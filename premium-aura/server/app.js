@@ -224,7 +224,9 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('unhandledRejection', (err) => logger.error(`Unhandled rejection: ${err?.message || err}`, { stack: err?.stack }));
 
-if (require.main === module) {
+// Always start: hosting launchers (Hostinger, Passenger, pm2) may load this file via require().
+if (!global.__auraStarted) {
+  global.__auraStarted = true;
   fs.mkdirSync(paths.LOGS_DIR, { recursive: true });
   server.listen(config.port, config.host, () => {
     logger.info(`HTTP listening on ${config.host}:${config.port} (${config.nodeEnv})`);

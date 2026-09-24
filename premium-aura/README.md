@@ -78,5 +78,5 @@ BASE_URL=http://localhost:3000 ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD='…
 ## Deployment notes
 
 - Run behind Nginx/Caddy with HTTPS; set `APP_URL=https://…` (enables Secure cookies + HSTS) and `TRUST_PROXY=1`. Proxy WebSocket upgrades for `/socket.io/`.
-- Use a process manager (`pm2 start server/app.js --name premium-aura`). For multiple instances set `DISABLE_WORKERS=true` on all but one.
+- Use a process manager (`pm2 start server.js --name premium-aura`). For multiple instances set `DISABLE_WORKERS=true` on all but one.
 - Back up MySQL and `uploads/`. Never commit `.env`.
