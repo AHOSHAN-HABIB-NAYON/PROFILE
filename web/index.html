@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- ========== SEO ========== -->
+    <title>A.H NAYON | Mechanical Engineer & Web Developer | Portfolio Bangladesh</title>
+    <meta name="description" content="A.H NAYON – Mechanical Engineering student, expert in Web Development, Python, Java, Cybersecurity. View innovative projects, professional skills, and hire for premium web solutions.">
+    <meta name="keywords" content="A.H NAYON, Mechanical Engineer, সুইট বয় নয়ন, Web Developer, Python, Java, Cybersecurity, Portfolio, Bangladesh, Sundarganj, Web Design, Software Engineer">
+    <meta name="author" content="A.H NAYON">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="#05070f">
+    <link rel="canonical" href="https://ah-nayon.github.io/web/">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="A.H NAYON | Mechanical Engineer & Web Developer">
+    <meta property="og:description" content="Portfolio of A.H NAYON – Mechanical Engineering student with expertise in Python, Java, Web Development, and Cybersecurity. Explore projects and services.">
+    <meta property="og:image" content="https://ah-nayon.github.io/web/images/Picsart_25-02-05_14-03-15-850-removebg-preview.png">
+    <meta property="og:url" content="https://ah-nayon.github.io/web/">
+    <meta property="og:site_name" content="A.H NAYON Portfolio">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="A.H NAYON | Mechanical Engineer & Web Developer">
+    <meta name="twitter:description" content="Mechanical Engineering student, skilled in Web Dev, Python, Java, Cybersecurity. Professional portfolio and services.">
+    <meta name="twitter:image" content="https://ah-nayon.github.io/web/images/Picsart_25-02-05_14-03-15-850-removebg-preview.png">
+
+    <link rel="shortcut icon" type="image/png" href="images/ic.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/boxicons.min.css">
+    <link rel="stylesheet" href="css/main.css">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      "name": "A.H NAYON",
+      "url": "https://ah-nayon.github.io/web/",
+      "sameAs": ["https://www.facebook.com/profile.php?id=100078637820779"],
+      "jobTitle": "Mechanical Engineer & Web Developer",
+      "knowsAbout": ["Web Development", "Python", "Java", "Cybersecurity", "UI/UX Design", "Mechanical Engineering"],
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Sundarganj",
+        "addressRegion": "Gaibandha",
+        "addressCountry": "Bangladesh"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "name": "A.H NAYON Web Solutions",
+      "image": "https://ah-nayon.github.io/web/images/Picsart_25-02-05_14-03-15-850-removebg-preview.png",
+      "description": "Professional web development, software solutions, and engineering consultancy based in Sundarganj, Bangladesh.",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Sundarganj",
+        "addressLocality": "Gaibandha",
+        "addressRegion": "Rangpur",
+        "addressCountry": "BD"
+      },
+      "geo": { "@type": "GeoCoordinates", "latitude": "25.5593", "longitude": "89.5205" },
+      "url": "https://ah-nayon.github.io/web/",
+      "telephone": "+8801757827996",
+      "email": "mdnayon718@gmail.com",
+      "priceRange": "$$",
+      "openingHours": "Mo-Fr 09:00-18:00"
+    }
+    </script>
+</head>
+<body class="is-loading">
+
+    <!-- Preloader -->
+    <div class="preloader" id="preloader" aria-hidden="true">
+        <div class="loader-inner">
+            <div class="loader-cube">
+                <span>A</span><span>H</span><span>N</span><span>Y</span><span></span><span></span>
+            </div>
+            <div class="loader-meta">
+                <span class="loader-count" id="loaderCount">0%</span>
+                LOADING EXPERIENCE
+                <div class="loader-bar"><i id="loaderBar"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transition curtain -->
+    <div class="curtain" id="curtain" aria-hidden="true">
+        <span style="--i:0"></span><span style="--i:1"></span><span style="--i:2"></span><span style="--i:3"></span><span style="--i:4"></span>
+    </div>
+
+    <div class="ambient" aria-hidden="true"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+    <div class="grid-overlay" aria-hidden="true"></div>
+    <div class="cursor-dot" aria-hidden="true"></div>
+    <div class="cursor-ring" aria-hidden="true"></div>
+    <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+
+    <!-- SVG gradient used by skill rings -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+        <defs>
+            <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#00eeff"/>
+                <stop offset="60%" stop-color="#7c5cff"/>
+                <stop offset="100%" stop-color="#ff3ea5"/>
+            </linearGradient>
+        </defs>
+    </svg>
+
+    <!-- ========== Header ========== -->
+    <header class="header" id="header">
+        <a href="#Home" class="logo" data-nav><span class="logo-mark"><i class="bx bx-cog"></i></span>A.H <b>NAYON</b></a>
+
+        <nav class="navbar" id="navbar">
+            <span class="nav-pill" id="navPill"></span>
+            <a href="#Home" style="--i:1" data-nav>Home</a>
+            <a href="#About" style="--i:2" data-nav>About</a>
+            <a href="#Live" style="--i:3" data-nav>Live</a>
+            <a href="#Skills" style="--i:4" data-nav>Skills</a>
+            <a href="#Projects" style="--i:5" data-nav>Projects</a>
+            <a href="#Services" style="--i:6" data-nav>Services</a>
+            <a href="#Contact" style="--i:7" data-nav>Contact</a>
+        </nav>
+
+        <div class="header-actions">
+            <a href="#Live" class="live-chip" data-nav><span class="rec-dot"></span><span class="lbl">LIVE</span></a>
+            <a href="images/A.H.NAYON-CV.png" download="A.H_NAYON_CV.png" class="btn btn-ghost btn-sm" data-magnetic><i class="bx bxs-download"></i> CV</a>
+            <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+    </header>
+
+    <main>
+        <!-- ========== Hero ========== -->
+        <section class="hero" id="Home">
+            <canvas id="hero3d" aria-hidden="true"></canvas>
+
+            <div class="hero-grid">
+                <div class="hero-intro">
+                    <div class="status-pill" style="--d:0"><span class="rec-dot green"></span><b>Available</b> for freelance &amp; collaboration</div>
+                    <p class="hero-hello" style="--d:1">Hello, It's Me 👋</p>
+                    <h1 class="hero-title" id="heroTitle" aria-label="A.H NAYON" style="opacity:1;animation:none">A.H <span class="accent">NAYON</span></h1>
+                    <p class="hero-typed" style="--d:2">I'm passionate in <span class="typed-target" id="typed"></span></p>
+                    <p class="hero-desc" style="--d:3">Mechanical Engineering student who builds modern, fast and secure digital experiences — blending an engineer's precision with a developer's creativity.</p>
+                    <div class="hero-cta" style="--d:4">
+                        <a href="#Contact" class="btn btn-primary" data-nav data-magnetic><i class="bx bx-rocket"></i> Hire Me</a>
+                        <a href="#Projects" class="btn btn-ghost" data-nav data-magnetic><i class="bx bx-grid-alt"></i> View Work</a>
+                    </div>
+                    <div class="socials" style="--d:5">
+                        <a href="https://www.facebook.com/profile.php?id=100078637820779" target="_blank" rel="noopener" aria-label="Facebook"><i class="bx bxl-facebook"></i></a>
+                        <a href="https://www.facebook.com/profile.php?id=100078637820779" target="_blank" rel="noopener" aria-label="LinkedIn"><i class="bx bxl-linkedin"></i></a>
+                        <a href="https://www.facebook.com/profile.php?id=100078637820779" target="_blank" rel="noopener" aria-label="Instagram"><i class="bx bxl-instagram"></i></a>
+                        <a href="https://www.facebook.com/profile.php?id=100078637820779" target="_blank" rel="noopener" aria-label="YouTube"><i class="bx bxl-youtube"></i></a>
+                        <a href="https://www.facebook.com/profile.php?id=100078637820779" target="_blank" rel="noopener" aria-label="GitHub"><i class="bx bxl-github"></i></a>
+                    </div>
+                </div>
+
+                <div class="portrait-wrap">
+                    <div class="portrait" id="portrait">
+                        <div class="portrait-glow"></div>
+                        <div class="portrait-ring"></div>
+                        <div class="portrait-ring r2"></div>
+                        <div class="portrait-img">
+                            <img src="images/Picsart_25-02-05_14-03-15-850-removebg-preview.png" alt="A.H NAYON profile picture - Mechanical Engineer and Web Developer" fetchpriority="high">
+                        </div>
+                        <div class="orbit" aria-hidden="true">
+                            <span class="chip" style="--a:0deg"><i class="bx bxl-python"></i></span>
+                            <span class="chip" style="--a:72deg"><i class="bx bxl-javascript"></i></span>
+                            <span class="chip" style="--a:144deg"><i class="bx bx-cog"></i></span>
+                            <span class="chip" style="--a:216deg"><i class="bx bxl-java"></i></span>
+                            <span class="chip" style="--a:288deg"><i class="bx bx-shield-quarter"></i></span>
+                        </div>
+                        <div class="float-card fc1"><i class="bx bx-wrench"></i><div>Mechanical<small>Engineering</small></div></div>
+                        <div class="float-card fc2"><i class="bx bx-code-alt"></i><div>Web &amp; Software<small>Developer</small></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <a href="#About" class="scroll-hint" data-nav aria-label="Scroll down"><span class="mouse"></span>SCROLL</a>
+        </section>
+
+        <!-- Marquee -->
+        <div class="marquee" aria-hidden="true">
+            <div class="marquee-track">
+                <span>Mechanical Engineer</span><span>Web Developer</span><span>Python</span><span>Cybersecurity</span><span>UI / UX</span><span>Java</span><span>Problem Solver</span><span>SQL</span>
+                <span>Mechanical Engineer</span><span>Web Developer</span><span>Python</span><span>Cybersecurity</span><span>UI / UX</span><span>Java</span><span>Problem Solver</span><span>SQL</span>
+            </div>
+        </div>
+
+        <!-- ========== About ========== -->
+        <section id="About">
+            <div class="container about-grid">
+                <div data-reveal="left">
+                <div class="about-photo glass" data-tilt>
+                    <img src="images/WhatsApp%20Image%202025-02-05%20at%2014.15.47_005c0e66.jpg" alt="A.H NAYON about image - mechanical engineering student and developer" loading="lazy">
+                    <div class="about-badge"><i class="bx bx-cog"></i><div><strong>Engineer × Dev</strong><small>Sundarganj, BD</small></div></div>
+                    <span class="glare"></span>
+                </div>
+                </div>
+
+                <div class="about-text">
+                    <span class="eyebrow" data-reveal="up"><i class="bx bx-user"></i> About Me</span>
+                    <h2 class="h2" data-reveal="up" style="--d:1">Engineering mind, <span class="grad-text">developer soul.</span></h2>
+                    <p data-reveal="up" style="--d:2"><strong>Mechanical Engineering student</strong> with expertise in <strong>Python, SQL, Java</strong> and <strong>Cybersecurity</strong>. A collaborative team player seeking opportunities to apply my engineering foundation and technical skills in innovative, cross-disciplinary roles.</p>
+
+                    <div class="stats" data-reveal="up" style="--d:3">
+                        <div class="stat glass"><strong data-count="11">0</strong><span>Tech Skills</span></div>
+                        <div class="stat glass"><strong data-count="8">0</strong><span>Soft Skills</span></div>
+                        <div class="stat glass"><strong data-count="3" data-suffix="+">0</strong><span>Projects</span></div>
+                        <div class="stat glass"><strong data-count="3">0</strong><span>Services</span></div>
+                    </div>
+
+                    <ul class="about-list" data-reveal="up" style="--d:4">
+                        <li><i class="bx bx-check-circle"></i> Mechanical Engineering</li>
+                        <li><i class="bx bx-check-circle"></i> Full-stack Web Development</li>
+                        <li><i class="bx bx-check-circle"></i> Python · Java · SQL</li>
+                        <li><i class="bx bx-check-circle"></i> Cybersecurity Enthusiast</li>
+                    </ul>
+
+                    <div class="hero-cta" data-reveal="up" style="--d:5;margin:0">
+                        <a href="https://www.facebook.com/profile.php?id=100078637820779" target="_blank" rel="noopener" class="btn btn-primary" data-magnetic><i class="bx bx-user-circle"></i> More About Me</a>
+                        <a href="images/A.H.NAYON-CV.png" download="A.H_NAYON_CV.png" class="btn btn-ghost" data-magnetic><i class="bx bxs-download"></i> Download CV</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== Live Show ========== -->
+        <section id="Live" class="live-section">
+            <div class="container">
+                <div class="section-head">
+                    <span class="eyebrow" data-reveal="up"><span class="rec-dot"></span> On Air</span>
+                    <h2 data-reveal="up" style="--d:1">Live <span class="grad-text">Show</span></h2>
+                    <p data-reveal="up" style="--d:2">A real-time look into the studio — code being written, the clock in Sundarganj, and what's on the workbench right now.</p>
+                </div>
+
+                <div class="live-grid">
+                    <div class="live-screen glass" data-reveal="zoom">
+                        <div class="screen-top">
+                            <span class="dots"><i></i><i></i><i></i></span>
+                            <span>~/nayon/studio.py</span>
+                            <span class="on-air"><span class="rec-dot"></span>REC</span>
+                        </div>
+                        <div class="terminal" id="terminal" aria-live="off"></div>
+                        <canvas class="wave-canvas" id="waveCanvas" aria-hidden="true"></canvas>
+                        <div class="scanlines" aria-hidden="true"></div>
+                    </div>
+
+                    <div class="live-card glass" data-reveal="right" style="--d:1">
+                        <h3><i class="bx bx-time-five"></i> Local time · Sundarganj</h3>
+                        <div class="clock" id="clock">--:--<span class="sec">:--</span></div>
+                        <div class="clock-meta" id="clockMeta">Asia/Dhaka (GMT+6)</div>
+                        <div class="live-metrics">
+                            <div class="metric"><small>Status</small><b id="workStatus">—</b></div>
+                            <div class="metric"><small>You've been here</small><b id="sessionTime">00:00</b></div>
+                        </div>
+                    </div>
+
+                    <div class="live-card glass" data-reveal="right" style="--d:2">
+                        <h3><i class="bx bx-cube-alt"></i> Now on the workbench</h3>
+                        <div class="cube-stage">
+                            <div class="cube-scene">
+                                <div class="skill-cube">
+                                    <div><i class="bx bxl-python"></i></div>
+                                    <div><i class="bx bxl-html5"></i></div>
+                                    <div><i class="bx bx-cog"></i></div>
+                                    <div><i class="bx bxl-java"></i></div>
+                                    <div><i class="bx bx-shield-quarter"></i></div>
+                                    <div><i class="bx bx-data"></i></div>
+                                </div>
+                            </div>
+                            <div class="now-playing">
+                                <p>Currently building</p>
+                                <strong id="nowPlaying">AI Resume Analyzer</strong>
+                                <div class="eq" aria-hidden="true">
+                                    <i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i><i style="--i:7"></i><i style="--i:8"></i><i style="--i:9"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== Skills ========== -->
+        <section id="Skills">
+            <div class="container">
+                <div class="section-head">
+                    <span class="eyebrow" data-reveal="up"><i class="bx bx-bolt-circle"></i> Toolkit</span>
+                    <h2 data-reveal="up" style="--d:1">My <span class="grad-text">Skills</span></h2>
+                </div>
+
+                <div class="skills-layout">
+                    <div class="sphere-wrap" data-reveal="zoom">
+                        <div class="tag-sphere" id="tagSphere" aria-hidden="true"></div>
+                        <div class="sphere-hint">DRAG TO ROTATE</div>
+                    </div>
+
+                    <div data-reveal="up" style="--d:1">
+                        <div class="tabs" id="skillTabs" role="tablist">
+                            <span class="tab-pill"></span>
+                            <button class="tab active" data-tab="tech" role="tab">⚙️ Technical</button>
+                            <button class="tab" data-tab="prof" role="tab">💼 Professional</button>
+                        </div>
+                        <div class="skills-grid" id="skillsGrid"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== Projects ========== -->
+        <section id="Projects">
+            <div class="container">
+                <div class="section-head">
+                    <span class="eyebrow" data-reveal="up"><i class="bx bx-layer"></i> Portfolio</span>
+                    <h2 data-reveal="up" style="--d:1">Innovative <span class="grad-text">Creations</span></h2>
+                </div>
+
+                <div class="projects-grid">
+                    <article class="project" data-reveal="flip" style="--d:0">
+                        <div class="project-inner" data-tilt>
+                            <div class="project-media">
+                                <span class="project-num">01</span>
+                                <i class="bx bxl-python"></i>
+                                <div class="project-links">
+                                    <a href="#" target="_blank" rel="noopener" aria-label="Live demo"><i class="bx bx-link-external"></i></a>
+                                    <a href="#" target="_blank" rel="noopener" aria-label="Source code"><i class="bx bxl-github"></i></a>
+                                </div>
+                            </div>
+                            <div class="project-body">
+                                <h3>AI Resume Analyzer</h3>
+                                <p>NLP tool that parses resumes and matches candidates with job descriptions using ML.</p>
+                                <div class="badges"><span>Python</span><span>spaCy</span><span>Flask</span></div>
+                            </div>
+                            <span class="glare"></span>
+                        </div>
+                    </article>
+
+                    <article class="project" data-reveal="flip" style="--d:1">
+                        <div class="project-inner" data-tilt>
+                            <div class="project-media">
+                                <span class="project-num">02</span>
+                                <i class="bx bx-network-chart"></i>
+                                <div class="project-links">
+                                    <a href="#" target="_blank" rel="noopener" aria-label="Live demo"><i class="bx bx-link-external"></i></a>
+                                    <a href="#" target="_blank" rel="noopener" aria-label="Source code"><i class="bx bxl-github"></i></a>
+                                </div>
+                            </div>
+                            <div class="project-body">
+                                <h3>Blockchain Voting</h3>
+                                <p>Decentralized e‑voting with Ethereum smart contracts ensuring transparency.</p>
+                                <div class="badges"><span>Solidity</span><span>Web3.js</span><span>React</span></div>
+                            </div>
+                            <span class="glare"></span>
+                        </div>
+                    </article>
+
+                    <article class="project" data-reveal="flip" style="--d:2">
+                        <div class="project-inner" data-tilt>
+                            <div class="project-media">
+                                <span class="project-num">03</span>
+                                <i class="bx bx-bar-chart-alt-2"></i>
+                                <div class="project-links">
+                                    <a href="#" target="_blank" rel="noopener" aria-label="Live demo"><i class="bx bx-link-external"></i></a>
+                                    <a href="#" target="_blank" rel="noopener" aria-label="Source code"><i class="bx bxl-github"></i></a>
+                                </div>
+                            </div>
+                            <div class="project-body">
+                                <h3>Smart Inventory</h3>
+                                <p>Real‑time inventory with predictive analytics and automated reorder alerts.</p>
+                                <div class="badges"><span>React</span><span>Node.js</span><span>MongoDB</span></div>
+                            </div>
+                            <span class="glare"></span>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== Services ========== -->
+        <section id="Services">
+            <div class="container">
+                <div class="section-head">
+                    <span class="eyebrow" data-reveal="up"><i class="bx bx-briefcase-alt-2"></i> What I do</span>
+                    <h2 data-reveal="up" style="--d:1">My <span class="grad-text">Services</span></h2>
+                    <p data-reveal="up" style="--d:2">Hover (or tap) a card to flip it in 3D.</p>
+                </div>
+
+                <div class="services-grid">
+                    <div class="flip" data-reveal="up" style="--d:0" tabindex="0">
+                        <div class="flip-inner">
+                            <div class="flip-face flip-front glass">
+                                <div class="svc-icon"><i class="bx bx-code-alt"></i></div>
+                                <h3>Web Development</h3>
+                                <span class="hint"><i class="bx bx-refresh"></i> FLIP</span>
+                            </div>
+                            <div class="flip-face flip-back">
+                                <h3>Web Development</h3>
+                                <p>Modern, responsive websites with cutting‑edge technologies. From corporate to e‑commerce.</p>
+                                <a href="#Contact" class="btn btn-primary btn-sm" data-nav>Start a project <i class="bx bx-right-arrow-alt"></i></a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flip" data-reveal="up" style="--d:1" tabindex="0">
+                        <div class="flip-inner">
+                            <div class="flip-face flip-front glass">
+                                <div class="svc-icon"><i class="bx bx-palette"></i></div>
+                                <h3>UI/UX Design</h3>
+                                <span class="hint"><i class="bx bx-refresh"></i> FLIP</span>
+                            </div>
+                            <div class="flip-face flip-back">
+                                <h3>UI/UX Design</h3>
+                                <p>Intuitive and engaging interfaces that deliver exceptional user experiences.</p>
+                                <a href="#Contact" class="btn btn-primary btn-sm" data-nav>Start a project <i class="bx bx-right-arrow-alt"></i></a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flip" data-reveal="up" style="--d:2" tabindex="0">
+                        <div class="flip-inner">
+                            <div class="flip-face flip-front glass">
+                                <div class="svc-icon"><i class="bx bxl-android"></i></div>
+                                <h3>Software Development</h3>
+                                <span class="hint"><i class="bx bx-refresh"></i> FLIP</span>
+                            </div>
+                            <div class="flip-face flip-back">
+                                <h3>Software Development</h3>
+                                <p>Custom desktop and mobile applications tailored to your business needs.</p>
+                                <a href="#Contact" class="btn btn-primary btn-sm" data-nav>Start a project <i class="bx bx-right-arrow-alt"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== Contact ========== -->
+        <section id="Contact">
+            <div class="container">
+                <div class="section-head">
+                    <span class="eyebrow" data-reveal="up"><i class="bx bx-paper-plane"></i> Contact</span>
+                    <h2 data-reveal="up" style="--d:1">Let's Work <span class="grad-text">Together</span></h2>
+                </div>
+
+                <div class="contact-grid">
+                    <div class="contact-info glass" data-reveal="left">
+                        <h3>Have an idea? Let's build it.</h3>
+                        <p>Reach out through any channel — I usually reply within a day.</p>
+                        <a class="c-item" href="mailto:mdnayon718@gmail.com"><i class="bx bxs-send"></i><div><small>Email</small><span>mdnayon718@gmail.com</span></div></a>
+                        <a class="c-item" href="tel:+8801757827996"><i class="bx bxs-phone-call"></i><div><small>Phone</small><span>+8801757827996</span></div></a>
+                        <a class="c-item" href="https://wa.me/8801757827996" target="_blank" rel="noopener"><i class="bx bxl-whatsapp"></i><div><small>WhatsApp</small><span>Chat instantly</span></div></a>
+                        <div class="socials" style="margin-top:8px">
+                            <a href="https://www.facebook.com/profile.php?id=100078637820779" target="_blank" rel="noopener" aria-label="GitHub"><i class="bx bxl-github"></i></a>
+                            <a href="https://www.facebook.com/profile.php?id=100078637820779" target="_blank" rel="noopener" aria-label="YouTube"><i class="bx bxl-youtube"></i></a>
+                            <a href="https://www.facebook.com/profile.php?id=100078637820779" target="_blank" rel="noopener" aria-label="Instagram"><i class="bx bxl-instagram"></i></a>
+                            <a href="https://www.facebook.com/profile.php?id=100078637820779" target="_blank" rel="noopener" aria-label="LinkedIn"><i class="bx bxl-linkedin"></i></a>
+                        </div>
+                    </div>
+
+                    <form class="contact-form glass" id="contactForm" data-reveal="right" novalidate>
+                        <div class="form-row">
+                            <div class="field"><input type="text" id="fName" placeholder=" " required><label for="fName">Your name</label></div>
+                            <div class="field"><input type="email" id="fEmail" placeholder=" " required><label for="fEmail">Your email</label></div>
+                        </div>
+                        <div class="field"><input type="text" id="fSubject" placeholder=" "><label for="fSubject">Subject</label></div>
+                        <div class="field"><textarea id="fMsg" placeholder=" " required></textarea><label for="fMsg">Tell me about your project</label></div>
+                        <button type="submit" class="btn btn-primary" data-magnetic><i class="bx bx-send"></i> Send Message</button>
+                        <p class="form-note" id="formNote" role="status"></p>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== Hire (Bangla) ========== -->
+        <section class="hire" lang="bn">
+            <div class="container">
+                <div class="hire-card" data-reveal="zoom">
+                    <h2>আপনার ব্যবসা বা কোম্পানির জন্য <span class="grad-text">ওয়েবসাইট</span> দরকার?</h2>
+                    <p>পেশাদার, আধুনিক ও দ্রুতগতির ওয়েবসাইট তৈরি করতে আজই যোগাযোগ করুন। ই-কমার্স, কর্পোরেট, পোর্টফোলিও – যেকোনো ধরণের প্রজেক্টে আমরা আছি আপনার পাশে।</p>
+                    <div class="hire-actions">
+                        <a href="mailto:mdnayon718@gmail.com" class="btn btn-primary" data-magnetic><i class="bx bxs-envelope"></i> যোগাযোগ করুন</a>
+                        <a href="https://wa.me/8801757827996?text=আমি%20ওয়েবসাইট%20নির্মাণের%20জন্য%20যোগাযোগ%20করছি" target="_blank" rel="noopener" class="btn btn-ghost" data-magnetic><i class="bx bxl-whatsapp"></i> হায়ার করুন</a>
+                    </div>
+                    <div class="hire-meta">
+                        <span><i class="bx bxs-phone-call"></i>+8801757827996</span>
+                        <a href="mailto:mdnayon718@gmail.com"><i class="bx bxs-envelope"></i> mdnayon718@gmail.com</a>
+                        <a href="https://www.facebook.com/profile.php?id=100078637820779" target="_blank" rel="noopener"><i class="bx bxl-facebook"></i> Facebook</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== Map ========== -->
+        <section id="Location">
+            <div class="container">
+                <div class="section-head">
+                    <span class="eyebrow" data-reveal="up"><i class="bx bx-map-pin"></i> Location</span>
+                    <h2 data-reveal="up" style="--d:1">Based in <span class="grad-text">Sundarganj</span></h2>
+                    <p data-reveal="up" style="--d:2">Gaibandha — heart of Bangladesh. Working with clients everywhere.</p>
+                </div>
+                <div class="map-card glass" data-reveal="up">
+                    <div class="map-frame">
+                        <iframe title="Sundarganj Location Map" src="https://maps.google.com/maps?q=Sundarganj,+Gaibandha,+Rangpur,+Bangladesh&z=13&output=embed" allowfullscreen loading="lazy"></iframe>
+                        <span class="map-pin" aria-hidden="true"></span>
+                    </div>
+                    <div class="map-footer">
+                        <div class="addr"><i class="bx bxs-map"></i><span>Sundarganj, Gaibandha, Rangpur, Bangladesh</span></div>
+                        <a href="https://maps.google.com/?q=Sundarganj,+Gaibandha,+Bangladesh" target="_blank" rel="noopener" class="btn btn-ghost btn-sm"><i class="bx bx-navigation"></i> Get Directions</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ========== Footer ========== -->
+    <footer class="footer">
+        <div class="footer-big" aria-hidden="true">A.H NAYON</div>
+        <div class="footer-grid">
+            <div>
+                <h4>A.H NAYON</h4>
+                <p>🔧 Mechanical Engineer | 💻 Tech Enthusiast | 🌟 Creating innovative digital solutions with a passion for engineering and design.</p>
+            </div>
+            <div>
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="#Home" data-nav>Home</a></li>
+                    <li><a href="#About" data-nav>About</a></li>
+                    <li><a href="#Skills" data-nav>Skills</a></li>
+                    <li><a href="#Projects" data-nav>Projects</a></li>
+                    <li><a href="#Contact" data-nav>Contact</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Services</h4>
+                <ul>
+                    <li><a href="#Services" data-nav>Web Development</a></li>
+                    <li><a href="#Services" data-nav>UI/UX Design</a></li>
+                    <li><a href="#Services" data-nav>Software Dev</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Connect</h4>
+                <div class="socials">
+                    <a href="https://www.facebook.com/profile.php?id=100078637820779" target="_blank" rel="noopener" aria-label="Facebook"><i class="bx bxl-facebook"></i></a>
+                    <a href="https://www.facebook.com/profile.php?id=100078637820779" target="_blank" rel="noopener" aria-label="Instagram"><i class="bx bxl-instagram"></i></a>
+                    <a href="https://www.facebook.com/profile.php?id=100078637820779" target="_blank" rel="noopener" aria-label="LinkedIn"><i class="bx bxl-linkedin"></i></a>
+                    <a href="https://www.facebook.com/profile.php?id=100078637820779" target="_blank" rel="noopener" aria-label="GitHub"><i class="bx bxl-github"></i></a>
+                    <a href="https://www.facebook.com/profile.php?id=100078637820779" target="_blank" rel="noopener" aria-label="YouTube"><i class="bx bxl-youtube"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© <span id="year">2025</span> A.H NAYON · All Rights Reserved</span>
+            <span>Designed with <i class="bx bxs-heart heart"></i> for excellence</span>
+        </div>
+    </footer>
+
+    <!-- Back to top -->
+    <a href="#Home" class="to-top" id="toTop" data-nav aria-label="Back to top">
+        <svg viewBox="0 0 54 54" aria-hidden="true"><circle class="t" cx="27" cy="27" r="24"/><circle class="p" id="toTopProgress" cx="27" cy="27" r="24"/></svg>
+        <i class="bx bx-up-arrow-alt"></i>
+    </a>
+
+    <!-- Premium Area (floating links) -->
+    <button class="fab" id="fab" aria-label="Open Premium Area" aria-expanded="false"><i class="bx bx-link-alt"></i></button>
+    <div class="popup" id="popup" role="dialog" aria-label="Premium Area">
+        <div class="popup-head">
+            <h4><i class="bx bx-world"></i> Premium Area</h4>
+            <button class="popup-close" id="popupClose" aria-label="Close"><i class="bx bx-x"></i></button>
+        </div>
+        <div class="tabs" id="linkTabs">
+            <span class="tab-pill"></span>
+            <button class="tab active" data-tab="myown">My Own</button>
+            <button class="tab" data-tab="vip">VIP Area</button>
+            <button class="tab" data-tab="others">Others</button>
+        </div>
+        <div class="links-list" id="linksList"></div>
+    </div>
+
+    <script src="js/typed.umd.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
