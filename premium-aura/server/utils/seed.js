@@ -20,8 +20,8 @@ const SERVICES = [
 const PROVIDERS = [
   {
     name: 'TelerouteX', provider_type: 'teleroutex', base_url: 'https://server.teleroutex.com',
-    endpoint: '/api/message-data-record/viewstats', auth_type: 'api_key', auth_param_name: 'X-API-Key',
-    credential_env: 'TELEROUTEX_API_KEY', records_path: 'data',
+    endpoint: '/api/message-data-record/viewstats', auth_type: 'query_token', auth_param_name: 'apiKey',
+    credential_env: 'TELEROUTEX_API_KEY', query_json: { page: 1, pageSize: 50 }, records_path: 'data.docs',
   },
   {
     name: 'ThirdWave', provider_type: 'thirdwave', base_url: 'https://clients.thirdwave.im',

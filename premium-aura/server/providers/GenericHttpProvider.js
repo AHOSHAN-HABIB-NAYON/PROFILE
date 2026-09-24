@@ -134,7 +134,7 @@ class GenericHttpProvider extends ApiProviderInterface {
     let recs = path ? get(data, path) : data;
     if (!Array.isArray(recs)) {
       // Common envelopes
-      recs = [data.data, data.items, data.records, data.results, data.messages, data.rows, data.data?.items, data.data?.data]
+      recs = [data.data, data.items, data.records, data.results, data.messages, data.rows, data.data?.items, data.data?.data, data.data?.docs, data.docs]
         .find(Array.isArray) || (Array.isArray(data) ? data : []);
     }
     return recs;
