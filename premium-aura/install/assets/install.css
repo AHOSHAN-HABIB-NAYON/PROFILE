@@ -1,0 +1,12 @@
+.install-card { max-width: 620px; }
+.steps { list-style: none; padding: 0; margin: 0 0 22px; display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; }
+.steps li { height: 6px; border-radius: 99px; background: var(--border); transition: background .3s; }
+.steps li.done { background: var(--success); }
+.steps li.current { background: var(--grad); }
+.step-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; }
+.req { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); gap: 10px; }
+.req:last-child { border-bottom: 0; }
+.req .v { font-size: 12px; color: var(--muted); }
+.req i.ok { color: var(--success); } .req i.bad { color: var(--danger); } .req i.opt { color: var(--warning); }
+.wizard-foot { display: flex; gap: 10px; margin-top: 18px; }
+.wizard-foot .btn { flex: 1; }

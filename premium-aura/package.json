@@ -1,0 +1,42 @@
+{
+  "name": "premium-aura",
+  "version": "1.0.0",
+  "description": "Premium Aura — VIP access platform: authorized resource allocation, live OTP/test event feed, wallet, premium plans, news and admin panel.",
+  "main": "server/app.js",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=18.17"
+  },
+  "scripts": {
+    "start": "node server/app.js",
+    "dev": "NODE_ENV=development node --watch server/app.js",
+    "migrate": "node server/utils/migrate.js",
+    "test": "node --test --test-concurrency=1 tests/acceptance.test.js"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.3.1",
+    "bcryptjs": "^3.0.3",
+    "chart.js": "^4.5.1",
+    "compression": "^1.8.2",
+    "cors": "^2.8.6",
+    "csv-parse": "^7.0.2",
+    "dotenv": "^18.0.3",
+    "exceljs": "^4.4.0",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "express-session": "^1.19.0",
+    "flag-icons": "^7.5.0",
+    "helmet": "^8.3.0",
+    "multer": "^2.4.0",
+    "mysql2": "^3.24.4",
+    "nodemailer": "^10.0.10",
+    "otplib": "^12.0.1",
+    "qrcode": "^1.5.4",
+    "sanitize-html": "^2.17.7",
+    "socket.io": "^4.8.3"
+  },
+  "optionalDependencies": {
+    "sharp": "^0.35.4"
+  }
+}
