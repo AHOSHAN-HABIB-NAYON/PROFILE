@@ -4,7 +4,7 @@ const logger = require('../utils/logger');
 const errorPage = require('../utils/errorPage');
 
 function wantsJson(req) {
-  return req.path.startsWith('/api/') || req.xhr || (req.get('accept') || '').includes('application/json');
+  return req.path.startsWith('/api/') || req.path.startsWith('/install/api/') || req.xhr || (req.get('accept') || '').includes('application/json');
 }
 
 function notFound(req, res) {

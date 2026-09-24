@@ -9,3 +9,4 @@ logs/*
 !logs/.gitkeep
 *.log
 .DS_Store
+install/.installer-state.json

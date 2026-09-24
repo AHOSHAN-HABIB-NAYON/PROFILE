@@ -1,8 +1,7 @@
 'use strict';
 /**
- * 10-step installation wizard backend. Only reachable while install/installed.lock
- * does not exist. The first browser to open /install receives an installer key
- * cookie; all installer API calls must present it (plus INSTALL_TOKEN when set).
+ * 10-step installation wizard backend. Only reachable while the app is not installed
+ * (install/installed.lock missing and APP_INSTALLED not set).
  */
 const fs = require('fs');
 const path = require('path');
@@ -19,8 +18,29 @@ const { encrypt, safeEqual } = require('../utils/crypto');
 const v = require('../utils/validate');
 const { E } = require('../utils/errors');
 
-const state = { key: null, startedAt: 0, done: {} };
+/*
+ * Installer session. The lock is claimed by the browser that submits the
+ * database step (not by whoever merely opens the page — health-check bots and
+ * link previews would otherwise grab it). State lives in a file so it works
+ * when the host runs several Node processes, and unlocks after 30 minutes of
+ * inactivity.
+ */
 const COOKIE = 'aura_install';
+const TOKEN_COOKIE = 'aura_install_t';
+const STATE_FILE = path.join(paths.INSTALL_DIR, '.installer-state.json');
+const IDLE_MS = 30 * 60_000;
+const state = { key: null, lastActivity: 0, done: {} };
+
+function load() {
+  try { Object.assign(state, { key: null, lastActivity: 0, done: {} }, JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'))); } catch { /* no state yet */ }
+}
+function save() {
+  try { fs.writeFileSync(STATE_FILE, JSON.stringify(state), { mode: 0o600 }); } catch { /* read-only FS: in-memory only */ }
+}
+function clearState() {
+  Object.assign(state, { key: null, lastActivity: 0, done: {} });
+  try { fs.unlinkSync(STATE_FILE); } catch { /* ignore */ }
+}
 
 function readCookie(req, name) {
   const raw = req.get('cookie') || '';
@@ -31,32 +51,43 @@ function readCookie(req, name) {
   return null;
 }
 
+const cookieOpts = (maxAge) => ({ httpOnly: true, sameSite: 'strict', path: '/install', maxAge, secure: config.secureCookies });
+const tokenProof = () => crypto.createHash('sha256').update(`aura-install:${config.installToken}`).digest('hex');
+
 // APP_INSTALLED=true lets hosts that wipe the filesystem on redeploy (e.g. Hostinger) stay installed.
 function isInstalled() { return fs.existsSync(paths.INSTALL_LOCK) || config.bool(process.env.APP_INSTALLED); }
 
-/** GET /install — issue the installer key to the first visitor. */
+/** GET /install — serve the wizard. Opening the page does not claim the installer. */
 function page(req, res) {
   if (isInstalled()) return res.redirect('/login');
-  if (config.installToken && !safeEqual(req.query.token || '', config.installToken) && !safeEqual(readCookie(req, COOKIE) || '', state.key || '')) {
-    return res.status(403).type('text').send('Installer locked: open /install?token=<INSTALL_TOKEN>');
+  if (config.installToken) {
+    const ok = safeEqual(req.query.token || '', config.installToken) || safeEqual(readCookie(req, TOKEN_COOKIE) || '', tokenProof());
+    if (!ok) return res.status(403).type('text').send('Installer locked: open /install?token=<INSTALL_TOKEN>');
+    res.cookie(TOKEN_COOKIE, tokenProof(), cookieOpts(2 * 3600_000));
   }
-  const current = readCookie(req, COOKIE);
-  const expired = state.key && Date.now() - state.startedAt > 2 * 3600_000;
-  if (!state.key || expired) {
-    state.key = crypto.randomBytes(24).toString('hex');
-    state.startedAt = Date.now();
-    state.done = {};
-  } else if (!safeEqual(current || '', state.key)) {
-    return res.status(423).type('text').send('Another browser is currently running the installer. Finish it there, or restart the server to reset.');
-  }
-  res.cookie(COOKIE, state.key, { httpOnly: true, sameSite: 'strict', path: '/install', maxAge: 2 * 3600_000 });
   res.sendFile(path.join(paths.INSTALL_DIR, 'index.html'));
 }
 
 function guard(req, res, next) {
   if (isInstalled()) return next(E.forbidden('Application is already installed'));
-  if (!state.key || !safeEqual(readCookie(req, COOKIE) || '', state.key)) return next(E.forbidden('Installer session expired — reload /install'));
   if (req.method !== 'GET' && req.get('x-installer') !== '1') return next(E.forbidden('Bad installer request'));
+  if (config.installToken && !safeEqual(readCookie(req, TOKEN_COOKIE) || '', tokenProof())) return next(E.forbidden('Open /install?token=<INSTALL_TOKEN> first'));
+  if (req.method === 'GET' && req.path === '/requirements') return next(); // read-only, no claim needed
+  load();
+  const cookie = readCookie(req, COOKIE) || '';
+  const idle = !state.key || Date.now() - state.lastActivity > IDLE_MS;
+  const mine = !!state.key && safeEqual(cookie, state.key);
+  if (req.method === 'POST' && req.path === '/database' && !mine) {
+    if (!idle) {
+      return next(E.conflict('Another browser is running the installer right now. It unlocks automatically after 30 minutes of inactivity.'));
+    }
+    Object.assign(state, { key: crypto.randomBytes(24).toString('hex'), done: {} });
+    res.cookie(COOKIE, state.key, cookieOpts(2 * 3600_000));
+  } else if (!mine || idle) {
+    return next(E.forbidden('Installer session expired — start again from the database step'));
+  }
+  state.lastActivity = Date.now();
+  save();
   next();
 }
 
@@ -126,6 +157,7 @@ exports.database = async (req, res) => {
     ENCRYPTION_KEY: existing.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex'),
   });
   state.done.database = true;
+  save();
   res.json({ ok: true, version: info.version, message: `Connected to ${info.version}` });
 };
 
@@ -136,6 +168,7 @@ exports.tables = async (req, res) => {
   await seed();
   const [{ n }] = await db.query("SELECT COUNT(*) AS n FROM information_schema.tables WHERE table_schema = DATABASE()");
   state.done.tables = true;
+  save();
   res.json({ ok: true, tables: Number(n), message: `${n} tables ready` });
 };
 
@@ -152,6 +185,7 @@ exports.admin = async (req, res) => {
     await User.create({ name, email, password, role: 'admin', verified: true });
   }
   state.done.admin = true;
+  save();
   res.json({ ok: true, message: 'Administrator account ready' });
 };
 
@@ -210,7 +244,7 @@ exports.pwa = async (req, res) => {
 exports.finish = (onInstalled) => async (req, res) => {
   if (!state.done.tables || !state.done.admin) throw E.badRequest('Complete the database and admin steps first');
   fs.writeFileSync(paths.INSTALL_LOCK, JSON.stringify({ installed_at: new Date().toISOString(), version: require('../../package.json').version }), { mode: 0o644 });
-  state.key = null;
+  clearState();
   res.clearCookie(COOKIE, { path: '/install' });
   await onInstalled();
   res.json({ ok: true, redirect: '/login', message: 'Installation complete!' });
