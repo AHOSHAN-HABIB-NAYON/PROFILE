@@ -32,11 +32,17 @@ function poolOptions(db) {
 
 async function init(dbConfig) {
   if (pool) await pool.end().catch(() => {});
+  // MySQL rounds fractional seconds by default (MariaDB truncates), so a JS timestamp could land
+  // one second in the future. Enable truncation on MySQL only — MariaDB rejects that sql_mode.
+  const probe = await mysql.createConnection({ ...poolOptions(dbConfig), connectionLimit: undefined, waitForConnections: undefined, queueLimit: undefined, enableKeepAlive: undefined });
+  const [[ver]] = await probe.query('SELECT VERSION() AS v');
+  await probe.end().catch(() => {});
+  const isMaria = /mariadb/i.test(ver.v);
+  const sessionSql = isMaria
+    ? "SET time_zone = '+00:00'"
+    : "SET time_zone = '+00:00', sql_mode = CONCAT(@@sql_mode, ',TIME_TRUNCATE_FRACTIONAL')";
   pool = mysql.createPool(poolOptions(dbConfig));
-  // UTC everywhere; truncate (not round) fractional seconds so JS timestamps never land in the future.
-  pool.on('connection', (conn) => {
-    conn.query("SET time_zone = '+00:00', sql_mode = CONCAT(@@sql_mode, ',TIME_TRUNCATE_FRACTIONAL')");
-  });
+  pool.on('connection', (conn) => { conn.query(sessionSql); });
   const conn = await pool.getConnection();
   try {
     const [[row]] = await conn.query('SELECT VERSION() AS v');

@@ -31,7 +31,8 @@ function readCookie(req, name) {
   return null;
 }
 
-function isInstalled() { return fs.existsSync(paths.INSTALL_LOCK); }
+// APP_INSTALLED=true lets hosts that wipe the filesystem on redeploy (e.g. Hostinger) stay installed.
+function isInstalled() { return fs.existsSync(paths.INSTALL_LOCK) || config.bool(process.env.APP_INSTALLED); }
 
 /** GET /install — issue the installer key to the first visitor. */
 function page(req, res) {

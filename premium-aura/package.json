@@ -10,6 +10,7 @@
   },
   "scripts": {
     "start": "node server/app.js",
+    "build": "echo \"No build step needed\"",
     "dev": "NODE_ENV=development node --watch server/app.js",
     "migrate": "node server/utils/migrate.js",
     "test": "node --test --test-concurrency=1 tests/acceptance.test.js"
