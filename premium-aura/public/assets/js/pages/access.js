@@ -60,16 +60,17 @@ export async function mount(el, { query, live }) {
     <span class="range-text"><strong>${esc(x.country_code)} ${esc(x.app_code)}</strong><small>${esc(x.country_name)} ${esc(x.app_name)}</small></span>`;
 
   function renderPicker(filter = '') {
-    const active = services.filter(usable);
-    if (!active.some((x) => x.id === selected)) selected = null;
+    // All active ranges are listed; ones without numbers are shown as "Not Available".
+    const active = services.filter((x) => x.status === 'active').sort((x, y) => Number(usable(y)) - Number(usable(x)));
+    if (!active.some((x) => x.id === selected && usable(x))) selected = null;
     const q = filter.trim().toLowerCase();
     const shown = q ? active.filter((x) => `${x.country_code} ${x.app_code} ${x.country_name} ${x.app_name}`.toLowerCase().includes(q)) : active;
     $('[data-services]', el).innerHTML = shown.length ? shown.map((x) => `
-      <button type="button" class="range-item ${x.id === selected ? 'selected' : ''}" data-pick="${x.id}" role="option" aria-selected="${x.id === selected}">
-        ${svcLabel(x)}${x.hot ? '<span class="hot-dot" title="Hot">🔥</span>' : ''}${x.id === selected ? '<i class="fa-solid fa-circle-check range-check"></i>' : ''}
+      <button type="button" class="range-item ${x.id === selected ? 'selected' : ''} ${usable(x) ? '' : 'na'}" ${usable(x) ? `data-pick="${x.id}"` : 'disabled'} role="option" aria-selected="${x.id === selected}" aria-disabled="${!usable(x)}">
+        ${svcLabel(x)}${usable(x) ? (x.hot ? '<span class="hot-dot" title="Hot">🔥</span>' : '') : '<span class="chip danger">Not Available</span>'}${x.id === selected ? '<i class="fa-solid fa-circle-check range-check"></i>' : ''}
       </button>`).join('')
       : `<div class="empty" style="padding:16px"><i class="fa-solid fa-globe"></i><div>${active.length ? 'No match' : 'No active ranges right now'}</div></div>`;
-    const cur = active.find((x) => x.id === selected);
+    const cur = active.find((x) => x.id === selected && usable(x));
     $('[data-range-current]', el).innerHTML = cur ? svcLabel(cur) : '<span class="range-placeholder"><i class="fa-solid fa-earth-asia"></i> Select Range</span>';
     $('[data-get-selected]', el).disabled = !cur;
     $('[data-get-label]', el).textContent = cur ? `Get ${cur.country_code} ${cur.app_code} Number` : 'Get Number';

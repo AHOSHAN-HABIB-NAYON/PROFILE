@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Authorized resource import from CSV / XLSX.
+ * Authorized resource import from CSV / TXT / XLSX.
  * Preferred columns (header row, any order, case-insensitive): country, service, resource, status
  *   PK,TG,TEST-100001,available
  * Also accepted: a plain list of numbers (one per line, with "Import into" set),
@@ -131,6 +131,7 @@ async function importResources(buf, kind, { createMissing = false, serviceId = n
   if (serviceId && !fixed) throw E.notFound('Target service not found');
 
   const values = [];
+  const touched = new Set();
   for (const r of rows) {
     const bad = (msg) => { report.invalid += 1; if (report.errors.length < 20) report.errors.push(`Line ${r.line}: ${msg}`); };
     if (!r.resource) { bad('empty number/resource'); continue; }
@@ -159,9 +160,11 @@ async function importResources(buf, kind, { createMissing = false, serviceId = n
   for (let i = 0; i < values.length; i += 1000) {
     const chunk = values.slice(i, i + 1000);
     const res = await db.run('INSERT IGNORE INTO authorized_resources (service_id, resource_value, serial_digits, status, import_batch) VALUES ?', [chunk]);
+    if (res.affectedRows) chunk.forEach((c) => touched.add(c[0]));
     report.inserted += res.affectedRows;
     report.duplicates += chunk.length - res.affectedRows;
   }
+  report.service_ids = [...touched];
   return report;
 }
 

@@ -113,8 +113,16 @@ exports.importResources = async (req, res) => {
   });
   await audit.log(req, 'resource.import', { targetType: 'file', targetId: saved.id, details: { ...report, errors: report.errors.length } });
   if (report.inserted && v.bool(req.body.notify)) {
-    await notifications.broadcast({ type: 'resource', title: 'New numbers available', body: `${report.inserted} new authorized resources were added.`, link: '/access' });
+    // Tell users *where* numbers were added — never how many.
+    const svcs = report.service_ids.length
+      ? await db.query("SELECT country_code, app_code, country_name, app_name FROM services WHERE id IN (?) AND status = 'active' LIMIT 6", [report.service_ids]) : [];
+    const where = svcs.map((x) => `${x.country_code} ${x.app_code}`).join(', ');
+    await notifications.broadcast({
+      type: 'resource', title: 'New numbers available',
+      body: where ? `Fresh numbers added: ${where}. Get yours now!` : 'Fresh numbers were added. Get yours now!', link: '/access',
+    });
   }
+  delete report.service_ids;
   res.json({ ok: true, report, message: `Imported ${report.inserted} resource(s)` });
 };
 

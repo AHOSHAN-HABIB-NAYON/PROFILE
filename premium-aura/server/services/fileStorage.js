@@ -31,6 +31,7 @@ const IMAGE_TYPES = {
 
 const DOC_TYPES = {
   csv: { mime: 'text/csv', exts: ['csv'], test: (b) => isText(b) },
+  txt: { mime: 'text/plain', exts: ['txt'], test: (b) => isText(b) },
   xlsx: { mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', exts: ['xlsx'], test: (b) => b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04 },
   pdf: { mime: 'application/pdf', exts: ['pdf'], test: (b) => b.slice(0, 5).toString('ascii') === '%PDF-' },
 };
@@ -88,7 +89,7 @@ async function saveImage(file, { userId = null, purpose, visibility = 'public', 
   return persist(buf, { userId, purpose, visibility, originalName: file.originalname, mime, ext });
 }
 
-async function saveDocument(file, { userId = null, purpose, allowed = ['csv', 'xlsx', 'pdf'] } = {}) {
+async function saveDocument(file, { userId = null, purpose, allowed = ['csv', 'txt', 'xlsx', 'pdf'] } = {}) {
   if (!file) throw E.badRequest('Please choose a file to upload');
   const subset = Object.fromEntries(Object.entries(DOC_TYPES).filter(([k]) => allowed.includes(k)));
   const t = detect(file.buffer, file.originalname, subset);

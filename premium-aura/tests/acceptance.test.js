@@ -193,6 +193,20 @@ test('XLSX import works', async () => {
   assert.equal(r.data.report.inserted, 2);
 });
 
+test('TXT import (one number per line) + notification never reveals counts', async () => {
+  const fd = new FormData();
+  fd.append('file', new Blob([`92${NUM}701\n92${NUM}702\n\n92${NUM}703\n`], { type: 'text/plain' }), 'numbers.txt');
+  fd.append('service_id', String(service.id));
+  fd.append('notify', '1');
+  const r = await admin.req('POST', '/api/admin/resources/import', { form: fd });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  assert.equal(r.data.report.inserted, 3);
+  const n = (await user.get('/api/notifications')).data.items.find((x) => x.title === 'New numbers available');
+  assert.ok(n, 'users were notified');
+  assert.equal(/\b3\b|\d+ new/.test(n.body), false, `notification must not include counts: ${n.body}`);
+  assert.ok(n.body.includes(service.app_code), 'notification names the range');
+});
+
 test('uploads are validated by content (executable disguised as CSV/PNG rejected)', async () => {
   const fd = new FormData();
   fd.append('file', new Blob([Buffer.from('MZ\x00\x00binary')]), 'evil.csv');

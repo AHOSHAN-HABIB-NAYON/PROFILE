@@ -65,7 +65,7 @@ export async function mount(el, { live }) {
       <a class="list-item" href="/access" style="color:var(--text)">${flag(s.flag_code)}<strong class="code-pair">${esc(s.country_code)} ${esc(s.app_code)}</strong>
       ${appIcon(s.app_icon || s.app_code, 'sm')}<div class="li-body"><div class="li-title">${esc(s.country_name)} ${esc(s.app_name)}</div></div>
       ${s.otps_today ? `<span class="hot-badge ${s.hot ? 'is-hot' : ''}">${s.hot ? '🔥' : '<i class="fa-solid fa-bolt"></i>'} ${num(s.otps_today)}</span>` : ''}
-      ${s.status === 'active' && s.available ? '<span class="chip success">Available</span>' : '<span class="chip danger">Unavailable</span>'}</a>`).join('') || '<div class="empty">No services yet</div>'}</div>
+      ${s.status === 'active' && s.available ? '<span class="chip success">Available</span>' : '<span class="chip danger">Not Available</span>'}</a>`).join('') || '<div class="empty">No services yet</div>'}</div>
   </div>`;
 
   for (const n of el.querySelectorAll('[data-count]')) {

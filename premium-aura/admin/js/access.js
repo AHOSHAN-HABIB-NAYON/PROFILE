@@ -19,7 +19,7 @@ function serviceFields(s = {}) {
   ];
 }
 
-const TABS = [['services', 'Services'], ['resources', 'Resources'], ['import', 'Import CSV / XLSX'], ['limits', 'Rate limits'], ['assignments', 'Assignments']];
+const TABS = [['services', 'Services'], ['resources', 'Resources'], ['import', 'Import TXT / CSV / XLSX'], ['limits', 'Rate limits'], ['assignments', 'Assignments']];
 
 export async function mount(el) {
   el.innerHTML = `${pageHead('fa-solid fa-sim-card', 'Access Management', 'Services, authorized resources, imports & limits')}
@@ -92,8 +92,8 @@ export async function mount(el) {
       await loadServices();
       pane.innerHTML = `<div class="grid grid-main"><div class="card"><div class="card-head"><h2>Import authorized resources</h2></div>
         <form data-import>
-          <label class="dropzone" data-drop><input type="file" name="file" accept=".csv,.xlsx,.pdf" hidden required>
-            <i class="fa-solid fa-file-arrow-up" style="font-size:26px;color:var(--primary)"></i><div><strong>Choose CSV or XLSX</strong></div>
+          <label class="dropzone" data-drop><input type="file" name="file" accept=".csv,.txt,.xlsx,.pdf" hidden required>
+            <i class="fa-solid fa-file-arrow-up" style="font-size:26px;color:var(--primary)"></i><div><strong>Choose TXT, CSV or XLSX</strong></div>
             <div class="small muted">PDF is accepted for archive/viewing only · max 20 MB</div><div data-fname class="small" style="margin-top:6px"></div></label>
           <div class="field" style="margin-top:12px"><label>Import into</label><select class="input" name="service_id"><option value="">Use country + service columns</option>
             ${services.map((s) => `<option value="${s.id}">${esc(s.country_code)} ${esc(s.app_code)} · ${esc(s.country_name)} ${esc(s.app_name)}</option>`).join('')}</select></div>
@@ -106,7 +106,7 @@ export async function mount(el) {
 PK,TG,TEST-100001,available
 PK,TG,TEST-100002,available
 IQ,WS,TEST-200001,available</pre>
-        <p class="small muted"><strong>Only numbers?</strong> Upload a plain list (one number per line, no header) and pick the service in <em>Import into</em>.</p>
+        <p class="small muted"><strong>Only numbers?</strong> Upload a <strong>.txt</strong> (or .csv) with one number per line and pick the service in <em>Import into</em>.</p>
         <p class="small muted">Also accepted: <code>;</code> or tab separators and headers like <code>number</code> / <code>phone</code>. Duplicates are skipped. Status may be <code>available</code>, <code>disabled</code> or <code>retired</code>.</p>
         <a class="btn btn-ghost btn-sm" href="data:text/csv;charset=utf-8,country%2Cservice%2Cresource%2Cstatus%0APK%2CTG%2CTEST-100001%2Cavailable%0APK%2CTG%2CTEST-100002%2Cavailable%0AIQ%2CWS%2CTEST-200001%2Cavailable%0A" download="resources-sample.csv"><i class="fa-solid fa-download"></i>Sample CSV</a></div></div>`;
       const file = $('[name=file]', pane);
