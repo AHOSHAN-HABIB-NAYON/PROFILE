@@ -316,9 +316,12 @@ test('API provider polling: normalize, authorize, dedupe, reward, health', async
   const w = await user.get('/api/wallet');
   assert.equal(w.data.wallet.balance, '0.0100', 'reward credited');
   const act = await user.get('/api/activity');
+  assert.ok(act.data.items.every((x) => x.code === null), 'codes hidden by default');
+  await admin.put('/api/admin/settings', { live_activity_show_code: '1' });
+  assert.ok((await user.get('/api/activity')).data.items.some((x) => x.code === '27288'), 'codes shown when enabled');
+  await admin.put('/api/admin/settings', { live_activity_show_code: '0' });
   const item = act.data.items.find((x) => x.number === `${number.slice(0, 4)}••••${number.slice(-4)}`);
   assert.ok(item, 'real event appears in Live Activity');
-  assert.equal(JSON.stringify(act.data).includes('27288'), false, 'Live Activity never includes OTP codes');
   const svcs = (await user.get('/api/services')).data.services;
   assert.ok(svcs.find((x) => x.id === service.id).otps_today >= 1, 'service shows OTP activity today');
   // automatic 5s polling

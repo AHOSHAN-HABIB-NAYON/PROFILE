@@ -4,7 +4,7 @@ const events = require('../services/events');
 const { paginate, meta } = require('../utils/pagination');
 
 exports.activity = async (req, res) => {
-  res.json({ ok: true, ...(await events.activity(15)) });
+  res.json({ ok: true, ...(await events.activity(15, await settings.getBool('live_activity_show_code'))) });
 };
 
 exports.feed = async (req, res) => {

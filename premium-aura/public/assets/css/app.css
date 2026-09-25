@@ -649,3 +649,5 @@ table.table { width: 100%; border-collapse: separate; border-spacing: 0; }
 [data-theme="dark"] .plan-card .speed-main { color: #fdba74; }
 .range-item.na { opacity: .55; cursor: not-allowed; }
 .range-item.na .chip { flex: none; }
+.act-code { font-size: 14px; font-weight: 800; color: var(--primary); white-space: nowrap; letter-spacing: .05em; border: 0; background: none; cursor: pointer; padding: 0; }
+.act-code i { font-size: 11px; color: #f59e0b; }

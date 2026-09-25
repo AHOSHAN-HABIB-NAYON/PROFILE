@@ -27,6 +27,7 @@ export async function mount(el, ctx) {
       { name: 'registration_enabled', label: 'Allow new registrations', type: 'switch', value: s.registration_enabled === '1' },
       { name: 'require_email_verification', label: 'Require email verification', type: 'switch', value: s.require_email_verification === '1' },
       { name: 'news_demo_engagement_enabled', label: 'Show admin demo engagement on news (labelled DEMO)', type: 'switch', value: s.news_demo_engagement_enabled === '1' },
+      { name: 'live_activity_show_code', label: 'Live Activity: show OTP codes', type: 'switch', value: s.live_activity_show_code === '1', hint: 'Off = "OTP received" only. Numbers always stay masked.' },
     ]),
     wallet: fieldsHtml([
       { name: 'event_reward', label: 'Reward per valid event ($)', value: s.event_reward },

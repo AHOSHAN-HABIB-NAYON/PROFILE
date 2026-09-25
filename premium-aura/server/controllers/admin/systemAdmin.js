@@ -45,7 +45,7 @@ exports.saveSettings = async (req, res) => {
   urlk('binance_pay_link');
   ['logo_url', 'favicon_url', 'pwa_icon_url', 'login_background_url', 'binance_qr_url'].forEach(urlk);
   ['primary_color', 'accent_color', 'pwa_theme_color', 'pwa_background_color'].forEach(col);
-  ['registration_enabled', 'require_email_verification', 'news_demo_engagement_enabled'].forEach(flag);
+  ['registration_enabled', 'require_email_verification', 'news_demo_engagement_enabled', 'live_activity_show_code'].forEach(flag);
   if (b.default_theme !== undefined) out.default_theme = v.oneOf(b.default_theme, ['light', 'dark']);
   if (b.default_timezone !== undefined) {
     if (!validTz(b.default_timezone)) throw E.badRequest('Unknown timezone');

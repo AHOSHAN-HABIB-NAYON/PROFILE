@@ -4,7 +4,7 @@ function activityRow(a, isNew = false) {
   const app = appInfo(a.application);
   return `<div class="act-row${isNew ? ' new' : ''}" data-key="${esc(a.key)}">${flag(a.flag_code)}${appIcon(a.application, 'sm')}
     <div class="act-main"><div class="act-title">${esc(a.country_code || '')} · ${esc(app.n)}</div><div class="act-num mono">${esc(a.number || '')}</div></div>
-    <div class="act-end"><span class="act-ok"><i class="fa-solid fa-circle-check"></i> OTP received</span><span class="act-time">${relEl(a.received_at)}</span></div></div>`;
+    <div class="act-end">${a.code ? `<button class="act-code mono" data-copy="${esc(a.code)}" title="Copy"><i class="fa-solid fa-key"></i> ${esc(a.code)}</button>` : '<span class="act-ok"><i class="fa-solid fa-circle-check"></i> OTP received</span>'}<span class="act-time">${relEl(a.received_at)}</span></div></div>`;
 }
 
 function row(ev, isNew = false) {
@@ -35,7 +35,7 @@ export async function mount(el, { query, live }) {
   <div class="card activity-card" style="margin-bottom:16px">
     <div class="card-head"><h2><i class="fa-solid fa-bolt" style="color:#f59e0b"></i> Live Activity</h2><span class="chip live">Live</span><span class="link small muted" data-act-total></span></div>
     <div class="act-list" data-activity><div class="skeleton" style="height:52px;border-radius:14px"></div></div>
-    <p class="small muted" style="margin:8px 0 0">Real OTPs received by members in the last 24 hours. Codes are private; numbers are partly hidden.</p>
+    <p class="small muted" style="margin:8px 0 0">Real OTPs received by members in the last 24 hours. Numbers are partly hidden.</p>
   </div>
   <div class="card">
     <div class="tabs" data-tabs><button class="tab active" data-app="">All</button>${APP_LIST.slice(0, 8).map((a) => `<button class="tab" data-app="${a.code}">${a.code}</button>`).join('')}</div>

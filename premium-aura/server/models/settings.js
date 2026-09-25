@@ -50,6 +50,8 @@ const DEFAULTS = {
   upload_max_mb: '5',
   // News
   news_demo_engagement_enabled: '0',
+  // Live Activity: show the OTP code instead of just "OTP received" (off by default)
+  live_activity_show_code: '0',
 };
 
 const PUBLIC_KEYS = [

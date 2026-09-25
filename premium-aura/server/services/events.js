@@ -126,7 +126,7 @@ async function ingest(provider, events, sourceId = null) {
       `SELECT e.*, 'live' AS kind, p.name AS provider_name FROM event_records e LEFT JOIN api_providers p ON p.id = e.provider_id WHERE e.id = ?`,
       [result.id],
     );
-    realtime.broadcast('activity:new', activityItem(row));
+    realtime.broadcast('activity:new', activityItem(row, await settings.getBool('live_activity_show_code')));
     if (result.userId) {
       // Instant in-place update of the owner's number list (Access page).
       if (result.assignmentId) realtime.toUser(result.userId, 'resource:otp', { assignment_id: result.assignmentId, code: ev.code, application: row.application });
@@ -138,23 +138,24 @@ async function ingest(provider, events, sourceId = null) {
   return stats;
 }
 
-/** Public activity item: real event, code never included, number masked. */
-function activityItem(r) {
+/** Public activity item: real event, number always masked; code only when the admin enables it. */
+function activityItem(r, showCode = false) {
   return {
+    code: showCode ? r.code : null,
     key: `a${r.id}`, application: r.application, country_code: r.country_code, flag_code: r.flag_code || String(r.country_code || '').toLowerCase().slice(0, 2),
     number: maskNumber(r.resource_value), received_at: new Date(r.received_at).toISOString(),
   };
 }
 
 /** Latest real OTP activity across all users + per-service counts for the last 24h. */
-async function activity(limit = 15) {
+async function activity(limit = 15, showCode = false) {
   const rows = await db.query(
-    `SELECT e.id, e.application, e.country_code, e.resource_value, e.received_at, s.flag_code
+    `SELECT e.id, e.application, e.country_code, e.code, e.resource_value, e.received_at, s.flag_code
      FROM event_records e LEFT JOIN authorized_resources r ON r.id = e.resource_id LEFT JOIN services s ON s.id = r.service_id
      WHERE e.received_at > UTC_TIMESTAMP() - INTERVAL 1 DAY ORDER BY e.id DESC LIMIT ?`, [limit],
   );
   const [totals] = await db.query('SELECT COUNT(*) AS today FROM event_records WHERE received_at > UTC_TIMESTAMP() - INTERVAL 1 DAY');
-  return { items: rows.map(activityItem), today: Number(totals.today) };
+  return { items: rows.map((r) => activityItem(r, showCode)), today: Number(totals.today) };
 }
 
 async function serviceActivity() {
