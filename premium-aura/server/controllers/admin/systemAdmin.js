@@ -54,7 +54,6 @@ exports.saveSettings = async (req, res) => {
   moneyk('event_reward', '0');
   moneyk('min_withdrawal', '1');
   intk('upload_max_mb', 1, 20);
-  intk('free_quota_daily', 0, 100000);
   intk('assignment_timeout_minutes', 1, 1440);
   intk('notification_ttl_hours', 1, 720);
   intk('feed_page_size', 10, 100);

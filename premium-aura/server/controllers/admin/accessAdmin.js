@@ -154,9 +154,6 @@ exports.setRateLimits = async (req, res) => {
   await db.run(`INSERT INTO rate_limits (scope, interval_seconds, hourly_limit, daily_limit, enabled) VALUES ('resource_assign', ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE interval_seconds = VALUES(interval_seconds), hourly_limit = VALUES(hourly_limit), daily_limit = VALUES(daily_limit), enabled = VALUES(enabled)`,
   [cfg.interval_seconds, cfg.hourly_limit, cfg.daily_limit, cfg.enabled]);
-  if (b.free_quota_daily !== undefined) {
-    await require('../../models/settings').set({ free_quota_daily: v.int(b.free_quota_daily, { name: 'Free quota', min: 0, max: 100000 }) });
-  }
   await audit.log(req, 'rate_limits.update', { details: cfg });
   res.json({ ok: true, message: 'Rate limits saved' });
 };

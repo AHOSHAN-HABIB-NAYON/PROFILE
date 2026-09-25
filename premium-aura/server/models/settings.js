@@ -32,7 +32,6 @@ const DEFAULTS = {
   min_withdrawal: '50.00',
   currency_symbol: '$',
   // Access / quotas
-  free_quota_daily: '10',
   // Minutes a number stays with a user without receiving an OTP before it returns to the pool
   assignment_timeout_minutes: '10',
   // Header notifications are removed automatically after this many hours

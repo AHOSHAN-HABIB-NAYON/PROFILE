@@ -17,7 +17,6 @@ const ACT_ICON = { event: 'fa-shield-halved', resource: 'fa-hashtag', premium: '
 export async function mount(el, { live }) {
   const [d, svc] = await Promise.all([api('/dashboard'), api('/services')]);
   const c = d.cards;
-  const quota = c.resources.quota === null ? '∞' : num(c.resources.quota);
   el.innerHTML = `
   ${pageHead('fa-solid fa-house', `Hi, ${state.user.name.split(' ')[0]} 👋`, 'Here is what is happening with your account today')}
   <div class="card hero-card mobile-only" style="margin-bottom:16px">
@@ -39,10 +38,10 @@ export async function mount(el, { live }) {
       <div class="sub"><i class="fa-solid fa-arrow-trend-up"></i> +${esc(money(state.site.event_reward || '0.01'))} / event</div></div></div>
     <div class="card stat-card"><span class="ic cyan"><i class="fa-solid fa-envelope-open-text"></i></span><div><div class="label">OTP Received</div>
       <div class="value" data-count="${c.events.total}">${num(c.events.total)}</div><div class="sub">+${num(c.events.today)} today</div></div></div>
-    <div class="card stat-card"><span class="ic purple"><i class="fa-solid fa-hashtag"></i></span><div><div class="label">Used Resources</div>
-      <div class="value"><span data-count="${c.resources.used}">${num(c.resources.used)}</span> <small>/ ${quota}</small></div><div class="sub muted" style="color:var(--muted)">${esc(c.resources.label)}</div></div></div>
-    <div class="card stat-card"><span class="ic orange"><i class="fa-solid fa-gauge"></i></span><div><div class="label">Current Limit</div>
-      <div class="value"><span data-count="${c.limit.hour_used}">${num(c.limit.hour_used)}</span> <small>/ ${num(c.limit.hourly)}</small></div><div class="sub muted" style="color:var(--muted)">Per hour · ${num(c.limit.daily)}/day${c.premium.active ? ' · ⚡ Premium speed' : ''}</div></div></div>
+    <div class="card stat-card"><span class="ic purple"><i class="fa-solid fa-calendar-day"></i></span><div><div class="label">Used Today</div>
+      <div class="value"><span data-count="${c.limit.day_used}">${num(c.limit.day_used)}</span> <small>/ ${num(c.limit.daily)}</small></div><div class="sub muted" style="color:var(--muted)">Daily limit${c.premium.active ? ' · ⚡ Premium' : ' · Free'}</div></div></div>
+    <div class="card stat-card"><span class="ic orange"><i class="fa-solid fa-gauge-high"></i></span><div><div class="label">This Hour</div>
+      <div class="value"><span data-count="${c.limit.hour_used}">${num(c.limit.hour_used)}</span> <small>/ ${num(c.limit.hourly)}</small></div><div class="sub muted" style="color:var(--muted)">Hourly limit${c.premium.active ? ' · ⚡ Premium' : ' · Free'}</div></div></div>
     <div class="card stat-card"><span class="ic green"><i class="fa-solid fa-crown"></i></span><div><div class="label">Premium</div>
       <div class="value" style="font-size:18px">${c.premium.active ? 'Active' : 'Free'}</div>
       <div class="sub">${c.premium.active ? `${esc(c.premium.plan)} · until ${esc(new Date(c.premium.expires_at).toISOString().slice(0, 10))}` : '<a href="/premium">Upgrade now</a>'}</div></div></div>

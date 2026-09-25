@@ -52,7 +52,7 @@ export async function mount(el, { query, live }) {
     </div>`;
 
   const renderLimits = (l) => {
-    $('[data-limits]', el).textContent = `${l.hour_used}/${l.hourly_limit} this hour · ${l.quota === null ? '∞' : `${l.quota_used}/${l.quota}`} quota`;
+    $('[data-limits]', el).textContent = `${l.hour_used}/${l.hourly_limit} this hour · ${l.day_used}/${l.daily_limit} today${l.premium ? ' · ⚡ Premium' : ''}`;
   };
   const usable = (s) => s.status === 'active' && s.available;
 

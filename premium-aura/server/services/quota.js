@@ -7,7 +7,6 @@
  *      daily quota. Exceeding the quota triggers the premium upgrade prompt.
  */
 const db = require('../config/database');
-const settings = require('../models/settings');
 const { E } = require('../utils/errors');
 
 const lastAttempt = new Map(); // userId -> ms (in-process fast path; DB check below covers multi-process)
@@ -49,15 +48,10 @@ async function limitsFor(userId, conn = db) {
   // Priority: per-user override → premium plan speed → global rate limits.
   const hourly = user?.custom_hourly_limit ?? premium?.hourly_limit ?? rc.hourly_limit;
   const daily = user?.custom_daily_limit ?? premium?.daily_limit ?? rc.daily_limit;
-  let quota;
-  let quotaLabel;
-  if (premium) {
-    quota = user?.custom_quota ?? premium.resource_limit; // null = unlimited
-    quotaLabel = `${premium.plan_name} plan`;
-  } else {
-    quota = user?.custom_quota ?? (await settings.getInt('free_quota_daily', 10));
-    quotaLabel = 'Free daily quota';
-  }
+  // Plans are speed-based (per hour / per day). A total quota only applies when the
+  // admin sets a per-user override (Users → Change limits → quota).
+  const quota = user?.custom_quota ?? null;
+  const quotaLabel = premium ? `${premium.plan_name} plan` : 'Free plan';
   return {
     interval_seconds: rc.interval_seconds,
     enabled: !!rc.enabled,
@@ -67,6 +61,7 @@ async function limitsFor(userId, conn = db) {
     day_used: Number(counts.day_used || 0),
     quota, // null = unlimited
     quota_used: Number((premium ? counts.plan_used : counts.day_quota_used) || 0),
+    plan_label: quotaLabel,
     quota_label: quotaLabel,
     total_assigned: Number(counts.total || 0),
     last_assigned_at: counts.last_at,
@@ -97,8 +92,14 @@ async function enforce(tx, userId) {
       const gap = Date.now() - new Date(l.last_assigned_at).getTime();
       if (gap < l.interval_seconds * 1000) throw E.tooMany(`Please wait ${l.interval_seconds}s between requests`, { code: 'INTERVAL' });
     }
-    if (l.hour_used >= l.hourly_limit) throw E.tooMany(`Hourly limit reached (${l.hourly_limit}/hour). Try again later.`, { code: 'HOURLY_LIMIT', limits: l });
-    if (l.day_used >= l.daily_limit) throw E.tooMany(`Daily limit reached (${l.daily_limit}/day).`, { code: 'DAILY_LIMIT', limits: l });
+    // Free users who hit a limit get the premium upgrade prompt (premium = faster speed).
+    const upgrade = !l.premium;
+    if (l.hour_used >= l.hourly_limit) {
+      throw E.tooMany(upgrade ? `Free limit reached (${l.hourly_limit}/hour). Upgrade to Premium for faster speed.` : `Hourly limit reached (${l.hourly_limit}/hour). Try again later.`, { code: 'HOURLY_LIMIT', upgrade, limits: l });
+    }
+    if (l.day_used >= l.daily_limit) {
+      throw E.tooMany(upgrade ? `Free limit reached (${l.daily_limit}/day). Upgrade to Premium for more numbers per day.` : `Daily limit reached (${l.daily_limit}/day).`, { code: 'DAILY_LIMIT', upgrade, limits: l });
+    }
   }
   if (l.quota !== null && l.quota !== undefined && l.quota_used >= l.quota) {
     throw E.forbidden(

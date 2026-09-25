@@ -135,10 +135,9 @@ IQ,WS,TEST-200001,available</pre>
       pane.innerHTML = `<div class="card" style="max-width:640px"><div class="card-head"><h2>Resource request limits</h2><span class="chip info">server-side</span></div>
         <form data-limits><div class="form-grid two">
           <div class="field"><label>Request interval (seconds)</label><input class="input" type="number" name="interval_seconds" min="0" max="3600" value="${l.interval_seconds}"><span class="hint">Default 1 request / 1 second</span></div>
-          <div class="field"><label>Hourly limit</label><input class="input" type="number" name="hourly_limit" list="hourly-presets" min="1" value="${l.hourly_limit}">
+          <div class="field"><label>Free users: per hour</label><input class="input" type="number" name="hourly_limit" list="hourly-presets" min="1" value="${l.hourly_limit}">
             <datalist id="hourly-presets"><option value="10"><option value="25"><option value="50"><option value="100"><option value="200"></datalist></div>
-          <div class="field"><label>Daily limit</label><input class="input" type="number" name="daily_limit" min="1" value="${l.daily_limit}"></div>
-          <div class="field"><label>Free users: daily quota</label><input class="input" type="number" name="free_quota_daily" min="0" value="${esc(st.settings.free_quota_daily)}"><span class="hint">Premium plans use their own limits</span></div>
+          <div class="field"><label>Free users: per day</label><input class="input" type="number" name="daily_limit" min="1" value="${l.daily_limit}"><span class="hint">Premium plans have their own speed (Premium Plans → Edit)</span></div>
           <div class="field" style="grid-column:1/-1"><label class="switch"><input type="checkbox" name="enabled" ${l.enabled ? 'checked' : ''}><span class="track"></span><span>Enforce interval / hourly / daily limits</span></label></div>
         </div><div class="row-flex">${[10, 25, 50, 100, 200].map((n) => `<button type="button" class="btn btn-ghost btn-xs" data-preset="${n}">${n}/hour</button>`).join('')}</div>
         <button class="btn btn-primary" type="submit" style="margin-top:14px">Save limits</button></form></div>`;

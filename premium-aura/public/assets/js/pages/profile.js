@@ -15,7 +15,7 @@ export async function mount(el, ctx) {
         <dl class="kv"><dt>Address</dt><dd>${esc(u.address || '—')}</dd><dt>Account date</dt><dd>${esc(fmtDate(u.created_at))}</dd>
           <dt>Premium</dt><dd>${l.premium ? `${esc(l.premium.plan)} · until ${esc(fmtDate(l.premium.expires_at))}` : 'Free'}</dd>
           <dt>Wallet</dt><dd>${esc(money(r.wallet.display))}</dd>
-          <dt>Limits</dt><dd>${num(l.hourly_limit)}/hour · ${num(l.daily_limit)}/day · quota ${l.quota === null ? 'unlimited' : `${num(l.quota_used)}/${num(l.quota)}`}</dd>
+          <dt>Limits</dt><dd>${num(l.hourly_limit)}/hour · ${num(l.daily_limit)}/day</dd>
           <dt>Timezone</dt><dd>${esc(u.timezone === 'auto' ? `Local (${Intl.DateTimeFormat().resolvedOptions().timeZone})` : u.timezone)}</dd></dl>
       </div>
       <div class="card"><div class="list">
@@ -30,7 +30,6 @@ export async function mount(el, ctx) {
     <div class="card"><div class="card-head"><h2>Usage</h2></div>
       <div class="field"><label>Hourly (${num(l.hour_used)} / ${num(l.hourly_limit)})</label><div class="progress"><span style="width:${Math.min(100, (l.hour_used / l.hourly_limit) * 100)}%"></span></div></div>
       <div class="field"><label>Daily (${num(l.day_used)} / ${num(l.daily_limit)})</label><div class="progress"><span style="width:${Math.min(100, (l.day_used / l.daily_limit) * 100)}%"></span></div></div>
-      <div class="field"><label>${esc(l.quota_label)} (${num(l.quota_used)} / ${l.quota === null ? '∞' : num(l.quota)})</label><div class="progress"><span style="width:${l.quota === null ? 5 : Math.min(100, (l.quota_used / Math.max(1, l.quota)) * 100)}%"></span></div></div>
       <a class="btn btn-primary btn-block" href="/premium"><i class="fa-solid fa-crown"></i>Upgrade</a>
     </div>
   </div>`;

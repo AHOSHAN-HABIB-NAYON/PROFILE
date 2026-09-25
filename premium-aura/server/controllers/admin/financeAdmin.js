@@ -20,8 +20,7 @@ function planInput(b) {
     description: v.str(b.description, { name: 'Description', max: 255 }) || null,
     duration_days: v.int(b.duration_days, { name: 'Duration (days)', min: 1, max: 3650 }),
     price: money.normalize(price).slice(0, -2),
-    resource_limit: b.resource_limit === '' || b.resource_limit === null || b.resource_limit === undefined || v.bool(b.unlimited)
-      ? null : v.int(b.resource_limit, { name: 'Limit', min: 1, max: 10_000_000 }),
+    resource_limit: null, // plans are speed-based (hourly / daily)
     hourly_limit: b.hourly_limit === '' || b.hourly_limit === null || b.hourly_limit === undefined ? null : v.int(b.hourly_limit, { name: 'Hourly limit', min: 1, max: 1_000_000 }),
     daily_limit: b.daily_limit === '' || b.daily_limit === null || b.daily_limit === undefined ? null : v.int(b.daily_limit, { name: 'Daily limit', min: 1, max: 10_000_000 }),
     status: v.oneOf(b.status, ['active', 'inactive'], { def: 'active' }),

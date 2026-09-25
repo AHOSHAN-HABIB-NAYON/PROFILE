@@ -205,7 +205,7 @@ test('uploads are validated by content (executable disguised as CSV/PNG rejected
 });
 
 test('resource allocation + interval rate limit + duplicate prevention', async () => {
-  await admin.put('/api/admin/rate-limits', { interval_seconds: 1, hourly_limit: 50, daily_limit: 200, enabled: true, free_quota_daily: 3 });
+  await admin.put('/api/admin/rate-limits', { interval_seconds: 1, hourly_limit: 50, daily_limit: 3, enabled: true });
   const a1 = await user.post('/api/resource/assign', { service_id: service.id });
   assert.equal(a1.status, 201, JSON.stringify(a1.data));
   const a2 = await user.post('/api/resource/assign', { service_id: service.id });
@@ -218,13 +218,13 @@ test('resource allocation + interval rate limit + duplicate prevention', async (
   assert.equal(mine.data.items.length, 2);
 });
 
-test('free quota triggers premium upgrade prompt', async () => {
+test('free daily limit triggers premium upgrade prompt', async () => {
   await sleep(1100);
   assert.equal((await user.post('/api/resource/assign', { service_id: service.id })).status, 201);
   await sleep(1100);
   const r = await user.post('/api/resource/assign', { service_id: service.id });
-  assert.equal(r.status, 403);
-  assert.equal(r.data.upgrade, true);
+  assert.equal(r.status, 429, 'free daily limit reached');
+  assert.equal(r.data.upgrade, true, 'free users get the upgrade prompt');
 });
 
 test('serial search only returns accessible resources', async () => {
@@ -539,6 +539,8 @@ test('PWA manifest, service worker, security headers, JSON errors without stack 
   assert.equal(JSON.stringify(body).includes('at '), false);
   const html404 = await fetch(`${BASE}/nope-page`, { headers: { Accept: 'text/html', Cookie: admin.cookieHeader() } });
   assert.equal(html404.status, 404);
+  // restore the default free limits (50/hour, 200/day)
+  await admin.put('/api/admin/rate-limits', { interval_seconds: 1, hourly_limit: 50, daily_limit: 200, enabled: true });
   const envLeak = await fetch(`${BASE}/.env`);
   assert.notEqual(envLeak.status, 200);
   const src = await fetch(`${BASE}/assets/../server/config/env.js`);

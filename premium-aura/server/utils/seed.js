@@ -4,10 +4,10 @@ const db = require('../config/database');
 const settings = require('../models/settings');
 
 const PLANS = [
-  { name: '7 Days', description: 'Starter VIP access for one week', duration_days: 7, price: '1.00', resource_limit: 100, hourly: 100, daily: 500, sort_order: 1 },
-  { name: '15 Days', description: 'Two weeks of boosted limits', duration_days: 15, price: '3.00', resource_limit: 400, hourly: 150, daily: 1000, sort_order: 2 },
-  { name: '30 Days', description: 'Best value for regular members', duration_days: 30, price: '5.00', resource_limit: 700, hourly: 200, daily: 1500, sort_order: 3, is_featured: 1 },
-  { name: '1 Year', description: 'Unlimited resources for a full year', duration_days: 365, price: '10.00', resource_limit: null, hourly: 500, daily: 5000, sort_order: 4 },
+  { name: '7 Days', description: 'Faster access for one week', duration_days: 7, price: '1.00', resource_limit: null, hourly: 100, daily: 500, sort_order: 1 },
+  { name: '15 Days', description: 'Two weeks of faster speed', duration_days: 15, price: '3.00', resource_limit: null, hourly: 150, daily: 1000, sort_order: 2 },
+  { name: '30 Days', description: 'Best value for regular members', duration_days: 30, price: '5.00', resource_limit: null, hourly: 200, daily: 1500, sort_order: 3, is_featured: 1 },
+  { name: '1 Year', description: 'Top speed for a full year', duration_days: 365, price: '10.00', resource_limit: null, hourly: 500, daily: 5000, sort_order: 4 },
 ];
 
 const SERVICES = [
