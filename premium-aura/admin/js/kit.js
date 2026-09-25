@@ -30,6 +30,12 @@ export function listPage(el, opts) {
       const r = await api(opts.endpoint, { query: { page, ...st.filters } });
       st.rows = r.items;
       opts.onData?.(r, ctx);
+      if (opts.row) {
+        box.innerHTML = r.items.length ? `<div class="row-list">${r.items.map((row, i) => `<div data-i="${i}">${opts.row(row)}</div>`).join('')}</div>`
+          : `<div class="empty"><i class="fa-solid fa-inbox"></i><div>${esc(opts.empty || 'Nothing here yet')}</div></div>`;
+        $('[data-pages]', el).innerHTML = pagination(r.pagination, load);
+        return;
+      }
       box.innerHTML = r.items.length ? `<div class="table-wrap"><table class="table responsive"><thead><tr>
         ${opts.bulk?.length ? '<th style="width:32px"><input type="checkbox" data-selall aria-label="Select all"></th>' : ''}
         ${opts.columns.map((c) => `<th>${esc(c.label)}</th>`).join('')}${opts.actions ? '<th></th>' : ''}</tr></thead><tbody>
@@ -69,7 +75,7 @@ export function listPage(el, opts) {
     }
     const a = e.target.closest('[data-a]');
     if (a && opts.onAction) {
-      const tr = a.closest('tr');
+      const tr = a.closest('tr, [data-i]');
       const row = tr ? st.rows[Number(tr.dataset.i)] : null;
       try { await withLoading(a, () => opts.onAction(a.dataset.a, row, ctx, a)); } catch (err) { toastError(err); }
     }

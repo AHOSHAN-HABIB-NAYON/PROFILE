@@ -35,6 +35,13 @@ async function findResource(value, application = null) {
   );
 }
 
+/** 211927455905 → 2119••••5905 */
+function maskNumber(v) {
+  const s = String(v || '');
+  if (s.length <= 6) return s ? `${s.slice(0, 1)}••••${s.slice(-1)}` : '';
+  return `${s.slice(0, 4)}••••${s.slice(-4)}`;
+}
+
 function publicEvent(row, { forAdmin = false } = {}) {
   const e = {
     key: `${row.kind === 'demo' ? 'd' : 'e'}${row.id}`,
@@ -47,6 +54,7 @@ function publicEvent(row, { forAdmin = false } = {}) {
     is_demo: row.kind === 'demo',
     received_at: new Date(row.received_at).toISOString(),
     created_at: new Date(row.created_at || row.received_at).toISOString(),
+    number: row.resource_value ? maskNumber(row.resource_value) : null,
   };
   if (forAdmin) {
     e.user_id = row.user_id ?? null;
@@ -144,7 +152,8 @@ async function feed(user, { page = 1, size = 30, app = null, q = null } = {}) {
   if (appFilter) { liveWhere.push('e.application = ?'); liveParams.push(appFilter); }
   if (codeFilter) { liveWhere.push('e.code LIKE ?'); liveParams.push(codeFilter); }
 
-  const demoWhere = ["d.status = 'DEMO'"];
+  // Demo/test events are an admin-only tool: users never see them.
+  const demoWhere = [isAdmin ? "d.status = 'DEMO'" : '0 = 1'];
   const demoParams = [];
   if (appFilter) { demoWhere.push('d.application = ?'); demoParams.push(appFilter); }
   if (codeFilter) { demoWhere.push('d.code LIKE ?'); demoParams.push(codeFilter); }
@@ -183,4 +192,4 @@ async function expire() {
   return { live: a.affectedRows, demo: b.affectedRows };
 }
 
-module.exports = { ingest, feed, expire, publicEvent, expirationHours, findResource, digits };
+module.exports = { ingest, feed, expire, publicEvent, maskNumber, expirationHours, findResource, digits };

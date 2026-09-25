@@ -100,7 +100,7 @@ async function connectLive() {
     socket.on('disconnect', () => { live.connected = false; live.emit('live:state', false); });
     socket.on('connect_error', () => { live.connected = false; live.emit('live:state', false); });
     for (const evt of ['event:new', 'events:expired', 'notification:new', 'wallet:update', 'withdrawal:update', 'payment:update', 'service:count', 'maintenance',
-      'admin:event', 'admin:payment', 'admin:withdrawal', 'provider:health']) {
+      'resource:returned', 'admin:event', 'admin:payment', 'admin:withdrawal', 'provider:health']) {
       socket.on(evt, (payload) => live.emit(evt, payload));
     }
   } catch {

@@ -33,6 +33,7 @@ export async function mount(el, ctx) {
       { name: 'min_withdrawal', label: 'Minimum withdrawal ($)', value: s.min_withdrawal },
       { name: 'currency_symbol', label: 'Currency symbol', value: s.currency_symbol },
       { name: 'free_quota_daily', label: 'Free users: daily resource quota', type: 'number', value: s.free_quota_daily },
+      { name: 'assignment_timeout_minutes', label: 'Return unused number after (minutes)', type: 'number', value: s.assignment_timeout_minutes },
       { name: 'feed_page_size', label: 'Records per page (feeds)', type: 'number', value: s.feed_page_size },
       { name: 'api_polling_default', label: 'Default API polling (seconds)', type: 'number', value: s.api_polling_default },
     ]),

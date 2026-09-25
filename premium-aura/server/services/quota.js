@@ -39,7 +39,8 @@ async function limitsFor(userId, conn = db) {
     `SELECT
        SUM(assigned_at > UTC_TIMESTAMP() - INTERVAL 1 HOUR) AS hour_used,
        SUM(assigned_at > UTC_TIMESTAMP() - INTERVAL 1 DAY) AS day_used,
-       SUM(assigned_at >= ?) AS plan_used,
+       SUM(assigned_at >= ? AND status <> 'returned') AS plan_used,
+       SUM(assigned_at > UTC_TIMESTAMP() - INTERVAL 1 DAY AND status <> 'returned') AS day_quota_used,
        MAX(assigned_at) AS last_at,
        COUNT(*) AS total
      FROM resource_assignments WHERE user_id = ?`,
@@ -64,7 +65,7 @@ async function limitsFor(userId, conn = db) {
     hour_used: Number(counts.hour_used || 0),
     day_used: Number(counts.day_used || 0),
     quota, // null = unlimited
-    quota_used: Number((premium ? counts.plan_used : counts.day_used) || 0),
+    quota_used: Number((premium ? counts.plan_used : counts.day_quota_used) || 0),
     quota_label: quotaLabel,
     total_assigned: Number(counts.total || 0),
     last_assigned_at: counts.last_at,

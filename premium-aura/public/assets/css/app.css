@@ -528,3 +528,26 @@ table.table { width: 100%; border-collapse: separate; border-spacing: 0; }
 
 .code-pair { min-width: 56px; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: none; }
 .grid > .card + .card, .grid > * + .card { margin-top: 0; }
+
+/* compact one-line rows (number list, admin users) */
+.otp-number { font-size: 12px; color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-top: 2px; }
+.num-list, .row-list { display: grid; gap: 8px; }
+.num-row, .user-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--card-2); border: 1px solid var(--border); min-width: 0; }
+.num-row .flag { width: 26px; height: 26px; }
+.num-row.is-returned { opacity: .6; }
+.num-main, .user-main { flex: 1; min-width: 0; }
+.num-line { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.num-value { font-weight: 700; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.num-sub, .user-sub { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.icon-mini { width: 30px; height: 30px; flex: none; border-radius: 9px; border: 1px solid var(--border); background: var(--card); color: var(--muted); display: inline-grid; place-items: center; cursor: pointer; font-size: 13px; }
+.icon-mini:hover { color: var(--primary); border-color: var(--primary); }
+.icon-mini.danger:hover { color: var(--danger); border-color: var(--danger); }
+.icon-mini.done { background: var(--success); color: #fff; border-color: var(--success); }
+.otp-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 10px; border: 0; cursor: pointer; background: var(--grad); color: #fff; font-weight: 700; flex: none; }
+.otp-pill.done { background: var(--success); }
+.user-row .avatar { width: 34px; height: 34px; font-size: 14px; box-shadow: none; }
+.user-title { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-bal { font-weight: 700; font-size: 13px; flex: none; }
+@media (max-width: 420px) { .user-row .chip { display: none; } .num-row { gap: 8px; padding: 9px 10px; } }
+.row-list > *, .num-list > * { min-width: 0; }
+.service-grid > * { min-width: 0; } .service-card .sc-codes { min-width: 0; overflow: hidden; white-space: nowrap; } .service-card .sc-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

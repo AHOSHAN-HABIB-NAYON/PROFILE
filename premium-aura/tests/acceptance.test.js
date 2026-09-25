@@ -237,6 +237,27 @@ test('serial search only returns accessible resources', async () => {
   assert.equal((await user.get('/api/resource/search?serial=12')).status, 400);
 });
 
+test('users see Available/Unavailable, never counts; unused numbers auto-return', async () => {
+  const s = await user.get('/api/services');
+  const mineSvc = s.data.services.find((x) => x.id === service.id);
+  assert.equal(typeof mineSvc.available, 'boolean', 'users only get availability, not the count');
+  const a = (await admin.get('/api/services')).data.services.find((x) => x.id === service.id);
+  assert.equal(typeof a.available, 'number', 'admins still see counts');
+  // simulate a 10+ minute old number with no OTP and run the scheduler job
+  const mine = (await user.get('/api/resources/mine')).data.items;
+  const target = mine[mine.length - 1];
+  const db = require('../server/config/database');
+  const config = require('../server/config/env');
+  if (!db.isReady()) await db.init(config.db);
+  await db.run('UPDATE resource_assignments SET assigned_at = UTC_TIMESTAMP() - INTERVAL 11 MINUTE WHERE id = ?', [target.id]);
+  await require('../server/services/scheduler').returnUnused();
+  const after = (await user.get('/api/resources/mine')).data.items.find((x) => x.id === target.id);
+  assert.equal(after.status, 'returned', 'shown as Return');
+  const res = await admin.get(`/api/admin/resources?q=${encodeURIComponent(target.resource_value)}`);
+  assert.equal(res.data.items[0].status, 'available', 'number is back in the pool for others');
+  await db.close();
+});
+
 test('SQL injection attempts are treated as data', async () => {
   const r = await admin.get(`/api/admin/users?q=${encodeURIComponent("' OR 1=1; DROP TABLE users; --")}`);
   assert.equal(r.status, 200);
@@ -276,6 +297,8 @@ test('API provider polling: normalize, authorize, dedupe, reward, health', async
   assert.equal(ev.code, '27288');
   assert.equal(ev.application, 'TG');
   assert.equal(JSON.stringify(feed.data).includes('Do not share'), false, 'message body never exposed');
+  assert.equal(ev.number, `${number.slice(0, 4)}••••${number.slice(-4)}`, 'users see a masked number');
+  assert.equal(ev.resource_value, undefined, 'full number is not sent to users');
   const w = await user.get('/api/wallet');
   assert.equal(w.data.wallet.balance, '0.0100', 'reward credited');
   // automatic 5s polling
@@ -290,14 +313,16 @@ test('API provider polling: normalize, authorize, dedupe, reward, health', async
   assert.ok(found, 'enabled provider is polled automatically');
 });
 
-test('demo generator: 2 events/second, labelled DEMO, separate storage', async () => {
+test('demo generator: 2 events/second, admin-only, labelled DEMO, separate storage', async () => {
   await admin.post('/api/admin/demo/purge');
   const r = await admin.put('/api/admin/demo', { enabled: true, events_per_second: 2, interval_ms: 1000, applications: ['TG', 'WS'], countries: 'PK,IQ', expiration_hours: 24, starting_count: 0 });
   assert.equal(r.status, 200, JSON.stringify(r.data));
   await sleep(3200);
   await admin.post('/api/admin/demo/toggle', { enabled: false });
-  const feed = await user.get('/api/events?pageSize=30');
+  const feed = await admin.get('/api/events?pageSize=30');
   const demo = feed.data.items.filter((x) => x.is_demo);
+  const userFeed = await user.get('/api/events?pageSize=30');
+  assert.equal(userFeed.data.items.filter((x) => x.is_demo).length, 0, 'users never see demo events');
   assert.ok(demo.length >= 5 && demo.length <= 8, `expected ~6 demo events, got ${demo.length}`);
   assert.ok(demo.every((x) => x.status === 'DEMO'));
   const liveEvents = await admin.get('/api/admin/events');
@@ -310,10 +335,10 @@ test('pagination returns 30 per page', async () => {
   await admin.put('/api/admin/demo', { enabled: true, events_per_second: 5, interval_ms: 1000, applications: ['FB'], countries: 'PK', expiration_hours: 24, starting_count: 0 });
   await sleep(7000);
   await admin.post('/api/admin/demo/toggle', { enabled: false });
-  const p1 = await user.get('/api/events?page=1');
+  const p1 = await admin.get('/api/events?page=1');
   assert.equal(p1.data.items.length, 30);
   assert.ok(p1.data.pagination.pages >= 2);
-  const p2 = await user.get('/api/events?page=2');
+  const p2 = await admin.get('/api/events?page=2');
   assert.ok(p2.data.items.length >= 1);
   assert.equal(p1.data.items.some((a) => p2.data.items.some((b) => a.key === b.key)), false);
 });
@@ -321,7 +346,7 @@ test('pagination returns 30 per page', async () => {
 test('manual expiration removes events from the feed', async () => {
   const r = await admin.post('/api/admin/events/expire', { scope: 'all_demo' });
   assert.equal(r.status, 200);
-  const feed = await user.get('/api/events');
+  const feed = await admin.get('/api/events');
   assert.equal(feed.data.items.filter((x) => x.is_demo).length, 0);
   const cfg = await admin.put('/api/admin/events/config', { expiration_hours: 24, event_reward: '0.01' });
   assert.equal(cfg.status, 200);

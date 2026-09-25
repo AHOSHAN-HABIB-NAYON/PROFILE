@@ -8,6 +8,7 @@ function row(ev, isNew = false) {
     <div class="otp-meta">
       <div class="otp-top"><span class="otp-short">${esc(a.code)}</span>${ev.country_code ? `<span class="small muted">${esc(ev.country_code)}</span>` : ''}${statusChip}</div>
       <div class="otp-code">${esc(ev.code)}</div>
+      ${ev.resource_value || ev.number ? `<div class="otp-number"><i class="fa-solid fa-mobile-screen"></i> ${esc(state.user.role === 'admin' && ev.resource_value ? ev.resource_value : ev.number)}</div>` : ''}
       <div class="otp-time" title="${esc(ev.received_at)}">${esc(fmtTime(ev.received_at))} · ${relEl(ev.received_at)}${state.user.role === 'admin' && ev.provider ? ` · ${esc(ev.provider)}` : ''}</div>
     </div>
     <div class="otp-end"><button class="copy-btn" data-copy="${esc(ev.code)}" aria-label="Copy OTP"><i class="fa-regular fa-copy"></i></button></div>
@@ -31,7 +32,7 @@ export async function mount(el, { query, live }) {
     <div data-pages></div>
     <p class="small muted center" style="margin:14px 0 0" data-foot></p>
   </div>
-  <p class="small muted center" style="margin-top:12px"><i class="fa-solid fa-lock"></i> Only codes from resources assigned to you (and clearly labelled DEMO test events) are shown. Message bodies are never displayed.</p>`;
+  <p class="small muted center" style="margin-top:12px"><i class="fa-solid fa-lock"></i> Only codes for numbers assigned to you are shown.</p>`;
 
   const list = $('[data-list]', el);
 
@@ -42,7 +43,7 @@ export async function mount(el, { query, live }) {
     seen.clear();
     r.items.forEach((x) => seen.add(x.key));
     list.innerHTML = r.items.length ? r.items.map((x) => row(x)).join('')
-      : '<div class="empty"><i class="fa-solid fa-inbox"></i><div><strong>No OTPs yet</strong></div><div class="small">Get a number in Access Services — codes appear here instantly.</div></div>';
+      : '<div class="empty"><i class="fa-solid fa-inbox"></i><div><strong>No OTPs yet</strong></div><div class="small">Get a number in Access Services — codes appear here instantly.</div><a class="btn btn-primary btn-sm" href="/access" style="margin-top:12px"><i class="fa-solid fa-plus"></i>Get Number</a></div>';
     $('[data-pages]', el).innerHTML = pagination(r.pagination, load);
     $('[data-foot]', el).textContent = `${num(r.pagination.total)} active · auto refresh every 5 seconds · expires in ${r.expiration_hours} hours`;
   }
@@ -105,6 +106,7 @@ export async function mount(el, { query, live }) {
   setConn(live.connected);
   const offs = [
     live.on('event:new', enqueue),
+    live.on('admin:event', (ev) => { if (state.user.role === 'admin') enqueue(ev); }),
     live.on('live:state', setConn),
     live.on('events:expired', debounce(() => { if (page === 1) load(1); }, 2000)),
   ];

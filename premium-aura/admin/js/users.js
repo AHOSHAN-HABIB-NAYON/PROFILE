@@ -1,4 +1,4 @@
-import { api, esc, pageHead, listPage, formSheet, btn, toast, sheet, $, fieldsHtml } from './kit.js';
+import { api, esc, pageHead, listPage, formSheet, toast, toastError, sheet } from './kit.js';
 import { chip, relEl, fmtDate, money, num, confirmSheet } from '/assets/js/core.js';
 
 export async function mount(el) {
@@ -12,28 +12,17 @@ export async function mount(el) {
       { name: 'premium', type: 'select', options: [['', 'All plans'], ['1', 'Premium'], ['0', 'Free']] },
       { name: 'role', type: 'select', options: [['', 'All roles'], ['user', 'Users'], ['admin', 'Admins']] },
     ],
-    bulk: [{ action: 'suspend', label: 'Suspend', danger: true }, { action: 'unsuspend', label: 'Unsuspend' }, { action: 'verify', label: 'Mark verified' }],
-    async onBulk(action, ids, ctx) {
-      const r = await api('/admin/users/bulk', { method: 'POST', body: { action, ids } });
-      toast(r.message); ctx.reload();
-    },
-    columns: [
-      { label: 'ID', render: (u) => `<span class="mono">#${u.id}</span>` },
-      { label: 'Name', render: (u) => `<strong>${esc(u.name)}</strong>${u.role === 'admin' ? ' <span class="chip admin">admin</span>' : ''}` },
-      { label: 'Email', render: (u) => `<span class="truncate" style="display:inline-block">${esc(u.email)}</span>${u.email_verified_at ? '' : ' <i class="fa-solid fa-circle-exclamation" style="color:var(--warning)" title="Unverified"></i>'}` },
-      { label: 'Status', render: (u) => chip(u.status) },
-      { label: 'Premium', render: (u) => (u.premium_plan ? chip('success', u.premium_plan) : '<span class="muted">Free</span>') },
-      { label: 'Balance', render: (u) => `<strong>${esc(money(u.balance))}</strong>` },
-      { label: 'Used', render: (u) => num(u.used_resources) },
-      { label: 'Events', render: (u) => num(u.event_count) },
-      { label: 'Joined', render: (u) => `<span class="nowrap">${esc(fmtDate(u.created_at))}</span>` },
-      { label: 'Last active', render: (u) => (u.last_active_at ? relEl(new Date(u.last_active_at).toISOString()) : '—') },
-    ],
-    actions: (u) => `${btn('view', 'fa-solid fa-eye', 'View')}${btn('edit', 'fa-solid fa-pen', 'Edit')}${btn('wallet', 'fa-solid fa-wallet', 'Adjust wallet')}
-      ${btn('premium', 'fa-solid fa-crown', 'Change premium')}${btn('limits', 'fa-solid fa-gauge', 'Change limits')}${btn('reset', 'fa-solid fa-key', 'Reset password')}
-      ${u.status === 'suspended' ? btn('unsuspend', 'fa-solid fa-user-check', 'Unsuspend', 'btn-success') : btn('suspend', 'fa-solid fa-user-slash', 'Suspend', 'btn-danger')}`,
+    // One compact line per user; all actions live in the 👁 details sheet.
+    row: (u) => `<div class="user-row">
+      <span class="avatar">${esc(String(u.name || u.email).charAt(0).toUpperCase())}</span>
+      <div class="user-main"><div class="user-title">${esc(u.name)}${u.role === 'admin' ? ' <i class="fa-solid fa-shield-halved" style="color:var(--primary)" title="Admin"></i>' : ''}${u.premium_plan ? ' <i class="fa-solid fa-crown" style="color:#f59e0b" title="Premium"></i>' : ''}</div>
+        <div class="user-sub">#${u.id} · ${esc(u.email)} · ${num(u.used_resources)} used</div></div>
+      <span class="user-bal">${esc(money(u.balance))}</span>
+      ${chip(u.status)}
+      <button class="icon-mini" data-a="view" aria-label="View details"><i class="fa-solid fa-eye"></i></button>
+    </div>`,
     async onAction(a, u, ctx) {
-      if (a === 'view') return viewUser(u.id);
+      if (a === 'view') return viewUser(u, (act) => this.onAction(act, u, ctx));
       if (a === 'edit') {
         return formSheet({
           title: `Edit ${u.name}`, fields: [
@@ -102,10 +91,15 @@ export async function mount(el) {
   });
 }
 
-async function viewUser(id) {
-  const r = await api(`/admin/users/${id}`);
+const ACTIONS = [
+  ['edit', 'fa-pen', 'Edit'], ['wallet', 'fa-wallet', 'Adjust wallet'], ['premium', 'fa-crown', 'Change premium'],
+  ['limits', 'fa-gauge', 'Change limits'], ['reset', 'fa-key', 'Reset password'],
+];
+
+async function viewUser(row, run) {
+  const r = await api(`/admin/users/${row.id}`);
   const u = r.user;
-  sheet({
+  const s = sheet({
     title: u.name, icon: 'fa-solid fa-user', wide: true,
     body: `<div class="row-flex" style="margin-bottom:12px"><span class="avatar lg">${esc(u.initial)}</span><div><strong>${esc(u.email)}</strong><div class="row-flex" style="gap:6px">${chip(u.status)} ${u.twofa ? chip('info', '2FA') : ''} ${u.email_verified ? chip('success', 'verified') : chip('warning', 'unverified')}</div></div></div>
       <div class="grid grid-2"><dl class="kv"><dt>Joined</dt><dd>${esc(fmtDate(u.created_at))}</dd><dt>Last login</dt><dd>${u.last_login_at ? relEl(new Date(u.last_login_at).toISOString()) : '—'}</dd>
@@ -116,5 +110,14 @@ async function viewUser(id) {
       <div class="list">${r.transactions.map((t) => `<div class="list-item"><div class="li-body"><div class="li-title">${esc(t.description)}</div><div class="li-sub">${esc(t.type)} · ${relEl(new Date(t.created_at).toISOString())}</div></div><strong>${esc(money(t.amount))}</strong></div>`).join('') || '<div class="muted">None</div>'}</div>
       <div class="divider"></div><h3>Recent resources</h3>
       <div class="list">${r.assignments.map((a) => `<div class="list-item"><div class="li-body"><div class="li-title mono">${esc(a.resource_value)}</div><div class="li-sub">${esc(a.country_code)} ${esc(a.app_code)}</div></div>${chip(a.status)}</div>`).join('') || '<div class="muted">None</div>'}</div>`,
+    foot: `<div class="row-flex" style="width:100%">${ACTIONS.map(([k, i, l]) => `<button class="btn btn-ghost btn-sm" data-act="${k}"><i class="fa-solid ${i}"></i>${l}</button>`).join('')}
+      ${u.status === 'suspended' ? '<button class="btn btn-success btn-sm" data-act="unsuspend"><i class="fa-solid fa-user-check"></i>Unsuspend</button>'
+    : '<button class="btn btn-danger btn-sm" data-act="suspend"><i class="fa-solid fa-user-slash"></i>Suspend</button>'}</div>`,
+  });
+  s.el.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-act]');
+    if (!b) return;
+    s.close();
+    Promise.resolve(run(b.dataset.act)).catch((err) => toastError(err));
   });
 }

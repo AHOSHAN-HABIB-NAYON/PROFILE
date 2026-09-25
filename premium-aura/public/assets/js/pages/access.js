@@ -47,34 +47,42 @@ export async function mount(el, { query, live }) {
     $('[data-limits]', el).textContent = `${l.hour_used}/${l.hourly_limit} this hour · ${l.quota === null ? '∞' : `${l.quota_used}/${l.quota}`} quota`;
   };
 
+  let returnMinutes = 10;
   async function loadServices() {
     const r = await api('/services');
+    returnMinutes = r.return_minutes || 10;
     renderLimits(r.limits);
     $('[data-services]', el).innerHTML = r.services.length ? r.services.map((s) => `
       <div class="service-card" data-service="${s.id}">
         ${flag(s.flag_code)}
         <div class="sc-body"><div class="sc-codes">${esc(s.country_code)} ${appIcon(s.app_icon || s.app_code, 'sm')} ${esc(s.app_code)}</div>
-          <div class="sc-name">${esc(s.country_name)} ${esc(s.app_name)}</div>${s.status !== 'active' ? chip(s.status) : ''}</div>
-        <div class="sc-end"><span class="sc-count" data-count>${num(s.available)}</span>
+          <div class="sc-name">${esc(s.country_name)} ${esc(s.app_name)}</div></div>
+        <div class="sc-end">${s.status === 'active' && s.available ? '<span class="chip success">Available</span>' : `<span class="chip danger">${s.status === 'maintenance' ? 'Maintenance' : 'Unavailable'}</span>`}
           <button class="btn btn-primary btn-xs" data-get="${s.id}" ${s.status !== 'active' || !s.available ? 'disabled' : ''}><i class="fa-solid fa-plus"></i>Get</button></div>
       </div>`).join('') : '<div class="empty"><i class="fa-solid fa-sim-card"></i><div>No services available yet</div></div>';
     $('[data-select]', el).innerHTML = r.services.filter((s) => s.status === 'active')
-      .map((s) => `<option value="${s.id}">${esc(s.country_name)} (${esc(s.country_code)} - ${esc(s.app_code)}) · ${num(s.available)} available</option>`).join('');
+      .map((s) => `<option value="${s.id}" ${s.available ? '' : 'disabled'}>${esc(s.country_name)} (${esc(s.country_code)} - ${esc(s.app_code)})${s.available ? '' : ' · unavailable'}</option>`).join('');
   }
 
   async function loadMine(p = page) {
     page = p;
     const box = $('[data-mine]', el);
     const r = await api('/resources/mine', { query: { page } });
-    box.innerHTML = r.items.length ? `<table class="table responsive"><thead><tr><th>#</th><th>Number</th><th>Service</th><th>OTP</th><th>Status</th><th></th></tr></thead><tbody>
-      ${r.items.map((a, i) => `<tr><td data-label="#">${(r.pagination.page - 1) * r.pagination.pageSize + i + 1}</td>
-        <td data-label="Number" class="mono">${esc(a.resource_value)}</td>
-        <td data-label="Service"><span class="row-flex" style="gap:6px;justify-content:flex-end">${flag(a.flag_code)}${esc(a.country_code)} ${esc(a.app_code)}</span></td>
-        <td data-label="OTP">${a.last_code ? `<strong class="mono">${esc(a.last_code)}</strong> <button class="btn btn-ghost btn-xs" data-copy="${esc(a.last_code)}">copy</button>` : '<span class="muted">—</span>'}</td>
-        <td data-label="Status">${chip(a.status)}<div class="small muted">${relEl(a.assigned_at)}</div></td>
-        <td class="actions"><button class="btn btn-ghost btn-xs" data-copy="${esc(a.resource_value)}"><i class="fa-regular fa-copy"></i></button>
-          <button class="btn btn-ghost btn-xs" data-release="${a.id}" title="Release"><i class="fa-solid fa-xmark"></i></button></td></tr>`).join('')}
-      </tbody></table>${pagination(r.pagination, loadMine)}` : '<div class="empty"><i class="fa-solid fa-hashtag"></i><div>No numbers yet</div><div class="small">Tap “Get” on a service to receive an authorized number.</div></div>';
+    const statusChip = (x) => (x.status === 'returned' ? '<span class="chip warning">Return</span>' : x.status === 'received' ? '<span class="chip success">Received</span>' : '<span class="chip pending">Pending</span>');
+    box.innerHTML = r.items.length ? `<div class="num-list">${r.items.map((a) => `
+      <div class="num-row ${a.status === 'returned' ? 'is-returned' : ''}">
+        ${flag(a.flag_code)}
+        <div class="num-main">
+          <div class="num-line"><span class="mono num-value">${esc(a.resource_value)}</span>
+            ${a.status !== 'returned' ? `<button class="icon-mini" data-copy="${esc(a.resource_value)}" aria-label="Copy number"><i class="fa-regular fa-copy"></i></button>` : ''}</div>
+          <div class="num-sub">${esc(a.country_code)} ${esc(a.app_code)} · ${relEl(a.assigned_at)}</div>
+        </div>
+        ${a.last_code ? `<button class="otp-pill" data-copy="${esc(a.last_code)}" title="Copy OTP"><span class="mono">${esc(a.last_code)}</span><i class="fa-regular fa-copy"></i></button>` : ''}
+        ${statusChip(a)}
+        ${a.status === 'pending' ? `<button class="icon-mini danger" data-release="${a.id}" title="Return number" aria-label="Return number"><i class="fa-solid fa-xmark"></i></button>` : ''}
+      </div>`).join('')}</div>${pagination(r.pagination, loadMine)}
+      <p class="small muted" style="margin:10px 0 0"><i class="fa-regular fa-clock"></i> Numbers without an OTP return automatically after ${returnMinutes} minutes.</p>`
+      : '<div class="empty"><i class="fa-solid fa-hashtag"></i><div>No numbers yet</div><div class="small">Tap “Get” on a service to receive a number.</div></div>';
   }
 
   async function assign(serviceId, btn) {
@@ -117,7 +125,7 @@ export async function mount(el, { query, live }) {
     if (c) return copyText(c.dataset.copy, c);
     const rel = e.target.closest('[data-release]');
     if (rel) {
-      try { await api(`/resources/${rel.dataset.release}/release`, { method: 'POST' }); toast('Released'); loadMine(); } catch (err) { toastError(err); }
+      try { await api(`/resources/${rel.dataset.release}/release`, { method: 'POST' }); toast('Number returned'); loadMine(); loadServices(); } catch (err) { toastError(err); }
       return;
     }
     const cl = e.target.closest('[data-claim]');
@@ -142,6 +150,7 @@ export async function mount(el, { query, live }) {
   if (query.serial) search(query.serial);
 
   const refreshCounts = debounce(() => loadServices().catch(() => {}), 1500);
-  const offs = [live.on('service:count', refreshCounts), live.on('event:new', (ev) => { if (!ev.is_demo) loadMine().catch(() => {}); })];
+  const offs = [live.on('service:count', refreshCounts), live.on('resource:returned', () => loadMine().catch(() => {})),
+    live.on('event:new', (ev) => { if (!ev.is_demo) loadMine().catch(() => {}); })];
   return () => offs.forEach((f) => f());
 }

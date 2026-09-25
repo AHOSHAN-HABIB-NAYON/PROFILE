@@ -209,7 +209,7 @@ CREATE TABLE IF NOT EXISTS resource_assignments (
   user_id       BIGINT UNSIGNED NOT NULL,
   resource_id   BIGINT UNSIGNED NOT NULL,
   service_id    BIGINT UNSIGNED NOT NULL,
-  status        ENUM('pending','received','released','expired') NOT NULL DEFAULT 'pending',
+  status        ENUM('pending','received','released','expired','returned') NOT NULL DEFAULT 'pending',
   last_code     VARCHAR(16)  NULL,
   assigned_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   released_at   DATETIME     NULL,

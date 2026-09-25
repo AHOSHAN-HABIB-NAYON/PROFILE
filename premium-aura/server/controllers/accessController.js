@@ -2,6 +2,7 @@
 /** Access Services: service catalogue, resource allocation, serial search. */
 const db = require('../config/database');
 const quota = require('../services/quota');
+const settings = require('../models/settings');
 const notifications = require('../models/notification');
 const realtime = require('../services/realtime');
 const v = require('../utils/validate');
@@ -21,7 +22,9 @@ async function servicesWithCounts(where = "s.status <> 'inactive'", params = [])
 
 exports.list = async (req, res) => {
   const [services, limits] = await Promise.all([servicesWithCounts(), quota.limitsFor(req.user.id)]);
-  res.json({ ok: true, services, limits });
+  // Users only see whether numbers are available, never how many.
+  const out = req.user.role === 'admin' ? services : services.map(({ available, ...s }) => ({ ...s, available: available > 0 }));
+  res.json({ ok: true, services: out, limits, return_minutes: await settings.getInt('assignment_timeout_minutes', 10) });
 };
 
 /** Allocate one available resource (or a specific one when claiming from search). */
@@ -81,12 +84,13 @@ exports.claim = async (req, res) => {
 exports.mine = async (req, res) => {
   const p = paginate(req.query, { defaultSize: 30 });
   const active = req.query.scope !== 'all';
-  const where = `a.user_id = ? ${active ? 'AND a.released_at IS NULL' : ''}`;
+  // Active numbers plus the ones auto-returned in the last 24h (shown as "Return").
+  const where = `a.user_id = ? ${active ? "AND (a.released_at IS NULL OR (a.status = 'returned' AND a.released_at > UTC_TIMESTAMP() - INTERVAL 1 DAY))" : ''}`;
   const [items, [{ n }]] = await Promise.all([
     db.query(
       `SELECT a.id, a.status, a.assigned_at, a.last_code, a.released_at, r.resource_value, s.country_code, s.flag_code, s.app_code, s.app_name
        FROM resource_assignments a JOIN authorized_resources r ON r.id = a.resource_id JOIN services s ON s.id = a.service_id
-       WHERE ${where} ORDER BY a.id DESC LIMIT ? OFFSET ?`, [req.user.id, p.size, p.offset],
+       WHERE ${where} ORDER BY a.released_at IS NULL DESC, a.id DESC LIMIT ? OFFSET ?`, [req.user.id, p.size, p.offset],
     ),
     db.query(`SELECT COUNT(*) AS n FROM resource_assignments a WHERE ${where}`, [req.user.id]),
   ]);
@@ -96,11 +100,12 @@ exports.mine = async (req, res) => {
 exports.release = async (req, res) => {
   const id = v.id(req.params.id);
   await db.transaction(async (tx) => {
-    const a = await tx.one('SELECT id, resource_id FROM resource_assignments WHERE id = ? AND user_id = ? AND released_at IS NULL FOR UPDATE', [id, req.user.id]);
+    const a = await tx.one('SELECT id, resource_id, status FROM resource_assignments WHERE id = ? AND user_id = ? AND released_at IS NULL FOR UPDATE', [id, req.user.id]);
     if (!a) throw E.notFound('Assignment not found');
-    await tx.run("UPDATE resource_assignments SET released_at = UTC_TIMESTAMP(), status = 'released' WHERE id = ?", [a.id]);
-    // Released resources are retired (not recycled) so a code can never reach a second user.
-    await tx.run("UPDATE authorized_resources SET status = 'retired', assigned_user_id = NULL WHERE id = ?", [a.resource_id]);
+    // No OTP yet → the number goes back to the pool. Already used → retired so old codes never reach someone else.
+    const unused = a.status === 'pending';
+    await tx.run('UPDATE resource_assignments SET released_at = UTC_TIMESTAMP(), status = ? WHERE id = ?', [unused ? 'returned' : 'released', a.id]);
+    await tx.run('UPDATE authorized_resources SET status = ?, assigned_user_id = NULL WHERE id = ?', [unused ? 'available' : 'retired', a.resource_id]);
   });
   res.json({ ok: true, message: 'Resource released' });
 };

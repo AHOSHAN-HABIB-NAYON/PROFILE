@@ -49,7 +49,7 @@ async function tick() {
     current.generated_total += rows.length;
     await db.run('UPDATE demo_event_settings SET generated_total = generated_total + ? WHERE id = 1', [rows.length]);
     rows.forEach((r, i) => {
-      realtime.broadcast('event:new', publicEvent({
+      realtime.toAdmins('event:new', publicEvent({
         id: res.insertId + i, kind: 'demo', application: r[1], country_code: r[2], code: r[3], status: 'DEMO', received_at: now, created_at: now,
       }));
     });

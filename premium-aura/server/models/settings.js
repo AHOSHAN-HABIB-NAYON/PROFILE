@@ -33,6 +33,8 @@ const DEFAULTS = {
   currency_symbol: '$',
   // Access / quotas
   free_quota_daily: '10',
+  // Minutes a number stays with a user without receiving an OTP before it returns to the pool
+  assignment_timeout_minutes: '10',
   // Events
   event_expiration_hours: '24',
   feed_page_size: '30',
