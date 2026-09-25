@@ -23,7 +23,7 @@ async function rateConfig(conn = db) {
 
 async function activePremium(userId, conn = db) {
   return conn.one(
-    `SELECT id, plan_id, plan_name, resource_limit, starts_at, expires_at FROM user_premium
+    `SELECT id, plan_id, plan_name, resource_limit, hourly_limit, daily_limit, starts_at, expires_at FROM user_premium
      WHERE user_id = ? AND status = 'active' AND expires_at > UTC_TIMESTAMP() ORDER BY expires_at DESC LIMIT 1`, [userId],
   );
 }
@@ -46,8 +46,9 @@ async function limitsFor(userId, conn = db) {
      FROM resource_assignments WHERE user_id = ?`,
     [premium ? premium.starts_at : new Date(Date.now() - 86_400_000), userId],
   );
-  const hourly = user?.custom_hourly_limit ?? rc.hourly_limit;
-  const daily = user?.custom_daily_limit ?? rc.daily_limit;
+  // Priority: per-user override → premium plan speed → global rate limits.
+  const hourly = user?.custom_hourly_limit ?? premium?.hourly_limit ?? rc.hourly_limit;
+  const daily = user?.custom_daily_limit ?? premium?.daily_limit ?? rc.daily_limit;
   let quota;
   let quotaLabel;
   if (premium) {
@@ -69,7 +70,9 @@ async function limitsFor(userId, conn = db) {
     quota_label: quotaLabel,
     total_assigned: Number(counts.total || 0),
     last_assigned_at: counts.last_at,
-    premium: premium ? { plan: premium.plan_name, expires_at: premium.expires_at, resource_limit: premium.resource_limit } : null,
+    premium: premium ? { plan: premium.plan_name, expires_at: premium.expires_at, resource_limit: premium.resource_limit, hourly_limit: premium.hourly_limit, daily_limit: premium.daily_limit } : null,
+    free_hourly_limit: rc.hourly_limit,
+    free_daily_limit: rc.daily_limit,
   };
 }
 

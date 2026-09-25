@@ -16,9 +16,9 @@ async function activate(tx, userId, plan, { paymentId = null, grantedBy = null, 
   const expires = new Date(base.getTime() + plan.duration_days * 86_400_000);
   if (current) await tx.run("UPDATE user_premium SET status = 'cancelled' WHERE id = ?", [current.id]);
   const res = await tx.run(
-    `INSERT INTO user_premium (user_id, plan_id, plan_name, resource_limit, starts_at, expires_at, status, payment_id, granted_by)
-     VALUES (?,?,?,?,?,?, 'active', ?, ?)`,
-    [userId, plan.id, plan.name, plan.resource_limit, now, expires, paymentId, grantedBy],
+    `INSERT INTO user_premium (user_id, plan_id, plan_name, resource_limit, hourly_limit, daily_limit, starts_at, expires_at, status, payment_id, granted_by)
+     VALUES (?,?,?,?,?,?,?,?, 'active', ?, ?)`,
+    [userId, plan.id, plan.name, plan.resource_limit, plan.hourly_limit ?? null, plan.daily_limit ?? null, now, expires, paymentId, grantedBy],
   );
   if (notify) await notifications.notify(userId, {
     type: 'premium', title: 'Premium activated 👑',

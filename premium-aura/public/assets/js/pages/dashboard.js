@@ -42,7 +42,7 @@ export async function mount(el, { live }) {
     <div class="card stat-card"><span class="ic purple"><i class="fa-solid fa-hashtag"></i></span><div><div class="label">Used Resources</div>
       <div class="value"><span data-count="${c.resources.used}">${num(c.resources.used)}</span> <small>/ ${quota}</small></div><div class="sub muted" style="color:var(--muted)">${esc(c.resources.label)}</div></div></div>
     <div class="card stat-card"><span class="ic orange"><i class="fa-solid fa-gauge"></i></span><div><div class="label">Current Limit</div>
-      <div class="value"><span data-count="${c.limit.hour_used}">${num(c.limit.hour_used)}</span> <small>/ ${num(c.limit.hourly)}</small></div><div class="sub muted" style="color:var(--muted)">Hourly · ${num(c.limit.daily)}/day</div></div></div>
+      <div class="value"><span data-count="${c.limit.hour_used}">${num(c.limit.hour_used)}</span> <small>/ ${num(c.limit.hourly)}</small></div><div class="sub muted" style="color:var(--muted)">Per hour · ${num(c.limit.daily)}/day${c.premium.active ? ' · ⚡ Premium speed' : ''}</div></div></div>
     <div class="card stat-card"><span class="ic green"><i class="fa-solid fa-crown"></i></span><div><div class="label">Premium</div>
       <div class="value" style="font-size:18px">${c.premium.active ? 'Active' : 'Free'}</div>
       <div class="sub">${c.premium.active ? `${esc(c.premium.plan)} · until ${esc(new Date(c.premium.expires_at).toISOString().slice(0, 10))}` : '<a href="/premium">Upgrade now</a>'}</div></div></div>

@@ -389,6 +389,9 @@ test('premium: plans, payment screenshot upload, admin approval', async () => {
   assert.equal(ap.status, 200);
   const me = await user.get('/api/me');
   assert.equal(me.data.premium.plan, plan.name);
+  const lim = (await user.get('/api/profile')).data.limits;
+  if (plan.hourly_limit) assert.equal(lim.hourly_limit, plan.hourly_limit, 'premium plan speed applies');
+  if (plan.daily_limit) assert.equal(lim.daily_limit, plan.daily_limit);
   await sleep(1100);
   assert.equal((await user.post('/api/resource/assign', { service_id: service.id })).status, 201, 'premium lifts the free quota');
 });

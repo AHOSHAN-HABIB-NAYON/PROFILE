@@ -11,13 +11,14 @@ export async function mount(el, ctx) {
   <div class="upgrade-banner" style="margin-bottom:16px"><i class="fa-solid fa-crown crown"></i>
     <div style="flex:1"><strong style="font-size:16px">${l.premium ? `${esc(l.premium.plan)} is active` : 'Need More Numbers & OTPs?'}</strong>
     <div class="small" style="opacity:.85">${l.premium ? `Valid until ${esc(new Date(l.premium.expires_at).toISOString().slice(0, 10))} · ${l.quota === null ? 'Unlimited' : `${num(l.quota_used)} / ${num(l.quota)}`} resources used`
-    : `Free plan · ${num(l.quota_used)} / ${num(l.quota)} today. Upgrade for higher limits, faster access and more features.`}</div></div></div>
+    : `Free plan · ${num(l.quota_used)} / ${num(l.quota)} today · ${num(l.free_hourly_limit)}/hour. Upgrade for more numbers and faster speed.`}</div></div></div>
 
   <div class="card"><div class="card-head"><h2>VIP Member Plans</h2></div>
     <div class="plan-grid" data-plans>${r.plans.map((p) => `
       <div class="plan-card ${p.is_featured ? 'featured' : ''} ${selected?.id === p.id ? 'selected' : ''}" data-plan="${p.id}" tabindex="0" role="button">
         <div class="dur">${esc(p.name)}</div><div class="price">${esc(money(p.price))}</div>
         <div class="lim">${p.resource_limit === null ? 'No limit' : `${num(p.resource_limit)} numbers`}</div>
+        ${p.hourly_limit ? `<div class="speed-tag"><i class="fa-solid fa-bolt"></i> ${num(p.hourly_limit)}/hour${p.daily_limit ? ` · ${num(p.daily_limit)}/day` : ''}</div>` : ''}
         <div class="small muted" style="margin-top:6px">${esc(p.description || '')}</div></div>`).join('')}</div>
   </div>
 

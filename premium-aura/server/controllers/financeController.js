@@ -36,7 +36,7 @@ async function paymentMethods() {
 
 exports.overview = async (req, res) => {
   const [plans, limits, methods, payments] = await Promise.all([
-    db.query("SELECT id, name, description, duration_days, price, resource_limit, is_featured FROM premium_plans WHERE status = 'active' ORDER BY sort_order, price"),
+    db.query("SELECT id, name, description, duration_days, price, resource_limit, hourly_limit, daily_limit, is_featured FROM premium_plans WHERE status = 'active' ORDER BY sort_order, price"),
     quota.limitsFor(req.user.id),
     paymentMethods(),
     db.query(

@@ -4,10 +4,10 @@ const db = require('../config/database');
 const settings = require('../models/settings');
 
 const PLANS = [
-  { name: '7 Days', description: 'Starter VIP access for one week', duration_days: 7, price: '1.00', resource_limit: 100, sort_order: 1 },
-  { name: '15 Days', description: 'Two weeks of boosted limits', duration_days: 15, price: '3.00', resource_limit: 400, sort_order: 2 },
-  { name: '30 Days', description: 'Best value for regular members', duration_days: 30, price: '5.00', resource_limit: 700, sort_order: 3, is_featured: 1 },
-  { name: '1 Year', description: 'Unlimited resources for a full year', duration_days: 365, price: '10.00', resource_limit: null, sort_order: 4 },
+  { name: '7 Days', description: 'Starter VIP access for one week', duration_days: 7, price: '1.00', resource_limit: 100, hourly: 100, daily: 500, sort_order: 1 },
+  { name: '15 Days', description: 'Two weeks of boosted limits', duration_days: 15, price: '3.00', resource_limit: 400, hourly: 150, daily: 1000, sort_order: 2 },
+  { name: '30 Days', description: 'Best value for regular members', duration_days: 30, price: '5.00', resource_limit: 700, hourly: 200, daily: 1500, sort_order: 3, is_featured: 1 },
+  { name: '1 Year', description: 'Unlimited resources for a full year', duration_days: 365, price: '10.00', resource_limit: null, hourly: 500, daily: 5000, sort_order: 4 },
 ];
 
 const SERVICES = [
@@ -64,8 +64,8 @@ async function seed() {
   if (!planCount) {
     for (const p of PLANS) {
       await db.run(
-        'INSERT INTO premium_plans (name, description, duration_days, price, resource_limit, sort_order, is_featured) VALUES (?,?,?,?,?,?,?)',
-        [p.name, p.description, p.duration_days, p.price, p.resource_limit, p.sort_order, p.is_featured || 0],
+        'INSERT INTO premium_plans (name, description, duration_days, price, resource_limit, hourly_limit, daily_limit, sort_order, is_featured) VALUES (?,?,?,?,?,?,?,?,?)',
+        [p.name, p.description, p.duration_days, p.price, p.resource_limit, p.hourly, p.daily, p.sort_order, p.is_featured || 0],
       );
     }
   }
