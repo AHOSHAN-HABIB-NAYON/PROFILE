@@ -51,6 +51,7 @@ router.get('/resources/mine', ah(access.mine));
 router.post('/resources/:id/release', ah(access.release));
 
 router.get('/events', ah(eventsCtl.feed));
+router.get('/activity', ah(eventsCtl.activity));
 
 router.get('/premium', ah(finance.overview));
 router.post('/premium/wallet', sensitiveLimiter, ah(finance.buyWithWallet));

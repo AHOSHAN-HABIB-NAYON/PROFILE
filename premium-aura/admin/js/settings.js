@@ -34,6 +34,7 @@ export async function mount(el, ctx) {
       { name: 'currency_symbol', label: 'Currency symbol', value: s.currency_symbol },
       { name: 'free_quota_daily', label: 'Free users: daily resource quota', type: 'number', value: s.free_quota_daily },
       { name: 'assignment_timeout_minutes', label: 'Return unused number after (minutes)', type: 'number', value: s.assignment_timeout_minutes },
+      { name: 'notification_ttl_hours', label: 'Remove notifications after (hours)', type: 'number', value: s.notification_ttl_hours },
       { name: 'feed_page_size', label: 'Records per page (feeds)', type: 'number', value: s.feed_page_size },
       { name: 'api_polling_default', label: 'Default API polling (seconds)', type: 'number', value: s.api_polling_default },
     ]),
@@ -44,6 +45,10 @@ export async function mount(el, ctx) {
       { name: 'binance_name', label: 'Binance account name', value: s.binance_name },
       { name: 'binance_pay_link', label: 'Binance Pay direct link', value: s.binance_pay_link, full: true, placeholder: 'https://app.binance.com/…' },
       { name: 'upload_max_mb', label: 'Max screenshot size (MB)', type: 'number', value: s.upload_max_mb },
+      { type: 'html', html: `<div class="field" style="grid-column:1/-1"><label>Binance Pay QR code</label>
+        <div class="row-flex">${s.binance_qr_url ? `<img src="${esc(s.binance_qr_url)}" alt="Binance QR" style="width:84px;height:84px;border-radius:12px;background:#fff;padding:4px;object-fit:contain">` : '<span class="small muted">No QR uploaded — one is generated from the UID/link.</span>'}
+        <label class="btn btn-soft btn-sm">Upload QR<input type="file" hidden accept="image/jpeg,image/png,image/webp" data-upload="binance_qr"></label>
+        ${s.binance_qr_url ? '<button type="button" class="btn btn-ghost btn-sm" data-clear="binance_qr_url">Remove</button>' : ''}</div></div>` },
     ]),
     pwa: fieldsHtml([
       { name: 'pwa_name', label: 'App name', value: s.pwa_name },

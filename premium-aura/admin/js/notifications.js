@@ -3,15 +3,16 @@ import { chip, relEl } from '/assets/js/core.js';
 
 export async function mount(el) {
   el.innerHTML = `${pageHead('fa-solid fa-bullhorn', 'Notifications', 'Broadcast to everyone or message a single user')}
-    <div class="grid grid-main"><div data-list></div>
-    <div class="card"><div class="card-head"><h2>Send notification</h2></div><form data-send><div class="form-grid">
+    <div class="stack">
+    <div class="card"><div class="card-head"><h2>Send notification</h2><span class="link small muted">Auto-removed after 24h</span></div><form data-send><div class="form-grid two">
       ${fieldsHtml([
     { name: 'type', label: 'Type', type: 'select', options: [['system', 'System'], ['service', 'New service'], ['resource', 'New number/resource'], ['post', 'New post'], ['payment', 'Payment'], ['premium', 'Premium'], ['withdrawal', 'Withdrawal']] },
     { name: 'title', label: 'Title', required: true },
     { name: 'body', label: 'Message', type: 'textarea', rows: 3 },
     { name: 'link', label: 'Link (in-app path)', placeholder: '/premium' },
     { name: 'user_email', label: 'Only this user (email)', type: 'email', placeholder: 'Leave blank to broadcast to all' },
-  ])}</div><button class="btn btn-primary btn-block" type="submit"><i class="fa-solid fa-paper-plane"></i>Send</button></form></div></div>`;
+  ])}</div><button class="btn btn-primary btn-block" type="submit"><i class="fa-solid fa-paper-plane"></i>Send</button></form></div>
+    <div data-list></div></div>`;
   const list = listPage($('[data-list]', el), {
     endpoint: '/admin/notifications',
     columns: [

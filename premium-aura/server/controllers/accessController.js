@@ -3,7 +3,6 @@
 const db = require('../config/database');
 const quota = require('../services/quota');
 const settings = require('../models/settings');
-const notifications = require('../models/notification');
 const realtime = require('../services/realtime');
 const v = require('../utils/validate');
 const { E } = require('../utils/errors');
@@ -21,9 +20,11 @@ async function servicesWithCounts(where = "s.status <> 'inactive'", params = [])
 }
 
 exports.list = async (req, res) => {
-  const [services, limits] = await Promise.all([servicesWithCounts(), quota.limitsFor(req.user.id)]);
-  // Users only see whether numbers are available, never how many.
-  const out = req.user.role === 'admin' ? services : services.map(({ available, ...s }) => ({ ...s, available: available > 0 }));
+  const [services, limits, act] = await Promise.all([servicesWithCounts(), quota.limitsFor(req.user.id), require('../services/events').serviceActivity()]);
+  // Users only see whether numbers are available, never how many. OTP activity (last 24h) is real and shown to everyone.
+  const top = Math.max(0, ...act.values());
+  const withAct = services.map((s) => ({ ...s, otps_today: act.get(s.id) || 0, hot: top > 0 && (act.get(s.id) || 0) >= Math.max(3, top * 0.5) }));
+  const out = req.user.role === 'admin' ? withAct : withAct.map(({ available, ...s }) => ({ ...s, available: available > 0 }));
   res.json({ ok: true, services: out, limits, return_minutes: await settings.getInt('assignment_timeout_minutes', 10) });
 };
 
@@ -64,7 +65,6 @@ async function allocate(req, { serviceId = null, resourceId = null }) {
      FROM resource_assignments a JOIN authorized_resources r ON r.id = a.resource_id JOIN services s ON s.id = a.service_id WHERE a.id = ?`,
     [result.assignmentId],
   );
-  notifications.notify(uid, { type: 'resource', title: 'New resource assigned', body: `${row.country_code} ${row.app_code} · ${row.resource_value}`, link: '/access' }).catch(() => {});
   realtime.broadcast('service:count', { service_id: result.resource.service_id });
   return { assignment: row, limits: await quota.limitsFor(uid) };
 }

@@ -97,15 +97,17 @@ async function saveDocument(file, { userId = null, purpose, allowed = ['csv', 'x
   return { ...saved, kind: t.key };
 }
 
+const DB_COPY_MAX = 12 * 1024 * 1024;
+
 async function persist(buf, { userId, purpose, visibility, originalName, mime, ext }) {
   const stored = `${Date.now().toString(36)}-${crypto.randomBytes(12).toString('hex')}.${ext}`;
   const dir = visibility === 'public' ? paths.PUBLIC_UPLOADS : paths.PRIVATE_UPLOADS;
-  await fs.promises.writeFile(path.join(dir, stored), buf, { mode: 0o640 });
+  await fs.promises.writeFile(path.join(dir, stored), buf, { mode: 0o640 }).catch(() => {}); // DB copy below is authoritative
   const sha = crypto.createHash('sha256').update(buf).digest('hex');
   const safeOriginal = String(originalName || 'file').replace(/[^\w.\- ]+/g, '_').slice(0, 200);
   const res = await db.run(
-    'INSERT INTO file_uploads (user_id, purpose, visibility, original_name, stored_name, mime_type, size_bytes, sha256) VALUES (?,?,?,?,?,?,?,?)',
-    [userId, purpose, visibility, safeOriginal, stored, mime, buf.length, sha],
+    'INSERT INTO file_uploads (user_id, purpose, visibility, original_name, stored_name, mime_type, size_bytes, sha256, data) VALUES (?,?,?,?,?,?,?,?,?)',
+    [userId, purpose, visibility, safeOriginal, stored, mime, buf.length, sha, mime.startsWith('image/') && buf.length <= DB_COPY_MAX ? buf : null],
   );
   return {
     id: res.insertId, stored_name: stored, mime, size: buf.length, visibility,
@@ -119,4 +121,21 @@ function privatePath(storedName) {
   return path.join(paths.PRIVATE_UPLOADS, safe);
 }
 
-module.exports = { memoryUpload, saveImage, saveDocument, privatePath, hasSharp: () => !!sharp, IMAGE_TYPES };
+/**
+ * Send a stored file: from disk when present, otherwise from the database copy
+ * (re-caching it on disk). Returns false when the file no longer exists.
+ */
+async function sendStored(res, row) {
+  const dir = row.visibility === 'public' ? paths.PUBLIC_UPLOADS : paths.PRIVATE_UPLOADS;
+  const file = path.join(dir, path.basename(row.stored_name));
+  res.set('Content-Type', row.mime_type);
+  res.set('X-Content-Type-Options', 'nosniff');
+  if (fs.existsSync(file)) { res.sendFile(file); return true; }
+  const full = await db.one('SELECT data FROM file_uploads WHERE id = ?', [row.id]);
+  if (!full?.data) return false;
+  fs.promises.writeFile(file, full.data, { mode: 0o640 }).catch(() => {});
+  res.send(full.data);
+  return true;
+}
+
+module.exports = { memoryUpload, saveImage, saveDocument, privatePath, sendStored, hasSharp: () => !!sharp, IMAGE_TYPES };

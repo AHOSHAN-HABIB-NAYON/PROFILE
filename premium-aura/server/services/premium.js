@@ -6,7 +6,7 @@ const notifications = require('../models/notification');
  * already active its remaining time is carried over and the new plan's limit
  * applies from now.
  */
-async function activate(tx, userId, plan, { paymentId = null, grantedBy = null } = {}) {
+async function activate(tx, userId, plan, { paymentId = null, grantedBy = null, notify = true } = {}) {
   const current = await tx.one(
     "SELECT id, expires_at FROM user_premium WHERE user_id = ? AND status = 'active' AND expires_at > UTC_TIMESTAMP() ORDER BY expires_at DESC LIMIT 1 FOR UPDATE",
     [userId],
@@ -20,7 +20,7 @@ async function activate(tx, userId, plan, { paymentId = null, grantedBy = null }
      VALUES (?,?,?,?,?,?, 'active', ?, ?)`,
     [userId, plan.id, plan.name, plan.resource_limit, now, expires, paymentId, grantedBy],
   );
-  await notifications.notify(userId, {
+  if (notify) await notifications.notify(userId, {
     type: 'premium', title: 'Premium activated 👑',
     body: `${plan.name} plan is active until ${expires.toISOString().slice(0, 10)}.`, link: '/premium',
   }, tx);

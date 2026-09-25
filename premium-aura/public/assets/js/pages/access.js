@@ -56,7 +56,8 @@ export async function mount(el, { query, live }) {
       <div class="service-card" data-service="${s.id}">
         ${flag(s.flag_code)}
         <div class="sc-body"><div class="sc-codes">${esc(s.country_code)} ${appIcon(s.app_icon || s.app_code, 'sm')} ${esc(s.app_code)}</div>
-          <div class="sc-name">${esc(s.country_name)} ${esc(s.app_name)}</div></div>
+          <div class="sc-name">${esc(s.country_name)} ${esc(s.app_name)}</div>
+          ${s.otps_today ? `<div class="hot-badge ${s.hot ? 'is-hot' : ''}">${s.hot ? '🔥 Hot · ' : '<i class="fa-solid fa-bolt"></i> '}${num(s.otps_today)} OTP today</div>` : ''}</div>
         <div class="sc-end">${s.status === 'active' && s.available ? '<span class="chip success">Available</span>' : `<span class="chip danger">${s.status === 'maintenance' ? 'Maintenance' : 'Unavailable'}</span>`}
           <button class="btn btn-primary btn-xs" data-get="${s.id}" ${s.status !== 'active' || !s.available ? 'disabled' : ''}><i class="fa-solid fa-plus"></i>Get</button></div>
       </div>`).join('') : '<div class="empty"><i class="fa-solid fa-sim-card"></i><div>No services available yet</div></div>';

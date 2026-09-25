@@ -1,4 +1,4 @@
-import { api, esc, $, $$, toast, toastError, pageHead, copyText, withLoading, relEl, chip, sheet, money, num, state } from '../core.js';
+import { api, esc, $, $$, toast, toastError, pageHead, copyText, withLoading, relEl, chip, sheet, money, num, state, BINANCE_LOGO, TETHER_LOGO } from '../core.js';
 
 export async function mount(el, ctx) {
   const reload = () => ctx.navigate(location.pathname, { replace: true, scroll: false });
@@ -23,22 +23,24 @@ export async function mount(el, ctx) {
 
   <div class="grid grid-2" style="margin-top:16px">
     <div class="card"><div class="card-head"><h2>Payment Methods</h2></div>
-      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr))">
-        ${m.trc20 ? `<div class="pay-method card" style="box-shadow:none"><div class="row-flex"><span class="app-ic" style="background:#26a17b"><i class="fa-solid fa-t"></i></span><strong>TRC20 (USDT)</strong></div>
+      ${m.trc20 || m.binance ? `<div class="method-tabs" role="tablist">
+        ${m.trc20 ? `<button type="button" class="method-tab" data-method="trc20" role="tab">${TETHER_LOGO}<span>TRC20 (USDT)</span></button>` : ''}
+        ${m.binance ? `<button type="button" class="method-tab" data-method="binance" role="tab"><span class="bn-logo">${BINANCE_LOGO}</span><span>Binance Pay</span></button>` : ''}
+      </div>` : ''}
+      ${m.trc20 ? `<div class="pay-method" data-panel="trc20">
           <img class="qr" src="${esc(m.trc20.qr)}" alt="TRC20 QR code"><div class="address-box">${esc(m.trc20.address)}</div>
           <button class="btn btn-primary btn-sm btn-block" data-copy="${esc(m.trc20.address)}"><i class="fa-regular fa-copy"></i>Copy Address</button>
           <div class="small muted">${esc(m.trc20.note || '')}</div></div>` : ''}
-        ${m.binance ? `<div class="pay-method card" style="box-shadow:none"><div class="row-flex"><i class="fa-brands fa-bitcoin binance-logo"></i><strong>Binance Pay</strong></div>
+      ${m.binance ? `<div class="pay-method" data-panel="binance">
           ${m.binance.qr ? `<img class="qr" src="${esc(m.binance.qr)}" alt="Binance Pay QR">` : ''}
-          <div>UID: <strong class="mono">${esc(m.binance.uid)}</strong> <button class="btn btn-ghost btn-xs" data-copy="${esc(m.binance.uid)}"><i class="fa-regular fa-copy"></i></button></div>
+          <div class="bn-uid"><span class="bn-logo">${BINANCE_LOGO}</span> UID: <strong class="mono">${esc(m.binance.uid)}</strong> <button class="btn btn-ghost btn-xs" data-copy="${esc(m.binance.uid)}"><i class="fa-regular fa-copy"></i></button></div>
           ${m.binance.name ? `<div class="small muted">${esc(m.binance.name)}</div>` : ''}
-          ${m.binance.link ? `<a class="btn btn-warning btn-sm btn-block" href="${esc(m.binance.link)}" target="_blank" rel="noopener">Binance Pay Direct</a>` : ''}</div>` : ''}
-        ${!m.trc20 && !m.binance ? '<div class="empty"><i class="fa-solid fa-credit-card"></i><div>Payment methods are not configured yet.</div></div>' : ''}
-      </div>
+          ${m.binance.link ? `<a class="btn btn-binance btn-sm btn-block" href="${esc(m.binance.link)}" target="_blank" rel="noopener"><span class="bn-logo">${BINANCE_LOGO}</span>Binance Pay Direct</a>` : ''}</div>` : ''}
+      ${!m.trc20 && !m.binance ? '<div class="empty"><i class="fa-solid fa-credit-card"></i><div>Payment methods are not configured yet.</div></div>' : ''}
     </div>
     <div class="card"><div class="card-head"><h2>Pay Now</h2><span class="link small muted" data-selected></span></div>
       <form data-pay>
-        <div class="field"><label>Method</label><select class="input" name="method">${m.trc20 ? '<option value="trc20">TRC20 (USDT)</option>' : ''}${m.binance ? '<option value="binance">Binance Pay</option>' : ''}</select></div>
+        <input type="hidden" name="method" value="${m.trc20 ? 'trc20' : 'binance'}">
         <div class="field"><label>Transaction ID / Reference</label><input class="input" name="transaction_ref" maxlength="190" placeholder="TX hash or Binance order ID"></div>
         <div class="field"><label>Payment screenshot</label>
           <label class="dropzone" data-drop><input type="file" name="screenshot" accept="image/jpeg,image/png,image/webp" hidden>
@@ -57,6 +59,15 @@ export async function mount(el, ctx) {
 
   const setSelected = () => { $('[data-selected]', el).textContent = selected ? `${selected.name} · ${money(selected.price)}` : ''; };
   setSelected();
+  // Only the chosen payment method is shown.
+  const chooseMethod = (method) => {
+    $$('[data-method]', el).forEach((b) => b.classList.toggle('active', b.dataset.method === method));
+    $$('[data-panel]', el).forEach((p) => { p.hidden = p.dataset.panel !== method; });
+    const input = $('[data-pay] [name=method]', el);
+    if (input) input.value = method;
+  };
+  chooseMethod(m.trc20 ? 'trc20' : 'binance');
+  el.addEventListener('click', (e) => { const t = e.target.closest('[data-method]'); if (t) chooseMethod(t.dataset.method); });
 
   el.addEventListener('click', (e) => {
     const p = e.target.closest('[data-plan]');

@@ -3,6 +3,10 @@ const settings = require('../models/settings');
 const events = require('../services/events');
 const { paginate, meta } = require('../utils/pagination');
 
+exports.activity = async (req, res) => {
+  res.json({ ok: true, ...(await events.activity(15)) });
+};
+
 exports.feed = async (req, res) => {
   const size = await settings.getInt('feed_page_size', 30);
   const p = paginate(req.query, { defaultSize: size, maxSize: 100 });

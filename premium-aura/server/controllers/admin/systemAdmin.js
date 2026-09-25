@@ -56,6 +56,7 @@ exports.saveSettings = async (req, res) => {
   intk('upload_max_mb', 1, 20);
   intk('free_quota_daily', 0, 100000);
   intk('assignment_timeout_minutes', 1, 1440);
+  intk('notification_ttl_hours', 1, 720);
   intk('feed_page_size', 10, 100);
   intk('api_polling_default', 1, 3600);
   if (out.event_reward !== undefined && money.cmp(out.event_reward, '100') > 0) throw E.badRequest('Reward is too large');

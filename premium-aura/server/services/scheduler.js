@@ -40,7 +40,8 @@ async function run() {
     await events.expire();
     await premiumExpiry();
     await db.run('DELETE FROM api_provider_logs WHERE created_at < UTC_TIMESTAMP() - INTERVAL 14 DAY LIMIT 10000');
-    await db.run('DELETE FROM notifications WHERE is_read = 1 AND created_at < UTC_TIMESTAMP() - INTERVAL 90 DAY LIMIT 10000');
+    const ttl = Math.max(1, await settings.getInt('notification_ttl_hours', 24));
+    await db.run('DELETE FROM notifications WHERE created_at < UTC_TIMESTAMP() - INTERVAL ? HOUR LIMIT 20000', [ttl]);
   } catch (err) {
     logger.error(`scheduler: ${err.message}`);
   }

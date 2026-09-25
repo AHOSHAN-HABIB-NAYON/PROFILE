@@ -301,6 +301,12 @@ test('API provider polling: normalize, authorize, dedupe, reward, health', async
   assert.equal(ev.resource_value, undefined, 'full number is not sent to users');
   const w = await user.get('/api/wallet');
   assert.equal(w.data.wallet.balance, '0.0100', 'reward credited');
+  const act = await user.get('/api/activity');
+  const item = act.data.items.find((x) => x.number === `${number.slice(0, 4)}••••${number.slice(-4)}`);
+  assert.ok(item, 'real event appears in Live Activity');
+  assert.equal(JSON.stringify(act.data).includes('27288'), false, 'Live Activity never includes OTP codes');
+  const svcs = (await user.get('/api/services')).data.services;
+  assert.ok(svcs.find((x) => x.id === service.id).otps_today >= 1, 'service shows OTP activity today');
   // automatic 5s polling
   await admin.post(`/api/admin/providers/${p.id}/toggle`, { enabled: true });
   mockRecords = [{ id: `ext-${RUN}-3`, number, message: 'WhatsApp code 63821' }];
@@ -372,6 +378,11 @@ test('premium: plans, payment screenshot upload, admin approval', async () => {
   const pay = list.data.items.find((p) => p.id === r.data.id);
   assert.ok(pay.screenshot_url);
   assert.equal((await user.get(pay.screenshot_url)).status, 200, 'owner can view');
+  // simulate a host that wiped uploads/ on redeploy: the database copy is served instead
+  const dir = path.join(__dirname, '..', 'uploads', 'private');
+  for (const f of fs.readdirSync(dir)) fs.unlinkSync(path.join(dir, f));
+  const again = await user.req('GET', pay.screenshot_url);
+  assert.equal(again.status, 200, 'screenshot survives a wiped uploads folder');
   const other = new Client();
   assert.equal((await other.get(pay.screenshot_url)).status, 401, 'private file protected');
   const ap = await admin.post(`/api/admin/payments/${pay.id}/review`, { action: 'approve' });

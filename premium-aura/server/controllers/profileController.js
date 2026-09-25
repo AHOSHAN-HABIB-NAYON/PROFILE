@@ -131,12 +131,11 @@ exports.revokeSessions = async (req, res) => {
 
 exports.file = async (req, res) => {
   const id = v.id(req.params.id);
-  const f = await db.one("SELECT * FROM file_uploads WHERE id = ? AND visibility = 'private'", [id]);
+  const f = await db.one("SELECT id, user_id, visibility, stored_name, mime_type FROM file_uploads WHERE id = ? AND visibility = 'private'", [id]);
   if (!f) throw E.notFound('File not found');
   if (f.user_id !== req.user.id && req.user.role !== 'admin') throw E.forbidden();
   const fileStorage = require('../services/fileStorage');
-  res.set('Content-Type', f.mime_type);
   res.set('Content-Disposition', `inline; filename="file-${f.id}"`);
   res.set('Cache-Control', 'private, max-age=300');
-  res.sendFile(fileStorage.privatePath(f.stored_name));
+  if (!(await fileStorage.sendStored(res, f))) throw E.notFound('This file is no longer available');
 };

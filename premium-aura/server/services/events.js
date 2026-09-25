@@ -126,6 +126,7 @@ async function ingest(provider, events, sourceId = null) {
       `SELECT e.*, 'live' AS kind, p.name AS provider_name FROM event_records e LEFT JOIN api_providers p ON p.id = e.provider_id WHERE e.id = ?`,
       [result.id],
     );
+    realtime.broadcast('activity:new', activityItem(row));
     if (result.userId) {
       realtime.toUser(result.userId, 'event:new', publicEvent(row));
       if (result.balance !== null) { stats.credited += 1; wallet.emitBalance(result.userId, result.balance); }
@@ -133,6 +134,33 @@ async function ingest(provider, events, sourceId = null) {
     realtime.toAdmins('admin:event', publicEvent(row, { forAdmin: true }));
   }
   return stats;
+}
+
+/** Public activity item: real event, code never included, number masked. */
+function activityItem(r) {
+  return {
+    key: `a${r.id}`, application: r.application, country_code: r.country_code, flag_code: r.flag_code || String(r.country_code || '').toLowerCase().slice(0, 2),
+    number: maskNumber(r.resource_value), received_at: new Date(r.received_at).toISOString(),
+  };
+}
+
+/** Latest real OTP activity across all users + per-service counts for the last 24h. */
+async function activity(limit = 15) {
+  const rows = await db.query(
+    `SELECT e.id, e.application, e.country_code, e.resource_value, e.received_at, s.flag_code
+     FROM event_records e LEFT JOIN authorized_resources r ON r.id = e.resource_id LEFT JOIN services s ON s.id = r.service_id
+     WHERE e.received_at > UTC_TIMESTAMP() - INTERVAL 1 DAY ORDER BY e.id DESC LIMIT ?`, [limit],
+  );
+  const [totals] = await db.query('SELECT COUNT(*) AS today FROM event_records WHERE received_at > UTC_TIMESTAMP() - INTERVAL 1 DAY');
+  return { items: rows.map(activityItem), today: Number(totals.today) };
+}
+
+async function serviceActivity() {
+  const rows = await db.query(
+    `SELECT r.service_id, COUNT(*) AS n FROM event_records e JOIN authorized_resources r ON r.id = e.resource_id
+     WHERE e.received_at > UTC_TIMESTAMP() - INTERVAL 1 DAY GROUP BY r.service_id`,
+  );
+  return new Map(rows.map((x) => [x.service_id, Number(x.n)]));
 }
 
 /**
@@ -192,4 +220,4 @@ async function expire() {
   return { live: a.affectedRows, demo: b.affectedRows };
 }
 
-module.exports = { ingest, feed, expire, publicEvent, maskNumber, expirationHours, findResource, digits };
+module.exports = { ingest, feed, expire, publicEvent, maskNumber, activity, serviceActivity, expirationHours, findResource, digits };

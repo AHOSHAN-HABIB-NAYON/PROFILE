@@ -35,6 +35,8 @@ const DEFAULTS = {
   free_quota_daily: '10',
   // Minutes a number stays with a user without receiving an OTP before it returns to the pool
   assignment_timeout_minutes: '10',
+  // Header notifications are removed automatically after this many hours
+  notification_ttl_hours: '24',
   // Events
   event_expiration_hours: '24',
   feed_page_size: '30',

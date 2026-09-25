@@ -4,7 +4,6 @@ const QRCode = require('qrcode');
 const db = require('../config/database');
 const settings = require('../models/settings');
 const wallet = require('../models/wallet');
-const notifications = require('../models/notification');
 const audit = require('../models/auditLog');
 const premium = require('../services/premium');
 const quota = require('../services/quota');
@@ -58,7 +57,7 @@ exports.buyWithWallet = async (req, res) => {
       [req.user.id, plan.id, plan.price],
     );
     const t = await wallet.apply(tx, req.user.id, money.neg(plan.price), { type: 'debit', description: `Premium · ${plan.name}`, paymentId: pay.insertId });
-    const act = await premium.activate(tx, req.user.id, plan, { paymentId: pay.insertId });
+    const act = await premium.activate(tx, req.user.id, plan, { paymentId: pay.insertId, notify: false });
     return { balance: t.balance, expires_at: act.expires_at, plan: plan.name };
   });
   wallet.emitBalance(req.user.id, out.balance);
@@ -84,7 +83,6 @@ exports.submitPayment = async (req, res) => {
     'INSERT INTO payments (user_id, plan_id, method, amount, transaction_ref, screenshot_file_id) VALUES (?,?,?,?,?,?)',
     [req.user.id, plan.id, method, plan.price, ref || null, fileId],
   );
-  await notifications.notify(req.user.id, { type: 'payment', title: 'Payment submitted', body: `$${plan.price} for ${plan.name} is waiting for review.`, link: '/premium' });
   realtime.toAdmins('admin:payment', { id: r.insertId });
   await audit.log(req, 'payment.submitted', { category: 'system', targetType: 'payment', targetId: r.insertId });
   res.status(201).json({ ok: true, message: 'Payment submitted! We will verify it shortly.', id: r.insertId });
@@ -140,7 +138,6 @@ exports.requestWithdrawal = async (req, res) => {
     return { id: w.insertId, balance: t.balance };
   });
   wallet.emitBalance(req.user.id, out.balance);
-  await notifications.notify(req.user.id, { type: 'withdrawal', title: 'Withdrawal requested', body: `$${money.display(amount)} is waiting for admin approval.`, link: '/withdraw' });
   realtime.toAdmins('admin:withdrawal', { id: out.id });
   await audit.log(req, 'withdrawal.requested', { category: 'system', targetType: 'withdrawal', targetId: out.id, details: { amount } });
   mailer.send({ to: req.user.email, subject: 'Withdrawal request received', title: 'Withdrawal requested', text: `We received your withdrawal request of $${money.display(amount)} to Binance UID ${uid}. You will be notified when it is processed.` }).catch(() => {});

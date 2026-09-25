@@ -551,3 +551,30 @@ table.table { width: 100%; border-collapse: separate; border-spacing: 0; }
 @media (max-width: 420px) { .user-row .chip { display: none; } .num-row { gap: 8px; padding: 9px 10px; } }
 .row-list > *, .num-list > * { min-width: 0; }
 .service-grid > * { min-width: 0; } .service-card .sc-codes { min-width: 0; overflow: hidden; white-space: nowrap; } .service-card .sc-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* live activity */
+.act-list { display: grid; gap: 6px; }
+.act-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; background: var(--card-2); border: 1px solid var(--border); min-width: 0; }
+.act-row.new { animation: slideIn .5s var(--ease); }
+.act-row .flag { width: 24px; height: 24px; }
+.act-main { flex: 1; min-width: 0; }
+.act-title { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.act-num { font-size: 12px; color: var(--muted); }
+.act-end { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex: none; }
+.act-ok { font-size: 11px; font-weight: 600; color: var(--success); white-space: nowrap; }
+.act-time { font-size: 11px; color: var(--muted); }
+.activity-card { background: linear-gradient(180deg, color-mix(in srgb, var(--success) 6%, var(--card)), var(--card)); }
+.hot-badge { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 11px; font-weight: 600; color: var(--primary); background: var(--grad-soft); border-radius: 99px; padding: 2px 8px; white-space: nowrap; }
+.hot-badge.is-hot { color: #c2410c; background: color-mix(in srgb, #f97316 16%, transparent); }
+[data-theme="dark"] .hot-badge.is-hot { color: #fdba74; }
+/* payment method tabs */
+.method-tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+.method-tab { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border-radius: 14px; border: 2px solid var(--border); background: var(--card); cursor: pointer; font-weight: 600; font-size: 13px; color: var(--text); }
+.method-tab.active { border-color: var(--primary); box-shadow: 0 8px 20px color-mix(in srgb, var(--primary) 20%, transparent); }
+.pay-method[hidden] { display: none !important; }
+.bn-logo { display: inline-flex; font-size: 20px; }
+.bn-uid { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.btn-binance { background: #F0B90B; color: #1e2026; }
+.btn-binance .bn-logo svg path { fill: #1e2026; }
+.tether-mark { width: 24px; height: 24px; border-radius: 50%; background: #26a17b; color: #fff; display: inline-grid; place-items: center; font-weight: 800; font-size: 14px; }
+.plan-card.featured { padding-top: 24px; } .plan-card.featured::before { white-space: nowrap; top: -11px; }

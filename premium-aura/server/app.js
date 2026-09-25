@@ -142,6 +142,14 @@ app.use(maintenanceGate);
 const publicController = require('./controllers/publicController');
 const { ah } = require('./utils/errors');
 
+// Public uploads missing on disk (e.g. wiped by a redeploy) are restored from the database copy.
+app.get('/uploads/public/:name', ah(async (req, res, next) => {
+  const row = await db.one("SELECT id, visibility, stored_name, mime_type FROM file_uploads WHERE stored_name = ? AND visibility = 'public'", [String(req.params.name).slice(0, 255)]);
+  if (!row) return next();
+  res.set('Cache-Control', 'public, max-age=2592000');
+  res.set('Content-Security-Policy', "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'");
+  if (!(await require('./services/fileStorage').sendStored(res, row))) return next();
+}));
 app.get('/manifest.json', ah(publicController.manifest));
 app.get('/brand.css', ah(publicController.brandCss));
 app.get('/robots.txt', ah(publicController.robots));
