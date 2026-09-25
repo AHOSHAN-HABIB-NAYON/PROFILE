@@ -22,7 +22,7 @@ export async function mount(el, { live }) {
   <div class="card hero-card mobile-only" style="margin-bottom:16px">
     <div class="row-flex" style="justify-content:space-between">
       <div class="row-flex"><span class="li-ic" style="background:rgba(255,255,255,.2)"><i class="fa-solid fa-wallet"></i></span>
-        <div><div style="font-size:26px;font-weight:800" data-count-money>${esc(money(c.wallet.balance))}</div><div class="muted small">Wallet Balance</div></div></div>
+        <div><div style="font-size:26px;font-weight:700" data-count-money>${esc(money(c.wallet.balance))}</div><div class="muted small">Wallet Balance</div></div></div>
       <a class="btn btn-white btn-sm" href="/withdraw">Withdraw</a>
     </div>
   </div>

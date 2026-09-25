@@ -1,11 +1,12 @@
 /* Premium Aura service worker — app-shell caching; API calls always go to the network. */
-const VERSION = 'aura-v1.0.0';
+const VERSION = 'aura-v1.1.0';
 const SHELL = [
   '/offline.html',
   '/assets/css/app.css',
   '/assets/js/core.js',
   '/assets/js/app.js',
   '/assets/js/theme-boot.js',
+  '/assets/js/fit.js',
   '/assets/icons/favicon.svg',
   '/assets/icons/icon-192.png',
   '/vendor/fontawesome/css/all.min.css',

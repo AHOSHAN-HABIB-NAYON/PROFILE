@@ -15,7 +15,7 @@ export async function mount(el, { live }) {
     const r = await api('/withdrawals', { query: { page } });
     const canWithdraw = Number(r.balance) >= Number(r.min_withdrawal);
     $('[data-form]', el).innerHTML = `
-      <div class="card hero-card" style="margin-bottom:14px"><div class="muted small">Available balance</div><div style="font-size:28px;font-weight:800" data-wallet>${esc(money(r.balance))}</div>
+      <div class="card hero-card" style="margin-bottom:14px"><div class="muted small">Available balance</div><div style="font-size:28px;font-weight:700" data-wallet>${esc(money(r.balance))}</div>
       <div class="small muted">Minimum withdrawal ${esc(money(r.min_withdrawal))}</div>
       <div class="progress" style="margin-top:10px;background:rgba(255,255,255,.25)"><span style="width:${Math.min(100, (Number(r.balance) / Number(r.min_withdrawal)) * 100)}%;background:#fff"></span></div></div>
       <form data-withdraw novalidate>
