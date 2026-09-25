@@ -32,6 +32,13 @@ export async function mount(el, ctx) {
       { name: 'news_demo_engagement_enabled', label: 'Show admin demo engagement on news (labelled DEMO)', type: 'switch', value: s.news_demo_engagement_enabled === '1' },
       { name: 'live_activity_show_code', label: 'Live Activity: show OTP codes', type: 'switch', value: s.live_activity_show_code === '1', hint: 'Off = "OTP received" only. Numbers always stay masked.' },
     ]),
+    google: fieldsHtml([
+      { name: 'google_login_enabled', label: 'Enable "Continue with Google"', type: 'switch', value: s.google_login_enabled === '1', hint: 'The button appears on Login & Register once Client ID and Secret are saved.' },
+      { name: 'google_client_id', label: 'Client ID', value: s.google_client_id, full: true, placeholder: 'xxxx.apps.googleusercontent.com' },
+      { name: 'google_client_secret', label: 'Client Secret', type: 'password', value: '', full: true, placeholder: s.has_google_secret ? '•••••••• saved — leave blank to keep' : 'GOCSPX-…', attrs: 'autocomplete="new-password"', hint: 'Stored encrypted; never displayed.' },
+      { type: 'html', html: `<div class="field" style="grid-column:1/-1"><label>Authorized redirect URI (paste in Google Cloud Console)</label>
+        <input class="input mono" readonly value="${esc(location.origin)}/auth/google/callback"></div>` },
+    ]),
     wallet: fieldsHtml([
       { name: 'event_reward', label: 'Reward per valid event ($)', value: s.event_reward },
       { name: 'min_withdrawal', label: 'Minimum withdrawal ($)', value: s.min_withdrawal },
@@ -60,7 +67,7 @@ export async function mount(el, ctx) {
       { name: 'pwa_background_color', label: 'Background color', type: 'color', value: s.pwa_background_color },
     ]),
   };
-  const titles = { branding: 'Branding', accounts: 'Accounts', wallet: 'Wallet & limits', payments: 'Payment methods', pwa: 'PWA' };
+  const titles = { branding: 'Branding', accounts: 'Accounts', google: 'Google Login', wallet: 'Wallet & limits', payments: 'Payment methods', pwa: 'PWA' };
   el.innerHTML = `${pageHead('fa-solid fa-sliders', 'System Settings', 'Branding, payments, wallet, PWA and more')}
   <div class="grid grid-2">
     ${Object.entries(sections).map(([k, html]) => `<div class="card"><div class="card-head"><h2>${titles[k]}</h2></div><form data-section="${k}"><div class="form-grid two">${html}</div>

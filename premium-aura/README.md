@@ -65,6 +65,15 @@ premium-aura/
 
 Most providers need no code: Admin → API Management → *Add provider* (URL, auth type, query/headers, records path) and map fields (`message.code → code`). For quirks, create `server/providers/MyProvider.js` extending `GenericHttpProvider` (override `connect/fetch/normalize/validate/healthCheck`) and register it in `server/providers/index.js`.
 
+### Sign in with Google
+
+1. Google Cloud Console → APIs & Services → Credentials → *Create OAuth client ID* (Web application).
+2. Authorized redirect URI: `https://YOUR-DOMAIN/auth/google/callback` (shown in Admin → System Settings → Google Login).
+3. Paste the Client ID and Client Secret in Admin → System Settings → Google Login and switch it on.
+
+Google-verified emails skip email verification; admin approval (if enabled) and 2FA still apply.
+An existing account with the same email is linked on first Google sign-in.
+
 ## Tests
 
 With an installed instance running:

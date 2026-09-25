@@ -10,6 +10,8 @@ const paths = require('../config/paths');
 const { ah } = require('../utils/errors');
 const auth = require('../controllers/authController');
 const pub = require('../controllers/publicController');
+const google = require('../controllers/googleAuthController');
+const { oauthLimiter } = require('../middleware/rateLimiters');
 
 const router = express.Router();
 const SHELL = path.join(paths.PUBLIC_DIR, 'index.html');
@@ -29,6 +31,8 @@ for (const p of ['/login', '/register', '/forgot-password', '/reset-password', '
   });
 }
 router.get('/verify-email', ah(auth.verifyEmail));
+router.get('/auth/google', oauthLimiter, ah(google.start));
+router.get('/auth/google/callback', oauthLimiter, ah(google.callback));
 router.get('/logout', (req, res) => {
   req.session?.destroy(() => {});
   res.clearCookie('aura.sid');

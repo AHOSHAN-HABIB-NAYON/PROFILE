@@ -31,6 +31,10 @@ const DEFAULTS = {
   require_admin_approval: '0',
   support_whatsapp: '',
   support_contact_note: 'Contact us on WhatsApp to get your account approved faster.',
+  // Sign in with Google (OAuth 2.0). The client secret is stored encrypted.
+  google_login_enabled: '0',
+  google_client_id: '',
+  google_client_secret: '',
   // Wallet
   event_reward: '0.0100',
   min_withdrawal: '50.00',
@@ -109,10 +113,16 @@ async function set(values, conn = db) {
 
 function invalidate() { cache = null; }
 
+/** Google sign-in is offered only when switched on and fully configured. */
+function googleReady(all) {
+  return all.google_login_enabled === '1' && !!all.google_client_id && !!all.google_client_secret;
+}
+
 async function publicSettings() {
   const all = await loadAll();
   const out = {};
   for (const k of PUBLIC_KEYS) out[k] = all[k];
+  out.google_login = googleReady(all) ? '1' : '0';
   return out;
 }
 
@@ -123,4 +133,4 @@ async function seedDefaults(conn = db) {
   invalidate();
 }
 
-module.exports = { DEFAULTS, PUBLIC_KEYS, loadAll, get, getInt, getBool, set, invalidate, publicSettings, seedDefaults };
+module.exports = { DEFAULTS, googleReady, PUBLIC_KEYS, loadAll, get, getInt, getBool, set, invalidate, publicSettings, seedDefaults };

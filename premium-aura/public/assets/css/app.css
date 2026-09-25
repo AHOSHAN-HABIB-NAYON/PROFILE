@@ -660,3 +660,9 @@ table.table { width: 100%; border-collapse: separate; border-spacing: 0; }
 .contact-row i { color: #25D366; font-size: 22px; }
 .contact-row strong { margin-left: auto; }
 .btn-wa { background: #25D366; color: #fff; box-shadow: 0 10px 22px rgba(37, 211, 102, .3); }
+
+/* Sign in with Google */
+.btn-google { background: var(--card); color: var(--text); border: 1px solid var(--border); gap: 10px; font-weight: 600; }
+.btn-google:hover { background: var(--card-2); }
+.auth-or { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+.auth-or::before, .auth-or::after { content: ""; flex: 1; height: 1px; background: var(--border); }

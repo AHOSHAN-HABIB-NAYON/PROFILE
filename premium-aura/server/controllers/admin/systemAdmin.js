@@ -14,7 +14,9 @@ const { paginate, meta } = require('../../utils/pagination');
 function validTz(tz) { try { Intl.DateTimeFormat('en-US', { timeZone: tz }); return true; } catch { return false; } }
 
 exports.getSettings = async (req, res) => {
-  const all = await settings.loadAll(true);
+  const all = { ...(await settings.loadAll(true)) };
+  all.has_google_secret = !!all.google_client_secret;
+  all.google_client_secret = ''; // write-only
   res.json({ ok: true, settings: all, has_sharp: fileStorage.hasSharp() });
 };
 
@@ -48,6 +50,10 @@ exports.saveSettings = async (req, res) => {
   ['registration_enabled', 'require_email_verification', 'require_admin_approval', 'news_demo_engagement_enabled', 'live_activity_show_code'].forEach(flag);
   if (b.support_whatsapp !== undefined) out.support_whatsapp = v.str(b.support_whatsapp, { name: 'WhatsApp number', max: 24, pattern: /^\+?[\d\s-]{6,24}$/ });
   txt('support_contact_note', 200);
+  flag('google_login_enabled');
+  if (b.google_client_id !== undefined) out.google_client_id = v.str(b.google_client_id, { name: 'Google Client ID', max: 200, pattern: /^$|^[\w.-]+\.apps\.googleusercontent\.com$/ });
+  if (typeof b.google_client_secret === 'string' && b.google_client_secret.trim()) out.google_client_secret = encrypt(v.str(b.google_client_secret, { name: 'Google Client Secret', max: 200 }));
+  if (v.bool(b.clear_google_secret)) out.google_client_secret = '';
   if (b.default_theme !== undefined) out.default_theme = v.oneOf(b.default_theme, ['light', 'dark']);
   if (b.default_timezone !== undefined) {
     if (!validTz(b.default_timezone)) throw E.badRequest('Unknown timezone');
@@ -63,7 +69,7 @@ exports.saveSettings = async (req, res) => {
   if (out.event_reward !== undefined && money.cmp(out.event_reward, '100') > 0) throw E.badRequest('Reward is too large');
 
   const n = await settings.set(out);
-  await audit.log(req, 'settings.update', { details: out });
+  await audit.log(req, 'settings.update', { details: { ...out, ...(out.google_client_secret ? { google_client_secret: '[encrypted]' } : {}) } });
   res.json({ ok: true, message: `${n} setting(s) saved` });
 };
 

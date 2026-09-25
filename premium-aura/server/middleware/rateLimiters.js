@@ -21,6 +21,12 @@ const loginLimiter = rateLimit({
   handler: json('Too many login attempts. Please wait 15 minutes and try again.'),
 });
 
+// Google sign-in redirects (browser navigations, so failures redirect back to /login).
+const oauthLimiter = rateLimit({
+  windowMs: 15 * 60_000, limit: 40, standardHeaders: 'draft-7', legacyHeaders: false,
+  handler: (req, res) => res.redirect('/login?google=busy'),
+});
+
 // Per signed-in user (falls back to IP) — payments, withdrawals, password & 2FA changes.
 const sensitiveLimiter = rateLimit({
   windowMs: 60 * 60_000, limit: 30, standardHeaders: 'draft-7', legacyHeaders: false,
@@ -28,4 +34,4 @@ const sensitiveLimiter = rateLimit({
   handler: json('Too many attempts. Please try again later.'),
 });
 
-module.exports = { apiLimiter, authLimiter, loginLimiter, sensitiveLimiter };
+module.exports = { apiLimiter, authLimiter, oauthLimiter, loginLimiter, sensitiveLimiter };

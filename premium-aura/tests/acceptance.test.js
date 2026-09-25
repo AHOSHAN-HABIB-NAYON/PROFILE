@@ -561,6 +561,81 @@ test('admin approval: verify email → Pending with WhatsApp contact → approve
   await admin.put('/api/admin/settings', { require_admin_approval: '0' });
 });
 
+test('Google login: hidden until configured, secret write-only, state checked, creates & links accounts', async () => {
+  // Mock Google token + userinfo endpoints (the server runs with GOOGLE_OAUTH_MOCK=http://127.0.0.1:4599).
+  let profile;
+  const g = http.createServer((req, res) => {
+    let body = '';
+    req.on('data', (d) => { body += d; });
+    req.on('end', () => {
+      const send = (code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(obj)); };
+      if (req.url === '/token') {
+        const p = new URLSearchParams(body);
+        if (p.get('client_secret') !== 'GOCSPX-test-secret' || p.get('code') !== 'good-code') return send(400, { error: 'invalid_grant' });
+        return send(200, { access_token: 'mock-access' });
+      }
+      if (req.url === '/userinfo' && req.headers.authorization === 'Bearer mock-access') return send(200, profile);
+      send(404, {});
+    });
+  });
+  await new Promise((r) => g.listen(4599, '127.0.0.1', r));
+  try {
+    await admin.put('/api/admin/settings', { require_admin_approval: '0', google_login_enabled: '0' });
+    const anon = new Client();
+    assert.equal((await anon.get('/api/public/site')).data.site.google_login, '0');
+    assert.match((await anon.get('/auth/google')).headers.get('location'), /google=disabled/);
+
+    const s = await admin.put('/api/admin/settings', { google_login_enabled: '1', google_client_id: '123-abc.apps.googleusercontent.com', google_client_secret: 'GOCSPX-test-secret' });
+    assert.equal(s.status, 200, JSON.stringify(s.data));
+    const got = (await admin.get('/api/admin/settings')).data.settings;
+    assert.equal(got.google_client_secret, '', 'secret never returned');
+    assert.equal(got.has_google_secret, true);
+    assert.equal((await anon.get('/api/public/site')).data.site.google_login, '1');
+
+    const flow = async (c, code = 'good-code', tamper = false) => {
+      const start = await c.get('/auth/google');
+      const loc = new URL(start.headers.get('location'));
+      assert.equal(loc.searchParams.get('client_id'), '123-abc.apps.googleusercontent.com');
+      assert.match(loc.searchParams.get('redirect_uri'), /\/auth\/google\/callback$/);
+      const state = tamper ? 'forged-state' : loc.searchParams.get('state');
+      return c.get(`/auth/google/callback?code=${code}&state=${state}`);
+    };
+
+    // forged state is rejected
+    profile = { sub: `g-${RUN}`, email: `google_${RUN}@example.com`, email_verified: true, name: 'Google User' };
+    assert.match((await flow(new Client(), 'good-code', true)).headers.get('location'), /google=expired/);
+    // bad code is rejected
+    assert.match((await flow(new Client(), 'bad-code')).headers.get('location'), /google=failed/);
+    // unverified Google email is rejected
+    profile = { ...profile, email_verified: false };
+    assert.match((await flow(new Client())).headers.get('location'), /google=unverified/);
+
+    // new account is created, verified and signed in
+    profile = { ...profile, email_verified: true };
+    const c1 = new Client();
+    const ok = await flow(c1);
+    assert.equal(ok.headers.get('location'), '/dashboard');
+    const me = await c1.get('/api/me');
+    assert.equal(me.status, 200);
+    assert.equal(me.data.user.email, `google_${RUN}@example.com`);
+
+    // existing password account is linked by email (no duplicate) and its 2FA is still enforced
+    profile = { sub: `g2-${RUN}`, email: userEmail, email_verified: true, name: 'X' };
+    const c2 = new Client();
+    assert.equal((await flow(c2)).headers.get('location'), '/two-factor', '2FA still required');
+    assert.equal((await c2.get('/api/me')).data.user, null, 'not signed in before the 2FA code');
+    assert.equal((await admin.get(`/api/admin/users?q=${encodeURIComponent(userEmail)}`)).data.items.length, 1, 'no duplicate account');
+
+    // with admin approval on, a new Google account lands on the Pending page
+    await admin.put('/api/admin/settings', { require_admin_approval: '1' });
+    profile = { sub: `g3-${RUN}`, email: `google3_${RUN}@example.com`, email_verified: true, name: 'Pending G' };
+    assert.match((await flow(new Client())).headers.get('location'), /verified=pending/);
+  } finally {
+    await admin.put('/api/admin/settings', { require_admin_approval: '0', google_login_enabled: '0' });
+    g.close();
+  }
+});
+
 test('PWA manifest, service worker, security headers, JSON errors without stack traces', async () => {
   const m = await fetch(`${BASE}/manifest.json`);
   const mj = await m.json();
