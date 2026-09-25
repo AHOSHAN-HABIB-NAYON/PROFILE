@@ -174,6 +174,14 @@ exports.preview = async (req, res) => {
   res.json({ ok: true, count: records.length, normalized });
 };
 
+/** Last raw records fetched from this provider (memory only) — to help map fields. */
+exports.sample = async (req, res) => {
+  const id = v.id(req.params.id);
+  const last = poller.lastResponse(id);
+  if (!last) throw E.notFound('No response yet — press "Poll now" first, then try again.');
+  res.json({ ok: true, ...last });
+};
+
 exports.logs = async (req, res) => {
   const p = paginate(req.query, { defaultSize: 30 });
   const pid = req.query.provider_id ? v.id(req.query.provider_id) : null;

@@ -383,6 +383,20 @@ test('OTP page: every API OTP is shown (masked), searchable by last 4 digits; ot
   const ownFeed = (await owner.get(`/api/events?q=${stored.slice(-4)}`)).data.items.find((x) => x.code === '918273');
   assert.equal(ownFeed.mine, true, 'owner sees it marked as their number');
 
+  // other common field names are understood; a rejected record explains why and can be inspected by the admin
+  mockRecords = [
+    { id: `pub-${RUN}-4`, destination_number: `4478${NUM}`, sms_content: 'Your code is 556677' },
+    { id: `pub-${RUN}-5`, dst: `4479${NUM}`, sms_content: 'Welcome, no code here' },
+  ];
+  const p2 = await admin.post(`/api/admin/providers/${p.id}/poll`);
+  assert.equal(p2.data.result.inserted, 1, JSON.stringify(p2.data));
+  assert.equal(p2.data.result.invalid, 1);
+  const logs = (await admin.get(`/api/admin/providers/${p.id}`)).data.logs;
+  assert.ok(logs.some((l) => /no OTP code found ×1 · fields: id, dst, sms_content/.test(l.message)), 'log explains the rejection');
+  const sample = await admin.get(`/api/admin/providers/${p.id}/sample`);
+  assert.equal(sample.data.firstInvalid.sms_content, 'Welcome, no code here');
+  assert.equal((await user.get(`/api/admin/providers/${p.id}/sample`)).status, 403, 'admins only');
+
   // switched off → users only see their own numbers again
   await admin.put('/api/admin/settings', { otp_public_feed: '0' });
   assert.equal((await user.get(`/api/events?q=${unlisted.slice(-4)}`)).data.items.some((x) => x.code === '734512'), false);

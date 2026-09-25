@@ -59,6 +59,7 @@ export async function mount(el) {
         <form data-map><div class="form-grid two">${r.system_fields.map((f) => `<div class="field"><label>${esc(f)}</label><input class="input" name="${esc(f)}" value="${esc(cur[f] || '')}" placeholder="provider field path"></div>`).join('')}</div>
         <button class="btn btn-primary" type="submit">Save mapping</button></form>
         <div class="divider"></div><h3>Test with sample JSON</h3>
+        <button class="btn btn-ghost btn-sm" type="button" data-last style="margin-bottom:8px"><i class="fa-solid fa-download"></i>Load last API response</button>
         <textarea class="input" data-sample rows="6" placeholder='{"data":[{"id":"abc","number":"923001234567","message":"Your Telegram code is 27288","created_at":"2026-09-24T10:00:00Z"}]}'></textarea>
         <button class="btn btn-soft btn-sm" data-preview style="margin-top:8px">Preview normalization</button><pre class="address-box" data-out style="margin-top:8px;display:none;text-align:left;white-space:pre-wrap"></pre>`,
     });
@@ -66,6 +67,15 @@ export async function mount(el) {
       e.preventDefault();
       const mappings = r.system_fields.map((f) => ({ system_field: f, provider_field: e.target[f].value.trim() })).filter((m) => m.provider_field);
       await withLoading(e.submitter, async () => { try { toast((await api(`/admin/providers/${id}/mappings`, { method: 'PUT', body: { mappings } })).message); } catch (err) { toastError(err); } });
+    });
+    $('[data-last]', s.el).addEventListener('click', async (e) => {
+      await withLoading(e.currentTarget, async () => {
+        try {
+          const last = await api(`/admin/providers/${id}/sample`);
+          $('[data-sample]', s.el).value = JSON.stringify(last.firstInvalid ? [last.firstInvalid] : last.records, null, 2);
+          toast(last.firstInvalid ? 'Loaded the record that was rejected — check which field holds the number and the message' : 'Loaded the latest records');
+        } catch (err) { toastError(err); }
+      });
     });
     $('[data-preview]', s.el).addEventListener('click', async (e) => {
       await withLoading(e.currentTarget, async () => {

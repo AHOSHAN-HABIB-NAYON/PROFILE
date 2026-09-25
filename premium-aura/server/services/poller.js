@@ -17,7 +17,9 @@ let listAt = 0;
 const nextDue = new Map();
 const inFlight = new Set();
 const lastLogged = new Map();
-const rateHits = new Map(); // provider id → consecutive HTTP 429 responses
+const rateHits = new Map();
+// Last raw response per provider, kept in memory only (never stored) so admins can map fields.
+const lastRaw = new Map(); // provider id → consecutive HTTP 429 responses
 
 function credentialFor(row) {
   try {
@@ -52,6 +54,15 @@ async function writeLog(providerId, entry, force = false) {
   ).catch(() => {});
 }
 
+const REASONS = { no_code: 'no OTP code found', no_resource: 'no phone number found', empty: 'empty record' };
+
+/** "no OTP code found ×1 · fields: id, cli, text" — field names only, never values. */
+function describeInvalid(reasons, rec) {
+  const why = Object.entries(reasons).map(([k, n]) => `${REASONS[k] || k} ×${n}`).join(', ');
+  const keys = rec && typeof rec === 'object' ? Object.keys(rec).slice(0, 20).join(', ') : typeof rec;
+  return `${why} · fields: ${keys} · open Mapping → Load last API response`;
+}
+
 async function pollOne(row) {
   if (inFlight.has(row.id)) return null;
   inFlight.add(row.id);
@@ -66,17 +77,24 @@ async function pollOne(row) {
     rateHits.delete(row.id);
     const valid = [];
     let skipped = 0;
+    const reasons = {};
+    let firstInvalid = null;
     for (const rec of records.slice(0, 500)) {
       const ev = p.normalize(rec);
-      if (p.validate(ev).ok) valid.push(ev); else skipped += 1;
+      const check = p.validate(ev);
+      if (check.ok) { valid.push(ev); continue; }
+      skipped += 1;
+      reasons[check.reason] = (reasons[check.reason] || 0) + 1;
+      if (!firstInvalid) firstInvalid = rec;
     }
+    lastRaw.set(row.id, { at: new Date().toISOString(), records: records.slice(0, 5), firstInvalid, reasons });
     const stats = await events.ingest(row, valid, await sourceIdFor(row));
     await db.run(
       `UPDATE api_providers SET health_status = 'online', last_checked_at = UTC_TIMESTAMP(), last_success_at = UTC_TIMESTAMP(),
        last_error = NULL, total_fetched = total_fetched + ? WHERE id = ?`, [stats.inserted, row.id],
     );
     const summary = { level: 'info', httpStatus, durationMs, fetched: records.length, inserted: stats.inserted, duplicates: stats.duplicates,
-      message: `fetched ${records.length}, new ${stats.inserted}, duplicates ${stats.duplicates}, unlisted ${stats.unlisted}, unauthorized ${stats.unauthorized}, invalid ${skipped}` };
+      message: `fetched ${records.length}, new ${stats.inserted}, duplicates ${stats.duplicates}, unlisted ${stats.unlisted}, unauthorized ${stats.unauthorized}, invalid ${skipped}${skipped ? ` (${describeInvalid(reasons, firstInvalid)})` : ''}` };
     await writeLog(row.id, summary, stats.inserted > 0);
     realtime.toAdmins('provider:health', { id: row.id, health_status: 'online', last_checked_at: new Date().toISOString() });
     return { ...stats, fetched: records.length, invalid: skipped };
@@ -141,4 +159,6 @@ async function testProvider(row) {
   return health;
 }
 
-module.exports = { start, stop, invalidate, pollOne, testProvider, credentialFor, instance };
+const lastResponse = (id) => lastRaw.get(id) || null;
+
+module.exports = { start, stop, invalidate, pollOne, lastResponse, testProvider, credentialFor, instance };

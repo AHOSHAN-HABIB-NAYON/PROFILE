@@ -66,6 +66,7 @@ router.post('/providers/:id/test', ah(api.test));
 router.post('/providers/:id/poll', ah(api.pollNow));
 router.put('/providers/:id/mappings', ah(api.saveMappings));
 router.post('/providers/:id/preview', ah(api.preview));
+router.get('/providers/:id/sample', ah(api.sample));
 
 router.get('/plans', ah(finance.plans));
 router.post('/plans', ah(finance.createPlan));
