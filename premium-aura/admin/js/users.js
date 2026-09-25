@@ -71,6 +71,11 @@ export async function mount(el) {
         else toast(r.message);
         return;
       }
+      if (a === 'reset2fa') {
+        if (!(await confirmSheet({ title: 'Turn off 2FA?', message: `${u.email} can then sign in with just the password and set 2FA up again. Only do this after confirming it is really them.`, confirm: 'Turn off 2FA', danger: true }))) return;
+        const r = await api(`/admin/users/${u.id}/reset-2fa`, { method: 'POST' });
+        toast(r.message); ctx.reload(); return;
+      }
       if (a === 'approve') {
         const r = await api(`/admin/users/${u.id}/approve`, { method: 'POST' });
         toast(r.message); ctx.reload(); return;
@@ -116,6 +121,7 @@ async function viewUser(row, run) {
       <div class="divider"></div><h3>Recent resources</h3>
       <div class="list">${r.assignments.map((a) => `<div class="list-item"><div class="li-body"><div class="li-title mono">${esc(a.resource_value)}</div><div class="li-sub">${esc(a.country_code)} ${esc(a.app_code)}</div></div>${chip(a.status)}</div>`).join('') || '<div class="muted">None</div>'}</div>`,
     foot: `<div class="row-flex" style="width:100%">${ACTIONS.map(([k, i, l]) => `<button class="btn btn-ghost btn-sm" data-act="${k}"><i class="fa-solid ${i}"></i>${l}</button>`).join('')}
+      ${u.twofa ? '<button class="btn btn-ghost btn-sm" data-act="reset2fa"><i class="fa-solid fa-shield-halved"></i>Reset 2FA</button>' : ''}
       ${u.status === 'pending' ? '<button class="btn btn-success btn-sm" data-act="approve"><i class="fa-solid fa-user-check"></i>Approve</button>' : ''}
       ${u.status === 'suspended' ? '<button class="btn btn-success btn-sm" data-act="unsuspend"><i class="fa-solid fa-user-check"></i>Unsuspend</button>'
     : '<button class="btn btn-danger btn-sm" data-act="suspend"><i class="fa-solid fa-user-slash"></i>Suspend</button>'}</div>`,

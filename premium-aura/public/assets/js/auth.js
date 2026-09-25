@@ -102,7 +102,16 @@ const views = {
   twofa() {
     return `<h1>Two-factor verification</h1><p class="sub">Enter the 6-digit code from your authenticator app, or a recovery code.</p><div data-msg></div>
     <form data-form="twofa" novalidate><div class="field"><input class="input otp-input" name="code" inputmode="text" autocomplete="one-time-code" maxlength="11" placeholder="••••••" required autofocus></div>
-    <button class="btn btn-primary btn-block" type="submit">Verify</button></form><p class="auth-foot"><a href="/login">Use a different account</a></p>`;
+    <button class="btn btn-primary btn-block" type="submit">Verify</button></form>
+    <div class="lost-2fa"><button type="button" class="btn btn-ghost btn-sm btn-block" data-lost2fa><i class="fa-solid fa-envelope"></i>Lost your phone? Get a code by email</button></div>
+    <p class="auth-foot"><a href="/login">Use a different account</a></p>`;
+  },
+  twofaEmail() {
+    return `<h1>Check your email</h1><p class="sub">Enter the 6-digit code we emailed you. Signing in this way turns off two-factor authentication so you can set it up again on your new phone.</p><div data-msg></div>
+    <form data-form="twofaEmail" novalidate><div class="field"><input class="input otp-input" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••" required autofocus></div>
+    <button class="btn btn-primary btn-block" type="submit">Verify &amp; sign in</button></form>
+    <button type="button" class="btn btn-ghost btn-sm btn-block" data-lost2fa style="margin-top:10px">Resend code</button>
+    <p class="auth-foot"><a href="/two-factor">Back to authenticator code</a></p>`;
   },
 };
 
@@ -115,7 +124,7 @@ function viewFor(path) {
 }
 
 function show(name) {
-  const titles = { login: 'Sign in', register: 'Register', forgot: 'Forgot password', reset: 'Reset password', twofa: 'Verification' };
+  const titles = { login: 'Sign in', register: 'Register', forgot: 'Forgot password', reset: 'Reset password', twofa: 'Verification', twofaEmail: 'Verification' };
   document.title = `${titles[name]} · ${state.site.site_name || 'Premium Aura'}`;
   root.innerHTML = `<a class="brand" href="/login">${brandHtml()}</a>${views[name]()}
     <div class="center" style="margin-top:18px"><div class="theme-toggle"><button data-theme-set="light"><i class="fa-solid fa-sun"></i>Light</button><button data-theme-set="dark"><i class="fa-solid fa-moon"></i>Dark</button></div></div>`;
@@ -158,6 +167,10 @@ const handlers = {
     const r = await api('/auth/2fa', { method: 'POST', body: formData(form) });
     location.href = r.redirect || '/dashboard';
   },
+  async twofaEmail(form) {
+    const r = await api('/auth/2fa/email/verify', { method: 'POST', body: formData(form) });
+    location.href = r.redirect || '/security';
+  },
 };
 
 root.addEventListener('submit', async (e) => {
@@ -195,6 +208,16 @@ root.addEventListener('click', (e) => {
     const input = t.closest('.input-group').querySelector('input');
     input.type = input.type === 'password' ? 'text' : 'password';
     t.innerHTML = `<i class="fa-regular ${input.type === 'password' ? 'fa-eye' : 'fa-eye-slash'}"></i>`;
+  }
+  const lost = e.target.closest('[data-lost2fa]');
+  if (lost) {
+    withLoading(lost, async () => {
+      try {
+        const r = await api('/auth/2fa/email', { method: 'POST' });
+        if (!$('[data-form=twofaEmail]', root)) show('twofaEmail');
+        msg('success', r.message);
+      } catch (err) { msg('error', err.message); }
+    });
   }
   const th = e.target.closest('[data-theme-set]');
   if (th) applyTheme(th.dataset.themeSet, { persist: false });

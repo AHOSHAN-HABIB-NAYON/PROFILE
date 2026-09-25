@@ -33,6 +33,8 @@ router.get('/public/contact', ah(auth.contact));
 router.post('/auth/register', authLimiter, ah(auth.register));
 router.post('/auth/login', loginLimiter, ah(auth.login));
 router.post('/auth/2fa', loginLimiter, ah(auth.twofa));
+router.post('/auth/2fa/email', authLimiter, ah(auth.twofaEmailSend));
+router.post('/auth/2fa/email/verify', loginLimiter, ah(auth.twofaEmailVerify));
 router.post('/auth/logout', ah(auth.logout));
 router.post('/auth/resend-verification', authLimiter, ah(auth.resendVerification));
 router.post('/auth/forgot', authLimiter, ah(auth.forgot));

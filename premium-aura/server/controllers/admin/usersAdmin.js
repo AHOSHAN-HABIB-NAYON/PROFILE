@@ -8,6 +8,7 @@ const notifications = require('../../models/notification');
 const premium = require('../../services/premium');
 const quota = require('../../services/quota');
 const mailer = require('../../services/mailer');
+const twofa = require('../../services/twofa');
 const money = require('../../utils/money');
 const v = require('../../utils/validate');
 const { E } = require('../../utils/errors');
@@ -58,11 +59,11 @@ exports.show = async (req, res) => {
     db.query('SELECT id, plan_name, resource_limit, starts_at, expires_at, status FROM user_premium WHERE user_id = ? ORDER BY id DESC LIMIT 10', [id]),
     db.one('SELECT failed_login_attempts, locked_until, password_changed_at FROM user_security WHERE user_id = ?', [id]),
   ]);
-  const twofa = await db.one('SELECT enabled FROM two_factor_auth WHERE user_id = ?', [id]);
+  const tf = await db.one('SELECT enabled FROM two_factor_auth WHERE user_id = ?', [id]);
   res.json({
     ok: true,
     user: { ...User.toPublic(u), custom_hourly_limit: u.custom_hourly_limit, custom_daily_limit: u.custom_daily_limit, custom_quota: u.custom_quota,
-      last_active_at: u.last_active_at, last_login_at: u.last_login_at, last_login_ip: u.last_login_ip, twofa: !!twofa?.enabled, security: sec },
+      last_active_at: u.last_active_at, last_login_at: u.last_login_at, last_login_ip: u.last_login_ip, twofa: !!tf?.enabled, security: sec },
     limits,
     wallet: { balance: money.display(w?.balance || 0), earned: money.display(w?.total_earned || 0), withdrawn: money.display(w?.total_withdrawn || 0) },
     transactions: tx.map((t) => ({ ...t, amount: money.normalize(t.amount), balance_after: money.normalize(t.balance_after) })),
@@ -97,6 +98,20 @@ async function setStatus(req, id, status) {
 
 exports.suspend = async (req, res) => { await setStatus(req, v.id(req.params.id), 'suspended'); res.json({ ok: true, message: 'User suspended' }); };
 exports.unsuspend = async (req, res) => { await setStatus(req, v.id(req.params.id), 'active'); res.json({ ok: true, message: 'User reactivated' }); };
+
+/** User lost their authenticator and recovery codes: turn 2FA off so they can sign in with the password. */
+exports.reset2fa = async (req, res) => {
+  const id = v.id(req.params.id);
+  const u = await db.one('SELECT id, email FROM users WHERE id = ?', [id]);
+  if (!u) throw E.notFound('User not found');
+  await twofa.disable(id);
+  await mailer.send({
+    to: u.email, subject: 'Two-factor authentication was reset', title: '2FA reset by support',
+    text: 'An administrator turned off two-factor authentication on your account. Sign in with your password and set it up again from Security settings.',
+  });
+  await audit.log(req, 'user.reset_2fa', { category: 'security', targetType: 'user', targetId: id });
+  res.json({ ok: true, message: '2FA turned off — the user was emailed' });
+};
 
 exports.approve = async (req, res) => {
   const id = v.id(req.params.id);

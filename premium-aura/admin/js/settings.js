@@ -29,6 +29,8 @@ export async function mount(el, ctx) {
       { name: 'require_admin_approval', label: 'New accounts need admin approval', type: 'switch', value: s.require_admin_approval === '1', hint: 'Off = approved automatically after email verification. On = Pending until you approve (the user is emailed).' },
       { name: 'support_whatsapp', label: 'Support WhatsApp (shown on the Pending page)', value: s.support_whatsapp, placeholder: '+8801XXXXXXXXX', full: true },
       { name: 'support_contact_note', label: 'Contact note', value: s.support_contact_note, full: true },
+      { name: 'admin_alert_email', label: 'Approval alert email (optional)', type: 'email', value: s.admin_alert_email, full: true, placeholder: 'you@gmail.com', hint: 'All admin accounts are emailed when a new account needs approval; add another address here if you like.' },
+      { name: 'twofa_email_recovery', label: 'Lost authenticator: allow sign-in with an email code', type: 'switch', value: s.twofa_email_recovery === '1', hint: 'The code turns 2FA off so the user can set it up again. Off = recovery codes or admin "Reset 2FA" only.' },
       { name: 'news_demo_engagement_enabled', label: 'Show admin demo engagement on news (labelled DEMO)', type: 'switch', value: s.news_demo_engagement_enabled === '1' },
       { name: 'live_activity_show_code', label: 'Live Activity: show OTP codes', type: 'switch', value: s.live_activity_show_code === '1', hint: 'Off = "OTP received" only. Numbers always stay masked.' },
     ]),

@@ -666,3 +666,4 @@ table.table { width: 100%; border-collapse: separate; border-spacing: 0; }
 .btn-google:hover { background: var(--card-2); }
 .auth-or { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
 .auth-or::before, .auth-or::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.lost-2fa { margin-top: 12px; }

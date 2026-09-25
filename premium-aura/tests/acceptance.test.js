@@ -551,8 +551,11 @@ test('admin approval: verify email → Pending with WhatsApp contact → approve
   assert.equal(l.status, 403);
   assert.equal(l.data.code, 'ACCOUNT_PENDING');
   assert.equal(l.data.contact.whatsapp, '+8801757827996');
-  const adminNote = (await admin.get('/api/notifications')).data.items.find((n) => n.title === 'New account waiting for approval');
+  const adminNote = (await admin.get('/api/notifications')).data.items.find((n) => n.title === 'New account waiting for approval' && n.body.includes(email));
   assert.ok(adminNote, 'admins are notified');
+  const alert = fs.readFileSync(MAIL_LOG, 'utf8').trim().split('\n').map((x) => JSON.parse(x).meta)
+    .find((m) => m.to === ADMIN_EMAIL && /waiting for approval/.test(m.subject) && m.text.includes(email));
+  assert.ok(alert, 'admin is emailed after the user verifies');
   const id = (await admin.get(`/api/admin/users?q=${encodeURIComponent(email)}&status=pending`)).data.items[0].id;
   assert.equal((await admin.post(`/api/admin/users/${id}/approve`)).status, 200);
   const mails = fs.readFileSync(MAIL_LOG, 'utf8').trim().split('\n').map((x) => JSON.parse(x).meta);
@@ -634,6 +637,51 @@ test('Google login: hidden until configured, secret write-only, state checked, c
     await admin.put('/api/admin/settings', { require_admin_approval: '0', google_login_enabled: '0' });
     g.close();
   }
+});
+
+test('lost authenticator: email code signs in and turns 2FA off; admin can reset 2FA', async () => {
+  const email = `lost_${RUN}@example.com`;
+  assert.equal((await admin.post('/api/admin/users', { name: 'Lost Phone', email, password: 'LostPhone123' })).status, 201);
+  const setup2fa = async () => {
+    const c = new Client();
+    await c.login(email, 'LostPhone123');
+    const s = await c.post('/api/security/2fa/setup', { password: 'LostPhone123' });
+    assert.equal((await c.post('/api/security/2fa/confirm', { code: authenticator.generate(s.data.secret) })).status, 200);
+  };
+  await setup2fa();
+  const c = new Client();
+  assert.equal((await c.login(email, 'LostPhone123')).data.twofa, true);
+  const sent = await c.post('/api/auth/2fa/email');
+  assert.equal(sent.status, 200, JSON.stringify(sent.data));
+  assert.match(sent.data.message, /lo•••@example\.com/);
+  assert.equal((await c.post('/api/auth/2fa/email')).status, 429, 'resend is throttled');
+  const mail = fs.readFileSync(MAIL_LOG, 'utf8').trim().split('\n').map((x) => JSON.parse(x).meta).reverse()
+    .find((m) => m.to === email && /sign-in code/.test(m.subject));
+  const code = mail.subject.slice(0, 6);
+  assert.equal((await c.post('/api/auth/2fa/email/verify', { code: code === '000000' ? '111111' : '000000' })).status, 401);
+  const ok = await c.post('/api/auth/2fa/email/verify', { code });
+  assert.equal(ok.status, 200, JSON.stringify(ok.data));
+  assert.equal(ok.data.redirect, '/security');
+  c.csrf = null;
+  assert.equal((await c.get('/api/dashboard')).status, 200, 'signed in');
+  const fresh = new Client();
+  const l = await fresh.login(email, 'LostPhone123');
+  assert.equal(l.status, 200);
+  assert.notEqual(l.data.twofa, true, '2FA is off after email recovery');
+
+  // admin reset
+  await setup2fa();
+  const id = (await admin.get(`/api/admin/users?q=${encodeURIComponent(email)}`)).data.items[0].id;
+  assert.equal((await admin.post(`/api/admin/users/${id}/reset-2fa`)).status, 200);
+  assert.notEqual((await new Client().login(email, 'LostPhone123')).data.twofa, true, 'admin reset turns 2FA off');
+
+  // admin can disable email recovery
+  await setup2fa();
+  await admin.put('/api/admin/settings', { twofa_email_recovery: '0' });
+  const d = new Client();
+  await d.login(email, 'LostPhone123');
+  assert.equal((await d.post('/api/auth/2fa/email')).status, 403);
+  await admin.put('/api/admin/settings', { twofa_email_recovery: '1' });
 });
 
 test('PWA manifest, service worker, security headers, JSON errors without stack traces', async () => {

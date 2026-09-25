@@ -29,6 +29,7 @@ router.delete('/users/:id', ah(users.remove));
 router.post('/users/:id/suspend', ah(users.suspend));
 router.post('/users/:id/unsuspend', ah(users.unsuspend));
 router.post('/users/:id/approve', ah(users.approve));
+router.post('/users/:id/reset-2fa', ah(users.reset2fa));
 router.post('/users/:id/reset-password', ah(users.resetPassword));
 router.put('/users/:id/limits', ah(users.limits));
 router.post('/users/:id/premium', ah(users.premium));

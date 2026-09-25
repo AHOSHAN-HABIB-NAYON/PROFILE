@@ -1,4 +1,5 @@
 'use strict';
+const crypto = require('crypto');
 const db = require('../config/database');
 const config = require('../config/env');
 const settings = require('../models/settings');
@@ -59,6 +60,27 @@ async function sendVerification(req, userId, email, name) {
   });
 }
 
+/**
+ * A new account now needs an admin: in-app notification + email to every
+ * active admin (and the optional alert address). Called once the account is
+ * ready to review — after email verification when that is required.
+ */
+async function requestApproval(req, user) {
+  const site = await settings.get('site_name');
+  await notifications.notifyAdmins({ type: 'system', title: 'New account waiting for approval', body: `${user.name} · ${user.email}`, link: '/admin/users' });
+  const admins = await db.query("SELECT email FROM users WHERE role = 'admin' AND status = 'active'");
+  const to = new Set(admins.map((a) => a.email.toLowerCase()));
+  const extra = await settings.get('admin_alert_email');
+  if (extra) to.add(extra.toLowerCase());
+  for (const email of to) {
+    await mailer.send({
+      to: email, subject: `New ${site} account waiting for approval`, title: 'New account needs approval',
+      text: `${user.name} (${user.email}) has verified their email and is waiting for your approval.`,
+      cta: { url: `${baseUrl(req)}/admin/users?status=pending`, label: 'Review pending accounts' },
+    });
+  }
+}
+
 exports.csrf = (req, res) => {
   res.json({ ok: true, csrfToken: ensureToken(req) });
 };
@@ -73,9 +95,7 @@ exports.register = async (req, res) => {
   const requireApproval = await settings.getBool('require_admin_approval');
   const id = await User.create({ name, email, password, verified: !requireVerify, status: requireApproval ? 'pending' : 'active' });
   await audit.log(req, 'register', { category: 'auth', userId: id, targetType: 'user', targetId: id });
-  if (requireApproval) {
-    notifications.notifyAdmins({ type: 'system', title: 'New account waiting for approval', body: `${name} · ${email}`, link: '/admin/users' }).catch(() => {});
-  }
+  if (requireApproval && !requireVerify) requestApproval(req, { name, email }).catch(() => {});
   if (requireVerify) {
     await sendVerification(req, id, email, name);
     return res.status(201).json({ ok: true, verify_required: true, message: 'Account created! Check your email to verify your address.' });
@@ -149,6 +169,59 @@ exports.twofa = async (req, res) => {
   res.json({ ok: true, redirect: '/dashboard', recovery_remaining: result.remaining });
 };
 
+/** Lost authenticator: email a one-time code to the account address. */
+exports.twofaEmailSend = async (req, res) => {
+  const p = req.session.pending2fa;
+  if (!p || Date.now() - p.at > 10 * 60_000) throw E.unauthorized('Your sign-in session expired. Please sign in again.');
+  if (!(await settings.getBool('twofa_email_recovery'))) throw E.forbidden('Email recovery is disabled. Use a recovery code or contact support.');
+  if (p.emailSentAt && Date.now() - p.emailSentAt < 60_000) throw E.tooMany('Please wait a minute before requesting another code.');
+  const user = await db.one('SELECT id, name, email FROM users WHERE id = ?', [p.userId]);
+  const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
+  await User.security(user.id);
+  await db.run(
+    'UPDATE user_security SET twofa_email_code_hash = ?, twofa_email_expires_at = UTC_TIMESTAMP() + INTERVAL 10 MINUTE, twofa_email_attempts = 0 WHERE user_id = ?',
+    [sha256(`${user.id}:${code}`), user.id],
+  );
+  const site = await settings.get('site_name');
+  await mailer.send({
+    to: user.email, subject: `${code} is your ${site} sign-in code`, title: 'Sign-in code',
+    text: `Your one-time code is ${code}. It expires in 10 minutes. Using it turns off two-factor authentication so you can set it up again on your new device. If this was not you, change your password now.`,
+  });
+  p.emailSentAt = Date.now();
+  p.at = Date.now();
+  await audit.log(req, 'login.2fa_email_sent', { category: 'security', userId: user.id });
+  const [name, domain] = user.email.split('@');
+  res.json({ ok: true, message: `Code sent to ${name.slice(0, 2)}•••@${domain}` });
+};
+
+exports.twofaEmailVerify = async (req, res) => {
+  const p = req.session.pending2fa;
+  if (!p || Date.now() - p.at > 10 * 60_000) throw E.unauthorized('Your sign-in session expired. Please sign in again.');
+  const code = v.str(req.body.code, { name: 'Code', required: true, max: 6, pattern: /^\d{6}$/ });
+  const sec = await db.one(
+    'SELECT twofa_email_code_hash AS h, twofa_email_attempts AS n FROM user_security WHERE user_id = ? AND twofa_email_expires_at > UTC_TIMESTAMP()', [p.userId],
+  );
+  if (!sec?.h || sec.n >= 5) throw E.unauthorized('This code has expired. Request a new one.');
+  if (sec.h !== sha256(`${p.userId}:${code}`)) {
+    await db.run('UPDATE user_security SET twofa_email_attempts = twofa_email_attempts + 1 WHERE user_id = ?', [p.userId]);
+    await audit.log(req, 'login.2fa_email_failed', { category: 'security', userId: p.userId });
+    throw E.unauthorized('Invalid code');
+  }
+  await db.run('UPDATE user_security SET twofa_email_code_hash = NULL, twofa_email_expires_at = NULL, twofa_email_attempts = 0 WHERE user_id = ?', [p.userId]);
+  const user = await db.one('SELECT * FROM users WHERE id = ?', [p.userId]);
+  if (!user || user.status !== 'active') throw E.forbidden('Account unavailable');
+  await twofa.disable(user.id);
+  await finalizeLogin(req, user, p.remember);
+  await audit.log(req, 'twofa.disabled_by_email', { category: 'security', userId: user.id });
+  await mailer.send({
+    to: user.email, subject: 'Two-factor authentication was turned off', title: '2FA turned off',
+    text: 'You signed in with an email code, so two-factor authentication was turned off. Set it up again on your new device from Security settings. If this was not you, change your password immediately.',
+    cta: { url: `${baseUrl(req)}/security`, label: 'Set up 2FA again' },
+  });
+  notifications.notify(user.id, { type: 'system', title: '2FA turned off', body: 'Set up two-factor authentication again on your new device.', link: '/security' }).catch(() => {});
+  res.json({ ok: true, redirect: '/security', message: '2FA was turned off. Please set it up again.' });
+};
+
 exports.logout = async (req, res) => {
   const uid = req.user?.id;
   await new Promise((resolve) => req.session.destroy(() => resolve()));
@@ -167,7 +240,8 @@ exports.verifyEmail = async (req, res) => {
   await db.run('UPDATE users SET email_verified_at = UTC_TIMESTAMP() WHERE id = ? AND email_verified_at IS NULL', [sec.user_id]);
   await db.run('UPDATE user_security SET email_verify_token_hash = NULL, email_verify_expires_at = NULL WHERE user_id = ?', [sec.user_id]);
   await audit.log(req, 'email.verified', { category: 'auth', userId: sec.user_id });
-  const u = await db.one('SELECT status FROM users WHERE id = ?', [sec.user_id]);
+  const u = await db.one('SELECT name, email, status FROM users WHERE id = ?', [sec.user_id]);
+  if (u?.status === 'pending') await requestApproval(req, u).catch(() => {});
   res.redirect(u?.status === 'pending' ? '/login?verified=pending' : '/login?verified=1');
 };
 
@@ -226,4 +300,5 @@ async function contactInfo() {
 exports.contact = async (req, res) => res.json({ ok: true, contact: await contactInfo() });
 
 exports.finalizeLogin = finalizeLogin;
+exports.requestApproval = requestApproval;
 exports.sendVerification = sendVerification;

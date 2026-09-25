@@ -31,6 +31,10 @@ const DEFAULTS = {
   require_admin_approval: '0',
   support_whatsapp: '',
   support_contact_note: 'Contact us on WhatsApp to get your account approved faster.',
+  // Extra address for "new account waiting for approval" emails (all admins are emailed too)
+  admin_alert_email: '',
+  // Users who lost their authenticator can get a one-time code by email (2FA is then turned off)
+  twofa_email_recovery: '1',
   // Sign in with Google (OAuth 2.0). The client secret is stored encrypted.
   google_login_enabled: '0',
   google_client_id: '',

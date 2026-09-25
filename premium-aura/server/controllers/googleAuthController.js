@@ -10,11 +10,10 @@ const config = require('../config/env');
 const settings = require('../models/settings');
 const User = require('../models/user');
 const audit = require('../models/auditLog');
-const notifications = require('../models/notification');
 const twofa = require('../services/twofa');
 const logger = require('../utils/logger');
 const { decrypt, randomToken, safeEqual } = require('../utils/crypto');
-const { finalizeLogin } = require('./authController');
+const { finalizeLogin, requestApproval } = require('./authController');
 
 const ENDPOINTS = {
   auth: 'https://accounts.google.com/o/oauth2/v2/auth',
@@ -112,9 +111,7 @@ exports.callback = async (req, res) => {
     const id = await User.create({ name, email, password: randomToken(24), verified: true, status: pending ? 'pending' : 'active' });
     await db.run('UPDATE users SET google_id = ? WHERE id = ?', [sub, id]);
     await audit.log(req, 'register', { category: 'auth', userId: id, targetType: 'user', targetId: id, details: { via: 'google' } });
-    if (pending) {
-      notifications.notifyAdmins({ type: 'system', title: 'New account waiting for approval', body: `${name} · ${email}`, link: '/admin/users' }).catch(() => {});
-    }
+    if (pending) requestApproval(req, { name, email }).catch(() => {});
     user = await db.one('SELECT * FROM users WHERE id = ?', [id]);
   }
 
