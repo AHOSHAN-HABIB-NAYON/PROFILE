@@ -25,4 +25,10 @@ async function broadcast({ type = 'system', title, body = null, link = null, rol
   return res.affectedRows;
 }
 
-module.exports = { notify, broadcast, TYPES };
+/** Notify every admin (e.g. a new account waiting for approval). */
+async function notifyAdmins(payload) {
+  const admins = await db.query("SELECT id FROM users WHERE role = 'admin' AND status = 'active'");
+  for (const a of admins) await notify(a.id, payload);
+}
+
+module.exports = { notify, broadcast, notifyAdmins, TYPES };

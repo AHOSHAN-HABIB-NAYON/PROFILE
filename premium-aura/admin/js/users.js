@@ -8,7 +8,7 @@ export async function mount(el) {
     endpoint: '/admin/users',
     filters: [
       { name: 'q', type: 'search', label: 'Search name, email or ID…' },
-      { name: 'status', type: 'select', options: [['', 'All status'], ['active', 'Active'], ['suspended', 'Suspended']] },
+      { name: 'status', type: 'select', options: [['', 'All status'], ['pending', 'Pending approval'], ['active', 'Active'], ['suspended', 'Suspended']] },
       { name: 'premium', type: 'select', options: [['', 'All plans'], ['1', 'Premium'], ['0', 'Free']] },
       { name: 'role', type: 'select', options: [['', 'All roles'], ['user', 'Users'], ['admin', 'Admins']] },
     ],
@@ -19,6 +19,7 @@ export async function mount(el) {
         <div class="user-sub">#${u.id} · ${esc(u.email)} · ${num(u.used_resources)} used</div></div>
       <span class="user-bal">${esc(money(u.balance))}</span>
       ${chip(u.status)}
+      ${u.status === 'pending' ? '<button class="btn btn-success btn-xs" data-a="approve">Approve</button>' : ''}
       <button class="icon-mini" data-a="view" aria-label="View details"><i class="fa-solid fa-eye"></i></button>
     </div>`,
     async onAction(a, u, ctx) {
@@ -70,6 +71,10 @@ export async function mount(el) {
         else toast(r.message);
         return;
       }
+      if (a === 'approve') {
+        const r = await api(`/admin/users/${u.id}/approve`, { method: 'POST' });
+        toast(r.message); ctx.reload(); return;
+      }
       if (a === 'suspend' || a === 'unsuspend') {
         if (a === 'suspend' && !(await confirmSheet({ title: 'Suspend user?', message: `${u.email} will be signed out and blocked.`, confirm: 'Suspend', danger: true }))) return;
         const r = await api(`/admin/users/${u.id}/${a}`, { method: 'POST' });
@@ -111,6 +116,7 @@ async function viewUser(row, run) {
       <div class="divider"></div><h3>Recent resources</h3>
       <div class="list">${r.assignments.map((a) => `<div class="list-item"><div class="li-body"><div class="li-title mono">${esc(a.resource_value)}</div><div class="li-sub">${esc(a.country_code)} ${esc(a.app_code)}</div></div>${chip(a.status)}</div>`).join('') || '<div class="muted">None</div>'}</div>`,
     foot: `<div class="row-flex" style="width:100%">${ACTIONS.map(([k, i, l]) => `<button class="btn btn-ghost btn-sm" data-act="${k}"><i class="fa-solid ${i}"></i>${l}</button>`).join('')}
+      ${u.status === 'pending' ? '<button class="btn btn-success btn-sm" data-act="approve"><i class="fa-solid fa-user-check"></i>Approve</button>' : ''}
       ${u.status === 'suspended' ? '<button class="btn btn-success btn-sm" data-act="unsuspend"><i class="fa-solid fa-user-check"></i>Unsuspend</button>'
     : '<button class="btn btn-danger btn-sm" data-act="suspend"><i class="fa-solid fa-user-slash"></i>Suspend</button>'}</div>`,
   });

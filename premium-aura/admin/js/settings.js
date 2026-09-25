@@ -26,6 +26,9 @@ export async function mount(el, ctx) {
     accounts: fieldsHtml([
       { name: 'registration_enabled', label: 'Allow new registrations', type: 'switch', value: s.registration_enabled === '1' },
       { name: 'require_email_verification', label: 'Require email verification', type: 'switch', value: s.require_email_verification === '1' },
+      { name: 'require_admin_approval', label: 'New accounts need admin approval', type: 'switch', value: s.require_admin_approval === '1', hint: 'Off = approved automatically after email verification. On = Pending until you approve (the user is emailed).' },
+      { name: 'support_whatsapp', label: 'Support WhatsApp (shown on the Pending page)', value: s.support_whatsapp, placeholder: '+8801XXXXXXXXX', full: true },
+      { name: 'support_contact_note', label: 'Contact note', value: s.support_contact_note, full: true },
       { name: 'news_demo_engagement_enabled', label: 'Show admin demo engagement on news (labelled DEMO)', type: 'switch', value: s.news_demo_engagement_enabled === '1' },
       { name: 'live_activity_show_code', label: 'Live Activity: show OTP codes', type: 'switch', value: s.live_activity_show_code === '1', hint: 'Off = "OTP received" only. Numbers always stay masked.' },
     ]),

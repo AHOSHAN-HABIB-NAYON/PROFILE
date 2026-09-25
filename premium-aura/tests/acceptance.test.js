@@ -539,6 +539,28 @@ test('admin user management: suspend blocks sessions, audit log records it', asy
   assert.ok(logs.data.items.some((l) => l.action === 'user.suspend'));
 });
 
+test('admin approval: verify email → Pending with WhatsApp contact → approve → email → login', async () => {
+  await admin.put('/api/admin/settings', { require_admin_approval: '1', require_email_verification: '1', support_whatsapp: '+8801757827996' });
+  const email = `pending_${RUN}@example.com`;
+  const c = new Client();
+  assert.equal((await c.post('/api/auth/register', { name: 'Pending User', email, password: 'Pending123', password_confirm: 'Pending123' })).status, 201);
+  const link = lastMailLink(email, '/verify-email');
+  const v = await c.req('GET', new URL(link).pathname + new URL(link).search);
+  assert.match(v.headers.get('location'), /verified=pending/, 'verification lands on the Pending page');
+  const l = await c.login(email, 'Pending123');
+  assert.equal(l.status, 403);
+  assert.equal(l.data.code, 'ACCOUNT_PENDING');
+  assert.equal(l.data.contact.whatsapp, '+8801757827996');
+  const adminNote = (await admin.get('/api/notifications')).data.items.find((n) => n.title === 'New account waiting for approval');
+  assert.ok(adminNote, 'admins are notified');
+  const id = (await admin.get(`/api/admin/users?q=${encodeURIComponent(email)}&status=pending`)).data.items[0].id;
+  assert.equal((await admin.post(`/api/admin/users/${id}/approve`)).status, 200);
+  const mails = fs.readFileSync(MAIL_LOG, 'utf8').trim().split('\n').map((x) => JSON.parse(x).meta);
+  assert.ok(mails.some((m) => m.to === email && /approved/i.test(m.subject)), 'approval email sent');
+  assert.equal((await c.login(email, 'Pending123')).status, 200, 'approved user can sign in');
+  await admin.put('/api/admin/settings', { require_admin_approval: '0' });
+});
+
 test('PWA manifest, service worker, security headers, JSON errors without stack traces', async () => {
   const m = await fetch(`${BASE}/manifest.json`);
   const mj = await m.json();

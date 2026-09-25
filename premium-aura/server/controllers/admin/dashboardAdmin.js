@@ -6,7 +6,7 @@ const money = require('../../utils/money');
 
 exports.stats = async (req, res) => {
   const [[users], [resources], [events], [demoRow], providers, [payments], [withdrawals], [premium], [news], [notifs], [wallets], series] = await Promise.all([
-    db.query(`SELECT COUNT(*) AS total, SUM(status = 'suspended') AS suspended, SUM(last_active_at > UTC_TIMESTAMP() - INTERVAL 5 MINUTE) AS online,
+    db.query(`SELECT COUNT(*) AS total, SUM(status = 'suspended') AS suspended, SUM(status = 'pending') AS pending, SUM(last_active_at > UTC_TIMESTAMP() - INTERVAL 5 MINUTE) AS online,
               SUM(created_at > UTC_TIMESTAMP() - INTERVAL 1 DAY) AS new_today FROM users`),
     db.query(`SELECT COUNT(*) AS total, SUM(status = 'available') AS available, SUM(status = 'assigned') AS assigned FROM authorized_resources`),
     db.query(`SELECT COUNT(*) AS total, SUM(status = 'received') AS live, SUM(received_at > UTC_TIMESTAMP() - INTERVAL 1 DAY) AS today FROM event_records`),
@@ -23,7 +23,7 @@ exports.stats = async (req, res) => {
   const n = (x) => Number(x || 0);
   res.json({
     ok: true,
-    users: { total: n(users.total), online: n(users.online), sockets: realtime.onlineCount(), suspended: n(users.suspended), new_today: n(users.new_today) },
+    users: { total: n(users.total), online: n(users.online), sockets: realtime.onlineCount(), suspended: n(users.suspended), pending: n(users.pending), new_today: n(users.new_today) },
     resources: { total: n(resources.total), available: n(resources.available), assigned: n(resources.assigned) },
     events: { total: n(events.total), live: n(events.live), today: n(events.today), demo_live: n(demoRow.live), demo_running: demo.status().running },
     providers,

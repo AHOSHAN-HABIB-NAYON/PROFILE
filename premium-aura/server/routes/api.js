@@ -29,6 +29,7 @@ router.get('/me', ah(user.me));
 
 // ---- auth
 router.get('/auth/csrf', auth.csrf);
+router.get('/public/contact', ah(auth.contact));
 router.post('/auth/register', authLimiter, ah(auth.register));
 router.post('/auth/login', loginLimiter, ah(auth.login));
 router.post('/auth/2fa', loginLimiter, ah(auth.twofa));

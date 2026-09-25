@@ -98,6 +98,24 @@ async function setStatus(req, id, status) {
 exports.suspend = async (req, res) => { await setStatus(req, v.id(req.params.id), 'suspended'); res.json({ ok: true, message: 'User suspended' }); };
 exports.unsuspend = async (req, res) => { await setStatus(req, v.id(req.params.id), 'active'); res.json({ ok: true, message: 'User reactivated' }); };
 
+exports.approve = async (req, res) => {
+  const id = v.id(req.params.id);
+  const u = await db.one('SELECT id, name, email, status FROM users WHERE id = ?', [id]);
+  if (!u) throw E.notFound('User not found');
+  if (u.status !== 'pending') throw E.conflict('This account is not waiting for approval');
+  await db.run("UPDATE users SET status = 'active' WHERE id = ?", [id]);
+  const site = await require('../../models/settings').get('site_name');
+  const url = `${config.appUrl || `${req.protocol}://${req.get('host')}`}/login`;
+  await mailer.send({
+    to: u.email, subject: `Your ${site} account is approved 🎉`, title: `Welcome, ${u.name}!`,
+    text: `Good news — your ${site} account has been approved. You can sign in and start using it now.`,
+    cta: { url, label: 'Sign in now' },
+  });
+  await notifications.notify(id, { type: 'system', title: 'Account approved', body: 'Welcome! Your account is active.', link: '/dashboard' });
+  await audit.log(req, 'user.approve', { targetType: 'user', targetId: id });
+  res.json({ ok: true, message: 'Account approved — the user was emailed' });
+};
+
 exports.resetPassword = async (req, res) => {
   const id = v.id(req.params.id);
   const u = await db.one('SELECT id, email FROM users WHERE id = ?', [id]);

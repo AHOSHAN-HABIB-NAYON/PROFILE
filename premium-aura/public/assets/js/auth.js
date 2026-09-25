@@ -9,6 +9,28 @@ function alertBox(type, msg) {
   return `<div class="alert ${type}" role="alert"><i class="fa-solid ${icon}"></i><span>${esc(msg)}</span></div>`;
 }
 
+function waLink(num) {
+  const d = String(num || '').replace(/[^\d]/g, '');
+  return d ? `https://wa.me/${d}` : '';
+}
+
+/** "Waiting for approval" screen with the admin's WhatsApp contact. */
+function pendingView(contact = {}, verified = false) {
+  const wa = contact.whatsapp || state.site.support_whatsapp || '';
+  const note = contact.note || state.site.support_contact_note || '';
+  root.innerHTML = `<a class="brand" href="/login">${brandHtml()}</a>
+    <div class="pending-box">
+      <div class="pending-icon"><i class="fa-solid fa-hourglass-half"></i></div>
+      ${verified ? '<div class="alert success" style="justify-content:center"><i class="fa-solid fa-circle-check"></i><span>Email verified!</span></div>' : ''}
+      <h1>Account Pending</h1>
+      <p class="sub">Your account is waiting for admin approval. You will get an email as soon as it is approved.</p>
+      ${wa ? `<div class="contact-card"><div class="small muted">${esc(note)}</div>
+        <div class="contact-row"><i class="fa-brands fa-whatsapp"></i><span>WhatsApp</span><strong class="mono">${esc(wa)}</strong></div>
+        <a class="btn btn-wa btn-block" href="${esc(waLink(wa))}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i>Contact on WhatsApp</a></div>` : ''}
+      <a class="btn btn-ghost btn-block" href="/login" style="margin-top:10px">Back to login</a>
+    </div>`;
+}
+
 function field({ name, type = 'text', label, icon, placeholder = '', autocomplete = '', extra = '' }) {
   const pw = type === 'password';
   return `<div class="field"><label for="f-${name}">${esc(label)}</label><div class="input-group"><i class="fa-solid ${icon}"></i>
@@ -93,6 +115,7 @@ const handlers = {
     if (d.password !== d.password_confirm) throw new Error('Passwords do not match');
     const r = await api('/auth/register', { method: 'POST', body: d });
     if (r.verify_required) { form.reset(); msg('success', r.message); return; }
+    if (r.pending) { pendingView(r.contact); return; }
     location.href = r.redirect || '/dashboard';
   },
   async forgot(form) {
@@ -121,7 +144,9 @@ root.addEventListener('submit', async (e) => {
     try {
       await handlers[form.dataset.form](form);
     } catch (err) {
-      if (err.body?.code === 'EMAIL_UNVERIFIED') {
+      if (err.body?.code === 'ACCOUNT_PENDING') {
+        pendingView(err.body.contact);
+      } else if (err.body?.code === 'EMAIL_UNVERIFIED') {
         msg('warning', err.message);
         const email = form.email.value;
         const box = $('[data-msg]', root);
@@ -159,6 +184,12 @@ root.addEventListener('click', (e) => {
   } catch (err) {
     if (err.status === 503 && err.body?.install) { location.href = '/install'; return; }
     state.site = { site_name: 'Premium Aura', site_subtitle: 'Vip Acess Only', registration_enabled: '1' };
+  }
+  if (params.get('verified') === 'pending') {
+    let contact = {};
+    try { contact = (await api('/public/contact')).contact; } catch { /* ignore */ }
+    pendingView(contact, true);
+    return;
   }
   show(viewFor(location.pathname));
 })();

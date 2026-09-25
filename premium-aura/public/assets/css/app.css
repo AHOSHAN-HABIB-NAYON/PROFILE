@@ -651,3 +651,12 @@ table.table { width: 100%; border-collapse: separate; border-spacing: 0; }
 .range-item.na .chip { flex: none; }
 .act-code { font-size: 14px; font-weight: 800; color: var(--primary); white-space: nowrap; letter-spacing: .05em; border: 0; background: none; cursor: pointer; padding: 0; }
 .act-code i { font-size: 11px; color: #f59e0b; }
+
+/* pending approval screen */
+.pending-box { text-align: center; }
+.pending-icon { width: 72px; height: 72px; border-radius: 22px; margin: 4px auto 14px; display: grid; place-items: center; font-size: 30px; color: #fff; background: linear-gradient(135deg, #f59e0b, #f97316); box-shadow: 0 12px 30px rgba(249, 115, 22, .35); animation: float 3s ease-in-out infinite; }
+.contact-card { text-align: left; padding: 14px; border-radius: 16px; background: var(--card-2); border: 1px solid var(--border); margin-top: 6px; }
+.contact-row { display: flex; align-items: center; gap: 8px; margin: 8px 0 12px; font-size: 15px; }
+.contact-row i { color: #25D366; font-size: 22px; }
+.contact-row strong { margin-left: auto; }
+.btn-wa { background: #25D366; color: #fff; box-shadow: 0 10px 22px rgba(37, 211, 102, .3); }

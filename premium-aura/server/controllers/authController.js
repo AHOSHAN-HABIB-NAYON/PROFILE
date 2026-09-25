@@ -4,6 +4,7 @@ const config = require('../config/env');
 const settings = require('../models/settings');
 const User = require('../models/user');
 const audit = require('../models/auditLog');
+const notifications = require('../models/notification');
 const twofa = require('../services/twofa');
 const mailer = require('../services/mailer');
 const v = require('../utils/validate');
@@ -69,11 +70,18 @@ exports.register = async (req, res) => {
   const password = v.password(req.body.password);
   if (req.body.password_confirm !== undefined && req.body.password_confirm !== password) throw E.badRequest('Passwords do not match');
   const requireVerify = await settings.getBool('require_email_verification');
-  const id = await User.create({ name, email, password, verified: !requireVerify });
+  const requireApproval = await settings.getBool('require_admin_approval');
+  const id = await User.create({ name, email, password, verified: !requireVerify, status: requireApproval ? 'pending' : 'active' });
   await audit.log(req, 'register', { category: 'auth', userId: id, targetType: 'user', targetId: id });
+  if (requireApproval) {
+    notifications.notifyAdmins({ type: 'system', title: 'New account waiting for approval', body: `${name} · ${email}`, link: '/admin/users' }).catch(() => {});
+  }
   if (requireVerify) {
     await sendVerification(req, id, email, name);
     return res.status(201).json({ ok: true, verify_required: true, message: 'Account created! Check your email to verify your address.' });
+  }
+  if (requireApproval) {
+    return res.status(201).json({ ok: true, pending: true, contact: await contactInfo(), message: 'Account created! It is waiting for admin approval.' });
   }
   const user = await db.one('SELECT * FROM users WHERE id = ?', [id]);
   await finalizeLogin(req, user, false);
@@ -107,6 +115,10 @@ exports.login = async (req, res) => {
   if (!user.email_verified_at && (await settings.getBool('require_email_verification'))) {
     throw E.forbidden('Please verify your email address before signing in.', { code: 'EMAIL_UNVERIFIED' });
   }
+  if (user.status === 'pending') {
+    throw E.forbidden('Your account is waiting for admin approval.', { code: 'ACCOUNT_PENDING', contact: await contactInfo() });
+  }
+
   if (await twofa.isEnabled(user.id)) {
     req.session.pending2fa = { userId: user.id, remember, at: Date.now() };
     return res.json({ ok: true, twofa: true });
@@ -155,7 +167,8 @@ exports.verifyEmail = async (req, res) => {
   await db.run('UPDATE users SET email_verified_at = UTC_TIMESTAMP() WHERE id = ? AND email_verified_at IS NULL', [sec.user_id]);
   await db.run('UPDATE user_security SET email_verify_token_hash = NULL, email_verify_expires_at = NULL WHERE user_id = ?', [sec.user_id]);
   await audit.log(req, 'email.verified', { category: 'auth', userId: sec.user_id });
-  res.redirect('/login?verified=1');
+  const u = await db.one('SELECT status FROM users WHERE id = ?', [sec.user_id]);
+  res.redirect(u?.status === 'pending' ? '/login?verified=pending' : '/login?verified=1');
 };
 
 exports.resendVerification = async (req, res) => {
@@ -204,6 +217,13 @@ exports.reset = async (req, res) => {
   await audit.log(req, 'password.reset', { category: 'security', userId: sec.user_id });
   res.json({ ok: true, message: 'Password updated. You can now sign in.' });
 };
+
+async function contactInfo() {
+  const s = await settings.loadAll();
+  return { whatsapp: s.support_whatsapp || '', note: s.support_contact_note || '' };
+}
+
+exports.contact = async (req, res) => res.json({ ok: true, contact: await contactInfo() });
 
 exports.finalizeLogin = finalizeLogin;
 exports.sendVerification = sendVerification;

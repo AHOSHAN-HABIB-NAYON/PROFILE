@@ -8,13 +8,13 @@ const BCRYPT_COST = 12;
 const hashPassword = (pw) => bcrypt.hash(pw, BCRYPT_COST);
 const verifyPassword = (pw, hash) => bcrypt.compare(String(pw || ''), hash || '');
 
-async function create({ name, email, password, role = 'user', verified = false }, conn = db) {
+async function create({ name, email, password, role = 'user', verified = false, status = 'active' }, conn = db) {
   const exists = await conn.one('SELECT id FROM users WHERE email = ?', [email]);
   if (exists) throw E.conflict('An account with this email already exists');
   const hash = await hashPassword(password);
   const res = await conn.run(
     'INSERT INTO users (name, email, password_hash, role, status, email_verified_at) VALUES (?,?,?,?,?,?)',
-    [name, email, hash, role, 'active', verified ? new Date() : null],
+    [name, email, hash, role, status, verified ? new Date() : null],
   );
   await conn.run('INSERT INTO user_security (user_id, password_changed_at) VALUES (?, UTC_TIMESTAMP())', [res.insertId]);
   await conn.run('INSERT INTO wallets (user_id) VALUES (?)', [res.insertId]);

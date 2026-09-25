@@ -27,6 +27,10 @@ const DEFAULTS = {
   // Accounts
   registration_enabled: '1',
   require_email_verification: '1',
+  // New accounts wait for admin approval (after email verification) when enabled
+  require_admin_approval: '0',
+  support_whatsapp: '',
+  support_contact_note: 'Contact us on WhatsApp to get your account approved faster.',
   // Wallet
   event_reward: '0.0100',
   min_withdrawal: '50.00',
@@ -58,7 +62,7 @@ const PUBLIC_KEYS = [
   'site_name', 'site_subtitle', 'logo_url', 'favicon_url', 'pwa_icon_url', 'login_background_url',
   'primary_color', 'accent_color', 'footer_text', 'default_timezone', 'default_theme',
   'pwa_name', 'pwa_short_name', 'pwa_theme_color', 'pwa_background_color',
-  'registration_enabled', 'currency_symbol', 'min_withdrawal', 'event_reward', 'feed_page_size',
+  'registration_enabled', 'support_whatsapp', 'support_contact_note', 'currency_symbol', 'min_withdrawal', 'event_reward', 'feed_page_size',
 ];
 
 let cache = null;

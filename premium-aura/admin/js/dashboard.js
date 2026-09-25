@@ -8,7 +8,7 @@ export async function mount(el, { live }) {
       <div><div class="label">${esc(label)}</div><div class="value" data-count="${esc(value)}">${esc(value)}</div>${sub ? `<div class="sub muted" style="color:var(--muted)">${sub}</div>` : ''}</div></${href ? 'a' : 'div'}>`;
     el.innerHTML = `${pageHead('fa-solid fa-gauge-high', 'Admin Dashboard', 'Everything at a glance')}
     <div class="grid grid-stats">
-      ${card('fa-solid fa-users', '', 'Users', s.users.total, `${num(s.users.new_today)} new today · ${num(s.users.suspended)} suspended`, '/admin/users')}
+      ${card('fa-solid fa-users', '', 'Users', s.users.total, `${num(s.users.new_today)} new today${s.users.pending ? ` · <strong style="color:#b45309">${num(s.users.pending)} pending approval</strong>` : ''}`, '/admin/users')}
       ${card('fa-solid fa-signal', 'green', 'Online Users', s.users.online, `${num(s.users.sockets)} live connections`)}
       ${card('fa-solid fa-sim-card', 'purple', 'Resources', s.resources.total, `${num(s.resources.available)} available · ${num(s.resources.assigned)} assigned`, '/admin/access')}
       ${card('fa-solid fa-bolt', 'cyan', 'Events', s.events.total, `${num(s.events.today)} today · ${num(s.events.demo_live)} demo ${s.events.demo_running ? '<span class="chip demo">running</span>' : ''}`, '/admin/events')}
