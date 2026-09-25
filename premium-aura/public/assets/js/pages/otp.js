@@ -1,25 +1,16 @@
-import { api, esc, $, $$, appIcon, appInfo, pageHead, relEl, fmtTime, pagination, copyText, playSound, flag, APP_LIST, debounce, num, state } from '../core.js';
+import { api, esc, $, $$, appIcon, appInfo, pageHead, relEl, pagination, copyText, playSound, flag, APP_LIST, debounce, num, state } from '../core.js';
 
-function activityRow(a, isNew = false) {
-  const app = appInfo(a.application);
-  return `<div class="act-row${isNew ? ' new' : ''}" data-key="${esc(a.key)}">${flag(a.flag_code)}${appIcon(a.application, 'sm')}
-    <div class="act-main"><div class="act-title">${esc(a.country_code || '')} · ${esc(app.n)}</div><div class="act-num mono">${esc(a.number || '')}</div></div>
-    <div class="act-end">${a.code ? `<button class="act-code mono" data-copy="${esc(a.code)}" title="Copy"><i class="fa-solid fa-key"></i> ${esc(a.code)}</button>` : '<span class="act-ok"><i class="fa-solid fa-circle-check"></i> OTP received</span>'}<span class="act-time">${relEl(a.received_at)}</span></div></div>`;
-}
-
+/** One OTP: flag · app logo · name / masked number · tap-to-copy code / live "x sec ago". */
 function row(ev, isNew = false) {
   const a = appInfo(ev.application);
-  const statusChip = ev.is_demo ? '<span class="chip demo">DEMO</span>' : `<span class="chip ${esc(ev.status)}">${esc(ev.status)}</span>`;
-  return `<div class="otp-row${isNew ? ' new' : ''}" data-key="${esc(ev.key)}">
-    ${appIcon(ev.application)}
-    <div class="otp-meta">
-      <div class="otp-top"><span class="otp-short">${esc(a.code)}</span>${ev.country_code ? `<span class="small muted">${esc(ev.country_code)}</span>` : ''}${statusChip}${ev.mine ? '<span class="chip success">Your number</span>' : ''}</div>
-      <div class="otp-code">${esc(ev.code)}</div>
-      ${ev.resource_value || ev.number ? `<div class="otp-number"><i class="fa-solid fa-mobile-screen"></i> ${esc(state.user.role === 'admin' && ev.resource_value ? ev.resource_value : ev.number)}</div>` : ''}
-      <div class="otp-time" title="${esc(ev.received_at)}">${esc(fmtTime(ev.received_at))} · ${relEl(ev.received_at)}${state.user.role === 'admin' && ev.provider ? ` · ${esc(ev.provider)}` : ''}</div>
-    </div>
-    <div class="otp-end"><button class="copy-btn" data-copy="${esc(ev.code)}" aria-label="Copy OTP"><i class="fa-regular fa-copy"></i></button></div>
-  </div>`;
+  const admin = state.user.role === 'admin';
+  const number = admin && ev.resource_value ? ev.resource_value : ev.number;
+  const title = [ev.country_code, a.n].filter(Boolean).join(' · ');
+  const tag = ev.is_demo ? '<span class="chip demo">DEMO</span>' : ev.mine ? '<span class="chip success">Your number</span>' : '';
+  return `<div class="act-row otp-item${isNew ? ' new' : ''}" data-key="${esc(ev.key)}">${flag(ev.country_code)}${appIcon(ev.application, 'sm')}
+    <div class="act-main"><div class="act-title">${esc(title)} ${tag}</div><div class="act-num mono">${esc(number || '')}</div>
+      ${admin && ev.provider ? `<div class="small muted">${esc(ev.provider)}</div>` : ''}</div>
+    <div class="act-end"><button class="act-code mono" data-copy="${esc(ev.code)}" title="Tap to copy"><i class="fa-regular fa-copy"></i> ${esc(ev.code)}</button>${relEl(ev.received_at)}</div></div>`;
 }
 
 export async function mount(el, { query, live }) {
@@ -31,16 +22,11 @@ export async function mount(el, { query, live }) {
   const queue = [];
   let flushTimer = null;
 
-  el.innerHTML = `${pageHead('fa-solid fa-shield-halved', 'OTP Services', 'Live OTPs from authorized sources', '<span class="conn-state" data-conn><span class="live-dot"></span><span>Connecting…</span></span>')}
-  <div class="card activity-card" style="margin-bottom:16px">
-    <div class="card-head"><h2><i class="fa-solid fa-bolt" style="color:#f59e0b"></i> Live Activity</h2><span class="chip live">Live</span><span class="link small muted" data-act-total></span></div>
-    <div class="act-list" data-activity><div class="skeleton" style="height:52px;border-radius:14px"></div></div>
-    <p class="small muted" style="margin:8px 0 0">Real OTPs received by members in the last 24 hours. Numbers are partly hidden.</p>
-  </div>
+  el.innerHTML = `${pageHead('fa-solid fa-shield-halved', 'OTP Services', 'Live OTPs · tap a code to copy', '<span class="conn-state" data-conn><span class="live-dot"></span><span>Connecting…</span></span>')}
   <div class="card">
     <div class="tabs" data-tabs><button class="tab active" data-app="">All</button>${APP_LIST.slice(0, 8).map((a) => `<button class="tab" data-app="${a.code}">${a.code}</button>`).join('')}</div>
     <div class="search-box" style="margin:12px 0"><i class="fa-solid fa-magnifying-glass"></i><input class="input" type="search" placeholder="Last 4 digits of number, or OTP code" data-q value="${esc(q)}" maxlength="15" inputmode="search"></div>
-    <div class="otp-list" data-list></div>
+    <div class="act-list" data-list></div>
     <div data-pages></div>
     <p class="small muted center" style="margin:14px 0 0" data-foot></p>
   </div>
@@ -50,7 +36,7 @@ export async function mount(el, { query, live }) {
 
   async function load(p = page) {
     page = p;
-    list.innerHTML = Array.from({ length: 6 }, () => '<div class="skeleton" style="height:74px;border-radius:16px"></div>').join('');
+    list.innerHTML = Array.from({ length: 6 }, () => '<div class="skeleton" style="height:58px;border-radius:14px"></div>').join('');
     const r = await api('/events', { query: { page, app, q } });
     seen.clear();
     r.items.forEach((x) => seen.add(x.key));
@@ -83,7 +69,7 @@ export async function mount(el, { query, live }) {
     list.querySelector('.empty')?.remove();
     const html = queue.splice(0).reverse().map((ev) => row(ev, true)).join('');
     list.insertAdjacentHTML('afterbegin', html);
-    const rows = list.querySelectorAll('.otp-row');
+    const rows = list.querySelectorAll('.otp-item');
     for (let i = 30; i < rows.length; i += 1) rows[i].remove();
     playSound('event');
   }
@@ -118,34 +104,12 @@ export async function mount(el, { query, live }) {
   });
   $('[data-q]', el).addEventListener('input', debounce((e) => { q = e.target.value.trim().replace(/[^A-Za-z0-9]/g, ''); load(1); }, 350));
 
-  async function loadActivity() {
-    try {
-      const a = await api('/activity');
-      $('[data-activity]', el).innerHTML = a.items.length ? a.items.slice(0, 8).map((x) => activityRow(x)).join('')
-        : '<div class="empty" style="padding:14px"><i class="fa-solid fa-satellite-dish"></i><div>Waiting for the next OTP…</div></div>';
-      $('[data-act-total]', el).textContent = `${num(a.today)} OTPs today`;
-      actToday = a.today;
-    } catch { /* ignore */ }
-  }
-  let actToday = 0;
-  function onActivity(a) {
-    const box = $('[data-activity]', el);
-    if (!box || box.querySelector(`[data-key="${a.key}"]`)) return;
-    box.querySelector('.empty')?.remove();
-    box.insertAdjacentHTML('afterbegin', activityRow(a, true));
-    const rows = box.querySelectorAll('.act-row');
-    for (let i = 8; i < rows.length; i += 1) rows[i].remove();
-    actToday += 1;
-    $('[data-act-total]', el).textContent = `${num(actToday)} OTPs today`;
-    playSound('event');
-  }
 
-  await Promise.all([load(1), loadActivity()]);
+  await load(1);
   setConn(live.connected);
   const offs = [
     live.on('event:new', enqueue),
     live.on('event:public', (ev) => { if (state.user.role !== 'admin') enqueue(ev); }),
-    live.on('activity:new', onActivity),
     live.on('admin:event', (ev) => { if (state.user.role === 'admin') enqueue(ev); }),
     live.on('live:state', setConn),
     live.on('events:expired', debounce(() => { if (page === 1) load(1); }, 2000)),

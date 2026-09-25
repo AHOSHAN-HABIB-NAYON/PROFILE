@@ -667,3 +667,12 @@ table.table { width: 100%; border-collapse: separate; border-spacing: 0; }
 .auth-or { display: flex; align-items: center; gap: 12px; margin: 16px 0; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
 .auth-or::before, .auth-or::after { content: ""; flex: 1; height: 1px; background: var(--border); }
 .lost-2fa { margin-top: 12px; }
+
+/* OTP page rows (Live Activity style) */
+.otp-item { padding: 10px 12px; }
+.otp-item .flag { width: 30px; height: 30px; }
+.otp-item .act-title .chip { font-size: 10px; padding: 1px 7px; vertical-align: middle; }
+.otp-item .act-code { font-size: 18px; padding: 4px 10px; border-radius: 10px; background: color-mix(in srgb, var(--primary) 10%, transparent); transition: transform .15s var(--ease), background .2s; }
+.otp-item .act-code:active { transform: scale(.94); }
+.otp-item .act-code i { color: var(--primary); font-size: 12px; }
+.act-end time { font-size: 11px; color: var(--muted); white-space: nowrap; }

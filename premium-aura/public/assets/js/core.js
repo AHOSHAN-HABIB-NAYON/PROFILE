@@ -160,9 +160,9 @@ export function relTime(iso) {
   if (!iso) return '';
   const d = new Date(iso);
   const s = Math.round((Date.now() - d.getTime()) / 1000);
-  if (s < 10) return 'just now';
+  if (s < 1) return 'just now';
   if (s < 60) return `${s} sec ago`;
-  const m = Math.round(s / 60);
+  const m = Math.floor(s / 60);
   if (m < 60) return `${m} min ago`;
   const h = Math.round(m / 60);
   if (h < 24) return `${h} hour${h > 1 ? 's' : ''} ago`;
@@ -179,7 +179,14 @@ export const fmtDateTime = (iso) => fmtDate(iso, { day: 'numeric', month: 'short
 export const fmtTime = (iso) => fmtDate(iso, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
 // keep relative timestamps fresh
-setInterval(() => { for (const el of $$('[data-rel]')) el.textContent = relTime(el.dataset.rel); }, 30_000);
+// Live "x sec ago" labels: every second for the first minute, then every 30 seconds.
+let relTick = 0;
+setInterval(() => {
+  relTick += 1;
+  for (const el of $$('[data-rel]')) {
+    if (relTick % 30 === 0 || Date.now() - new Date(el.dataset.rel).getTime() < 61_000) el.textContent = relTime(el.dataset.rel);
+  }
+}, 1000);
 export const relEl = (iso) => `<time data-rel="${esc(iso)}" datetime="${esc(iso)}" title="${esc(fmtDateTime(iso))}">${esc(relTime(iso))}</time>`;
 
 // ------------------------------------------------------------------ money / numbers

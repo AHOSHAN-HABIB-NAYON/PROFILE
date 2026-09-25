@@ -33,7 +33,6 @@ export async function mount(el, ctx) {
       { name: 'twofa_email_recovery', label: 'Lost authenticator: allow sign-in with an email code', type: 'switch', value: s.twofa_email_recovery === '1', hint: 'The code turns 2FA off so the user can set it up again. Off = recovery codes or admin "Reset 2FA" only.' },
       { name: 'news_demo_engagement_enabled', label: 'Show admin demo engagement on news (labelled DEMO)', type: 'switch', value: s.news_demo_engagement_enabled === '1' },
       { name: 'otp_public_feed', label: 'OTP page: show every OTP from the APIs', type: 'switch', value: s.otp_public_feed === '1', hint: 'On = all OTPs (also numbers not imported), numbers masked, searchable by last digits. Off = each user sees only their own numbers.' },
-      { name: 'live_activity_show_code', label: 'Live Activity: show OTP codes', type: 'switch', value: s.live_activity_show_code === '1', hint: 'Off = "OTP received" only. Numbers always stay masked.' },
     ]),
     google: fieldsHtml([
       { name: 'google_login_enabled', label: 'Enable "Continue with Google"', type: 'switch', value: s.google_login_enabled === '1', hint: 'The button appears on Login & Register once Client ID and Secret are saved.' },

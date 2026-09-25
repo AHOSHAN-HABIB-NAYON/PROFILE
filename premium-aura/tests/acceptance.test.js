@@ -358,10 +358,15 @@ test('OTP page: every API OTP is shown (masked), searchable by last 4 digits; ot
   mockRecords = [
     { id: `pub-${RUN}-1`, number: unlisted, message: 'Your WhatsApp code 734-512' }, // not imported
     { id: `pub-${RUN}-2`, number: `+${stored.slice(0, 3)} ${stored.slice(3)}`, message: 'WhatsApp code 918273' }, // same number, other format
+    { id: `pub-${RUN}-3`, number: `8801${NUM}9`, from: `Mock ${RUN}`, message: 'Your code 445566' }, // provider's own name as sender
   ];
   const poll = await admin.post(`/api/admin/providers/${p.id}/poll`);
-  assert.equal(poll.data.result.inserted, 2, JSON.stringify(poll.data));
-  assert.equal(poll.data.result.unlisted, 1);
+  assert.equal(poll.data.result.inserted, 3, JSON.stringify(poll.data));
+  assert.equal(poll.data.result.unlisted, 2);
+  const bd = (await user.get(`/api/events?q=${NUM.slice(-3)}9`)).data.items.find((x) => x.code === '445566');
+  assert.equal(bd.application, 'SMS', 'provider name is never shown as the app');
+  assert.equal(bd.country_code, 'BD', 'country guessed from the number');
+  assert.equal(JSON.stringify(bd).includes('Mock'), false, 'users never see the provider name');
 
   // the owner gets the OTP on the Get Number list even though the provider wrote the number differently
   const mineRow = (await owner.get('/api/resources/mine')).data.items.find((x) => x.id === a.data.assignment.id);
@@ -372,6 +377,7 @@ test('OTP page: every API OTP is shown (masked), searchable by last 4 digits; ot
   const hit = byTail.data.items.find((x) => x.code === '734512');
   assert.ok(hit, 'unlisted number OTP is found by its last 4 digits');
   assert.equal(hit.number, `${unlisted.slice(0, 4)}••••${unlisted.slice(-4)}`);
+  assert.equal(hit.country_code, 'GB', 'country guessed from +44');
   assert.equal(JSON.stringify(byTail.data).includes(unlisted), false, 'full number never sent');
   assert.ok(byTail.data.items.every((x) => x.number.endsWith(unlisted.slice(-4))), 'search only returns matching numbers');
   const ownFeed = (await owner.get(`/api/events?q=${stored.slice(-4)}`)).data.items.find((x) => x.code === '918273');

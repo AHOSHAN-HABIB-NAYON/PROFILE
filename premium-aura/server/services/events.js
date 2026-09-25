@@ -10,6 +10,7 @@ const wallet = require('../models/wallet');
 const realtime = require('./realtime');
 const money = require('../utils/money');
 const { sha256 } = require('../utils/crypto');
+const { countryFromNumber } = require('../utils/dialCodes');
 
 const digits = (s) => String(s || '').replace(/\D+/g, '');
 
@@ -45,6 +46,12 @@ async function findResource(value, application = null) {
   return hits[0] || null;
 }
 
+const alnum = (s) => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+/** Some providers put their own name in the sender field — never show a provider name as the app. */
+function appLabel(application, providerName) {
+  return providerName && alnum(application) && alnum(application) === alnum(providerName) ? 'SMS' : application;
+}
+
 /** 211927455905 → 2119••••5905 */
 function maskNumber(v) {
   const s = String(v || '');
@@ -57,8 +64,8 @@ function publicEvent(row, { forAdmin = false, userId = null } = {}) {
     key: `${row.kind === 'demo' ? 'd' : 'e'}${row.id}`,
     id: row.id,
     kind: row.kind,
-    application: row.application,
-    country_code: row.country_code,
+    application: appLabel(row.application, row.provider_name),
+    country_code: row.country_code || countryFromNumber(row.resource_value),
     code: row.code,
     status: row.kind === 'demo' ? 'DEMO' : row.status,
     is_demo: row.kind === 'demo',
@@ -93,8 +100,10 @@ async function ingest(provider, events, sourceId = null) {
     if (!found && !publicFeed) { stats.unauthorized += 1; continue; }
     // A number that is not in the system is still shown on the public OTP page (masked), but belongs to nobody.
     const resource = found || {
-      id: null, resource_value: String(ev.resource).slice(0, 64), country_code: ev.country_code, country_name: ev.country, app_code: ev.application, app_name: ev.service,
+      id: null, resource_value: String(ev.resource).slice(0, 64), country_code: ev.country_code || countryFromNumber(ev.resource),
+      country_name: ev.country, app_code: ev.application, app_name: ev.service,
     };
+    ev.application = appLabel(ev.application, provider.name);
     const externalId = ev.id || null;
     const hash = sha256([provider.id, externalId || '', digits(ev.resource) || ev.resource, ev.code,
       externalId ? '' : ev.received_at.toISOString().slice(0, 16)].join('|'));
@@ -161,7 +170,8 @@ async function ingest(provider, events, sourceId = null) {
 function activityItem(r, showCode = false) {
   return {
     code: showCode ? r.code : null,
-    key: `a${r.id}`, application: r.application, country_code: r.country_code, flag_code: r.flag_code || String(r.country_code || '').toLowerCase().slice(0, 2),
+    key: `a${r.id}`, application: r.application, country_code: r.country_code || countryFromNumber(r.resource_value),
+    flag_code: r.flag_code || String(r.country_code || countryFromNumber(r.resource_value) || '').toLowerCase().slice(0, 2),
     number: maskNumber(r.resource_value), received_at: new Date(r.received_at).toISOString(),
   };
 }
