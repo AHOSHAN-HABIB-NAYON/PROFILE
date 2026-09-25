@@ -282,6 +282,7 @@ test('SQL injection attempts are treated as data', async () => {
 });
 
 test('API provider polling: normalize, authorize, dedupe, reward, health', async () => {
+  await admin.put('/api/admin/settings', { otp_public_feed: '0' });
   const mine = (await user.get('/api/resources/mine')).data.items;
   const number = mine[0].resource_value;
   mockRecords = [
@@ -334,6 +335,52 @@ test('API provider polling: normalize, authorize, dedupe, reward, health', async
   }
   await admin.post(`/api/admin/providers/${p.id}/toggle`, { enabled: false });
   assert.ok(found, 'enabled provider is polled automatically');
+  await admin.put('/api/admin/settings', { otp_public_feed: '1' });
+});
+
+test('OTP page: every API OTP is shown (masked), searchable by last 4 digits; other number formats still reach the owner', async () => {
+  await admin.put('/api/admin/settings', { otp_public_feed: '1' });
+  const p = (await admin.get('/api/admin/providers')).data.items.find((x) => x.name === `Mock ${RUN}`);
+  // a one-number service so we know which number the new user gets
+  const sc = await admin.post('/api/admin/services', { country_name: 'Iraq', country_code: 'IQ', flag_code: 'iq', app_name: 'WhatsApp', app_code: `W${RUN}`.toUpperCase().slice(0, 16), status: 'active' });
+  const stored = `964${NUM}88`; // stored without "+"
+  const fd = new FormData();
+  fd.append('file', new Blob([`${stored}\n`], { type: 'text/plain' }), 'n.txt');
+  fd.append('service_id', String(sc.data.id));
+  assert.equal((await admin.req('POST', '/api/admin/resources/import', { form: fd })).status, 200);
+  const email = `feed_${RUN}@example.com`;
+  await admin.post('/api/admin/users', { name: 'Feed User', email, password: 'FeedUser123' });
+  const owner = new Client();
+  await owner.login(email, 'FeedUser123');
+  const a = await owner.post('/api/resource/assign', { service_id: sc.data.id });
+  assert.equal(a.status, 201, JSON.stringify(a.data));
+  const unlisted = `4477${NUM}`;
+  mockRecords = [
+    { id: `pub-${RUN}-1`, number: unlisted, message: 'Your WhatsApp code 734-512' }, // not imported
+    { id: `pub-${RUN}-2`, number: `+${stored.slice(0, 3)} ${stored.slice(3)}`, message: 'WhatsApp code 918273' }, // same number, other format
+  ];
+  const poll = await admin.post(`/api/admin/providers/${p.id}/poll`);
+  assert.equal(poll.data.result.inserted, 2, JSON.stringify(poll.data));
+  assert.equal(poll.data.result.unlisted, 1);
+
+  // the owner gets the OTP on the Get Number list even though the provider wrote the number differently
+  const mineRow = (await owner.get('/api/resources/mine')).data.items.find((x) => x.id === a.data.assignment.id);
+  assert.equal(mineRow.last_code, '918273', 'OTP reached the number list');
+
+  // everyone sees both OTPs, numbers masked
+  const byTail = await user.get(`/api/events?q=${unlisted.slice(-4)}`);
+  const hit = byTail.data.items.find((x) => x.code === '734512');
+  assert.ok(hit, 'unlisted number OTP is found by its last 4 digits');
+  assert.equal(hit.number, `${unlisted.slice(0, 4)}••••${unlisted.slice(-4)}`);
+  assert.equal(JSON.stringify(byTail.data).includes(unlisted), false, 'full number never sent');
+  assert.ok(byTail.data.items.every((x) => x.number.endsWith(unlisted.slice(-4))), 'search only returns matching numbers');
+  const ownFeed = (await owner.get(`/api/events?q=${stored.slice(-4)}`)).data.items.find((x) => x.code === '918273');
+  assert.equal(ownFeed.mine, true, 'owner sees it marked as their number');
+
+  // switched off → users only see their own numbers again
+  await admin.put('/api/admin/settings', { otp_public_feed: '0' });
+  assert.equal((await user.get(`/api/events?q=${unlisted.slice(-4)}`)).data.items.some((x) => x.code === '734512'), false);
+  await admin.put('/api/admin/settings', { otp_public_feed: '1' });
 });
 
 test('provider rate limit (HTTP 429) backs off instead of hammering the API', async () => {

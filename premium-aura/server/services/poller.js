@@ -76,7 +76,7 @@ async function pollOne(row) {
        last_error = NULL, total_fetched = total_fetched + ? WHERE id = ?`, [stats.inserted, row.id],
     );
     const summary = { level: 'info', httpStatus, durationMs, fetched: records.length, inserted: stats.inserted, duplicates: stats.duplicates,
-      message: `fetched ${records.length}, new ${stats.inserted}, duplicates ${stats.duplicates}, unauthorized ${stats.unauthorized}, invalid ${skipped}` };
+      message: `fetched ${records.length}, new ${stats.inserted}, duplicates ${stats.duplicates}, unlisted ${stats.unlisted}, unauthorized ${stats.unauthorized}, invalid ${skipped}` };
     await writeLog(row.id, summary, stats.inserted > 0);
     realtime.toAdmins('provider:health', { id: row.id, health_status: 'online', last_checked_at: new Date().toISOString() });
     return { ...stats, fetched: records.length, invalid: skipped };

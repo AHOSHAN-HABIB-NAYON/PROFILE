@@ -46,6 +46,8 @@ const DEFAULTS = {
   // Access / quotas
   // Minutes a number stays with a user without receiving an OTP before it returns to the pool
   assignment_timeout_minutes: '10',
+  // OTP page shows every OTP that arrives from the APIs (numbers masked), not only the user's own
+  otp_public_feed: '1',
   // Header notifications are removed automatically after this many hours
   notification_ttl_hours: '24',
   // Events

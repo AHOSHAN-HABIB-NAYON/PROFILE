@@ -14,7 +14,7 @@ exports.feed = async (req, res) => {
   const q = typeof req.query.q === 'string' ? req.query.q.trim() : null;
   const out = await events.feed(req.user, { page: p.page, size: p.size, app, q });
   res.json({
-    ok: true, items: out.items, pagination: meta(out.total, p), live_total: out.live_total, demo_total: out.demo_total,
+    ok: true, items: out.items, pagination: meta(out.total, p), live_total: out.live_total, demo_total: out.demo_total, public_feed: out.public_feed,
     expiration_hours: await events.expirationHours(), transport: { socket: true, poll_interval_ms: 5000 },
   });
 };

@@ -106,7 +106,7 @@ export async function mount(el) {
     await withLoading(b, async () => {
       try {
         if (b.dataset.act === 'test') { const r = await api(`/admin/providers/${id}/test`, { method: 'POST' }); toast(`${r.health.status}: ${r.health.message}`, r.health.status === 'online' ? 'success' : 'error', 5000); data = await render(); }
-        if (b.dataset.act === 'poll') { const r = await api(`/admin/providers/${id}/poll`, { method: 'POST' }); toast(r.result?.error ? `Error: ${r.result.error}` : `Fetched ${r.result.fetched}, new ${r.result.inserted}, duplicates ${r.result.duplicates}, unauthorized ${r.result.unauthorized}`, r.result?.error ? 'error' : 'success', 5000); data = await render(); }
+        if (b.dataset.act === 'poll') { const r = await api(`/admin/providers/${id}/poll`, { method: 'POST' }); toast(r.result?.error ? `Error: ${r.result.error}` : `Fetched ${r.result.fetched}, new ${r.result.inserted}, duplicates ${r.result.duplicates}, not in system ${r.result.unlisted || 0}, unauthorized ${r.result.unauthorized}`, r.result?.error ? 'error' : 'success', 5000); data = await render(); }
         if (b.dataset.act === 'edit') formSheet({ title: `Edit ${p.name}`, icon: 'fa-solid fa-plug', wide: true, fields: providerFields(p, data.types), onSubmit: async (d) => { const r = await api(`/admin/providers/${id}`, { method: 'PUT', body: d }); data = await render(); return r; } });
         if (b.dataset.act === 'map') await mapping(id);
         if (b.dataset.act === 'logs') await logs(id);

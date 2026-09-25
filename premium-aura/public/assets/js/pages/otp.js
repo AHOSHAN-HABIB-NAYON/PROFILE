@@ -13,7 +13,7 @@ function row(ev, isNew = false) {
   return `<div class="otp-row${isNew ? ' new' : ''}" data-key="${esc(ev.key)}">
     ${appIcon(ev.application)}
     <div class="otp-meta">
-      <div class="otp-top"><span class="otp-short">${esc(a.code)}</span>${ev.country_code ? `<span class="small muted">${esc(ev.country_code)}</span>` : ''}${statusChip}</div>
+      <div class="otp-top"><span class="otp-short">${esc(a.code)}</span>${ev.country_code ? `<span class="small muted">${esc(ev.country_code)}</span>` : ''}${statusChip}${ev.mine ? '<span class="chip success">Your number</span>' : ''}</div>
       <div class="otp-code">${esc(ev.code)}</div>
       ${ev.resource_value || ev.number ? `<div class="otp-number"><i class="fa-solid fa-mobile-screen"></i> ${esc(state.user.role === 'admin' && ev.resource_value ? ev.resource_value : ev.number)}</div>` : ''}
       <div class="otp-time" title="${esc(ev.received_at)}">${esc(fmtTime(ev.received_at))} · ${relEl(ev.received_at)}${state.user.role === 'admin' && ev.provider ? ` · ${esc(ev.provider)}` : ''}</div>
@@ -39,12 +39,12 @@ export async function mount(el, { query, live }) {
   </div>
   <div class="card">
     <div class="tabs" data-tabs><button class="tab active" data-app="">All</button>${APP_LIST.slice(0, 8).map((a) => `<button class="tab" data-app="${a.code}">${a.code}</button>`).join('')}</div>
-    <div class="search-box" style="margin:12px 0"><i class="fa-solid fa-magnifying-glass"></i><input class="input" type="search" placeholder="Search OTP code…" data-q value="${esc(q)}" maxlength="12"></div>
+    <div class="search-box" style="margin:12px 0"><i class="fa-solid fa-magnifying-glass"></i><input class="input" type="search" placeholder="Last 4 digits of number, or OTP code" data-q value="${esc(q)}" maxlength="15" inputmode="search"></div>
     <div class="otp-list" data-list></div>
     <div data-pages></div>
     <p class="small muted center" style="margin:14px 0 0" data-foot></p>
   </div>
-  <p class="small muted center" style="margin-top:12px"><i class="fa-solid fa-lock"></i> Only codes for numbers assigned to you are shown.</p>`;
+  <p class="small muted center" style="margin-top:12px" data-scope><i class="fa-solid fa-lock"></i> Numbers are partly hidden for privacy.</p>`;
 
   const list = $('[data-list]', el);
 
@@ -57,11 +57,15 @@ export async function mount(el, { query, live }) {
     list.innerHTML = r.items.length ? r.items.map((x) => row(x)).join('')
       : '<div class="empty"><i class="fa-solid fa-inbox"></i><div><strong>No OTPs yet</strong></div><div class="small">Get a number in Access Services — codes appear here instantly.</div><a class="btn btn-primary btn-sm" href="/access" style="margin-top:12px"><i class="fa-solid fa-plus"></i>Get Number</a></div>';
     $('[data-pages]', el).innerHTML = pagination(r.pagination, load);
+    $('[data-scope]', el).innerHTML = r.public_feed
+      ? '<i class="fa-solid fa-lock"></i> All OTPs from our APIs · numbers partly hidden · type the last 4 digits of your number to find your code'
+      : '<i class="fa-solid fa-lock"></i> Only codes for numbers assigned to you are shown.';
     $('[data-foot]', el).textContent = `${num(r.pagination.total)} active · auto refresh every 5 seconds · expires in ${r.expiration_hours} hours`;
   }
 
   function matchesFilter(ev) {
     if (app && ev.application !== app) return false;
+    if (q && /^\d{3,15}$/.test(q)) return q.length <= 4 && String(ev.number || '').endsWith(q);
     if (q && !String(ev.code).includes(q)) return false;
     return true;
   }
@@ -140,6 +144,7 @@ export async function mount(el, { query, live }) {
   setConn(live.connected);
   const offs = [
     live.on('event:new', enqueue),
+    live.on('event:public', (ev) => { if (state.user.role !== 'admin') enqueue(ev); }),
     live.on('activity:new', onActivity),
     live.on('admin:event', (ev) => { if (state.user.role === 'admin') enqueue(ev); }),
     live.on('live:state', setConn),
