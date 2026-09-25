@@ -117,7 +117,7 @@ async function ingest(provider, events, sourceId = null) {
       if (assignment) {
         await tx.run("UPDATE resource_assignments SET status = 'received', last_code = ? WHERE id = ?", [ev.code, assignment.id]);
       }
-      return { id: ins.insertId, userId, balance };
+      return { id: ins.insertId, userId, balance, assignmentId: assignment?.id || null };
     });
 
     if (result.duplicate) { stats.duplicates += 1; continue; }
@@ -128,6 +128,8 @@ async function ingest(provider, events, sourceId = null) {
     );
     realtime.broadcast('activity:new', activityItem(row));
     if (result.userId) {
+      // Instant in-place update of the owner's number list (Access page).
+      if (result.assignmentId) realtime.toUser(result.userId, 'resource:otp', { assignment_id: result.assignmentId, code: ev.code, application: row.application });
       realtime.toUser(result.userId, 'event:new', publicEvent(row));
       if (result.balance !== null) { stats.credited += 1; wallet.emitBalance(result.userId, result.balance); }
     }

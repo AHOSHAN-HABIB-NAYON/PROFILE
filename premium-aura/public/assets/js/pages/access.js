@@ -1,4 +1,6 @@
-import { api, esc, $, $$, toast, toastError, flag, appIcon, pageHead, num, relEl, pagination, withLoading, sheet, debounce, copyText, chip } from '../core.js';
+import { api, esc, $, $$, toast, toastError, flag, appIcon, pageHead, relEl, pagination, withLoading, sheet, debounce, copyText, chip, playSound } from '../core.js';
+
+const otpPill = (code) => `<button class="otp-pill" data-copy="${esc(code)}" title="Copy OTP"><span class="mono">${esc(code)}</span><i class="fa-regular fa-copy"></i></button>`;
 
 function upgradePrompt(message) {
   const s = sheet({
@@ -11,28 +13,31 @@ function upgradePrompt(message) {
   return s;
 }
 
+const LAST_KEY = 'aura.lastService';
+
 export async function mount(el, { query, live }) {
   let page = 1;
+  let services = [];
+  let selected = null;
+  try { selected = Number(localStorage.getItem(LAST_KEY)) || null; } catch { /* ignore */ }
+
   el.innerHTML = `${pageHead('fa-solid fa-sim-card', 'Access Services', 'Live servers & numbers')}
     <div class="grid grid-main">
       <div class="stack">
-        <div class="card">
-          <div class="card-head"><h2>Today Access Numbers</h2><span class="chip live">Live</span><span class="link small muted" data-limits></span></div>
-          <div class="service-grid" data-services><div class="skeleton sk-card"></div><div class="skeleton sk-card"></div></div>
+        <div class="card get-card">
+          <div class="card-head"><h2>Get Number</h2><span class="chip live">Live</span></div>
+          <div class="svc-pick" data-services role="radiogroup" aria-label="Country / service">
+            <div class="skeleton" style="height:64px;border-radius:16px"></div><div class="skeleton" style="height:64px;border-radius:16px"></div></div>
+          <p class="small muted limits-line" data-limits></p>
+          <button class="btn btn-primary btn-block get-btn" data-get-selected><i class="fa-solid fa-plus"></i><span data-get-label>Get Number</span></button>
         </div>
         <div class="card">
-          <div class="card-head"><h2>Number List</h2><div class="actions"><button class="btn btn-ghost btn-xs" data-refresh><i class="fa-solid fa-rotate"></i></button></div></div>
+          <div class="card-head"><h2>Number List</h2><div class="actions"><button class="btn btn-ghost btn-xs" data-refresh aria-label="Refresh"><i class="fa-solid fa-rotate"></i></button></div></div>
           <div data-mine></div>
         </div>
       </div>
       <div class="stack">
         <div class="card">
-          <div class="card-head"><h2>Add Number</h2></div>
-          <form data-add>
-            <div class="field"><label>Select Country / Service</label><select class="input" name="service_id" data-select></select></div>
-            <button class="btn btn-primary btn-block" type="submit"><i class="fa-solid fa-plus"></i>Get Number</button>
-          </form>
-          <div class="divider"></div>
           <div class="card-head" style="margin-bottom:8px"><h3>Advanced Search</h3><span class="link small muted">Serial 5–8 digits</span></div>
           <form data-search class="row-flex" style="flex-wrap:nowrap">
             <div class="input-group" style="flex:1"><i class="fa-solid fa-magnifying-glass"></i><input class="input" name="serial" inputmode="numeric" pattern="\\d{5,8}" maxlength="8" placeholder="e.g. 123456" value="${esc(query.serial || '')}"></div>
@@ -46,23 +51,31 @@ export async function mount(el, { query, live }) {
   const renderLimits = (l) => {
     $('[data-limits]', el).textContent = `${l.hour_used}/${l.hourly_limit} this hour · ${l.quota === null ? '∞' : `${l.quota_used}/${l.quota}`} quota`;
   };
+  const usable = (s) => s.status === 'active' && s.available;
+
+  function renderPicker() {
+    const box = $('[data-services]', el);
+    if (!services.length) { box.innerHTML = '<div class="empty"><i class="fa-solid fa-sim-card"></i><div>No services available yet</div></div>'; return; }
+    if (!services.some((s) => s.id === selected && usable(s))) selected = (services.find(usable) || services[0]).id;
+    box.innerHTML = services.map((s) => `
+      <button type="button" class="svc-tile ${s.id === selected ? 'selected' : ''} ${usable(s) ? '' : 'off'}" data-pick="${s.id}" role="radio" aria-checked="${s.id === selected}" ${usable(s) ? '' : 'disabled'}>
+        <span class="svc-icons">${flag(s.flag_code)}${appIcon(s.app_icon || s.app_code, 'sm')}</span>
+        <span class="svc-text"><strong>${esc(s.country_code)} ${esc(s.app_code)}</strong><small>${esc(s.country_name)} ${esc(s.app_name)}</small></span>
+        <span class="svc-state">${usable(s) ? (s.hot ? '<span class="hot-dot">🔥</span>' : '<span class="ok-dot"></span>') : '<span class="off-dot"></span>'}</span>
+      </button>`).join('');
+    const cur = services.find((s) => s.id === selected);
+    const btn = $('[data-get-selected]', el);
+    btn.disabled = !cur || !usable(cur);
+    $('[data-get-label]', el).textContent = cur ? (usable(cur) ? `Get ${cur.country_code} ${cur.app_code} Number` : `${cur.country_code} ${cur.app_code} unavailable`) : 'Get Number';
+  }
 
   let returnMinutes = 10;
   async function loadServices() {
     const r = await api('/services');
     returnMinutes = r.return_minutes || 10;
     renderLimits(r.limits);
-    $('[data-services]', el).innerHTML = r.services.length ? r.services.map((s) => `
-      <div class="service-card" data-service="${s.id}">
-        ${flag(s.flag_code)}
-        <div class="sc-body"><div class="sc-codes">${esc(s.country_code)} ${appIcon(s.app_icon || s.app_code, 'sm')} ${esc(s.app_code)}</div>
-          <div class="sc-name">${esc(s.country_name)} ${esc(s.app_name)}</div>
-          ${s.otps_today ? `<div class="hot-badge ${s.hot ? 'is-hot' : ''}">${s.hot ? '🔥 Hot · ' : '<i class="fa-solid fa-bolt"></i> '}${num(s.otps_today)} OTP today</div>` : ''}</div>
-        <div class="sc-end">${s.status === 'active' && s.available ? '<span class="chip success">Available</span>' : `<span class="chip danger">${s.status === 'maintenance' ? 'Maintenance' : 'Unavailable'}</span>`}
-          <button class="btn btn-primary btn-xs" data-get="${s.id}" ${s.status !== 'active' || !s.available ? 'disabled' : ''}><i class="fa-solid fa-plus"></i>Get</button></div>
-      </div>`).join('') : '<div class="empty"><i class="fa-solid fa-sim-card"></i><div>No services available yet</div></div>';
-    $('[data-select]', el).innerHTML = r.services.filter((s) => s.status === 'active')
-      .map((s) => `<option value="${s.id}" ${s.available ? '' : 'disabled'}>${esc(s.country_name)} (${esc(s.country_code)} - ${esc(s.app_code)})${s.available ? '' : ' · unavailable'}</option>`).join('');
+    services = r.services;
+    renderPicker();
   }
 
   async function loadMine(p = page) {
@@ -71,19 +84,18 @@ export async function mount(el, { query, live }) {
     const r = await api('/resources/mine', { query: { page } });
     const statusChip = (x) => (x.status === 'returned' ? '<span class="chip warning">Return</span>' : x.status === 'received' ? '<span class="chip success">Received</span>' : '<span class="chip pending">Pending</span>');
     box.innerHTML = r.items.length ? `<div class="num-list">${r.items.map((a) => `
-      <div class="num-row ${a.status === 'returned' ? 'is-returned' : ''}">
+      <div class="num-row ${a.status === 'returned' ? 'is-returned' : ''}" data-aid="${a.id}">
         ${flag(a.flag_code)}
         <div class="num-main">
           <div class="num-line"><span class="mono num-value">${esc(a.resource_value)}</span>
             ${a.status !== 'returned' ? `<button class="icon-mini" data-copy="${esc(a.resource_value)}" aria-label="Copy number"><i class="fa-regular fa-copy"></i></button>` : ''}</div>
-          <div class="num-sub">${esc(a.country_code)} ${esc(a.app_code)} · ${relEl(a.assigned_at)}</div>
+          <div class="num-sub">${a.last_code ? otpPill(a.last_code) : ''}<span>${esc(a.country_code)} ${esc(a.app_code)} · ${relEl(a.assigned_at)}</span></div>
         </div>
-        ${a.last_code ? `<button class="otp-pill" data-copy="${esc(a.last_code)}" title="Copy OTP"><span class="mono">${esc(a.last_code)}</span><i class="fa-regular fa-copy"></i></button>` : ''}
         ${statusChip(a)}
         ${a.status === 'pending' ? `<button class="icon-mini danger" data-release="${a.id}" title="Return number" aria-label="Return number"><i class="fa-solid fa-xmark"></i></button>` : ''}
       </div>`).join('')}</div>${pagination(r.pagination, loadMine)}
       <p class="small muted" style="margin:10px 0 0"><i class="fa-regular fa-clock"></i> Numbers without an OTP return automatically after ${returnMinutes} minutes.</p>`
-      : '<div class="empty"><i class="fa-solid fa-hashtag"></i><div>No numbers yet</div><div class="small">Tap “Get” on a service to receive a number.</div></div>';
+      : '<div class="empty"><i class="fa-solid fa-hashtag"></i><div>No numbers yet</div><div class="small">Choose a country above and tap “Get Number”.</div></div>';
   }
 
   async function assign(serviceId, btn) {
@@ -94,6 +106,7 @@ export async function mount(el, { query, live }) {
         renderLimits(r.limits);
         navigator.vibrate?.(30);
         await Promise.all([loadMine(1), loadServices()]);
+        $('[data-mine]', el).querySelector('.num-row')?.classList.add('flash');
       } catch (err) {
         if (err.body?.upgrade) upgradePrompt(err.message); else toastError(err);
       }
@@ -120,8 +133,15 @@ export async function mount(el, { query, live }) {
   }
 
   el.addEventListener('click', async (e) => {
-    const g = e.target.closest('[data-get]');
-    if (g) return assign(Number(g.dataset.get), g);
+    const pick = e.target.closest('[data-pick]');
+    if (pick) {
+      selected = Number(pick.dataset.pick);
+      try { localStorage.setItem(LAST_KEY, String(selected)); } catch { /* ignore */ }
+      renderPicker();
+      return;
+    }
+    const g = e.target.closest('[data-get-selected]');
+    if (g) return selected && assign(selected, g);
     const c = e.target.closest('[data-copy]');
     if (c) return copyText(c.dataset.copy, c);
     const rel = e.target.closest('[data-release]');
@@ -142,7 +162,6 @@ export async function mount(el, { query, live }) {
     }
     if (e.target.closest('[data-refresh]')) loadMine();
   });
-  $('[data-add]', el).addEventListener('submit', (e) => { e.preventDefault(); assign(Number(e.target.service_id.value), e.submitter || $('[data-add] [type=submit]', el)); });
   $('[data-search]', el).addEventListener('submit', (e) => { e.preventDefault(); search(e.target.serial.value.trim()); });
   const deb = debounce((v) => { if (/^\d{5,8}$/.test(v)) search(v); }, 450);
   $('[name=serial]', el).addEventListener('input', (e) => deb(e.target.value.trim()));
@@ -150,8 +169,28 @@ export async function mount(el, { query, live }) {
   await Promise.all([loadServices(), loadMine(1)]);
   if (query.serial) search(query.serial);
 
+  // OTP arrived: update that number's row instantly (no reload), flash it and play a sound.
+  function onOtp({ assignment_id: id, code }) {
+    const row = el.querySelector(`[data-aid="${id}"]`);
+    if (!row) { loadMine().catch(() => {}); return; }
+    row.querySelector('.otp-pill')?.remove();
+    row.querySelector('.num-sub')?.insertAdjacentHTML('afterbegin', otpPill(code));
+    row.querySelector('.chip').outerHTML = '<span class="chip success">Received</span>';
+    row.querySelector('[data-release]')?.remove();
+    row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash');
+    playSound('event');
+    navigator.vibrate?.([40, 30, 40]);
+  }
+
   const refreshCounts = debounce(() => loadServices().catch(() => {}), 1500);
   const offs = [live.on('service:count', refreshCounts), live.on('resource:returned', () => loadMine().catch(() => {})),
-    live.on('event:new', (ev) => { if (!ev.is_demo) loadMine().catch(() => {}); })];
-  return () => offs.forEach((f) => f());
+    live.on('resource:otp', onOtp)];
+  // Fallback when the live connection is down: check every 5 seconds.
+  const poll = setInterval(async () => {
+    if (live.connected || document.hidden || page !== 1) return;
+    const before = $$('.otp-pill', el).length;
+    await loadMine().catch(() => {});
+    if ($$('.otp-pill', el).length > before) playSound('event');
+  }, 5000);
+  return () => { offs.forEach((f) => f()); clearInterval(poll); };
 }
