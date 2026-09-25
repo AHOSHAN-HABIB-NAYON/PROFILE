@@ -393,6 +393,17 @@ test('OTP page: every API OTP is shown (masked), searchable by last 4 digits; ot
   assert.equal(p2.data.result.invalid, 1);
   const logs = (await admin.get(`/api/admin/providers/${p.id}`)).data.logs;
   assert.ok(logs.some((l) => /no OTP code found ×1 · fields: id, dst, sms_content/.test(l.message)), 'log explains the rejection');
+  // camelCase fields + Arabic WhatsApp text with a hidden direction mark (real ThirdWave shape)
+  mockRecords = [{
+    id: `tw-${RUN}`, receivedAt: new Date().toISOString(), sourceAddress: 'WhatsApp', rangeName: 'Iraq - Mobile - Zain',
+    destinationNumber: `964786${NUM}`, messageBody: '<#> كود ‏واتساب الخاص بك: \u200e282-366\nلا تطلع أحداً عليه\n4sgLq1p5sV6', status: 'DELIVERED',
+  }, { id: `pub-${RUN}-5`, dst: `4479${NUM}`, sms_content: 'Welcome, no code here' }];
+  const p3 = await admin.post(`/api/admin/providers/${p.id}/poll`);
+  assert.equal(p3.data.result.inserted, 1, JSON.stringify(p3.data));
+  const tw = (await user.get(`/api/events?q=${NUM.slice(-4)}`)).data.items.find((x) => x.code === '282366');
+  assert.ok(tw, 'camelCase provider fields are understood');
+  assert.equal(tw.application, 'WS');
+  assert.equal(tw.country_code, 'IQ');
   const sample = await admin.get(`/api/admin/providers/${p.id}/sample`);
   assert.equal(sample.data.firstInvalid.sms_content, 'Welcome, no code here');
   assert.equal((await user.get(`/api/admin/providers/${p.id}/sample`)).status, 403, 'admins only');

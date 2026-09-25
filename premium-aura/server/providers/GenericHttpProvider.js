@@ -13,7 +13,7 @@ const CANDIDATES = {
   code: ['code', 'otp', 'otp_code', 'otpCode', 'verification_code', 'pin'],
   message: ['message', 'text', 'body', 'sms', 'content', 'msg', 'sms_text', 'payload', 'message_text', 'sms_content', 'sms_body',
     'text_message', 'msg_body', 'message_body', 'full_message', 'short_message', 'sms_message', 'data.message', 'sms.message', 'sms.text'],
-  application: ['application', 'app', 'service', 'service_name', 'sender', 'originator', 'cli', 'from', 'source'],
+  application: ['application', 'app', 'service', 'service_name', 'sender', 'originator', 'cli', 'from', 'source', 'source_address', 'sender_id', 'sender_name'],
   service: ['service', 'service_name', 'app_name'],
   resource: ['number', 'phone', 'phone_number', 'msisdn', 'recipient', 'destination', 'did', 'to', 'mobile', 'test_number',
     'destination_number', 'dest', 'dst', 'called', 'called_number', 'b_number', 'bnumber', 'to_number', 'number_to', 'recipient_number',
@@ -29,6 +29,8 @@ const CODE_PATTERNS = [
   /(?:code|otp|pin|verification)[^\d]{0,20}(\d{4,8})/i,
   /\b(\d{4,8})\b/,
 ];
+
+const looseKey = (k) => String(k).toLowerCase().replace(/[^a-z0-9]/g, '');
 
 function extractCode(text) {
   if (!text) return null;
@@ -159,8 +161,14 @@ class GenericHttpProvider extends ApiProviderInterface {
   pick(record, field) {
     const mapping = this.mappings.find((m) => m.system_field === field);
     if (mapping) return get(record, mapping.provider_field);
+    // Providers name fields differently: destination_number, destinationNumber, DestinationNumber… are the same field.
+    const loose = new Map(Object.keys(record).map((k) => [looseKey(k), k]));
     for (const key of CANDIDATES[field] || []) {
-      const v = get(record, key);
+      let v = get(record, key);
+      if ((v === undefined || v === null || v === '') && !key.includes('.')) {
+        const real = loose.get(looseKey(key));
+        if (real !== undefined) v = record[real];
+      }
       if (v !== undefined && v !== null && v !== '') return v;
     }
     return undefined;
