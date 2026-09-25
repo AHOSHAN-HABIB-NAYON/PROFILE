@@ -336,6 +336,31 @@ test('API provider polling: normalize, authorize, dedupe, reward, health', async
   assert.ok(found, 'enabled provider is polled automatically');
 });
 
+test('provider rate limit (HTTP 429) backs off instead of hammering the API', async () => {
+  let hits = 0;
+  const rl = http.createServer((req, res) => { hits += 1; res.writeHead(429, { 'Retry-After': '45', 'Content-Type': 'application/json' }); res.end('{"error":"Too many requests"}'); });
+  await new Promise((r) => rl.listen(0, '127.0.0.1', r));
+  try {
+    const c = await admin.post('/api/admin/providers', {
+      name: `RateLimited ${RUN}`, provider_type: 'generic', base_url: `http://127.0.0.1:${rl.address().port}`, endpoint: '/m',
+      auth_type: 'bearer', credential: 'x', polling_interval_sec: 1, enabled: false,
+    });
+    const poll = await admin.post(`/api/admin/providers/${c.data.id}/poll`);
+    assert.match(poll.data.result.error, /rate limited, next poll in 45s/);
+    const h = await admin.post(`/api/admin/providers/${c.data.id}/test`);
+    assert.match(h.data.health.message, /Rate limited/);
+    // enabled with a 1s interval: the Retry-After pause means no further requests for a while
+    await admin.post(`/api/admin/providers/${c.data.id}/toggle`, { enabled: true });
+    await sleep(12_000); // poller refreshes its list every 10s
+    const before = hits;
+    await sleep(4000);
+    assert.ok(hits - before <= 1, `backed off (${hits - before} requests in 4s at a 1s interval)`);
+    await admin.req('DELETE', `/api/admin/providers/${c.data.id}`);
+  } finally {
+    rl.close();
+  }
+});
+
 test('demo generator: 2 events/second, admin-only, labelled DEMO, separate storage', async () => {
   await admin.post('/api/admin/demo/purge');
   const r = await admin.put('/api/admin/demo', { enabled: true, events_per_second: 2, interval_ms: 1000, applications: ['TG', 'WS'], countries: 'PK,IQ', expiration_hours: 24, starting_count: 0 });

@@ -122,7 +122,8 @@ class GenericHttpProvider extends ApiProviderInterface {
       const text = await res.text();
       let data = null;
       try { data = text ? JSON.parse(text) : null; } catch { data = null; }
-      return { ok: res.ok, httpStatus: res.status, data, durationMs: Date.now() - started, isJson: data !== null };
+      const ra = parseInt(res.headers.get('retry-after') || '', 10);
+      return { ok: res.ok, httpStatus: res.status, data, durationMs: Date.now() - started, isJson: data !== null, retryAfter: Number.isFinite(ra) ? ra : null };
     } finally {
       clearTimeout(timer);
     }
@@ -146,6 +147,7 @@ class GenericHttpProvider extends ApiProviderInterface {
       const err = new Error(`HTTP ${r.httpStatus}`);
       err.httpStatus = r.httpStatus;
       err.durationMs = r.durationMs;
+      err.retryAfter = r.retryAfter;
       throw err;
     }
     return { records: this.extractRecords(r.data), httpStatus: r.httpStatus, durationMs: r.durationMs };
@@ -197,6 +199,7 @@ class GenericHttpProvider extends ApiProviderInterface {
     try {
       const r = await this.request();
       if (r.ok) return { status: 'online', httpStatus: r.httpStatus, message: `OK in ${r.durationMs}ms${r.isJson ? '' : ' (non-JSON body)'}` };
+      if (r.httpStatus === 429) return { status: 'error', httpStatus: 429, message: 'Rate limited by the provider — increase the polling interval' };
       if ([401, 403].includes(r.httpStatus)) return { status: 'error', httpStatus: r.httpStatus, message: 'Authentication rejected — check the credential' };
       return { status: 'error', httpStatus: r.httpStatus, message: `HTTP ${r.httpStatus}` };
     } catch (err) {

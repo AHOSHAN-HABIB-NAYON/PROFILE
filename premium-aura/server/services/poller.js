@@ -17,6 +17,7 @@ let listAt = 0;
 const nextDue = new Map();
 const inFlight = new Set();
 const lastLogged = new Map();
+const rateHits = new Map(); // provider id → consecutive HTTP 429 responses
 
 function credentialFor(row) {
   try {
@@ -62,6 +63,7 @@ async function pollOne(row) {
       return { error: 'missing credential' };
     }
     const { records, httpStatus, durationMs } = await p.fetch();
+    rateHits.delete(row.id);
     const valid = [];
     let skipped = 0;
     for (const rec of records.slice(0, 500)) {
@@ -80,7 +82,15 @@ async function pollOne(row) {
     return { ...stats, fetched: records.length, invalid: skipped };
   } catch (err) {
     const status = err.httpStatus ? 'error' : 'offline';
-    const msg = err.name === 'AbortError' ? 'Request timed out' : err.message;
+    let msg = err.name === 'AbortError' ? 'Request timed out' : err.message;
+    if (err.httpStatus === 429) {
+      // The provider asked us to slow down: back off (Retry-After, else 30s, 60s … up to 5 min) instead of hammering it.
+      const n = (rateHits.get(row.id) || 0) + 1;
+      rateHits.set(row.id, n);
+      const wait = Math.min(300, Math.max(err.retryAfter || 0, 30 * 2 ** (n - 1)));
+      nextDue.set(row.id, Date.now() + wait * 1000);
+      msg = `HTTP 429 — rate limited, next poll in ${wait}s. Increase the polling interval for this provider.`;
+    }
     await db.run('UPDATE api_providers SET health_status = ?, last_checked_at = UTC_TIMESTAMP(), last_error = ? WHERE id = ?', [status, msg.slice(0, 500), row.id]);
     await writeLog(row.id, { level: 'error', httpStatus: err.httpStatus, durationMs: err.durationMs, message: msg }, true);
     realtime.toAdmins('provider:health', { id: row.id, health_status: status, last_error: msg });

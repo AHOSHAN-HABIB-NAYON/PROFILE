@@ -24,6 +24,8 @@ function providerFields(p = {}, types = []) {
   ];
 }
 
+const joinUrl = (p) => (p.endpoint ? `${String(p.base_url).replace(/\/+$/, '')}/${String(p.endpoint).replace(/^\/+/, '')}` : p.base_url);
+
 export async function mount(el) {
   async function render() {
     const r = await api('/admin/providers');
@@ -33,7 +35,7 @@ export async function mount(el) {
       <div class="card" data-id="${p.id}">
         <div class="card-head"><span class="li-ic system"><i class="fa-solid fa-plug"></i></span><div><h3 style="margin:0">${esc(p.name)}</h3><div class="small muted">${esc(p.provider_type)} · every ${p.polling_interval_sec}s</div></div>
           <label class="switch" style="margin-left:auto" title="Enabled"><input type="checkbox" data-toggle ${p.enabled ? 'checked' : ''}><span class="track"></span></label></div>
-        <div class="small mono truncate" style="max-width:100%" title="${esc(p.base_url + p.endpoint)}">${esc(p.base_url)}${esc(p.endpoint)}</div>
+        <div class="small mono truncate" style="max-width:100%" title="${esc(joinUrl(p))}">${esc(joinUrl(p))}</div>
         <div class="row-flex" style="margin:10px 0">${chip(p.health_status)}${p.has_credential ? chip('success', `key: ${p.credential_source}`) : chip('warning', 'no credential')}<span class="chip">${esc(p.auth_type)}</span></div>
         <div class="small muted">${p.last_checked_at ? `Last checked ${relEl(new Date(p.last_checked_at).toISOString())}` : 'Never checked'} · ${num(p.total_fetched)} events</div>
         ${p.last_error ? `<div class="small" style="color:var(--danger);margin-top:4px">${esc(p.last_error)}</div>` : ''}
