@@ -106,7 +106,8 @@ export async function mount(el) {
 PK,TG,TEST-100001,available
 PK,TG,TEST-100002,available
 IQ,WS,TEST-200001,available</pre>
-        <p class="small muted">Duplicates (same service + resource) are skipped automatically. Status may be <code>available</code>, <code>disabled</code> or <code>retired</code>.</p>
+        <p class="small muted"><strong>Only numbers?</strong> Upload a plain list (one number per line, no header) and pick the service in <em>Import into</em>.</p>
+        <p class="small muted">Also accepted: <code>;</code> or tab separators and headers like <code>number</code> / <code>phone</code>. Duplicates are skipped. Status may be <code>available</code>, <code>disabled</code> or <code>retired</code>.</p>
         <a class="btn btn-ghost btn-sm" href="data:text/csv;charset=utf-8,country%2Cservice%2Cresource%2Cstatus%0APK%2CTG%2CTEST-100001%2Cavailable%0APK%2CTG%2CTEST-100002%2Cavailable%0AIQ%2CWS%2CTEST-200001%2Cavailable%0A" download="resources-sample.csv"><i class="fa-solid fa-download"></i>Sample CSV</a></div></div>`;
       const file = $('[name=file]', pane);
       file.addEventListener('change', () => { $('[data-fname]', pane).textContent = file.files[0]?.name || ''; });
