@@ -600,7 +600,6 @@ table.table { width: 100%; border-collapse: separate; border-spacing: 0; }
 @keyframes rowFlash { 0% { background: color-mix(in srgb, var(--success) 30%, var(--card-2)); transform: scale(1.02); } 100% { background: var(--card-2); transform: none; } }
 @media (min-width: 560px) { .svc-pick { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
-.num-value { overflow: visible; text-overflow: clip; }
 .num-sub { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
 .num-sub > span { overflow: hidden; text-overflow: ellipsis; }
 .num-sub .otp-pill { padding: 3px 9px; font-size: 13px; }
@@ -692,3 +691,12 @@ table.table { width: 100%; border-collapse: separate; border-spacing: 0; }
 .svc-actions .btn { flex: 1 1 auto; }
 .svc-actions .svc-del { flex: 0 0 auto; color: #dc2626; }
 @media (min-width: 992px) { .row-list:has(.svc-card) { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; } }
+
+/* Wider boxes on phones: less empty space left/right, more room inside */
+@media (max-width: 991px) {
+  .main { padding-left: 10px; padding-right: 10px; }
+  .card { padding: 16px 14px; }
+  .num-row { padding: 12px 12px; gap: 10px; }
+}
+.num-value { font-size: 16px; letter-spacing: .01em; }
+.num-sub .chip { font-size: 11px; padding: 2px 8px; }

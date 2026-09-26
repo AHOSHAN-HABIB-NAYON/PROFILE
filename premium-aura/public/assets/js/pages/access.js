@@ -104,9 +104,8 @@ export async function mount(el, { query, live }) {
         <div class="num-main">
           <div class="num-line"><span class="mono num-value">${esc(a.resource_value)}</span>
             ${a.status !== 'returned' ? `<button class="icon-mini" data-copy="${esc(a.resource_value)}" aria-label="Copy number"><i class="fa-regular fa-copy"></i></button>` : ''}</div>
-          <div class="num-sub">${a.last_code ? otpPill(a.last_code) : ''}<span>${esc(a.country_code)} ${esc(a.app_code)} · ${relEl(a.assigned_at)}</span></div>
+          <div class="num-sub">${a.last_code ? otpPill(a.last_code) : statusChip(a)}<span>${esc(a.country_code)} ${esc(a.app_code)} · ${relEl(a.assigned_at)}</span></div>
         </div>
-        ${statusChip(a)}
         ${a.status === 'pending' ? `<button class="icon-mini danger" data-release="${a.id}" title="Return number" aria-label="Return number"><i class="fa-solid fa-xmark"></i></button>` : ''}
       </div>`).join('')}</div>${pagination(r.pagination, loadMine)}
       <p class="small muted" style="margin:10px 0 0"><i class="fa-regular fa-clock"></i> Numbers without an OTP return automatically after ${returnMinutes} minutes.</p>`
@@ -195,8 +194,8 @@ export async function mount(el, { query, live }) {
     const row = el.querySelector(`[data-aid="${id}"]`);
     if (!row) { loadMine().catch(() => {}); return; }
     row.querySelector('.otp-pill')?.remove();
+    row.querySelector('.num-sub .chip')?.remove(); // "Pending" → the OTP itself
     row.querySelector('.num-sub')?.insertAdjacentHTML('afterbegin', otpPill(code));
-    row.querySelector('.chip').outerHTML = '<span class="chip success">Received</span>';
     row.querySelector('[data-release]')?.remove();
     row.classList.remove('flash'); void row.offsetWidth; row.classList.add('flash');
     playSound('event');
