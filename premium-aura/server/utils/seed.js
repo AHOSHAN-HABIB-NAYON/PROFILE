@@ -39,8 +39,8 @@ const PROVIDERS = [
     query_json: { otp_only: 'true' }, records_path: 'data',
   },
   {
-    name: '2oo9 Cloud', provider_type: 'two009', base_url: 'https://api.2oo9.cloud/MXS47FLFX0U/tnevs/@public/api/',
-    endpoint: '', auth_type: 'api_key', auth_param_name: 'X-API-Key', credential_env: 'TWO009_API_KEY', records_path: 'data',
+    name: '2oo9 Cloud', provider_type: 'two009', base_url: 'https://api.2oo9.cloud/MXS47FLFX0U/tnevs/@public/api',
+    endpoint: '/success-otp', auth_type: 'api_key', auth_param_name: 'mauthapi', credential_env: 'TWO009_API_KEY', records_path: 'data.otps',
   },
 ];
 

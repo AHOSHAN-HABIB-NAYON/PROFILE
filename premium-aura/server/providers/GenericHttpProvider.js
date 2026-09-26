@@ -9,7 +9,7 @@ const { get } = require('../utils/objectPath');
 const { toAppCode, detectFromText } = require('./appCodes');
 
 const CANDIDATES = {
-  id: ['id', '_id', 'uuid', 'message_id', 'messageId', 'sms_id', 'smsId', 'record_id', 'mdr_id'],
+  id: ['id', '_id', 'uuid', 'message_id', 'messageId', 'sms_id', 'smsId', 'record_id', 'mdr_id', 'otp_id'],
   code: ['code', 'otp', 'otp_code', 'otpCode', 'verification_code', 'pin'],
   message: ['message', 'text', 'body', 'sms', 'content', 'msg', 'sms_text', 'payload', 'message_text', 'sms_content', 'sms_body',
     'text_message', 'msg_body', 'message_body', 'full_message', 'short_message', 'sms_message', 'data.message', 'sms.message', 'sms.text'],
