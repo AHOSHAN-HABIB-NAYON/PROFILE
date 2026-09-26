@@ -832,6 +832,31 @@ test('replace a service\'s numbers without deleting the service; numbers in use 
   assert.ok((await admin.get('/api/admin/services')).data.items.find((x) => x.id === sid), 'service kept after clear');
 });
 
+test('per-range "+" setting: numbers shown with or without + whatever the imported format', async () => {
+  const code = `P${RUN}`.toUpperCase().slice(0, 16);
+  const sc = await admin.post('/api/admin/services', { country_name: 'Iraq', country_code: 'IQ', flag_code: 'iq', app_name: 'WhatsApp', app_code: code, status: 'active', show_plus: true });
+  const sid = sc.data.id;
+  const fd = new FormData();
+  fd.append('file', new Blob([`964${NUM}31\n+964${NUM}32\n`], { type: 'text/plain' }), 'n.txt'); // one without, one with "+"
+  fd.append('service_id', String(sid));
+  assert.equal((await admin.req('POST', '/api/admin/resources/import', { form: fd })).data.report.inserted, 2);
+  const svc = (await admin.get('/api/admin/services')).data.items.find((x) => x.id === sid);
+  assert.equal(svc.show_plus, 1);
+  assert.equal(svc.manual_available, null, 'no manual count unless set');
+  const email = `plus_${RUN}@example.com`;
+  await admin.post('/api/admin/users', { name: 'Plus User', email, password: 'PlusUser123' });
+  const u = new Client();
+  await u.login(email, 'PlusUser123');
+  const a1 = await u.post('/api/resource/assign', { service_id: sid });
+  assert.match(a1.data.assignment.resource_value, /^\+964\d+$/, 'shown with + when on');
+  await sleep(1100);
+  const a2 = await u.post('/api/resource/assign', { service_id: sid });
+  assert.match(a2.data.assignment.resource_value, /^\+964\d+$/, 'a number imported with + is shown the same way');
+  assert.ok((await u.get('/api/resources/mine')).data.items.every((x) => x.resource_value.startsWith('+')));
+  await admin.put(`/api/admin/services/${sid}`, { ...svc, show_plus: false });
+  assert.ok((await u.get('/api/resources/mine')).data.items.every((x) => /^964\d+$/.test(x.resource_value)), 'shown without + when off');
+});
+
 test('PWA manifest, service worker, security headers, JSON errors without stack traces', async () => {
   const m = await fetch(`${BASE}/manifest.json`);
   const mj = await m.json();

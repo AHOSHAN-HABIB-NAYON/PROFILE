@@ -15,6 +15,7 @@ function serviceFields(s = {}) {
     { name: 'manual_available', label: 'Available count (override)', type: 'number', value: s.manual_available ?? '', hint: 'Blank = live count of available resources' },
     { name: 'sort_order', label: 'Sort order', type: 'number', value: s.sort_order ?? 0 },
     { name: 'description', label: 'Description', value: s.description, full: true },
+    { name: 'show_plus', label: 'Show numbers with + on Get Number', type: 'switch', value: !!s.show_plus, hint: 'On: +9647812345678 · Off: 9647812345678 — works whether or not the imported numbers have "+".' },
     ...(s.id ? [] : [{ name: 'notify', label: 'Notify all users about this new service', type: 'switch', value: true }]),
   ];
 }
@@ -65,7 +66,7 @@ export async function mount(el) {
         empty: 'No services yet — create one to start adding numbers',
         row: (s) => `<div class="svc-card">
           <div class="svc-top">${flag(s.flag_code)}${appIcon(s.app_icon || s.app_code, 'sm')}
-            <div class="svc-name"><strong>${esc(s.country_code)} ${esc(s.app_code)}</strong><span>${esc(s.country_name)} ${esc(s.app_name)}</span></div>${chip(s.status)}</div>
+            <div class="svc-name"><strong>${esc(s.country_code)} ${esc(s.app_code)}${s.show_plus ? ' <span class="chip info" title="Numbers shown with +">+</span>' : ''}</strong><span>${esc(s.country_name)} ${esc(s.app_name)}</span></div>${chip(s.status)}</div>
           <div class="svc-stats">
             <div><b>${num(s.available)}</b><span>${s.manual_available !== null ? 'Manual count' : 'Available'}</span></div>
             <div><b>${num(s.stats.assigned)}</b><span>In use</span></div>

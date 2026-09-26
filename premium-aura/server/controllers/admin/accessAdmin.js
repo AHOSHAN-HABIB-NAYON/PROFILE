@@ -23,6 +23,7 @@ function serviceInput(b) {
     status: v.oneOf(b.status, ['active', 'inactive', 'maintenance'], { def: 'active' }),
     manual_available: b.manual_available === '' || b.manual_available === null || b.manual_available === undefined ? null : v.int(b.manual_available, { name: 'Available count', min: 0, max: 10_000_000 }),
     sort_order: v.int(b.sort_order, { name: 'Sort order', min: -1000, max: 100000, def: 0 }),
+    show_plus: v.bool(b.show_plus) ? 1 : 0,
   };
 }
 
@@ -31,7 +32,8 @@ exports.services = async (req, res) => {
   const stats = await db.query(`SELECT service_id, SUM(status='assigned') AS assigned, SUM(status='disabled') AS disabled, SUM(status='retired') AS retired, COUNT(*) AS total
                                 FROM authorized_resources GROUP BY service_id`);
   const m = new Map(stats.map((s) => [s.service_id, s]));
-  res.json({ ok: true, items: rows.map((r) => ({ ...r, stats: { assigned: Number(m.get(r.id)?.assigned || 0), total: Number(m.get(r.id)?.total || 0) } })) });
+  const manual = new Map((await db.query('SELECT id, manual_available FROM services')).map((s) => [s.id, s.manual_available]));
+  res.json({ ok: true, items: rows.map((r) => ({ ...r, manual_available: manual.get(r.id) ?? null, stats: { assigned: Number(m.get(r.id)?.assigned || 0), total: Number(m.get(r.id)?.total || 0) } })) });
 };
 
 exports.createService = async (req, res) => {

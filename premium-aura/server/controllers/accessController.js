@@ -8,7 +8,7 @@ const v = require('../utils/validate');
 const { E } = require('../utils/errors');
 const { paginate, meta } = require('../utils/pagination');
 
-const SERVICE_COLS = `s.id, s.country_name, s.country_code, s.flag_code, s.app_name, s.app_code, s.app_icon, s.description, s.status, s.sort_order`;
+const SERVICE_COLS = `s.id, s.country_name, s.country_code, s.flag_code, s.app_name, s.app_code, s.app_icon, s.description, s.status, s.sort_order, s.show_plus`;
 
 async function servicesWithCounts(where = "s.status <> 'inactive'", params = []) {
   const rows = await db.query(
@@ -61,13 +61,22 @@ async function allocate(req, { serviceId = null, resourceId = null }) {
     return { assignmentId: ins.insertId, resource, limits };
   });
   const row = await db.one(
-    `SELECT a.id, a.status, a.assigned_at, a.last_code, r.resource_value, s.country_code, s.flag_code, s.app_code, s.app_name, s.country_name
+    `SELECT a.id, a.status, a.assigned_at, a.last_code, r.resource_value, s.show_plus, s.country_code, s.flag_code, s.app_code, s.app_name, s.country_name
      FROM resource_assignments a JOIN authorized_resources r ON r.id = a.resource_id JOIN services s ON s.id = a.service_id WHERE a.id = ?`,
     [result.assignmentId],
   );
   realtime.broadcast('service:count', { service_id: result.resource.service_id });
-  return { assignment: row, limits: await quota.limitsFor(uid) };
+  return { assignment: withDisplay(row), limits: await quota.limitsFor(uid) };
 }
+
+/** Phone numbers are shown with or without "+" per the range's setting; other identifiers stay as imported. */
+function displayNumber(value, showPlus) {
+  const v = String(value || '');
+  if (!/^\+?[\d\s-]+$/.test(v)) return v;
+  const bare = v.replace(/^\+/, '');
+  return showPlus ? `+${bare}` : bare;
+}
+const withDisplay = (row) => (row ? { ...row, resource_value: displayNumber(row.resource_value, !!row.show_plus), show_plus: undefined } : row);
 
 exports.assign = async (req, res) => {
   const serviceId = v.id(req.body.service_id, 'service_id');
@@ -88,13 +97,13 @@ exports.mine = async (req, res) => {
   const where = `a.user_id = ? ${active ? "AND (a.released_at IS NULL OR (a.status = 'returned' AND a.released_at > UTC_TIMESTAMP() - INTERVAL 1 DAY))" : ''}`;
   const [items, [{ n }]] = await Promise.all([
     db.query(
-      `SELECT a.id, a.status, a.assigned_at, a.last_code, a.released_at, r.resource_value, s.country_code, s.flag_code, s.app_code, s.app_name
+      `SELECT a.id, a.status, a.assigned_at, a.last_code, a.released_at, r.resource_value, s.show_plus, s.country_code, s.flag_code, s.app_code, s.app_name
        FROM resource_assignments a JOIN authorized_resources r ON r.id = a.resource_id JOIN services s ON s.id = a.service_id
        WHERE ${where} ORDER BY a.released_at IS NULL DESC, a.id DESC LIMIT ? OFFSET ?`, [req.user.id, p.size, p.offset],
     ),
     db.query(`SELECT COUNT(*) AS n FROM resource_assignments a WHERE ${where}`, [req.user.id]),
   ]);
-  res.json({ ok: true, items, pagination: meta(n, p) });
+  res.json({ ok: true, items: items.map(withDisplay), pagination: meta(n, p) });
 };
 
 exports.release = async (req, res) => {
@@ -121,7 +130,7 @@ exports.search = async (req, res) => {
   const like = `%${serial}%`;
   const svc = serviceId ? 'AND r.service_id = ?' : '';
   const rows = await db.query(
-    `SELECT r.id, r.resource_value, r.status, r.assigned_user_id = ? AS mine, s.id AS service_id, s.country_code, s.flag_code, s.app_code, s.app_name
+    `SELECT r.id, r.resource_value, s.show_plus, r.status, r.assigned_user_id = ? AS mine, s.id AS service_id, s.country_code, s.flag_code, s.app_code, s.app_name
      FROM authorized_resources r JOIN services s ON s.id = r.service_id
      WHERE r.serial_digits LIKE ? ${svc} AND s.status = 'active'
        AND ((r.status = 'assigned' AND r.assigned_user_id = ?) OR r.status = 'available')
@@ -132,8 +141,9 @@ exports.search = async (req, res) => {
     ok: true,
     count: rows.length,
     message: rows.length ? 'Matching resources found' : 'No matching resources',
-    items: rows.map((r) => ({ ...r, mine: !!r.mine })),
+    items: rows.map((r) => ({ ...withDisplay(r), mine: !!r.mine })),
   });
 };
 
 exports.servicesWithCounts = servicesWithCounts;
+exports.displayNumber = displayNumber;
