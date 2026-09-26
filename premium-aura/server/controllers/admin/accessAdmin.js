@@ -5,6 +5,7 @@ const notifications = require('../../models/notification');
 const importer = require('../../services/importer');
 const fileStorage = require('../../services/fileStorage');
 const quota = require('../../services/quota');
+const realtime = require('../../services/realtime');
 const { servicesWithCounts } = require('../accessController');
 const v = require('../../utils/validate');
 const { E } = require('../../utils/errors');
@@ -68,6 +69,17 @@ exports.deleteService = async (req, res) => {
   res.json({ ok: true, message: 'Service deleted' });
 };
 
+/** Delete the old numbers of a service without deleting the service itself. */
+exports.clearService = async (req, res) => {
+  const id = v.id(req.params.id);
+  const svc = await db.one('SELECT id, country_code, app_code FROM services WHERE id = ?', [id]);
+  if (!svc) throw E.notFound('Service not found');
+  const r = await importer.clearService(id);
+  await audit.log(req, 'service.clear_numbers', { targetType: 'service', targetId: id, details: r });
+  realtime.broadcast('service:count', {});
+  res.json({ ok: true, ...r, message: `${r.removed} number(s) deleted${r.retired ? `, ${r.retired} in use will disappear after the user finishes` : ''}` });
+};
+
 exports.resources = async (req, res) => {
   const p = paginate(req.query, { defaultSize: 30 });
   const where = ['1=1'];
@@ -110,6 +122,7 @@ exports.importResources = async (req, res) => {
   const report = await importer.importResources(req.file.buffer, saved.kind, {
     createMissing: v.bool(req.body.create_missing),
     serviceId: req.body.service_id ? v.id(req.body.service_id) : null,
+    replace: !!req.body.service_id && v.bool(req.body.replace),
   });
   await audit.log(req, 'resource.import', { targetType: 'file', targetId: saved.id, details: { ...report, errors: report.errors.length } });
   if (report.inserted && v.bool(req.body.notify)) {
@@ -123,7 +136,8 @@ exports.importResources = async (req, res) => {
     });
   }
   delete report.service_ids;
-  res.json({ ok: true, report, message: `Imported ${report.inserted} resource(s)` });
+  const replaced = report.replaced ? ` · ${report.replaced.removed} old number(s) removed` : '';
+  res.json({ ok: true, report, message: `Imported ${report.inserted} resource(s)${replaced}` });
 };
 
 exports.bulkResources = async (req, res) => {

@@ -1,4 +1,4 @@
-import { api, esc, $, $$, pageHead, listPage, formSheet, btn, toast, toastError, withLoading, formData } from './kit.js';
+import { api, esc, $, $$, pageHead, listPage, formSheet, sheet, toast, toastError, withLoading, formData } from './kit.js';
 import { chip, flag, appIcon, num, relEl, APP_LIST, confirmSheet } from '/assets/js/core.js';
 
 const ICONS = [['', 'Auto (from app code)'], ...APP_LIST.map((a) => [a.name.toLowerCase().replace(/[^a-z]/g, ''), a.name])];
@@ -19,6 +19,34 @@ function serviceFields(s = {}) {
   ];
 }
 
+/** Upload a file that replaces all old numbers of one service. */
+function replaceSheet(s, c) {
+  const sh = sheet({
+    title: `Replace numbers · ${s.country_code} ${s.app_code}`, icon: 'fa-solid fa-arrows-rotate',
+    body: `<p class="small muted">Old numbers are deleted and the numbers in your file are added. If the file has no valid numbers, nothing is deleted.</p>
+      <form data-rep><label class="dropzone"><input type="file" name="file" accept=".csv,.txt,.xlsx" hidden required>
+        <i class="fa-solid fa-file-arrow-up" style="font-size:24px;color:var(--primary)"></i><div><strong>Choose TXT, CSV or XLSX</strong></div><div class="small" data-fn></div></label>
+      <button class="btn btn-primary btn-block" type="submit" style="margin-top:12px"><i class="fa-solid fa-arrows-rotate"></i>Replace numbers</button></form><div data-out style="margin-top:10px"></div>`,
+  });
+  const f = $('[name=file]', sh.el);
+  f.addEventListener('change', () => { $('[data-fn]', sh.el).textContent = f.files[0]?.name || ''; });
+  $('[data-rep]', sh.el).addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!f.files[0]) return toast('Choose a file first', 'warning');
+    const fd = new FormData();
+    fd.append('file', f.files[0]); fd.append('service_id', String(s.id)); fd.append('replace', '1');
+    await withLoading(e.submitter, async () => {
+      try {
+        const r = await api('/admin/resources/import', { method: 'POST', form: fd });
+        toast(r.message); c.reload();
+        const rep = r.report;
+        $('[data-out]', sh.el).innerHTML = `<div class="alert ${rep.inserted ? 'success' : 'warning'}"><i class="fa-solid fa-circle-info"></i><div>${esc(r.message)} · ${num(rep.invalid)} invalid
+          ${rep.errors.length ? `<ul class="small">${rep.errors.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}</div></div>`;
+      } catch (err) { toastError(err); }
+    });
+  });
+}
+
 const TABS = [['services', 'Services'], ['resources', 'Resources'], ['import', 'Import TXT / CSV / XLSX'], ['limits', 'Rate limits'], ['assignments', 'Assignments']];
 
 export async function mount(el) {
@@ -32,27 +60,41 @@ export async function mount(el) {
     async services() {
       await loadServices();
       const ctx = listPage(pane, {
-        head: '<div class="row-flex" style="margin-bottom:12px"><button class="btn btn-primary btn-sm" data-new-svc><i class="fa-solid fa-plus"></i>New service</button></div>',
+        head: '<div class="row-flex" style="margin-bottom:14px"><button class="btn btn-primary btn-sm" data-new-svc><i class="fa-solid fa-plus"></i>New service</button></div>',
         endpoint: '/admin/services',
-        columns: [
-          { label: 'Service', render: (s) => `<span class="row-flex" style="gap:8px">${flag(s.flag_code)}<strong>${esc(s.country_code)} ${esc(s.app_code)}</strong>${appIcon(s.app_icon || s.app_code, 'sm')}</span>` },
-          { label: 'Name', render: (s) => `${esc(s.country_name)} ${esc(s.app_name)}` },
-          { label: 'Available', render: (s) => `<strong>${num(s.available)}</strong>${s.manual_available !== null ? ' <span class="chip">manual</span>' : ''}` },
-          { label: 'Assigned / total', render: (s) => `${num(s.stats.assigned)} / ${num(s.stats.total)}` },
-          { label: 'Status', render: (s) => chip(s.status) },
-        ],
-        actions: () => `${btn('edit', 'fa-solid fa-pen', 'Edit')}${btn('add', 'fa-solid fa-plus', 'Add resources')}${btn('delete', 'fa-solid fa-trash', 'Delete', 'btn-danger')}`,
+        empty: 'No services yet — create one to start adding numbers',
+        row: (s) => `<div class="svc-card">
+          <div class="svc-top">${flag(s.flag_code)}${appIcon(s.app_icon || s.app_code, 'sm')}
+            <div class="svc-name"><strong>${esc(s.country_code)} ${esc(s.app_code)}</strong><span>${esc(s.country_name)} ${esc(s.app_name)}</span></div>${chip(s.status)}</div>
+          <div class="svc-stats">
+            <div><b>${num(s.available)}</b><span>${s.manual_available !== null ? 'Manual count' : 'Available'}</span></div>
+            <div><b>${num(s.stats.assigned)}</b><span>In use</span></div>
+            <div><b>${num(s.stats.total)}</b><span>Total</span></div>
+          </div>
+          <div class="svc-actions">
+            <button class="btn btn-ghost btn-xs" data-a="edit"><i class="fa-solid fa-pen"></i>Edit</button>
+            <button class="btn btn-ghost btn-xs" data-a="add"><i class="fa-solid fa-plus"></i>Add</button>
+            <button class="btn btn-soft btn-xs" data-a="replace"><i class="fa-solid fa-arrows-rotate"></i>Replace</button>
+            <button class="btn btn-ghost btn-xs" data-a="clear"><i class="fa-solid fa-broom"></i>Clear</button>
+            <button class="btn btn-ghost btn-xs svc-del" data-a="delete" aria-label="Delete service"><i class="fa-solid fa-trash"></i></button>
+          </div></div>`,
         async onAction(a, s, c) {
-          if (a === 'edit') return formSheet({ title: `Edit ${s.country_code} ${s.app_code}`, fields: serviceFields(s), onSubmit: async (d) => { const r = await api(`/admin/services/${s.id}`, { method: 'PUT', body: d }); c.reload(); return r; } });
+          const name = `${s.country_code} ${s.app_code}`;
+          if (a === 'edit') return formSheet({ title: `Edit ${name}`, fields: serviceFields(s), onSubmit: async (d) => { const r = await api(`/admin/services/${s.id}`, { method: 'PUT', body: d }); c.reload(); return r; } });
           if (a === 'add') {
             return formSheet({
-              title: `Add resources · ${s.country_code} ${s.app_code}`, icon: 'fa-solid fa-plus', two: false,
-              fields: [{ name: 'resources', label: 'Authorized resources (one per line)', type: 'textarea', rows: 8, required: true, placeholder: 'TEST-100001\nTEST-100002' }],
+              title: `Add numbers · ${name}`, icon: 'fa-solid fa-plus', two: false,
+              fields: [{ name: 'resources', label: 'Numbers (one per line)', type: 'textarea', rows: 8, required: true, placeholder: '9647812345678\n9647812345679' }],
               onSubmit: async (d) => { const r = await api('/admin/resources', { method: 'POST', body: { ...d, service_id: s.id } }); c.reload(); return r; },
             });
           }
+          if (a === 'replace') return replaceSheet(s, c);
+          if (a === 'clear') {
+            if (!(await confirmSheet({ title: `Delete all numbers of ${name}?`, message: 'The service stays. Numbers someone is using right now keep working until they finish, then disappear.', confirm: 'Delete numbers', danger: true }))) return;
+            toast((await api(`/admin/services/${s.id}/clear`, { method: 'POST' })).message); c.reload();
+          }
           if (a === 'delete') {
-            if (!(await confirmSheet({ title: 'Delete service?', message: 'This removes the service and all its resources and assignments.', confirm: 'Delete', danger: true }))) return;
+            if (!(await confirmSheet({ title: `Delete ${name}?`, message: 'This removes the service and all its numbers and assignments.', confirm: 'Delete', danger: true }))) return;
             toast((await api(`/admin/services/${s.id}`, { method: 'DELETE' })).message); c.reload();
           }
         },
@@ -97,6 +139,7 @@ export async function mount(el) {
             <div class="small muted">PDF is accepted for archive/viewing only · max 20 MB</div><div data-fname class="small" style="margin-top:6px"></div></label>
           <div class="field" style="margin-top:12px"><label>Import into</label><select class="input" name="service_id"><option value="">Use country + service columns</option>
             ${services.map((s) => `<option value="${s.id}">${esc(s.country_code)} ${esc(s.app_code)} · ${esc(s.country_name)} ${esc(s.app_name)}</option>`).join('')}</select></div>
+          <label class="switch" style="margin-bottom:10px"><input type="checkbox" name="replace"><span class="track"></span><span>Replace: delete this service's old numbers first</span></label><br>
           <label class="switch" style="margin-bottom:10px"><input type="checkbox" name="create_missing"><span class="track"></span><span>Create missing services automatically</span></label><br>
           <label class="switch" style="margin-bottom:14px"><input type="checkbox" name="notify"><span class="track"></span><span>Notify users about new numbers</span></label>
           <button class="btn btn-primary btn-block" type="submit"><i class="fa-solid fa-upload"></i>Import</button></form>
@@ -117,6 +160,8 @@ IQ,WS,TEST-200001,available</pre>
         const fd = new FormData(e.target);
         fd.set('create_missing', e.target.create_missing.checked ? '1' : '0');
         fd.set('notify', e.target.notify.checked ? '1' : '0');
+        fd.set('replace', e.target.replace.checked ? '1' : '0');
+        if (e.target.replace.checked && !e.target.service_id.value) return toast('Choose the service in "Import into" to replace its numbers', 'warning');
         await withLoading(e.submitter, async () => {
           try {
             const r = await api('/admin/resources/import', { method: 'POST', form: fd });

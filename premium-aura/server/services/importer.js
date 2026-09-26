@@ -110,7 +110,29 @@ async function parseXlsx(buf) {
  * @param {Buffer} buf  @param {'csv'|'xlsx'} kind
  * @param {{createMissing:boolean, serviceId?:number}} opts
  */
-async function importResources(buf, kind, { createMissing = false, serviceId = null } = {}) {
+/**
+ * Remove a service's numbers but keep the service. Numbers a user is holding right
+ * now are retired instead (they keep working until released, then never come back).
+ */
+async function clearService(serviceId, conn = db) {
+  const run = async (tx) => {
+    await tx.run(
+      `DELETE a FROM resource_assignments a
+       WHERE a.service_id = ? AND a.resource_id NOT IN (
+         SELECT resource_id FROM (SELECT resource_id FROM resource_assignments WHERE service_id = ? AND released_at IS NULL) keep)`,
+      [serviceId, serviceId],
+    );
+    const del = await tx.run(
+      'DELETE r FROM authorized_resources r WHERE r.service_id = ? AND NOT EXISTS (SELECT 1 FROM resource_assignments a WHERE a.resource_id = r.id)',
+      [serviceId],
+    );
+    const ret = await tx.run("UPDATE authorized_resources SET status = 'retired', assigned_user_id = NULL WHERE service_id = ? AND status <> 'retired'", [serviceId]);
+    return { removed: del.affectedRows, retired: ret.affectedRows };
+  };
+  return conn === db ? db.transaction(run) : run(conn);
+}
+
+async function importResources(buf, kind, { createMissing = false, serviceId = null, replace = false } = {}) {
   const records = kind === 'xlsx' ? await parseXlsx(buf) : parseCsv(buf);
   if (records.length > MAX_ROWS + 1) throw E.badRequest(`Too many rows (max ${MAX_ROWS})`);
   const { rows, hasHeader, columns } = normalizeRows(records);
@@ -157,6 +179,9 @@ async function importResources(buf, kind, { createMissing = false, serviceId = n
     values.push([sid, r.resource, r.resource.replace(/\D+/g, '').slice(0, 64), r.status, batch]);
   }
 
+  // "Replace": only once the new file is known to contain valid numbers, remove the old ones.
+  if (replace && fixed && values.length) report.replaced = await clearService(fixed.id);
+
   for (let i = 0; i < values.length; i += 1000) {
     const chunk = values.slice(i, i + 1000);
     const res = await db.run('INSERT IGNORE INTO authorized_resources (service_id, resource_value, serial_digits, status, import_batch) VALUES ?', [chunk]);
@@ -168,4 +193,4 @@ async function importResources(buf, kind, { createMissing = false, serviceId = n
   return report;
 }
 
-module.exports = { importResources, parseCsv, parseXlsx };
+module.exports = { importResources, clearService, parseCsv, parseXlsx };

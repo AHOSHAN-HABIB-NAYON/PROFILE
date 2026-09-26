@@ -787,6 +787,51 @@ test('lost authenticator: email code signs in and turns 2FA off; admin can reset
   await admin.put('/api/admin/settings', { twofa_email_recovery: '1' });
 });
 
+test('replace a service\'s numbers without deleting the service; numbers in use are protected', async () => {
+  const sc = await admin.post('/api/admin/services', { country_name: 'Malaysia', country_code: 'MY', flag_code: 'my', app_name: 'WhatsApp', app_code: `R${RUN}`.toUpperCase().slice(0, 16), status: 'active' });
+  const sid = sc.data.id;
+  const up = (text, replace) => {
+    const fd = new FormData();
+    fd.append('file', new Blob([text], { type: 'text/plain' }), 'n.txt');
+    fd.append('service_id', String(sid));
+    if (replace) fd.append('replace', '1');
+    return admin.req('POST', '/api/admin/resources/import', { form: fd });
+  };
+  assert.equal((await up(`60${NUM}01\n60${NUM}02\n60${NUM}03\n`)).data.report.inserted, 3);
+  const email = `rep_${RUN}@example.com`;
+  await admin.post('/api/admin/users', { name: 'Rep User', email, password: 'RepUser123' });
+  const u = new Client();
+  await u.login(email, 'RepUser123');
+  const held = (await u.post('/api/resource/assign', { service_id: sid })).data.assignment;
+
+  // a file with no valid numbers deletes nothing
+  assert.equal((await up('!!!\n', true)).status, 200);
+  let list = (await admin.get(`/api/admin/resources?service_id=${sid}`)).data.items;
+  assert.equal(list.length, 3, 'nothing removed when the new file is invalid');
+
+  const r = await up(`60${NUM}11\n60${NUM}12\n`, true);
+  assert.equal(r.data.report.inserted, 2, JSON.stringify(r.data));
+  assert.equal(r.data.report.replaced.removed, 2);
+  list = (await admin.get(`/api/admin/resources?service_id=${sid}`)).data.items;
+  const byVal = Object.fromEntries(list.map((x) => [x.resource_value, x.status]));
+  assert.equal(byVal[held.resource_value], 'retired', 'the number in use is kept but retired');
+  assert.equal(byVal[`60${NUM}11`], 'available');
+  assert.equal(Object.keys(byVal).length, 3);
+  const svc = (await admin.get('/api/admin/services')).data.items.find((x) => x.id === sid);
+  assert.ok(svc, 'service still exists');
+
+  // the user releases it later: it must not come back to the pool
+  await u.post(`/api/resources/${held.id}/release`);
+  const after = (await admin.get(`/api/admin/resources?service_id=${sid}&q=${held.resource_value}`)).data.items[0];
+  assert.equal(after.status, 'retired');
+
+  // clear without a file
+  const clr = await admin.post(`/api/admin/services/${sid}/clear`);
+  assert.equal(clr.status, 200, JSON.stringify(clr.data));
+  assert.equal((await admin.get(`/api/admin/resources?service_id=${sid}&status=available`)).data.items.length, 0);
+  assert.ok((await admin.get('/api/admin/services')).data.items.find((x) => x.id === sid), 'service kept after clear');
+});
+
 test('PWA manifest, service worker, security headers, JSON errors without stack traces', async () => {
   const m = await fetch(`${BASE}/manifest.json`);
   const mj = await m.json();

@@ -39,6 +39,7 @@ router.get('/services', ah(access.services));
 router.post('/services', ah(access.createService));
 router.put('/services/:id', ah(access.updateService));
 router.delete('/services/:id', ah(access.deleteService));
+router.post('/services/:id/clear', ah(access.clearService));
 router.get('/resources', ah(access.resources));
 router.post('/resources', ah(access.addResources));
 router.post('/resources/import', importUpload, ah(access.importResources));

@@ -394,7 +394,7 @@ table.table { width: 100%; border-collapse: separate; border-spacing: 0; }
 .binance-logo { color: #f0b90b; font-size: 22px; }
 .upgrade-banner { background: linear-gradient(135deg, #1e3a8a, #6d28d9); color: #fff; border-radius: var(--radius); padding: 18px; display: flex; align-items: center; gap: 14px; border: 0; }
 .upgrade-banner .crown { font-size: 34px; color: #fbbf24; filter: drop-shadow(0 4px 10px rgba(251, 191, 36, .5)); animation: float 3s ease-in-out infinite; }
-.dropzone { border: 2px dashed var(--border); border-radius: var(--radius); padding: 18px; text-align: center; cursor: pointer; transition: all .2s; background: var(--card-2); }
+.dropzone { display: block; border: 2px dashed var(--border); border-radius: var(--radius); padding: 18px; text-align: center; cursor: pointer; transition: all .2s; background: var(--card-2); }
 .dropzone.drag, .dropzone:hover { border-color: var(--primary); background: var(--grad-soft); }
 .dropzone img { max-height: 160px; margin: 8px auto 0; border-radius: 10px; }
 
@@ -676,3 +676,19 @@ table.table { width: 100%; border-collapse: separate; border-spacing: 0; }
 .otp-item .act-code:active { transform: scale(.94); }
 .otp-item .act-code i { color: var(--primary); font-size: 12px; }
 .act-end time { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+/* Admin · service cards */
+.svc-card { background: var(--card-2); border: 1px solid var(--border); border-radius: 18px; padding: 14px 16px; display: grid; gap: 14px; }
+.svc-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.svc-top .flag { width: 32px; height: 32px; }
+.svc-name { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }
+.svc-name strong { font-size: 15px; font-weight: 600; }
+.svc-name span { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.svc-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.svc-stats > div { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 8px 10px; text-align: center; min-width: 0; }
+.svc-stats b { display: block; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.svc-stats span { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.svc-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.svc-actions .btn { flex: 1 1 auto; }
+.svc-actions .svc-del { flex: 0 0 auto; color: #dc2626; }
+@media (min-width: 992px) { .row-list:has(.svc-card) { grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 14px; } }

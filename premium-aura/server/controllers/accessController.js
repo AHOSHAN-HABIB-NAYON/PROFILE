@@ -105,7 +105,8 @@ exports.release = async (req, res) => {
     // No OTP yet → the number goes back to the pool. Already used → retired so old codes never reach someone else.
     const unused = a.status === 'pending';
     await tx.run('UPDATE resource_assignments SET released_at = UTC_TIMESTAMP(), status = ? WHERE id = ?', [unused ? 'returned' : 'released', a.id]);
-    await tx.run('UPDATE authorized_resources SET status = ?, assigned_user_id = NULL WHERE id = ?', [unused ? 'available' : 'retired', a.resource_id]);
+    // A number the admin retired meanwhile stays retired.
+    await tx.run("UPDATE authorized_resources SET status = ?, assigned_user_id = NULL WHERE id = ? AND status = 'assigned'", [unused ? 'available' : 'retired', a.resource_id]);
   });
   res.json({ ok: true, message: 'Resource released' });
 };
