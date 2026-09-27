@@ -23,7 +23,7 @@ const QUICK = [
 ];
 export function quickAdd() {
   $$('.fab').forEach((f) => f.classList.add('open'));
-  const body = el(html`<div><div class="qadd">${QUICK.map(([k, ic, c], i) => html`<button data-k="${k}" style="animation-delay:${i * 25}ms"><span class="tile" style="--c:${c}">${icon(ic)}</span>${t('quick.' + k)}</button>`)}</div>
+  const body = el(html`<div><div class="qadd">${QUICK.map(([k, ic, c], i) => html`<button data-k="${k}" style="animation-delay:${60 + i * 12}ms"><span class="tile" style="--c:${c}">${icon(ic)}</span>${t('quick.' + k)}</button>`)}</div>
     <div class="row" style="margin-top:4px"><button class="btn btn-soft btn-sm" data-k="mood">${icon('smile', 'i-sm')}${t('quick.mood')}</button><button class="btn btn-soft btn-sm" data-k="account">${icon('wallet', 'i-sm')}${t('quick.account')}</button></div></div>`);
   const s = openSheet({ title: t('quick.title'), body, onClose: () => $$('.fab').forEach((f) => f.classList.remove('open')) });
   $$('button[data-k]', body).forEach((b) => b.onclick = () => {

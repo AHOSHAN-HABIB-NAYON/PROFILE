@@ -1,5 +1,5 @@
 /* LifeTrack Admin — separate premium admin UI. Every action is permission-checked and audited on the server. */
-import { $, $$, el, html, raw, icon, payMark, api, state, loadLang, toast, openSheet, confirmDialog, withBusy, formErrors, money, num, relTime, fmtDate, esc } from '../core.js';
+import { $, $$, el, html, raw, icon, payMark, api, state, loadLang, switchTheme, toast, openSheet, confirmDialog, withBusy, formErrors, money, num, relTime, fmtDate, esc } from '../core.js';
 import { lineChart, barChart, donut, PALETTE } from '../charts.js';
 
 let ME = null; let PERMS = [];
@@ -22,9 +22,9 @@ function chrome(route) {
       <div class="sep">App</div><a href="/app" data-ext>${icon('home')}Open LifeTrack</a></nav>
     <div class="me"><span class="avatar" style="width:30px;height:30px;font-size:11px">${initials(ME.name)}</span><div style="min-width:0"><b class="ellipsis">${ME.name}</b><span>${ME.role.replace('_', ' ')}</span></div></div>`);
   const title = (NAV.find((n) => Array.isArray(n) && n[0] === route) || [])[2] || 'Admin';
-  $('#top').innerHTML = String(html`<button class="icon-btn menu-btn" data-menu aria-label="Menu">${icon('menu')}</button><h1>${title}</h1><button class="icon-btn bordered" data-theme aria-label="Theme">${icon(document.documentElement.dataset.theme === 'dark' ? 'sun' : 'moon')}</button><a class="btn btn-outline btn-sm" href="/app">${icon('external', 'i-sm')}App</a>`);
+  $('#top').innerHTML = String(html`<button class="icon-btn menu-btn" data-menu aria-label="Menu">${icon('menu')}</button><h1>${title}</h1><button class="icon-btn bordered" data-theme-btn aria-label="Theme">${icon(document.documentElement.dataset.theme === 'dark' ? 'sun' : 'moon')}</button><a class="btn btn-outline btn-sm" href="/app">${icon('external', 'i-sm')}App</a>`);
   $('[data-menu]').onclick = () => $('#side').classList.toggle('open');
-  $('[data-theme]').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = t; try { localStorage.setItem('lt-theme', t); } catch {} chrome(route); };
+  $('[data-theme-btn]').onclick = (e) => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; switchTheme(t, e); try { localStorage.setItem('lt-theme', t); } catch {} chrome(route); };
   document.title = `${title} · Admin · ${c.site || 'LifeTrack'}`;
 }
 

@@ -726,5 +726,11 @@
 "email.announcement.subject": "{{title}}",
 "email.announcement.body": "नमस्ते {{name}},\n\n{{body}}",
 "email.test.subject": "{{site}} ईमेल काम कर रहा है ✅",
-"email.test.body": "नमस्ते {{name}},\n\nयह आपके {{site}} एडमिन पैनल से एक परीक्षण ईमेल है। SMTP सही तरीके से कॉन्फ़िगर है।"
+"email.test.body": "नमस्ते {{name}},\n\nयह आपके {{site}} एडमिन पैनल से एक परीक्षण ईमेल है। SMTP सही तरीके से कॉन्फ़िगर है।",
+"sec.passkey_cancelled": "पासकी सेटअप रद्द किया गया।",
+"sec.passkey_https": "पासकी के लिए HTTPS और सही Site URL चाहिए (Admin → Settings → System)।",
+"err.passkey_exists": "इस डिवाइस पर आपके खाते की पासकी पहले से है।",
+"err.passkey_failed": "पासकी सत्यापन विफल। फिर से प्रयास करें।",
+"err.challenge_expired": "पासकी अनुरोध समाप्त, फिर से प्रयास करें।",
+"err.passkey_unknown": "यह पासकी पंजीकृत नहीं है।"
 }

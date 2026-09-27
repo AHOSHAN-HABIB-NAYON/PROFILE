@@ -1,5 +1,5 @@
 /* LifeTrack SPA: fetch-driven navigation with directional transitions, lazy-loaded views, PWA wiring. */
-import { $, $$, el, html, raw, icon, api, state, t, loadLang, on, emit, toast, closeAllSheets, topSheet, reduceMotion, clearCache, money } from './core.js';
+import { $, $$, el, html, raw, icon, api, state, t, loadLang, on, emit, toast, closeAllSheets, topSheet, reduceMotion, clearCache, money, skipPop, switchTheme } from './core.js';
 
 const ROUTES = [
   // [pattern, module, export, {depth, idx, auth}]
@@ -112,6 +112,7 @@ document.addEventListener('click', (e) => {
   navigate(url.pathname + url.search, { dir: a.dataset.dir || null });
 });
 window.addEventListener('popstate', () => {
+  if (skipPop.n > 0) { skipPop.n--; return; } // a sheet closed itself — the page stays as is
   // Back button closes the top sheet first (native-app feel)
   const s = topSheet();
   if (s) { s.close(true); return; }
@@ -119,11 +120,10 @@ window.addEventListener('popstate', () => {
 });
 
 /* ---------- Theme ---------- */
-export function applyTheme(theme, { save = true, animate = true } = {}) {
+export function applyTheme(theme, { save = true, animate = true, ev = null } = {}) {
   const th = theme === 'dark' ? 'dark' : 'light';
   const root = document.documentElement;
-  if (animate && !reduceMotion()) { root.classList.add('theme-anim'); setTimeout(() => root.classList.remove('theme-anim'), 450); }
-  root.setAttribute('data-theme', th);
+  if (animate) switchTheme(th, ev); else root.setAttribute('data-theme', th);
   $('meta[name="theme-color"]')?.setAttribute('content', th === 'dark' ? '#070C18' : '#F4F6FB');
   try { localStorage.setItem('lt-theme', th); } catch {}
   paintToggles();
@@ -134,8 +134,8 @@ function paintToggles() {
   const th = document.documentElement.getAttribute('data-theme');
   $$('[data-theme-toggle]').forEach((b) => { b.innerHTML = String(icon(th === 'dark' ? 'sun' : 'moon')); b.setAttribute('aria-label', t(th === 'dark' ? 'theme.to_light' : 'theme.to_dark')); b.title = b.getAttribute('aria-label'); });
 }
-export const toggleTheme = () => applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-document.addEventListener('click', (e) => { if (e.target.closest('[data-theme-toggle]')) toggleTheme(); });
+export const toggleTheme = (ev) => applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark', { ev });
+document.addEventListener('click', (e) => { if (e.target.closest('[data-theme-toggle]')) toggleTheme(e); });
 
 /* ---------- Session ---------- */
 export async function refreshMe() {

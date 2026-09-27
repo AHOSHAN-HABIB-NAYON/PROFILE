@@ -296,14 +296,14 @@ r.post('/passkey/options', medium, ah(async (req, res) => {
   const options = await generateAuthenticationOptions({ rpID, userVerification: 'preferred', allowCredentials: [], timeout: 60000 });
   const cid = await webauthn.saveChallenge(null, 'login', options.challenge);
   res.cookie('lt_chal', cid, { httpOnly: true, sameSite: 'strict', secure: req.secure, maxAge: 5 * 60e3, path: '/api' });
-  ok(res, options);
+  ok(res, { ...options, challengeId: cid });
 }));
 
 r.post('/passkey/verify', strict, ah(async (req, res) => {
   if (!settings.bool('auth_passkey_enabled')) throw err(403, 'passkeys_disabled', 'Passkeys are disabled');
   const response = req.body?.response;
   if (!response || typeof response.id !== 'string' || response.id.length > 512) throw err(400, 'invalid_request', 'Invalid passkey response');
-  const ch = await webauthn.takeChallenge(req.cookies.lt_chal, 'login');
+  const ch = await webauthn.takeChallenge(req.body?.challengeId || req.cookies.lt_chal, 'login');
   res.clearCookie('lt_chal', { path: '/api' });
   if (!ch) throw err(400, 'challenge_expired', 'Passkey request expired, please try again');
   const pk = await db.one('SELECT p.*, u.email, u.name, u.status FROM passkeys p JOIN users u ON u.id=p.user_id WHERE p.credential_id=? AND u.deleted_at IS NULL', [response.id]);

@@ -726,5 +726,11 @@
 "email.announcement.subject": "{{title}}",
 "email.announcement.body": "Hi {{name}},\n\n{{body}}",
 "email.test.subject": "{{site}} email is working ✅",
-"email.test.body": "Hi {{name}},\n\nThis is a test email from your {{site}} admin panel. SMTP is configured correctly."
+"email.test.body": "Hi {{name}},\n\nThis is a test email from your {{site}} admin panel. SMTP is configured correctly.",
+"sec.passkey_cancelled": "Passkey setup was cancelled.",
+"sec.passkey_https": "Passkeys need HTTPS and the correct Site URL (Admin → Settings → System).",
+"err.passkey_exists": "This device already has a passkey for your account.",
+"err.passkey_failed": "Passkey verification failed. Please try again.",
+"err.challenge_expired": "Passkey request expired, please try again.",
+"err.passkey_unknown": "This passkey is not registered."
 }

@@ -171,24 +171,25 @@ r.post('/passkeys/options', limiter, ah(async (req, res) => {
     userID: new TextEncoder().encode(req.user.uuid),
     attestationType: 'none',
     excludeCredentials: existing.map((p) => ({ id: p.credential_id, transports: p.transports ? p.transports.split(',') : undefined })),
-    authenticatorSelection: { residentKey: 'required', userVerification: 'preferred' },
+    authenticatorSelection: { residentKey: 'preferred', requireResidentKey: false, userVerification: 'preferred' },
   });
   const cid = await webauthn.saveChallenge(req.user.id, 'register', options.challenge);
   res.cookie('lt_chal', cid, { httpOnly: true, sameSite: 'strict', secure: req.secure, maxAge: 5 * 60e3, path: '/api' });
-  ok(res, options);
+  ok(res, { ...options, challengeId: cid });
 }));
 
 r.post('/passkeys/verify', limiter, ah(async (req, res) => {
-  const name = String(req.body?.name || '').trim().slice(0, 80) || 'Passkey';
+  const name = String(req.body?.name || '').trim().slice(0, 80) || require('../../services/auth').deviceName(req.get('user-agent'));
   const response = req.body?.response;
   if (!response || typeof response !== 'object') throw err(400, 'invalid_request', 'Invalid passkey response');
-  const ch = await webauthn.takeChallenge(req.cookies.lt_chal, 'register', req.user.id);
+  // challenge id comes from the body (robust on proxies/in-app browsers) or the cookie
+  const ch = await webauthn.takeChallenge(req.body?.challengeId || req.cookies.lt_chal, 'register', req.user.id);
   res.clearCookie('lt_chal', { path: '/api' });
   if (!ch) throw err(400, 'challenge_expired', 'Passkey request expired, please try again');
   const { rpID, origin } = webauthn.rp(req);
   let v;
   try { v = await verifyRegistrationResponse({ response, expectedChallenge: ch.challenge, expectedOrigin: origin, expectedRPID: rpID, requireUserVerification: false }); }
-  catch (e) { throw err(400, 'passkey_failed', 'Passkey registration failed: ' + e.message); }
+  catch (e) { console.warn('[passkey] register verify failed:', e.message); throw err(400, 'passkey_failed', 'Passkey registration failed: ' + e.message); }
   if (!v.verified || !v.registrationInfo) throw err(400, 'passkey_failed', 'Passkey registration failed');
   const { credential, credentialDeviceType, credentialBackedUp } = v.registrationInfo;
   try {
@@ -197,7 +198,8 @@ r.post('/passkeys/verify', limiter, ah(async (req, res) => {
   } catch (e) { if (e.code === 'ER_DUP_ENTRY') throw err(409, 'passkey_exists', 'This passkey is already registered'); throw e; }
   await logs.security(req, req.user.id, 'passkey_added', { name }, 'warning');
   secNotify(req, 'notif.passkey_changed.title', 'notif.passkey_added.body', 'passkey_changed', { action: 'added', passkey: name });
-  ok(res, { added: true }, 201);
+  const row = await db.one('SELECT id, name FROM passkeys WHERE credential_id=?', [credential.id]);
+  ok(res, { added: true, id: row.id, name: row.name }, 201);
 }));
 
 r.patch('/passkeys/:id', ah(async (req, res) => {

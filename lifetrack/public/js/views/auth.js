@@ -37,11 +37,11 @@ async function passkeyLogin(btn, next) {
   await withBusy(btn, async () => {
     try {
       const { startAuthentication } = await loadWebAuthn();
-      const opts = await api.post('/api/auth/passkey/options');
-      const resp = await startAuthentication({ optionsJSON: opts });
-      const out = await api.post('/api/auth/passkey/verify', { response: resp });
+      const { challengeId, ...optionsJSON } = await api.post('/api/auth/passkey/options');
+      const resp = await startAuthentication({ optionsJSON });
+      const out = await api.post('/api/auth/passkey/verify', { response: resp, challengeId });
       if (out.mfa) location.href = '/app/2fa'; else await afterLogin(next);
-    } catch (e) { if (e.name === 'NotAllowedError' || e.name === 'AbortError') return; toast(e.message, { type: 'error' }); }
+    } catch (e) { if (e.name === 'NotAllowedError' || e.name === 'AbortError') return; toast(e.name === 'SecurityError' ? t('sec.passkey_https') : e.message, { type: 'error', timeout: 6000 }); }
   });
 }
 export async function loadWebAuthn() {
@@ -84,9 +84,9 @@ export function login(ctx) {
     try {
       if (!c.passkeys || !window.PublicKeyCredential?.isConditionalMediationAvailable || !(await PublicKeyCredential.isConditionalMediationAvailable())) return;
       const { startAuthentication } = await loadWebAuthn();
-      const opts = await api.post('/api/auth/passkey/options');
-      const resp = await startAuthentication({ optionsJSON: opts, useBrowserAutofill: true });
-      const out = await api.post('/api/auth/passkey/verify', { response: resp });
+      const { challengeId, ...optionsJSON } = await api.post('/api/auth/passkey/options');
+      const resp = await startAuthentication({ optionsJSON, useBrowserAutofill: true });
+      const out = await api.post('/api/auth/passkey/verify', { response: resp, challengeId });
       if (out.mfa) ctx.navigate('/app/2fa', { replace: true }); else await afterLogin(ctx.query.next);
     } catch { /* ignored — user may simply type a password */ }
   })();

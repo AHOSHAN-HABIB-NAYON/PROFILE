@@ -252,6 +252,8 @@ export function toast(message, { type = 'success', action, timeout = 3200 } = {}
 
 /* ---------- Bottom sheets / modals ---------- */
 const sheets = [];
+/** history.back() issued by closing a sheet must not re-render the page */
+export const skipPop = { n: 0 };
 export function openSheet({ title = '', body, foot, wide = false, onClose, className = '' } = {}) {
   const id = uid();
   const overlay = el('<div class="overlay"></div>');
@@ -273,7 +275,7 @@ export function openSheet({ title = '', body, foot, wide = false, onClose, class
       overlay.classList.remove('show'); sheet.classList.remove('show');
       setTimeout(() => { overlay.remove(); sheet.remove(); }, 420);
       document.removeEventListener('keydown', onKey);
-      if (!fromPop && history.state?.sheet === id) history.back();
+      if (!fromPop && history.state?.sheet === id) { skipPop.n++; history.back(); }
       if (!sheets.length) document.body.style.overflow = '';
       prevFocus?.focus?.({ preventScroll: true });
       onClose?.();
@@ -398,4 +400,18 @@ export function enableSwipe(root, onDelete) {
     };
     row.addEventListener('pointerup', end); row.addEventListener('pointercancel', end);
   });
+}
+
+/** Smooth theme switch: circular reveal via the View Transitions API, plain swap as fallback. */
+export function switchTheme(theme, ev) {
+  const root = document.documentElement;
+  const apply = () => root.setAttribute('data-theme', theme);
+  if (!document.startViewTransition || reduceMotion() || root.dataset.theme === theme) { apply(); return; }
+  const x = ev?.clientX ?? innerWidth - 40; const y = ev?.clientY ?? 40;
+  const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+  const vt = document.startViewTransition(apply);
+  vt.ready.then(() => {
+    root.animate({ clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
+      { duration: 480, easing: 'cubic-bezier(.4,0,.2,1)', pseudoElement: '::view-transition-new(root)' });
+  }).catch(() => {});
 }

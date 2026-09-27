@@ -3,11 +3,19 @@ const db = require('../db');
 const settings = require('./settings');
 const { randomToken } = require('../lib/crypto');
 
-/** Relying party derived from the configured site URL (falls back to request host). */
+/**
+ * Relying party. rpID is the configured site host (e.g. taox.shop) when the request comes from that host
+ * or one of its subdomains (www.taox.shop); otherwise the request host. Both the configured site URL and
+ * the actual request origin are accepted as expected origins.
+ */
 function rp(req) {
-  const origin = settings.siteUrl(req);
-  const rpID = new URL(origin).hostname;
-  return { rpID, origin, rpName: settings.get('site_name') || 'LifeTrack' };
+  const site = settings.siteUrl(req);
+  const siteHost = new URL(site).hostname;
+  const reqHost = String(req.hostname || '').toLowerCase();
+  const reqOrigin = `${req.protocol}://${req.get('host')}`;
+  const rpID = reqHost && reqHost !== siteHost && !reqHost.endsWith('.' + siteHost) ? reqHost : siteHost;
+  const origins = [...new Set([site, reqOrigin].filter((o) => { try { const h = new URL(o).hostname; return h === rpID || h.endsWith('.' + rpID); } catch { return false; } }))];
+  return { rpID, origin: origins.length ? origins : [reqOrigin], rpName: settings.get('site_name') || 'LifeTrack' };
 }
 async function saveChallenge(userId, purpose, challenge) {
   const id = randomToken(32);

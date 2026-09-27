@@ -88,18 +88,27 @@ const RENDER = {
       try { const d = await api.post(`/api/security/2fa/email/${tf.email ? 'disable' : 'enable'}`, cred); toast(tf.email ? t('sec.disabled_toast') : t('sec.enabled_toast')); if (d.recoveryCodes) showCodes(d.recoveryCodes); reload(); } catch (e) { toast(e.message, { type: 'error' }); }
     });
     $('[data-codes]', box)?.addEventListener('click', async () => { const cred = await stepUp(sec); if (!cred) return; try { const d = await api.post('/api/security/recovery-codes', cred); showCodes(d.recoveryCodes); reload(); } catch (e) { toast(e.message, { type: 'error' }); } });
+    // Load the WebAuthn helper up-front so the passkey prompt opens instantly on tap (keeps the user gesture)
+    const wa = import('./auth.js').then((m) => m.loadWebAuthn()).catch(() => null);
     $('[data-pk-add]', box)?.addEventListener('click', async (ev) => {
       if (!window.PublicKeyCredential) { toast(t('auth.passkey_unsupported'), { type: 'error' }); return; }
-      const name = await confirmDialog({ title: t('sec.add_passkey'), message: t('sec.passkey_name_prompt'), input: { label: t('sec.passkey_name'), type: 'text' }, confirm: t('common.continue') });
-      if (name === false) return;
       await withBusy(ev.currentTarget, async () => {
         try {
-          const { loadWebAuthn } = await import('./auth.js'); const { startRegistration } = await loadWebAuthn();
-          const opts = await api.post('/api/security/passkeys/options');
-          const resp = await startRegistration({ optionsJSON: opts });
-          await api.post('/api/security/passkeys/verify', { response: resp, name: name || navigator.platform || 'Passkey' });
-          toast(t('sec.passkey_added')); reload();
-        } catch (e) { if (e.name !== 'NotAllowedError' && e.name !== 'AbortError') toast(e.message, { type: 'error' }); }
+          const lib = await wa;
+          if (!lib) throw new Error(t('err.network'));
+          const { challengeId, ...optionsJSON } = await api.post('/api/security/passkeys/options');
+          const resp = await lib.startRegistration({ optionsJSON });
+          const out = await api.post('/api/security/passkeys/verify', { response: resp, challengeId });
+          toast(t('sec.passkey_added'));
+          const name = await confirmDialog({ title: t('sec.passkey_added'), message: t('sec.passkey_name_prompt'), input: { label: t('sec.passkey_name') }, confirm: t('common.save') });
+          if (name) await api.patch(`/api/security/passkeys/${out.id}`, { name }).catch(() => {});
+          reload();
+        } catch (e) {
+          if (e.name === 'NotAllowedError' || e.name === 'AbortError') { toast(t('sec.passkey_cancelled'), { type: 'info' }); return; }
+          if (e.name === 'InvalidStateError') { toast(t('err.passkey_exists'), { type: 'info' }); return; }
+          if (e.name === 'SecurityError') { toast(t('sec.passkey_https'), { type: 'error', timeout: 7000 }); return; }
+          toast(e.message, { type: 'error', timeout: 6000 });
+        }
       });
     });
     $$('[data-pk-del]', box).forEach((b) => b.onclick = async () => {
@@ -165,7 +174,7 @@ const RENDER = {
         <div style="border-radius:14px;overflow:hidden;border:1px solid #1C2842;background:#070C18;padding:10px"><div style="height:34px;border-radius:9px;background:linear-gradient(135deg,#16307F,#0C7C88)"></div><div style="display:flex;gap:6px;margin-top:6px"><div style="flex:1;height:22px;border-radius:7px;background:#0E1628"></div><div style="flex:1;height:22px;border-radius:7px;background:#0E1628"></div></div><div style="font-size:11px;margin-top:6px;color:#B3C0D6;font-weight:600">${t('theme.night')}</div></div></div>
       <p class="hint" style="margin-top:10px">${t('theme.sync_hint')}</p></div>
       <div class="list set-list" style="margin-top:12px">${toggleRow('rm', t('set.reduce_motion'), t('set.reduce_motion_sub'), rm, 'activity', 'var(--teal)')}</div>`);
-    segmented($('[data-theme-seg]', box), (v) => applyTheme(v));
+    segmented($('[data-theme-seg]', box), (v) => applyTheme(v, { ev: { clientX: innerWidth / 2, clientY: 200 } }));
     $('[name=rm]', box).onchange = (e) => { try { localStorage.setItem('lt-reduce-motion', e.target.checked ? '1' : '0'); } catch {} document.documentElement.classList.toggle('reduce-motion', e.target.checked); };
   },
 

@@ -726,5 +726,11 @@
 "email.announcement.subject": "{{title}}",
 "email.announcement.body": "হ্যালো {{name}},\n\n{{body}}",
 "email.test.subject": "{{site}} ইমেইল কাজ করছে ✅",
-"email.test.body": "হ্যালো {{name}},\n\nএটি আপনার {{site}} অ্যাডমিন প্যানেল থেকে একটি পরীক্ষামূলক ইমেইল। SMTP সঠিকভাবে কনফিগার করা হয়েছে।"
+"email.test.body": "হ্যালো {{name}},\n\nএটি আপনার {{site}} অ্যাডমিন প্যানেল থেকে একটি পরীক্ষামূলক ইমেইল। SMTP সঠিকভাবে কনফিগার করা হয়েছে।",
+"sec.passkey_cancelled": "পাসকি তৈরি বাতিল করা হয়েছে।",
+"sec.passkey_https": "পাসকির জন্য HTTPS ও সঠিক Site URL লাগবে (Admin → Settings → System)।",
+"err.passkey_exists": "এই ডিভাইসে আপনার অ্যাকাউন্টের পাসকি আগেই আছে।",
+"err.passkey_failed": "পাসকি যাচাই ব্যর্থ হয়েছে। আবার চেষ্টা করুন।",
+"err.challenge_expired": "পাসকি অনুরোধের মেয়াদ শেষ, আবার চেষ্টা করুন।",
+"err.passkey_unknown": "এই পাসকি নিবন্ধিত নয়।"
 }
