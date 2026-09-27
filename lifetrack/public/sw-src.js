@@ -35,10 +35,22 @@ self.addEventListener('fetch', (e) => {
   if (req.mode === 'navigate') {
     e.respondWith((async () => {
       try {
-        const pre = await e.preloadResponse; if (pre) return pre;
-        const res = await fetch(req);
-        if (url.pathname.startsWith('/app') && res.ok) { const c = await caches.open(SHELL); c.put('/app', res.clone()); }
-        return res;
+        const network = (async () => {
+          const pre = await e.preloadResponse; if (pre) return pre;
+          const res = await fetch(req);
+          if (url.pathname.startsWith('/app') && res.ok) { const c = await caches.open(SHELL); c.put('/app', res.clone()); }
+          return res;
+        })();
+        // Slow network (e.g. Chrome cold start on mobile data): show the cached app shell after 2 s
+        if (url.pathname.startsWith('/app')) {
+          const cached = await caches.match('/app');
+          if (cached) {
+            const winner = await Promise.race([network.catch(() => null), new Promise((r) => setTimeout(() => r('slow'), 2000))]);
+            if (winner && winner !== 'slow') return winner;
+            return cached;
+          }
+        }
+        return await network;
       } catch {
         const c = await caches.open(SHELL);
         if (url.pathname.startsWith('/app')) return (await c.match('/app')) || (await c.match('/offline.html'));

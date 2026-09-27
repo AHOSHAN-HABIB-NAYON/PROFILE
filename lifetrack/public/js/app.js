@@ -1,5 +1,5 @@
 /* LifeTrack SPA: fetch-driven navigation with directional transitions, lazy-loaded views, PWA wiring. */
-import { $, $$, el, html, raw, icon, api, state, t, loadLang, on, emit, toast, closeAllSheets, topSheet, reduceMotion, clearCache, money, skipPop, switchTheme } from './core.js';
+import { $, $$, el, html, raw, icon, api, state, t, loadLang, on, emit, toast, closeAllSheets, topSheet, reduceMotion, clearCache, money, skipPop, switchTheme, sleep } from './core.js';
 
 const ROUTES = [
   // [pattern, module, export, {depth, idx, auth}]
@@ -143,8 +143,11 @@ export async function refreshMe() {
     const d = await api.get('/api/me', { force: true });
     state.me = d.user; state.profile = d.profile;
     setUnread(d.unread);
+    try { localStorage.setItem('lt-me', JSON.stringify({ user: d.user, profile: d.profile })); } catch {}
     return d;
   } catch (e) {
+    if (e.status === 401 || e.status === 403) { state.me = null; state.profile = null; try { localStorage.removeItem('lt-me'); } catch {} return null; }
+    if (e.status === 0) throw e; // network problem — not a logout
     state.me = null; state.profile = null;
     return null;
   }
@@ -162,7 +165,7 @@ export async function afterLogin(next) {
 }
 on('auth:lost', () => {
   if (!state.me) return;
-  state.me = null; state.profile = null; clearCache(); renderChrome();
+  state.me = null; state.profile = null; clearCache(); try { localStorage.removeItem('lt-me'); } catch {} renderChrome();
   toast(t('auth.session_expired'), { type: 'info' });
   navigate('/app/login', { replace: true });
 });
@@ -288,19 +291,39 @@ if ('serviceWorker' in navigator) {
 }
 
 /* ---------- Boot ---------- */
+const hideSplash = () => { const s = $('.boot'); if (!s || s.classList.contains('hide')) return; s.classList.add('hide'); setTimeout(() => s.remove(), 400); };
+setTimeout(hideSplash, 4000); // never keep the logo on screen longer than this
+const readLS = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; } };
+const writeLS = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+/** Resolve with the network value, or with `fallback` after `ms` (the network copy still updates later). */
+const within = (p, ms, fallback) => Promise.race([p, sleep(ms).then(() => fallback)]);
+
 (async function boot() {
   try {
-    const [cfg] = await Promise.all([api.get('/api/public/config').catch(() => null)]);
-    state.config = cfg || { site: 'LifeTrack', currencies: [{ code: 'BDT', symbol: '৳', rate: 1 }], languages: [] };
+    const cachedCfg = readLS('lt-config');
+    const cfgP = api.get('/api/public/config', { timeout: 10000 }).then((c) => { writeLS('lt-config', c); state.config = c; return c; }).catch(() => null);
+    const cfg = cachedCfg || await within(cfgP, 3500, null);
+    state.config = state.config || cfg || { site: 'LifeTrack', currencies: [{ code: 'BDT', symbol: '৳', rate: 1 }], languages: [] };
     const storedLang = (() => { try { return localStorage.getItem('lt-lang'); } catch { return null; } })();
+    // Language + session check run in parallel
+    const meP = refreshMe().catch(() => 'offline'); // 'offline' = network problem, not a logout
     await loadLang(storedLang || cfg?.defaultLanguage || (navigator.language || 'en').slice(0, 2));
-    const me = await refreshMe();
+    const cachedMe = readLS('lt-me');
+    let me = await within(meP, cachedMe ? 2500 : 6000, undefined);
+    if ((me === undefined || me === 'offline') && cachedMe) {
+      // Slow/offline network: open with the last known account; the real check finishes in the background
+      state.me = cachedMe.user; state.profile = cachedMe.profile; me = cachedMe;
+      meP.then((fresh) => { if (fresh === null) emit('auth:lost'); else if (fresh && fresh !== 'offline') renderChrome(); });
+    } else if (me === undefined) me = await meP;
+    if (me === 'offline') me = null;
+    if (me?.user) writeLS('lt-me', { user: me.user, profile: me.profile }); else if (me === null) { try { localStorage.removeItem('lt-me'); } catch {} }
     if (me?.profile) {
       applyTheme(me.profile.theme, { save: false, animate: false });
       if (me.profile.language && me.profile.language !== state.lang) await loadLang(me.profile.language);
     }
     renderChrome();
     await render('up');
+    hideSplash();
     if (state.me) {
       import('./outbox.js').then((m) => m.flush());
       import('./push.js').then((m) => m.syncSubscription()).catch(() => {});
@@ -315,7 +338,7 @@ if ('serviceWorker' in navigator) {
     $('#view').innerHTML = String(html`<div class="empty" style="margin-top:20vh">${icon('wifi-off', 'i-lg')}<h4>${t('state.error_title')}</h4><p>${e.message}</p><button class="btn btn-primary btn-sm" data-reload>${t('common.retry')}</button></div>`);
     $('[data-reload]')?.addEventListener('click', () => location.reload());
   } finally {
-    const s = $('.boot'); s?.classList.add('hide'); setTimeout(() => s?.remove(), 400);
+    hideSplash();
   }
 })();
 

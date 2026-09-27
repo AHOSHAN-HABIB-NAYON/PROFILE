@@ -49,19 +49,35 @@ export function t(key, vars) {
   if (vars) s = s.replace(/\{(\w+)\}/g, (_, k) => (vars[k] !== undefined ? vars[k] : `{${k}}`));
   return s;
 }
+const applyDict = () => {
+  $$('[data-i18n]').forEach((n) => { n.textContent = t(n.dataset.i18n); });
+  $$('[data-i18n-title]').forEach((n) => { n.title = t(n.dataset.i18nTitle); n.setAttribute('aria-label', t(n.dataset.i18nTitle)); });
+};
+/** Cached dictionary is used instantly; the network copy refreshes it (max ~3.5 s wait when nothing is cached). */
 export async function loadLang(lang) {
   const l = ['en', 'bn', 'hi'].includes(lang) ? lang : 'en';
   const cacheKey = 'lt-dict-' + l;
-  try { const c = JSON.parse(localStorage.getItem(cacheKey) || 'null'); if (c && !Object.keys(state.dict).length) state.dict = c; } catch {}
-  try {
-    const r = await fetch(`/api/public/i18n/${l}`, { credentials: 'same-origin' });
-    if (r.ok) { state.dict = await r.json(); try { localStorage.setItem(cacheKey, JSON.stringify(state.dict)); } catch {} }
-  } catch { /* offline: cached dictionary */ }
+  let cached = null;
+  try { cached = JSON.parse(localStorage.getItem(cacheKey) || 'null'); } catch {}
   state.lang = l;
   document.documentElement.lang = l;
   try { localStorage.setItem('lt-lang', l); } catch {}
-  $$('[data-i18n]').forEach((n) => { n.textContent = t(n.dataset.i18n); });
-  $$('[data-i18n-title]').forEach((n) => { n.title = t(n.dataset.i18nTitle); n.setAttribute('aria-label', t(n.dataset.i18nTitle)); });
+  const net = (async () => {
+    const ctrl = new AbortController(); const tm = setTimeout(() => ctrl.abort(), 8000);
+    try {
+      const r = await fetch(`/api/public/i18n/${l}`, { credentials: 'same-origin', signal: ctrl.signal });
+      if (r.ok) { const d = await r.json(); try { localStorage.setItem(cacheKey, JSON.stringify(d)); } catch {} return d; }
+    } catch { /* offline */ } finally { clearTimeout(tm); }
+    return null;
+  })();
+  if (cached) {
+    state.dict = cached;
+    net.then((d) => { if (d && state.lang === l) state.dict = d; });
+  } else {
+    const d = await Promise.race([net, sleep(3500).then(() => null)]);
+    if (d) state.dict = d; else net.then((x) => { if (x && state.lang === l) { state.dict = x; applyDict(); } });
+  }
+  applyDict();
 }
 
 /* ---------- API client ---------- */
@@ -106,10 +122,10 @@ async function request(method, url, body, opts = {}) {
 }
 
 export const api = {
-  async get(url, { maxAge = 0, force = false } = {}) {
+  async get(url, { maxAge = 0, force = false, timeout } = {}) {
     const c = cache.get(url);
     if (!force && c && Date.now() - c.at < maxAge) return c.data;
-    const d = await request('GET', url);
+    const d = await request('GET', url, undefined, { timeout });
     cache.set(url, { at: Date.now(), data: d });
     return d;
   },

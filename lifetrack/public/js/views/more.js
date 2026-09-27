@@ -5,6 +5,7 @@ import { avatar, applyTheme } from '../app.js';
 export async function logout() {
   try { const p = await import('../push.js'); await p.disable().catch(() => {}); } catch {}
   await api.post('/api/auth/logout').catch(() => {});
+  try { localStorage.removeItem('lt-me'); } catch {}
   location.href = '/app/login';
 }
 
