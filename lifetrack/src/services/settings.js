@@ -17,6 +17,7 @@ const DEFAULTS = {
   pwa_icon_url: '',
   og_image_url: '',
   theme_color: '#1E4FD8',
+  android_assetlinks: '',
   background_color: '#F5F7FB',
   // SEO
   seo_title: 'LifeTrack — Personal Finance & Life Tracker',

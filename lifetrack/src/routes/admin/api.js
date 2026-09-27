@@ -318,7 +318,7 @@ const GROUPS = {
   'branding.manage': ['site_name', 'site_tagline', 'logo_url', 'logo_show_name', 'favicon_url', 'pwa_icon_url', 'og_image_url'],
   'seo.manage': ['seo_title', 'seo_description', 'seo_keywords'],
   'content.manage': ['landing_hero_title', 'landing_hero_subtitle', 'landing_cta', 'landing_show_faq'],
-  'pwa.manage': ['theme_color', 'background_color'],
+  'pwa.manage': ['theme_color', 'background_color', 'android_assetlinks'],
   'settings.system': ['site_url', 'registration_enabled', 'email_verification_required', 'auth_google_enabled', 'google_client_id', 'google_client_secret', 'auth_passkey_enabled', 'auth_2fa_enabled',
     'session_days', 'login_max_attempts', 'login_lock_minutes', 'mail_enabled', 'smtp_host', 'smtp_port', 'smtp_secure', 'smtp_user', 'smtp_pass', 'mail_from_name', 'mail_from_email',
     'push_enabled', 'vapid_subject', 'firebase_enabled', 'firebase_web_config', 'firebase_vapid_key', 'firebase_service_account', 'default_language', 'languages_enabled', 'default_currency',
@@ -346,7 +346,7 @@ r.put('/settings', ah(async (req, res) => {
     if (k === 'site_url' && val && !/^https?:\/\/[^\s/]+(:\d+)?$/.test(val.replace(/\/+$/, ''))) throw err(422, 'validation_failed', 'Site URL must look like https://example.com', { fields: { site_url: 'invalid' } });
     if (k === 'site_url') val = val.replace(/\/+$/, '');
     if (['theme_color', 'background_color'].includes(k) && !/^#[0-9a-fA-F]{6}$/.test(val)) throw err(422, 'validation_failed', 'Invalid colour', { fields: { [k]: 'invalid' } });
-    if (['currencies', 'firebase_web_config', 'firebase_service_account'].includes(k) && val) { try { JSON.parse(val); } catch { throw err(422, 'validation_failed', `${k} must be valid JSON`, { fields: { [k]: 'invalid' } }); } }
+    if (['currencies', 'firebase_web_config', 'firebase_service_account', 'android_assetlinks'].includes(k) && val) { try { JSON.parse(val); } catch { throw err(422, 'validation_failed', `${k} must be valid JSON`, { fields: { [k]: 'invalid' } }); } }
     if (k === 'currencies') {
       const list = JSON.parse(val);
       if (!Array.isArray(list) || !list.length || !list.every((c) => /^[A-Z]{3}$/.test(c.code) && c.symbol && Number(c.rate) > 0)) throw err(422, 'validation_failed', 'Each currency needs code, symbol and a positive rate', { fields: { currencies: 'invalid' } });

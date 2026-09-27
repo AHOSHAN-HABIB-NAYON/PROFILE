@@ -107,6 +107,12 @@ r.get('/sitemap.xml', (req, res) => {
   res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>${esc(u)}/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url><url><loc>${esc(u)}/app/login</loc><priority>0.5</priority></url><url><loc>${esc(u)}/app/register</loc><priority>0.6</priority></url></urlset>`);
 });
 r.get('/favicon.ico', (req, res) => res.redirect(301, settings.get('favicon_url') || '/icons/favicon-32.png'));
+// Digital Asset Links for the Android (TWA) app from PWABuilder — pasted in Admin → Settings → PWA
+r.get('/.well-known/assetlinks.json', (req, res) => {
+  const v = settings.get('android_assetlinks');
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.type('application/json').send(v && v.trim() ? v : '[]');
+});
 r.get('/.well-known/change-password', (req, res) => res.redirect('/app/settings/security'));
 
 module.exports = { router: r, VERSION, render, vars, html, sprite };
