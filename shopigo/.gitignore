@@ -1,0 +1,17 @@
+node_modules/
+server/dist/
+client/dist/
+.env
+.env.*
+!.env.example
+storage/*
+!storage/.gitkeep
+uploads/*
+!uploads/.gitkeep
+releases/
+current
+keys/
+updates/*.tar.gz
+updates/.staging-*
+tmp/
+*.log

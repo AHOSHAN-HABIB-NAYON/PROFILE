@@ -1,0 +1,44 @@
+{
+  "name": "@shopigo/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node ../scripts/copy-server-assets.mjs",
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "cli": "node dist/cli.js"
+  },
+  "dependencies": {
+    "@node-rs/argon2": "^2.2.1",
+    "@simplewebauthn/server": "^13.3.3",
+    "compression": "^1.8.2",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
+    "ioredis": "^5.11.1",
+    "kysely": "^0.29.6",
+    "multer": "^2.4.0",
+    "mysql2": "^3.24.4",
+    "otpauth": "^9.5.2",
+    "pino": "^10.3.1",
+    "qrcode": "^1.5.4",
+    "rate-limit-redis": "^6.0.1",
+    "sharp": "^0.35.5",
+    "tar": "^7.5.22",
+    "ua-parser-js": "^2.0.10",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/compression": "^1.8.1",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^22.20.4",
+    "@types/qrcode": "^1.5.6",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
+  }
+}
