@@ -1,0 +1,25 @@
+{
+  "name": "tradeteam",
+  "private": true,
+  "version": "1.0.0",
+  "description": "TradeTeam — full-stack real-time trading platform (Node.js + TypeScript)",
+  "workspaces": ["packages/*", "apps/*"],
+  "engines": { "node": ">=20.11" },
+  "scripts": {
+    "dev": "npm run dev -w @tradeteam/api",
+    "build": "npm run build -w @tradeteam/web && npm run build -w @tradeteam/api",
+    "start": "npm run start -w @tradeteam/api",
+    "migrate": "npm run migrate -w @tradeteam/api",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "eslint": "^9.36.0",
+    "prettier": "^3.6.2",
+    "typescript": "~5.9.2",
+    "typescript-eslint": "^8.44.0"
+  }
+}

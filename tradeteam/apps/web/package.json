@@ -1,0 +1,33 @@
+{
+  "name": "@tradeteam/web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3001",
+    "build": "next build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@simplewebauthn/browser": "^13.2.2",
+    "@tanstack/react-query": "^5.90.2",
+    "@tanstack/react-virtual": "^3.13.12",
+    "@tradeteam/shared": "*",
+    "lightweight-charts": "^5.0.9",
+    "next": "16.3.6",
+    "qrcode": "^1.5.4",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "socket.io-client": "^4.8.1",
+    "socket.io-msgpack-parser": "^3.0.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.13",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "tailwindcss": "^4.1.13",
+    "vitest": "^5.0.2"
+  }
+}
