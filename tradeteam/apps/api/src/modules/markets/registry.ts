@@ -104,6 +104,8 @@ export function toDTO(m: MarketRow, favorite?: boolean): MarketDTO {
     engine: m.engine,
     pricePrecision: m.price_precision,
     qtyPrecision: m.qty_precision,
+    tickSize: fmt(m.tick_size),
+    stepSize: fmt(m.step_size),
     minQty: fmt(m.min_qty),
     maxQty: m.max_qty ? fmt(m.max_qty) : null,
     minNotional: fmt(m.min_notional),

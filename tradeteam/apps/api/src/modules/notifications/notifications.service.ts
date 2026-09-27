@@ -1,7 +1,7 @@
 import webpush from 'web-push';
 import { exec, one, query } from '../../infrastructure/db';
 import { enqueue, startWorker } from '../../infrastructure/queue';
-import { sendMail } from '../../infrastructure/mailer';
+import { sendMail, smtpConfigured } from '../../infrastructure/mailer';
 import { logger } from '../../infrastructure/logger';
 import { sha256 } from '../../infrastructure/crypto';
 import { getSetting } from '../settings/settings.service';
@@ -101,7 +101,8 @@ export async function notify(
   }
   const wantEmail = opts.email ?? cat === 'security';
   if (wantEmail && (cat === 'security' || prefs.email?.[cat] !== false)) {
-    await enqueue('email', 'notification', { userId, title, body });
+    if (smtpConfigured()) await enqueue('email', 'notification', { userId, title, body });
+    else warnNoSmtp();
   }
   if (getSetting('push.enabled') && prefs.push?.[cat] !== false) {
     await enqueue('push', 'notification', { userId, title, body, data: { ...data, type } });
@@ -114,7 +115,16 @@ export async function sendTransactionalEmail(
   to: string,
   opts: { title: string; body: string; code?: string; cta?: { label: string; url: string } },
 ) {
+  if (!smtpConfigured()) return warnNoSmtp();
   await enqueue('email', 'transactional', { to, ...opts });
+}
+
+let warnedAt = 0;
+/** Without SMTP, emails cannot be delivered: warn (rate-limited) instead of queueing doomed jobs. */
+function warnNoSmtp() {
+  if (Date.now() - warnedAt < 60_000) return;
+  warnedAt = Date.now();
+  logger.warn('email not sent: SMTP is not configured (Admin → System settings → Email)');
 }
 
 export async function broadcastAnnouncement(title: string, body: string, adminId: number) {
@@ -139,7 +149,15 @@ export async function broadcastAnnouncement(title: string, body: string, adminId
 export function startNotificationWorkers() {
   const env = loadEnv();
   if (env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY) {
-    webpush.setVapidDetails(env.APP_URL, env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY);
+    // The VAPID subject must be an https: URL or a mailto: address.
+    const subject = env.APP_URL.startsWith('https://')
+      ? env.APP_URL
+      : `mailto:admin@${new URL(env.APP_URL).hostname}`;
+    try {
+      webpush.setVapidDetails(subject, env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY);
+    } catch (e) {
+      logger.error({ err: (e as Error).message }, 'web push disabled: invalid VAPID configuration');
+    }
   }
   startWorker('email', async (job) => {
     if (job.name === 'notification') {

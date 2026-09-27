@@ -58,7 +58,13 @@ export async function startHarness(): Promise<Harness> {
   await redis().flushdb();
   await migrate(db());
   await loadSettings();
-  await setSettings({ 'auth.email_verification_required': false, 'market.provider': 'internal' });
+  // SMTP "configured" so emails are queued; no mail worker runs in tests, so nothing is sent.
+  await setSettings({
+    'auth.email_verification_required': false,
+    'market.provider': 'internal',
+    'smtp.host': 'smtp.test.invalid',
+    'smtp.from': 'test@example.com',
+  });
   await loadFees();
   await seedInternalMarket();
   await loadAssets();

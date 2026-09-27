@@ -1,0 +1,186 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens. LIGHT is the default theme; DARK is a separately tuned palette (not an inversion):
+ * deeper navy surfaces, lifted borders, desaturated accents for long sessions.
+ */
+:root {
+  color-scheme: light;
+  --bg: #f5f6fa;
+  --bg-elev: #ffffff;
+  --card: #ffffff;
+  --card-2: #f3f4f8;
+  --line: #e7e9f0;
+  --line-strong: #d6d9e4;
+  --fg: #0f172a;
+  --fg-2: #334155;
+  --muted: #64748b;
+  --faint: #94a3b8;
+  --accent: #4f46e5;
+  --accent-2: #6366f1;
+  --accent-soft: #eef0ff;
+  --accent-fg: #ffffff;
+  --up: #059669;
+  --up-soft: #e7f7f0;
+  --down: #e11d48;
+  --down-soft: #fdecef;
+  --warn: #d97706;
+  --warn-soft: #fef5e7;
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 10px 40px rgba(15, 23, 42, 0.14);
+  --chart-grid: #eef0f5;
+  --chart-text: #64748b;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0a0f1e;
+  --bg-elev: #0f1629;
+  --card: #111a2e;
+  --card-2: #16213a;
+  --line: #1c2842;
+  --line-strong: #27365a;
+  --fg: #e8edf7;
+  --fg-2: #c3cde0;
+  --muted: #8b9ab6;
+  --faint: #5c6b88;
+  --accent: #7c83ff;
+  --accent-2: #9297ff;
+  --accent-soft: #1b2250;
+  --accent-fg: #0a0f1e;
+  --up: #22c58b;
+  --up-soft: #0f2a24;
+  --down: #f4577a;
+  --down-soft: #2e1420;
+  --warn: #f5a524;
+  --warn-soft: #2d2210;
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 50px rgba(0, 0, 0, 0.55);
+  --chart-grid: #16213a;
+  --chart-text: #8b9ab6;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-elev: var(--bg-elev);
+  --color-card: var(--card);
+  --color-card-2: var(--card-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-fg-2: var(--fg-2);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-fg: var(--accent-fg);
+  --color-up: var(--up);
+  --color-up-soft: var(--up-soft);
+  --color-down: var(--down);
+  --color-down-soft: var(--down-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --shadow-card: var(--shadow);
+  --shadow-pop: var(--shadow-lg);
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Inter, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'SF Mono', ui-monospace, 'JetBrains Mono', Menlo, Consolas, monospace;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--fg);
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+body {
+  font-family: var(--font-sans);
+  overscroll-behavior-y: none;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+.pb-safe {
+  padding-bottom: calc(var(--safe-bottom) + 0.5rem);
+}
+.pt-safe {
+  padding-top: var(--safe-top);
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.flash-up {
+  animation: flashUp 0.6s ease-out;
+}
+.flash-down {
+  animation: flashDown 0.6s ease-out;
+}
+@keyframes flashUp {
+  from {
+    background-color: var(--up-soft);
+  }
+}
+@keyframes flashDown {
+  from {
+    background-color: var(--down-soft);
+  }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--card-2) 25%, var(--line) 37%, var(--card-2) 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+@keyframes shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+.sheet-enter {
+  animation: sheetUp 0.28s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+@keyframes sheetUp {
+  from {
+    transform: translateY(100%);
+  }
+}
+.fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+.page-enter {
+  animation: pageIn 0.22s ease-out;
+}
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

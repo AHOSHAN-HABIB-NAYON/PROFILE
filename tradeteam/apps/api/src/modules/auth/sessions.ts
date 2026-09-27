@@ -2,7 +2,7 @@ import type { Request, Response } from 'express';
 import { UAParser } from 'ua-parser-js';
 import { exec, one, query } from '../../infrastructure/db';
 import { redis } from '../../infrastructure/redis';
-import { randomToken, sha256 } from '../../infrastructure/crypto';
+import { hmac, randomToken, sha256 } from '../../infrastructure/crypto';
 import { loadEnv } from '../../config/env';
 import { getSetting } from '../settings/settings.service';
 import { publishSessionRevoked } from '../../websocket/bus';
@@ -67,7 +67,8 @@ export function ensureDeviceCookie(req: Request, res: Response): string {
 
 export async function upsertDevice(pt: PrincipalType, pid: number, did: string, req: Request) {
   const ua = new UAParser(userAgent(req)).getResult();
-  const fp = sha256(did);
+  // Keyed hash: device identifiers in the database are useless without the server secret.
+  const fp = hmac(loadEnv().SESSION_SECRET ?? '', did);
   const existing = await one<{ id: number }>(
     'SELECT id FROM user_devices WHERE principal_type = ? AND principal_id = ? AND fingerprint = ?',
     [pt, pid, fp],

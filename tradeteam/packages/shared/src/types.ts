@@ -57,6 +57,8 @@ export interface MarketDTO {
   engine: 'internal' | 'external';
   pricePrecision: number;
   qtyPrecision: number;
+  tickSize: Dec;
+  stepSize: Dec;
   minQty: Dec;
   maxQty: Dec | null;
   minNotional: Dec;

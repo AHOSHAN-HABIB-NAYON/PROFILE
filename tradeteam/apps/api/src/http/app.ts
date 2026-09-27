@@ -9,7 +9,7 @@ import { APP_VERSION, UPLOADS_DIR } from '../config/paths';
 import { errorHandler, notFound } from './middleware/error';
 import { csrf } from './middleware/csrf';
 import { loadUser } from './middleware/auth';
-import { rateLimit } from './middleware/rate-limit';
+import { rateLimit, byPrincipal } from './middleware/rate-limit';
 import { authRouter } from '../modules/auth/auth.routes';
 import { accountRouter } from '../modules/users/users.routes';
 import { marketsRouter } from '../modules/markets/markets.routes';
@@ -30,7 +30,6 @@ export function buildAppApi(): express.Router {
   // Webhooks: HMAC-authenticated, no cookies → no CSRF, mounted first.
   api.use('/webhooks', webhooksRouter);
   api.use(csrf);
-  api.use(rateLimit('api', 600, 60));
 
   api.get('/config/public', (_req, res) => {
     res.json({ installed: true, version: APP_VERSION, settings: publicSettings() });
@@ -42,6 +41,8 @@ export function buildAppApi(): express.Router {
   api.use('/admin', adminRouter);
 
   api.use(loadUser);
+  // General API budget: per user when signed in (fair behind NAT), per IP otherwise.
+  api.use(rateLimit('api', 1200, 60, byPrincipal));
   api.use('/auth', authRouter);
   api.use('/account', accountRouter);
   api.use(marketsRouter);

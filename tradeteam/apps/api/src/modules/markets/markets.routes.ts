@@ -129,10 +129,13 @@ marketsRouter.get(
       }),
       req.query,
     );
-    const list = allMarkets()
+    const all = allMarkets()
       .filter((m) => isVisible(m) && m.status === 'trading' && m.quote === q.quote.toUpperCase())
       .map((m) => ({ m, t: getTicker(m.symbol) }))
-      .filter((x) => x.t && Number(x.t.q) >= q.minQuoteVolume);
+      .filter((x) => x.t);
+    // Ignore illiquid pairs when there are enough liquid ones; small venues fall back to all pairs.
+    const liquid = all.filter((x) => Number(x.t!.q) >= q.minQuoteVolume);
+    const list = liquid.length >= q.limit ? liquid : all;
     const byChange = [...list].sort((a, b) => Number(b.t!.p) - Number(a.t!.p));
     const byVolume = [...list].sort((a, b) => Number(b.t!.q) - Number(a.t!.q));
     res.json({

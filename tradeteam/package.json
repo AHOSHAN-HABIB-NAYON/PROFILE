@@ -3,8 +3,13 @@
   "private": true,
   "version": "1.0.0",
   "description": "TradeTeam — full-stack real-time trading platform (Node.js + TypeScript)",
-  "workspaces": ["packages/*", "apps/*"],
-  "engines": { "node": ">=20.11" },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20.11"
+  },
   "scripts": {
     "dev": "npm run dev -w @tradeteam/api",
     "build": "npm run build -w @tradeteam/web && npm run build -w @tradeteam/api",
@@ -18,6 +23,7 @@
   "devDependencies": {
     "@eslint/js": "^9.36.0",
     "eslint": "^9.36.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
     "prettier": "^3.6.2",
     "typescript": "~5.9.2",
     "typescript-eslint": "^8.44.0"

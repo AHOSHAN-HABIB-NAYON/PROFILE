@@ -1,0 +1,45 @@
+name: TradeTeam CI
+
+on:
+  push:
+    paths: ['tradeteam/**', '.github/workflows/tradeteam-ci.yml']
+  pull_request:
+    paths: ['tradeteam/**', '.github/workflows/tradeteam-ci.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tradeteam
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_USER: tt
+          MYSQL_PASSWORD: ttpass
+          MYSQL_DATABASE: tradeteam_test
+        ports: ['3306:3306']
+        options: --health-cmd="mysqladmin ping -proot" --health-interval=5s --health-timeout=5s --health-retries=20
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
+        options: --health-cmd="redis-cli ping" --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tradeteam/package-lock.json
+      - run: npm ci
+      - name: Grant test user rights to create test databases
+        run: mysql -h127.0.0.1 -uroot -proot -e "GRANT ALL ON *.* TO 'tt'@'%'; FLUSH PRIVILEGES;"
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
