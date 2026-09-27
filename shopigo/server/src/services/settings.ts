@@ -32,7 +32,7 @@ export const SETTINGS: SettingDef[] = [
   d('general', 'currency_symbol', 'string', 'Currency symbol', '৳', { public: true }),
   d('general', 'timezone', 'string', 'Timezone', 'Asia/Dhaka', { public: true }),
   d('general', 'order_prefix', 'string', 'Order ID prefix', 'SG'),
-  d('general', 'language', 'select', 'Storefront language', 'bn', { public: true, options: ['bn', 'en'] }),
+  d('general', 'language', 'select', 'Storefront language', 'en', { public: true, options: ['en', 'bn'] }),
   // Branding
   d('branding', 'logo', 'image', 'Logo', '', { public: true }),
   d('branding', 'favicon', 'image', 'Favicon', '', { public: true }),

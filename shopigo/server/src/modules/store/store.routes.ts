@@ -126,6 +126,7 @@ const listSchema = z.object({
   min: z.coerce.number().min(0).optional(),
   max: z.coerce.number().min(0).optional(),
   in_stock: z.enum(['1', '0']).optional(),
+  ids: z.string().regex(/^\d+(,\d+){0,59}$/).optional(),
   page: z.coerce.number().int().min(1).max(1000).optional(),
   limit: z.coerce.number().int().min(1).max(60).optional(),
 });
@@ -152,6 +153,7 @@ storeRouter.get('/products', async (req, res) => {
     if (f.min !== undefined) q = q.where(sql`COALESCE(NULLIF(p.sale_price, 0), p.price)`, '>=', f.min);
     if (f.max !== undefined) q = q.where(sql`COALESCE(NULLIF(p.sale_price, 0), p.price)`, '<=', f.max);
     if (f.in_stock === '1') q = q.where('p.stock', '>', 0);
+    if (f.ids) q = q.where('p.id', 'in', f.ids.split(',').map(Number));
     if (f.section === 'featured') q = q.where('p.is_featured', '=', 1);
     if (f.section === 'free_delivery') q = q.where('p.free_delivery', '=', 1);
     if (f.section === 'flash_sale') {

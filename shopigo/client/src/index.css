@@ -1,0 +1,155 @@
+@import 'tailwindcss';
+@import '@fontsource/plus-jakarta-sans/400.css';
+@import '@fontsource/plus-jakarta-sans/500.css';
+@import '@fontsource/plus-jakarta-sans/600.css';
+@import '@fontsource/plus-jakarta-sans/700.css';
+@import '@fontsource/plus-jakarta-sans/800.css';
+@import '@fontsource/hind-siliguri/bengali-400.css';
+@import '@fontsource/hind-siliguri/bengali-500.css';
+@import '@fontsource/hind-siliguri/bengali-600.css';
+@import '@fontsource/hind-siliguri/bengali-700.css';
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', 'Hind Siliguri', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Warm, premium palette: cream canvas, soft peach surfaces, orange accent */
+  --color-brand-50: #fff4ee;
+  --color-brand-100: #ffe6d9;
+  --color-brand-200: #ffcbb1;
+  --color-brand-300: #ffa981;
+  --color-brand-400: #fb8757;
+  --color-brand-500: #f26b3a;
+  --color-brand-600: #de5627;
+  --color-brand-700: #b8421d;
+  --color-brand-800: #92371d;
+  --color-brand-900: #76301b;
+
+  --color-canvas: #fbf5ef;
+  --color-surface: #ffffff;
+  --color-soft: #f7efe7;
+  --color-line: #f0e5da;
+  --color-ink: #251b15;
+  --color-ink-2: #4a3d34;
+  --color-muted: #8c7c70;
+  --color-success: #16a34a;
+  --color-danger: #e0422c;
+
+  --radius-card: 22px;
+  --radius-pill: 999px;
+
+  --shadow-soft: 0 1px 2px rgb(56 32 16 / 0.04), 0 8px 24px -12px rgb(56 32 16 / 0.14);
+  --shadow-float: 0 18px 40px -18px rgb(242 107 58 / 0.45);
+  --shadow-card: 0 1px 0 rgb(56 32 16 / 0.03), 0 12px 32px -18px rgb(56 32 16 / 0.22);
+
+  --animate-shimmer: shimmer 2.8s ease-in-out infinite;
+  --animate-pop: pop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+  --animate-fade-up: fade-up 0.35s ease-out both;
+
+  @keyframes shimmer {
+    0%, 60% { transform: translateX(-120%) skewX(-18deg); }
+    100% { transform: translateX(220%) skewX(-18deg); }
+  }
+  @keyframes pop {
+    0% { transform: scale(0.6); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes slide-in {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+  }
+  @keyframes fade-up {
+    from { transform: translateY(8px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+    font-feature-settings: 'ss01', 'cv11';
+  }
+  :lang(bn), .bn {
+    font-family: 'Hind Siliguri', 'Plus Jakarta Sans', sans-serif;
+  }
+  button, [role='button'] {
+    cursor: pointer;
+  }
+  input, select, textarea {
+    font: inherit;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-brand-400);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--color-brand-200);
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-[var(--radius-card)] bg-surface shadow-[var(--shadow-card)];
+  }
+  .input {
+    @apply w-full rounded-2xl border border-line bg-surface px-4 py-3 text-[15px] text-ink placeholder:text-muted/70 transition focus:border-brand-300 focus:ring-4 focus:ring-brand-100 outline-none disabled:bg-soft disabled:text-muted;
+  }
+  .label {
+    @apply mb-1.5 block text-[13px] font-semibold text-ink-2;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold;
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .prose-shop {
+    @apply text-[15px] leading-7 text-ink-2;
+  }
+  .prose-shop p { @apply mb-3; }
+  .prose-shop ul { @apply mb-3 list-disc pl-5; }
+  .prose-shop ol { @apply mb-3 list-decimal pl-5; }
+  .prose-shop h2 { @apply mt-5 mb-2 text-lg font-bold text-ink; }
+  .prose-shop h3 { @apply mt-4 mb-2 font-bold text-ink; }
+  .prose-shop a { @apply text-brand-600 underline; }
+  .prose-shop img { @apply my-3 rounded-2xl; }
+  .prose-shop table { @apply my-3 w-full text-sm; }
+  .prose-shop td, .prose-shop th { @apply border border-line px-3 py-2; }
+
+  /* Premium "Order Now" CTA: soft glow + light sweep */
+  .cta-glow {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .cta-glow::after {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 40%;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.45), transparent);
+    animation: var(--animate-shimmer);
+    z-index: -1;
+    pointer-events: none;
+  }
+  .press {
+    @apply transition-transform duration-150 active:scale-[0.97];
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

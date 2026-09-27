@@ -43,7 +43,7 @@ export interface Manifest {
 
 export interface StagedUpdate { version: string; dir: string; manifest: Manifest; signed: boolean }
 
-const PROTECTED = [/^release\/\.env/, /^release\/storage(\/|$)/, /^release\/uploads(\/|$)/, /^release\/releases(\/|$)/];
+const PROTECTED = [/^release\/\.env$/, /^release\/\.env\.(?!example$)/, /^release\/storage(\/|$)/, /^release\/uploads(\/|$)/, /^release\/releases(\/|$)/];
 
 let job: { running: boolean; version: string | null; log: string[]; status: 'idle' | 'running' | 'success' | 'failed'; startedAt: string | null } = { running: false, version: null, log: [], status: 'idle', startedAt: null };
 
@@ -344,7 +344,8 @@ export async function rollback(historyId: number, adminId: number | null, restor
   if (h.to_version !== CODE_VERSION) throw badRequest(`The running version is ${CODE_VERSION}; only the latest update can be rolled back`);
   const target = h.from_version;
   const targetDir = path.join(RELEASES_DIR, target);
-  const rootVersion = JSON.parse(await fsp.readFile(path.join(SHARED_ROOT, 'package.json'), 'utf8').catch(() => '{}')).version;
+  const launcherRoot = process.env.SHOPIGO_LAUNCHER_ROOT || SHARED_ROOT;
+  const rootVersion = JSON.parse(await fsp.readFile(path.join(launcherRoot, 'package.json'), 'utf8').catch(() => '{}')).version;
   if (!fs.existsSync(targetDir) && rootVersion !== target) throw badRequest(`Release ${target} is no longer available on disk`);
   if (restoreDb && !h.backup_file) throw badRequest('No pre-update backup is recorded for this update');
   setMaintenance({ enabled: true, reason: `Rolling back to ${target}` });

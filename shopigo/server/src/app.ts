@@ -88,7 +88,7 @@ export function createApp() {
           'frame-ancestors': ["'self'"],
           'object-src': ["'none'"],
           'base-uri': ["'self'"],
-          'upgrade-insecure-requests': config.isProd ? [] : null,
+          'upgrade-insecure-requests': null,
         },
       },
       crossOriginEmbedderPolicy: false,
@@ -97,7 +97,9 @@ export function createApp() {
       hsts: config.isProd ? { maxAge: 15552000, includeSubDomains: false } : false,
     }),
   );
-  app.use((_req, res, next) => {
+  app.use((req, res, next) => {
+    // Only ask browsers to upgrade sub-resources when the site is actually served over HTTPS.
+    if (req.secure) res.set('Content-Security-Policy', `${res.get('Content-Security-Policy')};upgrade-insecure-requests`);
     res.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=()');
     next();
   });

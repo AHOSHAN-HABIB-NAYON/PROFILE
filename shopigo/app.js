@@ -13,12 +13,14 @@ const { pathToFileURL } = require('node:url');
 
 const root = __dirname;
 process.env.SHOPIGO_SHARED = process.env.SHOPIGO_SHARED || root;
+const shared = path.resolve(process.env.SHOPIGO_SHARED);
+process.env.SHOPIGO_LAUNCHER_ROOT = root;
 
 function entry() {
   try {
-    const version = fs.readFileSync(path.join(root, 'storage', 'current-release'), 'utf8').trim();
+    const version = fs.readFileSync(path.join(shared, 'storage', 'current-release'), 'utf8').trim();
     if (/^\d+\.\d+\.\d+([-.\w]*)$/.test(version)) {
-      const candidate = path.join(root, 'releases', version, 'server', 'dist', 'index.js');
+      const candidate = path.join(shared, 'releases', version, 'server', 'dist', 'index.js');
       if (fs.existsSync(candidate)) return candidate;
       console.error(`[shopigo] release ${version} not found, falling back to bundled code`);
     }
