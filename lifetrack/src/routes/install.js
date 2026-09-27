@@ -28,7 +28,12 @@ async function connectAndCreate(b) {
   const conn = await mysql.createConnection({ host: b.db_host, port: b.db_port, user: b.db_user, password: req0(b.db_password), connectTimeout: 8000 });
   try {
     const [[v]] = await conn.query('SELECT VERSION() v');
-    await conn.query(`CREATE DATABASE IF NOT EXISTS \`${b.db_name}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+    try {
+      await conn.query(`CREATE DATABASE IF NOT EXISTS \`${b.db_name}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+    } catch (e) {
+      // Shared hosting (Hostinger, cPanel…) users usually can't CREATE DATABASE — use the existing one.
+      try { await conn.query(`USE \`${b.db_name}\``); } catch { throw e; }
+    }
     return v.v;
   } finally { await conn.end(); }
 }
