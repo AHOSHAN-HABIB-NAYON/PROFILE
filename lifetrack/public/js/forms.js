@@ -66,7 +66,7 @@ export async function openTxForm(type = 'expense', { tx = null, account_id = nul
     <div class="field"><label>${t('tx.tags')}</label><input class="input" name="tags" maxlength="200" value="${tx?.tags || ''}" placeholder="${t('tx.tags_ph')}"></div>
     <label class="file-drop">${icon('paperclip', 'i-sm')}<span data-file>${t('tx.attach')}</span><input type="file" name="file" accept="image/*,application/pdf"></label>
   </form>`);
-  const foot = el(html`<button class="btn btn-primary btn-lg btn-block" data-save>${icon('check', 'i-sm')}${editing ? t('common.save_changes') : t('tx.save')}</button>`);
+  const foot = el(html`<div style="width:100%"><button class="btn btn-primary btn-lg btn-block" data-save>${icon('check', 'i-sm')}${editing ? t('common.save_changes') : t('tx.save')}</button></div>`);
   const s = openSheet({ title: editing ? t('tx.edit') : t('tx.new'), body, foot });
   const form = body;
   const accOf = (id) => accounts.find((a) => String(a.id) === String(id)) || state.accounts.find((a) => String(a.id) === String(id));
@@ -144,7 +144,7 @@ export async function openLoanForm(kind = 'lent') {
     <div class="field"><label>${t('tx.note')}</label><input class="input" name="note" maxlength="500"></div>
     <div class="alert" data-preview>${icon('alarm', 'i-sm')}<span></span></div>
   </form>`);
-  const foot = el(html`<button class="btn btn-primary btn-lg btn-block" data-save>${icon('check', 'i-sm')}${t('common.save')}</button>`);
+  const foot = el(html`<div style="width:100%"><button class="btn btn-primary btn-lg btn-block" data-save>${icon('check', 'i-sm')}${t('common.save')}</button></div>`);
   const s = openSheet({ title: t('loan.new'), body, foot });
   const form = body;
   const acc = () => accounts.find((a) => String(a.id) === String(accountId));
@@ -182,7 +182,7 @@ export async function openRepayForm(loan) {
     <div class="field"><label>${t(loan.kind === 'lent' ? 'loan.received_into' : 'loan.paid_from')}</label><div data-acc></div></div>
     <div class="field"><label>${t('loan.payment_date')}</label><input class="input" type="date" name="paid_at" value="${localDateStr()}"></div>
     <div class="field"><label>${t('tx.note')}</label><input class="input" name="note" maxlength="255"></div></form>`);
-  const foot = el(html`<button class="btn btn-primary btn-lg btn-block" data-save>${icon('check', 'i-sm')}${t('loan.record_payment')}</button>`);
+  const foot = el(html`<div style="width:100%"><button class="btn btn-primary btn-lg btn-block" data-save>${icon('check', 'i-sm')}${t('loan.record_payment')}</button></div>`);
   const s = openSheet({ title: t(loan.kind === 'lent' ? 'loan.receive_payment' : 'loan.make_payment'), body, foot });
   const a = $('[data-acc]', body); a.replaceChildren(el(accPicker('account_id', accounts, accountId))); bindPicker(a.firstElementChild, (id) => { accountId = id; });
   foot.querySelector('[data-save]').onclick = (e) => withBusy(e.currentTarget, async () => {
@@ -205,7 +205,7 @@ export async function openGoalForm(goal = null) {
     <div class="field"><label>${t('goal.deadline')}</label><input class="input" type="date" name="deadline" value="${goal?.deadline ? String(goal.deadline).slice(0, 10) : ''}"></div>
     <div class="field"><label>${t('tx.note')}</label><input class="input" name="note" maxlength="500" value="${goal?.note || ''}"></div>
     <label class="file-drop">${icon('image', 'i-sm')}<span data-file>${t('goal.image')}</span><input type="file" accept="image/*"></label></form>`);
-  const foot = el(html`<button class="btn btn-primary btn-lg btn-block" data-save>${icon('check', 'i-sm')}${goal ? t('common.save_changes') : t('goal.create')}</button>`);
+  const foot = el(html`<div style="width:100%"><button class="btn btn-primary btn-lg btn-block" data-save>${icon('check', 'i-sm')}${goal ? t('common.save_changes') : t('goal.create')}</button></div>`);
   const s = openSheet({ title: goal ? t('goal.edit') : t('goal.new'), body, foot });
   $$('[data-kinds] button', body).forEach((b) => b.onclick = () => {
     kind = b.dataset.k; $$('[data-kinds] button', body).forEach((x) => x.classList.toggle('active', x === b));
@@ -228,7 +228,7 @@ export function openContributeForm(goal) {
   const body = el(html`<form novalidate><div class="seg type-tabs" data-mode><button type="button" data-v="add" class="active">${t('goal.add_money')}</button><button type="button" data-v="withdraw">${t('goal.withdraw')}</button></div>
     <div class="amount-box field"><span class="cur">${currencyOf(goal.currency).symbol} ${goal.currency}</span><input class="amount-input" name="amount" inputmode="decimal" placeholder="0" autofocus></div>
     <p class="hint" style="text-align:center">${t('goal.remaining')}: <b>${money(goal.remaining, goal.currency)}</b></p></form>`);
-  const foot = el(html`<button class="btn btn-primary btn-lg btn-block" data-save>${icon('check', 'i-sm')}${t('common.save')}</button>`);
+  const foot = el(html`<div style="width:100%"><button class="btn btn-primary btn-lg btn-block" data-save>${icon('check', 'i-sm')}${t('common.save')}</button></div>`);
   const s = openSheet({ title: goal.name, body, foot });
   segmented($('[data-mode]', body), (v) => { mode = v; });
   foot.querySelector('[data-save]').onclick = (e) => withBusy(e.currentTarget, async () => {
@@ -249,7 +249,7 @@ export function openReminderForm(rem = null) {
     <div class="row"><div class="field"><label>${t('rem.notify')}</label><select class="select" name="remind_before_min">${[[0, 'rem.at_time'], [60, 'rem.1h'], [1440, 'rem.1d'], [4320, 'rem.3d'], [10080, 'rem.1w']].map(([v, k]) => html`<option value="${v}">${t(k)}</option>`)}</select></div>
       <div class="field"><label>${t('rem.repeat')}</label><select class="select" name="repeat_rule">${['none', 'daily', 'weekly', 'monthly', 'yearly'].map((k) => html`<option value="${k}" ${rem?.repeat_rule === k ? 'selected' : ''}>${t('rem.repeat.' + k)}</option>`)}</select></div></div>
     <div class="field"><label>${t('tx.note')}</label><input class="input" name="body" maxlength="500" value="${rem?.body || ''}"></div></form>`);
-  const foot = el(html`<button class="btn btn-primary btn-lg btn-block" data-save>${icon('check', 'i-sm')}${t('common.save')}</button>`);
+  const foot = el(html`<div style="width:100%"><button class="btn btn-primary btn-lg btn-block" data-save>${icon('check', 'i-sm')}${t('common.save')}</button></div>`);
   const s = openSheet({ title: rem ? t('rem.edit') : t('rem.new'), body, foot });
   foot.querySelector('[data-save]').onclick = (e) => withBusy(e.currentTarget, async () => {
     const f = new FormData(body);
@@ -264,7 +264,7 @@ export function openNoteForm(note = null) {
   const body = el(html`<form novalidate><div class="field"><label>${t('note.title')}</label><input class="input" name="title" maxlength="160" value="${note?.title || ''}"></div>
     <div class="field"><label>${t('note.body')}</label><textarea class="textarea" name="body" rows="6" maxlength="5000">${note?.body || ''}</textarea></div>
     <label class="check"><input type="checkbox" name="pinned" ${note?.pinned ? 'checked' : ''}>${t('note.pin')}</label></form>`);
-  const foot = el(html`<button class="btn btn-primary btn-lg btn-block" data-save>${icon('check', 'i-sm')}${t('common.save')}</button>`);
+  const foot = el(html`<div style="width:100%"><button class="btn btn-primary btn-lg btn-block" data-save>${icon('check', 'i-sm')}${t('common.save')}</button></div>`);
   const s = openSheet({ title: note ? t('note.edit') : t('note.new'), body, foot });
   foot.querySelector('[data-save]').onclick = (e) => withBusy(e.currentTarget, async () => {
     const f = new FormData(body); const p = { title: f.get('title'), body: f.get('body'), pinned: !!f.get('pinned') };
@@ -285,7 +285,7 @@ export function openAccountForm(acc = null) {
       <div class="field"><label>${t('acc.opening')}</label><input class="input" name="opening_balance" inputmode="decimal" placeholder="0"></div></div>`}
     <div class="field"><label>${t('acc.number_hint')}</label><input class="input" name="number_hint" maxlength="4" inputmode="numeric" pattern="[0-9]*" value="${acc?.number_hint || ''}" placeholder="1234"></div>
     <label class="check"><input type="checkbox" name="include_in_total" ${!acc || acc.include_in_total ? 'checked' : ''}>${t('acc.include_total')}</label></form>`);
-  const foot = el(html`<button class="btn btn-primary btn-lg btn-block" data-save>${icon('check', 'i-sm')}${acc ? t('common.save_changes') : t('acc.create')}</button>`);
+  const foot = el(html`<div style="width:100%"><button class="btn btn-primary btn-lg btn-block" data-save>${icon('check', 'i-sm')}${acc ? t('common.save_changes') : t('acc.create')}</button></div>`);
   const s = openSheet({ title: acc ? t('acc.edit') : t('acc.new'), body, foot });
   $$('[data-types] button', body).forEach((b) => b.onclick = () => {
     const prevName = t('acc.type.' + type); type = b.dataset.k; $$('[data-types] button', body).forEach((x) => x.classList.toggle('active', x === b));
@@ -303,7 +303,7 @@ export function openAccountForm(acc = null) {
 export function openAdjustForm(acc) {
   const body = el(html`<form novalidate><p class="hint" style="margin-bottom:10px">${t('acc.adjust_hint')}</p>
     <div class="amount-box field"><span class="cur">${currencyOf(acc.currency).symbol} ${acc.currency}</span><input class="amount-input" name="balance" inputmode="decimal" value="${Number(acc.balance)}" autofocus></div></form>`);
-  const foot = el(html`<button class="btn btn-primary btn-lg btn-block" data-save>${t('acc.adjust')}</button>`);
+  const foot = el(html`<div style="width:100%"><button class="btn btn-primary btn-lg btn-block" data-save>${t('acc.adjust')}</button></div>`);
   const s = openSheet({ title: t('acc.adjust'), body, foot });
   const idem = uid();
   foot.querySelector('[data-save]').onclick = (e) => withBusy(e.currentTarget, async () => {

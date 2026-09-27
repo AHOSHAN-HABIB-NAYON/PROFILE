@@ -333,3 +333,10 @@ body.auth-mode main#main { padding-bottom: 24px; max-width: none; }
 @media (min-width: 1400px) { body.app { grid-template-columns: 256px 1fr; } }
 @media (max-width: 359px) { body { font-size: 13.5px; } .hero-amt { font-size: 24px; } .stat-val { font-size: 15px; } main#main { padding-left: 10px; padding-right: 10px; } }
 @media (display-mode: standalone) { .install-card { display: none !important; } }
+.type-tabs { display: flex; overflow-x: auto; scrollbar-width: none; }
+.type-tabs::-webkit-scrollbar { display: none; }
+.type-tabs button { flex: 1 0 auto; padding: 0 10px; font-size: 12px; }
+.li-title, .li-sub, .li-amt { display: block; }
+.stat .spark { top: 12px; bottom: auto; right: 10px; width: 46px; height: 18px; opacity: .8; }
+@media (min-width: 1000px) { .stat .spark { top: auto; bottom: 12px; width: 60px; height: 22px; } }
+.mood-i { width: 28px; height: 28px; flex: none; }

@@ -32,7 +32,7 @@ export function el(markup) {
 export const icon = (name, cls = '') => raw(`<svg class="i ${cls}" aria-hidden="true"><use href="#${name}"/></svg>`);
 const PAY = ['bkash', 'nagad', 'rocket', 'bank', 'card', 'cash', 'wallet'];
 export const payMark = (type, cls = '') => raw(`<svg class="pm ${cls}" aria-hidden="true"><use href="#pay-${PAY.includes(type) ? type : 'wallet'}"/></svg>`);
-export const moodIcon = (n, cls = '') => raw(`<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true"><use href="#mood-${Math.min(5, Math.max(1, n || 3))}"/></svg>`);
+export const moodIcon = (n, cls = '') => raw(`<svg class="mood-i ${cls}" viewBox="0 0 24 24" aria-hidden="true"><use href="#mood-${Math.min(5, Math.max(1, n || 3))}"/></svg>`);
 
 /* ---------- Events ---------- */
 const bus = new EventTarget();
@@ -54,7 +54,7 @@ export async function loadLang(lang) {
   const cacheKey = 'lt-dict-' + l;
   try { const c = JSON.parse(localStorage.getItem(cacheKey) || 'null'); if (c && !Object.keys(state.dict).length) state.dict = c; } catch {}
   try {
-    const r = await fetch(`/api/i18n/${l}`, { credentials: 'same-origin' });
+    const r = await fetch(`/api/public/i18n/${l}`, { credentials: 'same-origin' });
     if (r.ok) { state.dict = await r.json(); try { localStorage.setItem(cacheKey, JSON.stringify(state.dict)); } catch {} }
   } catch { /* offline: cached dictionary */ }
   state.lang = l;

@@ -92,6 +92,8 @@ async function render(forcedDir = null) {
   current = { el: page, meta: r.meta, view };
   document.title = (view.title ? view.title + ' · ' : '') + (state.config?.site || 'LifeTrack');
   highlightNav(r.meta.tab);
+  paintToggles();
+  setUnread(state.unread || 0);
   requestAnimationFrame(() => { const h = page.querySelector('h1'); if (h && document.activeElement === document.body) { h.setAttribute('tabindex', '-1'); } });
 }
 
@@ -124,9 +126,13 @@ export function applyTheme(theme, { save = true, animate = true } = {}) {
   root.setAttribute('data-theme', th);
   $('meta[name="theme-color"]')?.setAttribute('content', th === 'dark' ? '#070C18' : '#F4F6FB');
   try { localStorage.setItem('lt-theme', th); } catch {}
-  $$('[data-theme-toggle]').forEach((b) => { b.innerHTML = String(icon(th === 'dark' ? 'sun' : 'moon')); b.setAttribute('aria-label', t(th === 'dark' ? 'theme.to_light' : 'theme.to_dark')); b.title = b.getAttribute('aria-label'); });
+  paintToggles();
   if (save && state.me) api.patch('/api/me/profile', { theme: th }).then((d) => { state.profile = d.profile; }).catch(() => {});
   emit('theme', th);
+}
+function paintToggles() {
+  const th = document.documentElement.getAttribute('data-theme');
+  $$('[data-theme-toggle]').forEach((b) => { b.innerHTML = String(icon(th === 'dark' ? 'sun' : 'moon')); b.setAttribute('aria-label', t(th === 'dark' ? 'theme.to_light' : 'theme.to_dark')); b.title = b.getAttribute('aria-label'); });
 }
 export const toggleTheme = () => applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
 document.addEventListener('click', (e) => { if (e.target.closest('[data-theme-toggle]')) toggleTheme(); });
@@ -151,6 +157,7 @@ export async function afterLogin(next) {
   }
   renderChrome();
   import('./push.js').then((m) => m.syncSubscription()).catch(() => {});
+  if (next === '/admin' || (next && next.startsWith('/admin/'))) { location.href = next; return; }
   navigate(next && next.startsWith('/app') ? next : '/app', { replace: true, dir: 'fade' });
 }
 on('auth:lost', () => {
@@ -265,6 +272,7 @@ window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); stat
 window.addEventListener('appinstalled', () => { state.installPrompt = null; toast(t('pwa.installed')); });
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    const hadController = !!navigator.serviceWorker.controller; // first install must not trigger a reload
     navigator.serviceWorker.register('/sw.js', { scope: '/' }).then((reg) => {
       reg.addEventListener('updatefound', () => {
         const w = reg.installing;
@@ -274,7 +282,7 @@ if ('serviceWorker' in navigator) {
       });
     }).catch(() => {});
     let reloaded = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => { if (!reloaded) { reloaded = true; location.reload(); } });
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController && !reloaded) { reloaded = true; location.reload(); } });
     navigator.serviceWorker.addEventListener('message', (e) => { if (e.data?.type === 'navigate' && e.data.url) navigate(e.data.url); if (e.data?.type === 'push') { pollUnread(); } });
   });
 }

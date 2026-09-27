@@ -43,7 +43,7 @@ function vars(req, extra = {}) {
   const site = settings.get('site_name') || 'LifeTrack';
   const url = settings.siteUrl(req);
   const icons = iconSet();
-  const og = settings.get('og_image_url') || '/img/og-image.png';
+  const og = settings.get('og_image_url') || '/img/og-image.jpg';
   const logo = settings.get('logo_url');
   return {
     v: VERSION, site: esc(site), tagline: esc(settings.get('site_tagline')), url: esc(url), canonical: esc(url + (extra.path || '/')),

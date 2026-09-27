@@ -8,7 +8,7 @@ export function openMoodForm(date = localDateStr(), existing = null) {
     <div class="moods" data-moods>${[1, 2, 3, 4, 5].map((m) => html`<button type="button" class="mood-btn ${m === mood ? 'active' : ''}" data-m="${m}">${moodIcon(m)}${t('mood.m' + m)}</button>`)}</div>
     <div class="field" style="margin-top:12px"><label>${t('mood.activity')}</label><div class="chips" style="flex-wrap:wrap" data-acts>${ACTIVITIES.map((a) => html`<button type="button" class="chip ${a === activity ? 'active' : ''}" data-a="${a}">${t('mood.act.' + a)}</button>`)}</div></div>
     <div class="field"><label>${t('mood.note')}</label><input class="input" name="note" maxlength="300" value="${existing?.note || ''}" placeholder="${t('mood.note_ph')}"></div></form>`);
-  const foot = el(html`<button class="btn btn-primary btn-lg btn-block" data-save>${icon('check', 'i-sm')}${t('common.save')}</button>`);
+  const foot = el(html`<div style="width:100%"><button class="btn btn-primary btn-lg btn-block" data-save>${icon('check', 'i-sm')}${t('common.save')}</button></div>`);
   const s = openSheet({ title: t('mood.how_today'), body, foot });
   $$('[data-m]', body).forEach((b) => b.onclick = () => { mood = Number(b.dataset.m); $$('[data-m]', body).forEach((x) => x.classList.toggle('active', x === b)); });
   $$('[data-a]', body).forEach((b) => b.onclick = () => { activity = activity === b.dataset.a ? '' : b.dataset.a; $$('[data-a]', body).forEach((x) => x.classList.toggle('active', x.dataset.a === activity)); });

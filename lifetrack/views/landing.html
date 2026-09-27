@@ -1,1 +1,135 @@
-<html>{{title}}</html>
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{{title}}</title>
+<meta name="description" content="{{description}}">
+<meta name="keywords" content="{{keywords}}">
+<link rel="canonical" href="{{canonical}}">
+<meta name="theme-color" content="#F4F6FB">
+<meta name="application-name" content="{{site}}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="{{site}}">
+<meta property="og:title" content="{{title}}">
+<meta property="og:description" content="{{description}}">
+<meta property="og:url" content="{{canonical}}">
+<meta property="og:image" content="{{og}}">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{title}}">
+<meta name="twitter:description" content="{{description}}">
+<meta name="twitter:image" content="{{og}}">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="{{favicon}}">
+<link rel="apple-touch-icon" href="{{apple}}">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="/css/base.css?v={{v}}">
+<link rel="stylesheet" href="/css/landing.css?v={{v}}">
+<script src="/js/boot.js?v={{v}}"></script>
+<script src="/js/landing.js?v={{v}}" defer></script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"{{site}}","applicationCategory":"FinanceApplication","operatingSystem":"Web, Android, iOS, Windows, macOS","description":"{{description}}","url":"{{url}}","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+</head>
+<body class="lp">
+{{sprite}}
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="lp-nav">
+  <div class="lp-wrap lp-nav-in">
+    <a class="lp-brand" href="/">{{logo}}<span {{logoShowName}}><b>{{site}}</b><small>{{tagline}}</small></span></a>
+    <nav class="lp-links" aria-label="Main"><a href="#features">Features</a><a href="#lending">Lending</a><a href="#security">Security</a><a href="#screens">Screenshots</a><a href="#faq">FAQ</a></nav>
+    <div class="lp-actions"><button class="icon-btn bordered" data-theme-toggle aria-label="Toggle theme"><svg class="i"><use href="#moon"/></svg></button><a class="btn btn-ghost lp-hide-sm" href="/app/login">Sign in</a><a class="btn btn-primary" href="/app/register">Get started</a></div>
+  </div>
+</header>
+<main id="main">
+  <section class="lp-hero">
+    <div class="lp-wrap lp-hero-grid">
+      <div class="lp-hero-copy">
+        <span class="lp-eyebrow"><svg class="i i-sm"><use href="#sparkle"/></svg>Your Life · Your Money · Your Goals</span>
+        <h1>{{heroTitle}}</h1>
+        <p class="lp-lead">{{heroSubtitle}}</p>
+        <div class="lp-cta"><a class="btn btn-grad btn-lg" href="/app/register">{{cta}}<svg class="i i-sm"><use href="#chevron-right"/></svg></a><a class="btn btn-outline btn-lg" href="/app/login"><svg class="i i-sm"><use href="#fingerprint"/></svg>Sign in with passkey</a></div>
+        <ul class="lp-trust"><li><svg class="i i-sm"><use href="#shield"/></svg>Argon2id + 2FA</li><li><svg class="i i-sm"><use href="#install"/></svg>Installable PWA</li><li><svg class="i i-sm"><use href="#globe"/></svg>English · বাংলা · हिन्दी</li></ul>
+        <div class="lp-pay"><span>Works with</span><svg class="pm"><use href="#pay-bkash"/></svg><svg class="pm"><use href="#pay-nagad"/></svg><svg class="pm"><use href="#pay-rocket"/></svg><svg class="pm"><use href="#pay-bank"/></svg><svg class="pm"><use href="#pay-card"/></svg><svg class="pm"><use href="#pay-cash"/></svg></div>
+      </div>
+      <div class="lp-hero-art" aria-hidden="true">
+        <div class="lp-glow"></div>
+        <div class="lp-phone lp-phone-back"><img src="/img/screens/mobile-reports.webp" alt="" width="390" height="844" loading="lazy"></div>
+        <div class="lp-phone"><img src="/img/screens/mobile-home.webp" alt="" width="390" height="844" fetchpriority="high"></div>
+        <div class="lp-float lp-f1"><span class="tile" style="--c:var(--green)"><svg class="i"><use href="#income"/></svg></span><div><small>Salary</small><b class="pos">+৳25,000</b></div></div>
+        <div class="lp-float lp-f2"><svg class="pm"><use href="#pay-bkash"/></svg><div><small>bKash</small><b>৳8,450</b></div></div>
+        <div class="lp-float lp-f3"><span class="tile" style="--c:var(--orange)"><svg class="i"><use href="#alarm"/></svg></span><div><small>Rahim · 15 Oct</small><b>৳5,000 due</b></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="lp-strip"><div class="lp-wrap lp-strip-in">
+    <div><b>10+</b><span>transaction types</span></div><div><b>7</b><span>wallet &amp; bank types</span></div><div><b>3</b><span>languages</span></div><div><b>100%</b><span>server-verified money</span></div>
+  </div></section>
+
+  <section class="lp-sec" id="features"><div class="lp-wrap">
+    <div class="lp-head"><span class="lp-eyebrow">Everything in one place</span><h2>A premium finance &amp; life app that fits in your pocket</h2><p>Compact, fast and beautiful — designed mobile-first and expanding intelligently on desktop.</p></div>
+    <div class="lp-grid">
+      <article class="lp-card"><span class="tile tile-lg" style="--c:var(--primary)"><svg class="i"><use href="#layers"/></svg></span><h3>Finance tracking</h3><p>Income, expense, investment, deposit, transfer, lending and borrowing — with categories, tags, notes and receipt attachments.</p></article>
+      <article class="lp-card"><span class="tile tile-lg" style="--c:var(--pink)"><svg class="i"><use href="#wallet"/></svg></span><h3>Every account</h3><p>Cash, bank, bKash, Nagad, Rocket, cards and custom wallets. Balances update atomically — never drift, never duplicate.</p></article>
+      <article class="lp-card"><span class="tile tile-lg" style="--c:var(--teal)"><svg class="i"><use href="#target"/></svg></span><h3>Goals</h3><p>Phone, bike, emergency fund or travel. Animated progress, remaining amount and days left keep you motivated.</p></article>
+      <article class="lp-card"><span class="tile tile-lg" style="--c:var(--violet)"><svg class="i"><use href="#trend-up"/></svg></span><h3>Investments</h3><p>Record shares, FDR, gold or business stakes. Update values and watch profit &amp; loss in real time.</p></article>
+      <article class="lp-card"><span class="tile tile-lg" style="--c:var(--orange)"><svg class="i"><use href="#pie"/></svg></span><h3>Reports</h3><p>Daily, weekly, monthly and yearly charts — income vs expense, categories, savings, net worth and P/L.</p></article>
+      <article class="lp-card"><span class="tile tile-lg" style="--c:var(--green)"><svg class="i"><use href="#calendar"/></svg></span><h3>Calendar</h3><p>See income, spending, due dates, reminders, goals and your mood on one compact calendar.</p></article>
+      <article class="lp-card"><span class="tile tile-lg" style="--c:var(--yellow)"><svg class="i"><use href="#smile"/></svg></span><h3>Mood tracker</h3><p>A two-second daily check-in with a timeline and monthly overview. Money and wellbeing, together.</p></article>
+      <article class="lp-card"><span class="tile tile-lg" style="--c:var(--red)"><svg class="i"><use href="#bell"/></svg></span><h3>Smart notifications</h3><p>In-app, email and push reminders for bills, loans, goals and security events — on your schedule.</p></article>
+    </div>
+  </div></section>
+
+  <section class="lp-sec lp-split" id="lending"><div class="lp-wrap lp-split-in">
+    <div><span class="lp-eyebrow">Lending &amp; borrowing</span><h2>Never forget who owes you</h2><p>Record money you lend or borrow with a return date. LifeTrack schedules reminders automatically and tracks partial repayments until everything is settled.</p>
+      <ul class="lp-list"><li><svg class="i i-sm"><use href="#check-circle"/></svg>Automatic reminders by in-app, email &amp; push</li><li><svg class="i i-sm"><use href="#check-circle"/></svg>Partial payments with overpayment protection</li><li><svg class="i i-sm"><use href="#check-circle"/></svg>Receivable &amp; payable totals on your net worth</li></ul></div>
+    <div class="lp-mock card"><div class="lp-notif"><span class="tile" style="--c:var(--orange)"><svg class="i"><use href="#lend"/></svg></span><div><b>Loan reminder</b><p>You lent ৳5,000 to Rahim. Return date: 15 October.</p><small>2h ago</small></div></div>
+      <div class="lp-notif"><span class="tile" style="--c:var(--primary)"><svg class="i"><use href="#sparkle"/></svg></span><div><b>Welcome to LifeTrack 🎉</b><p>Thanks for joining! Start tracking your life.</p><small>1d ago</small></div></div>
+      <div class="lp-notif"><span class="tile" style="--c:var(--yellow)"><svg class="i"><use href="#bolt"/></svg></span><div><b>Bill reminder</b><p>Electricity bill is due in 2 days.</p><small>2d ago</small></div></div></div>
+  </div></section>
+
+  <section class="lp-sec lp-dark" id="security"><div class="lp-wrap">
+    <div class="lp-head"><span class="lp-eyebrow">Security first</span><h2>Bank-grade protection for your personal data</h2><p>Every sensitive action is verified on the server. Nobody can read another user's data by changing an ID.</p></div>
+    <div class="lp-grid lp-grid-4">
+      <article class="lp-card"><span class="tile tile-lg" style="--c:#7AA2FF"><svg class="i"><use href="#fingerprint"/></svg></span><h3>Passkeys</h3><p>Sign in with Face ID, fingerprint or screen lock using WebAuthn.</p></article>
+      <article class="lp-card"><span class="tile tile-lg" style="--c:#2DD4BF"><svg class="i"><use href="#shield"/></svg></span><h3>Two-step verification</h3><p>Authenticator apps, email codes and hashed one-time recovery codes.</p></article>
+      <article class="lp-card"><span class="tile tile-lg" style="--c:#FFB14A"><svg class="i"><use href="#lock"/></svg></span><h3>Hardened sessions</h3><p>Argon2id, HttpOnly secure cookies, CSRF protection, rate limits &amp; lockouts.</p></article>
+      <article class="lp-card"><span class="tile tile-lg" style="--c:#F472B6"><svg class="i"><use href="#activity"/></svg></span><h3>Full audit trail</h3><p>Device &amp; session management, security alerts and admin audit logs.</p></article>
+    </div>
+  </div></section>
+
+  <section class="lp-sec" id="pwa"><div class="lp-wrap lp-grid lp-grid-3">
+    <article class="lp-card lp-feat"><span class="tile tile-lg" style="--c:var(--primary)"><svg class="i"><use href="#install"/></svg></span><h3>Install like a native app</h3><p>Add LifeTrack to your home screen on Android, iPhone or desktop. Works offline and loads instantly.</p></article>
+    <article class="lp-card lp-feat"><span class="tile tile-lg" style="--c:var(--teal)"><svg class="i"><use href="#language"/></svg></span><h3>Your language</h3><p>Fully translated into English, বাংলা and हिन्दी — menus, forms, notifications and emails.</p></article>
+    <article class="lp-card lp-feat"><span class="tile tile-lg" style="--c:var(--violet)"><svg class="i"><use href="#palette"/></svg></span><h3>Light &amp; Night</h3><p>A crisp Light mode by default and a separately tuned Night mode — synced across your devices.</p></article>
+  </div></section>
+
+  <section class="lp-sec" id="screens"><div class="lp-wrap">
+    <div class="lp-head"><span class="lp-eyebrow">Screenshots</span><h2>Designed for the palm of your hand</h2></div>
+    <div class="lp-tabs" role="tablist"><button role="tab" class="active" data-shot="mobile">Mobile</button><button role="tab" data-shot="desktop">Desktop</button><button role="tab" data-shot="dark">Night mode</button></div>
+    <div class="lp-shots" data-panel="mobile"><img src="/img/screens/mobile-home.webp" alt="LifeTrack dashboard on mobile" loading="lazy" width="390" height="844"><img src="/img/screens/mobile-reports.webp" alt="Reports on mobile" loading="lazy" width="390" height="844"><img src="/img/screens/mobile-goals.webp" alt="Goals on mobile" loading="lazy" width="390" height="844"><img src="/img/screens/mobile-quick.webp" alt="Quick add bottom sheet" loading="lazy" width="390" height="844"></div>
+    <div class="lp-shots lp-shots-wide" data-panel="desktop" hidden><img src="/img/screens/desktop-dashboard.webp" alt="Desktop dashboard" loading="lazy" width="1440" height="900"></div>
+    <div class="lp-shots" data-panel="dark" hidden><img src="/img/screens/mobile-home-dark.webp" alt="Night mode dashboard" loading="lazy" width="390" height="844"><img src="/img/screens/mobile-calendar-dark.webp" alt="Night mode calendar" loading="lazy" width="390" height="844"></div>
+  </div></section>
+
+  <section class="lp-sec" id="faq" {{faqHidden}}><div class="lp-wrap lp-faq">
+    <div class="lp-head"><span class="lp-eyebrow">FAQ</span><h2>Questions, answered</h2></div>
+    <details><summary>Is LifeTrack free to use?</summary><p>Yes — create an account and start tracking in under a minute.</p></details>
+    <details><summary>Does it work with bKash, Nagad and Rocket?</summary><p>You can create dedicated bKash, Nagad, Rocket, bank, card and cash accounts and track each balance separately. LifeTrack does not connect to or move money in these services — you stay in control.</p></details>
+    <details><summary>Is my data secure?</summary><p>Passwords are hashed with Argon2id, sessions use secure HttpOnly cookies, and you can enable passkeys and two-step verification. All permissions are verified on the server.</p></details>
+    <details><summary>Can I use it offline?</summary><p>The app opens offline. Transactions created offline are clearly marked as pending and are only counted once the server confirms them — no duplicates.</p></details>
+    <details><summary>Which languages and currencies are supported?</summary><p>English, বাংলা and हिन्दी, with BDT ৳, USD $ and more currencies configurable by the administrator.</p></details>
+    <details><summary>How do I install it on my phone?</summary><p>Open LifeTrack in Chrome and choose “Install app”, or on iPhone tap Share → “Add to Home Screen”.</p></details>
+  </div></section>
+
+  <section class="lp-final"><div class="lp-wrap"><div class="lp-final-card"><h2>Track today. Build tomorrow.</h2><p>Join LifeTrack and turn everyday money decisions into better habits.</p><div class="lp-cta"><a class="btn btn-lg" href="/app/register" style="background:#fff;color:#1E4FD8">Create free account</a><a class="btn btn-lg btn-ghost" href="/app/login" style="color:#fff">Sign in</a></div></div></div></section>
+</main>
+<footer class="lp-foot"><div class="lp-wrap lp-foot-in">
+  <div><a class="lp-brand" href="/">{{logo}}<span {{logoShowName}}><b>{{site}}</b><small>{{tagline}}</small></span></a><p class="muted">Personal finance &amp; life tracker for everyone.</p></div>
+  <nav aria-label="Footer"><b>Product</b><a href="#features">Features</a><a href="#security">Security</a><a href="#pwa">Install</a></nav>
+  <nav aria-label="Account"><b>Account</b><a href="/app/login">Sign in</a><a href="/app/register">Register</a><a href="/app/forgot">Forgot password</a></nav>
+  <p class="muted lp-copy">© {{year}} {{site}}. All rights reserved.</p>
+</div></footer>
+</body>
+</html>
