@@ -49,7 +49,7 @@ export async function migrate(pool: Pool, list: Migration[] = MIGRATIONS): Promi
   const appliedNow: number[] = [];
   try {
     const [lockRows] = await conn.query("SELECT GET_LOCK('tradeteam_migrate', 60) AS l");
-    if ((lockRows as { l: number }[])[0]?.l !== 1) throw new Error('Could not acquire migration lock');
+    if (Number((lockRows as { l: number | string }[])[0]?.l) !== 1) throw new Error('Could not acquire migration lock');
     await ensureMigrationsTable(pool);
     const applied = await appliedVersions(pool);
     for (const m of list) {
