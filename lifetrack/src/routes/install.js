@@ -39,14 +39,26 @@ async function connectAndCreate(b) {
 }
 const req0 = (p) => (p === undefined || p === null ? '' : String(p));
 
+/** Does this database already contain a LifeTrack installation? */
+async function existingInstall(b) {
+  const conn = await mysql.createConnection({ host: b.db_host, port: b.db_port, user: b.db_user, password: req0(b.db_password), database: b.db_name, connectTimeout: 8000 });
+  try {
+    const [m] = await conn.query("SELECT 1 FROM settings WHERE `key`='installed_at' LIMIT 1").catch(() => [[]]);
+    if (m.length) return true;
+    const [a] = await conn.query("SELECT 1 FROM users WHERE role='super_admin' LIMIT 1").catch(() => [[]]);
+    return a.length > 0;
+  } finally { await conn.end(); }
+}
+
 r.get('/status', (req, res) => ok(res, { installed: config.get().installed, tokenRequired: !!process.env.INSTALL_TOKEN, node: process.version,
   defaults: { db_host: process.env.DB_HOST || '127.0.0.1', db_port: Number(process.env.DB_PORT || 3306), db_user: process.env.DB_USER || '', db_name: process.env.DB_NAME || 'lifetrack' } }));
 
 r.post('/check-db', ah(async (req, res) => {
   guard(req);
   const b = validate(req.body, dbSchema);
-  try { const version = await connectAndCreate(b); ok(res, { connected: true, version }); }
-  catch (e) { throw err(400, 'db_connect_failed', 'Database connection failed: ' + e.message); }
+  let version;
+  try { version = await connectAndCreate(b); } catch (e) { throw err(400, 'db_connect_failed', 'Database connection failed: ' + e.message); }
+  ok(res, { connected: true, version, existing: await existingInstall(b) });
 }));
 
 r.post('/run', ah(async (req, res) => {
@@ -63,6 +75,7 @@ r.post('/run', ah(async (req, res) => {
   const siteUrl = (b.site_url || `${req.protocol}://${req.get('host')}`).replace(/\/+$/, '');
   if (!/^https?:\/\/[^\s/]+(:\d+)?$/.test(siteUrl)) throw err(422, 'validation_failed', 'Site URL must look like https://example.com', { fields: { site_url: 'invalid' } });
   try { await connectAndCreate(b); } catch (e) { throw err(400, 'db_connect_failed', 'Database connection failed: ' + e.message); }
+  if (await existingInstall(b)) throw err(409, 'already_installed', 'This database already has LifeTrack installed. Use “Reconnect” instead — your data and admin account are kept.');
 
   // Persist config (DB credentials + generated APP_KEY) — file is chmod 600 and git-ignored
   const cfg = { installed: false, appKey: crypto.randomBytes(32).toString('base64'), db: { host: b.db_host, port: b.db_port, user: b.db_user, password: req0(b.db_password), database: b.db_name } };
@@ -94,9 +107,37 @@ r.post('/run', ah(async (req, res) => {
   const logs = require('../services/logs');
   await logs.audit({ user: { id: adminId, role: 'super_admin' }, ip: req.ip }, 'system.installed', null, null, { version: require(path.join(config.ROOT, 'package.json')).version });
 
+  await seed.markInstalled();
   config.save({ ...config.get(), installed: true, db: config.get().db, appKey: config.get().appKey, installedAt: new Date().toISOString() });
   await req.app.locals.onInstalled();
   ok(res, { installed: true, admin: b.admin_email, appUrl: siteUrl + '/app', adminUrl: siteUrl + '/admin' });
+}));
+
+/**
+ * Reconnect an already-installed database (e.g. config file lost). Nothing in the database is changed —
+ * no admin account is created or modified.
+ */
+r.post('/reconnect', ah(async (req, res) => {
+  guard(req);
+  const b = validate(req.body, dbSchema);
+  try { await connectAndCreate(b); } catch (e) { throw err(400, 'db_connect_failed', 'Database connection failed: ' + e.message); }
+  if (!(await existingInstall(b))) throw err(404, 'not_installed', 'No LifeTrack installation found in this database');
+  const prev = config.get();
+  const appKey = process.env.APP_KEY || prev.appKey || crypto.randomBytes(32).toString('base64');
+  config.save({ installed: false, appKey, db: { host: b.db_host, port: b.db_port, user: b.db_user, password: req0(b.db_password), database: b.db_name } });
+  const db = require('../db');
+  db.connect(config.get().db);
+  const settings = require('../services/settings');
+  await settings.loadAll();
+  // Encrypted settings only decrypt with the original APP_KEY
+  const check = await db.one("SELECT value FROM settings WHERE `key`='app_key_check'");
+  let keyOk = true;
+  if (check) { try { keyOk = require('../lib/crypto').decrypt(check.value) === 'lifetrack-ok'; } catch { keyOk = false; } }
+  config.markInstalled();
+  await req.app.locals.onInstalled();
+  const logs = require('../services/logs');
+  await logs.audit({ ip: req.ip }, 'system.reconnected', null, null, { keyOk });
+  ok(res, { reconnected: true, keyOk });
 }));
 
 module.exports = r;

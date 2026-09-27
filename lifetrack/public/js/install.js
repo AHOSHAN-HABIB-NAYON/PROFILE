@@ -30,7 +30,11 @@ function busy(btn, on) { btn.disabled = on; btn.dataset.label = btn.dataset.labe
 })();
 document.querySelector('[data-next="1"]').onclick = async (e) => {
   const m = $('[data-msg1]'); busy(e.target, true); m.className = 'ins-msg'; m.textContent = '';
-  try { const d = await post('/api/install/check-db', data()); m.className = 'ins-msg ok'; m.textContent = `Connected to ${d.version}`; setTimeout(() => show(2), 500); }
+  try {
+    const d = await post('/api/install/check-db', data()); m.className = 'ins-msg ok'; m.textContent = `Connected to ${d.version}`;
+    if (d.existing) { $('[data-existing]').hidden = false; $('[data-reconnect]').hidden = false; e.target.hidden = true; return; }
+    setTimeout(() => show(2), 500);
+  }
   catch (er) { m.className = 'ins-msg err'; m.textContent = er.message; fieldErrors(er); } finally { busy(e.target, false); }
 };
 document.querySelector('[data-next="2"]').onclick = () => {
@@ -45,4 +49,14 @@ document.querySelector('[data-install]').onclick = async (e) => {
   try { await post('/api/install/run', data()); show(4); }
   catch (er) { m.className = 'ins-msg err'; m.textContent = er.message; fieldErrors(er); if (er.fields && Object.keys(er.fields).some((k) => k.startsWith('admin') || k.startsWith('site'))) show(2); if (er.fields && Object.keys(er.fields).some((k) => k.startsWith('db'))) show(1); }
   finally { busy(e.target, false); }
+};
+
+document.querySelector('[data-reconnect]').onclick = async (e) => {
+  const m = $('[data-msg1]'); busy(e.target, true);
+  try {
+    const d = await post('/api/install/reconnect', data());
+    $('[data-done-title]').textContent = 'Reconnected 🎉';
+    $('[data-done-text]').textContent = d.keyOk ? 'Your existing LifeTrack installation is back online. All data was kept.' : 'Reconnected, but APP_KEY differs from the original — re-enter SMTP / Google / Firebase secrets in Admin → Settings.';
+    show(4);
+  } catch (er) { m.className = 'ins-msg err'; m.textContent = er.message; } finally { busy(e.target, false); }
 };

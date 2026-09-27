@@ -13,7 +13,7 @@ const settings = require('./settings');
 let sharp = null;
 try { sharp = require('sharp'); } catch { /* optional */ }
 
-const UPLOAD_ROOT = path.join(__dirname, '..', '..', 'uploads');
+const UPLOAD_ROOT = require('../config').UPLOAD_DIR; // persistent (survives re-deploys)
 
 function sniff(buf) {
   if (buf.length < 12) return null;

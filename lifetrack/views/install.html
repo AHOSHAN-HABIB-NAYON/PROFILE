@@ -28,7 +28,8 @@
         <div class="row"><div class="field"><label>Username</label><input class="input" name="db_user" autocomplete="off"></div><div class="field"><label>Password</label><input class="input" name="db_password" type="password" autocomplete="new-password"></div></div>
         <div class="field"><label>Database name</label><input class="input" name="db_name" value="lifetrack"></div>
         <div class="ins-msg" data-msg1></div>
-        <div class="ins-actions"><span></span><button type="button" class="btn btn-primary" data-next="1">Test connection &amp; continue</button></div>
+        <div class="alert" data-existing hidden style="margin-top:12px"><svg class="i i-sm"><use href="#database"/></svg><span><b>LifeTrack is already installed in this database.</b><br>Your data, settings and admin account will be kept — nothing is overwritten. Click “Reconnect” to finish.</span></div>
+        <div class="ins-actions"><span></span><button type="button" class="btn btn-primary" data-next="1">Test connection &amp; continue</button><button type="button" class="btn btn-grad" data-reconnect hidden>Reconnect</button></div>
       </section>
       <section data-step="2" hidden>
         <h2>Site &amp; Super Admin</h2><p class="muted">You can change everything later in Admin → Settings.</p>
@@ -51,7 +52,7 @@
       </section>
       <section data-step="4" hidden>
         <div class="ins-done"><svg class="success-check" viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="none" stroke="var(--green)" stroke-width="3"/><path fill="none" stroke="var(--green)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" d="m15 27 7.5 7.5L38 19"/></svg>
-          <h2>LifeTrack is installed 🎉</h2><p class="muted">Your database is ready and your Super Admin account has been created.</p>
+          <h2 data-done-title>LifeTrack is installed 🎉</h2><p class="muted" data-done-text>Your database is ready and your Super Admin account has been created.</p>
           <div class="row" style="margin-top:16px"><a class="btn btn-primary btn-lg" href="/app/login">Open the app</a><a class="btn btn-outline btn-lg" href="/admin">Admin panel</a></div>
           <p class="hint" style="margin-top:14px">The installer is now disabled. Next: configure Google login, Firebase and branding in Admin → Settings.</p></div>
       </section>

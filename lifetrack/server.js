@@ -58,7 +58,7 @@ app.use(express.static(PUB, { ...staticOpts, setHeaders: (res, p) => {
   if (p.endsWith('.js') || p.endsWith('.html')) res.setHeader('Cache-Control', 'no-cache');
   else if (p.includes(`${path.sep}i18n${path.sep}`)) res.setHeader('Cache-Control', 'public, max-age=300');
 } }));
-for (const d of ['brand', 'avatars', 'goals']) app.use(`/uploads/${d}`, express.static(path.join(__dirname, 'uploads', d), { maxAge: '7d', index: false }));
+for (const d of ['brand', 'avatars', 'goals']) app.use(`/uploads/${d}`, express.static(path.join(config.UPLOAD_DIR, d), { maxAge: '7d', index: false }));
 app.use('/vendor/simplewebauthn-browser.js', (req, res) => res.sendFile(path.join(__dirname, 'node_modules/@simplewebauthn/browser/dist/bundle/index.umd.min.js'), { maxAge: '30d' }));
 
 // Health check (load balancers / uptime monitors)
@@ -142,20 +142,61 @@ async function boot() {
   db.connect(c.db);
   const migrate = require('./src/migrate');
   await migrate.run();
-  await require('./src/services/seed').defaults();
+  const seed = require('./src/services/seed');
+  await seed.defaults();
+  await seed.markInstalled();
   await settings.loadAll();
   await i18n.loadOverrides();
   scheduler.start();
 }
-app.locals.onInstalled = async () => { config.load(); await boot(); console.log('[lifetrack] installation complete'); };
+app.locals.onInstalled = async () => { config.load(); config.markInstalled(); await boot(); console.log('[lifetrack] installation complete'); };
+
+/**
+ * The database itself remembers the installation (settings.installed_at). If DB credentials are known
+ * (config file or DB_* env vars) and that marker exists, the app boots directly — the installer never
+ * shows again, even after re-deploying fresh app files.
+ */
+async function detectInstalled() {
+  const c = config.get();
+  if (c.installed) return true;
+  if (!c.db || !c.db.host || !c.appKey) return false;
+  try {
+    db.connect(c.db);
+    const marker = await db.q("SELECT value FROM settings WHERE `key`='installed_at'").catch(() => []);
+    let installed = marker.length > 0;
+    if (!installed) { // installs made before the marker existed
+      const admins = await db.q("SELECT id FROM users WHERE role='super_admin' LIMIT 1").catch(() => []);
+      installed = admins.length > 0;
+    }
+    if (installed) { config.markInstalled(); console.log('[lifetrack] existing installation found in database'); }
+    return installed;
+  } catch (e) { console.warn('[lifetrack] database not reachable yet:', e.message); return false; }
+}
+
+function migrateOldUploads() {
+  // Earlier versions stored uploads inside the app folder (lost on re-deploy) — copy them to the data dir once.
+  const fs = require('fs');
+  for (const [from, to] of [[path.join(__dirname, 'uploads'), config.UPLOAD_DIR], [path.join(__dirname, 'backups'), config.BACKUP_DIR]]) {
+    try { if (fs.existsSync(from) && from !== to) fs.cpSync(from, to, { recursive: true, force: false, errorOnExist: false }); } catch {}
+  }
+}
 
 (async () => {
-  if (cfg.installed) {
-    try { await boot(); } catch (e) { console.error('[lifetrack] boot failed:', e.message); process.exitCode = 1; }
-  } else {
-    console.log('[lifetrack] not installed — open /install in your browser');
-  }
   app.listen(PORT, () => console.log(`[lifetrack] listening on http://localhost:${PORT}`));
+  migrateOldUploads();
+  // Retry until the database is reachable (MySQL may start after the app on shared hosting)
+  for (let attempt = 1; ; attempt++) {
+    const hasDb = !!(config.get().db && config.get().db.host);
+    if (config.get().installed || await detectInstalled()) {
+      try { await boot(); break; } catch (e) { console.error(`[lifetrack] boot failed (attempt ${attempt}):`, e.message); }
+    } else if (!hasDb) { console.log('[lifetrack] not installed — open /install in your browser'); break; }
+    else if (attempt > 1 && !config.get().installed) {
+      // DB reachable but empty → fresh install
+      try { await db.q('SELECT 1'); console.log('[lifetrack] not installed — open /install in your browser'); break; } catch {}
+    }
+    await new Promise((r) => setTimeout(r, Math.min(30000, 3000 * attempt)));
+  }
+  console.log('[lifetrack] data directory:', config.DATA_DIR);
 })();
 
 process.on('unhandledRejection', (e) => console.error('[unhandledRejection]', e));

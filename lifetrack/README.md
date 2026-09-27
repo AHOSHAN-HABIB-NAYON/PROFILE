@@ -19,8 +19,19 @@ Opening the site for the first time launches the **web installer** (`/install`):
 2. **Site & Super Admin** — site name/URL, default language, currency and timezone, admin account.
 3. **Email (optional)** — SMTP for verification, password reset, reminders and security alerts.
 
-The installer runs all migrations, generates an `APP_KEY` and Web Push (VAPID) keys, writes `config/config.json`
-(mode 600, git-ignored) and then disables itself. Set `INSTALL_TOKEN` on public servers so nobody else can claim the install.
+The installer runs all migrations, generates an `APP_KEY` and Web Push (VAPID) keys and then **locks itself permanently**:
+
+- The lock lives **in the database** (`settings.installed_at`). The installer can never run again on an installed database,
+  and it never creates or overwrites an admin account there.
+- Config, uploads and backups are stored in a **persistent data directory outside the app folder**
+  (`~/.lifetrack`, override with `LT_DATA_DIR`), so uploading/deploying new app files is all an update needs.
+- For hosts that wipe the home folder too, set `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` and `APP_KEY` as environment
+  variables: the app then finds its installation in the database on every start, with no installer at all.
+- If the config is ever lost without env vars, the installer only offers **Reconnect** (keeps all data).
+
+Set `INSTALL_TOKEN` on public servers so nobody else can claim a fresh install.
+
+**Updating:** deploy the new files and restart — database migrations run automatically on start.
 
 Optional demo data: `BASE_URL=http://localhost:3000 node scripts/seed-demo.js` (creates `demo@lifetrack.app` / `Demo12345`).
 

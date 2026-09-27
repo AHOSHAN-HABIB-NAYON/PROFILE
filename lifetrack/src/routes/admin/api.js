@@ -21,7 +21,7 @@ const auth = require('../../services/auth');
 
 const r = express.Router();
 r.use(requireStaff);
-const BACKUP_DIR = path.join(__dirname, '..', '..', '..', 'backups');
+const BACKUP_DIR = require('../../config').BACKUP_DIR; // persistent (survives re-deploys)
 const RANK = { user: 0, support: 1, admin: 2, super_admin: 3 };
 const page = (q, max = 100) => { const limit = Math.min(max, Math.max(1, Number(q.limit) || 20)); const p = Math.max(1, Number(q.page) || 1); return { limit, page: p, offset: (p - 1) * limit }; };
 

@@ -77,7 +77,7 @@ const DEFAULTS = {
   upload_max_mb: '5',
 };
 
-const SECRETS = new Set(['google_client_secret', 'smtp_pass', 'vapid_private', 'firebase_service_account']);
+const SECRETS = new Set(['google_client_secret', 'smtp_pass', 'vapid_private', 'firebase_service_account', 'app_key_check']);
 
 let cache = null;
 
