@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Install LifeTrack</title><meta name="robots" content="noindex">
+<link rel="icon" href="/icons/favicon.svg">
+<link rel="stylesheet" href="/css/base.css?v={{v}}">
+<link rel="stylesheet" href="/css/install.css?v={{v}}">
+<script src="/js/boot.js?v={{v}}"></script>
+<script type="module" src="/js/install.js?v={{v}}"></script>
+</head>
+<body>
+{{sprite}}
+<div class="ins">
+  <aside class="ins-side">
+    <div class="ins-brand"><svg><use href="#logo"/></svg><div><b>LifeTrack</b><small>Track Today • Build Tomorrow</small></div></div>
+    <h1>Let's set up your LifeTrack</h1>
+    <p>This one-time installer connects your MySQL database, creates all tables, and sets up your Super Admin account.</p>
+    <ol class="ins-steps"><li data-s="1" class="active"><span>1</span>Database</li><li data-s="2"><span>2</span>Site &amp; admin</li><li data-s="3"><span>3</span>Email (optional)</li><li data-s="4"><span>4</span>Finish</li></ol>
+    <div class="ins-note"><svg class="i i-sm"><use href="#shield"/></svg><span>Credentials are stored in <code>config/config.json</code> (permissions 600) — never in the browser.</span></div>
+  </aside>
+  <main class="ins-main card">
+    <form id="f" novalidate autocomplete="off">
+      <section data-step="1">
+        <h2>Database connection</h2><p class="muted">MySQL 5.7+ / 8.x or MariaDB 10.4+. The database will be created if it doesn't exist.</p>
+        <div class="field" data-token hidden><label>Installation token</label><input class="input" name="install_token" placeholder="INSTALL_TOKEN from your environment"></div>
+        <div class="row"><div class="field"><label>Host</label><input class="input" name="db_host" value="127.0.0.1"></div><div class="field" style="max-width:110px"><label>Port</label><input class="input" name="db_port" value="3306" inputmode="numeric"></div></div>
+        <div class="row"><div class="field"><label>Username</label><input class="input" name="db_user" autocomplete="off"></div><div class="field"><label>Password</label><input class="input" name="db_password" type="password" autocomplete="new-password"></div></div>
+        <div class="field"><label>Database name</label><input class="input" name="db_name" value="lifetrack"></div>
+        <div class="ins-msg" data-msg1></div>
+        <div class="ins-actions"><span></span><button type="button" class="btn btn-primary" data-next="1">Test connection &amp; continue</button></div>
+      </section>
+      <section data-step="2" hidden>
+        <h2>Site &amp; Super Admin</h2><p class="muted">You can change everything later in Admin → Settings.</p>
+        <div class="row"><div class="field"><label>Site name</label><input class="input" name="site_name" value="LifeTrack"></div><div class="field"><label>Site URL</label><input class="input" name="site_url" placeholder="https://lifetrack.example.com"><span class="hint">Used for emails, passkeys &amp; Google login.</span></div></div>
+        <div class="row"><div class="field"><label>Default language</label><select class="select" name="default_language"><option value="en">English</option><option value="bn">বাংলা</option><option value="hi">हिन्दी</option></select></div>
+          <div class="field"><label>Default currency</label><select class="select" name="default_currency"><option>BDT</option><option>USD</option><option>INR</option><option>EUR</option><option>GBP</option></select></div>
+          <div class="field"><label>Timezone</label><input class="input" name="timezone" value="Asia/Dhaka"></div></div>
+        <hr class="divider">
+        <div class="row"><div class="field"><label>Admin name</label><input class="input" name="admin_name" autocomplete="name"></div><div class="field"><label>Admin email</label><input class="input" name="admin_email" type="email" autocomplete="email"></div></div>
+        <div class="field"><label>Admin password</label><input class="input" name="admin_password" type="password" autocomplete="new-password"><span class="hint">At least 8 characters with letters and numbers.</span></div>
+        <div class="ins-actions"><button type="button" class="btn btn-ghost" data-prev="2">Back</button><button type="button" class="btn btn-primary" data-next="2">Continue</button></div>
+      </section>
+      <section data-step="3" hidden>
+        <h2>Email (SMTP)</h2><p class="muted">Needed for verification, password reset, reminders and security alerts. You can skip and configure it later.</p>
+        <div class="row"><div class="field"><label>SMTP host</label><input class="input" name="smtp_host" placeholder="smtp.gmail.com"></div><div class="field" style="max-width:110px"><label>Port</label><input class="input" name="smtp_port" value="587"></div></div>
+        <div class="row"><div class="field"><label>SMTP username</label><input class="input" name="smtp_user" autocomplete="off"></div><div class="field"><label>SMTP password</label><input class="input" name="smtp_pass" type="password" autocomplete="new-password"></div></div>
+        <div class="row"><div class="field"><label>Sender email</label><input class="input" name="mail_from_email" type="email" placeholder="no-reply@example.com"></div><div class="field" style="align-self:end"><label class="check"><input type="checkbox" name="smtp_secure"> Use SSL/TLS (port 465)</label></div></div>
+        <div class="ins-msg" data-msg3></div>
+        <div class="ins-actions"><button type="button" class="btn btn-ghost" data-prev="3">Back</button><button type="button" class="btn btn-grad btn-lg" data-install>Install LifeTrack</button></div>
+      </section>
+      <section data-step="4" hidden>
+        <div class="ins-done"><svg class="success-check" viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="none" stroke="var(--green)" stroke-width="3"/><path fill="none" stroke="var(--green)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" d="m15 27 7.5 7.5L38 19"/></svg>
+          <h2>LifeTrack is installed 🎉</h2><p class="muted">Your database is ready and your Super Admin account has been created.</p>
+          <div class="row" style="margin-top:16px"><a class="btn btn-primary btn-lg" href="/app/login">Open the app</a><a class="btn btn-outline btn-lg" href="/admin">Admin panel</a></div>
+          <p class="hint" style="margin-top:14px">The installer is now disabled. Next: configure Google login, Firebase and branding in Admin → Settings.</p></div>
+      </section>
+    </form>
+  </main>
+</div>
+</body></html>

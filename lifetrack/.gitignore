@@ -1,0 +1,8 @@
+node_modules/
+config/config.json
+uploads/*
+!uploads/.gitkeep
+backups/*
+!backups/.gitkeep
+.env
+*.log
