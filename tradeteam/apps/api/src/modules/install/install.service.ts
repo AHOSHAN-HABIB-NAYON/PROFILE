@@ -252,11 +252,21 @@ export async function runInstall(input: InstallInput, activate: () => Promise<vo
     const secrets = await step(
       'Generate secure secrets',
       async () => {
-        const vapid = webpush.generateVAPIDKeys();
+        // Secrets supplied as environment variables (PaaS hosting) are reused so they survive redeploys.
+        const e = process.env;
+        const vapid =
+          e.VAPID_PUBLIC_KEY && e.VAPID_PRIVATE_KEY
+            ? { publicKey: e.VAPID_PUBLIC_KEY, privateKey: e.VAPID_PRIVATE_KEY }
+            : webpush.generateVAPIDKeys();
+        const key =
+          e.ENCRYPTION_KEY && Buffer.from(e.ENCRYPTION_KEY, 'base64').length === 32
+            ? e.ENCRYPTION_KEY
+            : crypto.randomBytes(32).toString('base64');
         return {
-          SESSION_SECRET: randomToken(48),
-          ENCRYPTION_KEY: crypto.randomBytes(32).toString('base64'),
-          WEBHOOK_SECRET: randomToken(32),
+          SESSION_SECRET:
+            e.SESSION_SECRET && e.SESSION_SECRET.length >= 32 ? e.SESSION_SECRET : randomToken(48),
+          ENCRYPTION_KEY: key,
+          WEBHOOK_SECRET: e.WEBHOOK_SECRET || randomToken(32),
           VAPID_PUBLIC_KEY: vapid.publicKey,
           VAPID_PRIVATE_KEY: vapid.privateKey,
         };

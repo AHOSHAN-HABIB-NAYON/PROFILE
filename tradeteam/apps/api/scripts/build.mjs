@@ -18,6 +18,8 @@ await build({
   target: 'node20',
   sourcemap: true,
   external: [...external, 'decimal.js'],
-  banner: { js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);" },
+  banner: {
+    js: "import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url); process.env.NODE_ENV ??= 'production';",
+  },
   logLevel: 'info',
 });
