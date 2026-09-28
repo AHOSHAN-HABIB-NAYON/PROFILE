@@ -1,22 +1,29 @@
 import type { Request, Response, NextFunction } from 'express';
-import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
-import { redis } from '../../infrastructure/redis';
+import {
+  RateLimiterMemory,
+  RateLimiterRedis,
+  RateLimiterRes,
+  type RateLimiterAbstract,
+} from 'rate-limiter-flexible';
+import { redis, isMemoryRedis } from '../../infrastructure/redis';
 import { Errors } from '../errors';
 import { clientIp } from '../../modules/auth/sessions';
 
-const limiters = new Map<string, RateLimiterRedis>();
+const limiters = new Map<string, RateLimiterAbstract>();
 
 function limiter(name: string, points: number, duration: number, blockDuration = 0) {
   const key = `${name}:${points}:${duration}`;
   let l = limiters.get(key);
   if (!l) {
-    l = new RateLimiterRedis({
-      storeClient: redis(),
-      keyPrefix: `rl:${name}`,
-      points,
-      duration,
-      blockDuration,
-    });
+    l = isMemoryRedis()
+      ? new RateLimiterMemory({ keyPrefix: `rl:${name}`, points, duration, blockDuration })
+      : new RateLimiterRedis({
+          storeClient: redis(),
+          keyPrefix: `rl:${name}`,
+          points,
+          duration,
+          blockDuration,
+        });
     limiters.set(key, l);
   }
   return l;

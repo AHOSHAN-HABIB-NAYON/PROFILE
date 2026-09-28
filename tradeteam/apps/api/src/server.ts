@@ -66,6 +66,10 @@ async function checkInstalledDb(cfg: ReturnType<typeof requireRuntimeEnv>): Prom
       [cfg.DB_NAME],
     );
     if (Number((rows as { n: number | string }[])[0]?.n) !== 2) return false;
+    // Only a completed installation (it has an administrator) restores the lock; an imported empty
+    // schema still goes through the installer.
+    const [admins] = await pool.query('SELECT 1 FROM admin_users LIMIT 1').catch(() => [[]]);
+    if (!(admins as unknown[]).length) return false;
     const fs = await import('node:fs');
     fs.writeFileSync(
       INSTALL_LOCK_FILE,
@@ -139,6 +143,11 @@ async function main() {
       ssl: cfg.DB_SSL,
     });
     initRedis(cfg.REDIS_URL);
+    if (!cfg.REDIS_URL && !(cfg.RUN_ENGINE && cfg.RUN_MARKET_DATA && cfg.RUN_WORKERS)) {
+      // Without Redis there is no cross-process bus: this process must run every role.
+      logger.warn('in-memory mode requires a single process: enabling engine, market data and workers here');
+      cfg.RUN_ENGINE = cfg.RUN_MARKET_DATA = cfg.RUN_WORKERS = true;
+    }
     if (cfg.AUTO_MIGRATE) {
       const r = await migrate(db());
       if (r.applied.length) logger.info({ applied: r.applied }, 'database upgraded');

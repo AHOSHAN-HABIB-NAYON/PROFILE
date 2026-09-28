@@ -42,4 +42,8 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - name: API tests in built-in memory mode (no Redis)
+        run: npm test -w @tradeteam/api
+        env:
+          TEST_REDIS_URL: ''
       - run: npm run build

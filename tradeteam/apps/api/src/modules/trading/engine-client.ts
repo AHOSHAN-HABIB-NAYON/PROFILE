@@ -1,6 +1,6 @@
 import { redis, redisSub } from '../../infrastructure/redis';
 import { Redis } from 'ioredis';
-import { redisUrl } from '../../infrastructure/redis';
+import { redisUrl, isMemoryRedis } from '../../infrastructure/redis';
 import { randomToken } from '../../infrastructure/crypto';
 import { logger } from '../../infrastructure/logger';
 import type { MatchingEngine } from './engine';
@@ -66,6 +66,8 @@ export function cancelInEngine(orderId: string, reason = 'user') {
 
 /** Engine side: consume commands from other instances. */
 export async function startCommandConsumer(engine: MatchingEngine, consumer: string) {
+  // Single-process memory mode: every command is local, no cross-process stream needed.
+  if (isMemoryRedis()) return async () => undefined;
   const r = new Redis(redisUrl(), { maxRetriesPerRequest: null });
   try {
     await r.xgroup('CREATE', STREAM, GROUP, '$', 'MKSTREAM');

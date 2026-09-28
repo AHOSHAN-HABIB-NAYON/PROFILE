@@ -9,6 +9,7 @@
     "start": "NODE_ENV=production node dist/server.js",
     "migrate": "node dist/migrate.js",
     "migrate:dev": "tsx src/cli/migrate.ts",
+    "export-sql": "tsx src/cli/export-sql.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },

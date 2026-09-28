@@ -1,5 +1,6 @@
 import { Redis } from 'ioredis';
 import { logger } from './logger';
+import { MemoryRedis } from './memory-redis';
 
 /**
  * Three Redis connections: commands, publisher, subscriber (a subscribed connection cannot run
@@ -21,11 +22,26 @@ function make(u: string, name: string): Redis {
   return r;
 }
 
-export function initRedis(u: string) {
-  url = u;
-  cmd = make(u, 'cmd');
-  pub = make(u, 'pub');
-  sub = make(u, 'sub');
+let memory = false;
+
+/** Empty URL → built-in in-memory mode (single server only; see memory-redis.ts). */
+export function initRedis(u: string | undefined) {
+  url = u ?? '';
+  memory = !url;
+  if (memory) {
+    logger.warn('REDIS_URL not set: using built-in in-memory mode (single server only)');
+    cmd = new MemoryRedis() as unknown as Redis;
+    pub = new MemoryRedis() as unknown as Redis;
+    sub = new MemoryRedis() as unknown as Redis;
+    return;
+  }
+  cmd = make(url, 'cmd');
+  pub = make(url, 'pub');
+  sub = make(url, 'sub');
+}
+
+export function isMemoryRedis() {
+  return memory;
 }
 
 export function redis(): Redis {

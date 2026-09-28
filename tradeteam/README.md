@@ -53,7 +53,9 @@ tradeteam/
 
 ## Quick start (development)
 
-Requirements: Node.js ≥ 20, MySQL 8 / MariaDB 10.6+, Redis 6+.
+Requirements: Node.js ≥ 20, MySQL 8 / MariaDB 10.6+, and optionally Redis 6+ (without it a
+built-in single-server memory mode is used — ideal for hosting that only provides MySQL). The
+full schema is also available as `database/tradeteam.sql` for phpMyAdmin import.
 
 ```bash
 cd tradeteam

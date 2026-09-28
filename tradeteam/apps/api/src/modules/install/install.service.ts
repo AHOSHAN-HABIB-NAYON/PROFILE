@@ -128,7 +128,15 @@ export async function checkDatabase(d: DbInput) {
       );
       const names = (t as { TABLE_NAME: string }[]).map((r) => r.TABLE_NAME);
       tableCount = names.length;
-      existingInstall = names.includes('schema_migrations') || names.includes('users');
+      // A schema without any accounts (e.g. imported from database/tradeteam.sql) is not an
+      // installation yet; any user or administrator means real data that must never be touched.
+      const hasRows = async (table: string) => {
+        if (!names.includes(table)) return false;
+        const [r] = await conn.query(`SELECT 1 FROM \`${d.database}\`.\`${table}\` LIMIT 1`);
+        return (r as unknown[]).length > 0;
+      };
+      existingInstall = (await hasRows('admin_users')) || (await hasRows('users'));
+      if (names.includes('users') && !names.includes('schema_migrations')) existingInstall = true; // foreign schema
     }
     return { ok: !existingInstall, version, databaseExists: exists, tableCount, existingInstall };
   } finally {
@@ -243,11 +251,19 @@ export async function runInstall(input: InstallInput, activate: () => Promise<vo
       throw Object.assign(new Error('Existing installation detected — refusing to overwrite'), { log });
     }
 
-    await step(
-      'Verify Redis',
-      () => checkRedis(input.redisUrl),
-      (r) => `Redis ${r.version}`,
-    );
+    if (input.redisUrl) {
+      await step(
+        'Verify Redis',
+        () => checkRedis(input.redisUrl),
+        (r) => `Redis ${r.version}`,
+      );
+    } else {
+      log.push({
+        step: 'Cache & real-time bus',
+        ok: true,
+        detail: 'built-in in-memory mode (single server, no Redis)',
+      });
+    }
 
     const secrets = await step(
       'Generate secure secrets',
@@ -400,7 +416,7 @@ export async function runInstall(input: InstallInput, activate: () => Promise<vo
           envLine('DB_NAME', input.db.database),
           envLine('DB_USER', input.db.user),
           envLine('DB_PASSWORD', input.db.password),
-          envLine('REDIS_URL', input.redisUrl),
+          ...(input.redisUrl ? [envLine('REDIS_URL', input.redisUrl)] : []),
           ...Object.entries(secrets).map(([k, v]) => envLine(k, v)),
         ];
         const tmp = `${RUNTIME_ENV_FILE}.tmp`;

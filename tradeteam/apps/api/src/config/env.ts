@@ -72,9 +72,9 @@ export function isInstalled(): boolean {
 
 /** Validates that everything needed to run an installed application is present. */
 export function requireRuntimeEnv(env: Env) {
-  const missing = (
-    ['DB_HOST', 'DB_NAME', 'DB_USER', 'REDIS_URL', 'SESSION_SECRET', 'ENCRYPTION_KEY'] as const
-  ).filter((k) => !env[k]);
+  const missing = (['DB_HOST', 'DB_NAME', 'DB_USER', 'SESSION_SECRET', 'ENCRYPTION_KEY'] as const).filter(
+    (k) => !env[k],
+  );
   if (missing.length) throw new Error(`Installed, but missing configuration: ${missing.join(', ')}`);
   const key = Buffer.from(env.ENCRYPTION_KEY!, 'base64');
   if (key.length !== 32) throw new Error('ENCRYPTION_KEY must be 32 bytes (base64 encoded)');
@@ -82,7 +82,6 @@ export function requireRuntimeEnv(env: Env) {
     DB_HOST: string;
     DB_NAME: string;
     DB_USER: string;
-    REDIS_URL: string;
     SESSION_SECRET: string;
     ENCRYPTION_KEY: string;
   };

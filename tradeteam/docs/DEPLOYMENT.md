@@ -7,7 +7,8 @@
   (or create it yourself) and, for the ledger immutability triggers, `TRIGGER` (+ `SUPER` or
   `log_bin_trust_function_creators=1` when binary logging is on). Without it the migration records
   a warning and the application-level guarantees still apply.
-* **Redis 6+** (persistence recommended: `appendonly yes`)
+* **Redis 6+** (persistence recommended: `appendonly yes`) — *optional on a single server*: leave
+  `REDIS_URL` empty and the built-in in-memory mode is used (see "Hosting without Redis")
 * A domain with **HTTPS** (required for secure cookies, passkeys, Google sign-in and PWA install)
 * Outbound access to your market-data provider (e.g. `api.binance.com`, `stream.binance.com:9443`)
 
@@ -33,6 +34,27 @@ NODE_ENV=production PORT=3000 HOST=127.0.0.1 STORAGE_DIR=/var/lib/tradeteam node
 
 `STORAGE_DIR` holds `install.lock`, `runtime.env` (DB credentials + generated secrets, mode 0600) and
 uploads. Keep it **outside** any web root, back it up, and never commit it.
+
+## Hosting without Redis (e.g. Hostinger Node.js apps)
+
+Many Node.js hosting plans offer MySQL but no Redis. Leave the Redis field in the installer empty
+(or don't set `REDIS_URL`): caches, the session cache, rate-limit counters, real-time pub/sub and
+background jobs then run inside the single Node.js process. All durable data — users, balances,
+ledger, orders, trades, sessions — is always in MySQL, so nothing financial depends on it.
+Limitations: exactly one process/instance; rate-limit counters and queued notification emails are
+reset on restart.
+
+Hostinger settings: root directory `tradeteam`, Node 22, entry file `apps/api/dist/server.js`,
+build command `npm run build`. Set environment variables for `APP_URL`, `DB_HOST`, `DB_PORT`,
+`DB_NAME`, `DB_USER`, `DB_PASSWORD`, `SESSION_SECRET`, `ENCRYPTION_KEY` (32 random bytes, base64),
+`WEBHOOK_SECRET`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `HOST=0.0.0.0`, `TRUST_PROXY=true`
+(do not set `PORT` or `NODE_ENV`). Because redeploys replace the app folder, the app restores its
+install lock from the database when this configuration is provided, so the installer never returns.
+
+**Database import (optional):** `database/tradeteam.sql` contains the complete schema and seed
+data. Import it into an empty database with phpMyAdmin if you prefer; the installer detects an
+imported, still-empty schema and only adds the administrator, settings and optional triggers.
+Regenerate it after schema changes with `npm run export-sql -w @tradeteam/api`.
 
 ## Process management
 

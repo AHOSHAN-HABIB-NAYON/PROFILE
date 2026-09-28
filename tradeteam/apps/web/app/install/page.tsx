@@ -59,7 +59,7 @@ export default function Installer() {
     databaseExists?: boolean;
     error?: string;
   } | null>(null);
-  const [redisUrl, setRedisUrl] = useState('redis://127.0.0.1:6379/0');
+  const [redisUrl, setRedisUrl] = useState('');
   const [redisCheck, setRedisCheck] = useState<{ ok: boolean; version?: string; error?: string } | null>(
     null,
   );
@@ -116,7 +116,7 @@ export default function Installer() {
     admin.password === admin.password2;
   const canNext = [
     Boolean(req?.ok && tokenOk),
-    Boolean(dbCheck?.ok && redisCheck?.ok),
+    Boolean(dbCheck?.ok && (!redisUrl.trim() || redisCheck?.ok)),
     Boolean(admin.name && /\S+@\S+\.\S+/.test(admin.email) && pwOk && (!totp || admin.totpCode.length === 6)),
     Boolean(app.siteName && app.appUrl),
     true,
@@ -129,7 +129,7 @@ export default function Installer() {
         token,
         appUrl: app.appUrl,
         db,
-        redisUrl,
+        redisUrl: redisUrl.trim(),
         admin: {
           name: admin.name,
           email: admin.email,
@@ -285,11 +285,12 @@ export default function Installer() {
                   label="Redis URL"
                   value={redisUrl}
                   onChange={(e) => (setRedisUrl(e.target.value), setRedisCheck(null))}
-                  hint="redis://user:pass@host:6379/0 or rediss:// for TLS"
+                  hint="Optional. Leave empty on single-server hosting (e.g. Hostinger) to use the built-in memory mode. Use redis:// or rediss:// for multi-server scaling."
                 />
                 <Button
                   variant="secondary"
                   loading={busy}
+                  disabled={!redisUrl.trim()}
                   onClick={() =>
                     wrap(async () =>
                       setRedisCheck(await post('/install/check-redis', { token, url: redisUrl })),

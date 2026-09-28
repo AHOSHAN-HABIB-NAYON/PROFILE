@@ -129,10 +129,16 @@ export function installRouter(activate: () => Promise<void>) {
       .url()
       .refine((u) => /^https?:\/\//.test(u)),
     db: dbSchema,
+    // Empty = built-in in-memory mode (single server without a Redis service).
     redisUrl: z
-      .string()
-      .regex(/^rediss?:\/\//)
-      .max(500),
+      .union([
+        z.literal(''),
+        z
+          .string()
+          .regex(/^rediss?:\/\//)
+          .max(500),
+      ])
+      .default(''),
     admin: z.object({
       name: z.string().trim().min(1).max(100),
       email: z.string().trim().toLowerCase().email(),
