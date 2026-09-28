@@ -44,8 +44,9 @@ ledger, orders, trades, sessions — is always in MySQL, so nothing financial de
 Limitations: exactly one process/instance; rate-limit counters and queued notification emails are
 reset on restart.
 
-Hostinger settings: root directory `tradeteam`, Node 22, entry file `apps/api/dist/server.js`,
-build command `npm run build`. Set environment variables for `APP_URL`, `DB_HOST`, `DB_PORT`,
+Hostinger settings: Express preset, root directory `tradeteam`, Node 22, default entry file (the
+root `server.js` starts the bundled app and builds it first if no build output is present). Uploading
+a zip that already contains `apps/api/dist` and `apps/web/.next` avoids building on the host. Set environment variables for `APP_URL`, `DB_HOST`, `DB_PORT`,
 `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `SESSION_SECRET`, `ENCRYPTION_KEY` (32 random bytes, base64),
 `WEBHOOK_SECRET`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `HOST=0.0.0.0`, `TRUST_PROXY=true`
 (do not set `PORT` or `NODE_ENV`). Because redeploys replace the app folder, the app restores its
