@@ -19,8 +19,8 @@ import { makeCtx } from './modules/site/routes.js';
 
 const UPLOAD_EXT = /\.(jpe?g|png|webp|gif|avif|pdf)$/i;
 
-export async function buildApp({ logger = false } = {}) {
-  const app = Fastify({ logger, trustProxy: config.trustProxy, bodyLimit: 2 * 1024 * 1024, routerOptions: { ignoreTrailingSlash: true, maxParamLength: 300 } });
+export async function buildApp({ logger = false, serverFactory } = {}) {
+  const app = Fastify({ logger, ...(serverFactory ? { serverFactory } : {}), trustProxy: config.trustProxy, bodyLimit: 2 * 1024 * 1024, routerOptions: { ignoreTrailingSlash: true, maxParamLength: 300 } });
   await loadSettings(true);
   setInterval(() => loadSettings(true).catch(() => {}), 30_000).unref();
 
@@ -51,8 +51,10 @@ export async function buildApp({ logger = false } = {}) {
     },
   });
   /* আপলোড ফোল্ডার — শুধু ছবি ও পিডিএফ, স্ক্রিপ্ট চালানো বন্ধ */
-  fs.mkdirSync(config.uploadDir, { recursive: true });
-  await app.register(async (inst) => {
+  let uploadsOk = true;
+  try { fs.mkdirSync(config.uploadDir, { recursive: true }); fs.accessSync(config.uploadDir, fs.constants.R_OK); }
+  catch (e) { uploadsOk = false; console.error(`⚠ UPLOAD_DIR (${config.uploadDir}) খোলা যায়নি: ${e.code || e.message} — ছবি/পিডিএফ দেখা যাবে না। .env-এ UPLOAD_DIR ঠিক করুন।`); }
+  if (uploadsOk) await app.register(async (inst) => {
     inst.addHook('onRequest', async (req, reply) => {
       if (!UPLOAD_EXT.test(req.url.split('?')[0])) return reply.code(404).send('Not found');
       reply.header('Content-Security-Policy', "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox")
