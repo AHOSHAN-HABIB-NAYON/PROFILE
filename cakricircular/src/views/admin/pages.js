@@ -509,6 +509,7 @@ function settingsPage(d) {
 <div data-pane="home" class="card" hidden>
   ${U.field('hero_title', 'হিরো শিরোনাম (প্রতি লাইনে আলাদা)', g('hero_title'), { type: 'textarea', attrs: 'rows="3"' })}
   ${U.field('hero_subtitle', 'হিরো সাবটাইটেল', g('hero_subtitle'))}
+  ${U.fileField('hero_image', 'হিরো ব্যাকগ্রাউন্ড ছবি', g('hero_image') ? uploads.url(g('hero_image')) : '', { hint: 'চওড়া ছবি দিন (১৬:৯)। খালি রাখলে ডিফল্ট ছবি দেখাবে' })}
   <div class="grid3">${U.field('per_page', 'প্রতি পেজে পোস্ট', g('per_page'), { type: 'number', attrs: 'min="4" max="60"' })}${U.field('notice_limit', 'নোটিশ লিমিট', g('notice_limit'), { type: 'number', attrs: 'min="5" max="500"' })}${U.field('promo_gap', 'প্রিমিয়াম বিরতি (promo_gap)', g('promo_gap'), { type: 'number', attrs: 'min="2" max="30"', hint: 'প্রতি কয়টি পোস্ট পর একটি প্রিমিয়াম' })}</div>
   <div class="grid3">${U.field('related_count', 'সম্পর্কিত পোস্ট', g('related_count'), { type: 'number', attrs: 'min="0" max="24"' })}${U.field('trash_days', 'ট্র্যাশ অটো-মুছবে (দিন)', g('trash_days'), { type: 'number' })}${U.field('report_limit_per_hour', 'রিপোর্ট লিমিট/ঘণ্টা', g('report_limit_per_hour'), { type: 'number' })}</div>
   <h3>নোটিফিকেশন</h3>

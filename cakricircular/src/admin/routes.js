@@ -626,7 +626,7 @@ router.post('/settings', auth.can('settings'), wrap(async (req, res) => {
     if (p !== settings.get('admin_path')) { vals.admin_path = p; newPath = `/${p}/settings`; }
   }
   try {
-    for (const [name, kind] of [['logo', 'logo'], ['favicon', 'favicon'], ['og_image', 'thumb']]) {
+    for (const [name, kind] of [['logo', 'logo'], ['favicon', 'favicon'], ['og_image', 'thumb'], ['hero_image', 'hero']]) {
       const f = file(req, name);
       if (f) {
         vals[name] = await uploads.saveImage(f.buffer, kind);

@@ -199,7 +199,8 @@ ul, ol { margin: 0; padding: 0; }
 /* ---------- hero (scene illustration + search band) ---------- */
 .hero { position: relative; color: #fff; background: var(--hero-2); isolation: isolate; }
 .hero-scene { position: relative; overflow: hidden; min-height: 250px; display: flex; align-items: center; }
-.hero-bg { position: absolute; inset: 0; background: #6fb4ea url('../img/hero-scene.svg') 88% 100% / auto 104% no-repeat; z-index: -2; animation: heroZoom 18s ease-in-out infinite alternate; }
+.hero-bg { position: absolute; inset: 0; z-index: -2; overflow: hidden; background: #3b8fe0; }
+.hero-bg img { width: 100%; height: 100%; object-fit: cover; object-position: 72% 55%; animation: heroZoom 20s ease-in-out infinite alternate; }
 @keyframes heroZoom { to { transform: scale(1.06); } }
 .hero-scene::before { content: ""; position: absolute; inset: 0; z-index: -1;
   background: linear-gradient(90deg, rgba(8, 38, 100, .9) 0%, rgba(10, 52, 128, .72) 30%, rgba(12, 60, 140, .22) 52%, rgba(12, 60, 140, 0) 66%),
@@ -689,7 +690,7 @@ body.hide-bnav .bnav { transform: translateY(110%); }
   .hero-txt { max-width: 560px; }
   .hero h1 { font-size: 46px; }
   .hero p { font-size: 17px; max-width: 44ch; }
-  .hero-bg { background-position: 100% 38%; background-size: cover; }
+  .hero-bg img { object-position: 100% 45%; }
   .hero-band { padding: 0 0 72px; margin-top: -40px; background: transparent; position: relative; }
   .hero-scene::before { background: linear-gradient(90deg, rgba(8, 38, 100, .94) 0%, rgba(10, 52, 128, .8) 30%, rgba(12, 60, 140, .2) 55%, rgba(12, 60, 140, 0) 70%), linear-gradient(0deg, rgba(8, 38, 100, .55) 0%, rgba(8, 38, 100, 0) 35%); }
   .hero { background: linear-gradient(180deg, transparent 0, transparent 460px, var(--hero-1) 460px); }

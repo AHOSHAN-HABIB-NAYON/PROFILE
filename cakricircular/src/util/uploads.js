@@ -78,6 +78,10 @@ async function saveImage(buf, kind = 'thumb') {
       factory = () => sharp(buf, { failOn: 'none' }).rotate().resize(856, 292, { fit: 'cover', position: 'attention' });
       target = 200 * 1024;
       break;
+    case 'hero':
+      factory = () => sharp(buf, { failOn: 'none' }).rotate().resize(1920, 1080, { fit: 'inside', withoutEnlargement: true });
+      target = 260 * 1024;
+      break;
     case 'avatar':
       factory = () => sharp(buf, { failOn: 'none' }).rotate().resize(400, 400, { fit: 'cover', position: 'attention' });
       target = 60 * 1024;

@@ -12,6 +12,13 @@ function heroTitle() {
   return String(settings.get('hero_title') || '').split('\n').map((l, i) => html`<span class="l${i}">${l}</span>`);
 }
 
+function heroImage() {
+  const custom = settings.get('hero_image');
+  if (custom) return html`<img src="${uploads.url(custom)}" alt="" fetchpriority="high" decoding="async" width="1672" height="940">`;
+  const { asset } = require('../../assets');
+  return html`<img src="${asset('img/hero-photo.webp')}" srcset="${asset('img/hero-photo-m.webp')} 900w, ${asset('img/hero-photo.webp')} 1672w" sizes="100vw" alt="" fetchpriority="high" decoding="async" width="1672" height="940">`;
+}
+
 function slider(banners) {
   if (!banners.length) return '';
   return html`<section class="slider" data-slider aria-roledescription="carousel" aria-label="ব্যানার">
@@ -48,7 +55,7 @@ function home(ctx) {
   return html`<div class="home">
   <section class="hero">
     <div class="hero-scene">
-      <div class="hero-bg" aria-hidden="true"></div>
+      <div class="hero-bg" aria-hidden="true">${heroImage()}</div>
       <div class="wrap hero-in">
         <div class="hero-txt">
           <h1>${heroTitle()}</h1>
