@@ -164,9 +164,13 @@ app.use((err, req, res, next) => {
 });
 
 /* ---------- start ---------- */
-const PORT = Number(process.env.PORT) || 3000;
+// PORT may be a number or (on some hosts) a unix socket path
+const PORT = /^\d+$/.test(String(process.env.PORT || '')) ? Number(process.env.PORT) : (process.env.PORT || 3000);
 
+let started = false;
 async function main() {
+  if (started) return;
+  started = true;
   try {
     const ok = await boot();
     console.log(ok ? '[boot] ready' : '[boot] not installed — open /install');
@@ -186,7 +190,9 @@ async function main() {
   process.on('SIGINT', shutdown);
 }
 
-if (require.main === module) main();
+// Always start, even when loaded through a wrapper (Hostinger/LiteSpeed lsnode, Passenger, PM2),
+// where require.main is not this file. Set CC_NO_AUTOSTART=1 to import without listening.
+if (process.env.CC_NO_AUTOSTART !== '1') main();
 
 process.on('unhandledRejection', (e) => console.error('[unhandledRejection]', e));
 
