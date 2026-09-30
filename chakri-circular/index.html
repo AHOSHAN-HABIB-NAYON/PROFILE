@@ -1,0 +1,1501 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>চাকরি সার্কুলার</title>
+<meta name="description" content="চাকরি সার্কুলার — সরকারি ও বেসরকারি চাকরি, ভর্তি, রেজাল্ট, নোটিশ ও স্কলারশিপের নির্ভরযোগ্য আপডেট।">
+<meta name="theme-color" content="#0B8457">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Da+2:wght@600;700;800&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: desktop = screen index | live phone | spec panel; phone width = the app itself, full bleed. */
+:root{
+  --bg:#F3F7F5; --stage:#E9F0ED; --surface:#FFFFFF; --surface-2:#F0F5F3; --surface-3:#E6EEEA;
+  --ink:#0F1F1A; --ink-2:#4B5E57; --ink-3:#83958E; --line:#E0E9E4; --line-2:#CFDCD6;
+  --green:#0B8457; --green-2:#086B47; --green-soft:#E1F3EA; --on-green:#FFFFFF;
+  --blue:#1D63D8; --blue-soft:#E5EEFD;
+  --violet:#6B4BD6; --violet-soft:#EEEAFD;
+  --orange:#DD7412; --orange-soft:#FDF0E2;
+  --red:#D23B3B; --red-soft:#FDE9E9;
+  --teal:#0E8A8A; --teal-soft:#DFF4F3;
+  --gold:#A8740A; --gold-soft:#FBF3DC; --gold-line:#EBD393;
+  --hero-a:#0B8457; --hero-b:#1D63D8;
+  --shadow:0 1px 2px rgba(15,31,26,.05),0 4px 14px rgba(15,31,26,.06);
+  --shadow-lg:0 10px 40px rgba(15,31,26,.16);
+  --scrim:rgba(8,20,16,.45);
+  --font:"Noto Sans Bengali","Hind Siliguri","Nirmala UI","Vrinda",system-ui,sans-serif;
+  --display:"Baloo Da 2","Noto Sans Bengali","Nirmala UI",system-ui,sans-serif;
+  --r-sm:10px; --r:14px; --r-lg:20px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0A1311; --stage:#070E0C; --surface:#111C19; --surface-2:#172521; --surface-3:#1E2E29;
+  --ink:#E7F0EC; --ink-2:#A3B5AE; --ink-3:#6F827B; --line:#20322C; --line-2:#2B403A;
+  --green:#2FB982; --green-2:#46C993; --green-soft:#11342A; --on-green:#04140E;
+  --blue:#629AF5; --blue-soft:#15294A; --violet:#9C85F2; --violet-soft:#241D45;
+  --orange:#F0A052; --orange-soft:#3A2710; --red:#F07474; --red-soft:#3D1B1B;
+  --teal:#3CC4C0; --teal-soft:#10312F; --gold:#E4B653; --gold-soft:#2E2510; --gold-line:#5A4718;
+  --hero-a:#0E5E42; --hero-b:#173F86;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25); --shadow-lg:0 10px 40px rgba(0,0,0,.5);
+  --scrim:rgba(0,0,0,.6); color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0A1311; --stage:#070E0C; --surface:#111C19; --surface-2:#172521; --surface-3:#1E2E29;
+  --ink:#E7F0EC; --ink-2:#A3B5AE; --ink-3:#6F827B; --line:#20322C; --line-2:#2B403A;
+  --green:#2FB982; --green-2:#46C993; --green-soft:#11342A; --on-green:#04140E;
+  --blue:#629AF5; --blue-soft:#15294A; --violet:#9C85F2; --violet-soft:#241D45;
+  --orange:#F0A052; --orange-soft:#3A2710; --red:#F07474; --red-soft:#3D1B1B;
+  --teal:#3CC4C0; --teal-soft:#10312F; --gold:#E4B653; --gold-soft:#2E2510; --gold-line:#5A4718;
+  --hero-a:#0E5E42; --hero-b:#173F86;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25); --shadow-lg:0 10px 40px rgba(0,0,0,.5);
+  --scrim:rgba(0,0,0,.6); color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--stage);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+a{color:inherit;text-decoration:none}
+svg.i{width:20px;height:20px;flex:none;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+svg.i.fill{fill:currentColor}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:8px}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- Showcase shell ---------- */
+.stage{display:grid;grid-template-columns:240px minmax(0,auto) minmax(0,320px);gap:28px;justify-content:center;align-items:start;padding:24px 16px;min-height:100%}
+.index{position:sticky;top:24px;display:flex;flex-direction:column;gap:14px;max-height:calc(100vh - 48px);overflow:auto;padding-right:4px}
+.index .brandline{display:flex;gap:10px;align-items:center}
+.index .brandline b{font-family:var(--display);font-size:20px;line-height:1.1;color:var(--ink)}
+.index .brandline small{display:block;color:var(--ink-3);font-size:12px}
+.mode{display:grid;grid-template-columns:1fr 1fr;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:3px}
+.mode button{padding:7px 0;border-radius:9px;font-weight:600;font-size:13.5px;color:var(--ink-2)}
+.mode button.on{background:var(--green);color:var(--on-green)}
+.index h4{margin:6px 0 0;font-size:11.5px;letter-spacing:.06em;color:var(--ink-3);font-weight:600;text-transform:uppercase}
+.index ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1px}
+.index li button{width:100%;text-align:left;padding:6px 10px;border-radius:8px;font-size:14px;color:var(--ink-2);display:flex;justify-content:space-between;gap:8px}
+.index li button:hover{background:var(--surface)}
+.index li button.on{background:var(--surface);color:var(--green);font-weight:600;box-shadow:var(--shadow)}
+.index li button span{color:var(--ink-3);font-size:12px}
+.themebtn{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--surface);border:1px solid var(--line);font-size:13.5px;color:var(--ink-2)}
+
+.device{width:392px;height:min(830px,calc(100vh - 48px));border-radius:44px;padding:10px;background:#0c1512;box-shadow:var(--shadow-lg),inset 0 0 0 2px #2a3632;position:sticky;top:24px}
+.screen{position:relative;width:100%;height:100%;border-radius:35px;overflow:hidden;background:var(--bg);display:flex;flex-direction:column;isolation:isolate}
+.statusbar{height:34px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:0 26px;font-size:12.5px;font-weight:600;background:var(--surface);color:var(--ink)}
+.statusbar .dots{display:flex;gap:5px;align-items:center}
+.statusbar .dots i{display:block;width:16px;height:9px;border:1.5px solid currentColor;border-radius:3px;position:relative}
+.statusbar .dots i::after{content:"";position:absolute;inset:1px;right:4px;background:currentColor;border-radius:1px}
+.urlbar{flex:none;display:flex;align-items:center;gap:6px;margin:0 10px 6px;padding:5px 12px;border-radius:10px;background:var(--surface-2);font-size:11.5px;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.urlbar svg{width:12px;height:12px}
+.urlbar span{overflow:hidden;text-overflow:ellipsis}
+.urlwrap{background:var(--surface);flex:none}
+
+.spec{position:sticky;top:24px;display:flex;flex-direction:column;gap:14px;max-height:calc(100vh - 48px);overflow:auto}
+.spec section{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.spec h3{margin:0 0 6px;font-size:14px}
+.spec p,.spec li{font-size:13px;color:var(--ink-2);margin:0}
+.spec ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
+.spec pre{margin:8px 0 0;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--surface-2);border-radius:10px;padding:10px;overflow:auto;max-height:260px;color:var(--ink-2)}
+.chiprow{display:flex;flex-wrap:wrap;gap:6px}
+.chiprow code{font-size:11.5px;background:var(--surface-2);padding:2px 8px;border-radius:99px;color:var(--ink-2)}
+
+@media (max-width:1180px){.stage{grid-template-columns:220px auto}.spec{display:none}}
+@media (max-width:760px){
+  body{background:var(--bg)}
+  .stage{display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;gap:0;padding:0;height:100%;min-height:0}
+  .index{position:relative;top:0;flex:none;z-index:50;max-height:none;flex-direction:row;overflow-x:auto;padding:8px 16px;gap:8px;background:var(--surface);border-bottom:1px solid var(--line);align-items:center}
+  .index .brandline,.index h4,.themebtn{display:none}
+  .index ul{flex-direction:row;gap:6px}
+  .index li button{white-space:nowrap;padding:5px 10px;border:1px solid var(--line)}
+  .index li button span{display:none}
+  .mode{flex:none;width:150px}
+  .device{width:100%;flex:1;min-height:0;height:auto;border-radius:0;padding:0;background:none;box-shadow:none;position:relative;top:0}
+  .screen{border-radius:0}
+  .statusbar{display:none}
+}
+
+/* ---------- App primitives ---------- */
+.view{flex:1;overflow-y:auto;overflow-x:hidden;scroll-behavior:smooth;position:relative;overscroll-behavior:contain}
+.view.has-nav{padding-bottom:84px}
+.pad{padding:0 16px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;align-items:center;gap:10px}
+.spacer{flex:1}
+.muted{color:var(--ink-2)}
+.faint{color:var(--ink-3)}
+.fade-in{animation:fade .28s ease both}
+@keyframes fade{from{opacity:.001;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.appbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--surface);border-bottom:1px solid var(--line)}
+.appbar h1{margin:0;font-size:17px;font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ib{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--ink);position:relative;transition:background .15s}
+.ib:hover{background:var(--surface-2)}
+.ib .dot{position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 0 2px var(--surface)}
+.logo{display:flex;align-items:center;gap:9px;flex:1;min-width:0}
+.logo b{font-family:var(--display);font-size:19px;line-height:1;color:var(--green);font-weight:700}
+.logo small{display:block;font-size:10.5px;color:var(--ink-3);line-height:1.2;margin-top:2px;font-family:system-ui,sans-serif;letter-spacing:.02em}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:46px;padding:0 18px;border-radius:12px;font-weight:600;font-size:15px;transition:transform .12s,background .15s,box-shadow .15s;white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--green);color:var(--on-green)}
+.btn.primary:hover{background:var(--green-2)}
+.btn.blue{background:var(--blue);color:#fff}
+.btn.ghost{background:var(--surface);border:1.5px solid var(--line-2);color:var(--ink)}
+.btn.soft{background:var(--green-soft);color:var(--green)}
+.btn.danger{background:var(--red-soft);color:var(--red)}
+.btn.sm{height:36px;padding:0 12px;font-size:13.5px;border-radius:10px}
+.btn.block{width:100%}
+.btn[disabled]{opacity:.5;pointer-events:none}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:22px 16px 10px}
+.sec-h h2{margin:0;font-size:17px;font-weight:700;display:flex;align-items:center;gap:6px}
+.sec-h h2 small{font-weight:500;color:var(--ink-3);font-size:12px}
+.sec-h a,.sec-h button{font-size:13.5px;color:var(--green);font-weight:600;display:flex;align-items:center;gap:2px}
+.sec-h svg{width:16px;height:16px}
+
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;padding:1px 8px;border-radius:99px;line-height:1.7;white-space:nowrap}
+.badge svg{width:12px;height:12px;stroke-width:2.4}
+.b-green{background:var(--green-soft);color:var(--green)}
+.b-blue{background:var(--blue-soft);color:var(--blue)}
+.b-violet{background:var(--violet-soft);color:var(--violet)}
+.b-orange{background:var(--orange-soft);color:var(--orange)}
+.b-red{background:var(--red-soft);color:var(--red)}
+.b-teal{background:var(--teal-soft);color:var(--teal)}
+.b-gold{background:var(--gold-soft);color:var(--gold)}
+.b-grey{background:var(--surface-2);color:var(--ink-2)}
+
+/* Hero */
+.hero{margin:12px 16px 0;border-radius:var(--r-lg);padding:20px 16px 16px;color:#fff;position:relative;overflow:hidden;background:linear-gradient(135deg,var(--hero-a),var(--hero-b))}
+.hero::after{content:"";position:absolute;right:-60px;top:-70px;width:220px;height:220px;border-radius:50%;border:34px solid rgba(255,255,255,.07)}
+.hero h2{margin:0;font-family:var(--display);font-size:26px;line-height:1.25;font-weight:700;text-wrap:balance;position:relative}
+.hero p{margin:4px 0 14px;font-size:13.5px;opacity:.88;position:relative}
+.searchbox{position:relative;display:flex;align-items:center;background:var(--surface);border-radius:14px;padding:5px 5px 5px 14px;gap:8px;box-shadow:0 6px 18px rgba(0,0,0,.12);color:var(--ink);z-index:1}
+.searchbox input{flex:1;min-width:0;border:0;outline:0;background:none;font-size:14.5px;height:40px}
+.searchbox input::placeholder{color:var(--ink-3)}
+.searchbox .go{width:42px;height:40px;border-radius:11px;background:var(--green);color:var(--on-green);display:grid;place-items:center}
+.searchbox.flat{box-shadow:none;border:1.5px solid var(--line-2)}
+.searchbox.flat:focus-within{border-color:var(--green)}
+.hero .stats{display:flex;gap:16px;margin-top:12px;font-size:12.5px;opacity:.92;position:relative}
+.hero .stats b{font-weight:700}
+
+/* Categories */
+.catgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 16px}
+.cat{display:flex;flex-direction:column;align-items:center;gap:7px;padding:14px 6px 12px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);transition:transform .15s,box-shadow .15s}
+.cat:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.cat .ic{width:44px;height:44px;border-radius:13px;display:grid;place-items:center}
+.cat .ic svg{width:22px;height:22px}
+.cat span{font-size:13px;font-weight:600;text-align:center;line-height:1.3}
+.ic.green{background:var(--green-soft);color:var(--green)}.ic.blue{background:var(--blue-soft);color:var(--blue)}.ic.violet{background:var(--violet-soft);color:var(--violet)}.ic.orange{background:var(--orange-soft);color:var(--orange)}.ic.red{background:var(--red-soft);color:var(--red)}.ic.teal{background:var(--teal-soft);color:var(--teal)}.ic.gold{background:var(--gold-soft);color:var(--gold)}
+
+.catrow{display:flex;align-items:center;gap:14px;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);transition:border-color .15s}
+.catrow:hover{border-color:var(--green)}
+.catrow .ic{width:48px;height:48px;border-radius:14px;display:grid;place-items:center}
+.catrow b{display:block;font-size:15.5px}
+.catrow small{color:var(--ink-3);font-size:12.5px}
+
+/* Job card */
+.feed{display:flex;flex-direction:column;gap:10px;padding:0 16px}
+.job{display:grid;grid-template-columns:58px minmax(0,1fr) auto;gap:12px;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);transition:transform .15s,box-shadow .15s,border-color .15s;position:relative;text-align:left;width:100%}
+.job:hover{box-shadow:var(--shadow);transform:translateY(-1px)}
+.job .thumb{width:58px;height:58px;border-radius:12px;overflow:hidden;background:var(--surface-2)}
+.job .thumb svg{width:100%;height:100%;display:block}
+.job .body{min-width:0;display:flex;flex-direction:column;gap:4px}
+.job .top{display:flex;gap:6px;flex-wrap:wrap}
+.job h3{margin:0;font-size:14.5px;line-height:1.45;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.job .meta{display:flex;flex-wrap:wrap;gap:2px 10px;font-size:12px;color:var(--ink-3)}
+.job .meta span{display:inline-flex;align-items:center;gap:3px}
+.job .meta svg{width:13px;height:13px}
+.job .dl{font-size:12px;font-weight:600;color:var(--green);display:inline-flex;align-items:center;gap:4px}
+.job .dl.soon{color:var(--orange)}
+.job .dl.over{color:var(--red)}
+.job .dl svg{width:13px;height:13px}
+.job .bm{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:var(--ink-3);align-self:start}
+.job .bm:hover{background:var(--surface-2);color:var(--ink)}
+.job .bm.on{color:var(--green)}
+.job .bm.on svg{fill:currentColor}
+.job.promoted{border-color:color-mix(in srgb,var(--blue) 35%,var(--line))}
+.job.premium{border-color:var(--gold-line);background:linear-gradient(180deg,var(--gold-soft),var(--surface) 70%)}
+.promo-tag{font-size:11px;color:var(--ink-3);display:inline-flex;align-items:center;gap:3px}
+.promo-tag svg{width:11px;height:11px}
+
+/* Chips / tabs */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:0 16px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;height:34px;padding:0 14px;border-radius:99px;border:1px solid var(--line-2);background:var(--surface);font-size:13.5px;display:inline-flex;align-items:center;gap:6px;color:var(--ink-2);transition:all .15s}
+.chip.on{background:var(--green);border-color:var(--green);color:var(--on-green)}
+.chip svg{width:15px;height:15px}
+.tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface-2);border-radius:12px;padding:4px;margin:0 16px}
+.tabs button{height:36px;border-radius:9px;font-weight:600;font-size:14px;color:var(--ink-2);transition:all .2s}
+.tabs button.on{background:var(--surface);color:var(--green);box-shadow:var(--shadow)}
+
+/* Bottom nav */
+.bnav{position:absolute;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(5,1fr);background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:6px 6px calc(8px + env(safe-area-inset-bottom,0px))}
+.bnav button{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;color:var(--ink-3);padding:4px 0;font-weight:500}
+.bnav .pill{width:52px;height:30px;border-radius:99px;display:grid;place-items:center;transition:background .25s,transform .25s}
+.bnav button.on{color:var(--green);font-weight:700}
+.bnav button.on .pill{background:var(--green-soft);animation:pop .3s ease}
+@keyframes pop{0%{transform:scale(.7)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+
+/* Sheets, drawer, modal, toast */
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:60;animation:fadeo .2s ease both}
+@keyframes fadeo{from{opacity:0}to{opacity:1}}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:61;background:var(--surface);border-radius:24px 24px 0 0;padding:10px 16px calc(18px + env(safe-area-inset-bottom,0px));animation:up .28s cubic-bezier(.2,.8,.2,1) both;max-height:88%;overflow:auto}
+.sheet .grab{width:40px;height:4px;border-radius:4px;background:var(--line-2);margin:0 auto 12px}
+.sheet h3{margin:0 0 12px;font-size:16px}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+.drawer{position:absolute;top:0;bottom:0;left:0;width:84%;max-width:320px;z-index:61;background:var(--surface);display:flex;flex-direction:column;animation:slide .28s cubic-bezier(.2,.8,.2,1) both;overflow:auto}
+@keyframes slide{from{transform:translateX(-100%)}to{transform:none}}
+.drawer .dh{display:flex;align-items:center;gap:10px;padding:16px;border-bottom:1px solid var(--line)}
+.drawer nav{display:flex;flex-direction:column;padding:8px}
+.drawer nav button{display:flex;align-items:center;gap:14px;padding:11px 12px;border-radius:12px;font-size:15px;text-align:left;color:var(--ink)}
+.drawer nav button:hover{background:var(--surface-2)}
+.drawer nav button.on{background:var(--green-soft);color:var(--green);font-weight:600}
+.drawer nav button svg{color:var(--ink-2)}
+.drawer nav button.on svg{color:var(--green)}
+.drawer nav hr{border:0;border-top:1px solid var(--line);margin:6px 8px}
+.switch{width:44px;height:26px;border-radius:99px;background:var(--line-2);position:relative;transition:background .2s;flex:none}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+.switch.on{background:var(--green)}
+.switch.on::after{transform:translateX(18px)}
+.socials{display:flex;gap:10px}
+.socials button,.socials a{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--surface-2);color:var(--ink-2)}
+.socials svg{width:18px;height:18px}
+.modal{position:absolute;left:20px;right:20px;top:50%;transform:translateY(-50%);z-index:61;background:var(--surface);border-radius:24px;padding:24px 20px 18px;text-align:center;animation:zoom .25s ease both;box-shadow:var(--shadow-lg)}
+@keyframes zoom{from{opacity:0;transform:translateY(-46%) scale(.95)}to{opacity:1;transform:translateY(-50%)}}
+.modal h3{margin:12px 0 6px;font-size:18px;line-height:1.4;text-wrap:balance}
+.modal p{margin:0 0 18px;color:var(--ink-2);font-size:14px}
+.toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%);z-index:80;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13.5px;font-weight:500;box-shadow:var(--shadow-lg);animation:fade .25s ease both;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.toast svg{width:16px;height:16px;color:var(--green-2)}
+
+/* Detail */
+.dhead{padding:16px;background:var(--surface);border-bottom:1px solid var(--line)}
+.dhead .row{align-items:flex-start;gap:14px}
+.dhead .thumb{width:68px;height:68px;border-radius:16px;overflow:hidden;flex:none}
+.dhead h2{margin:0 0 4px;font-size:19px;line-height:1.4;text-wrap:balance}
+.dhead .org{font-size:14px;color:var(--ink-2);display:flex;align-items:center;gap:5px}
+.dhead .org svg{width:15px;height:15px;color:var(--green)}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:16px}
+.fact{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:flex;gap:10px;align-items:flex-start;min-width:0}
+.fact .ic{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;flex:none}
+.fact .ic svg{width:17px;height:17px}
+.fact small{display:block;font-size:11.5px;color:var(--ink-3);line-height:1.3}
+.fact b{display:block;font-size:13.5px;font-weight:600;line-height:1.4}
+.countdown{margin:0 16px;border-radius:var(--r-lg);padding:14px 16px;text-align:center;background:var(--red-soft);border:1px solid color-mix(in srgb,var(--red) 25%,transparent)}
+.countdown small{font-size:13px;color:var(--red);font-weight:600}
+.cd{display:flex;justify-content:center;gap:8px;margin-top:6px}
+.cd div{min-width:62px;background:var(--surface);border-radius:12px;padding:6px 4px}
+.cd b{display:block;font-size:24px;line-height:1.2;color:var(--red);font-weight:700}
+.cd span{font-size:11.5px;color:var(--ink-2)}
+.countdown.ok{background:var(--green-soft);border-color:color-mix(in srgb,var(--green) 25%,transparent)}
+.countdown.ok small,.countdown.ok .cd b{color:var(--green)}
+.countdown.over{background:var(--surface-2);border-color:var(--line)}
+.countdown.over small{color:var(--ink-2)}
+.countdown .ended{font-size:22px;font-weight:700;color:var(--ink-2)}
+.ctas{display:grid;grid-template-columns:1fr auto;gap:10px;padding:14px 16px 0}
+.prose{padding:6px 16px 0}
+.prose h3{font-size:16px;margin:18px 0 6px;display:flex;align-items:center;gap:8px}
+.prose h3::before{content:"";width:4px;height:16px;border-radius:2px;background:var(--green)}
+.prose p,.prose li{font-size:14.5px;color:var(--ink-2);margin:0 0 6px}
+.prose ul,.prose ol{padding-left:20px;margin:0}
+.note{background:var(--blue-soft);color:var(--ink);border-radius:12px;padding:12px 14px;font-size:13.5px;display:flex;gap:10px;margin-top:10px}
+.note svg{color:var(--blue);margin-top:2px}
+.sharegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.sharegrid button{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2);padding:8px 0;border-radius:12px}
+.sharegrid button:hover{background:var(--surface-2)}
+.sharegrid .ic{width:50px;height:50px;border-radius:50%;display:grid;place-items:center;color:#fff}
+.sharegrid .ic svg{width:22px;height:22px}
+.shareprev{display:flex;gap:12px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:14px;margin-bottom:16px}
+.shareprev .thumb{width:52px;height:52px;border-radius:10px;overflow:hidden;flex:none}
+.shareprev b{font-size:14px;line-height:1.4;display:block}
+.shareprev small{color:var(--ink-3);font-size:12px}
+
+/* Trending */
+.rank{display:grid;grid-template-columns:34px 56px minmax(0,1fr);gap:12px;align-items:center;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);text-align:left;width:100%}
+.rank .n{font-family:var(--display);font-size:24px;font-weight:800;color:var(--ink-3);text-align:center;line-height:1}
+.rank:nth-child(1) .n{color:var(--orange)}.rank:nth-child(2) .n{color:var(--blue)}.rank:nth-child(3) .n{color:var(--green)}
+.rank .thumb{width:56px;height:56px;border-radius:12px;overflow:hidden}
+.rank h3{margin:0 0 4px;font-size:14px;line-height:1.45;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rank .meta{display:flex;gap:12px;font-size:12px;color:var(--ink-3)}
+.rank .meta span{display:inline-flex;gap:3px;align-items:center}
+.rank .meta svg{width:13px;height:13px}
+.bar{height:4px;border-radius:4px;background:var(--surface-3);margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--orange);border-radius:4px}
+
+/* Search */
+.filters{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:0 16px}
+.sel{position:relative}
+.sel select{appearance:none;-webkit-appearance:none;width:100%;height:40px;border-radius:11px;border:1px solid var(--line-2);background:var(--surface);padding:0 30px 0 12px;font-size:13.5px;color:var(--ink)}
+.sel svg{position:absolute;right:10px;top:12px;width:16px;height:16px;color:var(--ink-3);pointer-events:none}
+.list{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);margin:0 16px;overflow:hidden}
+.list button,.list .li{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;text-align:left;font-size:14.5px;border-bottom:1px solid var(--line)}
+.list > :last-child{border-bottom:0}
+.list button:hover{background:var(--surface-2)}
+.list .n{width:24px;height:24px;border-radius:8px;background:var(--surface-2);display:grid;place-items:center;font-size:12.5px;font-weight:700;color:var(--ink-2);flex:none}
+.list .li svg,.list button svg{color:var(--ink-3)}
+.empty{text-align:center;padding:36px 24px;color:var(--ink-2)}
+.empty svg{width:40px;height:40px;color:var(--ink-3)}
+
+/* Notice */
+.notice{display:flex;gap:12px;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);align-items:flex-start;text-align:left;width:100%}
+.notice .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none}
+.notice b{display:block;font-size:14.5px;line-height:1.45;font-weight:600}
+.notice .meta{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--ink-3);margin-top:4px}
+.notice .meta span{display:inline-flex;gap:3px;align-items:center}
+.notice .meta svg{width:13px;height:13px}
+.notice.old{opacity:.75}
+
+/* Forms */
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:13.5px;font-weight:600;color:var(--ink)}
+.field label i{color:var(--red);font-style:normal}
+.input,.textarea{width:100%;border:1.5px solid var(--line-2);background:var(--surface);border-radius:12px;padding:0 14px;height:46px;font-size:14.5px;outline:0;transition:border-color .15s}
+.textarea{height:auto;min-height:110px;padding:12px 14px;resize:vertical;line-height:1.6}
+.input:focus,.textarea:focus,.sel select:focus{border-color:var(--green)}
+.hint{font-size:12px;color:var(--ink-3)}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+
+/* Saved */
+.saved{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);align-items:center}
+.saved .thumb{width:52px;height:52px;border-radius:12px;overflow:hidden}
+.saved h3{margin:0;font-size:14px;line-height:1.45;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.saved .foot{grid-column:1/-1;display:flex;align-items:center;gap:10px;padding-top:10px;border-top:1px dashed var(--line);font-size:13px;color:var(--ink-2)}
+
+/* Footer blocks */
+.subcard{margin:22px 16px 0;padding:18px 16px;border-radius:var(--r-lg);background:var(--blue-soft);display:flex;flex-direction:column;gap:10px}
+.subcard h3{margin:0;font-size:16.5px;line-height:1.4;display:flex;gap:10px;align-items:center}
+.subcard p{margin:0;font-size:13.5px;color:var(--ink-2)}
+.subcard .row{gap:8px}
+.subcard .input{height:44px;flex:1;min-width:0}
+.pwa{margin:14px 16px 0;padding:16px;border-radius:var(--r-lg);border:1px solid var(--line);background:var(--surface);display:grid;grid-template-columns:56px minmax(0,1fr);gap:12px;align-items:center}
+.pwa .appicon{width:56px;height:56px;border-radius:15px;background:linear-gradient(135deg,var(--green),var(--blue));display:grid;place-items:center}
+.pwa h3{margin:0;font-size:15px;line-height:1.4}
+.pwa p{margin:2px 0 0;font-size:12.5px;color:var(--ink-2)}
+.pwa .btn{grid-column:1/-1}
+.footer{margin-top:22px;padding:22px 16px 20px;background:var(--surface);border-top:1px solid var(--line);display:flex;flex-direction:column;gap:16px}
+.footer p{margin:0;font-size:13.5px;color:var(--ink-2)}
+.footer .links{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:13.5px}
+.footer .links button{text-align:left;color:var(--ink-2)}
+.footer .links button:hover{color:var(--green)}
+.footer h4{margin:0 0 8px;font-size:13px;color:var(--ink-3);font-weight:600}
+.team{display:flex;gap:10px;overflow-x:auto}
+.member{flex:none;display:flex;align-items:center;gap:8px;padding:6px 12px 6px 6px;border-radius:99px;background:var(--surface-2);font-size:12.5px}
+.member small{display:block;color:var(--ink-3);font-size:11px;line-height:1.2}
+.member b{font-weight:600;line-height:1.2;display:block}
+.avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;color:#fff;flex:none}
+.copy{font-size:12px;color:var(--ink-3);text-align:center;padding-top:14px;border-top:1px solid var(--line)}
+
+/* State screens */
+.state{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 28px;gap:10px}
+.state .big{font-family:var(--display);font-size:96px;line-height:1;font-weight:800;background:linear-gradient(135deg,var(--green),var(--blue));-webkit-background-clip:text;background-clip:text;color:transparent}
+.state h2{margin:4px 0 0;font-size:20px;text-wrap:balance}
+.state p{margin:0 0 12px;color:var(--ink-2);font-size:14.5px;max-width:30ch}
+.state .acts{display:flex;flex-direction:column;gap:10px;width:100%;max-width:260px}
+.adminpeek{position:absolute;top:0;left:0;right:0;z-index:5;background:var(--gold-soft);color:var(--gold);font-size:12.5px;padding:8px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--gold-line)}
+.adminpeek button{margin-left:auto;font-weight:700;text-decoration:underline}
+
+/* ---------- Admin ---------- */
+.admin .appbar{background:var(--surface)}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.kpi .row{gap:8px}
+.kpi .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center}
+.kpi .ic svg{width:16px;height:16px}
+.kpi small{font-size:12.5px;color:var(--ink-2)}
+.kpi b{font-size:22px;font-weight:700;line-height:1.3}
+.kpi em{font-style:normal;font-size:12px;font-weight:600}
+.up{color:var(--green)}.down{color:var(--red)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin:0 16px}
+.panel h3{margin:0;font-size:15px}
+.panel .ph{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.chart svg{width:100%;height:auto;display:block}
+.chart text{fill:var(--ink-3);font-size:10px;font-family:var(--font)}
+.hbar{display:grid;grid-template-columns:92px minmax(0,1fr) 44px;gap:10px;align-items:center;font-size:13px;padding:4px 0}
+.hbar .t{height:8px;border-radius:6px;background:var(--surface-3);overflow:hidden}
+.hbar .t i{display:block;height:100%;border-radius:6px;background:var(--green)}
+.hbar b{text-align:right;font-weight:600;font-size:12.5px}
+.arow{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:12px;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);align-items:start}
+.arow .thumb{width:52px;height:52px;border-radius:12px;overflow:hidden}
+.arow h3{margin:0;font-size:14px;line-height:1.45;font-weight:600}
+.arow .meta{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:var(--ink-3);margin-top:4px;align-items:center}
+.arow .meta span{display:inline-flex;gap:3px;align-items:center}
+.arow .meta svg{width:13px;height:13px}
+.arow .acts{display:flex;flex-direction:column;gap:4px}
+.arow .acts .ib{width:34px;height:34px;border-radius:10px;color:var(--ink-2)}
+.arow .acts .ib svg{width:17px;height:17px}
+.fab{position:absolute;right:16px;bottom:22px;z-index:25;height:52px;padding:0 20px;border-radius:16px;background:var(--green);color:var(--on-green);font-weight:700;display:flex;align-items:center;gap:8px;box-shadow:0 8px 24px color-mix(in srgb,var(--green) 40%,transparent)}
+.pipeline{display:flex;flex-direction:column;gap:0}
+.step{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 0;position:relative;font-size:14px}
+.step .dotc{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--line-2);background:var(--surface);z-index:1;font-size:11px;font-weight:700;color:var(--ink-3)}
+.step:not(:last-child)::before{content:"";position:absolute;left:11px;top:30px;bottom:-10px;width:2px;background:var(--line)}
+.step.done .dotc{background:var(--green);border-color:var(--green);color:var(--on-green)}
+.step.run .dotc{border-color:var(--blue);color:var(--blue);animation:pulse 1.2s infinite}
+.step.done:not(:last-child)::before{background:var(--green)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--blue) 45%,transparent)}100%{box-shadow:0 0 0 9px transparent}}
+.step small{font-size:12px;color:var(--ink-3)}
+.logs{font:12px/1.65 ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--surface-2);border-radius:12px;padding:10px 12px;max-height:200px;overflow:auto;color:var(--ink-2)}
+.logs div{display:flex;gap:8px}
+.logs time{color:var(--ink-3);flex:none}
+.logs .ok{color:var(--green)}.logs .warn{color:var(--orange)}.logs .err{color:var(--red)}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kv div{background:var(--surface-2);border-radius:10px;padding:8px 10px}
+.kv small{display:block;font-size:11.5px;color:var(--ink-3)}
+.kv b{font-size:15px}
+.gapsel{display:flex;gap:6px;flex-wrap:wrap}
+.gapsel button{min-width:48px;height:38px;padding:0 12px;border-radius:10px;border:1.5px solid var(--line-2);font-weight:600;background:var(--surface)}
+.gapsel button.on{border-color:var(--green);background:var(--green-soft);color:var(--green)}
+.preview{display:flex;flex-direction:column;gap:4px;counter-reset:p}
+.preview div{display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 10px;border-radius:9px;background:var(--surface-2);color:var(--ink-2);min-width:0}
+.preview div span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.preview div.p{background:var(--blue-soft);color:var(--blue);font-weight:600}
+.preview div.pp{background:var(--gold-soft);color:var(--gold);font-weight:600}
+.preview em{font-style:normal;font-size:11.5px;color:var(--ink-3);flex:none;width:44px}
+.perm{display:flex;flex-wrap:wrap;gap:6px}
+.perm button{height:30px;padding:0 10px;border-radius:99px;font-size:12.5px;border:1px solid var(--line-2);color:var(--ink-3);display:inline-flex;align-items:center;gap:4px}
+.perm button.on{background:var(--green-soft);border-color:transparent;color:var(--green);font-weight:600}
+.perm svg{width:13px;height:13px}
+.settings-list{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px}
+.settings-list button{display:flex;align-items:center;gap:10px;padding:12px;background:var(--surface);border:1px solid var(--line);border-radius:12px;font-size:13.5px;font-weight:500;text-align:left}
+.settings-list button.on{border-color:var(--green);background:var(--green-soft);color:var(--green)}
+.settings-list svg{width:18px;height:18px;color:var(--ink-2)}
+.adrawer{background:var(--surface)}
+.login{min-height:100%;display:flex;flex-direction:column;justify-content:center;padding:28px 22px;gap:16px}
+.login .mark{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:8px}
+.login .mark b{font-family:var(--display);font-size:28px;color:var(--green);line-height:1}
+.login .mark small{font-size:13px;color:var(--ink-3);letter-spacing:.08em;text-transform:uppercase}
+.divider{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink-3)}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+.rolebar{margin:10px 16px 0;padding:8px 12px;border-radius:12px;background:var(--surface-2);font-size:12.5px;color:var(--ink-2);display:flex;align-items:center;gap:8px}
+.rolebar select{border:0;background:none;font-weight:600;color:var(--ink);font-size:12.5px}
+.editor-tabs{display:flex;gap:4px;padding:0 16px;border-bottom:1px solid var(--line);overflow-x:auto;background:var(--surface)}
+.editor-tabs button{padding:10px 12px;font-size:14px;font-weight:600;color:var(--ink-3);border-bottom:2px solid transparent;white-space:nowrap}
+.editor-tabs button.on{color:var(--green);border-color:var(--green)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.upload{border:1.5px dashed var(--line-2);border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;font-size:13.5px;color:var(--ink-2)}
+.upload .thumb{width:48px;height:48px;border-radius:10px;overflow:hidden;flex:none}
+.serp{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--surface-2)}
+.serp .u{font-size:12px;color:var(--ink-2)}
+.serp .t{font-size:16px;color:var(--blue);line-height:1.35;margin:2px 0}
+.serp .d{font-size:13px;color:var(--ink-2)}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <aside class="index" id="index"></aside>
+  <div class="device"><div class="screen" id="screen"></div></div>
+  <aside class="spec" id="spec"></aside>
+</div>
+<script>
+"use strict";
+/* ================= Helpers ================= */
+const BN = "০১২৩৪৫৬৭৮৯";
+const bn = v => String(v).replace(/\d/g, d => BN[d]);
+const bnInt = n => bn(Number(n).toLocaleString("en-IN"));
+const MONTHS = ["জানুয়ারি","ফেব্রুয়ারি","মার্চ","এপ্রিল","মে","জুন","জুলাই","আগস্ট","সেপ্টেম্বর","অক্টোবর","নভেম্বর","ডিসেম্বর"];
+const DAY = 864e5, HOUR = 36e5;
+const NOW0 = Date.now();
+const bnDate = t => { const d = new Date(t); return bn(d.getDate()) + " " + MONTHS[d.getMonth()] + " " + bn(d.getFullYear()); };
+const bnShort = t => { const d = new Date(t); return bn(d.getDate()) + " " + MONTHS[d.getMonth()].slice(0, 3); };
+const ago = t => { const s = (Date.now() - t) / 1000; if (s < 3600) return bn(Math.max(1, Math.round(s / 60))) + " মিনিট আগে"; if (s < 86400) return bn(Math.round(s / 3600)) + " ঘণ্টা আগে"; return bn(Math.round(s / 86400)) + " দিন আগে"; };
+const pad2 = n => bn(String(n).padStart(2, "0"));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const store = { get(k, d) { try { const v = localStorage.getItem("cc:" + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem("cc:" + k, JSON.stringify(v)); } catch (e) {} } };
+
+const P = {
+  home:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h5v-6h4v6h5V9.5"/>',
+  grid:'<rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+  bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  more:'<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
+  menu:'<path d="M4 6h16M4 12h16M4 18h10"/>',
+  bookmark:'<path d="M19 21l-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
+  share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>',
+  back:'<path d="M19 12H5M12 19l-7-7 7-7"/>',
+  pin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  cal:'<rect x="3" y="4.5" width="18" height="16.5" rx="2.5"/><path d="M16 2.5v4M8 2.5v4M3 10h18"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  wallet:'<rect x="2.5" y="6" width="19" height="14" rx="2.5"/><path d="M16.5 13h.01M2.5 10h19M6 6V4.5h11V6"/>',
+  brief:'<rect x="2.5" y="7" width="19" height="13" rx="2.5"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2M2.5 13h19"/>',
+  building:'<path d="M3 21h18M5 21V10M19 21V10M9 21V10M15 21V10M2.5 10 12 4l9.5 6z"/>',
+  cap:'<path d="M22 9 12 4 2 9l10 5 10-5z"/><path d="M6 11v5c3 2.5 9 2.5 12 0v-5M22 9v6"/>',
+  chart:'<path d="M3 21h18"/><rect x="5" y="12" width="3" height="6" rx="1"/><rect x="10.5" y="7" width="3" height="11" rx="1"/><rect x="16" y="3.5" width="3" height="14.5" rx="1"/>',
+  book:'<path d="M2 4.5h6a4 4 0 0 1 4 4V21a3 3 0 0 0-3-3H2zM22 4.5h-6a4 4 0 0 0-4 4V21a3 3 0 0 1 3-3h7z"/>',
+  flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-.5-2-1-3-1.1-2.1-.2-4 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.2.4-2.3 1-3.3.5 1.5 1.5 2.8 2.5 2.8z"/>',
+  eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  x:'<path d="M18 6 6 18M6 6l12 12"/>',
+  check:'<path d="m4.5 12.5 5 5 10-11"/>',
+  copy:'<rect x="9" y="9" width="12" height="12" rx="2.5"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/>',
+  link:'<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>',
+  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  file:'<path d="M14 2.5H6.5a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V8z"/><path d="M14 2.5V8h5.5M9 13h6M9 17h6"/>',
+  alert:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+  flag:'<path d="M4 22V4s1.5-1 5-1 5 2 8 2 3-1 3-1v11s-1 1-3 1-5-2-8-2-5 1-5 1"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>',
+  mail:'<rect x="2.5" y="4.5" width="19" height="15" rx="2.5"/><path d="m3 6 9 7 9-7"/>',
+  download:'<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>',
+  chev:'<path d="m9 6 6 6-6 6"/>',
+  down:'<path d="m6 9 6 6 6-6"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  edit:'<path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z"/>',
+  trash:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  bolt:'<path d="M13 2 3 14h9l-1 8 10-12h-9z"/>',
+  star:'<path d="m12 2.5 3 6.1 6.7 1-4.9 4.7 1.2 6.7-6-3.2-6 3.2 1.2-6.7L2.3 9.6 9 8.6z"/>',
+  crown:'<path d="m2.5 7 4.5 4 5-7 5 7 4.5-4-2 12h-15z"/><path d="M5 21h14"/>',
+  logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
+  user:'<circle cx="12" cy="8" r="4.5"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
+  play:'<path d="M6 4v16l14-8z"/>',
+  stop:'<rect x="5.5" y="5.5" width="13" height="13" rx="2"/>',
+  trend:'<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
+  phone:'<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M11 18h2"/>',
+  lock:'<rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+  wrench:'<path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L3 17.8V21h3.2l6.3-6.3a4 4 0 0 0 5.2-5.4l-2.6 2.6-2.6-.6-.6-2.6z"/>',
+  megaphone:'<path d="M3 11v3a1 1 0 0 0 1 1h3l6 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M17 9a4 4 0 0 1 0 6"/>',
+  refresh:'<path d="M21 12a9 9 0 0 1-15.5 6.2L3 16M3 12A9 9 0 0 1 18.5 5.8L21 8M21 3v5h-5M3 21v-5h5"/>',
+  send:'<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>',
+  image:'<rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
+  sparkle:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>',
+  volume:'<path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/>',
+  fb:'<path d="M15 8h-2a1 1 0 0 0-1 1v3h3l-.5 3H12v7M9 12h3"/><circle cx="12" cy="12" r="9.5"/>',
+  xlogo:'<path d="M4 4l16 16M20 4 4 20" />',
+  wa:'<path d="M3 21l1.6-4.7A9 9 0 1 1 8 19.6z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1.2-1.5-2-1-1 .8a4 4 0 0 1-2-2l.8-1-1-2z"/>',
+  tg:'<path d="m21.5 3.5-19 7.3 6 2.2 2.2 6.5 3.4-4 5 3.7z"/><path d="m8.5 13 9.5-6.5"/>',
+  yt:'<rect x="2.5" y="5" width="19" height="14" rx="4"/><path d="m10 9 5 3-5 3z"/>'
+};
+const I = (n, cls = "") => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[n] || ""}</svg>`;
+
+/* Organisation seals: generated so the prototype needs no external images */
+function seal(p) {
+  const c = p.color, t = p.mark;
+  return `<svg viewBox="0 0 64 64" role="img" aria-label="${esc(p.org)}"><rect width="64" height="64" fill="${c}" opacity=".13"/><circle cx="32" cy="32" r="22" fill="${c}"/><circle cx="32" cy="32" r="18.5" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.2" stroke-dasharray="2 2.2"/><text x="32" y="38.5" text-anchor="middle" font-family="Baloo Da 2, Noto Sans Bengali, sans-serif" font-weight="700" font-size="${t.length > 2 ? 13 : 17}" fill="#fff">${t}</text></svg>`;
+}
+
+/* ================= Data ================= */
+const CATS = [
+  { id: "govt", name: "সরকারি চাকরি", slug: "সরকারি-চাকরি", icon: "building", tone: "green", count: 1842, on: true },
+  { id: "private", name: "বেসরকারি চাকরি", slug: "বেসরকারি-চাকরি", icon: "brief", tone: "blue", count: 1203, on: true },
+  { id: "admission", name: "ভর্তি", slug: "ভর্তি", icon: "cap", tone: "violet", count: 756, on: true },
+  { id: "result", name: "রেজাল্ট", slug: "রেজাল্ট", icon: "chart", tone: "orange", count: 423, on: true },
+  { id: "notice", name: "নোটিশ", slug: "নোটিশ", icon: "bell", tone: "red", count: 461, on: true },
+  { id: "scholar", name: "স্কলারশিপ", slug: "স্কলারশিপ", icon: "book", tone: "teal", count: 178, on: true }
+];
+const catOf = id => CATS.find(c => c.id === id);
+const DIVS = ["সব বিভাগ","ঢাকা","চট্টগ্রাম","রাজশাহী","খুলনা","বরিশাল","সিলেট","রংপুর","ময়মনসিংহ"];
+const DISTS = { "ঢাকা": ["ঢাকা","গাজীপুর","নারায়ণগঞ্জ","টাঙ্গাইল"], "চট্টগ্রাম": ["চট্টগ্রাম","কুমিল্লা","কক্সবাজার"], "রাজশাহী": ["রাজশাহী","বগুড়া","পাবনা"], "খুলনা": ["খুলনা","যশোর"], "বরিশাল": ["বরিশাল"], "সিলেট": ["সিলেট","মৌলভীবাজার"], "রংপুর": ["রংপুর","দিনাজপুর"], "ময়মনসিংহ": ["ময়মনসিংহ"] };
+
+let POSTS = [
+  { id: 1, title: "বাংলাদেশ পুলিশ কনস্টেবল পদে নিয়োগ বিজ্ঞপ্তি ২০২৬", slug: "বাংলাদেশ-পুলিশ-কনস্টেবল-নিয়োগ-২০২৬", org: "বাংলাদেশ পুলিশ", mark: "পুলিশ", color: "#1F4E9E", cat: "govt", loc: "সারা দেশ", div: "সব বিভাগ", posts: "৬,০০০+", salary: "৯,০০০ – ২১,৮০০ টাকা", type: "স্থায়ী", start: -2, end: 12.2, posted: -2 * HOUR, views: 18420, status: "published", promo: { type: "premium", on: true, start: -3, end: 20, priority: 3, max: 3 } },
+  { id: 2, title: "প্রাথমিক বিদ্যালয়ে সহকারী শিক্ষক নিয়োগ ২০২৬ — ১২,০০০ পদ", slug: "প্রাথমিক-সহকারী-শিক্ষক-নিয়োগ-২০২৬", org: "প্রাথমিক শিক্ষা অধিদপ্তর", mark: "প্রাশি", color: "#0B8457", cat: "govt", loc: "সারা দেশ", div: "সব বিভাগ", posts: "১২,০০০", salary: "১৭,০০০ – ৩৯,৯৪০ টাকা", type: "স্থায়ী", start: 0, end: 25, posted: -5 * HOUR, views: 15210, status: "published" },
+  { id: 3, title: "ব্র্যাক ব্যাংক ম্যানেজমেন্ট ট্রেইনি অফিসার নিয়োগ", slug: "ব্র্যাক-ব্যাংক-ট্রেইনি-অফিসার", org: "ব্র্যাক ব্যাংক পিএলসি", mark: "ব্র্যাক", color: "#E26A2C", cat: "private", loc: "ঢাকা", div: "ঢাকা", posts: "৫০", salary: "আলোচনা সাপেক্ষে", type: "ফুল-টাইম", start: -1, end: 9, posted: -9 * HOUR, views: 6120, status: "published" },
+  { id: 4, title: "ঢাকা বিশ্ববিদ্যালয় স্নাতক প্রথম বর্ষ ভর্তি বিজ্ঞপ্তি ২০২৬–২৭", slug: "ঢাকা-বিশ্ববিদ্যালয়-ভর্তি-২০২৬-২৭", org: "ঢাকা বিশ্ববিদ্যালয়", mark: "ঢাবি", color: "#7A2E8E", cat: "admission", loc: "ঢাকা", div: "ঢাকা", posts: "৬,০৩৫ আসন", salary: "প্রযোজ্য নয়", type: "ভর্তি", start: 2, end: 30, posted: -20 * HOUR, views: 22040, status: "published" },
+  { id: 5, title: "এইচএসসি ও সমমান পরীক্ষার ফলাফল ২০২৬ প্রকাশ", slug: "এইচএসসি-ফলাফল-২০২৬", org: "আন্তঃশিক্ষা বোর্ড", mark: "বোর্ড", color: "#C0561A", cat: "result", loc: "সারা দেশ", div: "সব বিভাগ", posts: "—", salary: "প্রযোজ্য নয়", type: "ফলাফল", start: -1, end: 60, posted: -26 * HOUR, views: 41200, status: "published" },
+  { id: 6, title: "বাংলাদেশ রেলওয়ে পশ্চিমাঞ্চলে ওয়েম্যান পদে নিয়োগ", slug: "রেলওয়ে-ওয়েম্যান-নিয়োগ", org: "বাংলাদেশ রেলওয়ে", mark: "রেল", color: "#0E6B5C", cat: "govt", loc: "রাজশাহী", div: "রাজশাহী", posts: "১,২৭০", salary: "৮,৮০০ – ২১,৩১০ টাকা", type: "স্থায়ী", start: -4, end: 3.4, posted: -30 * HOUR, views: 9870, status: "published" },
+  { id: 7, title: "গ্রামীণফোন গ্র্যাজুয়েট ট্যালেন্ট প্রোগ্রাম ২০২৬", slug: "গ্রামীণফোন-গ্র্যাজুয়েট-প্রোগ্রাম", org: "গ্রামীণফোন লিমিটেড", mark: "জিপি", color: "#1B8FD2", cat: "private", loc: "ঢাকা", div: "ঢাকা", posts: "৩০", salary: "৬৫,০০০ টাকা (মাসিক)", type: "ফুল-টাইম", start: -2, end: 15, posted: -34 * HOUR, views: 12780, status: "published", promo: { type: "promoted", on: true, start: -5, end: 10, priority: 2, max: 4 } },
+  { id: 8, title: "প্রধানমন্ত্রীর শিক্ষা সহায়তা ট্রাস্ট উচ্চশিক্ষা উপবৃত্তি", slug: "শিক্ষা-সহায়তা-ট্রাস্ট-উপবৃত্তি", org: "শিক্ষা সহায়তা ট্রাস্ট", mark: "ট্রাস্ট", color: "#0E8A8A", cat: "scholar", loc: "সারা দেশ", div: "সব বিভাগ", posts: "৩৫,০০০ শিক্ষার্থী", salary: "এককালীন বৃত্তি", type: "উপবৃত্তি", start: -6, end: 7, posted: -2 * DAY, views: 7420, status: "published" },
+  { id: 9, title: "বিমান বাংলাদেশ এয়ারলাইন্সে কেবিন ক্রু নিয়োগ", slug: "বিমান-কেবিন-ক্রু-নিয়োগ", org: "বিমান বাংলাদেশ এয়ারলাইন্স", mark: "বিমান", color: "#B3261E", cat: "govt", loc: "ঢাকা", div: "ঢাকা", posts: "৮৫", salary: "৪৫,০০০ টাকা (শুরুতে)", type: "চুক্তিভিত্তিক", start: -3, end: 18, posted: -2.4 * DAY, views: 11350, status: "published", promo: { type: "promoted", on: true, start: -1, end: 14, priority: 1, max: 3 } },
+  { id: 10, title: "স্বাস্থ্য অধিদপ্তরে সিনিয়র স্টাফ নার্স নিয়োগ", slug: "সিনিয়র-স্টাফ-নার্স-নিয়োগ", org: "স্বাস্থ্য অধিদপ্তর", mark: "স্বাস্থ্য", color: "#2A7F3F", cat: "govt", loc: "সারা দেশ", div: "সব বিভাগ", posts: "৩,০০০", salary: "১৬,০০০ – ৩৮,৬৪০ টাকা", type: "স্থায়ী", start: -5, end: 1.3, posted: -3 * DAY, views: 13900, status: "published" },
+  { id: 11, title: "এনটিআরসিএ ১৯তম শিক্ষক নিবন্ধন পরীক্ষার বিজ্ঞপ্তি", slug: "এনটিআরসিএ-১৯তম-নিবন্ধন", org: "এনটিআরসিএ", mark: "NTRCA", color: "#3B5BA9", cat: "govt", loc: "সারা দেশ", div: "সব বিভাগ", posts: "—", salary: "প্রযোজ্য নয়", type: "নিবন্ধন", start: 1, end: 22, posted: -3.5 * DAY, views: 16540, status: "published" },
+  { id: 12, title: "স্কয়ার ফার্মাসিউটিক্যালসে মেডিকেল প্রমোশন অফিসার নিয়োগ", slug: "স্কয়ার-মেডিকেল-প্রমোশন-অফিসার", org: "স্কয়ার ফার্মাসিউটিক্যালস", mark: "স্কয়ার", color: "#6B4BD6", cat: "private", loc: "চট্টগ্রাম", div: "চট্টগ্রাম", posts: "১২০", salary: "৩২,০০০ টাকা + ভাতা", type: "ফুল-টাইম", start: -2, end: 11, posted: -4 * DAY, views: 5360, status: "published" },
+  { id: 13, title: "জাতীয় বিশ্ববিদ্যালয় অনার্স প্রথম বর্ষ ভর্তি আবেদন শুরু", slug: "জাতীয়-বিশ্ববিদ্যালয়-অনার্স-ভর্তি", org: "জাতীয় বিশ্ববিদ্যালয়", mark: "জাবি", color: "#8E5B12", cat: "admission", loc: "সারা দেশ", div: "সব বিভাগ", posts: "—", salary: "প্রযোজ্য নয়", type: "ভর্তি", start: -1, end: 16, posted: -4.5 * DAY, views: 9100, status: "published" },
+  { id: 14, title: "বাংলাদেশ সেনাবাহিনীতে সৈনিক পদে ভর্তি ২০২৬", slug: "সেনাবাহিনী-সৈনিক-নিয়োগ-২০২৬", org: "বাংলাদেশ সেনাবাহিনী", mark: "সেনা", color: "#4A5A2A", cat: "govt", loc: "সারা দেশ", div: "সব বিভাগ", posts: "—", salary: "৯,০০০ – ২১,৮০০ টাকা", type: "স্থায়ী", start: -8, end: -1, posted: -6 * DAY, views: 20320, status: "published" },
+  { id: 15, title: "বাংলাদেশ ব্যাংক সহকারী পরিচালক (জেনারেল) নিয়োগ", slug: "বাংলাদেশ-ব্যাংক-এডি-নিয়োগ", org: "বাংলাদেশ ব্যাংক", mark: "বাব", color: "#0B6E4F", cat: "govt", loc: "ঢাকা", div: "ঢাকা", posts: "২২৫", salary: "২২,০০০ – ৫৩,০৬০ টাকা", type: "স্থায়ী", start: 0, end: 21, posted: -7 * DAY, views: 17820, status: "published" },
+  { id: 16, title: "খুলনা সিটি কর্পোরেশনে বিভিন্ন পদে নিয়োগ", slug: "খুলনা-সিটি-কর্পোরেশন-নিয়োগ", org: "খুলনা সিটি কর্পোরেশন", mark: "কেসিসি", color: "#2C6E91", cat: "govt", loc: "খুলনা", div: "খুলনা", posts: "৪৮", salary: "৮,২৫০ – ২০,০১০ টাকা", type: "স্থায়ী", start: -1, end: 13, posted: -8 * DAY, views: 3210, status: "draft" }
+];
+POSTS.forEach(p => { p.startAt = NOW0 + p.start * DAY; p.endAt = NOW0 + p.end * DAY; p.postedAt = NOW0 + p.posted; if (p.promo) { p.promo.startAt = NOW0 + p.promo.start * DAY; p.promo.endAt = NOW0 + p.promo.end * DAY; } });
+const postById = id => POSTS.find(p => p.id === +id);
+
+let NOTICES = [
+  { id: 1, title: "সকল সরকারি প্রতিষ্ঠানে দুর্গাপূজার ছুটি সংক্রান্ত নোটিশ", at: NOW0 - 3 * HOUR, exp: 6, icon: "megaphone", tone: "red", on: true },
+  { id: 2, title: "৪৭তম বিসিএস লিখিত পরীক্ষার সময়সূচি প্রকাশ", at: NOW0 - 20 * HOUR, exp: 20, icon: "cal", tone: "blue", on: true },
+  { id: 3, title: "শিক্ষা মন্ত্রণালয়ের ভর্তি নীতিমালা ২০২৬–২৭ সংশোধন", at: NOW0 - 2 * DAY, exp: 12, icon: "file", tone: "violet", on: true },
+  { id: 4, title: "এনটিআরসিএ নিবন্ধন সনদ উত্তোলনের নির্দেশনা", at: NOW0 - 4 * DAY, exp: 8, icon: "info", tone: "teal", on: true },
+  { id: 5, title: "বাংলাদেশ ব্যাংকের নিয়োগ পরীক্ষার কেন্দ্র পরিবর্তন", at: NOW0 - 9 * DAY, exp: -1, icon: "pin", tone: "orange", on: true },
+  { id: 6, title: "পুলিশ কনস্টেবল শারীরিক পরীক্ষার প্রবেশপত্র ডাউনলোড", at: NOW0 - 14 * DAY, exp: -4, icon: "download", tone: "green", on: true }
+];
+
+let REPORTS = [
+  { id: 1, type: "ভুল তথ্য", post: 6, msg: "আবেদনের শেষ তারিখ ৫ অক্টোবর, এখানে ভুল লেখা আছে।", at: NOW0 - 40 * 60e3, status: "new" },
+  { id: 2, type: "ভাঙা লিংক", post: 3, msg: "আবেদন লিংকে গেলে 404 দেখাচ্ছে।", at: NOW0 - 3 * HOUR, status: "new" },
+  { id: 3, type: "ভুল তারিখ", post: 10, msg: "পরীক্ষার তারিখ পিডিএফের সাথে মিলছে না।", at: NOW0 - 9 * HOUR, status: "review" },
+  { id: 4, type: "স্প্যাম", post: 12, msg: "একই পোস্ট দুইবার দেখাচ্ছে।", at: NOW0 - 26 * HOUR, status: "resolved" }
+];
+
+const MODULES = [
+  ["dashboard", "ড্যাশবোর্ড", "grid"], ["posts", "পোস্ট", "file"], ["promotions", "প্রমোশন", "star"], ["categories", "ক্যাটাগরি", "building"],
+  ["notices", "নোটিশ", "bell"], ["reports", "রিপোর্ট", "flag"], ["automation", "অটোমেশন", "bolt"], ["analytics", "অ্যানালিটিক্স", "chart"],
+  ["team", "টিম ও পারমিশন", "users"], ["settings", "সেটিংস", "gear"]
+];
+const PERMS = ["posts", "categories", "promotions", "notices", "reports", "automation", "analytics", "users", "settings"];
+const PERM_LABEL = { posts: "পোস্ট", categories: "ক্যাটাগরি", promotions: "প্রমোশন", notices: "নোটিশ", reports: "রিপোর্ট", automation: "অটোমেশন", analytics: "অ্যানালিটিক্স", users: "ইউজার", settings: "সেটিংস" };
+let TEAM = [
+  { id: 1, name: "আহসান হাবিব", email: "admin@cakricircular.com", role: "admin", perms: PERMS.slice(), on: true, color: "#0B8457" },
+  { id: 2, name: "রাহিম উদ্দিন", email: "rahim@cakricircular.com", role: "moderator", perms: ["posts", "notices", "reports"], on: true, color: "#1D63D8" },
+  { id: 3, name: "করিম হাসান", email: "karim@cakricircular.com", role: "moderator", perms: ["posts", "promotions", "analytics"], on: true, color: "#6B4BD6" },
+  { id: 4, name: "সাকিব আল মামুন", email: "sakib@cakricircular.com", role: "moderator", perms: ["reports"], on: false, color: "#DD7412" }
+];
+
+/* ================= State ================= */
+const S = {
+  mode: "public", screen: "home", params: {}, stack: [],
+  saved: store.get("saved", [1, 4, 7]),
+  reminders: store.get("rem", { 1: 3 }),
+  recent: store.get("recent", ["পুলিশ কনস্টেবল", "প্রাথমিক শিক্ষক", "ব্যাংক জব"]),
+  subscribed: store.get("sub", false),
+  pushAsked: store.get("push", false),
+  noticeSound: store.get("snd", false),
+  reportLock: 0,
+  overlay: null,
+  settings: Object.assign({ gap: 4, gapCustom: 7, maintenance: false, maintMsg: "আমাদের সাইটে কিছু আপডেটের কাজ চলছে। অল্প সময়ের মধ্যেই আবার ফিরে আসছি।", noticeExpiry: true, siteName: "চাকরি সার্কুলার", tagline: "সঠিক তথ্য, সময়মতো চাকরির খবর", email: "info@cakricircular.com", adminPath: "/cc-panel", geo: true, push: true, smtp: "smtp.hostinger.com" }, store.get("settings", {})),
+  me: 1,
+  loggedIn: store.get("login", false),
+  auto: { on: true, running: false, step: -1, processed: 1284, fresh: 36, dup: 212, tokens: 418200, errors: 2, last: NOW0 - 38 * 60e3, logs: [] }
+};
+const saveSettings = () => store.set("settings", S.settings);
+const gapVal = () => S.settings.gap === "custom" ? Math.max(2, +S.settings.gapCustom || 5) : +S.settings.gap;
+
+/* Promotion engine: interleave active promoted/premium posts after every `gap` normal posts */
+function promoActive(p, t = Date.now()) { return !!(p.promo && p.promo.on && t >= p.promo.startAt && t <= p.promo.endAt && p.status === "published"); }
+function buildFeed(list, gap = gapVal()) {
+  const promos = list.filter(p => promoActive(p)).sort((a, b) => b.promo.priority - a.promo.priority || (a.promo.type === "premium" ? -1 : 1));
+  const normal = list.filter(p => !promoActive(p));
+  const shown = {}; const out = []; let pi = 0;
+  normal.forEach((p, i) => {
+    out.push({ p, promo: false });
+    if ((i + 1) % gap === 0 && promos.length) {
+      for (let k = 0; k < promos.length; k++) {
+        const c = promos[(pi + k) % promos.length];
+        if ((shown[c.id] || 0) < c.promo.max) { out.push({ p: c, promo: true }); shown[c.id] = (shown[c.id] || 0) + 1; pi = (pi + k + 1) % promos.length; break; }
+      }
+    }
+  });
+  // Short lists (search, filtered category) never reach a slot: still show matching promoted posts once, at the end
+  promos.forEach(c => { if (!shown[c.id]) out.push({ p: c, promo: true }); });
+  return out;
+}
+const published = () => POSTS.filter(p => p.status === "published").sort((a, b) => b.postedAt - a.postedAt);
+
+/* ================= Shared UI pieces ================= */
+function deadlineLabel(p) {
+  const left = p.endAt - Date.now();
+  if (left <= 0) return `<span class="dl over">${I("clock")}সময় শেষ</span>`;
+  const d = Math.floor(left / DAY);
+  const soon = d < 4;
+  return `<span class="dl ${soon ? "soon" : ""}">${I("clock")}শেষ: ${bnDate(p.endAt)}${soon ? " · " + (d ? bn(d) + " দিন বাকি" : "আজই শেষ") : ""}</span>`;
+}
+function catBadge(id) { const c = catOf(id); return `<span class="badge b-${c.tone}">${c.name}</span>`; }
+function promoBadge(p) {
+  if (!p.promo) return "";
+  return p.promo.type === "premium" ? `<span class="badge b-gold">${I("crown")}প্রিমিয়াম</span>` : `<span class="badge b-blue">${I("star")}প্রমোটেড</span>`;
+}
+function jobCard(p, promo) {
+  const on = S.saved.includes(p.id);
+  const cls = promo ? (p.promo.type === "premium" ? "premium" : "promoted") : "";
+  return `<article class="job ${cls} fade-in" data-go="detail" data-id="${p.id}" tabindex="0" role="link" aria-label="${esc(p.title)}">
+    <div class="thumb">${seal(p)}</div>
+    <div class="body">
+      <div class="top">${catBadge(p.cat)}${promo ? promoBadge(p) : ""}</div>
+      <h3>${p.title}</h3>
+      <div class="meta"><span>${I("building")}${p.org}</span><span>${I("pin")}${p.loc}</span><span>${ago(p.postedAt)}</span></div>
+      ${deadlineLabel(p)}
+    </div>
+    <button class="bm ${on ? "on" : ""}" data-act="save" data-id="${p.id}" aria-label="${on ? "সেভ থেকে সরান" : "সেভ করুন"}">${I("bookmark")}</button>
+  </article>`;
+}
+function feedHTML(list, limit) {
+  let f = buildFeed(list); if (limit) f = f.slice(0, limit);
+  return f.length ? `<div class="feed">${f.map(x => jobCard(x.p, x.promo)).join("")}</div>` : `<div class="empty">${I("search")}<p>কোনো পোস্ট পাওয়া যায়নি।</p></div>`;
+}
+function appbar(title, opts = {}) {
+  const right = opts.right || "";
+  return `<header class="appbar"><button class="ib" data-act="back" aria-label="ফিরে যান">${I("back")}</button><h1>${title}</h1>${right}</header>`;
+}
+function brandbar() {
+  return `<header class="appbar"><button class="ib" data-act="drawer" aria-label="মেনু">${I("menu")}</button>
+    <div class="logo">${logoMark(34)}<div><b>চাকরি সার্কুলার</b><small>cakricircular.com</small></div></div>
+    <button class="ib" data-go="notice" aria-label="নোটিফিকেশন">${I("bell")}<span class="dot"></span></button></header>`;
+}
+function logoMark(s = 34) {
+  return `<svg width="${s}" height="${s}" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lg${s}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0B8457"/><stop offset="1" stop-color="#1D63D8"/></linearGradient></defs><rect width="40" height="40" rx="12" fill="url(#lg${s})"/><path d="M13 15.5h14a2 2 0 0 1 2 2V27a2 2 0 0 1-2 2H13a2 2 0 0 1-2-2v-9.5a2 2 0 0 1 2-2z" fill="none" stroke="#fff" stroke-width="2.2"/><path d="M16.5 15.5v-2a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v2" fill="none" stroke="#fff" stroke-width="2.2"/><circle cx="20" cy="22" r="2.6" fill="#fff"/></svg>`;
+}
+const BNAV = [["home", "হোম", "home"], ["categories", "ক্যাটাগরি", "grid"], ["search", "খুঁজুন", "search"], ["notice", "নোটিশ", "bell"], ["more", "আরও", "more"]];
+function bottomNav(active) {
+  return `<nav class="bnav" aria-label="প্রধান নেভিগেশন">${BNAV.map(([id, l, ic]) => `<button class="${active === id ? "on" : ""}" ${id === "more" ? 'data-act="drawer"' : `data-go="${id}"`} aria-label="${l}"><span class="pill">${I(ic)}</span>${l}</button>`).join("")}</nav>`;
+}
+</script>
+<script>
+/* ================= Public screens ================= */
+const PUB = {};
+
+PUB.home = () => `${brandbar()}
+  <div class="view has-nav">
+    <section class="hero">
+      <h2>সঠিক তথ্য,<br>সময়মতো চাকরির খবর</h2>
+      <p>সরকারি ও বেসরকারি চাকরি, ভর্তি, রেজাল্ট, নোটিশ ও স্কলারশিপ</p>
+      <form class="searchbox" data-form="search" role="search">
+        ${I("search")}<input id="home-q" name="q" placeholder="চাকরি, প্রতিষ্ঠান বা কীওয়ার্ড লিখুন" aria-label="খুঁজুন" autocomplete="off">
+        <button class="go" aria-label="খুঁজুন">${I("search")}</button>
+      </form>
+      <div class="stats num"><span><b>${bnInt(4863)}</b> সক্রিয় পোস্ট</span><span><b>${bnInt(128)}</b> আজ নতুন</span></div>
+    </section>
+    <div class="sec-h"><h2>ক্যাটাগরি</h2><button data-go="categories">সব দেখুন${I("chev")}</button></div>
+    <div class="catgrid">${CATS.filter(c => c.on).map(c => `<button class="cat" data-go="category" data-id="${c.id}"><span class="ic ${c.tone}">${I(c.icon)}</span><span>${c.name}</span></button>`).join("")}</div>
+    <div class="sec-h"><h2><span style="color:var(--orange);display:flex">${I("flame")}</span>সর্বশেষ আপডেট <small class="num">আজ ${bn(128)}টি</small></h2><button data-go="latest">আরও দেখুন${I("chev")}</button></div>
+    ${feedHTML(published(), 11)}
+    <div class="sec-h"><h2>ট্রেন্ডিং এখন</h2><button data-go="trending">সব দেখুন${I("chev")}</button></div>
+    <div class="chips">${published().slice().sort((a, b) => b.views - a.views).slice(0, 5).map(p => `<button class="chip" data-go="detail" data-id="${p.id}">${I("trend")}${p.org}</button>`).join("")}</div>
+    ${subscribeCard()}
+    ${pwaCard()}
+    ${footer()}
+  </div>${bottomNav("home")}`;
+
+PUB.latest = () => `${appbar("সর্বশেষ আপডেট")}
+  <div class="view has-nav"><div style="height:12px"></div>
+  <div class="chips" style="margin-bottom:12px"><button class="chip on">সব</button>${CATS.map(c => `<button class="chip" data-go="category" data-id="${c.id}">${c.name}</button>`).join("")}</div>
+  ${feedHTML(published())}<div style="height:16px"></div></div>${bottomNav("home")}`;
+
+function subscribeCard() {
+  if (S.subscribed) return `<section class="subcard"><h3><span class="ic green" style="width:36px;height:36px;border-radius:11px;display:grid;place-items:center">${I("check")}</span>আপনি সাবস্ক্রাইব করেছেন</h3><p>নতুন চাকরির খবর আপনার ইমেইলে পৌঁছে যাবে। যেকোনো সময় বন্ধ করতে পারবেন।</p><button class="btn ghost sm" data-act="unsub">আনসাবস্ক্রাইব করুন</button></section>`;
+  return `<section class="subcard"><h3><span class="ic blue" style="width:36px;height:36px;border-radius:11px;display:grid;place-items:center">${I("mail")}</span>নতুন চাকরির আপডেট ইমেইলে পেতে চান?</h3>
+    <p>প্রতিদিন একটি ইমেইলে গুরুত্বপূর্ণ সার্কুলার। কোনো স্প্যাম নয়।</p>
+    <form class="row" data-form="sub"><input class="input" id="sub-email" type="email" required placeholder="আপনার ইমেইল" aria-label="ইমেইল"><button class="btn blue">সাবস্ক্রাইব করুন</button></form></section>`;
+}
+function pwaCard() {
+  return `<section class="pwa"><div class="appicon">${logoMark(40)}</div><div><h3>চাকরি সার্কুলার অ্যাপ ইনস্টল করুন</h3><p>দ্রুত চাকরির আপডেট পেতে আপনার ফোনে ইনস্টল করুন। মাত্র ${bn(1)} MB, অফলাইনেও সেভ করা পোস্ট দেখা যাবে।</p></div><button class="btn primary block" data-act="install">${I("download")}অ্যাপ ইনস্টল করুন</button></section>`;
+}
+function footer() {
+  const team = TEAM.filter(t => t.on).slice(0, 3);
+  return `<footer class="footer">
+    <div class="logo">${logoMark(36)}<div><b>চাকরি সার্কুলার</b><small>cakricircular.com</small></div></div>
+    <p>বাংলাদেশের সরকারি-বেসরকারি চাকরি, ভর্তি, রেজাল্ট ও নোটিশের যাচাই করা তথ্য এক জায়গায়, সহজ ভাষায়।</p>
+    <div><h4>গুরুত্বপূর্ণ লিংক</h4><div class="links">${[["about", "আমাদের সম্পর্কে"], ["contact", "যোগাযোগ"], ["privacy", "গোপনীয়তা নীতি"], ["terms", "শর্তাবলী"], ["report", "রিপোর্ট করুন"], ["saved", "সেভ করা চাকরি"]].map(([g, l]) => `<button data-go="${g}">${l}</button>`).join("")}</div></div>
+    <div><h4>আমাদের টিম</h4><div class="team">${team.map(t => `<div class="member"><span class="avatar" style="background:${t.color}">${t.name[0]}</span><div><b>${t.name}</b><small>${t.role === "admin" ? "সম্পাদক" : "মডারেটর"}</small></div></div>`).join("")}</div></div>
+    <div><h4>সোশ্যাল মিডিয়া</h4><div class="socials">${["fb", "xlogo", "yt", "tg"].map(s => `<button aria-label="${s}">${I(s)}</button>`).join("")}</div></div>
+    <p class="row" style="gap:6px">${I("mail")}<span>${S.settings.email}</span></p>
+    <div class="copy">© ${bn(2026)} চাকরি সার্কুলার · সর্বস্বত্ব সংরক্ষিত</div>
+  </footer>`;
+}
+
+PUB.categories = () => `${brandbar()}
+  <div class="view has-nav">
+    <div class="pad" style="padding-top:16px"><h2 style="margin:0;font-size:20px">ক্যাটাগরি সমূহ</h2><p class="muted" style="margin:2px 0 14px;font-size:13.5px">আপনার পছন্দের বিষয় বেছে নিন</p></div>
+    <div class="stack pad">${CATS.filter(c => c.on).map(c => `<button class="catrow" data-go="category" data-id="${c.id}"><span class="ic ${c.tone}">${I(c.icon)}</span><div style="flex:1;text-align:left"><b>${c.name}</b><small class="num">${bnInt(c.count)}টি পোস্ট</small></div>${I("chev")}</button>`).join("")}</div>
+    <div class="sec-h"><h2>এই ক্যাটাগরির সর্বশেষ পোস্ট</h2></div>
+    ${feedHTML(published().filter(p => p.cat === "govt"), 5)}<div style="height:16px"></div>
+  </div>${bottomNav("categories")}`;
+
+PUB.category = () => {
+  const c = catOf(S.params.id) || CATS[0];
+  const list = published().filter(p => p.cat === c.id);
+  return `${appbar(c.name, { right: `<button class="ib" data-go="search" aria-label="খুঁজুন">${I("search")}</button>` })}
+  <div class="view has-nav">
+    <div class="pad row" style="padding-top:14px;padding-bottom:12px"><span class="ic ${c.tone}" style="width:48px;height:48px;border-radius:14px;display:grid;place-items:center">${I(c.icon)}</span><div><b style="font-size:17px">${c.name}</b><div class="faint num" style="font-size:13px">${bnInt(c.count)}টি পোস্ট · আজ ${bn(12)}টি নতুন</div></div></div>
+    <div class="chips" style="margin-bottom:12px"><button class="chip on">সর্বশেষ</button><button class="chip">শেষ তারিখ কাছে</button><button class="chip">সবচেয়ে বেশি দেখা</button></div>
+    ${feedHTML(list)}<div style="height:16px"></div>
+  </div>${bottomNav("categories")}`;
+};
+
+/* Search: results filter in place as you type, no reload */
+PUB.search = () => {
+  const q = S.params.q || "";
+  return `<header class="appbar"><button class="ib" data-act="back" aria-label="ফিরে যান">${I("back")}</button><h1>খুঁজুন</h1></header>
+  <div class="view has-nav">
+    <div class="pad" style="padding-top:14px"><form class="searchbox flat" data-form="search" role="search">${I("search")}<input id="search-q" name="q" value="${esc(q)}" placeholder="চাকরি, প্রতিষ্ঠান বা কীওয়ার্ড" aria-label="খুঁজুন" autocomplete="off"><button class="go" aria-label="খুঁজুন">${I("search")}</button></form></div>
+    <div class="filters" style="margin-top:10px">
+      ${selectHTML("f-cat", ["সব ক্যাটাগরি", ...CATS.map(c => c.name)], S.params.cat)}
+      ${selectHTML("f-div", DIVS, S.params.div)}
+      ${selectHTML("f-dist", ["সব জেলা", ...Object.values(DISTS).flat()], S.params.dist)}
+      ${selectHTML("f-date", ["যেকোনো সময়", "আজ", "গত ৭ দিন", "গত ৩০ দিন"], S.params.date)}
+    </div>
+    <div id="results"></div>
+  </div>${bottomNav("search")}`;
+};
+function selectHTML(id, opts, val) {
+  return `<label class="sel"><span class="hp">${id}</span><select id="${id}" data-filter>${opts.map(o => `<option ${o === val ? "selected" : ""}>${o}</option>`).join("")}</select>${I("down")}</label>`;
+}
+function renderResults() {
+  const box = document.getElementById("results"); if (!box) return;
+  const q = (document.getElementById("search-q")?.value || "").trim();
+  const cat = document.getElementById("f-cat").value, div = document.getElementById("f-div").value, dist = document.getElementById("f-dist").value, date = document.getElementById("f-date").value;
+  Object.assign(S.params, { q, cat, div, dist, date });
+  const filtering = q || cat !== "সব ক্যাটাগরি" || div !== "সব বিভাগ" || dist !== "সব জেলা" || date !== "যেকোনো সময়";
+  if (!filtering) {
+    const popular = ["পুলিশ", "ব্যাংক", "প্রাথমিক শিক্ষক", "রেলওয়ে", "বিমান", "NTRCA", "নার্স", "সেনাবাহিনী"];
+    const trending = ["পুলিশ কনস্টেবল নিয়োগ", "এইচএসসি রেজাল্ট ২০২৬", "এনটিআরসিএ নিবন্ধন", "ব্যাংক চাকরি", "ঢাবি ভর্তি"];
+    box.innerHTML = `<div class="sec-h"><h2>জনপ্রিয় সার্চ</h2></div><div class="chips" style="flex-wrap:wrap">${popular.map(t => `<button class="chip" data-q="${t}">${t}</button>`).join("")}</div>
+      <div class="sec-h"><h2>সাম্প্রতিক অনুসন্ধান</h2>${S.recent.length ? `<button data-act="clear-recent">মুছুন</button>` : ""}</div>
+      ${S.recent.length ? `<div class="list">${S.recent.map(t => `<button data-q="${esc(t)}">${I("clock")}<span style="flex:1">${esc(t)}</span>${I("chev")}</button>`).join("")}</div>` : `<p class="pad faint" style="margin:0;font-size:13.5px">এখনো কিছু খোঁজেননি।</p>`}
+      <div class="sec-h"><h2>সবাই যা খুঁজছে</h2></div>
+      <div class="list" style="margin-bottom:16px">${trending.map((t, i) => `<button data-q="${t}"><span class="n">${bn(i + 1)}</span><span style="flex:1">${t}</span>${I("trend")}</button>`).join("")}</div>`;
+    return;
+  }
+  const catId = (CATS.find(c => c.name === cat) || {}).id;
+  const maxAge = { "আজ": DAY, "গত ৭ দিন": 7 * DAY, "গত ৩০ দিন": 30 * DAY }[date];
+  const list = published().filter(p => (!q || (p.title + p.org + p.loc).toLowerCase().includes(q.toLowerCase()))
+    && (!catId || p.cat === catId) && (div === "সব বিভাগ" || p.div === div || p.div === "সব বিভাগ")
+    && (dist === "সব জেলা" || p.loc === dist || p.loc === "সারা দেশ") && (!maxAge || Date.now() - p.postedAt < maxAge));
+  box.innerHTML = `<div class="sec-h"><h2>ফলাফল <small class="num">${bn(list.length)}টি পোস্ট</small></h2></div>${feedHTML(list)}<div style="height:16px"></div>`;
+}
+
+PUB.trending = () => {
+  const list = published().slice().sort((a, b) => b.views - a.views).slice(0, 10), max = list[0].views;
+  return `${brandbar()}<div class="view has-nav">
+    <div class="pad" style="padding-top:16px"><h2 style="margin:0;font-size:20px;display:flex;gap:6px;align-items:center"><span style="color:var(--orange);display:flex">${I("flame")}</span>ট্রেন্ডিং চাকরি</h2><p class="muted" style="margin:2px 0 12px;font-size:13.5px">গত ২৪ ঘণ্টায় সবচেয়ে বেশি দেখা</p></div>
+    <div class="tabs" style="margin-bottom:12px"><button class="on">আজ</button><button>এই সপ্তাহ</button><button>এই মাস</button></div>
+    <div class="stack pad">${list.map((p, i) => `<button class="rank fade-in" data-go="detail" data-id="${p.id}"><span class="n num">${bn(i + 1)}</span><span class="thumb">${seal(p)}</span><span style="min-width:0"><h3>${p.title}</h3><span class="meta"><span>${I("eye")}${bnInt(p.views)}</span>${deadlineLabel(p)}</span><span class="bar"><i style="width:${Math.round(p.views / max * 100)}%"></i></span></span></button>`).join("")}</div><div style="height:16px"></div>
+  </div>${bottomNav("home")}`;
+};
+
+/* Job details */
+PUB.detail = () => {
+  const p = postById(S.params.id) || POSTS[0], c = catOf(p.cat), on = S.saved.includes(p.id);
+  const facts = [["users", "পদসংখ্যা", p.posts, "green"], ["wallet", "বেতন", p.salary, "blue"], ["brief", "চাকরির ধরন", p.type, "violet"], ["pin", "জেলা", p.loc, "orange"], ["globe", "বিভাগ", p.div, "teal"], ["building", "প্রতিষ্ঠান", p.org, "green"], ["cal", "আবেদনের শুরু", bnDate(p.startAt), "blue"], ["clock", "আবেদনের শেষ", bnDate(p.endAt), "red"]];
+  const related = published().filter(x => x.id !== p.id && x.cat === p.cat).slice(0, 3);
+  return `${appbar("পোস্টের বিস্তারিত", { right: `<button class="ib" data-act="share" data-id="${p.id}" aria-label="শেয়ার">${I("share")}</button><button class="ib" data-act="save" data-id="${p.id}" aria-label="সেভ" style="color:${on ? "var(--green)" : "inherit"}">${I("bookmark", on ? "fill" : "")}</button>` })}
+  <div class="view">
+    <section class="dhead"><div class="row"><div class="thumb">${seal(p)}</div><div style="min-width:0"><div class="row" style="gap:6px;margin-bottom:6px;flex-wrap:wrap">${catBadge(p.cat)}${promoActive(p) ? promoBadge(p) : ""}</div><h2>${p.title}</h2><div class="org">${I("shield")}${p.org}</div><div class="faint" style="font-size:12.5px;margin-top:4px">${I("clock", "").replace('class="i ', 'style="width:13px;height:13px;vertical-align:-2px" class="i ')} প্রকাশ: ${ago(p.postedAt)} · ${I("eye").replace('class="i ', 'style="width:13px;height:13px;vertical-align:-2px" class="i ')} ${bnInt(p.views)} বার দেখা</div></div></div></section>
+    <div class="facts">${facts.map(([ic, l, v, t]) => `<div class="fact"><span class="ic ${t}">${I(ic)}</span><div style="min-width:0"><small>${l}</small><b>${v}</b></div></div>`).join("")}</div>
+    <div id="countdown">${countdownHTML(p)}</div>
+    <div class="ctas"><a class="btn primary" href="https://cakricircular.com" target="_blank" rel="noopener">আবেদন করুন ${I("chev")}</a><button class="btn ghost" data-act="pdf">${I("file")}PDF দেখুন</button></div>
+    <div class="pad" style="margin-top:10px"><button class="btn soft block sm" data-act="remind" data-id="${p.id}">${I("bell")}${S.reminders[p.id] ? "রিমাইন্ডার চালু আছে · শেষ তারিখের " + bn(S.reminders[p.id]) + " দিন আগে" : "আবেদনের শেষ তারিখ মনে করিয়ে দিন"}</button></div>
+    <article class="prose">
+      <h3>চাকরির বিবরণ</h3><p>${p.org} ${p.loc === "সারা দেশ" ? "সারা দেশের" : p.loc + " অঞ্চলের"} জন্য ${p.posts} পদে ${p.type} ভিত্তিতে যোগ্য প্রার্থীদের কাছ থেকে অনলাইনে আবেদন আহ্বান করেছে।</p>
+      <h3>শিক্ষাগত যোগ্যতা</h3><ul><li>স্বীকৃত বোর্ড থেকে ন্যূনতম এসএসসি বা সমমান পাস (জিপিএ ${bn("2.50")})।</li><li>উচ্চতর ডিগ্রিধারীদের অগ্রাধিকার দেওয়া হবে।</li></ul>
+      <h3>অভিজ্ঞতা</h3><p>অভিজ্ঞতার প্রয়োজন নেই। নতুনরাও আবেদন করতে পারবেন।</p>
+      <h3>বয়সসীমা</h3><p>${bnDate(p.startAt)} তারিখে ${bn(18)} থেকে ${bn(32)} বছর। মুক্তিযোদ্ধার সন্তানদের ক্ষেত্রে সরকারি বিধি প্রযোজ্য।</p>
+      <h3>আবেদন প্রক্রিয়া</h3><ol><li>“আবেদন করুন” বাটনে চাপ দিয়ে অফিসিয়াল ওয়েবসাইটে যান।</li><li>ফরম পূরণ করে ছবি (৩০০×৩০০) ও স্বাক্ষর (৩০০×৮০) আপলোড করুন।</li><li>৭২ ঘণ্টার মধ্যে টেলিটক মোবাইল থেকে আবেদন ফি জমা দিন।</li></ol>
+      <h3>গুরুত্বপূর্ণ নির্দেশনা</h3>
+      <div class="note">${I("info")}<span>চাকরির জন্য কাউকে টাকা দেবেন না। নিয়োগ সম্পূর্ণ মেধার ভিত্তিতে হয়। তথ্য অফিসিয়াল বিজ্ঞপ্তির সাথে মিলিয়ে নিন।</span></div>
+      <p style="margin-top:14px"><button class="faint" data-go="report" data-id="${p.id}" style="font-size:13px;display:inline-flex;gap:6px;align-items:center">${I("flag")}কোনো তথ্য ভুল? রিপোর্ট করুন</button></p>
+    </article>
+    <div class="sec-h"><h2>সম্পর্কিত চাকরি</h2><button data-go="category" data-id="${c.id}">আরও${I("chev")}</button></div>
+    ${related.length ? `<div class="feed">${related.map(x => jobCard(x, false)).join("")}</div>` : `<p class="pad faint">এই মুহূর্তে সম্পর্কিত পোস্ট নেই।</p>`}
+    <div style="height:28px"></div>
+  </div>`;
+};
+function countdownHTML(p) {
+  const left = p.endAt - Date.now();
+  if (left <= 0) return `<div class="countdown over"><small>আবেদনের সময়</small><div class="ended">সময় শেষ</div></div>`;
+  const d = Math.floor(left / DAY), h = Math.floor(left % DAY / HOUR), m = Math.floor(left % HOUR / 6e4), s = Math.floor(left % 6e4 / 1e3);
+  return `<div class="countdown ${d >= 4 ? "ok" : ""}" role="timer"><small>আবেদনের সময় বাকি</small><div class="cd num">
+    <div><b>${pad2(d)}</b><span>দিন</span></div><div><b>${pad2(h)}</b><span>ঘণ্টা</span></div><div><b>${pad2(m)}</b><span>মিনিট</span></div><div><b>${pad2(s)}</b><span>সেকেন্ড</span></div></div></div>`;
+}
+
+PUB.notice = () => {
+  const tab = S.params.tab || "new";
+  const live = NOTICES.filter(n => n.on && (!S.settings.noticeExpiry || n.at + n.exp * DAY > Date.now() || tab === "old"));
+  const list = tab === "new" ? live.filter(n => n.at + n.exp * DAY > Date.now()) : NOTICES.filter(n => n.at + n.exp * DAY <= Date.now() || Date.now() - n.at > 3 * DAY);
+  return `${brandbar()}<div class="view has-nav">
+    <div class="pad row" style="padding-top:16px;padding-bottom:12px"><h2 style="margin:0;font-size:20px;flex:1">নোটিশ</h2><button class="chip ${S.noticeSound ? "on" : ""}" data-act="sound">${I("volume")}সাউন্ড ${S.noticeSound ? "চালু" : "বন্ধ"}</button></div>
+    <div class="tabs" style="margin-bottom:12px"><button class="${tab === "new" ? "on" : ""}" data-tab="new">সর্বশেষ</button><button class="${tab === "old" ? "on" : ""}" data-tab="old">পুরোনো</button></div>
+    <div class="stack pad">${list.map(n => {
+      const fresh = Date.now() - n.at < DAY, expired = n.at + n.exp * DAY <= Date.now();
+      const left = Math.ceil((n.at + n.exp * DAY - Date.now()) / DAY);
+      return `<div class="notice fade-in ${expired ? "old" : ""}"><span class="ic ${n.tone}">${I(n.icon)}</span><div style="flex:1;min-width:0"><b>${n.title}</b><div class="meta"><span>${I("cal")}${bnDate(n.at)}</span><span>${expired ? "মেয়াদ শেষ" : I("clock") + bn(left) + " দিন পর সরানো হবে"}</span></div></div>${fresh ? `<span class="badge b-red">নতুন</span>` : ""}</div>`;
+    }).join("") || `<div class="empty">${I("bell")}<p>কোনো নোটিশ নেই।</p></div>`}</div>
+    ${tab === "new" && S.settings.noticeExpiry ? `<p class="pad faint" style="font-size:12.5px;margin:12px 0 16px">মেয়াদ শেষ হওয়া নোটিশ স্বয়ংক্রিয়ভাবে “পুরোনো” তালিকায় চলে যায়।</p>` : `<div style="height:16px"></div>`}
+  </div>${bottomNav("notice")}`;
+};
+
+PUB.report = () => {
+  const p = postById(S.params.id);
+  const locked = S.reportLock > Date.now();
+  return `${appbar("রিপোর্ট করুন")}<div class="view">
+    <div class="pad" style="padding-top:18px;text-align:center"><span class="ic red" style="width:60px;height:60px;border-radius:18px;display:inline-grid;place-items:center">${I("flag")}</span>
+    <h2 style="font-size:19px;margin:10px 0 4px">ভুল তথ্য বা সমস্যা জানান</h2><p class="muted" style="margin:0 auto 18px;font-size:13.5px;max-width:32ch">আমাদের টিম দ্রুত যাচাই করে তথ্য সংশোধন করবে।</p></div>
+    <form class="stack pad" data-form="report" novalidate>
+      ${p ? `<div class="shareprev"><div class="thumb">${seal(p)}</div><div><small>যে পোস্ট নিয়ে রিপোর্ট</small><b>${p.title}</b></div></div>` : ""}
+      <div class="field"><label>সমস্যার ধরন <i>*</i></label><div class="seg" id="rtype">${["ভুল তথ্য", "ভুল তারিখ", "ভাঙা লিংক", "স্প্যাম", "অন্যান্য"].map((t, i) => `<button type="button" class="chip ${i === 0 ? "on" : ""}" data-rtype="${t}">${t}</button>`).join("")}</div></div>
+      <div class="field"><label for="r-desc">বিস্তারিত <i>*</i></label><textarea class="textarea" id="r-desc" maxlength="500" placeholder="কোন তথ্যটি ভুল এবং সঠিকটি কী, সংক্ষেপে লিখুন"></textarea><span class="hint" id="r-hint">কমপক্ষে ১৫ অক্ষর</span></div>
+      <div class="field"><label for="r-contact">যোগাযোগ (ঐচ্ছিক)</label><input class="input" id="r-contact" placeholder="ইমেইল বা মোবাইল নম্বর"></div>
+      <input class="hp" id="r-web" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <p class="hint" style="margin:0;display:flex;gap:6px">${I("shield")}স্প্যাম সুরক্ষা চালু · প্রতি ডিভাইস থেকে ১ মিনিটে ১টি রিপোর্ট</p>
+      <button class="btn primary block" id="r-submit" ${locked ? "disabled" : ""}>${I("send")}${locked ? "কিছুক্ষণ পরে আবার চেষ্টা করুন" : "রিপোর্ট পাঠান"}</button>
+    </form><div style="height:24px"></div></div>`;
+};
+
+PUB.saved = () => {
+  const list = S.saved.map(postById).filter(Boolean);
+  return `${appbar("সেভ করা চাকরি")}<div class="view has-nav">
+    <div class="pad" style="padding:14px 16px 10px"><p class="muted" style="margin:0;font-size:13.5px">${list.length ? `${bn(list.length)}টি পোস্ট সেভ করা আছে। শেষ তারিখের আগে আমরা মনে করিয়ে দিতে পারি।` : ""}</p></div>
+    ${list.length ? `<div class="stack pad">${list.map(p => {
+      const r = S.reminders[p.id];
+      return `<div class="saved fade-in"><div class="thumb">${seal(p)}</div><div style="min-width:0" data-go="detail" data-id="${p.id}" role="link" tabindex="0"><h3>${p.title}</h3>${deadlineLabel(p)}</div>
+      <button class="ib" data-act="save" data-id="${p.id}" aria-label="সেভ থেকে সরান" style="color:var(--ink-3)">${I("trash")}</button>
+      <div class="foot"><span class="badge b-green">${I("check")}সেভ করা</span><span class="spacer"></span><span style="font-size:12.5px">শেষ তারিখের আগে মনে করান</span><button class="switch ${r ? "on" : ""}" data-act="remind" data-id="${p.id}" aria-label="রিমাইন্ডার"></button></div></div>`;
+    }).join("")}</div>` : `<div class="state" style="min-height:60%">${I("bookmark").replace('class="i ', 'style="width:48px;height:48px;color:var(--ink-3)" class="i ')}<h2>কোনো চাকরি সেভ করা নেই</h2><p>পছন্দের পোস্টে বুকমার্ক আইকনে চাপ দিন, এখানে জমা থাকবে।</p><div class="acts"><button class="btn primary" data-go="home">চাকরি দেখুন</button></div></div>`}
+    <div style="height:16px"></div></div>${bottomNav("home")}`;
+};
+
+PUB.about = () => `${appbar("আমাদের সম্পর্কে")}<div class="view"><div class="pad stack" style="padding-top:22px">
+  <div class="logo" style="flex:none">${logoMark(52)}<div><b style="font-size:26px">চাকরি সার্কুলার</b><small>cakricircular.com</small></div></div>
+  <p class="muted" style="margin:0">চাকরি সার্কুলার বাংলাদেশের একটি নির্ভরযোগ্য চাকরি ও নিয়োগ তথ্যের প্ল্যাটফর্ম। সরকারি-বেসরকারি চাকরি, ভর্তি, রেজাল্ট, নোটিশ ও স্কলারশিপের খবর আমরা অফিসিয়াল উৎস থেকে যাচাই করে সহজ ভাষায় তুলে ধরি।</p>
+  <div class="list" style="margin:0">${[["shield", "যাচাই করা তথ্য"], ["bolt", "দ্রুত আপডেট"], ["phone", "মোবাইলে সহজ ব্যবহার"], ["users", "সবার জন্য বিনামূল্যে"]].map(([i, t]) => `<div class="li">${I(i)}<span>${t}</span></div>`).join("")}</div>
+  <button class="btn primary" data-go="contact">যোগাযোগ করুন</button></div></div>`;
+PUB.contact = () => `${appbar("যোগাযোগ")}<div class="view"><div class="pad stack" style="padding-top:18px"><p class="muted" style="margin:0">প্রশ্ন, পরামর্শ বা বিজ্ঞপ্তি পাঠাতে লিখুন। সাধারণত ২৪ ঘণ্টার মধ্যে উত্তর দিই।</p>
+  <div class="card" style="padding:14px;display:flex;gap:10px;align-items:center">${I("mail")}<span style="flex:1;user-select:all">${S.settings.email}</span><button class="btn soft sm" data-act="copy-email">${I("copy")}কপি</button></div>
+  <div class="field"><label for="c-name">নাম</label><input class="input" id="c-name"></div><div class="field"><label for="c-msg">বার্তা</label><textarea class="textarea" id="c-msg"></textarea></div><button class="btn primary" data-act="toast" data-msg="বার্তা পাঠানো হয়েছে">পাঠান</button></div></div>`;
+PUB.privacy = () => legal("গোপনীয়তা নীতি", ["আমরা কোনো ব্যক্তিগত তথ্য বিক্রি করি না।", "সেভ করা চাকরি ও সেটিংস আপনার ডিভাইসেই থাকে।", "ইমেইল সাবস্ক্রিপশন যেকোনো সময় বন্ধ করা যায়।", "অ্যানালিটিক্সে শুধুমাত্র নাম-পরিচয়হীন পরিসংখ্যান ব্যবহার করা হয়।"]);
+PUB.terms = () => legal("শর্তাবলী", ["সব তথ্য অফিসিয়াল উৎস থেকে নেওয়া; আবেদনের আগে মূল বিজ্ঞপ্তি মিলিয়ে নিন।", "সাইটের কনটেন্ট অনুমতি ছাড়া হুবহু কপি করা যাবে না।", "ভুল তথ্য চোখে পড়লে রিপোর্ট করুন।"]);
+function legal(t, items) { return `${appbar(t)}<div class="view"><article class="prose" style="padding-top:12px"><p class="faint" style="font-size:12.5px">সর্বশেষ হালনাগাদ: ${bnDate(NOW0 - 12 * DAY)}</p>${items.map((x, i) => `<h3>${bn(i + 1)}. ${x.split(";")[0].split("।")[0]}</h3><p>${x}</p>`).join("")}</article></div>`; }
+
+PUB.notfound = () => `<div class="view"><div class="state"><div class="big num">৪০৪</div><h2>দুঃখিত, পেজটি খুঁজে পাওয়া যায়নি।</h2><p>লিংকটি হয়তো পরিবর্তন হয়েছে বা পোস্টটি সরিয়ে নেওয়া হয়েছে।</p><div class="acts"><button class="btn primary" data-go="home">${I("home")}হোমে ফিরে যান</button><button class="btn ghost" data-go="search">${I("search")}খুঁজুন</button></div></div></div>`;
+PUB.maintenance = () => `<div class="view">${S.params.preview || !S.loggedIn ? "" : `<div class="adminpeek">${I("lock")}আপনি অ্যাডমিন হিসেবে লগইন আছেন<button data-act="peek">আসল সাইট দেখুন</button></div>`}<div class="state">
+  <span class="ic orange" style="width:84px;height:84px;border-radius:26px;display:grid;place-items:center">${I("wrench").replace('class="i ', 'style="width:40px;height:40px" class="i ')}</span>
+  <h2>সাইটে সাময়িক কাজ চলছে</h2><p>${esc(S.settings.maintMsg)}</p><div class="acts"><button class="btn primary" data-act="retry">${I("refresh")}পরে আবার চেষ্টা করুন</button></div>
+  <p class="faint" style="font-size:12.5px">${S.settings.email}</p></div></div>`;
+
+/* Drawer, share sheet, push prompt */
+function drawerHTML() {
+  const dark = document.documentElement.getAttribute("data-theme") === "dark" || (!document.documentElement.getAttribute("data-theme") && matchMedia("(prefers-color-scheme: dark)").matches);
+  const items = [["home", "হোম", "home"], ["categories", "ক্যাটাগরি", "grid"], ["search", "খুঁজুন", "search"], ["trending", "ট্রেন্ডিং", "flame"], ["notice", "নোটিশ", "bell"], ["saved", "সেভ করা চাকরি", "bookmark"], ["report", "রিপোর্ট করুন", "flag"], "-", ["about", "আমাদের সম্পর্কে", "info"], ["contact", "যোগাযোগ", "mail"], ["privacy", "গোপনীয়তা নীতি", "lock"], ["terms", "শর্তাবলী", "file"]];
+  return `<div class="scrim" data-act="close"></div><aside class="drawer" role="dialog" aria-label="মেনু">
+    <div class="dh"><div class="logo">${logoMark(38)}<div><b>চাকরি সার্কুলার</b><small>cakricircular.com</small></div></div><button class="ib" data-act="close" aria-label="বন্ধ">${I("x")}</button></div>
+    <nav>${items.map(x => x === "-" ? "<hr>" : `<button class="${S.screen === x[0] ? "on" : ""}" data-go="${x[0]}">${I(x[2])}${x[1]}${x[0] === "saved" && S.saved.length ? `<span class="spacer"></span><span class="badge b-green num">${bn(S.saved.length)}</span>` : ""}</button>`).join("")}
+      <hr><button data-act="theme">${I(dark ? "sun" : "moon")}ডার্ক মোড<span class="spacer"></span><span class="switch ${dark ? "on" : ""}"></span></button></nav>
+    <div style="padding:8px 20px 20px;margin-top:auto"><div class="faint" style="font-size:12.5px;margin-bottom:8px">সোশ্যাল মিডিয়া</div><div class="socials">${["fb", "xlogo", "yt", "tg"].map(s => `<button aria-label="${s}">${I(s)}</button>`).join("")}</div></div>
+  </aside>`;
+}
+function shareHTML(p) {
+  const url = "https://cakricircular.com/চাকরি/" + p.slug;
+  const opts = [["fb", "Facebook", "#1877F2"], ["xlogo", "X", "#111"], ["wa", "WhatsApp", "#25D366"], ["tg", "Telegram", "#229ED9"], ["link", "লিংক কপি", "var(--green)"], ["more", "আরও", "var(--ink-3)"]];
+  return `<div class="scrim" data-act="close"></div><div class="sheet" role="dialog" aria-label="শেয়ার"><div class="grab"></div><h3>শেয়ার করুন</h3>
+    <div class="shareprev"><div class="thumb">${seal(p)}</div><div style="min-width:0"><b>${p.title}</b><small>cakricircular.com</small></div></div>
+    <div class="sharegrid">${opts.map(([ic, l, c]) => `<button data-act="${ic === "link" ? "copy-link" : "toast"}" data-msg="${l}-এ শেয়ার করা হচ্ছে" data-url="${esc(url)}"><span class="ic" style="background:${c}">${I(ic)}</span>${l}</button>`).join("")}</div>
+    <button class="btn ghost block" style="margin-top:14px" data-act="close">বাতিল</button></div>`;
+}
+function pushHTML() {
+  return `<div class="scrim"></div><div class="modal" role="dialog" aria-label="নোটিফিকেশন"><span class="ic blue" style="width:72px;height:72px;border-radius:50%;display:inline-grid;place-items:center">${I("bell").replace('class="i ', 'style="width:34px;height:34px" class="i ')}</span>
+    <h3>নতুন চাকরির আপডেট পেতে Notification চালু করুন</h3><p>গুরুত্বপূর্ণ সার্কুলার প্রকাশ হলেই জানিয়ে দেব। দিনে ৩টির বেশি নয়।</p>
+    <div class="stack"><button class="btn primary" data-act="push-yes">Allow</button><button class="btn ghost" data-act="push-no">না, পরে</button></div></div>`;
+}
+function remindHTML(p) {
+  const cur = S.reminders[p.id] || 0;
+  return `<div class="scrim" data-act="close"></div><div class="sheet" role="dialog"><div class="grab"></div><h3>আবেদনের শেষ তারিখ মনে করিয়ে দিন</h3><p class="muted" style="margin:-6px 0 14px;font-size:13.5px">${p.title}<br>শেষ তারিখ: ${bnDate(p.endAt)}</p>
+    <div class="seg" style="margin-bottom:16px">${[1, 2, 3, 7].map(d => `<button class="chip ${cur === d ? "on" : ""}" data-remday="${d}" data-id="${p.id}">${bn(d)} দিন আগে</button>`).join("")}</div>
+    <div class="stack"><button class="btn primary" data-act="close">সংরক্ষণ করুন</button>${cur ? `<button class="btn danger" data-remday="0" data-id="${p.id}">রিমাইন্ডার বন্ধ করুন</button>` : ""}</div></div>`;
+}
+</script>
+<script>
+/* ================= Admin screens ================= */
+const ADM = {};
+const me = () => TEAM.find(t => t.id === S.me);
+const can = mod => { const u = me(); if (u.role === "admin") return true; const map = { dashboard: null, profile: null, team: "users", editor: "posts" }; const need = mod in map ? map[mod] : mod; return need === null || u.perms.includes(need); };
+function abar(title, right = "") {
+  return `<header class="appbar"><button class="ib" data-act="adrawer" aria-label="মেনু">${I("menu")}</button><h1>${title}</h1>${right}<button class="ib" data-ago="profile" aria-label="প্রোফাইল"><span class="avatar" style="width:30px;height:30px;background:${me().color}">${me().name[0]}</span></button></header>`;
+}
+function rolebar() {
+  return `<div class="rolebar">${I("shield")}<span>লগইন:</span><select id="as-user" aria-label="ইউজার পরিবর্তন">${TEAM.filter(t => t.on).map(t => `<option value="${t.id}" ${t.id === S.me ? "selected" : ""}>${t.name} (${t.role === "admin" ? "Admin" : "Moderator"})</option>`).join("")}</select></div>`;
+}
+function denied() { return `<div class="state">${I("lock").replace('class="i ', 'style="width:44px;height:44px;color:var(--ink-3)" class="i ')}<h2>এই অংশে আপনার অনুমতি নেই</h2><p>প্রয়োজনে অ্যাডমিনের কাছে পারমিশন চেয়ে নিন।</p><div class="acts"><button class="btn primary" data-ago="dashboard">ড্যাশবোর্ডে যান</button></div></div>`; }
+
+ADM.login = () => `<div class="view"><form class="login" data-form="login">
+  <div class="mark">${logoMark(64)}<b>চাকরি সার্কুলার</b><small>Admin Panel</small></div>
+  <div><h2 style="margin:0;font-size:19px">অ্যাডমিন লগইন</h2><p class="muted" style="margin:2px 0 0;font-size:13.5px">সাইট পরিচালনার জন্য লগইন করুন</p></div>
+  <div class="field"><label for="l-user">ইমেইল বা ইউজারনেম</label><input class="input" id="l-user" value="admin@cakricircular.com" autocomplete="username"></div>
+  <div class="field"><label for="l-pass">পাসওয়ার্ড</label><input class="input" id="l-pass" type="password" value="••••••••••" autocomplete="current-password"></div>
+  <div class="row" style="justify-content:space-between;font-size:13.5px"><label class="row" style="gap:8px"><input type="checkbox" id="l-rem" checked> মনে রাখুন</label><button type="button" style="color:var(--green);font-weight:600">পাসওয়ার্ড ভুলে গেছেন?</button></div>
+  <button class="btn primary block">${I("lock")}লগইন</button>
+  <div class="divider">অথবা</div>
+  <button type="button" class="btn ghost block" data-act="glogin"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.5 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2-1.9 3.2-4.7 3.2-8z"/><path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.8c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1V17A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.8 14.1a6.6 6.6 0 0 1 0-4.2V7H2.1a11 11 0 0 0 0 10z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2.1 7l3.7 2.9C6.7 7.3 9.1 5.4 12 5.4z"/></svg>Google দিয়ে লগইন</button>
+  <p class="hint" style="text-align:center;display:flex;gap:6px;justify-content:center">${I("shield")}৫ বার ভুল পাসওয়ার্ডে ১৫ মিনিট লক · 2FA সমর্থিত</p>
+</form></div>`;
+
+function areaChart(data, labels, color = "var(--green)", h = 120) {
+  const w = 320, pl = 30, pr = 8, pt = 10, pb = 20, max = Math.ceil(Math.max(...data) / 1000) * 1000;
+  const x = i => pl + i * (w - pl - pr) / (data.length - 1), y = v => pt + (1 - v / max) * (h - pt - pb);
+  const line = data.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
+  const ticks = [0, max / 2, max];
+  return `<div class="chart"><svg viewBox="0 0 ${w} ${h}" role="img" aria-label="চার্ট">
+    ${ticks.map(t => `<line x1="${pl}" x2="${w - pr}" y1="${y(t)}" y2="${y(t)}" stroke="var(--line)" stroke-width="1"/><text x="${pl - 6}" y="${y(t) + 3}" text-anchor="end">${bn(t >= 1000 ? t / 1000 + "k" : t)}</text>`).join("")}
+    <path d="${line}L${x(data.length - 1)},${y(0)}L${x(0)},${y(0)}Z" fill="${color}" opacity=".12"/>
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linejoin="round"/>
+    <circle cx="${x(data.length - 1)}" cy="${y(data[data.length - 1])}" r="4" fill="${color}" stroke="var(--surface)" stroke-width="2"/>
+    ${labels.map((l, i) => `<text x="${x(i)}" y="${h - 4}" text-anchor="middle">${l}</text>`).join("")}</svg></div>`;
+}
+const DAYS7 = [...Array(7)].map((_, i) => bn(new Date(NOW0 - (6 - i) * DAY).getDate()));
+const VIEWS7 = [6200, 7100, 6800, 8400, 9100, 8700, 10450];
+
+ADM.dashboard = () => {
+  const pub = POSTS.filter(p => p.status === "published").length, dr = POSTS.filter(p => p.status === "draft").length, prem = POSTS.filter(p => promoActive(p)).length, rep = REPORTS.filter(r => r.status !== "resolved").length;
+  const k = [["file", "মোট পোস্ট", 1248, "+১২ আজ", "green", "up"], ["check", "প্রকাশিত", 1120 + pub, "+১০ আজ", "blue", "up"], ["edit", "ড্রাফট", 96 + dr, "+৩ AI থেকে", "orange", "up"], ["crown", "প্রিমিয়াম/প্রমোটেড", prem, "সক্রিয়", "gold", ""], ["flag", "রিপোর্ট", rep, "অপেক্ষমাণ", "red", "down"], ["eye", "ভিউ (আজ)", 10450, "+১৬%", "violet", "up"], ["users", "ইউনিক ভিজিটর", 6912, "+১১%", "teal", "up"]];
+  return `${abar("ড্যাশবোর্ড")}<div class="view">${rolebar()}
+    <div class="pad" style="padding-top:14px;padding-bottom:12px"><h2 style="margin:0;font-size:19px">স্বাগতম, ${me().name.split(" ")[0]}</h2><p class="faint" style="margin:0;font-size:13px">আজ ${bnDate(NOW0)}</p></div>
+    <div class="kpis">${k.map(([ic, l, v, d, t, dir]) => `<div class="kpi"><div class="row"><span class="ic ${t}">${I(ic)}</span><small>${l}</small></div><b class="num">${bnInt(v)}</b><em class="${dir}">${d}</em></div>`).join("")}
+      <button class="kpi" data-ago="automation" style="text-align:left"><div class="row"><span class="ic green">${I("bolt")}</span><small>অটোমেশন</small></div><b style="font-size:16px;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${S.auto.on ? "var(--green)" : "var(--ink-3)"}"></span>${S.auto.on ? "চালু" : "বন্ধ"}</b><em class="faint">পরবর্তী রান ${bn(22)} মিনিটে</em></button></div>
+    <div class="sec-h"><h2>দৈনিক ভিউ</h2><span class="faint" style="font-size:12.5px">গত ৭ দিন</span></div>
+    <div class="panel">${areaChart(VIEWS7, DAYS7)}</div>
+    <div class="sec-h"><h2>ক্যাটাগরি পারফরম্যান্স</h2></div>
+    <div class="panel">${CATS.map(c => `<div class="hbar"><span>${c.name}</span><span class="t"><i style="width:${Math.round(c.count / 1842 * 100)}%;background:var(--${c.tone})"></i></span><b class="num">${bnInt(c.count)}</b></div>`).join("")}</div>
+    <div class="sec-h"><h2>সর্বাধিক দেখা পোস্ট</h2><button data-ago="analytics">বিস্তারিত${I("chev")}</button></div>
+    <div class="stack pad">${published().sort((a, b) => b.views - a.views).slice(0, 3).map(p => `<div class="arow"><div class="thumb">${seal(p)}</div><div style="min-width:0"><h3>${p.title}</h3><div class="meta"><span>${I("eye")}${bnInt(p.views)}</span></div></div><span></span></div>`).join("")}</div>
+    <div style="height:24px"></div></div>`;
+};
+
+ADM.posts = () => {
+  const f = S.params.f || "all";
+  const list = POSTS.filter(p => f === "all" ? p.status !== "trash" : f === "promo" ? !!p.promo : p.status === f);
+  const tabs = [["all", "সব"], ["published", "প্রকাশিত"], ["draft", "ড্রাফট"], ["promo", "প্রমোশন"], ["trash", "ট্র্যাশ"]];
+  return `${abar("পোস্ট")}<div class="view" style="padding-bottom:90px">
+    <div class="pad" style="padding-top:12px"><div class="searchbox flat">${I("search")}<input id="ap-q" placeholder="শিরোনাম বা প্রতিষ্ঠান দিয়ে খুঁজুন" aria-label="পোস্ট খুঁজুন"></div></div>
+    <div class="chips" style="margin:10px 0 12px">${tabs.map(([k, l]) => `<button class="chip ${f === k ? "on" : ""}" data-pf="${k}">${l} <span class="num">${bn(POSTS.filter(p => k === "all" ? p.status !== "trash" : k === "promo" ? !!p.promo : p.status === k).length)}</span></button>`).join("")}</div>
+    <div class="stack pad" id="ap-list">${list.map(p => `<div class="arow" data-title="${esc(p.title + p.org)}"><div class="thumb">${seal(p)}</div><div style="min-width:0"><h3>${p.title}</h3>
+      <div class="meta">${catBadge(p.cat)}<span class="badge ${p.status === "published" ? "b-green" : p.status === "draft" ? "b-orange" : "b-grey"}">${{ published: "প্রকাশিত", draft: "ড্রাফট", trash: "ট্র্যাশ" }[p.status]}</span>${p.promo ? promoBadge(p) : ""}</div>
+      <div class="meta"><span>${I("eye")}${bnInt(p.views)}</span><span>${I("clock")}শেষ ${bnShort(p.endAt)}</span></div></div>
+      <div class="acts"><button class="ib" data-ago="editor" data-id="${p.id}" aria-label="এডিট">${I("edit")}</button><button class="ib" data-act="trash" data-id="${p.id}" aria-label="ডিলিট" style="color:var(--red)">${I("trash")}</button></div></div>`).join("") || `<div class="empty">${I("file")}<p>এই তালিকায় কোনো পোস্ট নেই।</p></div>`}</div>
+  </div><button class="fab" data-ago="editor">${I("plus")}নতুন পোস্ট</button>`;
+};
+
+ADM.editor = () => {
+  const p = postById(S.params.id) || { title: "", slug: "", org: "", cat: "govt", div: "ঢাকা", loc: "ঢাকা", posts: "", salary: "", type: "স্থায়ী", startAt: NOW0, endAt: NOW0 + 20 * DAY, status: "draft", mark: "নতুন", color: "#0B8457" };
+  const tab = S.params.tab || "basic";
+  const d = t => new Date(t).toISOString().slice(0, 10);
+  const tabs = [["basic", "মূল তথ্য"], ["content", "বিজ্ঞপ্তি"], ["media", "মিডিয়া"], ["seo", "SEO"], ["promo", "প্রমোশন"]];
+  let body = "";
+  if (tab === "basic") body = `
+    <div class="field"><label for="e-title">শিরোনাম <i>*</i></label><input class="input" id="e-title" value="${esc(p.title)}"></div>
+    <div class="field"><label for="e-slug">Slug (বাংলা URL)</label><input class="input" id="e-slug" value="${esc(p.slug)}"><span class="hint">cakricircular.com/চাকরি/${esc(p.slug || "…")}</span></div>
+    <div class="field"><label for="e-org">প্রতিষ্ঠান <i>*</i></label><input class="input" id="e-org" value="${esc(p.org)}"></div>
+    <div class="grid2"><div class="field"><label>ক্যাটাগরি</label>${selectHTML("e-cat", CATS.map(c => c.name), catOf(p.cat).name)}</div><div class="field"><label>চাকরির ধরন</label>${selectHTML("e-type", ["স্থায়ী", "অস্থায়ী", "চুক্তিভিত্তিক", "ফুল-টাইম", "পার্ট-টাইম", "ভর্তি", "ফলাফল"], p.type)}</div></div>
+    <div class="grid2"><div class="field"><label>বিভাগ</label>${selectHTML("e-div", DIVS, p.div)}</div><div class="field"><label>জেলা</label>${selectHTML("e-dist", ["সারা দেশ", ...Object.values(DISTS).flat()], p.loc)}</div></div>
+    <div class="grid2"><div class="field"><label for="e-pos">পদসংখ্যা</label><input class="input" id="e-pos" value="${esc(p.posts)}"></div><div class="field"><label for="e-sal">বেতন</label><input class="input" id="e-sal" value="${esc(p.salary)}"></div></div>
+    <div class="grid2"><div class="field"><label for="e-start">আবেদন শুরু</label><input class="input" type="date" id="e-start" value="${d(p.startAt)}"></div><div class="field"><label for="e-end">শেষ তারিখ</label><input class="input" type="date" id="e-end" value="${d(p.endAt)}"></div></div>
+    <div class="field"><label for="e-url">আবেদনের লিংক</label><input class="input" id="e-url" value="https://" inputmode="url"></div>`;
+  if (tab === "content") body = `
+    <div class="field"><label>কনটেন্ট (Safe HTML)</label><div class="row" style="gap:4px;flex-wrap:wrap">${["B", "I", "H2", "H3", "• তালিকা", "১. তালিকা", "লিংক", "টেবিল"].map(b => `<button type="button" class="chip" style="height:30px">${b}</button>`).join("")}</div>
+    <textarea class="textarea" id="e-body" style="min-height:220px"><h3>শিক্ষাগত যোগ্যতা</h3>\n<ul><li>এসএসসি বা সমমান পাস</li></ul>\n<h3>আবেদন প্রক্রিয়া</h3>\n<p>অনলাইনে আবেদন করতে হবে।</p></textarea>
+    <span class="hint" style="display:flex;gap:6px">${I("shield")}script, iframe ও inline event স্বয়ংক্রিয়ভাবে সরানো হয় (sanitize)</span></div>`;
+  if (tab === "media") body = `
+    <div class="field"><label>থাম্বনেইল</label><div class="upload"><div class="thumb">${seal(p)}</div><div style="flex:1">WebP-তে রূপান্তর ও ৩ সাইজে রিসাইজ হবে<br><span class="hint">সর্বোচ্চ ২ MB</span></div><button type="button" class="btn ghost sm">${I("image")}পরিবর্তন</button></div></div>
+    <div class="field"><label>বিজ্ঞপ্তির PDF</label><div class="upload">${I("file")}<div style="flex:1">circular-${p.id || "new"}.pdf<br><span class="hint">১.৮ MB</span></div><button type="button" class="btn ghost sm">আপলোড</button></div></div>`;
+  if (tab === "seo") body = `
+    <div class="field"><label for="e-mt">Meta title</label><input class="input" id="e-mt" value="${esc(p.title)} | চাকরি সার্কুলার"><span class="hint">${bn((p.title + " | চাকরি সার্কুলার").length)}/৬০ অক্ষর</span></div>
+    <div class="field"><label for="e-md">Meta description</label><textarea class="textarea" id="e-md" style="min-height:80px">${esc(p.org)} ${esc(p.posts)} পদে নিয়োগ। শেষ তারিখ ${bnDate(p.endAt)}। যোগ্যতা, বেতন ও আবেদনের নিয়ম জানুন।</textarea></div>
+    <div class="field"><label for="e-kw">Keywords</label><input class="input" id="e-kw" value="${esc(p.org)}, নিয়োগ বিজ্ঞপ্তি, চাকরি ২০২৬"></div>
+    <div class="field"><label>Google প্রিভিউ</label><div class="serp"><div class="u">cakricircular.com › চাকরি › ${esc((p.slug || "").slice(0, 24))}…</div><div class="t">${esc(p.title || "শিরোনাম")} | চাকরি সার্কুলার</div><div class="d">${esc(p.org)} ${esc(p.posts)} পদে নিয়োগ। শেষ তারিখ ${bnDate(p.endAt)}।</div></div></div>
+    <p class="hint" style="display:flex;gap:6px">${I("check")}JobPosting, BreadcrumbList schema স্বয়ংক্রিয়</p>`;
+  if (tab === "promo") body = promoEditor(p);
+  return `<header class="appbar"><button class="ib" data-act="back" aria-label="ফিরে যান">${I("back")}</button><h1>${p.id ? "পোস্ট এডিট" : "নতুন পোস্ট"}</h1><button class="btn primary sm" data-act="savepost" data-id="${p.id || ""}">সেভ</button></header>
+    <div class="editor-tabs">${tabs.map(([k, l]) => `<button class="${tab === k ? "on" : ""}" data-etab="${k}">${l}</button>`).join("")}</div>
+    <div class="view"><form class="stack pad" style="padding-top:14px" onsubmit="return false">${body}
+      <div class="field"><label>স্ট্যাটাস</label><div class="seg">${[["draft", "ড্রাফট"], ["published", "প্রকাশিত"], ["trash", "ট্র্যাশ"]].map(([k, l]) => `<button type="button" class="chip ${p.status === k ? "on" : ""}" data-status="${k}" data-id="${p.id || ""}">${l}</button>`).join("")}</div></div>
+    </form><div style="height:24px"></div></div>`;
+};
+function promoEditor(p) {
+  const pr = p.promo || { type: "none", on: false, startAt: NOW0, endAt: NOW0 + 7 * DAY, priority: 1, max: 3 };
+  const d = t => new Date(t).toISOString().slice(0, 10);
+  return `<div class="field"><label>পোস্টের ধরন</label><div class="seg">${[["none", "সাধারণ পোস্ট"], ["promoted", "প্রমোটেড"], ["premium", "প্রিমিয়াম"]].map(([k, l]) => `<button type="button" class="chip ${(p.promo ? pr.type : "none") === k ? "on" : ""}" data-ptype="${k}" data-id="${p.id || ""}">${l}</button>`).join("")}</div></div>
+    ${p.promo ? `<div class="row card" style="padding:12px 14px;box-shadow:none"><span style="flex:1;font-weight:600">প্রমোশন চালু</span><button type="button" class="switch ${pr.on ? "on" : ""}" data-act="ptoggle" data-id="${p.id}" aria-label="প্রমোশন চালু"></button></div>
+    <div class="grid2"><div class="field"><label>শুরু</label><input class="input" type="date" value="${d(pr.startAt)}"></div><div class="field"><label>শেষ</label><input class="input" type="date" value="${d(pr.endAt)}"></div></div>
+    <div class="grid2"><div class="field"><label>প্রায়োরিটি</label>${selectHTML("e-prio", ["১ (সাধারণ)", "২ (মাঝারি)", "৩ (সর্বোচ্চ)"], ["১ (সাধারণ)", "২ (মাঝারি)", "৩ (সর্বোচ্চ)"][pr.priority - 1])}</div><div class="field"><label for="e-max">প্রতি পেজে সর্বোচ্চ</label><input class="input num" id="e-max" value="${bn(pr.max)} বার"></div></div>
+    <p class="hint">মেয়াদ শেষ হলে পোস্টটি স্বয়ংক্রিয়ভাবে সাধারণ পোস্টে ফিরে যাবে।</p>` : `<p class="hint">প্রমোটেড বা প্রিমিয়াম বেছে নিলে পোস্টটি ফিডে প্রতি ${bn(gapVal())}টি পোস্ট পরপর দেখাবে।</p>`}`;
+}
+
+ADM.promotions = () => {
+  const promos = POSTS.filter(p => p.promo);
+  const g = S.settings.gap;
+  const feed = buildFeed(published()).slice(0, 14);
+  let n = 0;
+  return `${abar("প্রমোশন")}<div class="view">
+    <div class="pad" style="padding-top:14px"><div class="note" style="margin:0">${I("info")}<span>প্রমোশন মানে আলাদা ব্যানার নয়। নির্বাচিত পোস্টই ফিডের ভেতরে সাধারণ কার্ডের মতো দেখায়, শুধু ছোট একটি “প্রমোটেড” বা “প্রিমিয়াম” চিহ্নসহ।</span></div></div>
+    <div class="sec-h"><h2>প্রমোশন গ্যাপ</h2></div>
+    <div class="panel"><p class="muted" style="margin:0 0 10px;font-size:13.5px">কয়টি সাধারণ পোস্ট পরপর একটি প্রমোশনাল পোস্ট বসবে</p>
+      <div class="gapsel">${[4, 5, 6].map(v => `<button class="${g == v ? "on" : ""}" data-gap="${v}">${bn(v)}</button>`).join("")}<button class="${g === "custom" ? "on" : ""}" data-gap="custom">কাস্টম</button>
+      ${g === "custom" ? `<input class="input num" id="gap-custom" type="number" min="2" max="20" value="${S.settings.gapCustom}" style="width:80px;height:38px" aria-label="কাস্টম গ্যাপ">` : ""}</div>
+      <p class="hint" style="margin:10px 0 0">ডিফল্ট: ৪–৫টি পোস্ট। পরিবর্তন সঙ্গে সঙ্গে সাইটে প্রযোজ্য হয়।</p></div>
+    <div class="sec-h"><h2>ফিড প্রিভিউ</h2><button data-act="viewsite">সাইটে দেখুন${I("chev")}</button></div>
+    <div class="panel"><div class="preview">${feed.map(x => x.promo ? `<div class="${x.p.promo.type === "premium" ? "pp" : "p"}"><em>${I("star").replace('class="i ', 'style="width:13px;height:13px" class="i ')}</em><span>${x.p.promo.type === "premium" ? "প্রিমিয়াম" : "প্রমোটেড"}: ${x.p.title}</span></div>` : `<div><em class="num">পোস্ট ${bn(++n)}</em><span>${x.p.title}</span></div>`).join("")}</div></div>
+    <div class="sec-h"><h2>প্রমোশনাল পোস্ট <small class="num">${bn(promos.length)}টি</small></h2><button data-ago="posts" data-pf="published">${I("plus")}পোস্ট বাছুন</button></div>
+    <div class="stack pad">${promos.map(p => {
+      const act = promoActive(p), exp = Date.now() > p.promo.endAt;
+      return `<div class="arow"><div class="thumb">${seal(p)}</div><div style="min-width:0"><h3>${p.title}</h3>
+        <div class="meta">${promoBadge(p)}<span class="badge ${act ? "b-green" : exp ? "b-grey" : "b-orange"}">${act ? "সক্রিয়" : exp ? "মেয়াদোত্তীর্ণ" : "বন্ধ"}</span><span>প্রায়োরিটি ${bn(p.promo.priority)}</span></div>
+        <div class="meta"><span>${I("cal")}${bnShort(p.promo.startAt)} – ${bnShort(p.promo.endAt)}</span><span>সর্বোচ্চ ${bn(p.promo.max)} বার</span></div></div>
+        <div class="acts"><button class="switch ${p.promo.on ? "on" : ""}" data-act="ptoggle" data-id="${p.id}" aria-label="প্রমোশন চালু/বন্ধ"></button><button class="ib" data-ago="editor" data-id="${p.id}" data-tab="promo" aria-label="এডিট">${I("edit")}</button></div></div>`;
+    }).join("")}</div>
+    <div style="height:24px"></div></div>`;
+};
+
+ADM.categories = () => `${abar("ক্যাটাগরি")}<div class="view" style="padding-bottom:90px">
+  <div class="pad" style="padding-top:14px"><p class="muted" style="margin:0 0 12px;font-size:13.5px">তীর দিয়ে ক্রম পরিবর্তন করুন। বন্ধ ক্যাটাগরি সাইটে দেখাবে না।</p></div>
+  <div class="stack pad">${CATS.map((c, i) => `<div class="arow" style="grid-template-columns:44px minmax(0,1fr) auto;align-items:center"><span class="ic ${c.tone}" style="width:44px;height:44px;border-radius:13px;display:grid;place-items:center">${I(c.icon)}</span>
+    <div style="min-width:0"><h3>${c.name}</h3><div class="meta"><span>/${c.slug}</span><span class="num">${bnInt(c.count)} পোস্ট</span></div></div>
+    <div class="row" style="gap:2px"><button class="ib" data-corder="${i}" data-dir="-1" aria-label="উপরে" ${i ? "" : "disabled"} style="width:32px">${I("down").replace('class="i ', 'style="transform:rotate(180deg)" class="i ')}</button><button class="ib" data-corder="${i}" data-dir="1" aria-label="নিচে" style="width:32px">${I("down")}</button><button class="switch ${c.on ? "on" : ""}" data-ctoggle="${i}" aria-label="চালু/বন্ধ"></button></div></div>`).join("")}</div>
+</div><button class="fab" data-act="toast" data-msg="নতুন ক্যাটাগরি ফর্ম খুলছে">${I("plus")}নতুন ক্যাটাগরি</button>`;
+
+ADM.notices = () => `${abar("নোটিশ")}<div class="view" style="padding-bottom:90px">
+  <div class="pad row" style="padding-top:14px;padding-bottom:12px"><span class="muted" style="flex:1;font-size:13.5px">মেয়াদ শেষে স্বয়ংক্রিয়ভাবে সরান</span><button class="switch ${S.settings.noticeExpiry ? "on" : ""}" data-act="nexp" aria-label="মেয়াদ শেষে সরান"></button></div>
+  <div class="stack pad">${NOTICES.map(n => { const exp = n.at + n.exp * DAY <= Date.now(); return `<div class="arow" style="grid-template-columns:40px minmax(0,1fr) auto"><span class="ic ${n.tone}" style="width:40px;height:40px;border-radius:12px;display:grid;place-items:center">${I(n.icon)}</span><div style="min-width:0"><h3>${n.title}</h3><div class="meta"><span>${bnDate(n.at)}</span><span class="badge ${exp ? "b-grey" : n.on ? "b-green" : "b-orange"}">${exp ? "মেয়াদোত্তীর্ণ" : n.on ? "প্রকাশিত" : "অপ্রকাশিত"}</span>${exp ? "" : `<span>${bn(Math.ceil((n.at + n.exp * DAY - Date.now()) / DAY))} দিন বাকি</span>`}</div></div>
+    <div class="acts"><button class="switch ${n.on ? "on" : ""}" data-ntoggle="${n.id}" aria-label="প্রকাশ"></button><button class="ib" data-ndel="${n.id}" aria-label="ডিলিট" style="color:var(--red)">${I("trash")}</button></div></div>`; }).join("")}</div>
+  ${NOTICES.some(n => n.at + n.exp * DAY <= Date.now()) ? `<div class="pad" style="margin-top:12px"><button class="btn danger block sm" data-act="ndelexp">${I("trash")}মেয়াদোত্তীর্ণ নোটিশ মুছুন</button></div>` : ""}
+</div><button class="fab" data-act="addnotice">${I("plus")}নতুন নোটিশ</button>`;
+
+ADM.reports = () => {
+  const f = S.params.f || "all";
+  const list = REPORTS.filter(r => f === "all" || r.status === f);
+  const st = { new: ["নতুন", "b-red"], review: ["রিভিউ চলছে", "b-orange"], resolved: ["সমাধান", "b-green"] };
+  return `${abar("রিপোর্ট")}<div class="view">
+    <div class="chips" style="margin:12px 0">${[["all", "সব"], ["new", "নতুন"], ["review", "রিভিউ"], ["resolved", "সমাধান"]].map(([k, l]) => `<button class="chip ${f === k ? "on" : ""}" data-rf="${k}">${l} <span class="num">${bn(REPORTS.filter(r => k === "all" || r.status === k).length)}</span></button>`).join("")}</div>
+    <div class="stack pad">${list.map(r => { const p = postById(r.post); return `<div class="card" style="padding:14px;box-shadow:none;display:flex;flex-direction:column;gap:8px">
+      <div class="row"><span class="badge b-blue">${r.type}</span><span class="badge ${st[r.status][1]}">${st[r.status][0]}</span><span class="spacer"></span><span class="faint" style="font-size:12px">${ago(r.at)}</span></div>
+      <b style="font-size:14px;line-height:1.45">${p.title}</b><p class="muted" style="margin:0;font-size:13.5px;background:var(--surface-2);padding:8px 10px;border-radius:10px">“${r.msg}”</p>
+      <div class="row" style="gap:6px">${r.status === "new" ? `<button class="btn soft sm" data-rset="${r.id}" data-s="review">${I("eye")}রিভিউ</button>` : ""}${r.status !== "resolved" ? `<button class="btn primary sm" data-rset="${r.id}" data-s="resolved">${I("check")}সমাধান</button>` : ""}<button class="btn danger sm" data-rdel="${r.id}">${I("trash")}ডিলিট</button></div></div>`; }).join("") || `<div class="empty">${I("check")}<p>কোনো রিপোর্ট নেই।</p></div>`}</div>
+    <div style="height:24px"></div></div>`;
+};
+
+const PIPE = [["সোর্স থেকে সংগ্রহ", "Source"], ["ডুপ্লিকেট যাচাই", "Check Duplicate"], ["OpenAI-তে পাঠানো", "OpenAI"], ["কনটেন্ট রিরাইট", "Rewrite"], ["ড্রাফট হিসেবে সংরক্ষণ", "Draft"], ["অ্যাডমিন রিভিউ", "Admin Review"]];
+ADM.automation = () => {
+  const a = S.auto;
+  return `${abar("অটোমেশন")}<div class="view">
+    <div class="pad row" style="padding-top:14px"><div style="flex:1"><b style="font-size:16px">অটোমেশন ${a.on ? "চালু" : "বন্ধ"}</b><div class="faint" style="font-size:12.5px">In-app scheduler · প্রতি ৩০ মিনিটে</div></div><button class="switch ${a.on ? "on" : ""}" data-act="autotoggle" aria-label="অটোমেশন চালু/বন্ধ"></button></div>
+    <div class="pad" style="margin-top:12px"><div class="note" style="margin:0;background:var(--gold-soft)">${I("shield")}<span>AI-এর লেখা কোনো কনটেন্ট স্বয়ংক্রিয়ভাবে প্রকাশ হয় না। সব পোস্ট ড্রাফট হিসেবে আপনার রিভিউয়ের অপেক্ষায় থাকে।</span></div></div>
+    <div class="sec-h"><h2>পাইপলাইন</h2><span class="faint" style="font-size:12.5px" id="a-task">${a.running ? "চলছে: " + PIPE[Math.max(0, a.step)][1] : "শেষ রান " + ago(a.last)}</span></div>
+    <div class="panel"><div class="pipeline" id="a-pipe">${pipeHTML()}</div>
+      <div class="grid2" style="margin-top:12px"><button class="btn primary" data-act="autorun" ${a.running ? "disabled" : ""}>${I("play")}এখনই চালান</button><button class="btn danger" data-act="autostop">${I("stop")}বন্ধ করুন</button></div></div>
+    <div class="sec-h"><h2>পরিসংখ্যান</h2></div>
+    <div class="panel"><div class="kv num" id="a-kv">${autoKV()}</div></div>
+    <div class="sec-h"><h2>লাইভ লগ</h2><span class="badge b-green">${I("refresh")}স্বয়ংক্রিয় আপডেট</span></div>
+    <div class="pad"><div class="logs" id="a-logs" aria-live="polite">${logsHTML()}</div></div>
+    <div class="sec-h"><h2>সোর্স</h2></div>
+    <div class="list" style="margin-bottom:24px">${["dpe.gov.bd", "police.gov.bd", "bpsc.gov.bd", "teletalk.com.bd", "ntrca.gov.bd"].map(s => `<div class="li">${I("globe")}<span style="flex:1">${s}</span><span class="badge b-green">সক্রিয়</span></div>`).join("")}</div>
+  </div>`;
+};
+function pipeHTML() { const a = S.auto; return PIPE.map(([bnl, en], i) => `<div class="step ${i < a.step || (!a.running && a.step >= PIPE.length) ? "done" : i === a.step && a.running ? "run" : ""}"><span class="dotc">${i < a.step || (!a.running && a.step >= PIPE.length) ? "✓" : bn(i + 1)}</span><span>${bnl} <small>${en}</small></span>${i === 5 ? `<span class="badge b-orange">ম্যানুয়াল</span>` : "<span></span>"}</div>`).join(""); }
+function autoKV() { const a = S.auto; return [["প্রসেস করা পোস্ট", bnInt(a.processed)], ["নতুন ড্রাফট", bnInt(a.fresh)], ["ডুপ্লিকেট বাদ", bnInt(a.dup)], ["AI টোকেন (এই মাস)", bnInt(a.tokens)], ["আনুমানিক খরচ", "$" + bn((a.tokens / 1e6 * 0.6).toFixed(2))], ["ত্রুটি", bn(a.errors)], ["শেষ রান", ago(a.last)], ["পরবর্তী রান", a.on ? bn(22) + " মিনিট পর" : "বন্ধ"]].map(([l, v]) => `<div><small>${l}</small><b>${v}</b></div>`).join(""); }
+function logsHTML() { return S.auto.logs.slice(-40).map(l => `<div><time>${l.t}</time><span class="${l.c}">${l.m}</span></div>`).join(""); }
+function logLine(m, c = "") { const d = new Date(); S.auto.logs.push({ t: bn(String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") + ":" + String(d.getSeconds()).padStart(2, "0")), m, c }); const el = document.getElementById("a-logs"); if (el) { el.innerHTML = logsHTML(); el.scrollTop = el.scrollHeight; } }
+[["সোর্স স্ক্যান সম্পন্ন: ১২টি নতুন লিংক", "ok"], ["ডুপ্লিকেট পাওয়া গেছে: ৭টি বাদ", "warn"], ["OpenAI রিরাইট: ৫টি পোস্ট", ""], ["৫টি ড্রাফট সংরক্ষিত — রিভিউয়ের অপেক্ষায়", "ok"]].forEach(([m, c]) => S.auto.logs.push({ t: "", m, c }));
+S.auto.logs.forEach((l, i) => { const d = new Date(S.auto.last + i * 9e3); l.t = bn(String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0") + ":" + String(d.getSeconds()).padStart(2, "0")); });
+
+let autoTimer = null;
+function autoRun() {
+  const a = S.auto; if (a.running) return;
+  a.running = true; a.step = 0; logLine("ম্যানুয়াল রান শুরু", ""); refreshAuto();
+  const msgs = [["৪টি সোর্স থেকে ১৮টি লিংক পাওয়া গেছে", "ok"], ["১১টি ডুপ্লিকেট বাদ দেওয়া হয়েছে", "warn"], ["৭টি পোস্ট OpenAI-তে পাঠানো হয়েছে (gpt-4o-mini)", ""], ["রিরাইট সম্পন্ন · ৯,৮৪০ টোকেন", "ok"], ["৭টি ড্রাফট সংরক্ষিত", "ok"], ["অ্যাডমিন রিভিউয়ের জন্য নোটিফিকেশন পাঠানো হয়েছে", "ok"]];
+  autoTimer = setInterval(() => {
+    if (!a.running) return;
+    logLine(msgs[a.step][0], msgs[a.step][1]);
+    a.step++;
+    if (a.step === 2) { a.dup += 11; a.processed += 18; }
+    if (a.step === 4) { a.tokens += 9840; }
+    if (a.step === 5) { a.fresh += 7; }
+    if (a.step >= PIPE.length) { a.running = false; a.last = Date.now(); clearInterval(autoTimer); logLine("রান শেষ · পরবর্তী রান ৩০ মিনিট পর", "ok"); }
+    refreshAuto();
+  }, 1300);
+}
+function refreshAuto() {
+  const p = document.getElementById("a-pipe"); if (!p) return;
+  p.innerHTML = pipeHTML(); document.getElementById("a-kv").innerHTML = autoKV();
+  document.getElementById("a-task").textContent = S.auto.running ? "চলছে: " + PIPE[Math.min(S.auto.step, 5)][1] : "শেষ রান " + ago(S.auto.last);
+  const b = document.querySelector('[data-act="autorun"]'); if (b) b.disabled = S.auto.running;
+}
+
+ADM.team = () => `${abar("টিম ও পারমিশন")}<div class="view" style="padding-bottom:90px">
+  <div class="pad" style="padding-top:14px"><p class="muted" style="margin:0 0 12px;font-size:13.5px">মডারেটর শুধু অনুমতিপ্রাপ্ত অংশগুলো দেখতে পাবেন। চিপে চাপ দিয়ে পারমিশন চালু বা বন্ধ করুন।</p></div>
+  <div class="stack pad">${TEAM.map(t => `<div class="card" style="padding:14px;box-shadow:none;display:flex;flex-direction:column;gap:10px">
+    <div class="row"><span class="avatar" style="width:44px;height:44px;font-size:17px;background:${t.color}">${t.name[0]}</span><div style="flex:1;min-width:0"><b style="display:block;font-size:15px">${t.name}</b><span class="faint" style="font-size:12.5px;word-break:break-all">${t.email}</span></div><button class="switch ${t.on ? "on" : ""}" data-ttoggle="${t.id}" aria-label="সক্রিয়" ${t.id === 1 ? "disabled" : ""}></button></div>
+    <div class="row" style="gap:6px"><span class="badge ${t.role === "admin" ? "b-green" : "b-blue"}">${t.role === "admin" ? "Admin" : "Moderator"}</span><span class="faint" style="font-size:12px">${t.on ? "সক্রিয়" : "নিষ্ক্রিয়"}</span></div>
+    <div class="perm">${PERMS.map(pm => `<button class="${t.role === "admin" || t.perms.includes(pm) ? "on" : ""}" data-perm="${pm}" data-uid="${t.id}" ${t.role === "admin" ? "disabled" : ""}>${t.role === "admin" || t.perms.includes(pm) ? I("check") : ""}${PERM_LABEL[pm]}</button>`).join("")}</div></div>`).join("")}</div>
+</div><button class="fab" data-act="adduser">${I("plus")}নতুন সদস্য</button>`;
+
+ADM.analytics = () => {
+  const src = [["সরাসরি", 38], ["Google সার্চ", 34], ["Facebook", 19], ["অন্যান্য", 9]];
+  const loc = [["ঢাকা", 41], ["চট্টগ্রাম", 17], ["রাজশাহী", 11], ["খুলনা", 9], ["অন্যান্য", 22]];
+  return `${abar("অ্যানালিটিক্স", `<button class="chip" style="height:32px">৭ দিন${I("down")}</button>`)}<div class="view">
+    <div class="kpis" style="padding-top:14px">${[["ভিজিটর", 48732, "+১২%"], ["ইউনিক ডিভাইস", 32481, "+১৪%"], ["পেজ ভিউ", 121658, "+১৬%"], ["জব ভিউ", 86240, "+১৯%"]].map(([l, v, d]) => `<div class="kpi"><small>${l}</small><b class="num">${bnInt(v)}</b><em class="up">${d}</em></div>`).join("")}</div>
+    <div class="sec-h"><h2>ভিজিট</h2></div><div class="panel">${areaChart([5200, 6100, 5900, 7400, 8200, 7900, 9300], DAYS7, "var(--blue)")}</div>
+    <div class="sec-h"><h2>ট্রাফিক সোর্স</h2></div><div class="panel">${src.map(([l, v]) => `<div class="hbar"><span>${l}</span><span class="t"><i style="width:${v / 38 * 100}%;background:var(--blue)"></i></span><b class="num">${bn(v)}%</b></div>`).join("")}</div>
+    <div class="sec-h"><h2>জনপ্রিয় ক্যাটাগরি</h2></div><div class="panel">${CATS.map(c => `<div class="hbar"><span>${c.name}</span><span class="t"><i style="width:${c.count / 18.42}%"></i></span><b class="num">${bnInt(c.count * 12)}</b></div>`).join("")}</div>
+    <div class="sec-h"><h2>সার্চ ট্রেন্ড</h2></div><div class="chips" style="flex-wrap:wrap">${["পুলিশ কনস্টেবল", "প্রাথমিক শিক্ষক", "এইচএসসি রেজাল্ট", "ব্যাংক", "NTRCA", "নার্স"].map((t, i) => `<span class="chip">${t} <b class="num" style="color:var(--green)">${bnInt(4200 - i * 540)}</b></span>`).join("")}</div>
+    <div class="sec-h"><h2>লোকেশন</h2><span class="badge ${S.settings.geo ? "b-green" : "b-grey"}">Geo lookup ${S.settings.geo ? "চালু" : "বন্ধ"}</span></div>
+    <div class="panel" style="margin-bottom:24px">${S.settings.geo ? loc.map(([l, v]) => `<div class="hbar"><span>${l}</span><span class="t"><i style="width:${v / 41 * 100}%;background:var(--teal)"></i></span><b class="num">${bn(v)}%</b></div>`).join("") : `<p class="muted" style="margin:0;font-size:13.5px">সেটিংস থেকে Geo lookup চালু করুন।</p>`}</div>
+  </div>`;
+};
+
+const SET_SECTIONS = [["site", "সাইটের তথ্য", "globe"], ["brand", "লোগো ও ফেভিকন", "image"], ["footer", "ফুটার ও সোশ্যাল", "link"], ["seo", "SEO", "search"], ["pwa", "PWA", "phone"], ["notify", "নোটিফিকেশন", "bell"], ["smtp", "SMTP ইমেইল", "mail"], ["ai", "অটোমেশন ও OpenAI", "bolt"], ["promo", "প্রমোশন", "star"], ["maint", "মেইনটেন্যান্স", "wrench"], ["security", "অ্যাডমিন পাথ", "lock"], ["geo", "Geo lookup", "pin"]];
+ADM.settings = () => {
+  const sec = S.params.sec || "site", st = S.settings;
+  const tg = (key, label, hint = "") => `<div class="row card" style="padding:12px 14px;box-shadow:none"><div style="flex:1"><b style="font-size:14px;display:block">${label}</b>${hint ? `<span class="hint">${hint}</span>` : ""}</div><button class="switch ${st[key] ? "on" : ""}" data-stoggle="${key}" aria-label="${label}"></button></div>`;
+  const inp = (id, label, val, key) => `<div class="field"><label for="${id}">${label}</label><input class="input" id="${id}" value="${esc(val)}" ${key ? `data-skey="${key}"` : ""}></div>`;
+  const B = {
+    site: inp("s-name", "সাইটের নাম", st.siteName, "siteName") + inp("s-tag", "ট্যাগলাইন", st.tagline, "tagline") + inp("s-mail", "যোগাযোগ ইমেইল", st.email, "email"),
+    brand: `<div class="upload"><div style="width:48px">${logoMark(48)}</div><div style="flex:1">logo.svg<br><span class="hint">SVG বা PNG, স্বচ্ছ ব্যাকগ্রাউন্ড</span></div><button class="btn ghost sm">পরিবর্তন</button></div><div class="upload"><div style="width:32px">${logoMark(32)}</div><div style="flex:1">favicon.png<br><span class="hint">৫১২×৫১২</span></div><button class="btn ghost sm">পরিবর্তন</button></div>`,
+    footer: inp("s-copy", "কপিরাইট টেক্সট", "© ২০২৬ চাকরি সার্কুলার") + inp("s-fb", "Facebook", "facebook.com/cakricircular") + inp("s-yt", "YouTube", "youtube.com/@cakricircular") + inp("s-tg", "Telegram", "t.me/cakricircular"),
+    seo: inp("s-gv", "Google verification", "google-site-verification=•••••") + `<div class="list" style="margin:0">${["sitemap.xml স্বয়ংক্রিয়", "robots.txt", "Canonical URL", "Open Graph ও Twitter Card", "Organization, WebSite, JobPosting, NewsArticle, BreadcrumbList schema"].map(t => `<div class="li">${I("check")}<span>${t}</span></div>`).join("")}</div>`,
+    pwa: inp("s-an", "অ্যাপের নাম", "চাকরি সার্কুলার") + inp("s-tc", "থিম কালার", "#0B8457") + `<p class="hint">manifest.json ও আইকন PWABuilder-এর জন্য প্রস্তুত।</p>`,
+    notify: tg("push", "পুশ নোটিফিকেশন", "প্রথম ভিজিটে অনুমতি চাওয়া হবে") + inp("s-vapid", "VAPID public key", "BHx2••••••••"),
+    smtp: inp("s-smtp", "SMTP হোস্ট", st.smtp, "smtp") + `<div class="grid2">${inp("s-port", "পোর্ট", "465")}${inp("s-su", "ইউজার", "no-reply@cakricircular.com")}</div><button class="btn ghost sm" data-act="toast" data-msg="টেস্ট ইমেইল পাঠানো হয়েছে">টেস্ট ইমেইল পাঠান</button>`,
+    ai: inp("s-key", "OpenAI API Key", "sk-••••••••••••••••") + `<div class="grid2">${inp("s-model", "মডেল", "gpt-4o-mini")}${inp("s-limit", "দৈনিক সীমা", "৬০ পোস্ট")}</div>` + inp("s-cron", "Cron (ঐচ্ছিক)", "*/30 * * * *"),
+    promo: `<div class="field"><label>প্রমোশন গ্যাপ</label><div class="gapsel">${[4, 5, 6].map(v => `<button class="${st.gap == v ? "on" : ""}" data-gap="${v}">${bn(v)}</button>`).join("")}<button class="${st.gap === "custom" ? "on" : ""}" data-gap="custom">কাস্টম</button></div></div><button class="btn soft sm" data-ago="promotions">প্রমোশন ম্যানেজ করুন${I("chev")}</button>`,
+    maint: tg("maintenance", "মেইনটেন্যান্স মোড", "চালু থাকলে ভিজিটররা মেইনটেন্যান্স পেজ দেখবেন; অ্যাডমিন আসল সাইট দেখতে পারবেন") + `<div class="field"><label for="s-mm">বার্তা</label><textarea class="textarea" id="s-mm" data-skey="maintMsg">${esc(st.maintMsg)}</textarea></div><button class="btn soft sm" data-act="viewsite">পাবলিক সাইটে দেখুন${I("chev")}</button>`,
+    security: inp("s-path", "অ্যাডমিন পাথ", st.adminPath, "adminPath") + `<p class="hint">ডিফল্ট /admin পাথ বন্ধ থাকবে। পরিবর্তনের পর নতুন লিংক বুকমার্ক করে রাখুন।</p>`,
+    geo: tg("geo", "Geo lookup", "অ্যানালিটিক্সে জেলা/দেশভিত্তিক ট্রাফিক দেখায়")
+  };
+  return `${abar("সেটিংস")}<div class="view">
+    <div class="settings-list" style="padding-top:14px">${SET_SECTIONS.map(([k, l, ic]) => `<button class="${sec === k ? "on" : ""}" data-sec="${k}">${I(ic)}${l}</button>`).join("")}</div>
+    <div class="sec-h"><h2>${SET_SECTIONS.find(s => s[0] === sec)[1]}</h2></div>
+    <div class="stack pad">${B[sec]}<button class="btn primary block" data-act="savesettings">সেভ করুন</button><p class="hint" style="text-align:center;margin:0">সেভ করার সঙ্গে সঙ্গে সাইটে পরিবর্তন দেখা যাবে</p></div>
+    <div style="height:24px"></div></div>`;
+};
+
+ADM.profile = () => `${appbar("প্রোফাইল")}<div class="view"><div class="stack pad" style="padding-top:18px">
+  <div class="row"><span class="avatar" style="width:60px;height:60px;font-size:24px;background:${me().color}">${me().name[0]}</span><div><b style="font-size:17px;display:block">${me().name}</b><span class="faint" style="font-size:13px">${me().email}</span></div></div>
+  <div class="field"><label for="pf-name">নাম</label><input class="input" id="pf-name" value="${esc(me().name)}"></div>
+  <div class="grid2"><div class="field"><label for="pf-p1">নতুন পাসওয়ার্ড</label><input class="input" type="password" id="pf-p1"></div><div class="field"><label for="pf-p2">নিশ্চিত করুন</label><input class="input" type="password" id="pf-p2"></div></div>
+  <button class="btn primary" data-act="toast" data-msg="প্রোফাইল আপডেট হয়েছে">আপডেট করুন</button>
+  <button class="btn danger" data-act="logout">${I("logout")}লগআউট</button></div></div>`;
+
+function adrawerHTML() {
+  return `<div class="scrim" data-act="close"></div><aside class="drawer adrawer" role="dialog" aria-label="অ্যাডমিন মেনু">
+    <div class="dh"><span class="avatar" style="width:42px;height:42px;background:${me().color}">${me().name[0]}</span><div style="flex:1;min-width:0"><b style="display:block">${me().name}</b><span class="faint" style="font-size:12px">${me().role === "admin" ? "Admin" : "Moderator"}</span></div><button class="ib" data-act="close" aria-label="বন্ধ">${I("x")}</button></div>
+    <nav>${MODULES.filter(([k]) => can(k)).map(([k, l, ic]) => `<button class="${S.screen === k ? "on" : ""}" data-ago="${k}">${I(ic)}${l}${k === "reports" ? `<span class="spacer"></span><span class="badge b-red num">${bn(REPORTS.filter(r => r.status === "new").length)}</span>` : ""}</button>`).join("")}
+    <hr><button data-act="viewsite">${I("globe")}সাইট দেখুন</button><button data-act="theme">${I("moon")}ডার্ক মোড</button><button data-act="logout">${I("logout")}লগআউট</button></nav></aside>`;
+}
+</script>
+<script>
+/* ================= Router ================= */
+const $screen = document.getElementById("screen");
+let toastTimer = null;
+
+function urlFor() {
+  const p = S.params, base = "cakricircular.com";
+  if (S.mode === "admin") return base + S.settings.adminPath + (S.loggedIn ? "/" + S.screen : "/login");
+  const post = postById(p.id), cat = catOf(p.id);
+  return base + ({
+    home: "/", latest: "/সর্বশেষ", categories: "/ক্যাটাগরি", category: "/ক্যাটাগরি/" + (cat ? cat.slug : ""), search: "/খুঁজুন" + (p.q ? "?q=" + p.q : ""),
+    trending: "/ট্রেন্ডিং", detail: "/চাকরি/" + (post ? post.slug : ""), notice: "/নোটিশ", report: "/রিপোর্ট", saved: "/সেভ-করা-চাকরি",
+    about: "/আমাদের-সম্পর্কে", contact: "/যোগাযোগ", privacy: "/গোপনীয়তা-নীতি", terms: "/শর্তাবলী", notfound: "/পুরোনো-লিংক", maintenance: "/"
+  }[S.screen] || "/");
+}
+
+function screenBody() {
+  if (S.mode === "admin") {
+    if (!S.loggedIn) return ADM.login();
+    if (!can(S.screen)) return abar("অনুমতি নেই") + `<div class="view">${denied()}</div>`;
+    return (ADM[S.screen] || ADM.dashboard)();
+  }
+  if (S.settings.maintenance && !S.peek && S.screen !== "maintenance") return PUB.maintenance();
+  if (S.screen === "maintenance") return PUB.maintenance();
+  return (PUB[S.screen] || PUB.notfound)();
+}
+
+function render(keepScroll) {
+  const prev = $screen.querySelector(".view"), top = keepScroll && prev ? prev.scrollTop : 0;
+  let ov = "";
+  if (S.overlay) {
+    const t = S.overlay.type;
+    if (t === "drawer") ov = drawerHTML();
+    if (t === "adrawer") ov = adrawerHTML();
+    if (t === "share") ov = shareHTML(postById(S.overlay.id));
+    if (t === "push") ov = pushHTML();
+    if (t === "remind") ov = remindHTML(postById(S.overlay.id));
+  }
+  $screen.innerHTML = `<div class="statusbar num"><span>৯:৪১</span><span class="dots">${I("globe").replace('class="i ', 'style="width:14px;height:14px" class="i ')}<i></i></span></div>
+    <div class="urlwrap"><div class="urlbar">${I("lock")}<span>${esc(urlFor())}</span></div></div>
+    ${screenBody()}${ov}${S.toast ? `<div class="toast" role="status">${I("check")}${S.toast}</div>` : ""}`;
+  const v = $screen.querySelector(".view"); if (v && top) { v.style.scrollBehavior = "auto"; v.scrollTop = top; v.style.scrollBehavior = ""; }
+  if (S.mode === "public" && S.screen === "search") renderResults();
+  if (S.mode === "admin" && S.screen === "automation") { const l = document.getElementById("a-logs"); if (l) l.scrollTop = l.scrollHeight; }
+  renderIndex(); renderSpec();
+}
+
+function go(screen, params = {}, mode) {
+  S.stack.push({ mode: S.mode, screen: S.screen, params: S.params });
+  if (mode) S.mode = mode;
+  S.screen = screen; S.params = params; S.overlay = null;
+  try { history.pushState({ d: S.stack.length }, ""); pushed++; } catch (e) {}
+  render();
+}
+function back() {
+  if (S.overlay) { S.overlay = null; return render(true); }
+  const prev = S.stack.pop();
+  if (!prev) { S.screen = S.mode === "admin" ? "dashboard" : "home"; S.params = {}; return render(); }
+  Object.assign(S, { mode: prev.mode, screen: prev.screen, params: prev.params });
+  render();
+}
+let pushed = 0;
+window.addEventListener("popstate", () => { if (pushed > 0) pushed--; back(); });
+function toast(msg) { S.toast = msg; render(true); clearTimeout(toastTimer); toastTimer = setTimeout(() => { S.toast = null; const t = $screen.querySelector(".toast"); if (t) t.remove(); }, 2200); }
+function isDark() { const a = document.documentElement.getAttribute("data-theme"); return a ? a === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; }
+function toggleTheme() { const t = isDark() ? "light" : "dark"; document.documentElement.setAttribute("data-theme", t); store.set("theme", t); render(true); }
+function chime() { try { const c = new (window.AudioContext || window.webkitAudioContext)(); [880, 1320].forEach((f, i) => { const o = c.createOscillator(), g = c.createGain(); o.frequency.value = f; o.type = "sine"; g.gain.setValueAtTime(0.0001, c.currentTime + i * .14); g.gain.exponentialRampToValueAtTime(0.2, c.currentTime + i * .14 + .02); g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + i * .14 + .35); o.connect(g).connect(c.destination); o.start(c.currentTime + i * .14); o.stop(c.currentTime + i * .14 + .4); }); } catch (e) {} }
+function addRecent(q) { q = q.trim(); if (!q) return; S.recent = [q, ...S.recent.filter(x => x !== q)].slice(0, 5); store.set("recent", S.recent); }
+
+/* ================= Events ================= */
+const SEL = "[data-act],[data-go],[data-ago],[data-q],[data-tab],[data-rtype],[data-pf],[data-etab],[data-status],[data-ptype],[data-gap],[data-corder],[data-ctoggle],[data-ntoggle],[data-ndel],[data-rf],[data-rset],[data-rdel],[data-ttoggle],[data-perm],[data-sec],[data-stoggle],[data-remday]";
+$screen.addEventListener("click", e => {
+  const el = e.target.closest(SEL); if (!el || el.disabled) return;
+  const d = el.dataset, id = d.id ? +d.id : undefined;
+  if (el.tagName === "BUTTON" && el.form && !el.type) {/* form buttons handled by submit */}
+  if (d.go) { e.preventDefault(); return go(d.go, id !== undefined ? { id: d.go === "category" ? d.id : id } : {}); }
+  if (d.ago) { e.preventDefault(); const p = {}; if (id) p.id = id; if (d.tab) p.tab = d.tab; if (d.pf) p.f = d.pf; return go(d.ago, p, "admin"); }
+  if (d.q !== undefined) { const i = document.getElementById("search-q"); if (i) { i.value = d.q; addRecent(d.q); renderResults(); } return; }
+  if (d.tab) { S.params.tab = d.tab; return render(true); }
+  if (d.rtype) { el.parentElement.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c === el)); return; }
+  if (d.pf) { S.params.f = d.pf; return render(true); }
+  if (d.etab) { S.params.tab = d.etab; return render(); }
+  if (d.status) { const p = postById(d.id); if (p) p.status = d.status; else el.parentElement.querySelectorAll(".chip").forEach(c => c.classList.toggle("on", c === el)); return p ? render(true) : null; }
+  if (d.ptype) { const p = postById(d.id); if (!p) return toast("আগে পোস্টটি সেভ করুন"); if (d.ptype === "none") delete p.promo; else { p.promo = p.promo || { on: true, startAt: Date.now() - HOUR, endAt: Date.now() + 7 * DAY, priority: 1, max: 3 }; p.promo.type = d.ptype; } return render(true); }
+  if (d.gap) { S.settings.gap = d.gap === "custom" ? "custom" : +d.gap; saveSettings(); return render(true); }
+  if (d.corder !== undefined) { const i = +d.corder, j = i + +d.dir; if (j < 0 || j >= CATS.length) return; [CATS[i], CATS[j]] = [CATS[j], CATS[i]]; return render(true); }
+  if (d.ctoggle !== undefined) { CATS[+d.ctoggle].on = !CATS[+d.ctoggle].on; return render(true); }
+  if (d.ntoggle) { const n = NOTICES.find(x => x.id === +d.ntoggle); n.on = !n.on; return render(true); }
+  if (d.ndel) { NOTICES = NOTICES.filter(x => x.id !== +d.ndel); return toast("নোটিশ মুছে ফেলা হয়েছে"); }
+  if (d.rf) { S.params.f = d.rf; return render(true); }
+  if (d.rset) { REPORTS.find(r => r.id === +d.rset).status = d.s; return toast(d.s === "resolved" ? "রিপোর্ট সমাধান হিসেবে চিহ্নিত" : "রিভিউ শুরু হয়েছে"); }
+  if (d.rdel) { REPORTS = REPORTS.filter(r => r.id !== +d.rdel); return toast("রিপোর্ট মুছে ফেলা হয়েছে"); }
+  if (d.ttoggle) { const t = TEAM.find(x => x.id === +d.ttoggle); t.on = !t.on; if (!t.on && S.me === t.id) S.me = 1; return render(true); }
+  if (d.perm) { const t = TEAM.find(x => x.id === +d.uid); t.perms = t.perms.includes(d.perm) ? t.perms.filter(x => x !== d.perm) : [...t.perms, d.perm]; return render(true); }
+  if (d.sec) { S.params.sec = d.sec; return render(true); }
+  if (d.stoggle) { S.settings[d.stoggle] = !S.settings[d.stoggle]; saveSettings(); return render(true); }
+  if (d.remday !== undefined) { const n = +d.remday; if (n) S.reminders[id] = n; else delete S.reminders[id]; store.set("rem", S.reminders); if (!n) S.overlay = null; return toast(n ? `শেষ তারিখের ${bn(n)} দিন আগে মনে করিয়ে দেব` : "রিমাইন্ডার বন্ধ করা হয়েছে"); }
+
+  switch (d.act) {
+    case "back": if (pushed > 0) { try { history.back(); return; } catch (err) {} } return back();
+    case "drawer": S.overlay = { type: "drawer" }; return render(true);
+    case "adrawer": S.overlay = { type: "adrawer" }; return render(true);
+    case "close": S.overlay = null; return render(true);
+    case "theme": return toggleTheme();
+    case "share": S.overlay = { type: "share", id }; return render(true);
+    case "save": { e.stopPropagation(); const on = S.saved.includes(id); S.saved = on ? S.saved.filter(x => x !== id) : [id, ...S.saved]; store.set("saved", S.saved); return toast(on ? "সেভ থেকে সরানো হয়েছে" : "চাকরিটি সেভ করা হয়েছে"); }
+    case "remind": if (S.screen === "saved") { if (S.reminders[id]) delete S.reminders[id]; else S.reminders[id] = 3; store.set("rem", S.reminders); return toast(S.reminders[id] ? "শেষ তারিখের ৩ দিন আগে মনে করিয়ে দেব" : "রিমাইন্ডার বন্ধ"); } S.overlay = { type: "remind", id }; return render(true);
+    case "copy-link": { const u = d.url; S.overlay = null; const done = () => toast("লিংক কপি হয়েছে"); try { navigator.clipboard.writeText(u).then(done, done); } catch (err) { done(); } return; }
+    case "copy-email": { const done = () => toast("ইমেইল কপি হয়েছে"); try { navigator.clipboard.writeText(S.settings.email).then(done, done); } catch (err) { done(); } return; }
+    case "toast": S.overlay = null; return toast(d.msg);
+    case "pdf": return toast("PDF নতুন ট্যাবে খুলছে");
+    case "install": return toast("হোম স্ক্রিনে যোগ করা হচ্ছে");
+    case "unsub": S.subscribed = false; store.set("sub", false); return toast("আনসাবস্ক্রাইব করা হয়েছে");
+    case "push-yes": S.pushAsked = true; store.set("push", true); S.overlay = null; return toast("নোটিফিকেশন চালু হয়েছে");
+    case "push-no": S.pushAsked = true; store.set("push", true); S.overlay = null; return render(true);
+    case "sound": S.noticeSound = !S.noticeSound; store.set("snd", S.noticeSound); if (S.noticeSound) chime(); return render(true);
+    case "clear-recent": S.recent = []; store.set("recent", []); return renderResults();
+    case "retry": return toast("এখনো কাজ চলছে, একটু পরে চেষ্টা করুন");
+    case "peek": S.peek = true; return render();
+    case "glogin": S.loggedIn = true; store.set("login", true); S.screen = "dashboard"; return render();
+    case "logout": S.loggedIn = false; store.set("login", false); S.overlay = null; S.stack = []; return render();
+    case "viewsite": S.peek = false; return go("home", {}, "public");
+    case "trash": { const p = postById(id); p.status = "trash"; return toast("পোস্ট ট্র্যাশে সরানো হয়েছে"); }
+    case "savepost": toast(id ? "পোস্ট আপডেট হয়েছে" : "ড্রাফট সেভ হয়েছে"); return;
+    case "ptoggle": { const p = postById(id); if (p && p.promo) p.promo.on = !p.promo.on; return render(true); }
+    case "nexp": S.settings.noticeExpiry = !S.settings.noticeExpiry; saveSettings(); return render(true);
+    case "ndelexp": NOTICES = NOTICES.filter(n => n.at + n.exp * DAY > Date.now()); return toast("মেয়াদোত্তীর্ণ নোটিশ মুছে ফেলা হয়েছে");
+    case "addnotice": NOTICES.unshift({ id: Date.now(), title: "ডিসেম্বর মাসের নিয়োগ পরীক্ষার সমন্বিত সময়সূচি", at: Date.now(), exp: 10, icon: "megaphone", tone: "blue", on: true }); if (S.noticeSound) chime(); return toast("নতুন নোটিশ প্রকাশিত হয়েছে");
+    case "adduser": return toast("আমন্ত্রণ ইমেইল পাঠানোর ফর্ম খুলছে");
+    case "autotoggle": S.auto.on = !S.auto.on; logLine(S.auto.on ? "শিডিউলার চালু করা হয়েছে" : "শিডিউলার বন্ধ করা হয়েছে", S.auto.on ? "ok" : "warn"); return render(true);
+    case "autorun": return autoRun();
+    case "autostop": if (S.auto.running) { S.auto.running = false; clearInterval(autoTimer); logLine("রান মাঝপথে বন্ধ করা হয়েছে", "err"); } else { S.auto.on = false; logLine("শিডিউলার বন্ধ করা হয়েছে", "warn"); } return render(true);
+    case "savesettings": saveSettings(); return toast("সেটিংস সেভ হয়েছে · সাইটে আপডেট হয়েছে");
+  }
+});
+$screen.addEventListener("keydown", e => { if (e.key === "Enter" && e.target.matches('[role="link"]')) e.target.click(); if (e.key === "Escape" && S.overlay && S.overlay.type !== "push") { S.overlay = null; render(true); } });
+$screen.addEventListener("submit", e => {
+  e.preventDefault();
+  const f = e.target.dataset.form;
+  if (f === "search") { const q = e.target.q.value.trim(); addRecent(q); if (S.screen === "search") { S.params.q = q; renderResults(); render(true); } else go("search", { q }); }
+  if (f === "sub") { S.subscribed = true; store.set("sub", true); toast("সাবস্ক্রাইব সম্পন্ন · ইমেইল যাচাই করুন"); }
+  if (f === "login") { S.loggedIn = true; store.set("login", true); S.screen = "dashboard"; render(); }
+  if (f === "report") {
+    const desc = document.getElementById("r-desc").value.trim(), hint = document.getElementById("r-hint");
+    if (document.getElementById("r-web").value) return; // honeypot: silently ignore bots
+    if (S.reportLock > Date.now()) return;
+    if (desc.length < 15) { hint.textContent = "অনুগ্রহ করে কমপক্ষে ১৫ অক্ষরে সমস্যাটি লিখুন"; hint.style.color = "var(--red)"; document.getElementById("r-desc").focus(); return; }
+    const type = (document.querySelector("#rtype .chip.on") || {}).dataset?.rtype || "অন্যান্য";
+    REPORTS.unshift({ id: Date.now(), type, post: S.params.id || 1, msg: desc, at: Date.now(), status: "new" });
+    S.reportLock = Date.now() + 60e3; setTimeout(() => { if (S.screen === "report") render(true); }, 60e3);
+    toast("ধন্যবাদ! রিপোর্ট জমা হয়েছে");
+  }
+});
+let qTimer;
+$screen.addEventListener("input", e => {
+  const t = e.target;
+  if (t.id === "search-q") { clearTimeout(qTimer); qTimer = setTimeout(renderResults, 180); }
+  if (t.id === "ap-q") { const q = t.value.trim(); document.querySelectorAll("#ap-list .arow").forEach(r => r.hidden = q && !r.dataset.title.includes(q)); }
+  if (t.dataset.skey) S.settings[t.dataset.skey] = t.value;
+  if (t.id === "gap-custom") { S.settings.gapCustom = Math.max(2, Math.min(20, +t.value || 5)); saveSettings(); const pv = document.querySelector(".preview"); if (pv) { clearTimeout(qTimer); qTimer = setTimeout(() => render(true), 400); } }
+});
+$screen.addEventListener("change", e => {
+  if (e.target.matches("[data-filter]") && S.screen === "search") renderResults();
+  if (e.target.id === "as-user") { S.me = +e.target.value; render(true); }
+});
+
+/* Live countdown on the details screen */
+setInterval(() => { if (S.mode === "public" && S.screen === "detail") { const c = document.getElementById("countdown"), p = postById(S.params.id); if (c && p) c.innerHTML = countdownHTML(p); } }, 1000);
+
+/* ================= Showcase index + spec ================= */
+const INDEX = {
+  public: [["home", "হোম"], ["categories", "ক্যাটাগরি"], ["category", "ক্যাটাগরির পোস্ট", { id: "govt" }], ["search", "খুঁজুন"], ["trending", "ট্রেন্ডিং"], ["detail", "পোস্ট ডিটেইল", { id: 1 }], ["notice", "নোটিশ"], ["report", "রিপোর্ট", { id: 6 }], ["saved", "সেভ করা চাকরি"], ["about", "আমাদের সম্পর্কে"], ["notfound", "৪০৪"], ["maintenance", "মেইনটেন্যান্স", { preview: 1 }], ["@drawer", "মেনু (ড্রয়ার)"], ["@share", "শেয়ার পপআপ"], ["@push", "পুশ নোটিফিকেশন"], ["@remind", "ডেডলাইন রিমাইন্ডার"]],
+  admin: [["login", "লগইন"], ["dashboard", "ড্যাশবোর্ড"], ["posts", "পোস্ট তালিকা"], ["editor", "পোস্ট এডিটর", { id: 1 }], ["promotions", "প্রমোশন"], ["categories", "ক্যাটাগরি"], ["notices", "নোটিশ"], ["reports", "রিপোর্ট"], ["automation", "অটোমেশন"], ["team", "টিম ও পারমিশন"], ["analytics", "অ্যানালিটিক্স"], ["settings", "সেটিংস"], ["profile", "প্রোফাইল"], ["@adrawer", "মেনু (ড্রয়ার)"]]
+};
+function renderIndex() {
+  const list = INDEX[S.mode];
+  const cur = S.overlay ? "@" + S.overlay.type : (S.mode === "admin" && !S.loggedIn ? "login" : S.screen);
+  document.getElementById("index").innerHTML = `
+    <div class="brandline">${logoMark(38)}<div><b>চাকরি সার্কুলার</b><small>UI প্রোটোটাইপ · মোবাইল-ফার্স্ট</small></div></div>
+    <div class="mode" role="tablist"><button class="${S.mode === "public" ? "on" : ""}" data-mode="public">পাবলিক সাইট</button><button class="${S.mode === "admin" ? "on" : ""}" data-mode="admin">অ্যাডমিন</button></div>
+    <h4>${S.mode === "public" ? "পাবলিক স্ক্রিন" : "অ্যাডমিন স্ক্রিন"}</h4>
+    <ul>${list.map(([k, l], i) => `<li><button class="${cur === k ? "on" : ""}" data-idx="${i}">${l}<span class="num">${bn(i + 1)}</span></button></li>`).join("")}</ul>
+    <button class="themebtn" data-idx-theme>${I(isDark() ? "sun" : "moon")}${isDark() ? "লাইট মোড" : "ডার্ক মোড"}</button>`;
+}
+document.getElementById("index").addEventListener("click", e => {
+  const m = e.target.closest("[data-mode]"), x = e.target.closest("[data-idx]"), th = e.target.closest("[data-idx-theme]");
+  if (th) return toggleTheme();
+  if (m) { S.mode = m.dataset.mode; S.stack = []; S.overlay = null; S.params = {}; S.screen = S.mode === "admin" ? "dashboard" : "home"; return render(); }
+  if (x) {
+    const [k, , params] = INDEX[S.mode][+x.dataset.idx];
+    S.overlay = null;
+    if (k === "login") { S.loggedIn = false; S.screen = "dashboard"; return render(); }
+    if (S.mode === "admin" && !S.loggedIn) { S.loggedIn = true; store.set("login", true); }
+    if (k[0] === "@") {
+      const type = k.slice(1);
+      if (type === "share" || type === "remind") { S.screen = "detail"; S.params = { id: 1 }; }
+      S.overlay = { type, id: 1 }; return render();
+    }
+    S.stack.push({ mode: S.mode, screen: S.screen, params: S.params });
+    S.screen = k; S.params = Object.assign({}, params || {}); if (k !== "maintenance") S.peek = false; render();
+  }
+});
+
+const SPEC = {
+  home: ["হোম", ["হিরোতে শুধু ট্যাগলাইন ও সার্চ, কোনো ব্যানার নেই", "সর্বশেষ আপডেটে প্রতি {gap}টি পোস্ট পরপর একটি প্রমোটেড/প্রিমিয়াম পোস্ট বসে", "ইমেইল সাবস্ক্রিপশন, PWA ইনস্টল কার্ড ও ফুটার নিচে"], ["Organization", "WebSite + SearchAction"]],
+  latest: ["সর্বশেষ আপডেট", ["ইনফিনিট স্ক্রলে পরের পেজ AJAX-এ আসে", "প্রমোশন গ্যাপ পুরো ফিড জুড়ে বজায় থাকে"], ["BreadcrumbList"]],
+  categories: ["ক্যাটাগরি", ["অ্যাডমিন থেকে ক্রম, আইকন ও চালু/বন্ধ নিয়ন্ত্রিত"], ["BreadcrumbList"]],
+  category: ["ক্যাটাগরির পোস্ট", ["বাংলা স্লাগ: /ক্যাটাগরি/সরকারি-চাকরি", "একই জব-কার্ড ডিজাইন"], ["BreadcrumbList", "CollectionPage"]],
+  search: ["খুঁজুন", ["টাইপ করলেই ফলাফল, পেজ রিলোড ছাড়া (১৮০ms debounce)", "ক্যাটাগরি, বিভাগ, জেলা ও তারিখ ফিল্টার", "সাম্প্রতিক অনুসন্ধান ডিভাইসে সংরক্ষিত"], ["SearchResultsPage"]],
+  trending: ["ট্রেন্ডিং", ["গত ২৪ ঘণ্টার ভিউ অনুযায়ী র‍্যাংকিং", "প্রথম তিনটি আলাদা রঙে"], ["ItemList"]],
+  detail: ["পোস্ট ডিটেইল", ["লাইভ কাউন্টডাউন প্রতি সেকেন্ডে আপডেট; শেষ হলে “সময় শেষ”", "৪ দিনের কম বাকি থাকলে লাল, বেশি থাকলে সবুজ", "শেয়ার, সেভ, রিমাইন্ডার ও রিপোর্ট এক জায়গায়"], ["JobPosting", "BreadcrumbList", "Open Graph"]],
+  notice: ["নোটিশ", ["২৪ ঘণ্টার কম পুরোনো হলে “নতুন” ব্যাজ", "মেয়াদ শেষে অ্যাডমিন সেটিং অনুযায়ী স্বয়ংক্রিয়ভাবে সরে যায়", "ঐচ্ছিক নোটিফিকেশন সাউন্ড"], ["NewsArticle"]],
+  report: ["রিপোর্ট", ["Honeypot ফিল্ড + প্রতি ডিভাইস ১ মিনিটে ১টি রিপোর্ট", "সার্ভারে IP-ভিত্তিক rate limit"], []],
+  saved: ["সেভ করা চাকরি", ["ডিভাইসে সংরক্ষিত, লগইন লাগে না", "প্রতি পোস্টে ডেডলাইন রিমাইন্ডার (পুশ নোটিফিকেশন)"], []],
+  notfound: ["৪০৪", ["সঠিক 404 স্ট্যাটাস কোড, noindex"], []],
+  maintenance: ["মেইনটেন্যান্স", ["503 + Retry-After হেডার", "লগইন করা অ্যাডমিন আসল সাইট দেখতে পারেন"], []],
+  promotions: ["প্রমোশন", ["আলাদা বিজ্ঞাপন নেই; বিদ্যমান পোস্টই প্রমোশন", "গ্যাপ বদলালে ফিড প্রিভিউ ও পাবলিক সাইট সঙ্গে সঙ্গে বদলায়", "মেয়াদ শেষে পোস্ট সাধারণ পোস্টে ফিরে যায়", "প্রতি পেজে সর্বোচ্চ প্রদর্শন সীমা"], []],
+  automation: ["অটোমেশন", ["Source → Check Duplicate → OpenAI → Rewrite → Draft → Admin Review", "AI কনটেন্ট কখনো নিজে প্রকাশ হয় না", "In-app scheduler, ঐচ্ছিক cron", "লগ SSE দিয়ে লাইভ আপডেট"], []],
+  team: ["টিম ও পারমিশন", ["রোল-ভিত্তিক অ্যাক্সেস (RBAC)", "উপরের “লগইন” ড্রপডাউন থেকে মডারেটর হিসেবে দেখে মেনু পরীক্ষা করুন"], []]
+};
+const PERF = ["একটি Node.js প্রসেস (Hostinger shared hosting)", "AJAX নেভিগেশন + History API (ব্যাক/ফরোয়ার্ড কাজ করে)", "লিংকে hover/touch-এ prefetch", "lazy loading ও WebP ইমেজ, srcset", "ক্রিটিক্যাল CSS inline, JS < ৩০ KB"];
+function renderSpec() {
+  const s = SPEC[S.screen] || [S.mode === "admin" ? "অ্যাডমিন প্যানেল" : "পাবলিক পেজ", ["পাবলিক সাইটের একই ব্র্যান্ড, ড্যাশবোর্ড-ধাঁচের লেআউট"], []];
+  const p = postById(S.params.id) || POSTS[0];
+  const ld = S.mode === "public" && S.screen === "detail" ? JSON.stringify({ "@context": "https://schema.org", "@type": "JobPosting", title: p.title, hiringOrganization: { "@type": "Organization", name: p.org }, datePosted: new Date(p.postedAt).toISOString().slice(0, 10), validThrough: new Date(p.endAt).toISOString(), employmentType: "FULL_TIME", jobLocation: { "@type": "Place", address: { "@type": "PostalAddress", addressRegion: p.div, addressCountry: "BD" } }, url: "https://cakricircular.com/চাকরি/" + p.slug }, null, 2) : "";
+  document.getElementById("spec").innerHTML = `
+    <section><h3>${s[0]}</h3><ul>${s[1].map(x => `<li>${x.replace("{gap}", bn(gapVal()))}</li>`).join("")}</ul>${s[2].length ? `<div class="chiprow" style="margin-top:10px">${s[2].map(x => `<code>${x}</code>`).join("")}</div>` : ""}${ld ? `<pre>${esc(ld)}</pre>` : ""}</section>
+    <section><h3>প্রমোশন ইঞ্জিন</h3><p>বর্তমান গ্যাপ: প্রতি <b>${bn(gapVal())}</b>টি সাধারণ পোস্টের পর ১টি প্রমোশনাল পোস্ট। সক্রিয় প্রমোশন: ${bn(POSTS.filter(x => promoActive(x)).length)}টি। অ্যাডমিন &gt; প্রমোশন থেকে বদলান।</p></section>
+    <section><h3>পারফরম্যান্স</h3><ul>${PERF.map(x => `<li>${x}</li>`).join("")}</ul></section>
+    <section><h3>SEO</h3><div class="chiprow">${["Organization", "WebSite", "JobPosting", "NewsArticle", "BreadcrumbList", "sitemap.xml", "robots.txt", "canonical", "Open Graph", "Twitter Card"].map(x => `<code>${x}</code>`).join("")}</div></section>`;
+}
+
+/* ================= Boot ================= */
+(() => { const t = store.get("theme", null); if (t) document.documentElement.setAttribute("data-theme", t); })();
+if (location.hash === "#admin") { S.mode = "admin"; S.screen = "dashboard"; }
+render();
+setTimeout(() => { if (!S.pushAsked && S.mode === "public" && !S.overlay && S.screen === "home") { S.overlay = { type: "push" }; render(true); } }, 2500);
+</script>
+</body>
+</html>
