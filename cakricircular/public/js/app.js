@@ -345,7 +345,12 @@
     if (f.matches('[data-subscribe]')) {
       e.preventDefault();
       fetch('/api/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: f.email.value }) })
-        .then(function (r) { return r.json(); }).then(function (d) { toast(d.ok ? d.message : d.error, !d.ok); if (d.ok) f.reset(); })
+        .then(function (r) { return r.json(); }).then(function (d) {
+          toast(d.ok ? d.message : d.error, !d.ok);
+          if (!d.ok) return;
+          f.reset(); store('cc_email_sub', Date.now());
+          if (f.hasAttribute('data-sub-modal')) { store('cc_push_asked', Date.now()); closeEl($('#pushModal')); }
+        })
         .catch(function () { toast('ইন্টারনেট সংযোগ পরীক্ষা করুন', true); });
     }
   });
@@ -451,9 +456,14 @@
     var out = new Uint8Array(raw.length); for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i); return out;
   }
     function pushSupported() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && CC.vapid && CC.push; }
-  function showPushPrompt() {
-    if (!pushSupported() || Notification.permission !== 'default') return;
-    openEl($('#pushModal'));
+  function canPush() { return pushSupported() && Notification.permission === 'default'; }
+  /** auto: only when there is something to offer (push not decided yet, or no push support and no email yet). */
+  function showPushPrompt(force) {
+    var m = $('#pushModal'); if (!m) return;
+    var push = canPush();
+    if (!force && !push && (pushSupported() || store('cc_email_sub'))) return;
+    m.classList.toggle('no-push', !push);
+    openEl(m);
   }
   function subscribePush() {
     store('cc_push_asked', Date.now());
@@ -479,10 +489,9 @@
     if (e.target.closest('[data-push-allow]')) subscribePush();
     if (e.target.closest('[data-push-later]')) { store('cc_push_asked', Date.now()); closeEl($('#pushModal')); }
     if (e.target.closest('[data-push-ask]')) {
-      if (!pushSupported()) return toast('এই ব্রাউজারে নোটিফিকেশন সমর্থিত নয়', true);
-      if (Notification.permission === 'granted') { syncPushSaved(); return toast('নোটিফিকেশন ইতিমধ্যে চালু আছে ✓'); }
-      if (Notification.permission === 'denied') return toast('ব্রাউজার সেটিংস থেকে নোটিফিকেশন অনুমতি দিন', true);
-      openEl($('#pushModal'));
+      if (pushSupported() && Notification.permission === 'granted') { syncPushSaved(); return toast('নোটিফিকেশন ইতিমধ্যে চালু আছে ✓'); }
+      if (pushSupported() && Notification.permission === 'denied') toast('ব্রাউজার সেটিংস থেকে নোটিফিকেশন অনুমতি দিন — অথবা ইমেইলে পান', true);
+      showPushPrompt(true);
     }
   });
   function maybeAskPush() {
@@ -495,11 +504,22 @@
   var deferredInstall = null;
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferredInstall = e; $$('[data-install]').forEach(function (b) { b.hidden = false; }); });
   window.addEventListener('appinstalled', function () { toast('অ্যাপ ইনস্টল হয়েছে ✓'); var c = $('#installCard'); if (c) c.hidden = true; });
+  function openInstall() {
+    var sh = $('#installSheet'); if (!sh) return;
+    var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    $('.is-ios', sh).hidden = !ios || !!deferredInstall;
+    $('.is-other', sh).hidden = ios || !!deferredInstall;
+    $('[data-install-go]', sh).hidden = !deferredInstall;
+    closeEl($('#drawer'));
+    openEl(sh);
+  }
   document.addEventListener('click', function (e) {
-    if (!e.target.closest('[data-install]')) return;
-    if (deferredInstall) { deferredInstall.prompt(); deferredInstall.userChoice.finally(function () { deferredInstall = null; }); }
-    else if (/iphone|ipad|ipod/i.test(navigator.userAgent)) toast('Safari তে শেয়ার বাটন → "Add to Home Screen" চাপুন');
-    else toast('ব্রাউজারের মেনু থেকে "Install app" / "Add to Home screen" চাপুন');
+    if (e.target.closest('[data-install-go]')) {
+      closeEl($('#installSheet'));
+      if (deferredInstall) { deferredInstall.prompt(); deferredInstall.userChoice.finally(function () { deferredInstall = null; }); }
+      return;
+    }
+    if (e.target.closest('[data-install]')) openInstall();
   });
   if (window.matchMedia('(display-mode: standalone)').matches) { var ic = $('#installCard'); if (ic) ic.hidden = true; }
 
@@ -572,5 +592,5 @@
     });
   }
   maybeAskPush();
-  window.CCApp = { navigate: navigate, toast: toast };
+  window.CCApp = { navigate: navigate, toast: toast, openInstall: openInstall, showPushPrompt: showPushPrompt };
 })();

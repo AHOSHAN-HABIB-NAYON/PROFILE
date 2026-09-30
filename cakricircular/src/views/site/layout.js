@@ -34,7 +34,7 @@ function socials() {
 function brand(tag = 'div') {
   return raw(`<${tag} class="brand-wrap"><a href="/" class="brand" aria-label="${esc(settings.get('site_name'))}">
   <img src="${esc(logoUrl())}" alt="" width="40" height="40" class="brand-logo">
-  <span class="brand-txt"><b>${esc(settings.get('site_name'))}</b><small>${esc(settings.get('site_domain'))}</small></span>
+  <span class="brand-txt"><b>${esc(settings.get('site_name'))}</b><small>${esc(settings.get('tagline') || settings.get('site_domain'))}</small></span>
 </a></${tag}>`);
 }
 
@@ -170,12 +170,60 @@ function searchSheet(s) {
 function pushPrompt() {
   return html`<div class="modal" id="pushModal" aria-hidden="true">
   <div class="modal-bg" data-push-later></div>
-  <div class="modal-panel push-panel" role="dialog" aria-label="নোটিফিকেশন">
-    <div class="bell-anim">${raw(icon('bell'))}</div>
-    <h3>নতুন চাকরির নোটিফিকেশন পেতে চান?</h3>
-    <p>সর্বশেষ চাকরি, নোটিশ ও আপডেট পেতে নোটিফিকেশন চালু করুন। সেভ করা জবের ডেডলাইনের আগে মনে করিয়ে দেব।</p>
-    <button class="btn btn-primary btn-block" type="button" data-push-allow>Allow</button>
-    <button class="btn btn-outline btn-block" type="button" data-push-later>না, পরে</button>
+  <div class="modal-panel push-panel" role="dialog" aria-labelledby="pushTitle">
+    <button class="icon-btn pp-x" type="button" data-push-later aria-label="বন্ধ">${raw(icon('x'))}</button>
+    <div class="pp-art" aria-hidden="true"><span class="pp-ring"></span><span class="pp-ring r2"></span><span class="pp-bell">${raw(icon('bell'))}</span><span class="pp-badge">১</span></div>
+    <h3 id="pushTitle">নতুন চাকরির খবর সবার আগে পান</h3>
+    <p class="pp-sub">নতুন বিজ্ঞপ্তি প্রকাশ হলেই আমরা আপনাকে জানিয়ে দেব — কোনো অ্যাপ লাগবে না।</p>
+    <ul class="pp-list">
+      <li><span>${raw(icon('zap'))}</span>নতুন সার্কুলার এলেই সাথে সাথে নোটিফিকেশন</li>
+      <li><span>${raw(icon('clock'))}</span>সেভ করা জবের শেষ তারিখের আগে রিমাইন্ডার</li>
+      <li><span>${raw(icon('shield'))}</span>স্প্যাম নেই — যেকোনো সময় বন্ধ করা যায়</li>
+    </ul>
+    <div class="pp-push"><button class="btn btn-primary btn-block btn-lg" type="button" data-push-allow>${raw(icon('bell'))}নোটিফিকেশন চালু করুন</button>
+      <div class="pp-or"><span>অথবা ইমেইলে পান</span></div></div>
+    <form class="pp-mail" data-subscribe data-sub-modal>
+      <label class="sr" for="ppEmail">ইমেইল</label>
+      <div class="pp-mail-row">${raw(icon('mail'))}<input id="ppEmail" type="email" name="email" placeholder="আপনার ইমেইল দিন" required autocomplete="email" inputmode="email"><button class="btn btn-soft" type="submit">${raw(icon('send'))}<span>জানাবেন</span></button></div>
+      <small>ইমেইল দিলে প্রতিদিনের নতুন চাকরির সারসংক্ষেপ আমরা পাঠিয়ে দেব।</small>
+    </form>
+    <button class="pp-later" type="button" data-push-later>এখন না</button>
+  </div>
+</div>`;
+}
+
+function installSheet() {
+  const name = settings.get('app_name') || settings.get('site_name');
+  const shots = [['screenshots/mobile-home.png', 'হোম'], ['screenshots/mobile-post.png', 'পোস্ট'], ['screenshots/mobile-search.png', 'খুঁজুন']];
+  return html`<div class="sheet" id="installSheet" aria-hidden="true">
+  <div class="sheet-bg" data-sheet-close></div>
+  <div class="sheet-panel install-panel" role="dialog" aria-label="অ্যাপ ইনস্টল করুন">
+    <div class="sheet-grip"></div>
+    <div class="is-head">
+      <img src="${asset('icons/icon-192.png')}" alt="" width="64" height="64" class="is-icon">
+      <div><h3>${name}</h3><small>${settings.get('site_domain') || ''} · সম্পূর্ণ বিনামূল্যে</small>
+        <div class="is-chips"><span>${raw(icon('zap'))}দ্রুত</span><span>${raw(icon('wifiOff'))}অফলাইনে</span><span>${raw(icon('bell'))}নোটিফিকেশন</span></div></div>
+      <button class="icon-btn" type="button" data-sheet-close aria-label="বন্ধ">${raw(icon('x'))}</button>
+    </div>
+    <div class="is-shots" tabindex="0" aria-label="অ্যাপের ছবি">${shots.map(([src, t]) => html`<figure><img src="${asset(src)}" alt="${t}" loading="lazy" width="540" height="1170"><figcaption>${t}</figcaption></figure>`)}</div>
+    <ul class="is-feat">
+      <li>${raw(icon('home'))}<span><b>হোম স্ক্রিনে এক ট্যাপে</b><small>ব্রাউজার খুঁজতে হবে না, অ্যাপের মতো খোলে</small></span></li>
+      <li>${raw(icon('bell'))}<span><b>নতুন চাকরির নোটিফিকেশন</b><small>সার্কুলার এলেই জানিয়ে দেব</small></span></li>
+      <li>${raw(icon('bookmark'))}<span><b>সেভ করা জব অফলাইনেও</b><small>নেট না থাকলেও পড়তে পারবেন</small></span></li>
+    </ul>
+    <div class="is-ios" hidden>
+      <b>iPhone / iPad এ ইনস্টল করুন</b>
+      <ol>
+        <li><span class="n">১</span>নিচের ${raw(`<span class="ios-ic">${icon('shareIos')}</span>`)} <b>শেয়ার</b> বাটনে চাপুন</li>
+        <li><span class="n">২</span><b>“Add to Home Screen”</b> ${raw(`<span class="ios-ic">${icon('plusSquare')}</span>`)} বেছে নিন</li>
+        <li><span class="n">৩</span>উপরে ডানে <b>“Add”</b> চাপুন — ব্যাস!</li>
+      </ol>
+    </div>
+    <div class="is-other" hidden><b>ইনস্টল করতে</b><p>ব্রাউজারের মেনু ${raw(`<span class="ios-ic">${icon('more')}</span>`)} থেকে <b>“Install app”</b> বা <b>“Add to Home screen”</b> চাপুন।</p></div>
+    <div class="is-actions">
+      <button class="btn btn-primary btn-lg btn-block" type="button" data-install-go>${raw(icon('download'))}ইনস্টল করুন</button>
+      <button class="btn btn-soft btn-block" type="button" data-sheet-close>এখন না</button>
+    </div>
   </div>
 </div>`;
 }
@@ -233,6 +281,7 @@ ${bottomNav()}
 ${shareSheet()}
 ${searchSheet(s)}
 ${pushPrompt()}
+${installSheet()}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>window.__CC=${raw(jsonForScript(boot))}</script>
 <script src="${asset('js/app.js')}" defer></script>

@@ -81,6 +81,32 @@ async function sideCtx() {
   return { notices, trending, ads };
 }
 
+/* ---------- old PHP-site URLs → new ones (permanent, keeps Google rankings) ---------- */
+router.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+  const host = String(req.headers.host || '');
+  // www.domain → domain (the old .htaccess did the same)
+  if (/^www\./i.test(host) && settings.get('site_domain') && !/^www\./i.test(settings.get('site_domain'))) {
+    return res.redirect(301, `https://${host.replace(/^www\./i, '')}${req.originalUrl}`);
+  }
+  if (String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim() === 'http' && settings.get('site_domain') && host.includes(settings.get('site_domain'))) {
+    return res.redirect(301, `https://${host}${req.originalUrl}`);
+  }
+  let p = req.path;
+  const qs = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?') + 1) : '';
+  const params = new URLSearchParams(qs);
+  let changed = false;
+  if (/\.php$/i.test(p)) { p = p.replace(/(index)?\.php$/i, '') || '/'; changed = true; }
+  const pg = p.match(/^(.*?)\/page\/(\d+)\/?$/);
+  if (pg) { p = pg[1] || '/'; if (Number(pg[2]) > 1) params.set('page', pg[2]); else params.delete('page'); changed = true; }
+  if (p === '/' && params.get('page') && Number(params.get('page')) > 1) { p = '/posts'; changed = true; }
+  if (p === '/promoted') { p = '/premium'; changed = true; }
+  if (p === '/about' || p === '/privacy') { p = `/page/${p.slice(1)}`; changed = true; }
+  if (!changed) return next();
+  const q = params.toString();
+  return res.redirect(301, p + (q ? `?${q}` : ''));
+});
+
 /* ---------- pages ---------- */
 router.get('/', cached(async (req) => {
   const [latestRaw, promos, banners, cats, total, today, side] = await Promise.all([
