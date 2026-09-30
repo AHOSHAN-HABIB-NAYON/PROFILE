@@ -6,6 +6,8 @@ import mysql from 'mysql2/promise';
 import { config } from './config.js';
 
 let pool;
+/** সর্বশেষ চলা কোয়েরি — স্টার্টআপ আটকে গেলে পাতায় দেখানো হয় */
+export const dbState = { last: '', at: 0, connects: 0 };
 
 export function getPool() {
   if (pool) return pool;
@@ -16,6 +18,7 @@ export function getPool() {
     password: config.db.password,
     database: config.db.database,
     charset: 'utf8mb4',
+    connectTimeout: 15000,
     waitForConnections: true,
     connectionLimit: config.db.pool,
     queueLimit: 200,
@@ -32,6 +35,7 @@ export function getPool() {
 
 /** সব সারি */
 export async function all(sql, args = []) {
+  dbState.last = String(sql).replace(/\s+/g, ' ').slice(0, 110); dbState.at = Date.now();
   const [rows] = await getPool().query(sql, args);
   return rows;
 }
