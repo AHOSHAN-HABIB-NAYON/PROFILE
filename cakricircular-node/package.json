@@ -10,6 +10,7 @@
   },
   "scripts": {
     "start": "node server.js",
+    "build": "node -e \"console.log('কোনো বিল্ড লাগে না')\"",
     "dev": "node --watch server.js",
     "test": "node --test test/app.test.js",
     "migrate": "node scripts/migrate.js",
