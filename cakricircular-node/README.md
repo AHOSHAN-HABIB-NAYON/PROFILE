@@ -30,7 +30,7 @@ PHP থেকে Node.js-এ সরানো পুরো সাইট: পা�
 4. **.env বানান:** `.env.example` কপি করে `.env` নাম দিন, মান বসান:
    ```
    DB_HOST=localhost
-   DB_NAME=u849068313_Jobs123      # আপনার বর্তমান ডাটাবেস
+   DB_NAME=<আপনার বর্তমান ডাটাবেসের নাম>
    DB_USER=...   DB_PASS=...
    SESSION_SECRET=<৩২+ অক্ষরের যেকোনো এলোমেলো লেখা>
    BASE_URL=https://test.cakricircular.com
