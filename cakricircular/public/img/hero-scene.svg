@@ -1,0 +1,199 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" preserveAspectRatio="xMaxYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2f7fd0"/>
+      <stop offset=".45" stop-color="#6fb4ea"/>
+      <stop offset=".8" stop-color="#cfe9f8"/>
+      <stop offset="1" stop-color="#e8f4fb"/>
+    </linearGradient>
+    <radialGradient id="sun" cx=".82" cy=".12" r=".35">
+      <stop offset="0" stop-color="#fff9e0" stop-opacity=".95"/>
+      <stop offset=".35" stop-color="#fff3c4" stop-opacity=".35"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="haze" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fb9dc"/>
+      <stop offset="1" stop-color="#b9d7ee"/>
+    </linearGradient>
+    <linearGradient id="facade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f7f3ea"/>
+      <stop offset=".6" stop-color="#ece6d8"/>
+      <stop offset="1" stop-color="#d9d1bf"/>
+    </linearGradient>
+    <linearGradient id="side" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#cfc6b2"/>
+      <stop offset="1" stop-color="#b8ae98"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f4e5f"/>
+      <stop offset=".5" stop-color="#2e6b78"/>
+      <stop offset="1" stop-color="#1b3e4a"/>
+    </linearGradient>
+    <linearGradient id="glassSide" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#163945"/>
+      <stop offset="1" stop-color="#10303a"/>
+    </linearGradient>
+    <pattern id="win" width="26" height="30" patternUnits="userSpaceOnUse">
+      <rect x="5" y="4" width="16" height="22" rx="1" fill="url(#glass)"/>
+      <rect x="6" y="5" width="6" height="20" fill="#7fb3c2" opacity=".35"/>
+    </pattern>
+    <pattern id="winSide" width="20" height="30" patternUnits="userSpaceOnUse">
+      <rect x="4" y="4" width="12" height="22" rx="1" fill="url(#glassSide)"/>
+    </pattern>
+    <pattern id="winFar" width="12" height="14" patternUnits="userSpaceOnUse">
+      <rect x="3" y="3" width="6" height="8" fill="#6f9dc2" opacity=".55"/>
+    </pattern>
+    <linearGradient id="lawn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fcf6a"/>
+      <stop offset="1" stop-color="#4e9a35"/>
+    </linearGradient>
+    <linearGradient id="pole" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#9aa4ad"/>
+      <stop offset=".5" stop-color="#eef2f5"/>
+      <stop offset="1" stop-color="#8b959e"/>
+    </linearGradient>
+    <linearGradient id="flag" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#00613f"/>
+      <stop offset=".5" stop-color="#067a4e"/>
+      <stop offset="1" stop-color="#005a3a"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2"/></filter>
+    <filter id="blur6" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6"/></filter>
+  </defs>
+
+  <!-- sky -->
+  <rect width="1200" height="520" fill="url(#sky)"/>
+  <rect width="1200" height="520" fill="url(#sun)"/>
+
+  <!-- clouds -->
+  <g fill="#fff" filter="url(#soft)">
+    <g opacity=".85"><ellipse cx="930" cy="92" rx="70" ry="20"/><ellipse cx="975" cy="80" rx="46" ry="24"/><ellipse cx="900" cy="84" rx="38" ry="18"/><ellipse cx="1020" cy="96" rx="50" ry="14"/></g>
+    <g opacity=".7"><ellipse cx="1110" cy="150" rx="80" ry="16"/><ellipse cx="1140" cy="138" rx="42" ry="18"/></g>
+    <g opacity=".55"><ellipse cx="560" cy="70" rx="90" ry="14"/><ellipse cx="600" cy="60" rx="40" ry="16"/></g>
+    <g opacity=".45"><ellipse cx="740" cy="160" rx="60" ry="10"/></g>
+  </g>
+
+  <!-- distant skyline -->
+  <g opacity=".75">
+    <rect x="300" y="210" width="60" height="200" fill="url(#haze)"/><rect x="300" y="210" width="60" height="200" fill="url(#winFar)"/>
+    <rect x="370" y="170" width="46" height="240" fill="url(#haze)"/><rect x="370" y="170" width="46" height="240" fill="url(#winFar)"/>
+    <rect x="424" y="240" width="70" height="170" fill="url(#haze)"/><rect x="424" y="240" width="70" height="170" fill="url(#winFar)"/>
+    <rect x="1080" y="220" width="54" height="190" fill="url(#haze)"/><rect x="1080" y="220" width="54" height="190" fill="url(#winFar)"/>
+    <rect x="1140" y="250" width="60" height="160" fill="url(#haze)"/><rect x="1140" y="250" width="60" height="160" fill="url(#winFar)"/>
+    <rect x="500" y="265" width="44" height="145" fill="url(#haze)"/>
+  </g>
+
+  <!-- main building: left wing -->
+  <g>
+    <rect x="590" y="215" width="140" height="190" fill="url(#side)"/>
+    <rect x="596" y="228" width="130" height="170" fill="url(#winSide)"/>
+    <rect x="586" y="206" width="148" height="12" fill="#c9bfa8"/>
+  </g>
+  <!-- main building: central block -->
+  <g>
+    <rect x="720" y="150" width="330" height="258" fill="url(#facade)"/>
+    <rect x="714" y="138" width="342" height="16" rx="2" fill="#f4efe3"/>
+    <rect x="714" y="152" width="342" height="4" fill="#cfc5ae"/>
+    <rect x="732" y="164" width="306" height="236" fill="url(#win)"/>
+    <!-- vertical fins -->
+    <g fill="#f3eee2">
+      <rect x="728" y="158" width="6" height="246"/><rect x="806" y="158" width="6" height="246"/><rect x="884" y="158" width="6" height="246"/>
+      <rect x="962" y="158" width="6" height="246"/><rect x="1036" y="158" width="6" height="246"/>
+    </g>
+    <!-- floor bands -->
+    <g fill="#efe9dc" opacity=".9">
+      <rect x="720" y="222" width="330" height="4"/><rect x="720" y="282" width="330" height="4"/><rect x="720" y="342" width="330" height="4"/>
+    </g>
+    <!-- entrance canopy -->
+    <rect x="830" y="370" width="110" height="10" fill="#e7e0d0"/>
+    <rect x="846" y="380" width="78" height="28" fill="#274b57"/>
+    <!-- shading on right edge -->
+    <rect x="1000" y="150" width="50" height="258" fill="#000" opacity=".08"/>
+  </g>
+  <!-- right wing receding -->
+  <g>
+    <polygon points="1050,165 1110,185 1110,408 1050,408" fill="url(#side)"/>
+    <polygon points="1054,178 1106,195 1106,398 1054,398" fill="url(#winSide)" opacity=".9"/>
+  </g>
+  <!-- roof details -->
+  <g fill="#d8cfbb"><rect x="800" y="118" width="60" height="22"/><rect x="930" y="124" width="40" height="16"/></g>
+  <rect x="816" y="102" width="4" height="18" fill="#9aa4ad"/>
+
+<!-- flag pole + waving flag -->
+  <g transform="translate(150 16)">
+    <rect x="558" y="40" width="6" height="370" rx="3" fill="url(#pole)"/>
+    <circle cx="561" cy="38" r="6" fill="#d9c27a"/>
+    <path d="M564 50 C600 38 628 64 668 52 C700 43 722 58 740 52 L740 146 C722 152 700 137 668 146 C628 158 600 132 564 144 Z" fill="url(#flag)">
+      <animate attributeName="d" dur="4s" repeatCount="indefinite" values="
+        M564 50 C600 38 628 64 668 52 C700 43 722 58 740 52 L740 146 C722 152 700 137 668 146 C628 158 600 132 564 144 Z;
+        M564 50 C600 60 628 40 668 54 C700 64 722 44 740 56 L740 150 C722 138 700 158 668 148 C628 134 600 154 564 144 Z;
+        M564 50 C600 38 628 64 668 52 C700 43 722 58 740 52 L740 146 C722 152 700 137 668 146 C628 158 600 132 564 144 Z"/>
+    </path>
+    <circle cx="640" cy="98" r="26" fill="#e3242b">
+      <animate attributeName="cy" dur="4s" repeatCount="indefinite" values="98;100;98"/>
+    </circle>
+    <path d="M564 50 C600 38 628 64 668 52 L668 70 C628 82 600 56 564 68 Z" fill="#fff" opacity=".1"/>
+  </g>
+
+    <!-- back tree line -->
+  <g filter="url(#soft)">
+    <g fill="#2f6f3a">
+      <circle cx="260" cy="400" r="40"/><circle cx="310" cy="390" r="46"/><circle cx="370" cy="398" r="40"/><circle cx="430" cy="392" r="44"/>
+      <circle cx="490" cy="400" r="38"/><circle cx="540" cy="395" r="36"/>
+      <circle cx="1100" cy="398" r="40"/><circle cx="1150" cy="392" r="44"/><circle cx="1195" cy="400" r="40"/>
+    </g>
+    <g fill="#3f8a45">
+      <circle cx="290" cy="410" r="34"/><circle cx="350" cy="414" r="30"/><circle cx="410" cy="408" r="34"/><circle cx="470" cy="414" r="30"/>
+      <circle cx="1125" cy="412" r="32"/><circle cx="1180" cy="410" r="30"/>
+    </g>
+  </g>
+
+  <!-- front trees & hedges -->
+  <g>
+    <g fill="#2e7d32"><circle cx="600" cy="402" r="30"/><circle cx="640" cy="396" r="34"/><circle cx="690" cy="404" r="28"/></g>
+    <g fill="#43a047"><circle cx="618" cy="412" r="22"/><circle cx="662" cy="410" r="24"/></g>
+    <g fill="#2e7d32"><circle cx="1015" cy="404" r="26"/><circle cx="1055" cy="398" r="32"/><circle cx="1095" cy="406" r="26"/></g>
+    <g fill="#4caf50"><circle cx="1035" cy="414" r="20"/><circle cx="1075" cy="412" r="22"/></g>
+    <rect x="700" y="400" width="130" height="18" rx="9" fill="#357a38"/>
+    <rect x="940" y="400" width="80" height="18" rx="9" fill="#357a38"/>
+    <rect x="704" y="402" width="120" height="6" rx="3" fill="#5fae55" opacity=".6"/>
+  </g>
+
+  <!-- lawn with mowing stripes -->
+  <path d="M0 418 H1200 V520 H0 Z" fill="url(#lawn)"/>
+  <g fill="#a6dc7e" opacity=".35">
+    <polygon points="120,418 220,418 60,520 -60,520"/>
+    <polygon points="360,418 460,418 360,520 240,520"/>
+    <polygon points="600,418 700,418 700,520 580,520"/>
+    <polygon points="840,418 940,418 1040,520 920,520"/>
+    <polygon points="1080,418 1180,418 1360,520 1240,520"/>
+  </g>
+  <!-- walkway -->
+  <polygon points="860,418 910,418 1010,520 820,520" fill="#e9e1cf" opacity=".95"/>
+  <polygon points="872,418 898,418 950,520 880,520" fill="#fff" opacity=".25"/>
+
+  <!-- flower beds -->
+  <g>
+    <ellipse cx="760" cy="440" rx="62" ry="10" fill="#3c8b33"/>
+    <g fill="#ff5a5f"><circle cx="720" cy="437" r="3"/><circle cx="738" cy="440" r="3"/><circle cx="756" cy="436" r="3"/><circle cx="774" cy="441" r="3"/><circle cx="792" cy="437" r="3"/></g>
+    <g fill="#ffd54f"><circle cx="729" cy="442" r="2.5"/><circle cx="747" cy="435" r="2.5"/><circle cx="765" cy="441" r="2.5"/><circle cx="783" cy="436" r="2.5"/><circle cx="801" cy="441" r="2.5"/></g>
+    <ellipse cx="1080" cy="446" rx="58" ry="9" fill="#3c8b33"/>
+    <g fill="#ff7043"><circle cx="1046" cy="444" r="3"/><circle cx="1066" cy="447" r="3"/><circle cx="1086" cy="443" r="3"/><circle cx="1106" cy="447" r="3"/></g>
+    <g fill="#fff176"><circle cx="1056" cy="448" r="2.5"/><circle cx="1076" cy="442" r="2.5"/><circle cx="1096" cy="448" r="2.5"/></g>
+  </g>
+
+  <!-- palm-ish tree on the right front -->
+  <g>
+    <path d="M1150 470 C1146 430 1150 390 1160 350" stroke="#7a5a3a" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <g fill="#2f8a3a">
+      <path d="M1160 350 C1130 330 1100 336 1080 352 C1110 344 1135 346 1160 356 Z"/>
+      <path d="M1160 350 C1180 322 1210 320 1230 332 C1205 330 1182 338 1162 356 Z"/>
+      <path d="M1160 350 C1150 318 1160 296 1178 286 C1168 306 1166 326 1164 352 Z"/>
+      <path d="M1160 350 C1128 356 1110 376 1106 396 C1122 376 1140 364 1162 356 Z"/>
+      <path d="M1160 350 C1192 356 1210 374 1214 394 C1198 376 1180 364 1158 356 Z"/>
+    </g>
+  </g>
+
+  <!-- subtle foreground shadow for text legibility -->
+  <rect width="1200" height="520" fill="#062a66" opacity=".06"/>
+</svg>

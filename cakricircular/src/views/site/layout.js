@@ -57,7 +57,7 @@ function header(s) {
       <a href="/notices" data-nav="notices">নোটিশ</a><a href="/saved" data-nav="saved">সেভড জব</a>
     </nav>
     <div class="hdr-act">
-      <button class="icon-btn" type="button" data-search-open aria-label="খুঁজুন">${raw(icon('search'))}</button>
+      <button class="icon-btn only-d" type="button" data-search-open aria-label="খুঁজুন">${raw(icon('search'))}</button>
       <button class="icon-btn only-d" type="button" data-theme-toggle aria-label="ডার্ক মোড">${raw(icon('moon', 'ic-moon'))}${raw(icon('sun', 'ic-sun'))}</button>
       <a class="icon-btn bell" href="/notices" aria-label="নোটিশ">${raw(icon('bell'))}<span class="dot-badge" id="noticeBadge" hidden></span></a>
     </div>

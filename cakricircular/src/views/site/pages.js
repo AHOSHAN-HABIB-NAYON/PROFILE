@@ -47,23 +47,28 @@ function home(ctx) {
   const feedAds = (ads && ads.home_feed) || [];
   return html`<div class="home">
   <section class="hero">
-    <div class="wrap hero-in">
-      <div class="hero-txt">
-        <h1>${heroTitle()}</h1>
-        <p>${settings.get('hero_subtitle')}</p>
+    <div class="hero-scene">
+      <div class="hero-bg" aria-hidden="true"></div>
+      <div class="wrap hero-in">
+        <div class="hero-txt">
+          <h1>${heroTitle()}</h1>
+          <p>${settings.get('hero_subtitle')}</p>
+        </div>
+      </div>
+    </div>
+    <div class="hero-band">
+      <div class="wrap">
         <form class="hero-search" action="/search" method="get" data-search-form>
           <span class="hs-ic">${raw(icon('search'))}</span>
           <input type="search" name="q" placeholder="চাকরি, প্রতিষ্ঠান বা কীওয়ার্ড লিখুন…" aria-label="খুঁজুন" data-suggest-inline autocomplete="off" enterkeyhint="search">
           <button type="submit" class="hs-btn" aria-label="খুঁজুন">${raw(icon('search'))}</button>
         </form>
-        <div class="hero-stats"><span><b>${bnCount(total)}</b> টি পোস্ট</span><span><b>${bnNum(today)}</b> টি আজ</span><span><b>${bnNum(cats.length)}</b> ক্যাটাগরি</span></div>
       </div>
-      <div class="hero-art" aria-hidden="true"></div>
     </div>
   </section>
   <div class="wrap">
+    <div class="cat-panel">${catTiles(cats)}</div>
     ${slider(banners)}
-    ${catTiles(cats)}
     ${C.adSlot(ads, 'home_top', 'wide')}
     <div class="layout">
       <div class="main-col">
