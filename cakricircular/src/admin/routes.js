@@ -19,9 +19,10 @@ const V = require('../views/admin/pages');
 const automation = require('../automation');
 const notify = require('../notify');
 const migrate = require('../migrate');
+const extras = require('../postextras');
 
 const router = express.Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 16 * 1024 * 1024, files: 6, fields: 200, fieldSize: 4 * 1024 * 1024 } });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 16 * 1024 * 1024, files: 20, fields: 400, fieldSize: 4 * 1024 * 1024 } });
 
 const ok = (res, message, extra = {}) => res.json({ ok: true, message, ...extra });
 const fail = (res, error, status = 400) => res.status(status).json({ ok: false, error });
@@ -98,11 +99,12 @@ router.get('/', wrap(async (req, res) => {
   const reports = await db.query("SELECT type, message, created_at FROM reports WHERE status = 'new' ORDER BY id DESC LIMIT 5");
   const top = await db.query("SELECT title, slug, views FROM posts WHERE status = 'published' AND published_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) ORDER BY views DESC LIMIT 6");
   const lastRun = await db.one('SELECT * FROM automation_runs ORDER BY id DESC LIMIT 1');
-  const [pushSubs, emailSubs] = await Promise.all([q('SELECT COUNT(*) FROM push_subs'), q('SELECT COUNT(*) FROM email_subs WHERE confirmed = 1')]);
+  const [pushSubs, emailSubs, legacy] = await Promise.all([q('SELECT COUNT(*) FROM push_subs'), q('SELECT COUNT(*) FROM email_subs WHERE confirmed = 1'), q('SELECT COUNT(*) FROM posts WHERE legacy_id IS NOT NULL')]);
+  const showImport = !legacy && req.admin.perms.has('settings');
   await render(req, res, {
     title: 'ড্যাশবোর্ড', nav: 'dashboard',
     body: V.dashboard({
-      user: req.admin, dayName: bnDay(new Date()), total, published, drafts, autoDrafts, expired, today, week, visits, cats, pending, reports, top, lastRun, pushSubs, emailSubs,
+      user: req.admin, showImport, dayName: bnDay(new Date()), total, published, drafts, autoDrafts, expired, today, week, visits, cats, pending, reports, top, lastRun, pushSubs, emailSubs,
       todayVisits: todayRow.visits || 0, todayUniques: todayRow.uniques || 0, pageviews: series.reduce((a, r) => a + Number(r.pageviews || 0), 0), autoOn: settings.bool('auto_enabled'),
     }),
   });
@@ -163,7 +165,8 @@ router.get('/posts/new', auth.can('posts'), wrap(async (req, res) => {
 router.get('/posts/:id(\\d+)', auth.can('posts'), wrap(async (req, res) => {
   const post = await db.one('SELECT * FROM posts WHERE id = ?', [req.params.id]);
   if (!post) return res.redirect(`${A()}/posts`);
-  await render(req, res, { title: 'পোস্ট এডিট', nav: 'posts', body: V.postForm({ ...(await postFormData()), post }) });
+  const { links, images } = await extras.forPost(post.id);
+  await render(req, res, { title: 'পোস্ট এডিট', nav: 'posts', body: V.postForm({ ...(await postFormData()), post, links, images }) });
 }));
 
 async function uniqueSlug(base, excludeId = 0) {
@@ -218,6 +221,13 @@ router.post('/posts/:id(new|\\d+)', auth.can('posts'), wrap(async (req, res) => 
     if (pdf) { row.pdf = await uploads.savePdf(pdf.buffer); if (existing && existing.pdf) uploads.removeFile(existing.pdf); } else if (flag(b.remove_pdf)) { row.pdf = null; if (existing) uploads.removeFile(existing.pdf); }
   } catch (e) { return fail(res, e.message); }
 
+  const links = extras.parseLinks(b.links);
+  if (!row.apply_url) { const firstApply = links.find((l) => l.is_apply); if (firstApply) row.apply_url = firstApply.url; }
+  const galleryNew = [];
+  try {
+    for (const f of (req.files || []).filter((x) => x.fieldname === 'images')) galleryNew.push(await uploads.saveImage(f.buffer, 'thumb'));
+  } catch (e) { for (const rel of galleryNew) uploads.removeFile(rel); return fail(res, e.message); }
+
   let id;
   if (isNew) {
     id = await db.insert('posts', { ...row, author_id: req.admin.id, created_at: new Date() });
@@ -229,9 +239,13 @@ router.post('/posts/:id(new|\\d+)', auth.can('posts'), wrap(async (req, res) => 
     }
     await db.update('posts', row, 'id = ?', [id]);
   }
+  await extras.replaceLinks(id, links);
+  await extras.updateImages(id, b.remove_images, galleryNew);
   cache.clear();
   if (status === 'published') notify.postPublished(id).catch((e) => console.error('[notify]', e.message));
-  return ok(res, status === 'published' ? 'পোস্ট প্রকাশিত হয়েছে ✓' : 'খসড়া সেভ হয়েছে ✓', isNew ? { redirect: `${A()}/posts/${id}` } : { slug });
+  // files were consumed by this save → re-render the editor so the same files aren't sent again
+  const filesChanged = (req.files || []).length > 0 || !!b.remove_images || flag(b.remove_thumbnail) || flag(b.remove_pdf);
+  return ok(res, status === 'published' ? 'পোস্ট প্রকাশিত হয়েছে ✓' : 'খসড়া সেভ হয়েছে ✓', isNew ? { redirect: `${A()}/posts/${id}` } : { slug, ...(filesChanged ? { reload: true } : {}) });
 }));
 
 router.post('/posts/bulk', auth.can('posts'), wrap(async (req, res) => {
@@ -249,9 +263,10 @@ router.post('/posts/bulk', auth.can('posts'), wrap(async (req, res) => {
     msg = 'প্রকাশিত হয়েছে';
   } else if (action === 'draft') { await db.raw("UPDATE posts SET status = 'draft' WHERE id IN (?)", [ids]); msg = 'খসড়া করা হয়েছে'; }
   else if (action === 'destroy') {
-    const files = await db.raw("SELECT thumbnail, pdf FROM posts WHERE id IN (?) AND status = 'trash'", [ids]);
+    const files = await db.raw("SELECT id, thumbnail, pdf FROM posts WHERE id IN (?) AND status = 'trash'", [ids]);
     await db.raw("DELETE FROM posts WHERE id IN (?) AND status = 'trash'", [ids]);
     await db.raw('DELETE FROM slug_redirects WHERE post_id IN (?)', [ids]);
+    await extras.destroy(files.map((f) => f.id));
     for (const f of files) { uploads.removeFile(f.thumbnail); uploads.removeFile(f.pdf); }
     msg = 'স্থায়ীভাবে মুছে ফেলা হয়েছে';
   } else return fail(res, 'অজানা অ্যাকশন');
@@ -637,6 +652,66 @@ router.post('/settings', auth.can('settings'), wrap(async (req, res) => {
   await settings.set(vals);
   ok(res, 'সেটিংস সেভ হয়েছে ✓ সাইটে সাথে সাথে পরিবর্তন দেখা যাবে', newPath ? { redirect: newPath } : {});
 }));
+
+/* ---------- import from the old PHP site ---------- */
+function importDbFromBody(b) {
+  return { host: String(b.old_host || 'localhost').trim(), port: int(b.old_port, 3306), name: String(b.old_name || '').trim(), user: String(b.old_user || '').trim(), password: String(b.old_pass || '') };
+}
+function guessUploadDirs() {
+  const os = require('os');
+  const fs = require('fs');
+  const out = [];
+  const home = os.homedir();
+  try {
+    const domains = path.join(home, 'domains');
+    for (const d of fs.readdirSync(domains)) {
+      const p = path.join(domains, d, 'public_html', 'uploads');
+      if (fs.existsSync(path.join(p, 'posts')) && path.resolve(p) !== path.resolve(config.uploadsDir())) out.push(p);
+    }
+  } catch (_) { /* not a Hostinger-like layout */ }
+  const pub = path.join(home, 'public_html', 'uploads');
+  try { if (fs.existsSync(path.join(pub, 'posts'))) out.push(pub); } catch (_) { /* ignore */ }
+  return out;
+}
+router.get('/import', auth.can('settings'), wrap(async (req, res) => {
+  let saved = {};
+  let last = null;
+  try { saved = JSON.parse(settings.get('import_db') || '{}'); } catch (_) { saved = {}; }
+  try { last = JSON.parse(settings.get('import_last') || 'null'); } catch (_) { last = null; }
+  const legacyPosts = Number(await db.val('SELECT COUNT(*) FROM posts WHERE legacy_id IS NOT NULL'));
+  await render(req, res, { title: 'পুরোনো সাইট থেকে আনুন', nav: 'import', body: V.importPage({ saved, last, legacyPosts, guesses: guessUploadDirs(), uploadsDir: config.uploadsDir() }) });
+}));
+router.post('/import/check', auth.can('settings'), wrap(async (req, res) => {
+  const o = importDbFromBody(req.body);
+  if (!o.name || !o.user) return fail(res, 'পুরোনো ডাটাবেসের নাম ও ইউজার দিন');
+  const importer = require('../importer');
+  let conn;
+  try {
+    conn = await importer.connectOld(o);
+    const info = await importer.inspect(conn);
+    await settings.set({ import_db: JSON.stringify({ host: o.host, port: o.port, name: o.name, user: o.user, uploads: String(req.body.old_uploads || '').trim() }) });
+    return ok(res, 'ডাটাবেস পাওয়া গেছে ✓', { html: String(V.importPreview(info)) });
+  } catch (e) {
+    return fail(res, importError(e));
+  } finally { if (conn) conn.end().catch(() => {}); }
+}));
+router.post('/import/run', auth.can('settings'), wrap(async (req, res) => {
+  const o = importDbFromBody(req.body);
+  if (!o.name || !o.user) return fail(res, 'পুরোনো ডাটাবেসের নাম ও ইউজার দিন');
+  req.setTimeout && req.setTimeout(10 * 60000);
+  try {
+    const r = await require('../importer').run({ db: o, uploadsFrom: String(req.body.old_uploads || '').trim(), withSettings: flag(req.body.with_settings), withUsers: flag(req.body.with_users) });
+    await db.insert('admin_notifications', { type: 'system', title: 'পুরোনো সাইট থেকে ইমপোর্ট সম্পন্ন', body: `${bnNum(r.counts.posts || 0)}টি পোস্ট, ${bnNum(r.missing.length)}টি ফাইল নেই`, link: '/import' });
+    return ok(res, `ইমপোর্ট সম্পন্ন ✓ ${bnNum(r.counts.posts || 0)}টি পোস্ট`, { html: String(V.importResult(r)) });
+  } catch (e) {
+    console.error('[import]', e);
+    return fail(res, importError(e));
+  }
+}));
+function importError(e) {
+  const m = { ER_ACCESS_DENIED_ERROR: 'ইউজারনেম বা পাসওয়ার্ড ভুল', ER_BAD_DB_ERROR: 'এই নামে কোনো ডাটাবেস নেই', ECONNREFUSED: 'ডাটাবেস সার্ভারে সংযোগ হচ্ছে না (হোস্ট দেখুন)', ENOTFOUND: 'হোস্টের নাম পাওয়া যাচ্ছে না', ETIMEDOUT: 'সংযোগের সময় শেষ', ER_DBACCESS_DENIED_ERROR: 'এই ইউজারের ওই ডাটাবেসে অনুমতি নেই — hPanel-এ ইউজারকে ডাটাবেসে যুক্ত করুন' };
+  return m[e.code] ? `${m[e.code]} (${e.code})` : e.message;
+}
 
 async function rebuildIcons(buf) {
   try {

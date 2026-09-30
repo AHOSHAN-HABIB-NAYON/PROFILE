@@ -210,7 +210,47 @@ const migrations = [
       ) ${T}`,
     ],
   },
+  {
+    v: 2,
+    name: 'post links & gallery images',
+    sql: [
+      `CREATE TABLE IF NOT EXISTS post_links (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        post_id INT UNSIGNED NOT NULL,
+        label VARCHAR(191) NOT NULL DEFAULT '',
+        url VARCHAR(600) NOT NULL,
+        is_apply TINYINT(1) NOT NULL DEFAULT 0,
+        sort INT NOT NULL DEFAULT 0,
+        INDEX idx_post (post_id, sort)
+      ) ${T}`,
+      `CREATE TABLE IF NOT EXISTS post_images (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        post_id INT UNSIGNED NOT NULL,
+        image VARCHAR(255) NOT NULL,
+        caption VARCHAR(255) NOT NULL DEFAULT '',
+        sort INT NOT NULL DEFAULT 0,
+        INDEX idx_post (post_id, sort)
+      ) ${T}`,
+    ],
+  },
+  {
+    v: 3,
+    name: 'legacy ids for importing the old PHP site',
+    sql: [
+      (db) => addColumn(db, 'posts', 'legacy_id', 'INT UNSIGNED NULL', 'UNIQUE KEY uq_posts_legacy (legacy_id)'),
+      (db) => addColumn(db, 'categories', 'legacy_id', 'INT UNSIGNED NULL', 'UNIQUE KEY uq_cats_legacy (legacy_id)'),
+      (db) => addColumn(db, 'banners', 'legacy_id', 'INT UNSIGNED NULL', 'UNIQUE KEY uq_banners_legacy (legacy_id)'),
+      (db) => addColumn(db, 'notices', 'legacy_id', 'INT UNSIGNED NULL', 'UNIQUE KEY uq_notices_legacy (legacy_id)'),
+      (db) => addColumn(db, 'reports', 'legacy_id', 'INT UNSIGNED NULL', 'UNIQUE KEY uq_reports_legacy (legacy_id)'),
+    ],
+  },
 ];
+
+async function addColumn(db, table, column, def, key) {
+  const has = await db.raw('SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?', [table, column]);
+  if (has.length) return;
+  await db.raw(`ALTER TABLE \`${table}\` ADD COLUMN \`${column}\` ${def}${key ? `, ADD ${key}` : ''}`);
+}
 
 async function run() {
   await db.raw(`CREATE TABLE IF NOT EXISTS migrations (version INT PRIMARY KEY, name VARCHAR(191), applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP) ${T}`);

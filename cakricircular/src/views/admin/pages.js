@@ -33,6 +33,11 @@ function dashboard(d) {
   const b = B();
   return html`<div class="a-hello"><div><h2>স্বাগতম, ${d.user.name || d.user.username}</h2><p>আজ ${bnDate(new Date())}, ${d.dayName}</p></div>
   <a class="btn btn-primary" href="${b}/posts/new">${raw(icon('plus'))}নতুন পোস্ট</a></div>
+${d.showImport ? html`<a class="imp-cta" href="${b}/import">
+  <span class="imp-cta-ic">${raw(icon('database'))}</span>
+  <span><b>পুরোনো সাইটের পোস্টগুলো আনুন</b><small>এক ক্লিকে আগের সব পোস্ট, লিংক, ছবি, এডমিন ও সেটিংস — পুরোনো সাইট আগের মতোই চলবে</small></span>
+  ${raw(icon('right'))}
+</a>` : ''}
 <div class="stats">
   ${U.stat('মোট পোস্ট', d.total, { ic: 'file', color: '#16a34a', delta: `${bnNum(d.week)} এই সপ্তাহে` })}
   ${U.stat('প্রকাশিত', d.published, { ic: 'checkCircle', color: '#2563eb', delta: `${bnNum(d.today)} আজ` })}
@@ -152,7 +157,8 @@ function postForm(d) {
           ${U.field('start_date', 'আবেদন শুরু', dateVal(p.start_date), { type: 'date' })}
           ${U.field('deadline', 'শেষ তারিখ ও সময়', dtVal(p.deadline), { type: 'datetime-local', hint: 'সময় না দিলে দিনের শেষে (রাত ১১:৫৯) ধরা হবে' })}
         </div>
-        ${U.field('apply_url', 'আবেদনের লিংক', val('apply_url'), { type: 'url', attrs: 'placeholder="https://"' })}
+        ${U.field('apply_url', 'প্রধান আবেদনের লিংক', val('apply_url'), { type: 'url', attrs: 'placeholder="https://"', hint: 'পোস্টে বড় সবুজ "আবেদন করুন" বাটনে যাবে। খালি রাখলে নিচের প্রথম "আবেদন" চিহ্নিত লিংক নেওয়া হবে।' })}
+        ${linksEditor(d.links || [])}
       </div>
       <div data-pane="content" class="card" hidden>
         <div class="editor" data-editor>
@@ -167,6 +173,7 @@ function postForm(d) {
           <textarea name="content" class="ed-src" hidden>${val('content')}</textarea>
         </div>
         ${U.field('excerpt', 'সংক্ষিপ্ত বিবরণ', val('excerpt'), { type: 'textarea', attrs: 'rows="3" maxlength="600"' })}
+        ${galleryEditor(d.images || [])}
       </div>
       <div data-pane="seo" class="card" hidden>
         ${U.field('meta_title', 'মেটা শিরোনাম', val('meta_title'), { attrs: 'maxlength="250" data-count="60"', hint: 'খালি রাখলে পোস্টের শিরোনাম ব্যবহার হবে' })}
@@ -205,6 +212,35 @@ function postForm(d) {
   <datalist id="jobTypes">${JOB_TYPES.map((x) => html`<option value="${x}">`)}</datalist>
   <datalist id="orgList">${(d.orgs || []).map((x) => html`<option value="${x}">`)}</datalist>
 </form>`;
+}
+
+/** Repeatable rows: label + URL + "apply" flag. Field names are re-indexed by admin.js. */
+function linksEditor(links) {
+  const row = (l, i) => html`<div class="lk-row" data-lk-row>
+    <span class="lk-grip" aria-hidden="true">${raw(icon('grid'))}</span>
+    <input class="lk-label" name="links[${i}][label]" value="${l.label || ''}" maxlength="180" placeholder="নাম — যেমন: আবেদনের লিংক, বিজ্ঞপ্তি, প্রবেশপত্র">
+    <input class="lk-url" name="links[${i}][url]" value="${l.url || ''}" type="text" inputmode="url" maxlength="600" placeholder="https://… বা tel:০১৭… বা mailto:…">
+    <label class="lk-apply" title="আবেদনের লিংক"><input type="checkbox" name="links[${i}][apply]" value="1" ${raw(l.is_apply ? 'checked' : '')}><span>আবেদন</span></label>
+    <span class="lk-btns"><button type="button" class="icon-btn sm" data-lk-up aria-label="উপরে">${raw(icon('up'))}</button><button type="button" class="icon-btn sm danger" data-lk-del aria-label="মুছুন">${raw(icon('trash'))}</button></span>
+  </div>`;
+  return html`<div class="links-ed" data-links>
+  <div class="le-head"><div><b>${raw(icon('link'))}গুরুত্বপূর্ণ লিংকসমূহ</b><small>আবেদন, বিজ্ঞপ্তি, প্রবেশপত্র, ফলাফল — যত খুশি লিংক। "আবেদন" টিক দিলে সবুজ বাটন হিসেবে দেখাবে।</small></div>
+    <span class="le-count" data-lk-count>${bnNum(links.length)}টি</span></div>
+  <div class="le-rows" data-lk-rows>${links.map(row)}</div>
+  <template data-lk-tpl>${row({}, '__i__')}</template>
+  <button type="button" class="btn btn-soft btn-sm le-add" data-lk-add>${raw(icon('plus'))}লিংক যোগ করুন</button>
+</div>`;
+}
+
+function galleryEditor(images) {
+  return html`<div class="gal-ed">
+  <div class="le-head"><div><b>${raw(icon('image'))}বিজ্ঞপ্তির ছবি (একাধিক)</b><small>পত্রিকার কাটিং বা বিজ্ঞপ্তির পাতাগুলো — পোস্টে গ্যালারি হিসেবে দেখাবে, ট্যাপ করলে বড় হবে। সর্বোচ্চ ১২টি, অটো কম্প্রেস।</small></div></div>
+  <div class="ge-grid" data-ge-grid>
+    ${images.map((im) => html`<label class="ge-item"><img src="${uploads.url(im.image)}" alt="" loading="lazy"><span class="ge-del"><input type="checkbox" name="remove_images" value="${im.id}">${raw(icon('trash'))}</span></label>`)}
+    <label class="ge-add">${raw(icon('plus'))}<span>ছবি যোগ</span><input type="file" name="images" accept="image/*" multiple hidden data-ge-input></label>
+  </div>
+  <small class="hint" data-ge-note hidden></small>
+</div>`;
 }
 
 /* ----------------------------- categories ----------------------------- */
@@ -550,7 +586,63 @@ function settingsPage(d) {
 </form>`;
 }
 
+/* ----------------------------- import from old PHP site ----------------------------- */
+function importPage({ saved, last, legacyPosts, guesses, uploadsDir }) {
+  const b = B();
+  const up = saved.uploads || guesses[0] || '';
+  return html`<div class="imp">
+  <section class="imp-hero">
+    <div class="imp-hero-ic">${raw(icon('database'))}</div>
+    <div><h2>পুরোনো সাইট থেকে সব তথ্য আনুন</h2>
+      <p>পুরোনো PHP সাইটের ডাটাবেস থেকে পোস্ট, ক্যাটাগরি, প্রতিটি পোস্টের লিংক ও ছবি, ব্যানার, নোটিশ, এডমিন ইউজার (আগের পাসওয়ার্ডসহ), সেটিংস আর অটোমেশনের ইতিহাস চলে আসবে। পুরোনো ডাটাবেস শুধু পড়া হয় — সেখানে কিছুই বদলায় না, তাই পুরোনো সাইট আগের মতোই চলবে।</p></div>
+  </section>
+  ${legacyPosts ? html`<div class="alert alert-info">${raw(icon('info'))}<span>আগে একবার ইমপোর্ট হয়েছে (${bnNum(legacyPosts)}টি পোস্ট)${last && last.at ? html` — ${bnDate(last.at, { time: true })}` : ''}। আবার চালালে <b>কিছুই ডুপ্লিকেট হবে না</b> — শুধু নতুন পোস্ট যোগ হবে আর পরিবর্তনগুলো আপডেট হবে। ডোমেইন বদলের ঠিক আগে একবার চালিয়ে নিন।</span></div>` : ''}
+  <ol class="imp-steps"><li class="on"><b>১</b><span>তথ্য দিন</span></li><li><b>২</b><span>যাচাই</span></li><li><b>৩</b><span>ইমপোর্ট</span></li></ol>
+  <form class="card imp-form" data-ajax data-imp-form action="${b}/import/run" method="post" data-confirm="ইমপোর্ট শুরু হবে। পুরোনো সাইটের কিছু বদলাবে না। চালিয়ে যাবেন?">
+    <div class="card-h"><h2>${raw(icon('database'))} পুরোনো ডাটাবেস</h2></div>
+    <p class="muted small">hPanel → Databases → Management এ পুরোনো সাইটের ডাটাবেসের নাম ও ইউজার দেখতে পাবেন। একই Hostinger অ্যাকাউন্টে থাকলে হোস্ট <code>localhost</code>।</p>
+    <div class="grid2">${U.field('old_host', 'হোস্ট', saved.host || 'localhost', { attrs: 'required autocomplete="off"' })}${U.field('old_port', 'পোর্ট', saved.port || 3306, { type: 'number' })}</div>
+    <div class="grid2">${U.field('old_name', 'ডাটাবেসের নাম *', saved.name || '', { attrs: 'required autocomplete="off" placeholder="u123456789_jobs"' })}${U.field('old_user', 'ডাটাবেস ইউজার *', saved.user || '', { attrs: 'required autocomplete="off"' })}</div>
+    ${U.field('old_pass', 'পাসওয়ার্ড', '', { type: 'password', attrs: 'autocomplete="new-password"', hint: 'নিরাপত্তার জন্য পাসওয়ার্ড সেভ করে রাখা হয় না' })}
+    <div class="card-h" style="margin-top:8px"><h2>${raw(icon('image'))} পুরোনো ছবি ও PDF (ঐচ্ছিক)</h2></div>
+    ${U.field('old_uploads', 'পুরোনো সাইটের uploads ফোল্ডারের পাথ', up, { attrs: 'autocomplete="off" placeholder="/home/u123456789/domains/cakricircular.com/public_html/uploads"', hint: `একই অ্যাকাউন্টে থাকলে ফাইলগুলো নিজে থেকে কপি হবে। খালি রাখলে পরে File Manager দিয়ে posts, pdf, banners, site ফোল্ডার এখানে রাখুন: ${uploadsDir}` })}
+    ${guesses.length ? html`<div class="imp-guess"><small>পাওয়া গেছে:</small>${guesses.map((g) => html`<button type="button" class="chip" data-fill="old_uploads" data-val="${g}">${raw(icon('check'))}${g}</button>`)}</div>` : ''}
+    <div class="imp-opts">
+      ${U.toggle('with_settings', 'সেটিংসও আনুন', true, { hint: 'সাইটের নাম, লোগো, সোশ্যাল লিংক, SMTP, OpenAI key, "আমাদের সম্পর্কে" ইত্যাদি' })}
+      ${U.toggle('with_users', 'এডমিন ইউজার আনুন', true, { hint: 'আগের ইউজারনেম ও পাসওয়ার্ড দিয়েই লগইন করা যাবে' })}
+    </div>
+    <div class="imp-actions">
+      <button class="btn btn-soft" type="submit" formaction="${b}/import/check" data-no-confirm>${raw(icon('check'))}যাচাই করুন</button>
+      <button class="btn btn-primary" type="submit">${raw(icon('download'))}ইমপোর্ট শুরু করুন</button>
+    </div>
+    <div class="imp-result" data-result aria-live="polite"></div>
+  </form>
+</div>`;
+}
+
+function importPreview(info) {
+  const t = [['পোস্ট', info.posts, 'file', '#16a34a'], ['প্রকাশিত', info.published, 'check', '#2563eb'], ['ক্যাটাগরি', info.categories, 'grid', '#7c3aed'], ['লিংক', info.links, 'link', '#0d9488'],
+    ['গ্যালারি ছবি', info.images, 'image', '#ea580c'], ['ব্যানার', info.banners, 'image', '#db2777'], ['নোটিশ', info.notices, 'bell', '#ca8a04'], ['এডমিন', info.admins, 'users', '#0891b2']];
+  return html`<div class="imp-card ok"><div class="imp-card-h">${raw(icon('checkCircle'))}<div><b>পুরোনো ডাটাবেস পাওয়া গেছে</b><small>যা যা আসবে — এখন "ইমপোর্ট শুরু করুন" চাপুন</small></div></div>
+  <div class="imp-tiles">${t.map(([l, n, ic, c]) => html`<div class="imp-tile" style="--c:${c}">${raw(icon(ic))}<b>${bnCount(n)}</b><small>${l}</small></div>`)}</div>
+  <p class="muted small">অটোমেশনের ${bnCount(info.sourceItems)}টি সোর্স রেকর্ডও আসবে — ফলে নতুন সাইটে আগের পোস্টগুলো আবার AI-তে যাবে না।</p></div>`;
+}
+
+function importResult(r) {
+  const c = r.counts;
+  const t = [['পোস্ট', c.posts, 'file', '#16a34a'], ['লিংক', c.links, 'link', '#0d9488'], ['গ্যালারি ছবি', c.images, 'image', '#ea580c'], ['ক্যাটাগরি', c.categories, 'grid', '#7c3aed'],
+    ['ব্যানার', c.banners, 'image', '#db2777'], ['নোটিশ', c.notices, 'bell', '#ca8a04'], ['ইউজার', c.users, 'users', '#0891b2'], ['ফাইল কপি', r.copied, 'download', '#2563eb']];
+  const b = B();
+  return html`<div class="imp-card ok"><div class="imp-card-h">${raw(icon('checkCircle'))}<div><b>ইমপোর্ট সম্পন্ন হয়েছে</b><small>${bnNum(c.posts || 0)}টি পোস্ট${r.created.posts ? html` (নতুন ${bnNum(r.created.posts)}টি)` : ''} · অটোমেশন রেকর্ড ${bnCount(c.automation || 0)}টি · সেটিংস ${bnNum(c.settings || 0)}টি</small></div></div>
+  <div class="imp-tiles">${t.map(([l, n, ic, col]) => html`<div class="imp-tile" style="--c:${col}">${raw(icon(ic))}<b>${bnCount(n || 0)}</b><small>${l}</small></div>`)}</div>
+  <div class="imp-links"><a class="btn btn-primary btn-sm" href="${b}/posts">${raw(icon('file'))}পোস্টগুলো দেখুন</a><a class="btn btn-soft btn-sm" href="/" target="_blank">${raw(icon('globe'))}সাইট দেখুন</a></div></div>
+  ${r.missing.length ? html`<div class="imp-card warn"><div class="imp-card-h">${raw(icon('alert'))}<div><b>${bnNum(r.missing.length)}টি ফাইল পাওয়া যায়নি</b><small>এই নামেই ফাইলগুলো uploads ফোল্ডারে রাখলে সাথে সাথে কাজ করবে (বা পোস্ট এডিট করে নতুন ফাইল দিন)</small></div></div>
+    <ul class="miss">${r.missing.map((m) => html`<li><span class="badge b-${m.kind === 'PDF' ? 'red' : 'amber'}">${m.kind}</span><code data-copy title="কপি করুন">${m.file}</code>${m.post ? html`<a href="${b}/posts/${m.post}">${m.old ? `পুরোনো #${bnNum(m.old)} · ` : ''}${m.title ? String(m.title).slice(0, 50) : `পোস্ট #${bnNum(m.post)}`}</a>` : ''}</li>`)}</ul></div>` : ''}
+  ${r.warnings.length ? html`<div class="imp-card"><div class="imp-card-h">${raw(icon('info'))}<div><b>জেনে রাখুন</b></div></div><ul class="imp-warn">${r.warnings.slice(0, 30).map((w) => html`<li>${w}</li>`)}</ul></div>` : ''}`;
+}
+
 module.exports = {
+  importPage, importPreview, importResult,
   dashboard, postsList, postForm, categories, banners, ads, notices, reports, automation, logLine, analytics,
   pagesTeam, subscribers, users, profile, notifications, settingsPage, AD_SLOTS, AUTO_STEPS,
 };

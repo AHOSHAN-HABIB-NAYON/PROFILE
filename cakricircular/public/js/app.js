@@ -128,6 +128,7 @@
   }
 
   function swap(data, back, after) {
+    lbClose();
     var apply = function () {
       app.innerHTML = data.body;
       document.title = data.title;
@@ -501,6 +502,54 @@
     else toast('ব্রাউজারের মেনু থেকে "Install app" / "Add to Home screen" চাপুন');
   });
   if (window.matchMedia('(display-mode: standalone)').matches) { var ic = $('#installCard'); if (ic) ic.hidden = true; }
+
+  /* ---------------- gallery lightbox ---------------- */
+  var lb = null; var lbList = []; var lbI = 0;
+  function lbBuild() {
+    if (lb) return lb;
+    lb = document.createElement('div'); lb.className = 'lb'; lb.setAttribute('role', 'dialog'); lb.setAttribute('aria-label', 'ছবি');
+    lb.innerHTML = '<div class="lb-top"><b data-lb-count></b><button class="lb-btn" type="button" data-lb-close aria-label="বন্ধ"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>' +
+      '<div class="lb-stage"><img alt="" data-lb-img><button class="lb-btn lb-nav lb-prev" type="button" data-lb-prev aria-label="আগের"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></button><button class="lb-btn lb-nav lb-next" type="button" data-lb-next aria-label="পরের"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg></button></div>' +
+      '<div class="lb-dots" data-lb-dots></div>';
+    document.body.appendChild(lb);
+    var img = $('[data-lb-img]', lb); var sx = 0; var sy = 0; var lastTap = 0;
+    lb.addEventListener('click', function (e) {
+      if (e.target.closest('[data-lb-close]') || e.target === $('.lb-stage', lb)) return lbClose();
+      if (e.target.closest('[data-lb-prev]')) return lbShow(lbI - 1);
+      if (e.target.closest('[data-lb-next]')) return lbShow(lbI + 1);
+    });
+    img.addEventListener('dblclick', function () { img.classList.toggle('zoomed'); });
+    lb.addEventListener('touchstart', function (e) { var t = e.touches[0]; sx = t.clientX; sy = t.clientY; }, { passive: true });
+    lb.addEventListener('touchend', function (e) {
+      var t = e.changedTouches[0]; var dx = t.clientX - sx; var dy = t.clientY - sy;
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && e.target === img) { var now = Date.now(); if (now - lastTap < 300) img.classList.toggle('zoomed'); lastTap = now; return; }
+      if (img.classList.contains('zoomed')) return;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) lbShow(lbI + (dx < 0 ? 1 : -1));
+      else if (dy > 90 && Math.abs(dy) > Math.abs(dx)) lbClose();
+    }, { passive: true });
+    return lb;
+  }
+  function lbShow(i) {
+    if (!lbList.length) return;
+    lbI = (i + lbList.length) % lbList.length;
+    var img = $('[data-lb-img]', lb); img.classList.remove('zoomed'); img.src = lbList[lbI];
+    $('[data-lb-count]', lb).textContent = lbList.length > 1 ? bn(lbI + 1) + ' / ' + bn(lbList.length) : '';
+    $('[data-lb-dots]', lb).innerHTML = lbList.length > 1 ? lbList.map(function (_, j) { return '<i class="' + (j === lbI ? 'on' : '') + '"></i>'; }).join('') : '';
+    $$('.lb-nav', lb).forEach(function (b) { b.hidden = lbList.length < 2; });
+  }
+  function lbClose() { if (!lb) return; lb.classList.remove('open'); document.body.style.overflow = ''; }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('[data-lightbox]'); if (!a) return;
+    e.preventDefault();
+    var grid = a.closest('[data-gallery]');
+    lbList = $$('[data-lightbox]', grid).map(function (x) { return x.getAttribute('href'); });
+    lbBuild(); lbShow(+a.getAttribute('data-lightbox') || 0);
+    lb.classList.add('open'); document.body.style.overflow = 'hidden';
+  });
+  document.addEventListener('keydown', function (e) {
+    if (!lb || !lb.classList.contains('open')) return;
+    if (e.key === 'Escape') lbClose(); else if (e.key === 'ArrowRight') lbShow(lbI + 1); else if (e.key === 'ArrowLeft') lbShow(lbI - 1);
+  });
 
   /* ---------------- per-page init ---------------- */
   function init(root) {

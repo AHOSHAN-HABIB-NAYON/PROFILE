@@ -85,7 +85,12 @@ async function postBySlug(slug) {
         c.name AS cat_name, c.slug AS cat_slug, c.color AS cat_color, c.icon AS cat_icon
        ${FROM} WHERE p.slug = ? AND ${LIVE}`, [slug],
     );
-    if (post) return { post };
+    if (post) {
+      const { links, images } = await require('./postextras').forPost(post.id);
+      post.links = links;
+      post.images = images;
+      return { post };
+    }
     const redirect = await db.one(
       `SELECT p.slug FROM slug_redirects r JOIN posts p ON p.id = r.post_id WHERE r.old_slug = ? AND ${LIVE}`, [slug],
     );

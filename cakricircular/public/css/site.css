@@ -736,3 +736,68 @@ body.hide-bnav .bnav { transform: translateY(110%); }
   .hdr, .bnav, .ftr, .side, .ad, .post-tools, .post-actions, .drawer, .sheet, .modal, .toast { display: none !important; }
   body { padding: 0; background: #fff; }
 }
+
+/* ---------- post: important links ---------- */
+.links-card { margin-top: 16px; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; box-shadow: var(--shadow-sm); position: relative; overflow: hidden; }
+.links-card::before { content: ''; position: absolute; inset: 0 0 auto; height: 3px; background: linear-gradient(90deg, var(--brand-3), var(--blue)); }
+.lc-head { display: flex; align-items: center; gap: 11px; margin-bottom: 12px; }
+.lc-head h2 { font-size: 17px; line-height: 1.3; }
+.lc-head small { color: var(--muted); font-size: 12.5px; }
+.lc-ic { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); flex: none; }
+.lc-ic .i { width: 19px; height: 19px; }
+.lc-list { list-style: none; display: grid; gap: 8px; }
+.lc-item { --c: var(--blue); display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); color: var(--text); transition: transform .2s var(--ease), border-color .2s, box-shadow .2s, background .2s; }
+.lc-item:hover { transform: translateY(-1px); border-color: color-mix(in srgb, var(--c) 40%, var(--line)); box-shadow: 0 8px 18px -12px color-mix(in srgb, var(--c) 70%, transparent); }
+.lc-item:active { transform: scale(.99); }
+.lc-i { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; flex: none; color: var(--c); background: color-mix(in srgb, var(--c) 12%, var(--card)); }
+.lc-i .i { width: 19px; height: 19px; }
+.lc-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.lc-t b { font-size: 14.5px; font-weight: 600; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lc-t small { font-size: 12px; color: var(--muted); direction: ltr; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lc-go { color: var(--muted); display: grid; }
+.lc-go .i { width: 17px; height: 17px; }
+.lc-badge { font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 99px; color: #fff; background: var(--c); flex: none; }
+.lc-apply { --c: var(--brand-2); background: linear-gradient(135deg, color-mix(in srgb, var(--brand-2) 9%, var(--card)), var(--card)); border-color: color-mix(in srgb, var(--brand-2) 28%, var(--line)); }
+.lc-apply .lc-t b { color: var(--brand); }
+.lc-apply.is-closed { --c: var(--muted); filter: saturate(.3); }
+.lc-pdf { --c: var(--red); }
+.lc-result { --c: var(--violet); }
+.lc-admit { --c: var(--amber); }
+.btn-apply { position: relative; overflow: hidden; }
+.btn-apply::after { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .35) 50%, transparent 70%); transform: translateX(-100%); animation: applyShine 3.2s var(--ease) 1.2s infinite; }
+@keyframes applyShine { 0%, 60% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+/* ---------- post: gallery + lightbox ---------- */
+.gallery { margin-top: 18px; }
+.gal-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.gal-head .i { width: 20px; height: 20px; color: var(--brand); }
+.gal-head h2 { font-size: 17px; }
+.gal-head small { color: var(--muted); font-size: 12.5px; flex-basis: 100%; margin-left: 28px; margin-top: -4px; }
+.gal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.gal-grid.one { grid-template-columns: 1fr; }
+.gal-item { position: relative; display: block; border-radius: 14px; overflow: hidden; background: var(--bg-2); border: 1px solid var(--line); aspect-ratio: 3 / 4; }
+.gal-grid.one .gal-item { aspect-ratio: auto; max-height: 560px; }
+.gal-item img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; transition: transform .45s var(--ease); }
+.gal-grid.one .gal-item img { object-fit: contain; height: auto; max-height: 560px; }
+.gal-item:hover img { transform: scale(1.05); }
+.gal-zoom { position: absolute; right: 8px; bottom: 8px; width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; color: #fff; background: rgba(15, 23, 42, .55); backdrop-filter: blur(6px); }
+.gal-zoom .i { width: 18px; height: 18px; }
+.gal-n { position: absolute; left: 8px; top: 8px; font-size: 11.5px; font-weight: 700; color: #fff; background: rgba(15, 23, 42, .55); padding: 2px 8px; border-radius: 99px; backdrop-filter: blur(6px); }
+.lb { position: fixed; inset: 0; z-index: 200; background: rgba(5, 10, 20, .94); display: grid; grid-template-rows: auto 1fr auto; opacity: 0; pointer-events: none; transition: opacity .25s; touch-action: none; }
+.lb.open { opacity: 1; pointer-events: auto; }
+.lb-top { display: flex; align-items: center; justify-content: space-between; padding: max(10px, env(safe-area-inset-top)) 12px 10px; color: #fff; }
+.lb-top b { font-size: 14px; opacity: .85; }
+.lb-btn { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; color: #fff; background: rgba(255, 255, 255, .1); }
+.lb-btn .i { width: 22px; height: 22px; }
+.lb-stage { position: relative; overflow: hidden; display: grid; place-items: center; }
+.lb-stage img { max-width: 100%; max-height: 100%; object-fit: contain; transition: transform .25s var(--ease); transform-origin: center; user-select: none; -webkit-user-drag: none; }
+.lb-stage img.zoomed { transform: scale(2); cursor: zoom-out; }
+.lb-nav { position: absolute; top: 50%; transform: translateY(-50%); }
+.lb-prev { left: 10px; } .lb-next { right: 10px; }
+.lb-dots { display: flex; justify-content: center; gap: 6px; padding: 12px 0 max(14px, env(safe-area-inset-bottom)); }
+.lb-dots i { width: 7px; height: 7px; border-radius: 9px; background: rgba(255, 255, 255, .35); transition: width .25s, background .25s; }
+.lb-dots i.on { width: 20px; background: #fff; }
+@media (max-width: 640px) { .lb-nav { display: none; } }
+.lc-phone { --c: #0d9488; }
+.lc-mail { --c: #db2777; }
+.lc-phone .lc-t small, .lc-mail .lc-t small { font-size: 13px; color: var(--text-2); font-weight: 600; }

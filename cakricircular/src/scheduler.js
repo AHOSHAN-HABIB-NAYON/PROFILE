@@ -33,7 +33,10 @@ async function housekeeping() {
   const days = settings.int('trash_days', 30);
   const old = await db.query(`SELECT id, thumbnail, pdf FROM posts WHERE status = 'trash' AND deleted_at < DATE_SUB(NOW(), INTERVAL ${Number(days)} DAY) LIMIT 200`);
   for (const r of old) { uploads.removeFile(r.thumbnail); uploads.removeFile(r.pdf); }
-  if (old.length) await db.raw('DELETE FROM posts WHERE id IN (?)', [old.map((r) => r.id)]);
+  if (old.length) {
+    await require('./postextras').destroy(old.map((r) => r.id));
+    await db.raw('DELETE FROM posts WHERE id IN (?)', [old.map((r) => r.id)]);
+  }
   await db.query('DELETE FROM sessions WHERE expires_at < NOW()');
   await db.query('DELETE FROM login_attempts WHERE updated_at < DATE_SUB(NOW(), INTERVAL 1 DAY)');
   await db.query('DELETE FROM admin_notifications WHERE created_at < DATE_SUB(NOW(), INTERVAL 60 DAY)');

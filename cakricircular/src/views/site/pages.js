@@ -126,6 +126,8 @@ function postDetail(ctx) {
   const left = daysLeft(p.deadline);
   const over = p.deadline && new Date(p.deadline) < new Date();
   const content = String(p.content || '');
+  const links = p.links || [];
+  const applyUrl = p.apply_url || ((links.find((l) => l.is_apply) || {}).url) || '';
   // put an in-content ad after the 3rd paragraph
   let body = content;
   const mid = C.adSlot(ads, 'post_content', 'inline');
@@ -163,7 +165,7 @@ function postDetail(ctx) {
         <div class="cd-val" aria-live="off">${over ? 'সময় শেষ' : raw('<b data-d>--</b> দিন <b data-h>--</b> : <b data-m>--</b> : <b data-s>--</b>')}</div>
       </div>` : ''}
       <div class="post-actions">
-        ${p.apply_url && !over ? html`<a class="btn btn-primary btn-lg" href="${safeUrl(p.apply_url)}" target="_blank" rel="noopener nofollow">${raw(icon('external'))}আবেদন করুন</a>` : ''}
+        ${applyUrl && !over ? html`<a class="btn btn-primary btn-lg btn-apply" href="${safeUrl(applyUrl)}" target="_blank" rel="noopener nofollow">${raw(icon('external'))}অনলাইনে আবেদন করুন</a>` : ''}
         ${p.pdf ? html`<a class="btn btn-outline btn-lg" href="${uploads.url(p.pdf)}" target="_blank" rel="noopener">${raw(icon('pdf'))}PDF দেখুন</a>` : ''}
       </div>
       <div class="post-tools">
@@ -171,7 +173,9 @@ function postDetail(ctx) {
         <button type="button" data-bm="${p.id}" data-bm-deadline="${p.deadline ? new Date(p.deadline).toISOString() : ''}">${raw(icon('bookmark'))}<span>সেভ</span></button>
         <a href="/report?post=${p.id}">${raw(icon('flag'))}<span>রিপোর্ট</span></a>
       </div>
+      ${linksCard(links, over)}
       <div class="content">${raw(body)}</div>
+      ${gallery(p.images || [], p.title)}
       ${p.pdf ? html`<a class="pdf-card" href="${uploads.url(p.pdf)}" target="_blank" rel="noopener">${raw(icon('pdf'))}<span><b>মূল বিজ্ঞপ্তি (PDF)</b><small>ডাউনলোড বা দেখতে ট্যাপ করুন</small></span>${raw(icon('download'))}</a>` : ''}
       ${p.keywords ? html`<div class="kw">${String(p.keywords).split(',').map((k) => k.trim()).filter(Boolean).slice(0, 10).map((k) => html`<a class="chip" href="/search?q=${encodeURIComponent(k)}">#${k}</a>`)}</div>` : ''}
       ${C.adSlot(ads, 'post_bottom', 'wide')}
@@ -181,6 +185,42 @@ function postDetail(ctx) {
   </div>
   ${related.length ? html`<section class="related">${C.sectionHead('সম্পর্কিত পোস্ট', { iconName: 'layers' })}<div class="cards">${C.cardList(related)}</div></section>` : ''}
 </div>`;
+}
+
+/** "গুরুত্বপূর্ণ লিংক" — every labelled link of the post, apply links highlighted. */
+function linksCard(links, over) {
+  if (!links.length) return '';
+  const host = (u) => {
+    if (/^(tel|mailto):/i.test(u)) return u.replace(/^(tel|mailto):/i, '');
+    try { return new URL(u).host.replace(/^www\./, ''); } catch (_) { return ''; }
+  };
+  const kind = (l) => (l.is_apply ? 'apply' : /^tel:/i.test(l.url) ? 'phone' : /^mailto:/i.test(l.url) ? 'mail' : /\.pdf($|\?)/i.test(l.url) ? 'pdf'
+    : /result|ফলাফল|রেজাল্ট/i.test(`${l.label} ${l.url}`) ? 'result' : /admit|প্রবেশপত্র/i.test(`${l.label} ${l.url}`) ? 'admit' : 'link');
+  const ic = { apply: 'apply', pdf: 'pdf', result: 'chart', admit: 'file', link: 'link', phone: 'phone', mail: 'mail' };
+  return html`<section class="links-card" aria-label="গুরুত্বপূর্ণ লিংক">
+  <div class="lc-head"><span class="lc-ic">${raw(icon('link'))}</span><div><h2>গুরুত্বপূর্ণ লিংক</h2><small>${bnNum(links.length)}টি লিংক · অফিসিয়াল সোর্স</small></div></div>
+  <ul class="lc-list">${links.map((l) => {
+    const k = kind(l);
+    return html`<li><a class="lc-item lc-${k}${l.is_apply && over ? ' is-closed' : ''}" href="${safeUrl(l.url)}" ${raw(/^(tel|mailto):/i.test(l.url) ? '' : 'target="_blank" rel="noopener nofollow"')}>
+      <span class="lc-i">${raw(icon(ic[k]))}</span>
+      <span class="lc-t"><b>${l.label || host(l.url)}</b><small>${host(l.url)}</small></span>
+      ${l.is_apply ? html`<span class="lc-badge">${over ? 'সময় শেষ' : 'আবেদন'}</span>` : ''}
+      <span class="lc-go">${raw(icon('external'))}</span>
+    </a></li>`;
+  })}</ul>
+</section>`;
+}
+
+/** Notice images gallery — tap to open the lightbox (app.js). */
+function gallery(images, title) {
+  if (!images.length) return '';
+  return html`<section class="gallery" aria-label="বিজ্ঞপ্তির ছবি">
+  <div class="gal-head">${raw(icon('gallery'))}<h2>বিজ্ঞপ্তির ছবি</h2><small>${bnNum(images.length)}টি · বড় করে দেখতে ট্যাপ করুন</small></div>
+  <div class="gal-grid${images.length === 1 ? ' one' : ''}" data-gallery>${images.map((im, i) => html`<a class="gal-item" href="${uploads.url(im.image)}" data-lightbox="${i}" aria-label="ছবি ${bnNum(i + 1)} বড় করে দেখুন">
+    <img src="${uploads.url(im.image)}" alt="${im.caption || `${title} — ছবি ${bnNum(i + 1)}`}" loading="lazy" decoding="async">
+    <span class="gal-zoom">${raw(icon('zoom'))}</span>${images.length > 1 ? html`<span class="gal-n">${bnNum(i + 1)}/${bnNum(images.length)}</span>` : ''}
+  </a>`)}</div>
+</section>`;
 }
 
 function searchPage({ q, rows, total, page, hasMore, cats, catId, division, top }) {

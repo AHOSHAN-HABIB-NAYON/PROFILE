@@ -74,6 +74,13 @@
     return fetch(url, { method: 'POST', body: body, credentials: 'same-origin', headers: { 'X-CSRF-Token': ADM.csrf, 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' } })
       .then(function (r) { return r.json().catch(function () { return { ok: false, error: 'সার্ভার থেকে সঠিক উত্তর আসেনি (' + r.status + ')' }; }); });
   }
+  function impStep(f, n, done) {
+    $$('.imp-steps li', f.parentNode).forEach(function (li, i) { li.classList.toggle('on', i < n); li.classList.toggle('done', i < n - 1 || (i === n - 1 && done)); });
+  }
+  document.addEventListener('click', function (e) {
+    var ch = e.target.closest && e.target.closest('[data-fill]'); if (!ch) return;
+    var inp = $('[name="' + ch.getAttribute('data-fill') + '"]'); if (inp) { inp.value = ch.getAttribute('data-val'); inp.focus(); }
+  });
   function handle(d) {
     if (!d) return;
     if (d.ok) {
@@ -93,7 +100,8 @@
     if (!f.matches('[data-ajax], [data-bulk]')) return;
     e.preventDefault();
     var sub = e.submitter;
-    var conf = (sub && sub.getAttribute('data-confirm')) || f.getAttribute('data-confirm');
+    var conf = sub && sub.hasAttribute('data-no-confirm') ? null : ((sub && sub.getAttribute('data-confirm')) || f.getAttribute('data-confirm'));
+    var action = sub && sub.hasAttribute('formaction') ? sub.getAttribute('formaction') : f.getAttribute('action');
     (conf ? confirmBox(conf) : Promise.resolve(true)).then(function (yes) {
       if (!yes) return;
       syncEditors(f);
@@ -102,8 +110,11 @@
       var btns = $$('button[type=submit], button:not([type])', f); btns.forEach(function (b) { b.disabled = true; });
       var old = sub ? sub.innerHTML : '';
       if (sub && !sub.classList.contains('icon-btn')) sub.innerHTML = 'অপেক্ষা করুন…';
-      post(f.getAttribute('action'), fd).then(function (d) {
+      var res = $('[data-result]', f);
+      if (res && f.hasAttribute('data-imp-form')) { res.innerHTML = '<div class="imp-wait"><span class="spin"></span>' + (/check/.test(action) ? 'পুরোনো ডাটাবেস যাচাই হচ্ছে…' : 'ইমপোর্ট চলছে — পোস্ট, লিংক, ছবি আনা হচ্ছে। পাতাটি বন্ধ করবেন না…') + '</div>'; impStep(f, /check/.test(action) ? 2 : 3, false); }
+      post(action, fd).then(function (d) {
         if (d.ok && d.slug) { var s = $('[name=slug]', f); if (s) s.value = d.slug; }
+        if (res) { res.innerHTML = d.ok && d.html ? d.html : (d.ok ? '' : '<div class="imp-card err"><div class="imp-card-h"><b>' + (d.error || 'সমস্যা হয়েছে').replace(/</g, '&lt;') + '</b></div></div>'); if (f.hasAttribute('data-imp-form')) impStep(f, /check/.test(action) ? 2 : 3, d.ok); if (d.html) res.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
         handle(d);
       }).catch(function () { toast('ইন্টারনেট সংযোগ পরীক্ষা করুন', true); })
         .finally(function () { btns.forEach(function (b) { b.disabled = false; }); if (sub && old) sub.innerHTML = old; });
@@ -269,4 +280,58 @@
     var log = $('[data-log]', root); if (log) { log.scrollTop = log.scrollHeight; startPoll(false); }
   }
   init(document);
+})();
+
+/* ---------------- post editor: links repeater & gallery ---------------- */
+(function () {
+  var BN = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+  function bn(n) { return String(n).replace(/[0-9]/g, function (d) { return BN[d]; }); }
+  function reindex(box) {
+    var rows = box.querySelectorAll('[data-lk-row]');
+    rows.forEach(function (r, i) {
+      r.querySelectorAll('[name^="links["]').forEach(function (inp) { inp.name = inp.name.replace(/^links\[[^\]]*\]/, 'links[' + i + ']'); });
+    });
+    var c = box.querySelector('[data-lk-count]'); if (c) c.textContent = bn(rows.length) + 'টি';
+  }
+  document.addEventListener('click', function (e) {
+    var box = e.target.closest && e.target.closest('[data-links]'); if (!box) return;
+    var rowsEl = box.querySelector('[data-lk-rows]');
+    if (e.target.closest('[data-lk-add]')) {
+      var tpl = box.querySelector('[data-lk-tpl]');
+      rowsEl.insertAdjacentHTML('beforeend', tpl.innerHTML);
+      var row = rowsEl.lastElementChild; row.classList.add('lk-new');
+      reindex(box); var inp = row.querySelector('.lk-label'); if (inp) inp.focus();
+      return;
+    }
+    var del = e.target.closest('[data-lk-del]');
+    if (del) { var r = del.closest('[data-lk-row]'); r.classList.add('lk-out'); setTimeout(function () { r.remove(); reindex(box); }, 180); return; }
+    var up = e.target.closest('[data-lk-up]');
+    if (up) { var ro = up.closest('[data-lk-row]'); if (ro.previousElementSibling) { rowsEl.insertBefore(ro, ro.previousElementSibling); reindex(box); } }
+  });
+  // paste a URL into the label box → move it to the URL box
+  document.addEventListener('paste', function (e) {
+    var t = e.target; if (!t.classList || !t.classList.contains('lk-label')) return;
+    var text = (e.clipboardData || window.clipboardData).getData('text');
+    var url = t.closest('[data-lk-row]').querySelector('.lk-url');
+    if (/^https?:\/\//i.test(text.trim()) && url && !url.value) { e.preventDefault(); url.value = text.trim(); }
+  });
+  // gallery: preview newly picked images
+  document.addEventListener('change', function (e) {
+    var inp = e.target; if (!inp.matches || !inp.matches('[data-ge-input]')) return;
+    var grid = inp.closest('[data-ge-grid]');
+    grid.querySelectorAll('.ge-pending').forEach(function (x) { x.remove(); });
+    var files = Array.prototype.slice.call(inp.files || []);
+    files.forEach(function (f) {
+      var fig = document.createElement('div'); fig.className = 'ge-item ge-pending';
+      var img = document.createElement('img'); img.src = URL.createObjectURL(f); img.alt = '';
+      var b = document.createElement('span'); b.className = 'ge-new'; b.textContent = 'নতুন';
+      fig.appendChild(img); fig.appendChild(b); grid.insertBefore(fig, inp.closest('.ge-add'));
+    });
+    var note = grid.parentNode.querySelector('[data-ge-note]');
+    if (note) { note.hidden = !files.length; note.textContent = bn(files.length) + 'টি নতুন ছবি সেভ করলে আপলোড হবে'; }
+  });
+  document.addEventListener('change', function (e) {
+    var c = e.target; if (!c.matches || !c.matches('.ge-del input')) return;
+    c.closest('.ge-item').classList.toggle('ge-removing', c.checked);
+  });
 })();

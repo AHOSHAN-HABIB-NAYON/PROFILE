@@ -20,6 +20,7 @@ const MENU = [
   ['subscribers', '/subscribers', 'সাবস্ক্রাইবার', 'mail', 'subscribers'],
   ['users', '/users', 'ইউজার', 'users', 'users'],
   ['settings', '/settings', 'সেটিংস', 'settings', 'settings'],
+  ['import', '/import', 'পুরোনো সাইট থেকে আনুন', 'database', 'settings'],
 ];
 
 function avatar(u, size = 36) {
