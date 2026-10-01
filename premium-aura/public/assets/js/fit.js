@@ -5,7 +5,7 @@
  * to the 390px design so it looks identical everywhere. Tablets/desktops are untouched.
  */
 (function () {
-  var BASE = 390;
+  var BASE = 412; // design width: a bit wider than most phones so everything is slightly smaller
   var root = document.documentElement;
   function fit() {
     var w = root.clientWidth || window.innerWidth;

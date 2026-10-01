@@ -700,3 +700,29 @@ table.table { width: 100%; border-collapse: separate; border-spacing: 0; }
 }
 .num-value { font-size: 16px; letter-spacing: .01em; }
 .num-sub .chip { font-size: 11px; padding: 2px 8px; }
+
+/* Compact header, bottom menu and type on phones */
+@media (max-width: 991px) {
+  :root { --header-h: 56px; --bottom-h: 60px; }
+  .topbar { gap: 8px; padding: 0 12px; }
+  .topbar .brand-mark, .topbar .brand-logo { width: 34px; height: 34px; border-radius: 10px; font-size: 15px; }
+  .topbar .brand { gap: 8px; }
+  .topbar .brand strong { font-size: 15px; }
+  .topbar .brand small { font-size: 10px; }
+  .icon-btn { width: 38px; height: 38px; font-size: 16px; border-radius: 12px; }
+  .avatar { width: 34px; height: 34px; font-size: 14px; }
+  .badge-dot { top: 3px; right: 2px; min-width: 16px; height: 16px; font-size: 10px; }
+  .bottom-nav a { font-size: 10px; gap: 3px; }
+  .bottom-nav a i { font-size: 17px; }
+  .bottom-nav a.active::before { top: 6px; width: 40px; height: 28px; border-radius: 11px; }
+  h1 { font-size: 21px; } h2 { font-size: 17px; } h3 { font-size: 15px; }
+  .page-head { margin: 2px 0 14px; gap: 10px; }
+  .page-head .ph-icon { width: 40px; height: 40px; font-size: 17px; border-radius: 12px; }
+  .page-head h1 { font-size: 18px; }
+  .page-head p { font-size: 12px; }
+  .stat-card { padding: 12px; gap: 10px; }
+  .stat-card .ic { width: 40px; height: 40px; font-size: 17px; border-radius: 12px; }
+  .stat-card .value { font-size: 19px; }
+  .app-tile .t-ic { width: 40px; height: 40px; font-size: 17px; border-radius: 12px; }
+  .plan-card .price { font-size: 24px; }
+}
