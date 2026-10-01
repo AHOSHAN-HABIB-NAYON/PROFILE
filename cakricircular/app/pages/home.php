@@ -110,20 +110,16 @@ html[data-theme="dark"] .hh-search{background:var(--card)}
 @media(max-width:700px){ .hh{margin:-12px -12px 0} .cg{margin:12px -12px 0;padding:2px 12px 4px} }
 @media(max-width:360px){ .hh h1{font-size:1.55rem} .hh-pill{font-size:1.25rem} }
 
-/* "সঠিক প্রস্তুতি" প্রোমো কার্ড */
-.hp{position:relative;display:flex;align-items:center;gap:14px;margin:14px 0 0;padding:16px 18px;border-radius:22px;overflow:hidden;
-  background:linear-gradient(120deg,#083d39,#0d6b63 60%,#16a08a);color:#fff;box-shadow:var(--sh);isolation:isolate}
-.hp::after{content:"";position:absolute;right:-40px;top:-50px;width:180px;height:180px;border-radius:50%;z-index:-1;
-  background:radial-gradient(circle,rgba(170,245,230,.3),transparent 70%)}
+/* "ট্রেন্ডিং দেখুন" — ছোট এক সারির কার্ড */
+.hp{display:flex;align-items:center;gap:11px;margin:12px 0 0;padding:9px 10px 9px 12px;border-radius:16px;
+  background:linear-gradient(120deg,#0b544e,#0f766e 60%,#16a08a);color:#fff;box-shadow:var(--sh)}
+.hp-ic{width:36px;height:36px;flex:none;border-radius:11px;background:rgba(255,255,255,.15);display:grid;place-items:center;font-size:.95rem}
 .hp-tx{flex:1;min-width:0}
-.hp b{display:block;font-size:1.06rem;line-height:1.35}
-.hp-tx>span{display:block;font-size:.78rem;opacity:.85;margin-top:2px}
-.hp .hp-go{opacity:1;display:inline-flex;align-items:center;gap:6px;margin-top:10px;background:#fbbf24;color:#3b2a00;font-weight:700;
-  font-size:.78rem;padding:6px 14px;border-radius:999px;box-shadow:0 6px 14px rgba(251,191,36,.3)}
-.hp-ic{width:62px;height:62px;flex:none;border-radius:20px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);
-  display:grid;place-items:center;font-size:1.6rem}
+.hp b{display:block;font-size:.88rem;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp-tx>span{display:block;font-size:.7rem;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hp .hp-go{flex:none;display:inline-flex;align-items:center;gap:5px;background:#fbbf24;color:#3b2a00;font-weight:700;
+  font-size:.72rem;padding:5px 11px;border-radius:999px}
 
-@media(max-width:700px){ .hp b{font-size:.98rem} }
 CSS);
 
 $P = [
@@ -193,12 +189,9 @@ $P = [
 </div>
 <?php elseif ($page === 1): ?>
 <a class="hp" href="<?= e(url('trending')) ?>">
-  <span class="hp-tx">
-    <b>সঠিক প্রস্তুতি, সফল ক্যারিয়ার</b>
-    <span>আমাদের সাথে থাকুন, আপনার স্বপ্ন পূরণে</span>
-    <span class="hp-go">ট্রেন্ডিং দেখুন <i class="fa fa-arrow-right"></i></span>
-  </span>
-  <span class="hp-ic"><i class="fa fa-user-graduate"></i></span>
+  <span class="hp-ic"><i class="fa fa-fire"></i></span>
+  <span class="hp-tx"><b>সঠিক প্রস্তুতি, সফল ক্যারিয়ার</b><span>সবচেয়ে বেশি দেখা বিজ্ঞপ্তিগুলো</span></span>
+  <span class="hp-go">ট্রেন্ডিং <i class="fa fa-arrow-right"></i></span>
 </a>
 <?php endif; ?>
 

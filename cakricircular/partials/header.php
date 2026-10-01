@@ -131,7 +131,7 @@ html[data-theme="dark"] .tone-4,html[data-theme="dark"] .tone-5,html[data-theme=
 #spa-progress{position:fixed;inset:calc(var(--head-h) + var(--bar-h) + env(safe-area-inset-top)) 0 auto 0;height:3px;z-index:120;pointer-events:none;opacity:0;transition:opacity .25s}
 #spa-progress.on{opacity:1}
 #spa-progress span{display:block;height:100%;width:0;border-radius:0 3px 3px 0;
-  background:linear-gradient(90deg,#7fe0cf,#fff);box-shadow:0 0 10px rgba(127,224,207,.7);transition:width .2s ease}
+  background:linear-gradient(90deg,var(--brand),#22c1a4);box-shadow:0 0 10px rgba(15,118,110,.5);transition:width .2s ease}
 
 /* স্কেলিটন লোডার */
 .skel{background:linear-gradient(90deg,var(--chip) 25%,var(--soft) 37%,var(--chip) 63%);background-size:400% 100%;
@@ -169,27 +169,26 @@ html[data-theme="dark"] .tone-4,html[data-theme="dark"] .tone-5,html[data-theme=
 CSS);
 
 css_once('header', <<<CSS
-.hd{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--hd-grad);color:#fff;
-  padding-top:env(safe-area-inset-top);box-shadow:0 6px 20px rgba(8,50,46,.18)}
-.hd::after{content:"";position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(600px 120px at 85% -40px,rgba(140,230,215,.22),transparent 70%)}
+.hd{position:fixed;top:0;left:0;right:0;z-index:100;background:color-mix(in srgb,var(--card) 95%,transparent);color:var(--ink);
+  backdrop-filter:saturate(1.6) blur(12px);-webkit-backdrop-filter:saturate(1.6) blur(12px);
+  padding-top:env(safe-area-inset-top);border-bottom:1px solid var(--line);box-shadow:0 2px 14px rgba(16,40,36,.05)}
 .hd-in{position:relative;z-index:1;max-width:var(--wrap);margin:0 auto;height:var(--head-h);display:flex;align-items:center;gap:10px;padding:0 12px}
 .brand{display:flex;align-items:center;gap:10px;min-width:0}
-.brand .lg{width:42px;height:42px;flex:none;border-radius:50%;background:#fff;padding:3px;
-  box-shadow:0 4px 12px rgba(0,0,0,.18),0 0 0 2px rgba(255,255,255,.25)}
-.brand .lg img{width:100%;height:100%;border-radius:50%;object-fit:cover}
-.brand b{font-size:1.14rem;font-weight:700;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;line-height:1.2}
-.brand small{display:block;font-size:.7rem;font-weight:500;opacity:.78;line-height:1.3;letter-spacing:.2px;
+.brand .lg{width:44px;height:44px;flex:none;border-radius:13px;overflow:hidden;box-shadow:0 3px 10px rgba(16,40,36,.12)}
+.brand .lg img{width:100%;height:100%;object-fit:cover}
+.brand b{font-size:1.16rem;font-weight:700;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;line-height:1.22;color:var(--ink)}
+.brand small{display:block;font-size:.72rem;font-weight:500;color:var(--muted);line-height:1.3;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hd-sp{flex:1}
-.ico-btn{position:relative;width:40px;height:40px;border-radius:12px;border:0;background:rgba(255,255,255,.1);
-  display:grid;place-items:center;color:#fff;font-size:1.02rem;transition:.18s;flex:none}
-.ico-btn:hover{background:rgba(255,255,255,.2)}
+.ico-btn{position:relative;width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--card);
+  display:grid;place-items:center;color:var(--ink);font-size:1rem;transition:.18s;flex:none}
+.ico-btn:hover{background:var(--brand-l);border-color:color-mix(in srgb,var(--brand) 25%,var(--line));color:var(--brand)}
 .ico-btn:active{transform:scale(.92)}
-.ico-btn .nb{position:absolute;top:4px;right:4px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;
-  background:#ff3b30;color:#fff;font-size:.6rem;font-weight:700;display:none;align-items:center;justify-content:center;
-  box-shadow:0 0 0 2px #0b544e}
+.ico-btn .nb{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 4px;border-radius:999px;
+  background:#e53935;color:#fff;font-size:.6rem;font-weight:700;display:none;align-items:center;justify-content:center;
+  box-shadow:0 0 0 2px var(--card)}
 .ico-btn .nb.on{display:flex;animation:pop .3s ease}
+.ico-btn.bell.on{color:var(--brand)}
 .ico-btn.bell.on i{animation:ring 2.4s ease-in-out infinite;transform-origin:50% 0}
 @keyframes ring{0%,70%,100%{transform:rotate(0)}75%{transform:rotate(14deg)}80%{transform:rotate(-12deg)}85%{transform:rotate(8deg)}90%{transform:rotate(-4deg)}}
 @keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
@@ -200,11 +199,11 @@ html[data-theme="dark"] .th-btn .fa-moon{display:none}
 /* কম্পিউটারের মেনু */
 .hd-nav{display:none;align-items:center;gap:2px;margin-left:18px}
 .hd-nav a{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;font-size:.9rem;font-weight:600;
-  color:rgba(255,255,255,.82);transition:.16s}
-.hd-nav a i{font-size:.82rem;opacity:.85}
-.hd-nav a:hover{background:rgba(255,255,255,.1);color:#fff}
-.hd-nav a.active{background:#fff;color:#0b544e}
-html[data-theme="dark"] .hd-nav a.active{background:var(--brand);color:#fff}
+  color:var(--ink-2);transition:.16s}
+.hd-nav a i{font-size:.82rem;color:var(--brand);opacity:.9}
+.hd-nav a:hover{background:var(--brand-l);color:var(--brand)}
+.hd-nav a.active{background:var(--brand);color:#fff}
+.hd-nav a.active i{color:#fff}
 .hd .th-btn{display:none}
 
 /* ---------- সার্চ শিট ---------- */
@@ -252,11 +251,11 @@ html[data-theme="dark"] .hd-nav a.active{background:var(--brand);color:#fff}
 }
 @media(max-width:700px){
   :root{--head-h:60px}
-  .brand .lg{width:38px;height:38px}
+  .brand .lg{width:40px;height:40px;border-radius:12px}
   .brand b{font-size:1.04rem}
   .brand small{font-size:.66rem}
   .hd-in{gap:6px;padding:0 8px}
-  .ico-btn{width:38px;height:38px;background:transparent}
+  .ico-btn{width:38px;height:38px}
 }
 CSS);
 

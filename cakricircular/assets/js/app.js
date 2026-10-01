@@ -811,15 +811,16 @@
         if (dl < 0) chip = '<span class="pdead over"><span class="dic"><i class="fa fa-xmark"></i></span>সময় শেষ</span>';
         else if (dl <= 3) chip = '<span class="pdead urgent"><span class="dic"><i class="fa fa-hourglass-half"></i></span>' + (dl === 0 ? 'আজই শেষ দিন' : 'আর ' + bnNum(dl) + ' দিন বাকি') + '</span>';
         else chip = '<span class="pdead open"><span class="dic"><i class="fa fa-calendar-check"></i></span>আর ' + bnNum(dl) + ' দিন বাকি</span>';
-      } else chip = '<span class="pdead none">বিস্তারিত দেখুন</span>';
+      }
       return '<article class="pitem" data-href="' + esc(x.u) + '">' +
         '<span class="pthumb"><a class="pitem-thumb" href="' + esc(x.u) + '" tabindex="-1" aria-hidden="true">' +
           (x.i ? '<img src="' + esc(x.i) + '" alt="" loading="lazy">' : '') + '</a></span>' +
-        '<div class="pitem-body"><div class="ptop"><span class="porg">' + (x.o ? '<i class="fa fa-building"></i>' + esc(x.o) : '') + '</span>' +
-          (x.c ? '<span class="pcat tone-1">' + esc(x.c) + '</span>' : '') + '</div>' +
+        '<div class="pitem-body">' + chip +
           '<a href="' + esc(x.u) + '"><h3 class="pitem-title">' + esc(x.t) + '</h3></a>' +
           '<div class="pmeta"><span class="tm"><i class="fa fa-bookmark"></i>সেভ করা হয়েছে</span></div>' +
-          '<div class="prow">' + chip + '<button type="button" class="unsave-btn" data-unsave="' + esc(x.u) + '" aria-label="সরান"><i class="fa fa-trash-can"></i></button></div>' +
+          '<div class="prow"><div class="ptags">' + (x.c ? '<span class="ptag">' + esc(x.c) + '</span>' : '') +
+            (x.o ? '<span class="ptag soft"><i class="fa fa-building"></i>' + esc(x.o) + '</span>' : '') + '</div>' +
+          '<button type="button" class="unsave-btn" data-unsave="' + esc(x.u) + '" aria-label="সরান"><i class="fa fa-trash-can"></i></button></div>' +
         '</div></article>';
     }).join('');
   }
