@@ -64,7 +64,8 @@ router.post('/install', express.urlencoded({ extended: false, limit: '50kb' }), 
     await db.testConnection(dbCfg);
   } catch (e) {
     const m = String(e.code || e.message);
-    const msg = m.includes('ACCESS_DENIED') ? 'ডাটাবেজ ইউজারনেম বা পাসওয়ার্ড ভুল।'
+    const msg = m === 'OLD_SCHEMA' ? e.message
+      : m.includes('ACCESS_DENIED') ? 'ডাটাবেজ ইউজারনেম বা পাসওয়ার্ড ভুল।'
       : m.includes('BAD_DB') ? 'এই নামে কোনো ডাটাবেজ নেই।'
         : m.includes('ENOTFOUND') || m.includes('ECONNREFUSED') ? 'ডাটাবেজ হোস্ট/পোর্টে সংযোগ করা যায়নি।'
           : `ডাটাবেজে সংযোগ ব্যর্থ: ${e.message}`;

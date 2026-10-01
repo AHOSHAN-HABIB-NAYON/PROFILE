@@ -6,6 +6,7 @@
   "private": true,
   "scripts": {
     "start": "node server.js",
+    "build": "node -e \"console.log('build step not needed')\"",
     "dev": "node --watch server.js",
     "test": "node --test --test-concurrency=1 test/unit.test.js test/integration.test.js"
   },
