@@ -33,7 +33,7 @@ if ($page === 1) {
             $catCounts[(int)$cc['cat_id']] = (int)$cc['n'];
     } catch (Throwable $e) {}
 }
-$homeCats = array_slice(categories(), 0, 6);
+$homeCats = categories();
 
 css_once('banner', <<<CSS
 /* ব্যানার — ৮৫৬×২৯২ অনুপাত (২.৯৩:১) */
@@ -55,20 +55,22 @@ css_once('banner', <<<CSS
 CSS);
 
 css_once('home', <<<CSS
-/* ===== হোম হিরো (হেডারের সবুজ রঙ নিচে নেমে আসে) ===== */
-.hh{position:relative;margin:-16px -16px 0;padding:22px 18px 74px;background:var(--hero-grad);color:#fff;overflow:hidden;isolation:isolate}
-.hh::before{content:"";position:absolute;inset:0;z-index:-1;opacity:.55;
-  background:radial-gradient(420px 220px at 92% 18%,rgba(160,240,190,.28),transparent 70%),
-             radial-gradient(300px 200px at -5% 100%,rgba(255,255,255,.10),transparent 70%)}
-.hh-art{position:absolute;right:-14px;top:6px;width:min(44%,220px);z-index:-1;opacity:.5;pointer-events:none}
+/* ===== হোম হিরো — পেছনে ইনলাইন SVG দৃশ্য (আলাদা ছবি লোড হয় না) ===== */
+.hh{position:relative;margin:-16px -16px 0;padding:24px 18px 64px;background:#06592f;color:#fff;overflow:hidden;isolation:isolate}
+.hh-scene{position:absolute;inset:0;width:100%;height:100%;z-index:-2;display:block}
+.hh::before{content:"";position:absolute;inset:0;z-index:-1;
+  background:linear-gradient(100deg,rgba(3,48,26,.94) 0%,rgba(4,64,35,.84) 48%,rgba(6,89,47,.42) 78%,rgba(6,89,47,.18) 100%),
+             linear-gradient(0deg,rgba(3,48,26,.85) 0%,rgba(3,48,26,0) 45%)}
+html[data-theme="dark"] .hh::before{background:linear-gradient(100deg,rgba(2,24,14,.96) 0%,rgba(3,40,22,.88) 50%,rgba(3,50,28,.55) 80%,rgba(3,50,28,.35) 100%),
+             linear-gradient(0deg,rgba(2,24,14,.9) 0%,rgba(2,24,14,0) 45%)}
 .hh-badge{display:inline-flex;align-items:center;gap:7px;padding:4px 12px 4px 5px;border-radius:999px;font-size:.74rem;font-weight:600;
-  background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.16);margin-bottom:10px}
+  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);margin-bottom:10px;backdrop-filter:blur(4px)}
 .hh-badge b{background:#fbbf24;color:#3b2a00;border-radius:999px;padding:0 8px;font-size:.66rem;line-height:1.8}
-.hh h1{font-size:1.72rem;line-height:1.28;margin:0 0 8px;font-weight:700;letter-spacing:-.6px;max-width:15em;text-wrap:balance}
+.hh h1{font-size:1.72rem;line-height:1.28;margin:0 0 8px;font-weight:700;letter-spacing:-.6px;max-width:15em;text-wrap:balance;text-shadow:0 2px 14px rgba(0,0,0,.25)}
 .hh h1 span{color:#9bf0bd}
-.hh p{margin:0 0 16px;font-size:.88rem;opacity:.86;max-width:28em;line-height:1.65}
-.hh-search{position:relative;display:flex;align-items:center;background:var(--card);border-radius:18px;padding:5px 5px 5px 14px;
-  box-shadow:0 14px 30px rgba(0,0,0,.18);max-width:620px}
+.hh p{margin:0 0 16px;font-size:.88rem;opacity:.92;max-width:28em;line-height:1.65;text-shadow:0 1px 8px rgba(0,0,0,.25)}
+.hh-search{position:relative;display:flex;align-items:center;background:#fff;border-radius:18px;padding:5px 5px 5px 14px;
+  box-shadow:0 14px 30px rgba(0,0,0,.22);max-width:620px}
 html[data-theme="dark"] .hh-search{background:var(--card)}
 .hh-search i.mg{color:var(--muted);font-size:.95rem}
 .hh-search input{flex:1;min-width:0;border:0;background:none;height:44px;padding:0 10px;font:inherit;font-size:.94rem;color:var(--ink)}
@@ -77,19 +79,44 @@ html[data-theme="dark"] .hh-search{background:var(--card)}
 .hh-search button{width:44px;height:44px;border:0;border-radius:14px;flex:none;color:#fff;font-size:.95rem;
   background:linear-gradient(135deg,var(--brand),var(--brand-2));box-shadow:0 6px 14px rgba(10,125,69,.3)}
 .hh-search button:active{transform:scale(.94)}
-.hh-stats{display:flex;gap:16px;margin-top:14px;font-size:.76rem;opacity:.9;flex-wrap:wrap}
+.hh-stats{display:flex;gap:16px;margin-top:14px;font-size:.76rem;opacity:.95;flex-wrap:wrap}
 .hh-stats span{display:inline-flex;align-items:center;gap:6px}
 .hh-stats i{color:#9bf0bd}
 
-/* ক্যাটাগরি গ্রিড — হিরোর ওপর ভেসে থাকা সাদা প্যানেল */
-.cg{position:relative;z-index:2;margin:-56px 0 0;background:var(--card);border:1px solid var(--line-2);border-radius:24px;
-  padding:14px;box-shadow:var(--sh-lg);display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.cg a{display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center;padding:12px 4px 10px;border-radius:18px;
-  background:var(--tl);transition:transform .18s,box-shadow .18s;min-width:0}
-.cg a:hover{transform:translateY(-3px);box-shadow:0 10px 22px rgba(10,40,25,.1)}
-.cg a:active{transform:scale(.97)}
-.cg b{font-size:.84rem;font-weight:700;color:var(--ink);line-height:1.3;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cg small{font-size:.68rem;color:var(--muted);font-weight:600;margin-top:-5px}
+/* ক্যাটাগরি — এক লাইনে, আঙুলে টেনে সরানো যায় */
+.cg-wrap{position:relative;z-index:2;margin:-40px 0 0;background:var(--card);border:1px solid var(--line-2);border-radius:22px;
+  box-shadow:var(--sh-lg);padding:10px 0}
+.cg{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;padding:2px 12px;
+  -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.cg::-webkit-scrollbar{display:none}
+.cg a{flex:none;scroll-snap-align:start;display:flex;align-items:center;gap:9px;padding:7px 14px 7px 7px;border-radius:999px;
+  background:var(--tl);border:1px solid color-mix(in srgb,var(--t1) 18%,transparent);transition:transform .18s;min-width:0}
+.cg a:active{transform:scale(.96)}
+.cg .tile-ic{width:36px;height:36px;font-size:.86rem;box-shadow:none}
+.cg b{display:block;font-size:.84rem;font-weight:700;color:var(--ink);line-height:1.25;white-space:nowrap}
+.cg small{display:block;font-size:.68rem;color:var(--muted);font-weight:600;line-height:1.3}
+.cg-wrap::after{content:"";position:absolute;top:0;right:0;bottom:0;width:34px;border-radius:0 22px 22px 0;pointer-events:none;
+  background:linear-gradient(90deg,transparent,var(--card))}
+
+@media(min-width:701px){
+  .hh{margin:0;border-radius:28px;padding:40px 36px 76px;min-height:360px}
+  .hh h1{font-size:2.1rem}
+  .hh p{font-size:.96rem}
+  .cg-wrap{margin:-44px 20px 0}
+  .cg a:hover{transform:translateY(-2px)}
+}
+@media(min-width:1024px){
+  .hh{padding:54px 52px 90px;min-height:430px}
+  .hh h1{font-size:2.6rem}
+  .hh::before{background:linear-gradient(90deg,rgba(3,48,26,.95) 0%,rgba(4,64,35,.82) 38%,rgba(6,89,47,.25) 62%,rgba(6,89,47,0) 80%),
+             linear-gradient(0deg,rgba(3,48,26,.6) 0%,rgba(3,48,26,0) 35%)}
+  .cg-wrap{margin:-50px 40px 0}
+}
+@media(max-width:700px){
+  .hh{margin:-12px -12px 0;padding:20px 16px 58px}
+  .hh-scene{width:auto;min-width:100%;left:auto;right:0}
+}
+@media(max-width:360px){ .hh h1{font-size:1.5rem} }
 
 /* "সঠিক প্রস্তুতি" প্রোমো কার্ড */
 .hp{position:relative;display:flex;align-items:center;gap:14px;margin:14px 0 0;padding:16px 18px;border-radius:22px;overflow:hidden;
@@ -104,25 +131,7 @@ html[data-theme="dark"] .hh-search{background:var(--card)}
 .hp-ic{width:62px;height:62px;flex:none;border-radius:20px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);
   display:grid;place-items:center;font-size:1.6rem}
 
-@media(min-width:701px){
-  .hh{margin:0;border-radius:28px;padding:34px 34px 88px}
-  .hh h1{font-size:2.1rem}
-  .hh p{font-size:.96rem}
-  .cg{margin:-64px 20px 0;grid-template-columns:repeat(6,1fr);padding:16px}
-}
-@media(min-width:1024px){
-  .hh{padding:44px 48px 96px}
-  .hh h1{font-size:2.5rem}
-  .hh-art{width:330px;right:40px;top:auto;bottom:70px;opacity:.85}
-  .cg{margin:-70px 40px 0}
-}
-@media(max-width:700px){
-  .hh{margin:-12px -12px 0;padding:18px 16px 70px}
-  .cg{padding:12px;gap:8px;border-radius:22px;margin-top:-54px}
-  .cg b{font-size:.8rem}
-  .hp b{font-size:.98rem}
-}
-@media(max-width:360px){ .hh h1{font-size:1.5rem} }
+@media(max-width:700px){ .hp b{font-size:.98rem} }
 CSS);
 
 $P = [
@@ -136,20 +145,7 @@ $P = [
 
 <?php if ($page === 1): ?>
 <section class="hh">
-  <svg class="hh-art" viewBox="0 0 300 220" aria-hidden="true">
-    <defs>
-      <linearGradient id="hhA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bff5d4" stop-opacity=".55"/><stop offset="1" stop-color="#bff5d4" stop-opacity=".05"/></linearGradient>
-      <linearGradient id="hhB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".35"/><stop offset="1" stop-color="#ffffff" stop-opacity=".04"/></linearGradient>
-    </defs>
-    <!-- স্মৃতিসৌধের আদলে ত্রিভুজ আর পতাকা -->
-    <path d="M150 20 L188 210 L112 210 Z" fill="url(#hhA)"/>
-    <path d="M150 52 L210 210 L90 210 Z" fill="url(#hhB)"/>
-    <path d="M150 84 L236 210 L64 210 Z" fill="url(#hhB)" opacity=".7"/>
-    <path d="M150 116 L262 210 L38 210 Z" fill="url(#hhB)" opacity=".5"/>
-    <line x1="232" y1="30" x2="232" y2="150" stroke="#e8fff1" stroke-opacity=".7" stroke-width="2"/>
-    <rect x="233" y="30" width="52" height="32" rx="3" fill="#0a7d45" stroke="#e8fff1" stroke-opacity=".5"/>
-    <circle cx="255" cy="46" r="9" fill="#f42a41"/>
-  </svg>
+  <?php readfile(APP_ROOT . '/partials/hero_scene.svg'); ?>
   <span class="hh-badge"><b>নতুন</b>প্রতিদিন হালনাগাদ চাকরির খবর</span>
   <h1><?= e(setting('home_hero_title', 'সবার আগে সঠিক তথ্য')) ?> <span><?= e(setting('home_hero_accent', 'চাকরি সার্কুলার')) ?></span></h1>
   <p><?= e(setting('home_hero_sub', 'সরকারি-বেসরকারি চাকরি, ভর্তি, রেজাল্ট, নোটিশ ও স্কলারশিপ — সব তথ্য এক প্ল্যাটফর্মে।')) ?></p>
@@ -165,15 +161,17 @@ $P = [
 </section>
 
 <?php if ($homeCats): ?>
+<div class="cg-wrap">
 <nav class="cg" aria-label="ক্যাটাগরি">
   <?php foreach ($homeCats as $i => $c): ?>
     <a class="tone-<?= ($i % 6) + 1 ?>" href="<?= e(cat_url($c['slug'])) ?>">
       <span class="tile-ic"><i class="fa <?= e($c['icon'] ?: 'fa-folder') ?>"></i></span>
-      <b><?= e($c['name']) ?></b>
-      <small><?= bn($catCounts[(int)$c['id']] ?? 0) ?>টি</small>
+      <span><b><?= e($c['name']) ?></b><small><?= bn($catCounts[(int)$c['id']] ?? 0) ?>টি পোস্ট</small></span>
     </a>
   <?php endforeach; ?>
+  <a class="tone-2" href="<?= e(url('categories')) ?>"><span class="tile-ic"><i class="fa fa-grip"></i></span><span><b>সব ক্যাটাগরি</b><small>দেখুন</small></span></a>
 </nav>
+</div>
 <?php endif; ?>
 <?php endif; ?>
 
