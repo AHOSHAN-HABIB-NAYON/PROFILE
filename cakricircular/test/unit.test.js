@@ -82,3 +82,30 @@ test('automation errors are explained in Bangla', () => {
   assert.match(explain({ status: 404, url: 'https://x.com/wp-json/wp/v2/posts' }), /REST API/);
   assert.match(explain({ code: 'ENOTFOUND', message: 'getaddrinfo ENOTFOUND' }), /ডোমেইন/);
 });
+
+test('old PHP plain-text content → HTML (same rules as format_content)', () => {
+  const { formatContent } = require('../src/importer');
+  const out = formatContent('# শিরোনাম\nযোগ্যতা:\n- স্নাতক পাস\n- বয়স ৩০\n\nবিস্তারিত: https://example.gov.bd/x. দেখুন **জরুরি**');
+  assert.match(out, /<h2>শিরোনাম<\/h2>/);
+  assert.match(out, /<h3>যোগ্যতা<\/h3>/);
+  assert.match(out, /<ul><li>স্নাতক পাস<\/li><li>বয়স ৩০<\/li><\/ul>/);
+  assert.match(out, /<a href="https:\/\/example\.gov\.bd\/x"/);
+  assert.match(out, /<b>জরুরি<\/b>/);
+  // existing HTML is kept but sanitised
+  assert.strictEqual(formatContent('<p>হ্যালো</p><script>x()</script><style>p{}</style>'), '<p>হ্যালো</p>');
+  assert.strictEqual(formatContent(''), '');
+});
+
+test('post links: rows parsed, unsafe/empty dropped, tel/mailto kept', () => {
+  const { parseLinks, hostLabel } = require('../src/postextras');
+  const rows = parseLinks({
+    1: { label: 'বিজ্ঞপ্তি', url: 'https://a.gov.bd/n.pdf' },
+    0: { label: 'আবেদন', url: 'apply.teletalk.com.bd', apply: '1' },
+    2: { label: 'x', url: 'javascript:alert(1)' },
+    3: { label: '', url: '' },
+    4: { label: 'ফোন', url: 'tel:01711000000' },
+  });
+  assert.deepStrictEqual(rows.map((r) => [r.url, r.is_apply]), [['https://apply.teletalk.com.bd', 1], ['https://a.gov.bd/n.pdf', 0], ['tel:01711000000', 0]]);
+  assert.strictEqual(hostLabel('https://www.bpsc.gov.bd/x'), 'bpsc.gov.bd');
+  assert.strictEqual(hostLabel('mailto:a@b.co'), 'ইমেইল করুন');
+});

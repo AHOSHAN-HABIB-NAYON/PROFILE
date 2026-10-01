@@ -153,7 +153,7 @@ test('integration', async (t) => {
     assert.strictEqual(bad.status, 403);
   });
 
-  let slug; let postId;
+  let slug; let postId; let catId;
   await t.test('create post with auto-compressed thumbnail', async () => {
     const sharp = require('sharp');
     const w = 1600; const h = 1200;
@@ -161,7 +161,7 @@ test('integration', async (t) => {
     const big = await sharp(noise, { raw: { width: w, height: h, channels: 3 } }).png().toBuffer();
     assert.ok(big.length > 1024 * 1024, 'test image should be >1MB');
     const cats = await req('GET', '/v2admin/posts/new');
-    const catId = cats.text.match(/<option value="(\d+)"[^>]*>সরকারি চাকরি/)[1];
+    catId = cats.text.match(/<option value="(\d+)"[^>]*>সরকারি চাকরি/)[1];
     const r = await admin('/posts/new', { title: 'রেলওয়ে ১৩৮০ পদে নিয়োগ বিজ্ঞপ্তি', category_id: catId, organization: 'বাংলাদেশ রেলওয়ে', vacancies: '১৩৮০', deadline: new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10), content: '<p>বিস্তারিত<script>x()</script></p>', status: 'published' }, { thumbnail: { buf: big, type: 'image/png', name: 'big.png' } });
     assert.ok(r.ok, JSON.stringify(r));
     postId = Number(r.redirect.split('/').pop());
@@ -306,6 +306,130 @@ test('integration', async (t) => {
     r = await admin('/posts/bulk', { ids: [String(postId)], action: 'publish' });
     assert.ok(r.ok);
     assert.strictEqual((await req('GET', `/post/${encodeURIComponent(slug)}`)).status, 200);
+  });
+
+  await t.test('post links + gallery: saved from the editor, shown on the post page', async () => {
+    const sharp = require('sharp');
+    const img = await sharp({ create: { width: 900, height: 1200, channels: 3, background: '#2563eb' } }).jpeg().toBuffer();
+    const fd = new FormData();
+    const fields = { title: 'লিংক ও গ্যালারি পরীক্ষা পোস্ট', category_id: String(catId), status: 'published',
+      'links[0][label]': 'অনলাইনে আবেদন', 'links[0][url]': 'https://apply.example.gov.bd', 'links[0][apply]': '1',
+      'links[1][label]': 'মূল বিজ্ঞপ্তি', 'links[1][url]': 'https://example.gov.bd/notice.pdf',
+      'links[2][label]': 'হেল্পলাইন', 'links[2][url]': 'tel:01700000000' };
+    for (const [k, v] of Object.entries(fields)) fd.append(k, v);
+    fd.append('images', new Blob([img], { type: 'image/jpeg' }), 'a.jpg');
+    fd.append('images', new Blob([img], { type: 'image/jpeg' }), 'b.jpg');
+    const r = await req('POST', '/v2admin/posts/new', { body: fd, headers: { 'x-csrf-token': csrf, accept: 'application/json' } });
+    const d = r.json();
+    assert.ok(d.ok, d.error);
+    const id = Number(d.redirect.split('/').pop());
+    const c = await mysql.createConnection({ host: DB.host, port: DB.port, user: DB.user, password: DB.password, database: DB.name });
+    const [[p]] = await c.query('SELECT slug, apply_url FROM posts WHERE id = ?', [id]);
+    const [links] = await c.query('SELECT label, url, is_apply FROM post_links WHERE post_id = ? ORDER BY sort', [id]);
+    const [imgs] = await c.query('SELECT id, image FROM post_images WHERE post_id = ? ORDER BY sort', [id]);
+    assert.strictEqual(p.apply_url, 'https://apply.example.gov.bd', 'first apply link becomes the main apply button');
+    assert.deepStrictEqual(links.map((l) => l.url), ['https://apply.example.gov.bd', 'https://example.gov.bd/notice.pdf', 'tel:01700000000']);
+    assert.strictEqual(imgs.length, 2);
+    for (const im of imgs) assert.ok(/\.webp$/.test(im.image), 'gallery images are re-encoded to webp');
+    const page = await req('GET', `/post/${encodeURIComponent(p.slug)}`);
+    assert.match(page.text, /গুরুত্বপূর্ণ লিংক/);
+    assert.match(page.text, /data-gallery/);
+    assert.match(page.text, /href="tel:01700000000"/);
+    assert.match(page.text, new RegExp(`og:image" content="[^"]*${imgs[0].image.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')}`), 'first gallery image is the share image');
+    // remove one image + reorder links on edit
+    const fd2 = new FormData();
+    for (const [k, v] of Object.entries({ title: 'লিংক ও গ্যালারি পরীক্ষা পোস্ট', category_id: String(catId), status: 'published', slug: p.slug,
+      'links[0][label]': 'হেল্পলাইন', 'links[0][url]': 'tel:01700000000', remove_images: String(imgs[0].id) })) fd2.append(k, v);
+    const r2 = (await req('POST', `/v2admin/posts/${id}`, { body: fd2, headers: { 'x-csrf-token': csrf, accept: 'application/json' } })).json();
+    assert.ok(r2.ok && r2.reload, 'editor reloads after file changes');
+    const [[{ n }]] = await c.query('SELECT COUNT(*) n FROM post_images WHERE post_id = ?', [id]);
+    const [links2] = await c.query('SELECT url FROM post_links WHERE post_id = ?', [id]);
+    await c.end();
+    assert.strictEqual(Number(n), 1);
+    assert.deepStrictEqual(links2.map((l) => l.url), ['tel:01700000000']);
+  });
+
+  await t.test('old PHP-site URLs redirect permanently', async () => {
+    const cases = [['/promoted', '/premium'], ['/about', '/page/about'], ['/privacy', '/page/privacy'], ['/category/x/page/3', '/category/x?page=3'], ['/page/2', '/posts?page=2'], ['/index.php', '/']];
+    for (const [from, to] of cases) {
+      const r = await req('GET', from);
+      assert.strictEqual(r.status, 301, from);
+      assert.strictEqual(new URL(r.headers.get('location'), base).pathname + new URL(r.headers.get('location'), base).search, to, from);
+    }
+  });
+
+  await t.test('import from the old PHP database (re-runnable, no duplicates)', async (st) => {
+    const oldName = `${DB.name}_old`;
+    let c;
+    try {
+      c = await mysql.createConnection({ host: DB.host, port: DB.port, user: DB.user, password: DB.password, multipleStatements: true });
+      await c.query(`DROP DATABASE IF EXISTS \`${oldName}\`; CREATE DATABASE \`${oldName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; USE \`${oldName}\``);
+    } catch (e) { if (c) await c.end(); st.skip(`no permission to create ${oldName}: ${e.code}`); return; }
+    await c.query(`
+      CREATE TABLE settings (k VARCHAR(64) PRIMARY KEY, v LONGTEXT);
+      CREATE TABLE categories (id INT PRIMARY KEY, name VARCHAR(120), slug VARCHAR(140), icon VARCHAR(60), meta_title VARCHAR(190), meta_desc VARCHAR(300), sort_order INT, is_active TINYINT);
+      CREATE TABLE posts (id INT PRIMARY KEY, cat_id INT, title VARCHAR(255), slug VARCHAR(190), content LONGTEXT, thumb VARCHAR(120), pdf VARCHAR(120), division VARCHAR(60), district VARCHAR(60),
+        vacancy VARCHAR(30), company VARCHAR(160), employment_type VARCHAR(30), deadline DATE, is_job TINYINT, keywords VARCHAR(300), meta_title VARCHAR(190), meta_desc VARCHAR(300), views INT,
+        status TINYINT, published_at DATETIME, updated_at DATETIME, created_by INT, deleted_at DATETIME, salary VARCHAR(100), is_premium TINYINT, premium_until DATE, is_auto TINYINT,
+        review_pending TINYINT, source_url VARCHAR(500), source_lastmod VARCHAR(40), auto_note TEXT, application_start DATE);
+      CREATE TABLE post_links (id INT PRIMARY KEY, post_id INT, label VARCHAR(120), url VARCHAR(500), is_apply TINYINT, sort_order INT);
+      CREATE TABLE post_images (id INT PRIMARY KEY, post_id INT, image VARCHAR(120), sort_order INT);
+      CREATE TABLE admins (id INT PRIMARY KEY, username VARCHAR(60), pass VARCHAR(255), name VARCHAR(120), role VARCHAR(20), perms TEXT, is_active TINYINT, last_login DATETIME, created_at DATETIME);
+      CREATE TABLE source_posts (source_id VARCHAR(40), source_link VARCHAR(500), title_raw VARCHAR(500), source_date DATETIME, source_modified DATETIME, status VARCHAR(30), my_post_id INT, match_post_id INT);
+      INSERT INTO settings VALUES ('site_name','পুরোনো নাম'),('tagline','সঠিক তথ্য, আপনার সফলতা'),('fb','https://facebook.com/cc'),('auto_source','https://bdgovtjob.net'),('page_about','# আমরা কারা\nআমরা চাকরির খবর দিই।');
+      INSERT INTO categories VALUES (11,'চাকরি','job','fa-briefcase',NULL,NULL,1,1),(12,'রেজাল্ট','result','fa-square-poll-vertical',NULL,NULL,2,1);
+      INSERT INTO posts (id,cat_id,title,slug,content,pdf,vacancy,company,employment_type,deadline,is_job,views,status,published_at,updated_at,is_premium,review_pending) VALUES
+        (501,11,'পুরোনো পোস্ট এক','old-one','যোগ্যতা:\n- স্নাতক','x1.pdf','১০','পুরোনো প্রতিষ্ঠান','FULL_TIME','2099-12-31',1,77,1,'2026-09-01 10:00:00','2026-09-02 10:00:00',1,0),
+        (502,12,'পুরোনো পোস্ট দুই','old-two','<p>ফলাফল</p>',NULL,NULL,NULL,NULL,NULL,0,5,1,'2026-09-03 10:00:00',NULL,0,1);
+      INSERT INTO post_links VALUES (1,501,'আবেদন','https://apply.old.gov.bd',1,0),(2,501,'ফোন','tel:0170000',0,1),(3,501,'','javascript:x',0,2);
+      INSERT INTO post_images VALUES (1,501,'g1.jpg',0);
+      INSERT INTO admins VALUES (1,'oldboss','${require('bcryptjs').hashSync('Old@pass123', 8).replace(/^\$2a\$/, '$2y$')}','Boss','super','["all"]',1,NULL,'2026-01-01 00:00:00');
+      INSERT INTO source_posts VALUES ('9001','https://bdgovtjob.net/a','A','2026-09-01 10:00:00','2026-09-01 11:00:00','done',501,NULL),('9002','https://bdgovtjob.net/b','B','2026-09-02 10:00:00','2026-09-02 11:00:00','baseline',NULL,NULL);
+    `);
+    await c.end();
+    const oldUploads = fs.mkdtempSync(path.join(os.tmpdir(), 'cc-old-up-'));
+    fs.mkdirSync(path.join(oldUploads, 'posts')); fs.mkdirSync(path.join(oldUploads, 'pdf'));
+    fs.writeFileSync(path.join(oldUploads, 'posts', 'g1.jpg'), require('fs').readFileSync(path.join(__dirname, '..', 'public', 'icons', 'icon-96.png')));
+    const form = { old_host: DB.host, old_port: String(DB.port), old_name: oldName, old_user: DB.user, old_pass: DB.password, old_uploads: oldUploads, with_settings: '1', with_users: '1' };
+    const chk = await admin('/import/check', form);
+    assert.ok(chk.ok, chk.error);
+    assert.match(chk.html, /পুরোনো ডাটাবেস পাওয়া গেছে/);
+    for (let run = 0; run < 2; run++) {
+      const r = await admin('/import/run', form);
+      assert.ok(r.ok, r.error);
+      assert.match(r.html, /x1\.pdf/, 'missing PDF is listed');
+    }
+    const n = await mysql.createConnection({ host: DB.host, port: DB.port, user: DB.user, password: DB.password, database: DB.name });
+    const [posts] = await n.query('SELECT id, legacy_id, slug, status, pdf, organization, job_type, views, notified, is_premium FROM posts WHERE legacy_id IS NOT NULL ORDER BY legacy_id');
+    const [[links]] = await n.query('SELECT COUNT(*) c FROM post_links l JOIN posts p ON p.id = l.post_id WHERE p.legacy_id = 501');
+    const [[auto]] = await n.query("SELECT status, post_id FROM automation_items WHERE source_site = 'bdgovtjob.net' AND source_id = '9001'");
+    const [[about]] = await n.query("SELECT content FROM pages WHERE slug = 'about'");
+    await n.end();
+    assert.strictEqual(posts.length, 2, 'running twice does not duplicate');
+    assert.strictEqual(posts[0].status, 'published');
+    assert.strictEqual(posts[1].status, 'draft', 'review_pending stays a draft');
+    assert.strictEqual(posts[0].pdf, 'pdf/x1.pdf');
+    assert.strictEqual(posts[0].job_type, 'স্থায়ী');
+    assert.strictEqual(Number(posts[0].views), 77);
+    assert.strictEqual(Number(posts[0].notified), 1, 'old posts are never push-notified');
+    assert.strictEqual(Number(links.c), 2, 'unsafe link dropped, tel kept');
+    assert.strictEqual(auto.status, 'processed');
+    assert.strictEqual(auto.post_id, posts[0].id);
+    assert.match(about.content, /<h2>আমরা কারা<\/h2>/);
+    assert.ok(fs.existsSync(path.join(dataDir, 'uploads', 'posts', 'g1.jpg')), 'old uploads copied');
+    const page = await req('GET', '/post/old-one');
+    assert.strictEqual(page.status, 200);
+    assert.match(page.text, /apply\.old\.gov\.bd/);
+    // the old admin can log in with the old password
+    const saveCookie = cookie; cookie = '';
+    const lp = await req('GET', '/v2admin/login');
+    const tk = (lp.text.match(/name="_t" value="([^"]+)"/) || lp.text.match(/name="_csrf" value="([^"]+)"/) || [])[1];
+    await new Promise((r) => setTimeout(r, 1600));
+    const login = await req('POST', '/v2admin/login', { form: { username: 'oldboss', password: 'Old@pass123', ...(tk ? { _t: tk } : {}) } });
+    assert.ok([302, 303].includes(login.status), `old admin login (${login.status})`);
+    cookie = saveCookie;
+    const c2 = await mysql.createConnection({ host: DB.host, port: DB.port, user: DB.user, password: DB.password });
+    await c2.query(`DROP DATABASE IF EXISTS \`${oldName}\``); await c2.end();
   });
 
   await t.test('restart keeps config (no reinstall needed)', async () => {
