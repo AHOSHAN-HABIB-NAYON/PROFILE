@@ -22,6 +22,8 @@
 
 ## ২. Environment Variables
 
+Hostinger zip দেওয়ার সময় শুধু নিচের ১০টা ঘর চায়। বাকি সেটিং অ্যাডমিন প্যানেল থেকে হয়। ঐচ্ছিক ভেরিয়েবলের তালিকা আছে `docs/ENV-REFERENCE.md` ফাইলে।
+
 | নাম | কী দেবেন |
 |---|---|
 | `NODE_ENV` | `production` |

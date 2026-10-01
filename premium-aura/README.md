@@ -21,7 +21,7 @@ Open `http://your-host:3000` → you are redirected to **/install**:
 
 Finishing writes `.env` (DB + generated `SESSION_SECRET`/`ENCRYPTION_KEY`) and `install/installed.lock`; `/install` is then disabled and you land on the login page. Set `INSTALL_TOKEN` in the environment to require `/install?token=…` on public servers.
 
-Manual setup instead: copy `.env.example` to `.env`, fill it in, run `npm run migrate`, create the lock file.
+Manual setup instead: copy `.env.example` to `.env` (optional variables: `docs/ENV-REFERENCE.md`), fill it in, run `npm run migrate`, create the lock file.
 
 ## Project structure
 
