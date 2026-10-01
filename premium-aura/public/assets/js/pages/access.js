@@ -28,6 +28,7 @@ export async function mount(el, { query, live }) {
         <div class="range-select" data-range>
           <button type="button" class="range-trigger" data-range-toggle aria-haspopup="listbox" aria-expanded="false">
             <span class="range-current" data-range-current><span class="muted">Select Range</span></span>
+            <span class="range-count" data-range-count></span>
             <i class="fa-solid fa-chevron-down range-caret"></i>
           </button>
           <div class="range-panel" data-range-panel role="listbox" hidden>
@@ -35,6 +36,7 @@ export async function mount(el, { query, live }) {
             <div class="range-list" data-services></div>
           </div>
         </div>
+        <div class="range-strip" data-range-strip></div>
         <button class="btn btn-primary btn-block get-btn" data-get-selected disabled><i class="fa-solid fa-plus"></i><span data-get-label>Get Number</span></button>
         <p class="small muted limits-line" data-limits></p>
         <div class="adv-search">
@@ -70,6 +72,12 @@ export async function mount(el, { query, live }) {
         ${svcLabel(x)}${usable(x) ? (x.hot ? '<span class="hot-dot" title="Hot">🔥</span>' : '') : '<span class="chip danger">Not Available</span>'}${x.id === selected ? '<i class="fa-solid fa-circle-check range-check"></i>' : ''}
       </button>`).join('')
       : `<div class="empty" style="padding:16px"><i class="fa-solid fa-globe"></i><div>${active.length ? 'No match' : 'No active ranges right now'}</div></div>`;
+    const ready = active.filter(usable);
+    $('[data-range-count]', el).textContent = ready.length ? `${ready.length} available` : '';
+    // Every available range as a tap-to-pick chip under the box, so users see how many there are.
+    $('[data-range-strip]', el).innerHTML = ready.length ? `<div class="strip-head"><i class="fa-solid fa-earth-asia"></i>${ready.length} range${ready.length > 1 ? 's' : ''} available · tap to choose</div>
+      <div class="strip-row">${ready.map((x) => `<button type="button" class="range-chip ${x.id === selected ? 'selected' : ''}" data-pick="${x.id}" title="${esc(x.country_name)} ${esc(x.app_name)}">
+        ${flag(x.flag_code)}<b>${esc(x.country_code)} ${esc(x.app_code)}</b>${x.hot ? '<span class="hot-dot">🔥</span>' : ''}</button>`).join('')}</div>` : '';
     const cur = active.find((x) => x.id === selected && usable(x));
     $('[data-range-current]', el).innerHTML = cur ? svcLabel(cur) : '<span class="range-placeholder"><i class="fa-solid fa-earth-asia"></i> Select Range</span>';
     $('[data-get-selected]', el).disabled = !cur;

@@ -712,3 +712,17 @@ table.table { width: 100%; border-collapse: separate; border-spacing: 0; }
   .bottom-nav a i { font-size: 19px; }
   .bottom-nav a.active::before { top: 7px; width: 44px; height: 31px; border-radius: 13px; }
 }
+
+/* Range count + chips under the Select Range box */
+.range-count { flex: none; font-size: 11px; font-weight: 500; color: var(--primary); background: var(--grad-soft); padding: 3px 9px; border-radius: 99px; white-space: nowrap; }
+.range-strip { margin: -2px 0 12px; }
+.range-strip:empty { display: none; }
+.strip-head { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.strip-head i { color: var(--primary); }
+.strip-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.strip-row::-webkit-scrollbar { display: none; }
+.range-chip { flex: none; display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px 5px 5px; border-radius: 99px; border: 1px solid var(--border); background: var(--card-2); color: var(--text); cursor: pointer; font-size: 13px; transition: border-color .15s, background .15s; }
+.range-chip .flag { width: 24px; height: 24px; box-shadow: none; }
+.range-chip b { font-weight: 500; white-space: nowrap; }
+.range-chip .hot-dot { font-size: 11px; }
+.range-chip.selected { border-color: var(--primary); background: var(--grad-soft); color: var(--primary); }
