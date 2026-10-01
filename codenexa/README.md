@@ -5,6 +5,7 @@ Fast, modern IT company website with an admin panel and a one-click web installe
 - **PHP 7.4+**, MySQL/MariaDB **or** SQLite (no extra libraries, no Composer)
 - **Light mode by default**, dark mode toggle + 4 accent colours (remembered per visitor)
 - **AJAX navigation**: pages switch without a reload, and links are prefetched on hover/touch so clicks feel instant
+- Icons (Font Awesome) and the Poppins font are bundled in `assets/vendor`, so there are no CDN delays
 - Smooth animations that only use transform/opacity, so they run at your screen's full refresh rate (60–120 Hz). Visitors who turn on "reduce motion" get no animation
 - Page HTML is cached on disk and the cache clears itself when you save in the admin panel; responses are gzip-compressed
 - Fully responsive: desktop navbar, plus a mobile bottom nav and slide-in drawer

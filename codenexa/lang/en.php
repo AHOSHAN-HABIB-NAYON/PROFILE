@@ -113,4 +113,9 @@ return [
     'notfound.text' => 'The page you are looking for does not exist or has been moved.',
     'notfound.back' => 'Back to Home',
     'offline' => 'You appear to be offline.',
+    'pricing.eyebrow' => 'Pricing',
+    'tech.eyebrow' => 'Tech Stack',
+    'tech.title' => 'Technologies We Use',
+    'hero.trust' => 'Trusted by 150+ businesses',
+    'scroll' => 'Scroll',
 ];

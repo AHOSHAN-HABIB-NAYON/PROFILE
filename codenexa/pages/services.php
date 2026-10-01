@@ -1,9 +1,9 @@
 <?php
 $title = t('nav.services');
 $services = rows('SELECT * FROM services WHERE active = 1 ORDER BY sort, id');
-page_hero(t('services.eyebrow'), t('services.sub'));
+page_hero(t('services.eyebrow'), t('services.title'), t('services.sub'), [[t('nav.services')]]);
 ?>
-<section class="section pt-0">
+<section class="section sheet">
     <div class="container">
         <label class="search reveal">
             <i class="fa-solid fa-magnifying-glass"></i>
@@ -13,4 +13,5 @@ page_hero(t('services.eyebrow'), t('services.sub'));
     </div>
 </section>
 <?php why_section(); ?>
+<?php tech_marquee(); ?>
 <?php cta_band(); ?>

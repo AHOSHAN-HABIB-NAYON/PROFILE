@@ -21,9 +21,8 @@ $csrf = csrf_token();
 <title><?= e($title) ?> — Admin</title>
 <script>try{if(localStorage.getItem('theme')==='dark')document.documentElement.setAttribute('data-theme','dark');var a=localStorage.getItem('accent');if(a)document.documentElement.setAttribute('data-accent',a)}catch(e){}</script>
 <link rel="icon" type="image/svg+xml" href="<?= e(asset('img/favicon.svg')) ?>">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style><?php foreach ([400, 500, 600, 700] as $w): ?>@font-face{font-family:Poppins;font-weight:<?= $w ?>;font-display:swap;src:url(<?= e(base_path()) ?>assets/vendor/fonts/poppins-latin-<?= $w ?>-normal.woff2) format("woff2")}<?php endforeach; ?></style>
+<link rel="stylesheet" href="<?= e(asset('vendor/fa/css/all.min.css')) ?>">
 <link rel="stylesheet" href="<?= e(base_path() . 'admin/admin.css?v=' . filemtime(__DIR__ . '/admin.css')) ?>">
 </head>
 <body>
