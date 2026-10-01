@@ -19,8 +19,9 @@ function deadlineBadge(deadline, { long = false } = {}) {
 }
 
 function thumb(p, { eager = false, cls = '' } = {}) {
-  if (p.thumbnail) {
-    return html`<img class="${cls}" src="${uploads.url(p.thumbnail)}" alt="${p.title}" ${raw(eager ? 'fetchpriority="high"' : 'loading="lazy"')} decoding="async" width="160" height="160">`;
+  const src = p.thumbnail || p.gallery_thumb;
+  if (src) {
+    return html`<img class="${cls}" src="${uploads.url(src)}" alt="${p.title}" ${raw(eager ? 'fetchpriority="high"' : 'loading="lazy"')} decoding="async" width="160" height="160">`;
   }
   return html`<span class="ph ${cls}" style="--c:${p.cat_color || '#16a34a'}">${raw(icon(p.cat_icon || 'briefcase'))}</span>`;
 }

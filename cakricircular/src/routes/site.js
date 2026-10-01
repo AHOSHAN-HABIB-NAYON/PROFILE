@@ -181,7 +181,7 @@ router.get('/post/:slug', cached(async (req, res) => {
   const desc = p.meta_desc || p.excerpt || truncate(strip(p.content), 160);
   return {
     title: p.meta_title || p.title, desc, keywords: p.keywords, canonical: path, type: 'article', nav: 'post',
-    image: p.thumbnail ? uploads.url(p.thumbnail) : '',
+    image: (p.thumbnail || ((p.images || [])[0] || {}).image) ? uploads.url(p.thumbnail || p.images[0].image) : '',
     body: V.postDetail({ post: p, related, ...side }),
     jsonld: [structured(p, base, path, desc), breadcrumb(base, [['হোম', '/'], ...(p.cat_slug ? [[p.cat_name, `/category/${encodeURIComponent(p.cat_slug)}`]] : []), [p.title, path]])],
   };

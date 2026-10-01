@@ -122,7 +122,8 @@ function infoRow(ic, label, value) {
 
 function postDetail(ctx) {
   const { post: p, related, ads } = ctx;
-  const img = p.thumbnail ? uploads.url(p.thumbnail) : '';
+  const heroSrc = p.thumbnail || ((p.images || [])[0] || {}).image || '';
+  const img = heroSrc ? uploads.url(heroSrc) : '';
   const left = daysLeft(p.deadline);
   const over = p.deadline && new Date(p.deadline) < new Date();
   const content = String(p.content || '');
@@ -144,7 +145,7 @@ function postDetail(ctx) {
     <article class="post" data-post="${p.id}" data-title="${p.title}" data-img="${img}">
       ${C.adSlot(ads, 'post_top', 'wide')}
       <div class="post-hero${img ? '' : ' no-img'}" style="--c:${p.cat_color || '#16a34a'}">
-        ${img ? html`<img src="${img}" alt="${p.title}" fetchpriority="high" width="800" height="420">` : raw(`<span class="ph big">${icon(p.cat_icon || 'briefcase')}</span>`)}
+        ${img ? html`<img src="${img}" alt="${p.title}" fetchpriority="high" width="800" height="420">` : html`<span class="ph big">${raw(icon(p.cat_icon || 'briefcase'))}</span><span class="ph-meta"><b>${p.cat_name || 'বিজ্ঞপ্তি'}</b><small>${p.organization || settings.get('site_name')}</small></span>`}
         <div class="post-hero-tags">${p.cat_name ? html`<a class="tag tag-solid" href="/category/${encodeURIComponent(p.cat_slug)}" style="--c:${p.cat_color}">${p.cat_name}</a>` : ''}${p.premium ? raw(`<span class="tag tag-prem">${icon('crown')}প্রিমিয়াম</span>`) : ''}</div>
       </div>
       <h1 class="post-title">${p.title}</h1>

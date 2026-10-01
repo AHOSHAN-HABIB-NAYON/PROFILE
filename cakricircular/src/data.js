@@ -7,6 +7,7 @@ const { normalizeText } = require('./util/bn');
 
 const CARD_COLS = `p.id, p.title, p.slug, p.thumbnail, p.organization, p.district, p.division, p.vacancies,
   p.deadline, p.published_at, p.updated_at, p.views, p.job_type,
+  (SELECT pi.image FROM post_images pi WHERE pi.post_id = p.id ORDER BY pi.sort, pi.id LIMIT 1) AS gallery_thumb,
   (p.is_premium = 1 AND (p.premium_until IS NULL OR p.premium_until > NOW())) AS premium,
   c.name AS cat_name, c.slug AS cat_slug, c.color AS cat_color, c.icon AS cat_icon`;
 const FROM = 'FROM posts p LEFT JOIN categories c ON c.id = p.category_id';
