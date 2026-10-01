@@ -1,0 +1,5 @@
+config/config.local.php
+storage/logs/*.log
+storage/cache/*
+!storage/cache/.htaccess
+uploads/*/

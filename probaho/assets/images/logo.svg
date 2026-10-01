@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Probaho">
+  <defs>
+    <linearGradient id="pbg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5b4bff"/><stop offset=".62" stop-color="#8b5cf6"/><stop offset="1" stop-color="#c026d3"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="17" fill="url(#pbg)"/>
+  <path d="M22 45V22.5a8.5 8.5 0 0 1 8.5-8.5H35a10.5 10.5 0 0 1 0 21h-6" fill="none" stroke="#fff" stroke-width="6.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M13 51.5c6.3-4.2 12.7-4.2 19 0s12.7 4.2 19 0" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="4" stroke-linecap="round"/>
+</svg>
