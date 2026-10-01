@@ -21,7 +21,6 @@ $quick = [
 ?>
 <div class="greet">
   <div class="grow"><small><?= e(greeting()) ?> 👋</small><b><?= e($firstName) ?></b></div>
-  <a href="<?= e(url('/notifications')) ?>" class="icon-btn bell" data-link aria-label="নোটিফিকেশন"><?= icon('bell') ?></a>
 </div>
 
 <?php if (Auth::needsVerification($user)): ?>
