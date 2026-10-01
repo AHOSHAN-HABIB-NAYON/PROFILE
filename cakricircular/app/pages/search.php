@@ -82,13 +82,13 @@ css_once('search', <<<CSS
 .sfield>i.mg{position:absolute;left:16px;color:var(--brand);font-size:.95rem;pointer-events:none}
 .sfield input[type=search]{width:100%;height:52px;border:1.5px solid var(--line);border-radius:16px;
   padding:0 46px 0 44px;font:inherit;font-size:.97rem;background:var(--soft);color:var(--ink);transition:.18s}
-.sfield input:focus{outline:none;border-color:var(--brand);background:var(--card);box-shadow:0 0 0 4px rgba(10,125,69,.1)}
+.sfield input:focus{outline:none;border-color:var(--brand);background:var(--card);box-shadow:0 0 0 4px rgba(15,118,110,.1)}
 .sfield input::-webkit-search-cancel-button{display:none}
 .sclear{position:absolute;right:9px;width:30px;height:30px;border-radius:50%;border:0;background:var(--chip);
   color:#5b6d69;display:none;place-items:center;font-size:.76rem;transition:.16s}
 .sclear.on{display:grid}
 .sclear:hover{background:var(--danger);color:#fff}
-.sgo{width:52px;height:52px;border-radius:16px;border:0;background:linear-gradient(135deg,var(--brand),var(--brand-2));box-shadow:0 6px 14px rgba(10,125,69,.28);color:#fff;font-size:1rem;flex:none;transition:.18s}
+.sgo{width:52px;height:52px;border-radius:16px;border:0;background:linear-gradient(135deg,var(--brand),var(--brand-2));box-shadow:0 6px 14px rgba(15,118,110,.28);color:#fff;font-size:1rem;flex:none;transition:.18s}
 .sgo:hover{background:var(--brand-d)}
 .filters{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
 .fsel{position:relative;display:flex;align-items:center}

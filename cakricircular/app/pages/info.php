@@ -14,7 +14,7 @@ css_once('info', <<<CSS
 .inf-wrap{max-width:760px;margin:6px auto}
 .inf-head{display:flex;align-items:center;gap:14px;margin:0 0 18px}
 .inf-head i{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;font-size:1.15rem;color:#fff;
-  background:linear-gradient(135deg,var(--brand),var(--brand-2));box-shadow:0 6px 16px rgba(10,125,69,.26);flex:none}
+  background:linear-gradient(135deg,var(--brand),var(--brand-2));box-shadow:0 6px 16px rgba(15,118,110,.26);flex:none}
 .inf-head h1{font-size:1.2rem;font-weight:700;margin:0;line-height:1.35}
 
 .inf-card{background:var(--card);border:1px solid var(--line-2);border-radius:20px;padding:22px;
@@ -43,8 +43,8 @@ css_once('info', <<<CSS
 .em-box small{display:block;margin-top:6px;color:var(--muted);font-size:.8rem}
 .em-btn{margin-top:14px;display:inline-flex;align-items:center;gap:9px;background:linear-gradient(135deg,var(--brand),var(--brand-2));
   color:#fff;font-weight:700;font-size:.88rem;padding:11px 20px;border-radius:999px;border:0;
-  box-shadow:0 8px 18px rgba(10,125,69,.24);transition:.2s}
-.em-btn:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(10,125,69,.3)}
+  box-shadow:0 8px 18px rgba(15,118,110,.24);transition:.2s}
+.em-btn:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(15,118,110,.3)}
 .em-btn:active{transform:scale(.96)}
 
 .inf-updated{text-align:center;color:var(--muted);font-size:.82rem;margin-top:6px}

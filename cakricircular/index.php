@@ -54,7 +54,7 @@ if ($s0 === 'manifest.webmanifest') {
         'display' => 'standalone',
         'orientation' => 'portrait',
         'background_color' => '#ffffff',
-        'theme_color' => '#06592f',
+        'theme_color' => '#0b544e',
         'lang' => 'bn',
         'dir' => 'ltr',
         'icons' => [
@@ -200,8 +200,8 @@ ob_start(); require APP_ROOT . '/partials/bottomnav.php'; $BOTTOMNAV = ob_get_cl
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#06592f">
-<script>try{if(localStorage.getItem('cc_theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');document.querySelector('meta[name="theme-color"]').setAttribute('content','#03251a');}}catch(e){}</script>
+<meta name="theme-color" content="#0b544e">
+<script>try{if(localStorage.getItem('cc_theme')==='dark'){document.documentElement.setAttribute('data-theme','dark');document.querySelector('meta[name="theme-color"]').setAttribute('content','#03221f');}}catch(e){}</script>
 <title><?= e($title) ?></title>
 <meta name="description" content="<?= e($desc) ?>">
 <?php if ($kw = setting('meta_keywords')): ?><meta name="keywords" content="<?= e($kw) ?>"><?php endif; ?>

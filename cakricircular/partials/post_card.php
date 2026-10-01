@@ -8,7 +8,7 @@ function post_card_css(): void
 
 .pitem{position:relative;cursor:pointer;display:flex;gap:12px;padding:11px;background:var(--card);border:1px solid var(--line-2);
   border-radius:20px;box-shadow:var(--sh);transition:border-color .18s,transform .18s,box-shadow .18s}
-.pitem:hover{border-color:color-mix(in srgb,var(--brand) 35%,var(--line));box-shadow:0 12px 30px rgba(10,40,25,.1)}
+.pitem:hover{border-color:color-mix(in srgb,var(--brand) 35%,var(--line));box-shadow:0 12px 30px rgba(16,40,36,.1)}
 .pitem:active{transform:scale(.995)}
 
 /* ===== প্রিমিয়াম পোস্ট: সোনালি চলন্ত বর্ডার ===== */
@@ -47,8 +47,8 @@ function post_card_css(): void
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .porg i{font-size:.66rem;color:var(--brand)}
 .pcat{flex:none;display:inline-flex;align-items:center;padding:1px 10px;border-radius:999px;font-size:.68rem;font-weight:700;
-  background:var(--tl,#e7f6ee);color:var(--t2,#075c33);white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis;line-height:1.8}
-html[data-theme="dark"] .pcat{color:var(--t1,#5fd696)}
+  background:var(--tl,#e6f4f1);color:var(--t2,#0b544e);white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis;line-height:1.8}
+html[data-theme="dark"] .pcat{color:var(--t1,#5fd6c3)}
 
 /* শিরোনাম — সর্বোচ্চ ২ লাইন */
 .pitem-title{font-size:.94rem;font-weight:700;line-height:1.45;margin:0;color:var(--ink);letter-spacing:-.15px;
@@ -67,7 +67,7 @@ html[data-theme="dark"] .pcat{color:var(--t1,#5fd696)}
 .pdead{display:inline-flex;align-items:center;gap:6px;padding:3px 11px 3px 4px;border-radius:999px;
   font-size:.72rem;font-weight:700;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .pdead .dic{width:19px;height:19px;border-radius:50%;display:grid;place-items:center;font-size:.56rem;color:#fff;flex:none}
-.pdead.open{background:#e6f6ec;color:#0c6b3a}
+.pdead.open{background:#e6f6ec;color:#0c6b5e}
 .pdead.open .dic{background:#16a34a}
 .pdead.urgent{background:#fef1e1;color:#a5580a}
 .pdead.urgent .dic{background:#f08c12}

@@ -31,7 +31,7 @@ css_once('report', <<<CSS
 .fld input,.fld textarea{width:100%;border:1.5px solid var(--line);border-radius:14px;background:var(--soft);
   padding:13px 40px 13px 14px;font:inherit;font-size:.95rem;transition:.18s;color:var(--ink)}
 .fld textarea{min-height:140px;resize:vertical;line-height:1.8;padding-right:14px}
-.fld input:focus,.fld textarea:focus{outline:none;border-color:var(--brand);background:var(--card);box-shadow:0 0 0 4px rgba(10,125,69,.1)}
+.fld input:focus,.fld textarea:focus{outline:none;border-color:var(--brand);background:var(--card);box-shadow:0 0 0 4px rgba(15,118,110,.1)}
 .rp-msg{padding:12px 15px;border-radius:13px;font-size:.89rem;margin-bottom:15px;display:none;align-items:center;gap:9px}
 .rp-msg.ok{display:flex;background:#e7f6ef;color:var(--ok)}
 .rp-msg.err{display:flex;background:#fdecea;color:var(--danger)}

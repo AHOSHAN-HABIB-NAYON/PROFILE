@@ -11,7 +11,7 @@ css_once('e404', <<<CSS
 .e4 .num{font-size:4.4rem;font-weight:700;line-height:1;letter-spacing:-2px;
   background:linear-gradient(135deg,var(--brand),var(--brand-2));-webkit-background-clip:text;background-clip:text;color:transparent}
 .e4 .eic{width:74px;height:74px;margin:0 auto 6px;border-radius:50%;display:grid;place-items:center;
-  font-size:1.8rem;color:#fff;background:linear-gradient(135deg,var(--brand),var(--brand-2));box-shadow:0 12px 28px rgba(10,125,69,.26)}
+  font-size:1.8rem;color:#fff;background:linear-gradient(135deg,var(--brand),var(--brand-2));box-shadow:0 12px 28px rgba(15,118,110,.26)}
 .e4 h1{font-size:1.2rem;margin:12px 0 6px;font-weight:700}
 .e4 p{color:var(--muted);margin:0 auto 20px;max-width:420px;font-size:.94rem;line-height:1.8}
 .e4-act{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}

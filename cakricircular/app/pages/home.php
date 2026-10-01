@@ -55,73 +55,66 @@ css_once('banner', <<<CSS
 CSS);
 
 css_once('home', <<<CSS
-/* ===== হোম হিরো — পেছনে ইনলাইন SVG দৃশ্য (আলাদা ছবি লোড হয় না) ===== */
-.hh{position:relative;margin:-16px -16px 0;padding:24px 18px 64px;background:#06592f url("data:image/webp;base64,UklGRrQAAABXRUJQVlA4IKgAAAAwBQCdASogABIAPtFepUyoJaOiMBgIAQAaCWoAnTLVRCA3MQncILywiiBZnhA1/O8Q1ADyc/fE1OEm3/gs8a5mkRKK0osdemRZBpBQ28f6r5H7XhQMbr/8B2AP3wSik3kIR/5IC3WaXiXLzW9wrgGNM4aNEmttB3K2J6Fxr4IRcT3E8CFioQ9yvQIgRpJ7LjWWCfytiv1hM0zDh971A5Fp+HYH9RU58AA=") 70% 40%/cover no-repeat;color:#fff;overflow:hidden;isolation:isolate}
-.hh-scene{position:absolute;inset:0;width:100%;height:100%;z-index:-2;display:block;object-fit:cover;object-position:70% 40%}
-.hh::before{content:"";position:absolute;inset:0;z-index:-1;
-  background:linear-gradient(100deg,rgba(3,48,26,.94) 0%,rgba(4,64,35,.84) 48%,rgba(6,89,47,.42) 78%,rgba(6,89,47,.18) 100%),
-             linear-gradient(0deg,rgba(3,48,26,.85) 0%,rgba(3,48,26,0) 45%)}
-html[data-theme="dark"] .hh::before{background:linear-gradient(100deg,rgba(2,24,14,.96) 0%,rgba(3,40,22,.88) 50%,rgba(3,50,28,.55) 80%,rgba(3,50,28,.35) 100%),
-             linear-gradient(0deg,rgba(2,24,14,.9) 0%,rgba(2,24,14,0) 45%)}
-.hh-badge{display:inline-flex;align-items:center;gap:7px;padding:4px 12px 4px 5px;border-radius:999px;font-size:.74rem;font-weight:600;
-  background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);margin-bottom:10px;backdrop-filter:blur(4px)}
-.hh-badge b{background:#fbbf24;color:#3b2a00;border-radius:999px;padding:0 8px;font-size:.66rem;line-height:1.8}
-.hh h1{font-size:1.72rem;line-height:1.28;margin:0 0 8px;font-weight:700;letter-spacing:-.6px;max-width:15em;text-wrap:balance;text-shadow:0 2px 14px rgba(0,0,0,.25)}
-.hh h1 span{color:#9bf0bd}
-.hh p{margin:0 0 16px;font-size:.88rem;opacity:.92;max-width:28em;line-height:1.65;text-shadow:0 1px 8px rgba(0,0,0,.25)}
-.hh-search{position:relative;display:flex;align-items:center;background:#fff;border-radius:18px;padding:5px 5px 5px 14px;
-  box-shadow:0 14px 30px rgba(0,0,0,.22);max-width:620px}
+/* ===== হোম হিরো — আসল ছবি স্পষ্ট দেখা যায়, বাঁয়ে লেখা, নিচে সার্চ ===== */
+.hh{position:relative;margin:-16px -16px 0;color:#fff;overflow:hidden;isolation:isolate;
+  background:linear-gradient(180deg,#0b544e,#0f766e)}
+.hh-photo{position:relative;min-height:290px;padding:26px 18px 34px;display:flex;flex-direction:column;justify-content:center;
+  background:#2f7fd0 url("data:image/webp;base64,UklGRrQAAABXRUJQVlA4IKgAAAAwBQCdASogABIAPtFepUyoJaOiMBgIAQAaCWoAnTLVRCA3MQncILywiiBZnhA1/O8Q1ADyc/fE1OEm3/gs8a5mkRKK0osdemRZBpBQ28f6r5H7XhQMbr/8B2AP3wSik3kIR/5IC3WaXiXLzW9wrgGNM4aNEmttB3K2J6Fxr4IRcT3E8CFioQ9yvQIgRpJ7LjWWCfytiv1hM0zDh971A5Fp+HYH9RU58AA=") 68% 50%/cover no-repeat;isolation:isolate}
+.hh-scene{position:absolute;inset:0;width:100%;height:100%;z-index:-2;display:block;object-fit:cover;object-position:68% 50%}
+.hh-photo::before{content:"";position:absolute;inset:0;z-index:-1;
+  background:linear-gradient(90deg,rgba(8,61,57,.78) 0%,rgba(11,84,78,.5) 38%,rgba(11,84,78,.08) 64%,rgba(11,84,78,0) 80%),
+             linear-gradient(0deg,#0b544e 0%,rgba(11,84,78,.55) 14%,rgba(11,84,78,0) 34%)}
+.hh-pill{align-self:flex-start;display:inline-block;padding:2px 16px 4px;border-radius:14px;font-size:1.5rem;font-weight:700;line-height:1.45;
+  background:linear-gradient(135deg,#14a38f,#22c1a4);box-shadow:0 8px 20px rgba(0,0,0,.18);margin-bottom:8px;letter-spacing:-.3px}
+.hh h1{font-size:1.85rem;line-height:1.28;margin:0 0 10px;font-weight:700;letter-spacing:-.5px;text-shadow:0 2px 16px rgba(0,0,0,.35)}
+.hh h1 span{display:block}
+.hh p{margin:0;font-size:.9rem;max-width:22em;line-height:1.6;text-shadow:0 1px 10px rgba(0,0,0,.45);opacity:.96}
+.hh-band{padding:4px 16px 18px}
+.hh-search{position:relative;display:flex;align-items:center;background:#fff;border-radius:20px;padding:6px 6px 6px 16px;
+  box-shadow:0 14px 30px rgba(0,0,0,.2);max-width:680px}
 html[data-theme="dark"] .hh-search{background:var(--card)}
-.hh-search i.mg{color:var(--muted);font-size:.95rem}
-.hh-search input{flex:1;min-width:0;border:0;background:none;height:44px;padding:0 10px;font:inherit;font-size:.94rem;color:var(--ink)}
+.hh-search i.mg{color:#8fa39e;font-size:1rem}
+.hh-search input{flex:1;min-width:0;border:0;background:none;height:46px;padding:0 10px;font:inherit;font-size:.95rem;color:var(--ink)}
 .hh-search input:focus{outline:none}
-.hh-search input::placeholder{color:#93a39b}
-.hh-search button{width:44px;height:44px;border:0;border-radius:14px;flex:none;color:#fff;font-size:.95rem;
-  background:linear-gradient(135deg,var(--brand),var(--brand-2));box-shadow:0 6px 14px rgba(10,125,69,.3)}
+.hh-search input::placeholder{color:#93a39f}
+.hh-search button{width:48px;height:48px;border:0;border-radius:15px;flex:none;color:#fff;font-size:1rem;
+  background:linear-gradient(135deg,var(--brand),#22b49c);box-shadow:0 6px 14px rgba(15,118,110,.3)}
 .hh-search button:active{transform:scale(.94)}
-.hh-stats{display:flex;gap:16px;margin-top:14px;font-size:.76rem;opacity:.95;flex-wrap:wrap}
-.hh-stats span{display:inline-flex;align-items:center;gap:6px}
-.hh-stats i{color:#9bf0bd}
 
-/* ক্যাটাগরি — এক লাইনে, আঙুলে টেনে সরানো যায় */
-.cg-wrap{position:relative;z-index:2;margin:-40px 0 0;background:var(--card);border:1px solid var(--line-2);border-radius:22px;
-  box-shadow:var(--sh-lg);padding:10px 0}
-.cg{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;padding:2px 12px;
+/* ক্যাটাগরি — এক লাইনে ছোট পিল, আঙুলে টেনে সরানো যায় */
+.cg{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x proximity;scrollbar-width:none;margin:14px -16px 0;padding:2px 16px 4px;
   -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
 .cg::-webkit-scrollbar{display:none}
-.cg a{flex:none;scroll-snap-align:start;display:flex;align-items:center;gap:9px;padding:7px 14px 7px 7px;border-radius:999px;
-  background:var(--tl);border:1px solid color-mix(in srgb,var(--t1) 18%,transparent);transition:transform .18s;min-width:0}
-.cg a:active{transform:scale(.96)}
-.cg .tile-ic{width:36px;height:36px;font-size:.86rem;box-shadow:none}
-.cg b{display:block;font-size:.84rem;font-weight:700;color:var(--ink);line-height:1.25;white-space:nowrap}
-.cg small{display:block;font-size:.68rem;color:var(--muted);font-weight:600;line-height:1.3}
-.cg-wrap::after{content:"";position:absolute;top:0;right:0;bottom:0;width:34px;border-radius:0 22px 22px 0;pointer-events:none;
-  background:linear-gradient(90deg,transparent,var(--card))}
+.cg a{flex:none;scroll-snap-align:start;display:inline-flex;align-items:center;gap:7px;padding:4px 13px 4px 4px;border-radius:999px;
+  background:var(--card);box-shadow:0 1px 2px rgba(16,40,36,.06),0 3px 10px rgba(16,40,36,.06);transition:transform .18s}
+.cg a:active{transform:scale(.95)}
+.cg .tile-ic{width:28px;height:28px;font-size:.72rem;box-shadow:none}
+.cg b{font-size:.8rem;font-weight:700;color:var(--ink);white-space:nowrap}
 
 @media(min-width:701px){
-  .hh{margin:0;border-radius:28px;padding:40px 36px 76px;min-height:360px}
-  .hh h1{font-size:2.1rem}
-  .hh p{font-size:.96rem}
-  .cg-wrap{margin:-44px 20px 0}
+  .hh{margin:0;border-radius:26px}
+  .hh-photo{min-height:380px;padding:44px 40px 50px}
+  .hh-pill{font-size:2rem}
+  .hh h1{font-size:2.5rem}
+  .hh p{font-size:1rem}
+  .hh-band{padding:0 40px 24px}
+  .cg{margin:16px 0 0;padding:2px 0 4px}
   .cg a:hover{transform:translateY(-2px)}
 }
 @media(min-width:1024px){
-  .hh{padding:54px 52px 90px;min-height:430px}
-  .hh h1{font-size:2.6rem}
-  .hh::before{background:linear-gradient(90deg,rgba(3,48,26,.95) 0%,rgba(4,64,35,.82) 38%,rgba(6,89,47,.25) 62%,rgba(6,89,47,0) 80%),
-             linear-gradient(0deg,rgba(3,48,26,.6) 0%,rgba(3,48,26,0) 35%)}
-  .cg-wrap{margin:-50px 40px 0}
+  .hh-photo{min-height:440px;padding:56px 56px 60px}
+  .hh-pill{font-size:2.3rem}
+  .hh h1{font-size:3rem}
+  .hh-band{padding:0 56px 28px}
 }
-@media(max-width:700px){
-  .hh{margin:-12px -12px 0;padding:20px 16px 58px}
-}
-@media(max-width:360px){ .hh h1{font-size:1.5rem} }
+@media(max-width:700px){ .hh{margin:-12px -12px 0} .cg{margin:12px -12px 0;padding:2px 12px 4px} }
+@media(max-width:360px){ .hh h1{font-size:1.55rem} .hh-pill{font-size:1.25rem} }
 
 /* "সঠিক প্রস্তুতি" প্রোমো কার্ড */
 .hp{position:relative;display:flex;align-items:center;gap:14px;margin:14px 0 0;padding:16px 18px;border-radius:22px;overflow:hidden;
-  background:linear-gradient(120deg,#063f24,#0a6b3c 60%,#12925a);color:#fff;box-shadow:var(--sh);isolation:isolate}
+  background:linear-gradient(120deg,#083d39,#0d6b63 60%,#16a08a);color:#fff;box-shadow:var(--sh);isolation:isolate}
 .hp::after{content:"";position:absolute;right:-40px;top:-50px;width:180px;height:180px;border-radius:50%;z-index:-1;
-  background:radial-gradient(circle,rgba(170,245,200,.3),transparent 70%)}
+  background:radial-gradient(circle,rgba(170,245,230,.3),transparent 70%)}
 .hp-tx{flex:1;min-width:0}
 .hp b{display:block;font-size:1.06rem;line-height:1.35}
 .hp-tx>span{display:block;font-size:.78rem;opacity:.85;margin-top:2px}
@@ -144,37 +137,32 @@ $P = [
 
 <?php if ($page === 1): ?>
 <section class="hh">
-  <picture>
-    <source media="(min-width:701px)" srcset="<?= e(asset('img/hero-1600.webp')) ?>" type="image/webp">
-    <img class="hh-scene" src="<?= e(asset('img/hero-960.webp')) ?>" alt="" width="1600" height="900"
-         loading="eager" fetchpriority="high" decoding="async">
-  </picture>
-  <span class="hh-badge"><b>নতুন</b>প্রতিদিন হালনাগাদ চাকরির খবর</span>
-  <h1><?= e(setting('home_hero_title', 'সবার আগে সঠিক তথ্য')) ?> <span><?= e(setting('home_hero_accent', 'চাকরি সার্কুলার')) ?></span></h1>
-  <p><?= e(setting('home_hero_sub', 'সরকারি-বেসরকারি চাকরি, ভর্তি, রেজাল্ট, নোটিশ ও স্কলারশিপ — সব তথ্য এক প্ল্যাটফর্মে।')) ?></p>
-  <form class="hh-search" action="<?= e(url('search')) ?>" method="get" data-spa-form role="search">
-    <i class="fa fa-magnifying-glass mg"></i>
-    <input type="search" name="q" placeholder="চাকরি, প্রতিষ্ঠান বা কীওয়ার্ড লিখুন…" autocomplete="off" aria-label="খুঁজুন">
-    <button type="submit" aria-label="খুঁজুন"><i class="fa fa-arrow-right"></i></button>
-  </form>
-  <div class="hh-stats">
-    <span><i class="fa fa-layer-group"></i>মোট <?= bn($total) ?>টি পোস্ট</span>
-    <span><i class="fa fa-circle-check"></i>যাচাই করা তথ্য</span>
+  <div class="hh-photo">
+    <picture>
+      <source media="(min-width:701px)" srcset="<?= e(asset('img/hero-1600.webp')) ?>" type="image/webp">
+      <img class="hh-scene" src="<?= e(asset('img/hero-960.webp')) ?>" alt="" width="1600" height="900"
+           loading="eager" fetchpriority="high" decoding="async">
+    </picture>
+    <span class="hh-pill"><?= e(setting('home_hero_badge', 'সবার আগে')) ?></span>
+    <h1><span><?= e(setting('home_hero_title', 'সঠিক তথ্য')) ?></span><span><?= e(setting('home_hero_accent', 'চাকরি সার্কুলার')) ?></span></h1>
+    <p><?= e(setting('home_hero_sub', 'সরকারি-বেসরকারি চাকরি, ভর্তি, রেজাল্ট, নোটিশ ও স্কলারশিপ')) ?></p>
+  </div>
+  <div class="hh-band">
+    <form class="hh-search" action="<?= e(url('search')) ?>" method="get" data-spa-form role="search">
+      <i class="fa fa-magnifying-glass mg"></i>
+      <input type="search" name="q" placeholder="চাকরি, প্রতিষ্ঠান বা কীওয়ার্ড লিখুন…" autocomplete="off" aria-label="খুঁজুন">
+      <button type="submit" aria-label="খুঁজুন"><i class="fa fa-magnifying-glass"></i></button>
+    </form>
   </div>
 </section>
 
 <?php if ($homeCats): ?>
-<div class="cg-wrap">
 <nav class="cg" aria-label="ক্যাটাগরি">
   <?php foreach ($homeCats as $i => $c): ?>
-    <a class="tone-<?= ($i % 6) + 1 ?>" href="<?= e(cat_url($c['slug'])) ?>">
-      <span class="tile-ic"><i class="fa <?= e($c['icon'] ?: 'fa-folder') ?>"></i></span>
-      <span><b><?= e($c['name']) ?></b><small><?= bn($catCounts[(int)$c['id']] ?? 0) ?>টি পোস্ট</small></span>
-    </a>
+    <a class="tone-<?= ($i % 6) + 1 ?>" href="<?= e(cat_url($c['slug'])) ?>"><span class="tile-ic"><i class="fa <?= e($c['icon'] ?: 'fa-folder') ?>"></i></span><b><?= e($c['name']) ?></b></a>
   <?php endforeach; ?>
-  <a class="tone-2" href="<?= e(url('categories')) ?>"><span class="tile-ic"><i class="fa fa-grip"></i></span><span><b>সব ক্যাটাগরি</b><small>দেখুন</small></span></a>
+  <a class="tone-2" href="<?= e(url('categories')) ?>"><span class="tile-ic"><i class="fa fa-grip"></i></span><b>সব দেখুন</b></a>
 </nav>
-</div>
 <?php endif; ?>
 <?php endif; ?>
 

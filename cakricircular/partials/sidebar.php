@@ -1,17 +1,17 @@
 <?php
 /* ===== সাইড ড্রয়ার (মোবাইল ও পিসি – একটাই) ===== */
 css_once('sidebar', <<<CSS
-.sb-mask{position:fixed;inset:0;background:rgba(3,20,12,.5);backdrop-filter:blur(2px);z-index:130;
+.sb-mask{position:fixed;inset:0;background:rgba(9,25,22,.5);backdrop-filter:blur(2px);z-index:130;
   opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s}
 .sb-mask.open{opacity:1;visibility:visible}
 .sb{position:fixed;top:0;left:0;bottom:0;width:310px;max-width:86vw;z-index:131;background:var(--card);
   transform:translateX(-103%);transition:transform .32s cubic-bezier(.22,.8,.28,1);
-  display:flex;flex-direction:column;box-shadow:18px 0 50px rgba(3,20,12,.2);border-radius:0 24px 24px 0;overflow:hidden}
+  display:flex;flex-direction:column;box-shadow:18px 0 50px rgba(9,25,22,.2);border-radius:0 24px 24px 0;overflow:hidden}
 .sb.open{transform:none}
 .sb-top{position:relative;padding:calc(18px + env(safe-area-inset-top)) 16px 18px;display:flex;align-items:center;gap:11px;
   background:var(--hd-grad);color:#fff;overflow:hidden}
 .sb-top::after{content:"";position:absolute;width:180px;height:180px;border-radius:50%;right:-60px;top:-80px;
-  background:radial-gradient(circle,rgba(150,235,185,.25),transparent 70%)}
+  background:radial-gradient(circle,rgba(150,235,220,.25),transparent 70%)}
 .sb-top .lg{width:46px;height:46px;flex:none;border-radius:50%;background:#fff;padding:3px;box-shadow:0 4px 12px rgba(0,0,0,.2)}
 .sb-top .lg img{width:100%;height:100%;border-radius:50%;object-fit:cover}
 .sb-top b{font-size:1.08rem;line-height:1.25;display:block}

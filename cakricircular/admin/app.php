@@ -122,18 +122,18 @@ function admin_start(string $title): void
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title><?= e($title) ?> — এডমিন</title>
-<meta name="theme-color" content="#06592f">
+<meta name="theme-color" content="#0b544e">
 <script>try{if(localStorage.getItem('cc_admin_theme')==='dark')document.documentElement.setAttribute('data-theme','dark')}catch(e){}</script>
 <link rel="icon" href="<?= e(site_favicon()) ?>">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <style>
-:root{--brand:#0a7d45;--brand-d:#075c33;--brand-2:#14a35c;--brand-l:#e7f6ee;--ink:#0f1f17;--ink-2:#2b3d34;--muted:#66786f;--line:#e3ebe6;
-  --bg:#f1f5f3;--card:#fff;--soft:#f6f9f7;--chip:#eef4f0;--danger:#e03b2f;--ok:#12804a;--r:13px;color-scheme:light;
-  --hd-grad:linear-gradient(135deg,#043a20 0%,#06592f 48%,#0a7d45 100%)}
-html[data-theme="dark"]{--brand:#22b46b;--brand-d:#5fd696;--brand-2:#2fc77b;--brand-l:#123a27;--ink:#e6efe9;--ink-2:#c6d4cc;--muted:#8fa399;
-  --line:#22332b;--bg:#0a1310;--card:#111d18;--soft:#15241e;--chip:#182a22;color-scheme:dark;
-  --hd-grad:linear-gradient(135deg,#03251a 0%,#05371f 60%,#07502d 100%)}
+:root{--brand:#0f766e;--brand-d:#0b544e;--brand-2:#16a08a;--brand-l:#e6f4f1;--ink:#13211f;--ink-2:#2c4540;--muted:#64757a;--line:#e4eae8;
+  --bg:#f3f7f6;--card:#fff;--soft:#f6faf9;--chip:#eef4f2;--danger:#e03b2f;--ok:#12804a;--r:13px;color-scheme:light;
+  --hd-grad:linear-gradient(135deg,#083d39 0%,#0b544e 48%,#0f766e 100%)}
+html[data-theme="dark"]{--brand:#2bb3a0;--brand-d:#5fd6c3;--brand-2:#34c4b0;--brand-l:#12332f;--ink:#e6efed;--ink-2:#c6d4d0;--muted:#8fa39e;
+  --line:#22332f;--bg:#0a1312;--card:#111c1b;--soft:#152321;--chip:#182927;color-scheme:dark;
+  --hd-grad:linear-gradient(135deg,#03221f 0%,#053532 60%,#074a45 100%)}
 *{box-sizing:border-box}
 html{overflow-x:hidden}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hind Siliguri",system-ui,sans-serif;
@@ -154,7 +154,7 @@ a{color:inherit;text-decoration:none}
   display:grid;place-items:center;font-size:.95rem;transition:.16s}
 .a-menu a:hover{background:var(--soft)}
 .a-menu a.on{background:var(--brand-l);color:var(--brand-d)}
-.a-menu a.on i{background:var(--brand);color:#fff;box-shadow:0 4px 12px rgba(10,125,69,.3)}
+.a-menu a.on i{background:var(--brand);color:#fff;box-shadow:0 4px 12px rgba(15,118,110,.3)}
 .a-menu a.danger{color:var(--danger)}
 .a-menu a.danger i{background:#fdecea;color:var(--danger)}
 .a-menu a.danger:hover{background:#fdf3f2}
@@ -191,10 +191,10 @@ label{display:block;font-size:.84rem;font-weight:600;margin-bottom:5px;color:var
 input[type=text],input[type=email],input[type=password],input[type=url],input[type=date],input[type=number],select,textarea{
   width:100%;border:1px solid var(--line);border-radius:11px;background:var(--soft);padding:10px 13px;font:inherit;font-size:.93rem;transition:.16s}
 textarea{min-height:120px;resize:vertical;line-height:1.8}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand);background:var(--card);box-shadow:0 0 0 3px rgba(10,125,69,.09)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand);background:var(--card);box-shadow:0 0 0 3px rgba(15,118,110,.09)}
 .btn{display:inline-flex;align-items:center;gap:7px;border:0;background:var(--brand);color:#fff;padding:9px 18px;
   border-radius:999px;font:inherit;font-weight:600;font-size:.88rem;cursor:pointer;transition:.16s;
-  box-shadow:0 3px 10px rgba(10,125,69,.22)}
+  box-shadow:0 3px 10px rgba(15,118,110,.22)}
 .btn:active{transform:scale(.96)}
 .btn:hover{background:var(--brand-d)}
 .btn.sec{background:var(--chip);color:var(--ink-2)}
@@ -281,7 +281,7 @@ html[data-theme="dark"] .msg.err,html[data-theme="dark"] .pill.off{background:rg
 .seg{display:flex;gap:4px}
 .seg button{flex:1;height:40px;border:1px solid var(--line);background:var(--card);border-radius:10px;
   color:var(--ink-2);font-size:.9rem;cursor:pointer;transition:.15s}
-.seg button.on{background:var(--brand);border-color:var(--brand);color:#fff;box-shadow:0 3px 9px rgba(10,125,69,.25)}
+.seg button.on{background:var(--brand);border-color:var(--brand);color:#fff;box-shadow:0 3px 9px rgba(15,118,110,.25)}
 .seg button:active{transform:scale(.93)}
 
 /* ছবি ও পিডিএফের প্রিভিউ + মুছে ফেলার বাটন */
@@ -661,7 +661,7 @@ document.addEventListener('click',function(e){
 
   var bar=document.createElement('div');
   bar.style.cssText='position:fixed;top:0;left:0;height:3px;width:0;z-index:300;'+
-    'background:linear-gradient(90deg,#0a7d45,#7ee2a8);transition:width .2s ease,opacity .3s;opacity:0';
+    'background:linear-gradient(90deg,#0f766e,#7fe0cf);transition:width .2s ease,opacity .3s;opacity:0';
   document.body.appendChild(bar);
   function start(){ bar.style.opacity=1; bar.style.width='35%'; setTimeout(function(){bar.style.width='72%';},220); }
   function stop(){ bar.style.width='100%'; setTimeout(function(){bar.style.opacity=0;setTimeout(function(){bar.style.width=0;},300);},160); }

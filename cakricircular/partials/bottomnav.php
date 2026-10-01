@@ -4,7 +4,7 @@ css_once('bottomnav', <<<CSS
 .bn{position:fixed;left:0;right:0;bottom:0;z-index:105;display:none;
   background:color-mix(in srgb,var(--card) 96%,transparent);backdrop-filter:blur(16px) saturate(1.6);
   border-top:1px solid var(--line);padding:5px 4px calc(5px + env(safe-area-inset-bottom));
-  box-shadow:0 -8px 26px rgba(10,40,25,.08);border-radius:20px 20px 0 0}
+  box-shadow:0 -8px 26px rgba(16,40,36,.08);border-radius:20px 20px 0 0}
 .bn-in{display:flex;max-width:520px;margin:0 auto;position:relative}
 .bn a,.bn button{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:4px 0 2px;border:0;background:none;
   color:var(--muted);font:inherit;font-size:.66rem;font-weight:600;position:relative;transition:color .2s;letter-spacing:-.1px}

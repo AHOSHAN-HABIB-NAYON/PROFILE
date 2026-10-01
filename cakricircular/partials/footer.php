@@ -2,10 +2,10 @@
 /* ===== ফুটার (লাইট / সাদা) + অ্যাপ ইনস্টল ===== */
 css_once('footer', <<<CSS
 .ft{color:var(--ink-2);margin-top:40px;background:var(--card);border-top:1px solid var(--line);position:relative}
-.ft::before{content:"";position:absolute;left:0;right:0;top:-1px;height:3px;background:linear-gradient(90deg,var(--brand),#7ee2a8,var(--brand))}
+.ft::before{content:"";position:absolute;left:0;right:0;top:-1px;height:3px;background:linear-gradient(90deg,var(--brand),#7fe0cf,var(--brand))}
 .ft-in{max-width:var(--wrap);margin:0 auto;padding:28px 18px 4px;display:grid;gap:26px;grid-template-columns:1.6fr 1fr 1fr}
 .ft-brand{display:flex;align-items:center;gap:11px;margin-bottom:11px}
-.ft-brand img{width:46px;height:46px;border-radius:50%;object-fit:cover;box-shadow:0 3px 10px rgba(10,40,25,.14);background:#fff;padding:2px}
+.ft-brand img{width:46px;height:46px;border-radius:50%;object-fit:cover;box-shadow:0 3px 10px rgba(16,40,36,.14);background:#fff;padding:2px}
 .ft-brand b{color:var(--ink);font-size:1.12rem;display:block;line-height:1.25}
 .ft-brand small{display:block;font-size:.76rem;color:var(--muted);font-weight:500}
 .ft p{margin:0 0 14px;font-size:.9rem;line-height:1.8;color:var(--muted)}
