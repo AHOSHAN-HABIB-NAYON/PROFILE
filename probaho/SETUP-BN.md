@@ -1,7 +1,7 @@
 # Probaho — সেটআপ গাইড (বাংলা)
 
 ## যা লাগবে
-- PHP **8.0 বা নতুন** (cPanel → *Select PHP Version*) — এক্সটেনশন: `pdo_mysql`, `openssl`, `sodium`, `curl`, `mbstring`, `gd`, `fileinfo`
+- PHP **8.0 বা নতুন** (cPanel → *Select PHP Version*) — এক্সটেনশন: `pdo_mysql`, `openssl`, `curl`, `mbstring`, `gd`, `fileinfo`
 - MySQL / MariaDB ডাটাবেস
 - **SSL (HTTPS)** — Passkey, Push নোটিফিকেশন ও অ্যাপ ইনস্টলের জন্য বাধ্যতামূলক (cPanel → *SSL/TLS Status* → AutoSSL)
 

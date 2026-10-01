@@ -14,7 +14,7 @@ runs on ordinary shared hosting. No Composer, no Node build step.
 
 ## Requirements
 
-- PHP **8.0+** with `pdo_mysql`, `openssl`, `sodium`, `curl`, `mbstring`, `gd`, `fileinfo`
+- PHP **8.0+** with `pdo_mysql`, `openssl`, `curl`, `mbstring`, `gd`, `fileinfo`
 - MySQL 5.7+ / MariaDB 10.3+ (utf8mb4)
 - Apache or LiteSpeed with `mod_rewrite` (nginx config below)
 - **HTTPS** in production — required by browsers for Passkeys, Push and PWA install

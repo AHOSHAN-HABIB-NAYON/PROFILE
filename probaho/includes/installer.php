@@ -53,7 +53,6 @@ $checks = [
     'PHP 8.0 বা নতুন' => version_compare(PHP_VERSION, '8.0.0', '>='),
     'PDO MySQL' => extension_loaded('pdo_mysql'),
     'OpenSSL' => extension_loaded('openssl'),
-    'Sodium' => extension_loaded('sodium'),
     'cURL' => extension_loaded('curl'),
     'mbstring' => extension_loaded('mbstring'),
     'GD (ইমেজ)' => extension_loaded('gd'),
