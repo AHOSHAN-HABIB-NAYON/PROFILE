@@ -56,8 +56,8 @@ CSS);
 
 css_once('home', <<<CSS
 /* ===== হোম হিরো — পেছনে ইনলাইন SVG দৃশ্য (আলাদা ছবি লোড হয় না) ===== */
-.hh{position:relative;margin:-16px -16px 0;padding:24px 18px 64px;background:#06592f;color:#fff;overflow:hidden;isolation:isolate}
-.hh-scene{position:absolute;inset:0;width:100%;height:100%;z-index:-2;display:block}
+.hh{position:relative;margin:-16px -16px 0;padding:24px 18px 64px;background:#06592f url("data:image/webp;base64,UklGRrQAAABXRUJQVlA4IKgAAAAwBQCdASogABIAPtFepUyoJaOiMBgIAQAaCWoAnTLVRCA3MQncILywiiBZnhA1/O8Q1ADyc/fE1OEm3/gs8a5mkRKK0osdemRZBpBQ28f6r5H7XhQMbr/8B2AP3wSik3kIR/5IC3WaXiXLzW9wrgGNM4aNEmttB3K2J6Fxr4IRcT3E8CFioQ9yvQIgRpJ7LjWWCfytiv1hM0zDh971A5Fp+HYH9RU58AA=") 70% 40%/cover no-repeat;color:#fff;overflow:hidden;isolation:isolate}
+.hh-scene{position:absolute;inset:0;width:100%;height:100%;z-index:-2;display:block;object-fit:cover;object-position:70% 40%}
 .hh::before{content:"";position:absolute;inset:0;z-index:-1;
   background:linear-gradient(100deg,rgba(3,48,26,.94) 0%,rgba(4,64,35,.84) 48%,rgba(6,89,47,.42) 78%,rgba(6,89,47,.18) 100%),
              linear-gradient(0deg,rgba(3,48,26,.85) 0%,rgba(3,48,26,0) 45%)}
@@ -114,7 +114,6 @@ html[data-theme="dark"] .hh-search{background:var(--card)}
 }
 @media(max-width:700px){
   .hh{margin:-12px -12px 0;padding:20px 16px 58px}
-  .hh-scene{width:auto;min-width:100%;left:auto;right:0}
 }
 @media(max-width:360px){ .hh h1{font-size:1.5rem} }
 
@@ -145,7 +144,11 @@ $P = [
 
 <?php if ($page === 1): ?>
 <section class="hh">
-  <?php readfile(APP_ROOT . '/partials/hero_scene.svg'); ?>
+  <picture>
+    <source media="(min-width:701px)" srcset="<?= e(asset('img/hero-1600.webp')) ?>" type="image/webp">
+    <img class="hh-scene" src="<?= e(asset('img/hero-960.webp')) ?>" alt="" width="1600" height="900"
+         loading="eager" fetchpriority="high" decoding="async">
+  </picture>
   <span class="hh-badge"><b>নতুন</b>প্রতিদিন হালনাগাদ চাকরির খবর</span>
   <h1><?= e(setting('home_hero_title', 'সবার আগে সঠিক তথ্য')) ?> <span><?= e(setting('home_hero_accent', 'চাকরি সার্কুলার')) ?></span></h1>
   <p><?= e(setting('home_hero_sub', 'সরকারি-বেসরকারি চাকরি, ভর্তি, রেজাল্ট, নোটিশ ও স্কলারশিপ — সব তথ্য এক প্ল্যাটফর্মে।')) ?></p>

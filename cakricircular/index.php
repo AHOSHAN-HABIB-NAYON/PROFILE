@@ -231,6 +231,10 @@ ob_start(); require APP_ROOT . '/partials/bottomnav.php'; $BOTTOMNAV = ob_get_cl
 <meta name="apple-mobile-web-app-title" content="<?= e(setting('app_name', 'Cakricircular')) ?>">
 <meta name="mobile-web-app-capable" content="yes">
 
+<?php if ($route['file'] === 'home' && $page === 1): ?>
+<link rel="preload" as="image" href="<?= e(asset('img/hero-960.webp')) ?>" media="(max-width:700px)" fetchpriority="high">
+<link rel="preload" as="image" href="<?= e(asset('img/hero-1600.webp')) ?>" media="(min-width:701px)" fetchpriority="high">
+<?php endif; ?>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap">
