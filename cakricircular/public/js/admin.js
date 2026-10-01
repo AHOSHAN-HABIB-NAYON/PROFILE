@@ -335,3 +335,10 @@
     c.closest('.ge-item').classList.toggle('ge-removing', c.checked);
   });
 })();
+
+/* hide the bottom bar while the on-screen keyboard is up, so it never covers the field being typed in */
+(function () {
+  var typing = function (el) { return el && el.matches && el.matches('input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]), textarea, select, [contenteditable="true"]'); };
+  document.addEventListener('focusin', function (e) { if (typing(e.target) && window.innerWidth < 1024) document.body.classList.add('kb-open'); });
+  document.addEventListener('focusout', function () { setTimeout(function () { if (!typing(document.activeElement)) document.body.classList.remove('kb-open'); }, 80); });
+})();

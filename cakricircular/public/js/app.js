@@ -135,6 +135,7 @@
       app.setAttribute('data-nav-key', data.nav || '');
       document.body.className = data.bodyClass || '';
       setActive(data.nav || '');
+      showBnav();
       after && after();
       init(app);
       hit();
@@ -173,13 +174,20 @@
   }
 
   /* hide bottom nav while scrolling down on phones */
+  // …but never at the end of the page (the menu must always be reachable there) and never while a sheet is open
   var lastY = window.scrollY;
   window.addEventListener('scroll', function () {
-    var y = window.scrollY;
-    if (Math.abs(y - lastY) < 8) return;
-    document.body.classList.toggle('hide-bnav', y > lastY && y > 300);
+    var y = Math.max(0, window.scrollY);
+    var nearEnd = window.innerHeight + y >= document.documentElement.scrollHeight - 140;
+    if (Math.abs(y - lastY) < 10 && !nearEnd) return;
+    document.body.classList.toggle('hide-bnav', y > lastY && y > 320 && !nearEnd);
     lastY = y;
   }, { passive: true });
+  // the keyboard is up → keep the bottom menu out of the way
+  var isTyping = function (el) { return el && el.matches && el.matches('input:not([type=checkbox]):not([type=radio]):not([type=hidden]), textarea, select'); };
+  document.addEventListener('focusin', function (e) { if (isTyping(e.target) && window.innerWidth < 960) document.body.classList.add('kb-open'); });
+  document.addEventListener('focusout', function () { setTimeout(function () { if (!isTyping(document.activeElement)) document.body.classList.remove('kb-open'); }, 80); });
+  function showBnav() { document.body.classList.remove('hide-bnav'); lastY = window.scrollY; }
 
   /* ---------------- analytics beacon ---------------- */
   function device() {

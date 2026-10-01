@@ -594,3 +594,20 @@ code.copy { display: block; background: var(--card); border: 1px dashed var(--li
 .imp-cta-ic { width: 46px; height: 46px; border-radius: 15px; display: grid; place-items: center; background: var(--brand-2); color: #fff; flex: none; box-shadow: 0 10px 20px -10px var(--brand-2); animation: ctaPulse 2.4s var(--ease) infinite; }
 .imp-cta-ic .i { width: 24px; height: 24px; }
 @keyframes ctaPulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand-2) 45%, transparent); } 50% { box-shadow: 0 0 0 10px transparent; } }
+
+/* ---------- mobile: no sideways scroll, no auto-zoom ---------- */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { overflow-x: clip; }
+.grid-2 { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1024px) { .grid-2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.card, .stat, .grid2 > *, .grid3 > *, .pf-main, .pf-side, .a-main, main { min-width: 0; }
+.card { overflow-wrap: anywhere; }
+.card-h { flex-wrap: wrap; row-gap: 6px; }
+button, a, label, summary { touch-action: manipulation; }
+/* iPhone zooms the page when a focused field's text is under 16px — and doesn't zoom back */
+@media (max-width: 960px) {
+  input:not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea, .ed-area { font-size: 16px !important; }
+  .tbl, table { max-width: 100%; }
+  .tbl-wrap, .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+}
+body.kb-open .a-bnav { transform: translateY(110%); transition: transform .25s; }
