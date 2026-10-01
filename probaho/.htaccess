@@ -19,7 +19,7 @@ AddDefaultCharset UTF-8
     # Block internal folders and dotfiles
     RewriteRule ^(config|core|includes|pages|database|storage)(/|$) - [F,L]
     RewriteRule (^|/)\. - [F,L]
-    RewriteRule (^|/)(composer\.(json|lock)|README\.md)$ - [F,L]
+    RewriteRule (^|/)(composer\.(json|lock)|[^/]+\.md)$ - [F,L]
 
     # No direct execution of any PHP file except the front controller
     RewriteCond %{REQUEST_URI} !(^|/)index\.php$
