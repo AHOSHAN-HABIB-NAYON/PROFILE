@@ -1,0 +1,14 @@
+# /admin সরাসরি খোলা যাবে না — এডমিন প্যানেল চলে গোপন URL দিয়ে (সেটিংসে দেওয়া)
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteRule ^ /index.php [L]
+</IfModule>
+
+# rewrite না থাকলেও যেন ৪০৩ না দেখায়
+<IfModule !mod_rewrite.c>
+<FilesMatch "\.php$">
+Require all denied
+</FilesMatch>
+</IfModule>

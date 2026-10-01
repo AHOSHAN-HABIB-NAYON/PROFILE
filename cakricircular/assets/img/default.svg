@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f766e"/><stop offset="1" stop-color="#14a08c"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#g)"/>
+  <circle cx="1030" cy="120" r="220" fill="#fff" opacity=".07"/>
+  <circle cx="150" cy="560" r="180" fill="#fff" opacity=".06"/>
+  <g transform="translate(470,210)">
+    <rect x="0" y="40" width="260" height="180" rx="22" fill="#fff" opacity=".96"/>
+    <path d="M70 40V18a30 30 0 0 1 30-30h60a30 30 0 0 1 30 30v22" fill="none" stroke="#fff" stroke-width="16" stroke-linecap="round"/>
+    <rect x="0" y="118" width="260" height="6" fill="#0f766e" opacity=".35"/>
+    <circle cx="130" cy="150" r="16" fill="#0f766e"/>
+  </g>
+  <text x="600" y="500" font-family="Hind Siliguri, Noto Sans Bengali, sans-serif" font-size="58" font-weight="700" fill="#fff" text-anchor="middle">চাকরি সার্কুলার</text>
+  <text x="600" y="556" font-family="Hind Siliguri, Noto Sans Bengali, sans-serif" font-size="28" fill="#d6ece7" text-anchor="middle">আজকের চাকরির খবর, ভর্তি ও রেজাল্ট</text>
+</svg>

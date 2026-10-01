@@ -1,0 +1,6 @@
+# uploads ফোল্ডার — কোনো স্ক্রিপ্ট চলবে না, কিন্তু ছবি সব ব্রাউজারে খুলবে
+Options -Indexes
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteRule \.(php|php\d|phtml|phar|cgi|pl|py|sh)$ - [F,L]
+</IfModule>
