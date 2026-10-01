@@ -41,17 +41,19 @@ async function testConnection(dbCfg) {
     connectTimeout: 8000,
   });
   const [[row]] = await conn.query('SELECT VERSION() AS v');
-  // a database that already holds the OLD PHP site's tables (or another app's) cannot be reused:
-  // the new tables would not be created and the site would break.
-  const [cols] = await conn.query("SELECT COLUMN_NAME c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'posts'");
-  await conn.end();
-  const names = new Set(cols.map((r) => r.c));
-  if (names.size && !names.has('category_id')) {
-    const e = new Error('এই ডাটাবেসে পুরোনো সাইটের টেবিল আছে। নতুন সাইটের জন্য hPanel থেকে একটি নতুন খালি ডাটাবেস বানিয়ে সেটির তথ্য দিন। পুরোনো পোস্টগুলো ইনস্টলের পর এডমিন → "পুরোনো সাইট থেকে আনুন" দিয়ে আনবেন।');
-    e.code = 'OLD_SCHEMA';
-    throw e;
-  }
+  try { await assertCompatible((sql) => conn.query(sql).then(([r]) => r)); } finally { await conn.end(); }
   return row.v;
+}
+
+/**
+ * A database that already holds the OLD PHP site's tables (or another app's) cannot be reused:
+ * the new tables would not be created and every page would fail.
+ */
+const OLD_SCHEMA_MSG = 'এই ডাটাবেসে পুরোনো সাইটের (বা অন্য অ্যাপের) টেবিল আছে, তাই নতুন সাইট এটা ব্যবহার করতে পারবে না। hPanel → Databases থেকে একটি নতুন খালি ডাটাবেস বানিয়ে সেটির তথ্য দিন। পুরোনো পোস্টগুলো ইনস্টলের পর এডমিন → "পুরোনো সাইট থেকে আনুন" দিয়ে আসবে।';
+async function assertCompatible(run) {
+  const cols = await run("SELECT COLUMN_NAME c FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'posts'");
+  const names = new Set(cols.map((r) => r.c));
+  if (names.size && !names.has('category_id')) { const e = new Error(OLD_SCHEMA_MSG); e.code = 'OLD_SCHEMA'; throw e; }
 }
 
 /** Prepared statement returning rows. */
@@ -95,4 +97,4 @@ function normalize(v) {
 function ready() { return !!pool; }
 function getPool() { return pool; }
 
-module.exports = { connect, testConnection, query, raw, one, val, insert, update, ready, getPool };
+module.exports = { assertCompatible: () => assertCompatible((sql) => raw(sql)), connect, testConnection, query, raw, one, val, insert, update, ready, getPool };

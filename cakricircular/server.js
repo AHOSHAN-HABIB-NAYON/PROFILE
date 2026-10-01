@@ -30,6 +30,15 @@ async function boot() {
   const cfg = config.load();
   if (!cfg) { booted = false; return false; }
   db.connect(cfg.db);
+  try {
+    await db.assertCompatible(); // never create tables inside the old site's database
+  } catch (e) {
+    if (e.code !== 'OLD_SCHEMA') throw e;
+    console.error('[boot]', e.message);
+    config.markInvalid(e.message);
+    booted = false;
+    return false;
+  }
   const applied = await migrate.run();
   if (applied) console.log(`[boot] ${applied} migration(s) applied`);
   await settings.load();
@@ -160,7 +169,9 @@ app.use((err, req, res, next) => {
   if (req.xhr || (req.headers.accept || '').includes('application/json') || req.path.startsWith('/api/')) {
     return res.status(status).json({ ok: false, error: status === 413 ? 'ফাইল বা ডেটা অনেক বড়' : 'সার্ভারে সমস্যা হয়েছে, আবার চেষ্টা করুন।' });
   }
-  res.status(status).send(`<!doctype html><html lang="bn"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>সমস্যা হয়েছে</title><body style="font-family:'Hind Siliguri',sans-serif;text-align:center;padding:60px 16px;color:#0f172a"><h1>দুঃখিত, একটি সমস্যা হয়েছে</h1><p>কিছুক্ষণ পরে আবার চেষ্টা করুন।</p><a href="/" style="color:#15803d">হোমে ফিরে যান</a></body></html>`);
+  // a short, harmless reason (no stack trace) makes problems fixable from a screenshot
+  const reason = String((err && (err.code || '')) + (err && err.message ? `: ${err.message}` : '')).replace(/[<>&"]/g, '').slice(0, 180);
+  res.status(status).send(`<!doctype html><html lang="bn"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>সমস্যা হয়েছে</title><body style="font-family:'Hind Siliguri',sans-serif;text-align:center;padding:60px 16px;color:#0f172a"><h1>দুঃখিত, একটি সমস্যা হয়েছে</h1><p>কিছুক্ষণ পরে আবার চেষ্টা করুন।</p><a href="/" style="color:#15803d">হোমে ফিরে যান</a>${reason ? `<p style="margin-top:28px;color:#94a3b8;font-size:12px;direction:ltr;word-break:break-word">${reason}</p>` : ''}</body></html>`);
 });
 
 /* ---------- start ---------- */

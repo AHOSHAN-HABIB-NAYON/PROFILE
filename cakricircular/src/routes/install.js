@@ -46,7 +46,8 @@ function form(v = {}) {
 const router = express.Router();
 router.get('/install', (req, res) => {
   if (config.isInstalled()) return res.status(404).send('Not found');
-  res.set('X-Robots-Tag', 'noindex').send(page(form({ site_domain: req.headers.host })));
+  const why = config.invalidReason();
+  res.set('X-Robots-Tag', 'noindex').send(page(form({ site_domain: req.headers.host }), why ? `আবার ইনস্টল করতে হবে — ${why}` : ''));
 });
 
 router.post('/install', express.urlencoded({ extended: false, limit: '50kb' }), async (req, res) => {
