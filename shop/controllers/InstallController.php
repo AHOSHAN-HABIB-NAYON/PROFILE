@@ -18,6 +18,7 @@ final class InstallController
             ['রুট ফোল্ডার লেখার অনুমতি (.env)', is_writable(BASE_PATH), ''],
             ['storage/ লেখার অনুমতি', $writable('storage') && $writable('storage/cache') && $writable('storage/logs'), ''],
             ['uploads/ লেখার অনুমতি', $writable('uploads'), ''],
+            ['সেশন সেভ করা যায়', session_status() === PHP_SESSION_ACTIVE, ''],
         ];
     }
 

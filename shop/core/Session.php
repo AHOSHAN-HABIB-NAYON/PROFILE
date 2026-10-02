@@ -6,12 +6,32 @@ final class Session
         if (session_status() === PHP_SESSION_ACTIVE) {
             return;
         }
-        ini_set('session.use_strict_mode', '1');
-        ini_set('session.use_only_cookies', '1');
-        ini_set('session.cookie_httponly', '1');
-        ini_set('session.sid_length', '48');
-        ini_set('session.sid_bits_per_character', '6');
-        ini_set('session.gc_maxlifetime', '7200');
+        $ini = static function (string $k, string $v): void {
+            if (function_exists('ini_set')) {
+                @ini_set($k, $v);
+            }
+        };
+        $ini('session.use_strict_mode', '1');
+        $ini('session.use_only_cookies', '1');
+        $ini('session.cookie_httponly', '1');
+        $ini('session.gc_maxlifetime', '7200');
+        if (PHP_VERSION_ID < 80400) {
+            // Deprecated since PHP 8.4 (where 32 chars / 4 bits is the safe default).
+            $ini('session.sid_length', '48');
+            $ini('session.sid_bits_per_character', '6');
+        }
+        // Shared hosts sometimes have an unwritable default session path → use our own private folder.
+        $path = (string) session_save_path();
+        $dir = $path !== '' ? (str_contains($path, ';') ? substr($path, strrpos($path, ';') + 1) : $path) : sys_get_temp_dir();
+        if (!@is_writable($dir)) {
+            $own = BASE_PATH . '/storage/sessions';
+            if (!is_dir($own)) {
+                @mkdir($own, 0700, true);
+            }
+            if (is_writable($own)) {
+                session_save_path($own);
+            }
+        }
         session_name(Config::get('session.name', 'shop_sid'));
         session_set_cookie_params([
             'lifetime' => 0,

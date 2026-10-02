@@ -25,8 +25,10 @@ Config::set($config);
 date_default_timezone_set(Config::get('timezone', 'Asia/Dhaka'));
 mb_internal_encoding('UTF-8');
 
-ini_set('display_errors', Config::get('debug') ? '1' : '0');
-ini_set('log_errors', '1');
+if (function_exists('ini_set')) {
+    @ini_set('display_errors', Config::get('debug') ? '1' : '0');
+    @ini_set('log_errors', '1');
+}
 error_reporting(E_ALL);
 
 set_exception_handler([ErrorHandler::class, 'handleException']);
