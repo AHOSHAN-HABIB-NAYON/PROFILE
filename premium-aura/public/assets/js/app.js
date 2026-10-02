@@ -2,6 +2,7 @@
 import {
   state, api, esc, $, $$, toast, toastError, relEl, applyTheme, brandHtml, playSound, skeleton, money, sheet,
 } from './core.js';
+import { pushSupported, currentSubscription } from './push.js';
 
 // ------------------------------------------------------------------ routes
 const USER_ROUTES = {
@@ -285,7 +286,7 @@ async function render(route, u) {
     const el = document.createElement('div');
     el.className = 'view';
     view.replaceChildren(el);
-    currentCleanup = await mod.mount(el, { query: Object.fromEntries(u.searchParams), navigate, live, setUnread, setWallet });
+    currentCleanup = await mod.mount(el, { query: Object.fromEntries(u.searchParams), hash: u.hash, navigate, live, setUnread, setWallet });
   } catch (err) {
     if (token !== navToken) return;
     view.innerHTML = `<div class="view card">${err?.status === 503 ? '<div class="empty"><i class="fa-solid fa-screwdriver-wrench"></i><strong>Maintenance in progress</strong></div>'
@@ -363,44 +364,56 @@ export async function promptInstall() {
   deferredInstall = null;
   return r.outcome === 'accepted';
 }
-window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; live.emit('pwa:installable', true); scheduleInstallPopup(); });
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; live.emit('pwa:installable', true); });
 window.addEventListener('appinstalled', () => { deferredInstall = null; try { localStorage.setItem('aura.installed', '1'); } catch { /* ignore */ } });
 
 /*
- * "Install the app" popup: shown now and then (first after ~20 s, then at most once every 3 days
- * after "Not now"), never when the app is already installed / running standalone.
+ * Welcome popup ~4 s after opening the app: "Install the app" (unless already installed) and
+ * "Turn on notifications" (unless this device already receives push). "Not now" hides it for a day.
  */
 const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
-let installTimer = null;
+let promptTimer = null;
 function scheduleInstallPopup() {
-  if (installTimer || isStandalone()) return;
+  if (promptTimer) return;
   let last = 0;
-  try { if (localStorage.getItem('aura.installed') === '1') return; last = Number(localStorage.getItem('aura.installAsk') || 0); } catch { /* ignore */ }
-  if (Date.now() - last < 3 * 86400_000) return;
-  installTimer = setTimeout(showInstallPopup, 20_000);
+  try { last = Number(localStorage.getItem('aura.promptAsk') || 0); } catch { /* ignore */ }
+  if (Date.now() - last < 86400_000) return;
+  promptTimer = setTimeout(() => showWelcomePopup().catch(() => {}), 4000);
 }
-function showInstallPopup() {
-  if (isStandalone() || (!deferredInstall && !isIos()) || document.querySelector('.sheet.show')) return;
-  try { localStorage.setItem('aura.installAsk', String(Date.now())); } catch { /* ignore */ }
+async function showWelcomePopup() {
+  if (!state.user || document.querySelector('.sheet.show')) return;
+  const needInstall = !isStandalone();
+  let needPush = false;
+  if (pushSupported() && Notification.permission !== 'denied') {
+    const sub = await currentSubscription().catch(() => null);
+    needPush = !sub || Notification.permission !== 'granted' || state.user.notify?.push === false;
+  }
+  if (!needInstall && !needPush) return;
+  try { localStorage.setItem('aura.promptAsk', String(Date.now())); } catch { /* ignore */ }
   const name = esc(state.site?.pwa_name || state.site?.site_name || 'Premium Aura');
+  const howTo = isIos() ? '<i class="fa-solid fa-arrow-up-from-bracket"></i> Tap <strong>Share</strong>, then <strong>Add to Home Screen</strong>'
+    : '<i class="fa-solid fa-ellipsis-vertical"></i> Tap the browser menu <strong>⋮</strong>, then <strong>Install app</strong> / <strong>Add to Home screen</strong>';
   const s = sheet({
     title: '', body: `<div class="install-pop">
       <div class="install-icon"><img src="${esc(state.site?.pwa_icon_url || '/assets/icons/icon-192.png')}" alt=""></div>
-      <h2>Install ${name}</h2>
-      <p class="muted">Get OTPs faster with a full-screen app on your home screen.</p>
-      <ul class="install-points"><li><i class="fa-solid fa-bolt"></i>Opens instantly, no browser bar</li><li><i class="fa-regular fa-bell"></i>OTP notifications even when closed</li><li><i class="fa-solid fa-feather"></i>Tiny — no app store needed</li></ul>
-      ${deferredInstall ? '<button class="btn btn-primary btn-block" data-install-now><i class="fa-solid fa-download"></i>Install app</button>'
-    : '<div class="install-ios"><i class="fa-solid fa-arrow-up-from-bracket"></i> Tap <strong>Share</strong> in Safari, then <strong>Add to Home Screen</strong></div>'}
-      <button class="btn btn-ghost btn-block" data-close style="margin-top:8px">Not now</button></div>`,
+      <h2>${needInstall ? `Get the ${name} app` : 'Never miss an OTP'}</h2>
+      <p class="muted">${needInstall ? 'Faster, full-screen, right on your home screen.' : 'Turn on notifications to get codes instantly.'}</p>
+      ${needInstall ? `<div class="welcome-card"><span class="wc-ic"><i class="fa-solid fa-mobile-screen-button"></i></span>
+        <div class="wc-text"><strong>Install the app</strong><small>Opens instantly · no browser bar · no app store</small></div>
+        ${deferredInstall ? '<button class="btn btn-primary btn-sm" data-install-now><i class="fa-solid fa-download"></i>Install</button>' : ''}</div>
+        ${deferredInstall ? '' : `<div class="install-ios">${howTo}</div>`}` : ''}
+      ${needPush ? `<div class="welcome-card"><span class="wc-ic green"><i class="fa-regular fa-bell"></i></span>
+        <div class="wc-text"><strong>Turn on notifications</strong><small>OTP alerts even when the app is closed</small></div>
+        <button class="btn btn-soft btn-sm" data-go-notify>Turn on</button></div>` : ''}
+      <button class="btn btn-ghost btn-block" data-close style="margin-top:12px">Not now</button></div>`,
   });
   s.el.querySelector('[data-install-now]')?.addEventListener('click', async () => {
     const ok = await promptInstall();
-    s.close();
-    if (ok) toast('Installed! Open it from your home screen 🎉', 'success');
+    if (ok) { s.close(); toast('Installed! Open it from your home screen 🎉', 'success'); }
   });
+  s.el.querySelector('[data-go-notify]')?.addEventListener('click', () => { s.close(); navigate('/settings#notifications'); });
 }
-if (isIos()) scheduleInstallPopup();
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js').catch(() => {}));
 }
@@ -417,7 +430,8 @@ if ('serviceWorker' in navigator) {
     renderShell();
     bindGlobal();
     connectLive();
-    await navigate(location.pathname + location.search, { replace: true, scroll: false });
+    await navigate(location.pathname + location.search + location.hash, { replace: true, scroll: false });
+    scheduleInstallPopup();
   } catch (err) {
     if (err.status !== 401) $('#view').innerHTML = `<div class="card empty"><i class="fa-solid fa-wifi"></i><div><strong>Unable to connect</strong></div><div class="small">${esc(err.message)}</div></div>`;
   }

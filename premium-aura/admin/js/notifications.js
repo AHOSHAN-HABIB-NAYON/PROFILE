@@ -30,7 +30,7 @@ export async function mount(el) {
         const d = formData(e.target);
         const body = { type: d.type, link: d.link, ...notifyValues(e.target), title: e.target.notify_title.value, body: e.target.notify_body.value };
         toast((await api('/admin/notifications', { method: 'POST', body })).message, 'success', 5000);
-        e.target.reset(); bindNotifyPanel(e.target); list.reload();
+        e.target.reset(); e.target.querySelector('[data-notify-panel]').reset?.(); list.reload();
       } catch (err) { toastError(err); }
     });
   });

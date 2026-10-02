@@ -142,7 +142,11 @@ export function notifyPanelHtml({ toggle = false, title = '', body = '', showTit
       <div class="field"><label>Send to</label><div class="seg">
         <label><input type="radio" name="notify_to" value="all" checked><span><i class="fa-solid fa-users"></i>All users</span></label>
         <label><input type="radio" name="notify_to" value="users"><span><i class="fa-solid fa-user"></i>Specific users</span></label></div></div>
-      <div class="field" data-notify-users hidden><label>User emails</label><textarea class="input" name="notify_users" rows="2" placeholder="one@gmail.com, two@gmail.com"></textarea><span class="hint">Separate with commas or new lines.</span></div>
+      <div class="field" data-notify-users hidden><label>Choose users <span class="muted small" data-picked-count></span></label>
+        <div class="picked" data-picked></div>
+        <div class="search-box"><i class="fa-solid fa-magnifying-glass"></i><input class="input" type="search" data-user-search placeholder="Search name or email…" autocomplete="off"></div>
+        <div class="user-pick-list" data-user-list></div>
+        <input type="hidden" name="notify_users"></div>
       ${showTitle ? `<div class="field"><label>Title</label><input class="input" name="notify_title" maxlength="160" value="${esc(title)}" placeholder="New numbers available"></div>` : ''}
       <div class="field"><label>Message</label><textarea class="input" name="notify_body" rows="3" maxlength="500" placeholder="Write your message…">${esc(body)}</textarea></div>
       <div class="field"><label>Send by</label><div class="chk-row">
@@ -156,13 +160,40 @@ export function notifyPanelHtml({ toggle = false, title = '', body = '', showTit
 export function bindNotifyPanel(root) {
   const panel = root.querySelector('[data-notify-panel]');
   if (!panel) return;
-  const sync = () => {
-    const on = panel.querySelector('[data-notify-on]');
-    panel.querySelector('.notify-body').hidden = !!on && !on.checked;
-    const specific = panel.querySelector('[name=notify_to][value=users]').checked;
-    panel.querySelector('[data-notify-users]').hidden = !specific;
+  const picked = new Map(); // email → name
+  const q = (sel) => panel.querySelector(sel);
+  let loaded = false;
+  const renderPicked = () => {
+    q('[name=notify_users]').value = [...picked.keys()].join(',');
+    q('[data-picked-count]').textContent = picked.size ? `· ${picked.size} selected` : '';
+    q('[data-picked]').innerHTML = [...picked].map(([email, name]) => `<span class="pick-chip">${esc(name || email)}<button type="button" data-unpick="${esc(email)}" aria-label="Remove">×</button></span>`).join('');
+    panel.querySelectorAll('[data-pick-user]').forEach((c) => { c.checked = picked.has(c.value); });
   };
-  panel.addEventListener('change', sync);
+  const load = async (term = '') => {
+    const box = q('[data-user-list]');
+    box.innerHTML = '<div class="small muted" style="padding:8px">Loading…</div>';
+    try {
+      const r = await api('/admin/users', { query: { q: term, status: 'active', pageSize: 50 } });
+      box.innerHTML = r.items.length ? r.items.map((u) => `<label class="pick-row"><input type="checkbox" data-pick-user value="${esc(u.email)}" data-name="${esc(u.name)}" ${picked.has(u.email) ? 'checked' : ''}>
+          <span class="avatar">${esc(String(u.name || u.email).charAt(0).toUpperCase())}</span><span class="pick-text"><strong>${esc(u.name)}</strong><small>${esc(u.email)}</small></span></label>`).join('')
+        : '<div class="small muted" style="padding:8px">No users found</div>';
+    } catch (err) { box.innerHTML = ''; toastError(err); }
+  };
+  const sync = () => {
+    const on = q('[data-notify-on]');
+    q('.notify-body').hidden = !!on && !on.checked;
+    const specific = q('[name=notify_to][value=users]').checked;
+    q('[data-notify-users]').hidden = !specific;
+    if (specific && !loaded) { loaded = true; load(); }
+  };
+  panel.addEventListener('change', (e) => {
+    const c = e.target.closest('[data-pick-user]');
+    if (c) { if (c.checked) picked.set(c.value, c.dataset.name); else picked.delete(c.value); renderPicked(); return; }
+    sync();
+  });
+  panel.addEventListener('click', (e) => { const x = e.target.closest('[data-unpick]'); if (x) { picked.delete(x.dataset.unpick); renderPicked(); } });
+  q('[data-user-search]').addEventListener('input', debounce((e) => load(e.target.value.trim()), 300));
+  panel.reset = () => { picked.clear(); renderPicked(); };
   sync();
 }
 

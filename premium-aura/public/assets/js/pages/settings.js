@@ -19,7 +19,7 @@ export async function mount(el, ctx) {
     <div class="card"><div class="card-head"><h2>Appearance</h2></div>
       <div class="theme-toggle"><button data-theme-set="light"><i class="fa-solid fa-sun"></i>Light</button><button data-theme-set="dark"><i class="fa-solid fa-moon"></i>Dark</button></div>
       <p class="small muted" style="margin-top:10px">Saved to this device and your profile. Switches instantly — no reload.</p></div>
-    <div class="card"><div class="card-head"><h2>Notifications</h2></div>
+    <div class="card" data-notify-card><div class="card-head"><h2>Notifications</h2></div>
       <div class="pref-list">
         ${prefRow('inapp', 'fa-regular fa-bell', 'blue', 'In-app notifications', 'Show alerts inside Premium Aura', n.inapp)}
         ${prefRow('email', 'fa-regular fa-envelope', 'orange', 'Email notifications', 'News and updates by email', n.email)}
@@ -40,6 +40,10 @@ export async function mount(el, ctx) {
       <p class="small muted" style="margin-top:8px">On iPhone: tap <i class="fa-solid fa-arrow-up-from-bracket"></i> Share → “Add to Home Screen”.</p>`}</div>
   </div>`;
   applyTheme(document.documentElement.dataset.theme, { persist: false });
+  if (ctx.hash === '#notifications') {
+    const card = $('[data-notify-card]', el);
+    setTimeout(() => { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); card.classList.add('card-flash'); }, 150);
+  }
 
   // Push: the switch shows whether THIS device is subscribed.
   const pushBox = $('[data-pref=push]', el);

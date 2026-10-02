@@ -40,6 +40,12 @@ export async function mount(el, { query, live }) {
         <div class="range-strip" data-range-strip></div>
         <button class="btn btn-primary btn-block get-btn" data-get-selected disabled><i class="fa-solid fa-plus"></i><span data-get-label>Get Number</span></button>
         <p class="small muted limits-line" data-limits></p>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Number List</h2><div class="actions"><button class="btn btn-ghost btn-xs" data-refresh aria-label="Refresh"><i class="fa-solid fa-rotate"></i></button></div></div>
+        <div data-mine></div>
+      </div>
+      <div class="card adv-card">
         <div class="adv-search">
           <div class="adv-head"><i class="fa-solid fa-magnifying-glass-plus"></i><strong>Advanced Search</strong><span class="small muted">Serial 5–8 digits</span></div>
           <form data-search class="adv-form">
@@ -47,10 +53,6 @@ export async function mount(el, { query, live }) {
             <button class="btn btn-primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i>Search</button>
           </form>
         </div>
-      </div>
-      <div class="card">
-        <div class="card-head"><h2>Number List</h2><div class="actions"><button class="btn btn-ghost btn-xs" data-refresh aria-label="Refresh"><i class="fa-solid fa-rotate"></i></button></div></div>
-        <div data-mine></div>
       </div>
     </div>`;
 
@@ -129,7 +131,9 @@ export async function mount(el, { query, live }) {
         renderLimits(r.limits);
         navigator.vibrate?.(30);
         await Promise.all([loadMine(1), loadServices()]);
-        $('[data-mine]', el).querySelector('.num-row')?.classList.add('flash');
+        const row = $('[data-mine]', el).querySelector('.num-row');
+        row?.classList.add('flash');
+        row?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } catch (err) {
         if (err.body?.upgrade) upgradePrompt(err.message); else toastError(err);
       }

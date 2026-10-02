@@ -89,7 +89,9 @@ app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 
 // ------------------------------------------------------------------ static assets
 const staticOpts = { index: false, maxAge: config.isProd ? '7d' : 0, fallthrough: true };
-app.use('/assets', express.static(path.join(paths.PUBLIC_DIR, 'assets'), staticOpts));
+// App code (CSS/JS/icons) is revalidated on every load (cheap 304s via ETag) so an update is never
+// half-applied — a long cache once mixed new JS with old CSS on phones.
+app.use('/assets', express.static(path.join(paths.PUBLIC_DIR, 'assets'), { index: false, fallthrough: true, maxAge: 0, etag: true, lastModified: true }));
 app.use('/vendor/fontawesome', express.static(path.join(paths.NODE_MODULES, '@fortawesome/fontawesome-free'), { ...staticOpts, maxAge: '30d' }));
 app.use('/vendor/flag-icons', express.static(path.join(paths.NODE_MODULES, 'flag-icons'), { ...staticOpts, maxAge: '30d' }));
 app.use('/vendor/chart.js', express.static(path.join(paths.NODE_MODULES, 'chart.js/dist'), { ...staticOpts, maxAge: '30d' }));

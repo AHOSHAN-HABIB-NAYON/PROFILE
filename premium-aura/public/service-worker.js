@@ -1,5 +1,5 @@
 /* Premium Aura service worker — app-shell caching; API calls always go to the network. */
-const VERSION = 'aura-v1.5.0';
+const VERSION = 'aura-v1.7.0';
 const SHELL = [
   '/offline.html',
   '/assets/css/app.css',
@@ -34,8 +34,19 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(fetch(req).catch(() => caches.match('/offline.html')));
     return;
   }
-  if (/^\/(assets|vendor|uploads\/public)\//.test(url.pathname)) {
-    // stale-while-revalidate for static assets
+  if (/^\/assets\//.test(url.pathname)) {
+    // App code: network first (always the latest version), cache only as an offline fallback.
+    event.respondWith(caches.open(VERSION).then(async (cache) => {
+      try {
+        const res = await fetch(req, { cache: 'no-cache' });
+        if (res.ok) cache.put(req, res.clone());
+        return res;
+      } catch { return (await cache.match(req)) || Response.error(); }
+    }));
+    return;
+  }
+  if (/^\/(vendor|uploads\/public)\//.test(url.pathname)) {
+    // Fonts, icons, uploaded images: stale-while-revalidate.
     event.respondWith(caches.open(VERSION).then(async (cache) => {
       const cached = await cache.match(req);
       const network = fetch(req).then((res) => { if (res.ok) cache.put(req, res.clone()); return res; }).catch(() => cached);
