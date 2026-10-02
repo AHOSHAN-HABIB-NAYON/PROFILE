@@ -46,6 +46,8 @@
           raf = requestAnimationFrame(() => {
             const i = Math.round(track.scrollLeft / track.clientWidth);
             thumbs.forEach((t, n) => t.classList.toggle('active', n === i));
+            const cnt = root.querySelector('[data-gallery-count]');
+            if (cnt) cnt.textContent = App.bn(i + 1) + '/' + App.bn(thumbs.length);
           });
         }, { passive: true, signal });
       }

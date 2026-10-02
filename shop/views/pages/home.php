@@ -1,21 +1,24 @@
 <?php /** Home page sections are switched on/off from Admin → Settings → Homepage. */ ?>
 <div class="page container" data-page="home">
+<button type="button" class="search-pill only-mobile" data-open-search><i class="fa fa-search"></i><span>পণ্য খুঁজুন…</span></button>
+
 <?php if ($banners): ?>
   <section class="hero" aria-label="অফার ব্যানার">
     <div class="slider" data-slider>
       <div class="slides">
-        <?php foreach ($banners as $i => $b): ?>
-        <div class="slide" aria-roledescription="slide">
-          <?php $img = picture($b['image'], $b['title'] ?: setting('site_name'), (int) $b['width'], (int) $b['height'], 'slide-img', $i > 0, 'md'); ?>
-          <?php if ($b['link']): ?><a href="<?= e($b['link']) ?>"><?= $img ?></a><?php else: ?><?= $img ?><?php endif; ?>
-          <?php if ($b['title'] || $b['cta_text']): ?>
-          <div class="slide-cap">
-            <?php if ($b['title']): ?><strong><?= e($b['title']) ?></strong><?php endif; ?>
-            <?php if ($b['subtitle']): ?><span><?= e($b['subtitle']) ?></span><?php endif; ?>
-            <?php if ($b['cta_text'] && $b['link']): ?><a href="<?= e($b['link']) ?>" class="btn btn-light btn-xs"><?= e($b['cta_text']) ?></a><?php endif; ?>
-          </div>
+        <?php foreach ($banners as $i => $b): $hasText = $b['title'] || $b['subtitle'] || $b['cta_text']; $tag = $b['link'] ? 'a' : 'div'; ?>
+        <<?= $tag ?> class="slide<?= $hasText ? ' hero-card' : '' ?>"<?= $b['link'] ? ' href="' . e($b['link']) . '"' : '' ?> aria-roledescription="slide">
+          <?php if ($hasText): ?>
+            <div class="hero-text">
+              <?php if ($b['title']): ?><strong class="hero-title"><?= e($b['title']) ?></strong><?php endif; ?>
+              <?php if ($b['subtitle']): ?><span class="hero-sub"><?= e($b['subtitle']) ?></span><?php endif; ?>
+              <?php if ($b['cta_text']): ?><span class="btn btn-dark-green btn-xs"><?= e($b['cta_text']) ?></span><?php endif; ?>
+            </div>
+            <div class="hero-img"><?= picture($b['image'], $b['title'] ?: setting('site_name'), (int) $b['width'], (int) $b['height'], 'slide-img', $i > 0, 'md') ?></div>
+          <?php else: ?>
+            <?= picture($b['image'], setting('site_name'), (int) $b['width'], (int) $b['height'], 'slide-img full', $i > 0, 'md') ?>
           <?php endif; ?>
-        </div>
+        </<?= $tag ?>>
         <?php endforeach; ?>
       </div>
       <?php if (count($banners) > 1): ?>
@@ -29,12 +32,7 @@
   <section class="section">
     <?php View::partial('components/section-head', ['title' => 'ক্যাটাগরি', 'link' => '/categories']); ?>
     <div class="cat-scroll">
-      <?php foreach ($categories as $c): ?>
-      <a href="/category/<?= e(rawurlencode($c['slug'])) ?>" class="cat-chip">
-        <span class="cat-icon"><?php if ($c['icon_type'] === 'image' && $c['image']): ?><img src="/<?= e($c['image']) ?>" alt="" width="28" height="28" loading="lazy"><?php else: ?><i class="fa fa-<?= e($c['icon'] ?: 'tag') ?>"></i><?php endif; ?></span>
-        <span class="cat-name"><?= e($c['name']) ?></span>
-      </a>
-      <?php endforeach; ?>
+      <?php foreach ($categories as $c) { View::partial('components/category-tile', ['c' => $c]); } ?>
     </div>
   </section>
 <?php endif; ?>

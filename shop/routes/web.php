@@ -8,6 +8,7 @@ $router->get('/category/{slug}', [CategoryController::class, 'show']);
 $router->get('/cart', [CartController::class, 'show']);
 $router->get('/checkout', [CheckoutController::class, 'show']);
 $router->get('/order-success/{code}', [CheckoutController::class, 'success']);
+$router->get('/my-orders', [CheckoutController::class, 'myOrders']);
 $router->get('/contact', [PageController::class, 'contact']);
 $router->get('/offline', [PageController::class, 'offline']);
 

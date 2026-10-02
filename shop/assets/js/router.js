@@ -11,6 +11,7 @@
   let controller = null;
   let navId = 0;
   let currentKey = location.pathname + location.search;
+  let depth = (history.state && history.state.depth) || 0;
 
   const keyOf = (url) => url.pathname + url.search;
   const CACHEABLE = scope === '/' ? /^\/($|products|product\/|category\/|categories|contact)/ : null;
@@ -103,6 +104,9 @@
     const signal = controller.signal;
     const root = app.firstElementChild || app;
     const page = app.dataset.page;
+    document.body.dataset.page = page;
+    const t = document.querySelector('[data-appbar-title]');
+    if (t) t.textContent = (document.title.split(' | ')[0] || '').trim();
     App.lazy && App.lazy.observe(app);
     App.ui.countdowns(app, signal);
     if (App.nav) App.nav.setActive(app.dataset.navKey || '');
@@ -156,7 +160,8 @@
     } else if (opts.replace) {
       history.replaceState({ key }, '', url.href);
     } else {
-      history.pushState({ key }, '', url.href);
+      history.pushState({ key, depth: depth + 1 }, '', url.href);
+      depth++;
     }
     currentKey = key;
 
@@ -191,7 +196,7 @@
 
   function start() {
     history.scrollRestoration = 'manual';
-    history.replaceState({ key: currentKey, y: window.scrollY }, '');
+    history.replaceState({ key: currentKey, y: window.scrollY, depth }, '');
 
     document.addEventListener('click', (e) => {
       const l = linkFrom(e);
@@ -213,7 +218,12 @@
       navigate(url.href);
     });
 
-    window.addEventListener('popstate', () => navigate(location.href, { pop: true }));
+    window.addEventListener('popstate', (e) => { depth = (e.state && e.state.depth) || 0; navigate(location.href, { pop: true }); });
+    // App-bar back button: go back inside the app, otherwise to home.
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('[data-back]')) return;
+      if (depth > 0) history.back(); else navigate(scope === '/admin' ? '/admin' : '/');
+    });
     initPage(false);
   }
 

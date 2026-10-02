@@ -54,7 +54,7 @@ final class SystemController
         header('Content-Type: text/plain; charset=utf-8');
         $base = rtrim((string) (setting('canonical_base') ?: Config::get('url') ?: Request::origin()), '/');
         $disallowAll = str_contains((string) setting('robots'), 'noindex');
-        echo "User-agent: *\n" . ($disallowAll ? "Disallow: /\n" : "Disallow: /admin\nDisallow: /api/\nDisallow: /cart\nDisallow: /checkout\nDisallow: /order-success/\nAllow: /\n") . "\nSitemap: {$base}/sitemap.xml\n";
+        echo "User-agent: *\n" . ($disallowAll ? "Disallow: /\n" : "Disallow: /admin\nDisallow: /api/\nDisallow: /cart\nDisallow: /checkout\nDisallow: /order-success/\nDisallow: /my-orders\nAllow: /\n") . "\nSitemap: {$base}/sitemap.xml\n";
     }
 
     public function sitemap(): void

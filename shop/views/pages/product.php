@@ -10,7 +10,7 @@ $shareText = $p['name'] . ' — ' . money($p['effective_price']);
     <span aria-current="page"><?= e(str_limit($p['name'], 40)) ?></span>
   </nav>
   <div class="pd-layout">
-    <div class="gallery" data-gallery>
+    <div class="gallery<?= count($images) > 1 ? ' has-thumbs' : '' ?>" data-gallery>
       <div class="gallery-main">
         <div class="gallery-track" data-gallery-track>
           <?php if ($images): foreach ($images as $i => $img): ?>
@@ -19,7 +19,8 @@ $shareText = $p['name'] . ' — ' . money($p['effective_price']);
             <div class="gallery-slide"><?= picture(null, $p['name'], 800, 800, 'gallery-img', false) ?></div>
           <?php endif; ?>
         </div>
-        <?php if ($p['discount_pct']): ?><span class="tag tag-sale pd-tag">-<?= bn_num($p['discount_pct']) ?>%</span><?php endif; ?>
+        <?php if ($p['free_delivery']): ?><span class="tag tag-free pd-tag"><i class="fa fa-truck"></i> ফ্রি ডেলিভারি</span><?php endif; ?>
+        <?php if (count($images) > 1): ?><span class="gallery-count" data-gallery-count>১/<?= bn_num(count($images)) ?></span><?php endif; ?>
       </div>
       <?php if (count($images) > 1): ?>
       <div class="thumbs" role="tablist">
@@ -35,7 +36,7 @@ $shareText = $p['name'] . ' — ' . money($p['effective_price']);
       <h1 class="pd-title"><?= e($p['name']) ?></h1>
       <div class="price-row lg">
         <span class="price"><?= money($p['effective_price']) ?></span>
-        <?php if ($p['compare_price']): ?><del class="old-price"><?= money($p['compare_price']) ?></del><span class="tag tag-sale">-<?= bn_num($p['discount_pct']) ?>%</span><?php endif; ?>
+        <?php if ($p['compare_price']): ?><del class="old-price"><?= money($p['compare_price']) ?></del><span class="off-pill"><?= bn_num($p['discount_pct']) ?>% ছাড়</span><?php endif; ?>
       </div>
       <?php if ($p['flash_active'] && $p['flash_end']): ?>
         <div class="flash-strip"><i class="fa fa-bolt"></i> ফ্ল্যাশ সেল শেষ হবে <span class="countdown" data-countdown="<?= strtotime($p['flash_end']) ?>"></span></div>
@@ -69,9 +70,9 @@ $shareText = $p['name'] . ' — ' . money($p['effective_price']);
             <input type="number" name="qty" value="1" min="1" max="<?= min(20, (int) $p['stock']) ?>" inputmode="numeric" aria-label="পরিমাণ" data-qty-input>
             <button type="button" data-qty-inc aria-label="বাড়ান"><i class="fa fa-plus"></i></button>
           </div>
-          <button type="button" class="btn btn-soft grow" data-pd-add><i class="fa fa-cart-plus"></i> কার্টে যোগ করুন</button>
+          <button type="button" class="btn btn-primary grow" data-pd-add><i class="fa fa-cart-plus"></i> কার্টে যোগ করুন</button>
         </div>
-        <button type="submit" class="btn btn-primary btn-block btn-cta"><i class="fa fa-bolt"></i> এখনই অর্ডার করুন</button>
+        <button type="submit" class="btn btn-dark-green btn-block btn-cta"><i class="fa fa-bolt"></i> এখনই অর্ডার করুন</button>
         <?php else: ?>
         <button type="button" class="btn btn-muted btn-block" disabled>দুঃখিত, এই পণ্যটি বর্তমানে স্টকে নেই</button>
         <?php endif; ?>

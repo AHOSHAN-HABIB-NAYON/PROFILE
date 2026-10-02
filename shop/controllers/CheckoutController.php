@@ -29,9 +29,24 @@ final class CheckoutController
             Response::notFound();
         }
         // Personal details are shown only to the browser session that placed the order.
-        $mine = in_array($order['order_code'], (array) Session::get('my_orders', []), true);
+        $mine = MyOrders::owns($order['order_code']);
         View::page('pages/success', [
             'order' => $order, 'items' => $mine ? Order::items((int) $order['id']) : [], 'mine' => $mine,
+            'history' => array_column(DB::all('SELECT status, MIN(created_at) at FROM order_status_history WHERE order_id = ? GROUP BY status', [$order['id']]), 'at', 'status'),
         ], ['title' => 'অর্ডার নিশ্চিত হয়েছে', 'page' => 'success', 'robots' => 'noindex,nofollow', 'nav' => 'home']);
+    }
+
+    public function myOrders(): void
+    {
+        $filter = in_array(Request::query('status'), ['active', 'delivered', 'cancelled'], true) ? Request::query('status') : 'all';
+        $orders = MyOrders::orders();
+        if ($filter !== 'all') {
+            $orders = array_values(array_filter($orders, static fn ($o) => match ($filter) {
+                'delivered' => $o['status'] === 'delivered',
+                'cancelled' => in_array($o['status'], ['cancelled', 'returned', 'failed'], true),
+                default => in_array($o['status'], ['pending', 'confirmed', 'processing', 'courier_sent'], true),
+            }));
+        }
+        View::page('pages/my-orders', ['orders' => $orders, 'filter' => $filter], ['title' => 'আমার অর্ডার', 'page' => 'my-orders', 'robots' => 'noindex,nofollow', 'nav' => 'more']);
     }
 }

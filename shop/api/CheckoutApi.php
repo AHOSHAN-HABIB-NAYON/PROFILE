@@ -29,9 +29,7 @@ final class CheckoutApi
             Response::fail($result['error'], $result['errors'] ?? []);
         }
         $order = $result['order'];
-        $mine = (array) Session::get('my_orders', []);
-        $mine[] = $order['order_code'];
-        Session::set('my_orders', array_slice(array_unique($mine), -10));
+        MyOrders::add($order['order_code']);
         CheckoutController::newToken();
         // Device-bound permission to auto-fill the address next time (never exposed to other devices).
         setcookie('cust', hash_hmac('sha256', $order['phone'], (string) Config::get('key')), [

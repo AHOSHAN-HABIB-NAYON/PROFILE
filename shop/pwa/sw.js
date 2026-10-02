@@ -6,7 +6,7 @@ const STATIC = 'static-' + VERSION;
 const IMAGES = 'images-v1';
 const PAGES = 'pages-' + VERSION;
 const PRECACHE = __PRECACHE__;
-const PRIVATE = /^\/(admin|api|cart|checkout|order-success|install)(\/|$)/;
+const PRIVATE = /^\/(admin|api|cart|checkout|order-success|my-orders|install)(\/|$)/;
 const MAX_IMAGES = 250;
 
 self.addEventListener('install', (e) => {

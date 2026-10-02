@@ -246,7 +246,7 @@
       if (vals2.length) s += '<polyline class="line2" points="' + vals2.map((v, i) => x(i) + ',' + y(v)).join(' ') + '"/>';
       vals.forEach((v, i) => { s += '<circle class="pt" data-i="' + i + '" cx="' + x(i) + '" cy="' + y(v) + '" r="3.5"/>'; });
     }
-    el.innerHTML = s + '</svg>' + (cfg.legend ? '<div class="chart-legend"><span><i style="background:var(--primary)"></i>' + cfg.legend[0] + '</span><span><i style="background:var(--accent)"></i>' + cfg.legend[1] + '</span></div>' : '');
+    el.innerHTML = s + '</svg>' + (cfg.legend ? '<div class="chart-legend"><span><i style="background:var(--primary)"></i>' + cfg.legend[0] + '</span><span><i style="background:#0ea5e9"></i>' + cfg.legend[1] + '</span></div>' : '');
     const tip = document.createElement('div');
     tip.className = 'chart-tip'; tip.hidden = true;
     el.appendChild(tip);

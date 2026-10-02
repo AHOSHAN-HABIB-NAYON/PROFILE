@@ -7,7 +7,7 @@ final class Settings
     public const DEFAULTS = [
         // Branding
         'site_name' => 'শপ', 'site_tagline' => 'বিশ্বস্ত অনলাইন শপিং', 'logo' => '', 'favicon' => '',
-        'primary_color' => '#4f46e5',
+        'primary_color' => '#16a34a',
         'theme_default' => 'light', 'theme_toggle' => '1',
         // Contact
         'contact_phone' => '', 'contact_email' => '', 'contact_address' => '', 'facebook_url' => '',
@@ -47,7 +47,7 @@ final class Settings
         'meta_title' => '', 'meta_description' => '', 'meta_keywords' => '', 'og_image' => '',
         'robots' => 'index,follow', 'canonical_base' => '',
         // PWA
-        'pwa_enabled' => '1', 'pwa_short_name' => 'শপ', 'pwa_theme_color' => '#4f46e5', 'pwa_bg_color' => '#ffffff',
+        'pwa_enabled' => '1', 'pwa_short_name' => 'শপ', 'pwa_theme_color' => '#16a34a', 'pwa_bg_color' => '#ffffff',
         // System
         'maintenance' => '0', 'maintenance_message' => 'আমরা সাইটটি আরও উন্নত করছি। কিছুক্ষণ পর আবার আসুন।',
         'notify_email' => '',

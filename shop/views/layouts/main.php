@@ -53,12 +53,14 @@ $config = [
 <script type="application/ld+json"><?= json_encode($ld, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?></script>
 <?php endforeach; ?>
 </head>
-<body>
+<body data-page="<?= e($meta['page']) ?>">
 <a class="skip-link" href="#app">মূল কনটেন্টে যান</a>
 <div id="progress" class="progress" aria-hidden="true"><span></span></div>
 
 <header class="app-header">
   <div class="container header-row">
+    <button type="button" class="icon-btn back-btn" data-back aria-label="পেছনে যান"><i class="fa fa-arrow-left"></i></button>
+    <span class="appbar-title" data-appbar-title><?= e($meta['title']) ?></span>
     <a href="/" class="brand" aria-label="<?= e($site) ?> হোম">
       <?php if (setting('logo')): ?>
         <img src="/<?= e(setting('logo')) ?>" alt="<?= e($site) ?>" width="120" height="32" class="brand-logo">
@@ -75,10 +77,11 @@ $config = [
       <a href="/" data-nav="home">হোম</a>
       <a href="/products" data-nav="products">সকল পণ্য</a>
       <a href="/categories" data-nav="categories">ক্যাটাগরি</a>
+      <a href="/my-orders" data-nav="more">আমার অর্ডার</a>
       <a href="/contact" data-nav="support">সাপোর্ট</a>
     </nav>
     <div class="header-actions">
-      <button type="button" class="icon-btn only-mobile" data-open-search aria-label="খুঁজুন"><i class="fa fa-search"></i></button>
+      <button type="button" class="icon-btn" data-open-search aria-label="খুঁজুন"><i class="fa fa-search"></i></button>
       <?php if (Settings::on('theme_toggle')): ?>
       <button type="button" class="icon-btn only-desktop" data-theme-toggle aria-label="থিম পরিবর্তন"><i class="fa fa-moon-o"></i></button>
       <?php endif; ?>
@@ -117,7 +120,7 @@ $config = [
   <a href="/categories" data-nav="categories"><i class="fa fa-th-large"></i><span>ক্যাটাগরি</span></a>
   <a href="/cart" data-nav="cart" class="bn-cart"><i class="fa fa-shopping-cart"></i><span>কার্ট</span><b class="badge-count" data-cart-count<?= $cartCount ? '' : ' hidden' ?>><?= bn_num($cartCount) ?></b></a>
   <a href="/contact" data-nav="support"><i class="fa fa-headphones"></i><span>সাপোর্ট</span></a>
-  <button type="button" data-open-sheet="more"><i class="fa fa-bars"></i><span>আরও</span></button>
+  <button type="button" data-open-sheet="more" data-nav="more"><i class="fa fa-bars"></i><span>আরও</span></button>
 </nav>
 
 <?php if ($config['whatsapp']['enabled']): ?>
@@ -129,6 +132,7 @@ $config = [
   <div class="sheet-panel" role="dialog" aria-modal="true" aria-label="আরও অপশন">
     <div class="sheet-handle"></div>
     <div class="sheet-list">
+      <a href="/my-orders"><i class="fa fa-list-alt"></i> আমার অর্ডার</a>
       <a href="/products"><i class="fa fa-th"></i> সকল পণ্য</a>
       <?php if (Settings::on('flash_enabled')): ?><a href="/products?filter=flash"><i class="fa fa-bolt"></i> ফ্ল্যাশ সেল</a><?php endif; ?>
       <?php if (Settings::on('free_delivery_enabled')): ?><a href="/products?filter=free"><i class="fa fa-truck"></i> ফ্রি ডেলিভারি</a><?php endif; ?>
@@ -137,6 +141,20 @@ $config = [
       <?php if (Settings::on('theme_toggle')): ?><button type="button" data-theme-toggle><i class="fa fa-moon-o"></i> <span data-theme-label>ডার্ক মোড</span></button><?php endif; ?>
       <button type="button" data-install hidden><i class="fa fa-download"></i> অ্যাপ ইনস্টল করুন</button>
     </div>
+  </div>
+</div>
+
+<div class="sheet" data-sheet="install" hidden>
+  <div class="sheet-backdrop" data-close-sheet></div>
+  <div class="sheet-panel install-panel" role="dialog" aria-modal="true" aria-label="অ্যাপ ইনস্টল">
+    <div class="sheet-handle"></div>
+    <span class="brand-mark lg"><i class="fa fa-shopping-bag"></i></span>
+    <strong class="install-site"><?= e($site) ?></strong>
+    <h2>অ্যাপ হিসেবে ইনস্টল করুন</h2>
+    <p class="muted small">ফোনে অ্যাপের মতো ব্যবহার করুন — দ্রুত খুলবে, কম ডেটা লাগবে।</p>
+    <div class="install-art" aria-hidden="true"><span class="phone"><i class="fa fa-shopping-bag"></i></span><span class="plus"><i class="fa fa-plus"></i></span></div>
+    <button type="button" class="btn btn-primary btn-block btn-cta" data-install-confirm><i class="fa fa-download"></i> ইনস্টল করুন</button>
+    <button type="button" class="btn btn-ghost btn-block" data-install-later>পরে</button>
   </div>
 </div>
 
