@@ -3,6 +3,7 @@ import {
   state, api, esc, $, $$, toast, toastError, relEl, applyTheme, brandHtml, playSound, skeleton, money, sheet,
 } from './core.js';
 import { pushSupported, currentSubscription } from './push.js';
+import { mountBot } from './chatbot.js';
 
 // ------------------------------------------------------------------ routes
 const USER_ROUTES = {
@@ -432,6 +433,7 @@ if ('serviceWorker' in navigator) {
     connectLive();
     await navigate(location.pathname + location.search + location.hash, { replace: true, scroll: false });
     scheduleInstallPopup();
+    mountBot({ navigate });
   } catch (err) {
     if (err.status !== 401) $('#view').innerHTML = `<div class="card empty"><i class="fa-solid fa-wifi"></i><div><strong>Unable to connect</strong></div><div class="small">${esc(err.message)}</div></div>`;
   }

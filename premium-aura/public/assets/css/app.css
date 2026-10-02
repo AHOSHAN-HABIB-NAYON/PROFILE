@@ -789,3 +789,65 @@ table.table { width: 100%; border-collapse: separate; border-spacing: 0; }
 .get-card .range-select { margin-bottom: 10px; }
 .get-card .limits-line { margin: 8px 0 0; text-align: center; }
 .adv-card .adv-search { margin: 0; padding: 0; background: none; }
+
+/* Access · Advanced Search icon */
+.adv-icon { display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--primary); font-weight: 500; font-size: 13px; cursor: pointer; box-shadow: var(--shadow); }
+.adv-icon i { font-size: 15px; }
+.adv-icon:active { transform: scale(.96); }
+
+/* ---------------------------------------------------------------- help bot */
+.bot { position: fixed; right: 14px; bottom: calc(var(--bottom-h) + 14px + env(safe-area-inset-bottom)); z-index: 90; }
+@media (min-width: 992px) { .bot { bottom: 22px; right: 22px; } }
+.bot-fab { width: 54px; height: 54px; border-radius: 50%; border: 0; background: var(--grad); color: #fff; font-size: 22px; cursor: pointer; box-shadow: 0 12px 28px color-mix(in srgb, var(--primary) 45%, transparent); position: relative; transition: transform .2s var(--ease); }
+.bot-fab:active { transform: scale(.92); }
+.bot.open .bot-fab { transform: scale(.9) rotate(-8deg); }
+.bot-dot { position: absolute; top: 4px; right: 4px; width: 12px; height: 12px; border-radius: 50%; background: #22c55e; border: 2px solid #fff; }
+.bot-panel { position: absolute; right: 0; bottom: 66px; width: min(370px, calc(100vw / var(--z, 1) - 28px)); height: min(560px, calc(100vh / var(--z, 1) - var(--bottom-h) - var(--header-h) - 60px));
+  background: var(--surface); border: 1px solid var(--border); border-radius: 22px; box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden; animation: popIn .2s var(--ease); }
+.bot-panel[hidden] { display: none; }
+.bot-head { display: flex; align-items: center; gap: 10px; padding: 12px 12px 12px 14px; background: var(--grad); color: #fff; }
+.bot-avatar { width: 38px; height: 38px; border-radius: 12px; background: rgba(255,255,255,.2); display: grid; place-items: center; font-size: 18px; flex: none; }
+.bot-title { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }
+.bot-title strong { font-weight: 600; font-size: 15px; }
+.bot-title small { font-size: 11px; opacity: .9; display: flex; align-items: center; gap: 6px; }
+.bot-online { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 0 3px rgba(74,222,128,.3); display: inline-block; animation: pulse 2s infinite; }
+.bot-human { display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 99px; background: #25D366; color: #fff; font-size: 12px; font-weight: 500; text-decoration: none; flex: none; }
+.bot-x { border: 0; background: rgba(255,255,255,.18); color: #fff; width: 32px; height: 32px; border-radius: 10px; cursor: pointer; flex: none; }
+.bot-msgs { flex: 1; overflow-y: auto; padding: 14px 12px; display: flex; flex-direction: column; gap: 10px; background: var(--background); overscroll-behavior: contain; }
+.bot-msg { display: flex; }
+.bot-msg.from-me { justify-content: flex-end; }
+.bot-bubble { max-width: 88%; padding: 10px 12px; border-radius: 16px; font-size: 13.5px; line-height: 1.5; background: var(--card); border: 1px solid var(--border); color: var(--text); word-wrap: break-word; }
+.bot-msg.from-bot .bot-bubble { border-top-left-radius: 6px; }
+.bot-msg.from-me .bot-bubble { background: var(--grad); color: #fff; border: 0; border-top-right-radius: 6px; }
+.bot-bubble ol, .bot-bubble ul { margin: 6px 0; padding-left: 18px; }
+.bot-bubble li { margin: 2px 0; }
+.bot-quick { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.bot-act { display: inline-flex; align-items: center; gap: 6px; margin: 6px 6px 0 0; padding: 6px 11px; border-radius: 99px; border: 1px solid var(--primary); background: var(--card); color: var(--primary); font-size: 12px; font-weight: 500; cursor: pointer; text-decoration: none; }
+.bot-act.wa { border-color: #25D366; background: #25D366; color: #fff; }
+.bot-quick .bot-act { margin: 0; }
+.bot-table { display: grid; gap: 6px; margin: 8px 0; }
+.bot-table > div { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; }
+.bot-table span { font-weight: 600; color: var(--primary); }
+.bot-bar { grid-column: 1 / -1; height: 5px; border-radius: 99px; background: var(--border); overflow: hidden; }
+.bot-bar i { display: block; height: 100%; background: var(--grad); border-radius: 99px; }
+.bot-note { font-size: 11.5px; color: var(--muted); margin: 6px 0 0; }
+.bot-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; }
+.bot-chips span { padding: 3px 8px; border-radius: 99px; background: var(--grad-soft); color: var(--primary); font-size: 11.5px; font-weight: 500; }
+.bot-chips span.off { background: var(--card-2); color: var(--muted); text-decoration: line-through; }
+.bot-plans { display: grid; gap: 6px; margin: 8px 0; }
+.bot-plans > div { display: grid; grid-template-columns: 1fr auto; padding: 8px 10px; border-radius: 12px; background: var(--card-2); }
+.bot-plans span { font-weight: 600; color: var(--primary); }
+.bot-plans small { grid-column: 1 / -1; color: var(--muted); font-size: 11px; }
+.bot-form { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--border); background: var(--surface); }
+.bot-input { flex: 1; min-width: 0; height: 42px; border-radius: 12px; border: 1px solid var(--border); background: var(--card-2); padding: 0 12px; font-size: 14px; color: var(--text); }
+.bot-input:focus { outline: 0; border-color: var(--primary); }
+.bot-send { width: 42px; height: 42px; border-radius: 12px; border: 0; background: var(--grad); color: #fff; cursor: pointer; flex: none; }
+.bot-msg.typing .bot-bubble { display: flex; gap: 4px; padding: 12px 14px; }
+.bot-msg.typing span { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: botDot 1s infinite; }
+.bot-msg.typing span:nth-child(2) { animation-delay: .15s; } .bot-msg.typing span:nth-child(3) { animation-delay: .3s; }
+@keyframes botDot { 0%, 100% { opacity: .3; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
+.bot-msg { min-width: 0; max-width: 100%; }
+.bot-bubble { min-width: 0; overflow-wrap: anywhere; }
+.bot-msg.from-bot .bot-bubble { max-width: 92%; }
+.bot-table > div, .bot-plans > div { grid-template-columns: minmax(0, 1fr) auto; }
+.bot-table b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

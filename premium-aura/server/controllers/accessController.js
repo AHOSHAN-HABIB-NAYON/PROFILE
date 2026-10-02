@@ -131,7 +131,8 @@ exports.release = async (req, res) => {
  */
 exports.search = async (req, res) => {
   restrictedNumbers(req);
-  const serial = v.str(req.query.serial, { name: 'Serial', required: true, pattern: /^\d{5,8}$/ });
+  // Up to 8 digits, an optional leading "+" (e.g. "+97259"); spaces/dashes ignored.
+  const serial = v.str(String(req.query.serial || '').replace(/[\s-]/g, ''), { name: 'Serial', required: true, pattern: /^\+?\d{3,8}$/ }).replace(/^\+/, '');
   const serviceId = req.query.service_id ? v.id(req.query.service_id, 'service_id') : null;
   const like = `%${serial}%`;
   const svc = serviceId ? 'AND r.service_id = ?' : '';

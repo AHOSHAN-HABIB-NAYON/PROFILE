@@ -22,7 +22,7 @@ field gets what), and after each change send a fresh zip.
 - `npm test` runs `node --test tests/acceptance.test.js` against a **running installed server** on
   :3000 (admin@example.com / Admin12345), with MySQL up. Start the server with
   `GOOGLE_OAUTH_MOCK=http://127.0.0.1:4599` (the Google test uses a mock). Run the suite once per server
-  start: the login rate limiters remember earlier runs. All tests must pass before shipping (38 at last count).
+  start: the login rate limiters remember earlier runs. All tests must pass before shipping (39 at last count).
 - Zip for the owner: `git archive --format=zip --prefix=premium-aura/ HEAD:premium-aura -o premium-aura.zip`.
 
 ## Conventions and rules (keep these)
@@ -70,7 +70,14 @@ field gets what), and after each change send a fresh zip.
   Settings (`notify_*` columns). Browser push uses `services/push.js` (web-push, VAPID keys auto-generated and
   stored in settings). The owner's OTPs are also pushed to their devices.
 - Admin can restrict a user (`block_numbers`, `block_otp`): no Get Number/search, no OTP page/codes/feed socket.
-- PWA install popup (`app.js`): shown after ~20 s, at most every 3 days, never when installed; iOS gets Share instructions.
+- Welcome popup (`app.js`): 4 s after opening, offers Install and "Turn on notifications" (goes to
+  `/settings#notifications`); skipped when already installed and push is on.
+- Help bot (`public/assets/js/chatbot.js`, bottom-right, "Online"): rule-based, Bangla/English/Banglish keyword
+  intents. Live facts come from `GET /api/bot/info` (`botController.js`): ranges with the 24 h success % (numbers
+  taken that got a code), plans, the user's limits, payments, and `support_whatsapp` for "Contact Human". Message
+  classes are `from-bot` / `from-me` (`.bot` is the fixed wrapper, so don't reuse it).
+- Advanced Search: the "Search" icon in the Access page header opens a sheet. It takes 3–8 digits, optional "+",
+  and remembers the last value per user in localStorage (`aura.advSerial.<id>`). Claiming closes the sheet.
 - Phones: `public/assets/js/fit.js` zooms the page to a 390 px design so DPI and system font size
   don't change the look.
 

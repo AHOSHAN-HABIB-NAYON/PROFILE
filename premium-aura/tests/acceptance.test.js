@@ -249,6 +249,24 @@ test('serial search only returns accessible resources', async () => {
   assert.ok(r.data.items.length >= 1);
   assert.ok(r.data.items.every((x) => x.mine || x.status === 'available'));
   assert.equal((await user.get('/api/resource/search?serial=12')).status, 400);
+  const plus = await user.get(`/api/resource/search?serial=${encodeURIComponent('+' + digits)}`);
+  assert.equal(plus.status, 200, 'a leading + is accepted');
+  assert.equal(plus.data.items.length, r.data.items.length);
+  assert.equal((await user.get('/api/resource/search?serial=123456789')).status, 400, 'max 8 digits');
+});
+
+test('chat bot info: ranges with success %, plans, support contact; no stock counts or provider names', async () => {
+  const r = await user.get('/api/bot/info');
+  assert.equal(r.status, 200);
+  assert.ok(Array.isArray(r.data.ranges) && r.data.ranges.length >= 1);
+  for (const x of r.data.ranges) {
+    assert.equal(typeof x.available, 'boolean');
+    assert.ok(x.success_rate === null || (x.success_rate >= 0 && x.success_rate <= 100));
+    assert.equal('provider' in x, false);
+  }
+  assert.ok(Array.isArray(r.data.plans) && r.data.plans.length >= 1);
+  assert.ok(r.data.support && 'whatsapp' in r.data.support);
+  assert.equal((await fetch(`${BASE}/api/bot/info`)).status, 401);
 });
 
 test('users see Available/Unavailable, never counts; unused numbers auto-return', async () => {

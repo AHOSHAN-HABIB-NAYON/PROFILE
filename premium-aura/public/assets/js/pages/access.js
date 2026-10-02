@@ -21,7 +21,7 @@ export async function mount(el, { query, live }) {
   let selected = null;
   try { selected = Number(localStorage.getItem(LAST_KEY)) || null; } catch { /* ignore */ }
 
-  el.innerHTML = `${pageHead('fa-solid fa-sim-card', 'Access Services', 'Live servers & numbers')}
+  el.innerHTML = `${pageHead('fa-solid fa-sim-card', 'Access Services', 'Live servers & numbers', '<button class="adv-icon" data-adv-open title="Advanced Search" aria-label="Advanced Search"><i class="fa-solid fa-magnifying-glass-plus"></i><span>Search</span></button>')}
     <div class="stack access-stack">
       <div class="card get-card">
         <div class="card-head"><h2>Get Number</h2><span class="chip live">Live</span></div>
@@ -44,15 +44,6 @@ export async function mount(el, { query, live }) {
       <div class="card">
         <div class="card-head"><h2>Number List</h2><div class="actions"><button class="btn btn-ghost btn-xs" data-refresh aria-label="Refresh"><i class="fa-solid fa-rotate"></i></button></div></div>
         <div data-mine></div>
-      </div>
-      <div class="card adv-card">
-        <div class="adv-search">
-          <div class="adv-head"><i class="fa-solid fa-magnifying-glass-plus"></i><strong>Advanced Search</strong><span class="small muted">Serial 5–8 digits</span></div>
-          <form data-search class="adv-form">
-            <input class="input" name="serial" inputmode="numeric" pattern="\\d{5,8}" maxlength="8" placeholder="e.g. 123456" value="${esc(query.serial || '')}" aria-label="Serial">
-            <button class="btn btn-primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i>Search</button>
-          </form>
-        </div>
       </div>
     </div>`;
 
@@ -140,40 +131,61 @@ export async function mount(el, { query, live }) {
     });
   }
 
+  // ---- Advanced Search: floating popup, remembers the last search while you are signed in
+  const ADV_KEY = `aura.advSerial.${state.user.id}`;
+  const savedSerial = () => { try { return localStorage.getItem(ADV_KEY) || ''; } catch { return ''; } };
   let resultSheet = null;
-  async function search(serial) {
-    if (!/^\d{5,8}$/.test(serial)) { toast('Enter 5–8 digits', 'warning'); return; }
-    try {
-      const r = await api('/resource/search', { query: { serial } });
-      resultSheet?.close();
-      resultSheet = sheet({
-        title: r.count ? `Matching resources found (${r.count})` : 'No matching resources',
-        icon: r.count ? 'fa-solid fa-circle-check' : 'fa-solid fa-magnifying-glass',
-        body: r.items.length ? `<div class="num-list">${r.items.map((x) => `<div class="num-row" data-claim-row="${x.id}">
-            ${flag(x.flag_code)}<div class="num-main"><div class="num-line"><span class="mono num-value">${esc(x.resource_value)}</span></div>
-            <div class="num-sub"><span>${esc(x.country_code)} ${esc(x.app_code)} · ${x.mine ? 'Already yours' : 'Available'}</span></div></div>
-            ${x.mine ? chip('assigned', 'Yours') : `<button class="btn btn-primary btn-sm" data-claim="${x.id}"><i class="fa-solid fa-hand-pointer"></i>Claim</button>`}</div>`).join('')}</div>`
-          : `<div class="empty"><i class="fa-solid fa-magnifying-glass"></i><div>No available number contains “${esc(serial)}”.</div></div>`,
+  const advRow = (x) => `<div class="num-row" data-claim-row="${x.id}">
+      ${flag(x.flag_code)}<div class="num-main"><div class="num-line"><span class="mono num-value">${esc(x.resource_value)}</span></div>
+      <div class="num-sub"><span>${esc(x.country_code)} ${esc(x.app_code)} · ${x.mine ? 'Already yours' : 'Available'}</span></div></div>
+      ${x.mine ? chip('assigned', 'Yours') : `<button class="btn btn-primary btn-sm" data-claim="${x.id}"><i class="fa-solid fa-hand-pointer"></i>Claim</button>`}</div>`;
+
+  function openAdvanced(initial = savedSerial()) {
+    resultSheet?.close();
+    resultSheet = sheet({
+      title: 'Advanced Search', icon: 'fa-solid fa-magnifying-glass-plus',
+      body: `<form class="adv-form" data-adv-form>
+          <input class="input mono" name="serial" inputmode="tel" maxlength="12" placeholder="+97259 or 123456" value="${esc(initial)}" aria-label="Number digits" autocomplete="off">
+          <button class="btn btn-primary" type="submit"><i class="fa-solid fa-magnifying-glass"></i>Search</button></form>
+        <p class="small muted" style="margin:8px 0 12px">Type 3–8 digits of the number (a leading <b>+</b> is fine). Your last search is remembered.</p>
+        <div data-adv-results></div>`,
+    });
+    const sh = resultSheet;
+    const out = $('[data-adv-results]', sh.el);
+    const run = async (raw) => {
+      const serial = String(raw || '').replace(/[\s-]/g, '');
+      if (!/^\+?\d{3,8}$/.test(serial)) { out.innerHTML = '<div class="alert warning"><i class="fa-solid fa-circle-info"></i><span>Enter 3–8 digits (optionally starting with +).</span></div>'; return; }
+      try { localStorage.setItem(ADV_KEY, serial); } catch { /* ignore */ }
+      out.innerHTML = '<div class="skeleton" style="height:60px;border-radius:14px"></div>';
+      try {
+        const r = await api('/resource/search', { query: { serial } });
+        out.innerHTML = r.items.length ? `<div class="small muted" style="margin-bottom:8px">${r.count} match${r.count > 1 ? 'es' : ''} for “${esc(serial)}”</div><div class="num-list">${r.items.map(advRow).join('')}</div>`
+          : `<div class="empty"><i class="fa-solid fa-magnifying-glass"></i><div>No available number contains “${esc(serial)}”.</div><div class="small">Try fewer digits.</div></div>`;
+      } catch (err) { out.innerHTML = ''; toastError(err); }
+    };
+    $('[data-adv-form]', sh.el).addEventListener('submit', (e) => { e.preventDefault(); run(e.target.serial.value); });
+    sh.el.addEventListener('click', async (e) => {
+      const cl = e.target.closest('[data-claim]');
+      if (!cl) return;
+      await withLoading(cl, async () => {
+        try {
+          const res = await api('/resource/claim', { method: 'POST', body: { resource_id: Number(cl.dataset.claim) } });
+          toast(`Number assigned: ${res.assignment.resource_value}`);
+          navigator.vibrate?.(30);
+          sh.close(); // the number appears in your list; tap the search icon again for more
+          await Promise.all([loadMine(1), loadServices()]);
+          const row = el.querySelector('.num-row');
+          row?.classList.add('flash');
+          row?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (err) { if (err.body?.upgrade) { sh.close(); upgradePrompt(err.message); } else toastError(err); }
       });
-      resultSheet.el.addEventListener('click', async (e) => {
-        const cl = e.target.closest('[data-claim]');
-        if (!cl) return;
-        await withLoading(cl, async () => {
-          try {
-            const res = await api('/resource/claim', { method: 'POST', body: { resource_id: Number(cl.dataset.claim) } });
-            toast(`Number assigned: ${res.assignment.resource_value}`);
-            cl.outerHTML = chip('assigned', 'Yours');
-            navigator.vibrate?.(30);
-            await Promise.all([loadMine(1), loadServices()]);
-            el.querySelector('.num-row')?.classList.add('flash');
-          } catch (err) { if (err.body?.upgrade) { resultSheet.close(); upgradePrompt(err.message); } else toastError(err); }
-        });
-      });
-    } catch (err) { toastError(err); }
+    });
+    if (initial) run(initial); else setTimeout(() => $('[name=serial]', sh.el)?.focus(), 250);
   }
 
   el.addEventListener('click', async (e) => {
     if (e.target.closest('[data-range-toggle]')) { openRange($('[data-range-panel]', el).hidden); return; }
+    if (e.target.closest('[data-adv-open]')) { openAdvanced(); return; }
     const pick = e.target.closest('[data-pick]');
     if (pick) {
       selected = Number(pick.dataset.pick);
@@ -193,7 +205,6 @@ export async function mount(el, { query, live }) {
     }
     if (e.target.closest('[data-refresh]')) loadMine();
   });
-  $('[data-search]', el).addEventListener('submit', (e) => { e.preventDefault(); search(e.target.serial.value.trim()); });
   $('[data-range-filter]', el).addEventListener('input', (e) => renderPicker(e.target.value));
   // close the range list when tapping outside it
   // (re-rendering the box replaces the tapped element, so a detached target is not an outside tap)
@@ -201,7 +212,7 @@ export async function mount(el, { query, live }) {
   document.addEventListener('click', outside);
 
   await Promise.all([loadServices(), loadMine(1)]);
-  if (query.serial) search(query.serial);
+  if (query.serial) openAdvanced(query.serial);
 
   // OTP arrived: update that number's row instantly (no reload), flash it and play a sound.
   function onOtp({ assignment_id: id, code }) {

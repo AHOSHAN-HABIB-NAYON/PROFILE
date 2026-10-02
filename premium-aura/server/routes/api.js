@@ -57,6 +57,7 @@ router.get('/events', ah(eventsCtl.feed));
 router.get('/activity', ah(eventsCtl.activity));
 
 router.get('/premium', ah(finance.overview));
+router.get('/bot/info', ah(require('../controllers/botController').info));
 router.post('/premium/wallet', sensitiveLimiter, ah(finance.buyWithWallet));
 router.post('/payment', sensitiveLimiter, screenshotUpload, ah(finance.submitPayment));
 router.get('/payments', ah(finance.myPayments));
