@@ -36,22 +36,24 @@
     <form class="coupon-form" data-coupon-form>
       <input type="text" name="code" placeholder="কুপন কোড" value="<?= e($s['coupon_code'] ?? '') ?>" aria-label="কুপন কোড" autocomplete="off" maxlength="40">
       <?php if ($s['coupon_code']): ?>
-        <button type="button" class="btn btn-soft btn-sm" data-coupon-remove>সরান</button>
+        <button type="button" class="btn btn-soft" data-coupon-remove>সরান</button>
       <?php else: ?>
-        <button type="submit" class="btn btn-dark btn-sm">প্রয়োগ</button>
+        <button type="submit" class="btn btn-dark">প্রয়োগ</button>
       <?php endif; ?>
     </form>
     <?php if ($s['coupon_error']): ?><p class="field-error"><?= e($s['coupon_error']) ?></p><?php endif; ?>
     <?php endif; ?>
     <dl class="totals">
-      <div><dt>সাবটোটাল (<?= bn_num($s['count']) ?>টি)</dt><dd><?= money($s['subtotal']) ?></dd></div>
-      <?php if ($s['discount'] > 0): ?><div class="ok"><dt>ডিসকাউন্ট (<?= e($s['coupon_code']) ?>)</dt><dd>-<?= money($s['discount']) ?></dd></div><?php endif; ?>
-      <div><dt>ডেলিভারি চার্জ</dt><dd>
-        <?php if ($s['free_delivery'] || !Settings::on('delivery_enabled')): ?><span class="ok">ফ্রি ডেলিভারি</span>
-        <?php else: ?><span class="small muted">ঢাকা <?= money(setting('delivery_inside_dhaka')) ?> / বাইরে <?= money(setting('delivery_outside_dhaka')) ?></span><?php endif; ?>
+      <div><dt>পণ্যের মূল্য (<?= bn_num($s['count']) ?>টি)</dt><dd><?= money($s['subtotal']) ?></dd></div>
+      <div><dt>ডেলিভারি</dt><dd>
+        <?php if ($s['free_delivery'] || !Settings::on('delivery_enabled')): ?><span class="ok">ফ্রি</span>
+        <?php else: ?><span class="muted">চেকআউটে জেলা অনুযায়ী</span><?php endif; ?>
       </dd></div>
+      <div class="<?= $s['discount'] > 0 ? 'ok' : '' ?>"><dt>ডিসকাউন্ট<?= $s['coupon_code'] ? ' (' . e($s['coupon_code']) . ')' : '' ?></dt><dd><?= $s['discount'] > 0 ? '-' . money($s['discount']) : money(0) ?></dd></div>
+      <div class="grand"><dt>সর্বমোট</dt><dd><?= money($s['subtotal'] - $s['discount']) ?></dd></div>
     </dl>
-    <a href="/checkout" class="btn btn-primary btn-block<?= $s['has_errors'] ? ' disabled' : '' ?>" <?= $s['has_errors'] ? 'aria-disabled="true"' : '' ?>>চেকআউট করুন <i class="fa fa-arrow-right"></i></a>
+    <?php if (!$s['free_delivery'] && Settings::on('delivery_enabled')): ?><p class="delivery-note"><i class="fa fa-truck"></i> ঢাকার ভিতরে <?= money(setting('delivery_inside_dhaka')) ?> · ঢাকার বাইরে <?= money(setting('delivery_outside_dhaka')) ?></p><?php endif; ?>
+    <a href="/checkout" class="btn btn-primary btn-block btn-lg<?= $s['has_errors'] ? ' disabled' : '' ?>" <?= $s['has_errors'] ? 'aria-disabled="true"' : '' ?>>চেকআউট করুন <i class="fa fa-arrow-right"></i></a>
     <a href="/products" class="btn btn-ghost btn-block btn-sm">কেনাকাটা চালিয়ে যান</a>
     <p class="cod-note small"><i class="fa fa-money"></i> <?= e(setting('cod_info')) ?></p>
   </aside>

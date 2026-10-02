@@ -131,15 +131,21 @@ $config = [
   <div class="sheet-backdrop" data-close-sheet></div>
   <div class="sheet-panel" role="dialog" aria-modal="true" aria-label="আরও অপশন">
     <div class="sheet-handle"></div>
+    <div class="sheet-title"><strong>আরও</strong><button type="button" class="icon-btn" data-close-sheet aria-label="বন্ধ করুন"><i class="fa fa-times"></i></button></div>
+    <div class="sheet-grid">
+      <a href="/products"><i class="fa fa-th"></i><span>সকল পণ্য</span></a>
+      <?php if (Settings::on('flash_enabled')): ?><a href="/products?filter=flash"><i class="fa fa-bolt"></i><span>ফ্ল্যাশ সেল</span></a><?php endif; ?>
+      <?php if (Settings::on('free_delivery_enabled')): ?><a href="/products?filter=free"><i class="fa fa-truck"></i><span>ফ্রি ডেলিভারি</span></a><?php endif; ?>
+      <a href="/my-orders"><i class="fa fa-list-alt"></i><span>আমার অর্ডার</span></a>
+    </div>
     <div class="sheet-list">
-      <a href="/my-orders"><i class="fa fa-list-alt"></i> আমার অর্ডার</a>
-      <a href="/products"><i class="fa fa-th"></i> সকল পণ্য</a>
-      <?php if (Settings::on('flash_enabled')): ?><a href="/products?filter=flash"><i class="fa fa-bolt"></i> ফ্ল্যাশ সেল</a><?php endif; ?>
-      <?php if (Settings::on('free_delivery_enabled')): ?><a href="/products?filter=free"><i class="fa fa-truck"></i> ফ্রি ডেলিভারি</a><?php endif; ?>
-      <a href="/contact"><i class="fa fa-phone"></i> যোগাযোগ</a>
-      <?php if (setting('facebook_url')): ?><a href="<?= e(setting('facebook_url')) ?>" target="_blank" rel="noopener" data-no-spa><i class="fa fa-facebook-square"></i> Facebook পেজ</a><?php endif; ?>
-      <?php if (Settings::on('theme_toggle')): ?><button type="button" data-theme-toggle><i class="fa fa-moon-o"></i> <span data-theme-label>ডার্ক মোড</span></button><?php endif; ?>
-      <button type="button" data-install hidden><i class="fa fa-download"></i> অ্যাপ ইনস্টল করুন</button>
+      <a href="/contact"><i class="fa fa-headphones"></i><span>যোগাযোগ ও সাপোর্ট</span><i class="fa fa-angle-right chev"></i></a>
+      <?php if (Settings::on('theme_toggle')): ?><button type="button" data-theme-toggle><i class="fa fa-moon-o"></i><span data-theme-label>ডার্ক মোড</span><span class="mini-switch" aria-hidden="true"></span></button><?php endif; ?>
+      <button type="button" data-install hidden><i class="fa fa-download"></i><span>অ্যাপ ইনস্টল করুন</span><i class="fa fa-angle-right chev"></i></button>
+      <?php if (setting('facebook_url')): ?><a href="<?= e(setting('facebook_url')) ?>" target="_blank" rel="noopener" data-no-spa><i class="fa fa-facebook-square"></i><span>Facebook পেজ</span><i class="fa fa-external-link chev"></i></a><?php endif; ?>
+      <a href="/about"><i class="fa fa-info-circle"></i><span>আমাদের সম্পর্কে</span><i class="fa fa-angle-right chev"></i></a>
+      <a href="/privacy"><i class="fa fa-shield"></i><span>প্রাইভেসি পলিসি</span><i class="fa fa-angle-right chev"></i></a>
+      <a href="/terms"><i class="fa fa-file-text-o"></i><span>শর্তাবলী</span><i class="fa fa-angle-right chev"></i></a>
     </div>
   </div>
 </div>
@@ -161,11 +167,26 @@ $config = [
 <div class="search-overlay" data-search-overlay hidden>
   <div class="search-overlay-bar">
     <button type="button" class="icon-btn" data-close-search aria-label="বন্ধ করুন"><i class="fa fa-arrow-left"></i></button>
-    <form action="/products" method="get" role="search" data-search-form class="grow">
-      <input type="search" name="q" placeholder="পণ্য খুঁজুন…" autocomplete="off" aria-label="পণ্য খুঁজুন" data-search-input>
+    <form action="/products" method="get" role="search" data-search-form class="search-field">
+      <i class="fa fa-search" aria-hidden="true"></i>
+      <input type="search" name="q" placeholder="পণ্যের নাম, ক্যাটাগরি…" autocomplete="off" aria-label="পণ্য খুঁজুন" data-search-input enterkeyhint="search">
     </form>
   </div>
-  <div class="search-overlay-results" data-search-results></div>
+  <div class="search-overlay-body">
+    <div data-search-idle>
+      <div class="search-block" data-recent-wrap hidden>
+        <div class="search-block-head"><b>সাম্প্রতিক সার্চ</b><button type="button" class="link-btn" data-recent-clear>মুছুন</button></div>
+        <div class="search-chips" data-recent></div>
+      </div>
+      <?php $popularCats = array_slice(Category::active(), 0, 8); if ($popularCats): ?>
+      <div class="search-block">
+        <div class="search-block-head"><b>জনপ্রিয় ক্যাটাগরি</b></div>
+        <div class="search-chips"><?php foreach ($popularCats as $pc): ?><a href="/category/<?= e(rawurlencode($pc['slug'])) ?>" class="chip"><?= e($pc['name']) ?></a><?php endforeach; ?></div>
+      </div>
+      <?php endif; ?>
+    </div>
+    <div class="search-overlay-results" data-search-results hidden></div>
+  </div>
 </div>
 
 <div class="toast-wrap" aria-live="polite" aria-atomic="true" data-toasts></div>

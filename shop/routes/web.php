@@ -10,6 +10,9 @@ $router->get('/checkout', [CheckoutController::class, 'show']);
 $router->get('/order-success/{code}', [CheckoutController::class, 'success']);
 $router->get('/my-orders', [CheckoutController::class, 'myOrders']);
 $router->get('/contact', [PageController::class, 'contact']);
+$router->get('/about', static fn () => (new PageController())->info('about'));
+$router->get('/privacy', static fn () => (new PageController())->info('privacy'));
+$router->get('/terms', static fn () => (new PageController())->info('terms'));
 $router->get('/offline', [PageController::class, 'offline']);
 
 // System files (dynamic, admin-controlled)

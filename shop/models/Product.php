@@ -96,6 +96,17 @@ final class Product
         if (!empty($f['featured'])) {
             $where[] = 'p.is_featured = 1';
         }
+        if (!empty($f['in_stock'])) {
+            $where[] = 'p.stock > 0';
+        }
+        if (!empty($f['min'])) {
+            $where[] = 'COALESCE(IF(p.is_flash = 1 AND p.flash_price IS NOT NULL AND (p.flash_start IS NULL OR p.flash_start <= NOW()) AND (p.flash_end IS NULL OR p.flash_end > NOW()), p.flash_price, NULL), p.price) >= ?';
+            $params[] = (float) $f['min'];
+        }
+        if (!empty($f['max'])) {
+            $where[] = 'COALESCE(IF(p.is_flash = 1 AND p.flash_price IS NOT NULL AND (p.flash_start IS NULL OR p.flash_start <= NOW()) AND (p.flash_end IS NULL OR p.flash_end > NOW()), p.flash_price, NULL), p.price) <= ?';
+            $params[] = (float) $f['max'];
+        }
         $w = implode(' AND ', $where);
         $total = (int) DB::val("SELECT COUNT(*) FROM products p LEFT JOIN categories c ON c.id = p.category_id WHERE {$w}", $params);
         $page = max(1, $page);

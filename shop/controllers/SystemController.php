@@ -62,7 +62,7 @@ final class SystemController
         header('Content-Type: application/xml; charset=utf-8');
         header('Cache-Control: public, max-age=3600');
         $base = rtrim((string) (setting('canonical_base') ?: Config::get('url') ?: Request::origin()), '/');
-        $urls = [[$base . '/', date('Y-m-d'), '1.0'], [$base . '/products', date('Y-m-d'), '0.9'], [$base . '/categories', date('Y-m-d'), '0.7'], [$base . '/contact', null, '0.4']];
+        $urls = [[$base . '/', date('Y-m-d'), '1.0'], [$base . '/products', date('Y-m-d'), '0.9'], [$base . '/categories', date('Y-m-d'), '0.7'], [$base . '/contact', null, '0.4'], [$base . '/about', null, '0.3'], [$base . '/privacy', null, '0.2'], [$base . '/terms', null, '0.2']];
         foreach (DB::all('SELECT slug FROM categories WHERE is_active = 1 AND deleted_at IS NULL') as $c) {
             $urls[] = [$base . '/category/' . rawurlencode($c['slug']), null, '0.7'];
         }

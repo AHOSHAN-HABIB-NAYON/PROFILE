@@ -274,16 +274,31 @@
       const r = await App.ajax.post(list.dataset.sortable, { order });
       App.ui.toast(r.message, r.success ? 'success' : 'error', { duration: 1200 });
     }));
-    // Tabs (settings) with deep-link hash
-    const tabs = $('[data-tabs]', root);
-    if (tabs) {
-      const show = (k) => {
-        if (!$('[data-pane="' + k + '"]', root)) return;
-        $$('[data-tab]', tabs).forEach((t) => t.classList.toggle('active', t.dataset.tab === k));
-        $$('[data-pane]', root).forEach((p) => (p.hidden = p.dataset.pane !== k));
+    // Grouped settings: list menu → pane (mobile), two columns (desktop). Deep-link with #group.
+    const shell = $('[data-settings]', root);
+    if (shell) {
+      const legacy = { general: 'store', contact: 'store', home: 'design', features: 'orders', protection: 'orders', tracking: 'meta', system: 'security' };
+      const show = (k, push) => {
+        k = legacy[k] || k;
+        if (!$('[data-pane="' + k + '"]', shell)) k = '';
+        $$('[data-tab]', shell).forEach((t) => t.classList.toggle('active', t.dataset.tab === k));
+        $$('[data-pane]', shell).forEach((p) => (p.hidden = p.dataset.pane !== k));
+        shell.classList.toggle('has-pane', !!k);
+        if (push) history.replaceState(history.state, '', k ? '#' + k : location.pathname);
+        if (k && window.matchMedia('(max-width: 999px)').matches) window.scrollTo(0, 0);
       };
-      tabs.addEventListener('click', (e) => { const t = e.target.closest('[data-tab]'); if (t) { show(t.dataset.tab); history.replaceState(history.state, '', '#' + t.dataset.tab); } }, { signal });
-      if (location.hash) show(location.hash.slice(1));
+      shell.addEventListener('click', (e) => {
+        const t = e.target.closest('[data-tab]');
+        if (t) show(t.dataset.tab, true);
+        if (e.target.closest('[data-settings-back]')) show('', true);
+      }, { signal });
+      show(location.hash.slice(1) || (window.matchMedia('(min-width: 1000px)').matches ? 'store' : ''), false);
+    }
+    // Deep links like /admin/orders/5?open=courier open the matching modal.
+    const want = new URLSearchParams(location.search).get('open');
+    if (want) {
+      const trg = $('[data-auto-open="' + want + '"]', root);
+      if (trg) setTimeout(() => trg.click(), 120);
     }
     // Client-side list filter
     $$('[data-filter-list]', root).forEach((inp) => inp.addEventListener('input', () => {

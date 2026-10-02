@@ -12,12 +12,16 @@ final class ProductController
         $sort = in_array(Request::query('sort'), ['new', 'price_asc', 'price_desc', 'popular'], true) ? Request::query('sort') : 'new';
         $page = max(1, (int) Request::query('page', '1'));
         $filter = Request::query('filter');
+        $min = max(0, (int) Request::query('min'));
+        $max = max(0, (int) Request::query('max'));
+        $inStock = Request::query('stock') === '1';
         $f = ['q' => $q, 'sort' => $sort, 'category_id' => $category['id'] ?? null,
-            'flash' => $filter === 'flash', 'free' => $filter === 'free', 'featured' => $filter === 'featured'];
+            'flash' => $filter === 'flash', 'free' => $filter === 'free', 'featured' => $filter === 'featured',
+            'min' => $min, 'max' => $max, 'in_stock' => $inStock];
         [$items, $total] = Product::paginate($f, $page, self::perPage());
         $title = match (true) {
             $category !== null => $category['name'],
-            $q !== '' => '"' . $q . '" এর ফলাফল',
+            $q !== '' => '"' . $q . '" এর জন্য ফলাফল',
             $filter === 'flash' => 'ফ্ল্যাশ সেল',
             $filter === 'free' => 'ফ্রি ডেলিভারি পণ্য',
             $filter === 'featured' => 'ফিচার্ড পণ্য',
@@ -32,7 +36,8 @@ final class ProductController
         View::page('pages/products', [
             'items' => $items, 'total' => $total, 'page' => $page, 'pages' => (int) ceil($total / self::perPage()),
             'q' => $q, 'sort' => $sort, 'filter' => $filter, 'category' => $category, 'heading' => $title,
-            'categories' => Category::active(),
+            'categories' => Category::active(), 'min' => $min, 'max' => $max, 'inStock' => $inStock,
+            'activeFilters' => (int) ($min > 0) + (int) ($max > 0) + (int) $inStock + (int) in_array($filter, ['flash', 'free', 'featured'], true),
         ], $meta);
     }
 

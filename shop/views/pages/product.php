@@ -54,7 +54,7 @@ $shareText = $p['name'] . ' — ' . money($p['effective_price']);
         <input type="hidden" name="id" value="<?= (int) $p['id'] ?>">
         <?php if ($p['sizes']): ?>
         <fieldset class="size-picker">
-          <legend>সাইজ নির্বাচন করুন <span class="req">*</span></legend>
+          <legend>সাইজ নির্বাচন করুন <span class="req">*</span><?php if (!empty($p['sizes'])): ?><span class="legend-hint"><?= bn_num(count(array_filter($p['sizes'], static fn ($s) => $s['available']))) ?>টি সাইজ পাওয়া যাচ্ছে</span><?php endif; ?></legend>
           <div class="sizes">
             <?php foreach ($p['sizes'] as $s): ?>
               <label class="size<?= $s['available'] ? '' : ' disabled' ?>"><input type="radio" name="size" value="<?= e($s['size']) ?>"<?= $s['available'] ? '' : ' disabled' ?>><span><?= e($s['size']) ?></span></label>
@@ -114,7 +114,7 @@ $shareText = $p['name'] . ' — ' . money($p['effective_price']);
 
   <?php if ($related): ?>
   <section class="section">
-    <?php View::partial('components/section-head', ['title' => 'সম্পর্কিত পণ্য']); ?>
+    <?php View::partial('components/section-head', ['title' => 'আপনার জন্য আরও পণ্য', 'icon' => 'th-large']); ?>
     <?php View::partial('components/product-grid', ['items' => $related, 'lazyFrom' => 0]); ?>
   </section>
   <?php endif; ?>

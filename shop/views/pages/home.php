@@ -1,6 +1,6 @@
 <?php /** Home page sections are switched on/off from Admin → Settings → Homepage. */ ?>
 <div class="page container" data-page="home">
-<button type="button" class="search-pill only-mobile" data-open-search><i class="fa fa-search"></i><span>পণ্য খুঁজুন…</span></button>
+<button type="button" class="search-pill" data-open-search><i class="fa fa-search"></i><span>কী খুঁজছেন? পণ্যের নাম লিখুন…</span></button>
 
 <?php if ($banners): ?>
   <section class="hero" aria-label="অফার ব্যানার">
@@ -38,55 +38,67 @@
 <?php endif; ?>
 
 <?php if ($coupon): ?>
-  <section class="coupon-banner">
-    <div><span class="small">বিশেষ অফার</span>
-      <strong><?= $coupon['type'] === 'percent' ? bn_num((float) $coupon['value']) . '% ছাড়' : money($coupon['value']) . ' ছাড়' ?></strong>
-      <span class="small"><?= (float) $coupon['min_order'] > 0 ? 'সর্বনিম্ন ' . money($coupon['min_order']) . ' অর্ডারে' : 'যেকোনো অর্ডারে' ?><?= $coupon['expires_at'] ? ' · মেয়াদ ' . date('d/m/Y', strtotime($coupon['expires_at'])) : '' ?></span>
+  <section class="promo-coupon">
+    <span class="promo-ic"><i class="fa fa-gift"></i></span>
+    <div class="grow">
+      <span class="promo-kicker">বিশেষ অফার</span>
+      <strong class="promo-amount"><?= $coupon['type'] === 'percent' ? bn_num((float) $coupon['value']) . '% ছাড়' : money($coupon['value']) . ' ছাড়' ?></strong>
+      <span class="promo-note"><?= (float) $coupon['min_order'] > 0 ? money($coupon['min_order']) . '+ অর্ডারে' : 'যেকোনো অর্ডারে' ?><?= $coupon['expires_at'] ? ' · ' . date('d/m', strtotime($coupon['expires_at'])) . ' পর্যন্ত' : '' ?></span>
     </div>
-    <button type="button" class="coupon-code" data-copy="<?= e($coupon['code']) ?>" aria-label="কুপন কোড কপি করুন"><?= e($coupon['code']) ?> <i class="fa fa-clone"></i></button>
+    <div class="promo-code-box">
+      <code><?= e($coupon['code']) ?></code>
+      <button type="button" class="btn btn-light btn-copy" data-copy="<?= e($coupon['code']) ?>"><i class="fa fa-clone"></i> কপি করুন</button>
+    </div>
   </section>
 <?php endif; ?>
 
 <?php if ($flash): ?>
   <section class="section flash-section">
-    <?php View::partial('components/section-head', ['title' => 'ফ্ল্যাশ সেল', 'icon' => 'bolt', 'link' => '/products?filter=flash',
-        'extra' => $flash_end ? '<span class="countdown" data-countdown="' . (int) $flash_end . '" aria-label="অফার শেষ হতে বাকি"></span>' : '']); ?>
-    <div class="hscroll"><?php foreach ($flash as $p) { View::partial('components/product-card', ['p' => $p]); } ?></div>
+    <div class="flash-head">
+      <h2 class="section-title"><i class="fa fa-bolt"></i> ফ্ল্যাশ সেল</h2>
+      <?php if ($flash_end): ?><span class="countdown" data-countdown="<?= (int) $flash_end ?>" aria-label="অফার শেষ হতে বাকি"></span><?php endif; ?>
+      <a href="/products?filter=flash" class="see-all">সব দেখুন <i class="fa fa-angle-right"></i></a>
+    </div>
+    <?php View::partial('components/product-grid', ['items' => $flash, 'flash' => true, 'lazyFrom' => 2]); ?>
   </section>
 <?php endif; ?>
 
 <?php if ($featured): ?>
   <section class="section">
     <?php View::partial('components/section-head', ['title' => 'ফিচার্ড পণ্য', 'icon' => 'star', 'link' => '/products?filter=featured']); ?>
-    <?php View::partial('components/product-grid', ['items' => $featured]); ?>
+    <?php View::partial('components/product-grid', ['items' => $featured, 'lazyFrom' => 2]); ?>
+  </section>
+<?php endif; ?>
+
+<?php if ($free): ?>
+  <section class="section">
+    <a href="/products?filter=free" class="free-strip">
+      <span class="free-ic"><i class="fa fa-truck"></i></span>
+      <span class="grow"><strong>ফ্রি ডেলিভারি</strong><span>এই পণ্যগুলোতে সারা দেশে কোনো ডেলিভারি চার্জ নেই</span></span>
+      <i class="fa fa-angle-right"></i>
+    </a>
+    <?php View::partial('components/product-grid', ['items' => $free]); ?>
   </section>
 <?php endif; ?>
 
 <?php if ($combos): ?>
   <section class="section" id="combo">
     <?php View::partial('components/section-head', ['title' => 'কম্বো অফার', 'icon' => 'gift']); ?>
-    <div class="hscroll combo-scroll"><?php foreach ($combos as $c) { View::partial('components/combo-card', ['c' => $c]); } ?></div>
-  </section>
-<?php endif; ?>
-
-<?php if ($free): ?>
-  <section class="section">
-    <?php View::partial('components/section-head', ['title' => 'ফ্রি ডেলিভারি', 'icon' => 'truck', 'link' => '/products?filter=free']); ?>
-    <div class="hscroll"><?php foreach ($free as $p) { View::partial('components/product-card', ['p' => $p]); } ?></div>
+    <div class="combo-list<?= count($combos) === 1 ? ' is-single' : '' ?>"><?php foreach ($combos as $c) { View::partial('components/combo-card', ['c' => $c]); } ?></div>
   </section>
 <?php endif; ?>
 
 <?php if ($latest): ?>
   <section class="section">
-    <?php View::partial('components/section-head', ['title' => 'নতুন পণ্য', 'link' => '/products']); ?>
-    <?php View::partial('components/product-grid', ['items' => $latest, 'lazyFrom' => $featured ? 0 : 4]); ?>
+    <?php View::partial('components/section-head', ['title' => 'নতুন পণ্য', 'icon' => 'th-large', 'link' => '/products']); ?>
+    <?php View::partial('components/product-grid', ['items' => $latest]); ?>
   </section>
 <?php endif; ?>
 
 <?php if ($recommended): ?>
   <section class="section">
     <?php View::partial('components/section-head', ['title' => 'আপনার জন্য প্রস্তাবিত', 'icon' => 'thumbs-o-up', 'link' => '/products?sort=popular']); ?>
-    <div class="hscroll"><?php foreach ($recommended as $p) { View::partial('components/product-card', ['p' => $p]); } ?></div>
+    <?php View::partial('components/product-grid', ['items' => $recommended]); ?>
   </section>
 <?php endif; ?>
 

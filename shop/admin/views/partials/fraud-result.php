@@ -15,11 +15,16 @@
     <div><b><?= bn_num($c['success_rate']) ?>%</b><span>সফলতা</span></div>
   </div>
   <?php if (!empty($c['couriers'])): ?>
-  <table class="table compact mt-8"><thead><tr><th>কুরিয়ার</th><th>মোট</th><th>সফল</th><th>বাতিল</th><th>হার</th></tr></thead><tbody>
-    <?php foreach ($c['couriers'] as $row): ?>
-      <tr><td><?= e($row['name']) ?></td><td><?= bn_num($row['total']) ?></td><td><?= bn_num($row['delivered']) ?></td><td><?= bn_num($row['cancelled']) ?></td><td><?= bn_num($row['success_rate']) ?>%</td></tr>
+  <p class="small strong mt-12 mb-8">Courier History</p>
+  <div class="courier-cards">
+    <?php foreach ($c['couriers'] as $row): $rate = (float) $row['success_rate']; ?>
+      <div class="cc">
+        <div class="cc-head"><b><?= e($row['name']) ?></b><span class="cc-rate <?= $row['total'] === 0 ? '' : ($rate >= 70 ? 'good' : ($rate >= 40 ? 'mid' : 'bad')) ?>"><?= $row['total'] ? bn_num($rate) . '%' : '—' ?></span></div>
+        <div class="cc-bar"><span style="width:<?= $row['total'] ? max(3, min(100, $rate)) : 0 ?>%"></span></div>
+        <div class="cc-nums"><span>মোট <b><?= bn_num($row['total']) ?></b></span><span class="ok">সফল <b><?= bn_num($row['delivered']) ?></b></span><span class="bad">বাতিল <b><?= bn_num($row['cancelled']) ?></b></span><?php if ($row['returned']): ?><span>রিটার্ন <b><?= bn_num($row['returned']) ?></b></span><?php endif; ?></div>
+      </div>
     <?php endforeach; ?>
-  </tbody></table>
+  </div>
   <?php endif; ?>
   <?php endif; ?>
   <p class="small muted mt-8">এই শপে: মোট <?= bn_num($r['local']['total']) ?>, ডেলিভারড <?= bn_num($r['local']['delivered']) ?>, বাতিল <?= bn_num($r['local']['cancelled']) ?>, রিটার্ন <?= bn_num($r['local']['returned']) ?></p>

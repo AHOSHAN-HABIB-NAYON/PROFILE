@@ -16,6 +16,14 @@ $shipment = ['name' => $o['customer_name'], 'phone' => $o['phone'], 'address' =>
     </div>
   </div>
 
+  <div class="action-bar">
+    <?php if ($o['status'] === 'pending'): ?><button type="button" class="btn btn-primary btn-sm" data-post="/admin/api/orders/<?= (int) $o['id'] ?>/status" data-body='{"status":"confirmed"}' data-reload><i class="fa fa-check"></i> কনফার্ম</button><?php endif; ?>
+    <?php if ($couriers && !in_array($o['status'], ['delivered', 'cancelled', 'returned', 'failed'], true)): ?><button type="button" class="btn btn-soft btn-sm" data-modal="tpl-courier" data-title="কুরিয়ারে পাঠান" data-auto-open="courier"><i class="fa fa-paper-plane"></i> কুরিয়ারে পাঠান</button><?php endif; ?>
+    <button type="button" class="btn btn-soft btn-sm btn-check" data-post="/admin/api/orders/<?= (int) $o['id'] ?>/fraud" data-reload><i class="fa fa-shield"></i> Courier History / Fraud Check</button>
+    <button type="button" class="btn btn-ghost btn-sm" data-modal="tpl-order-edit" data-title="অর্ডার সম্পাদনা" data-auto-open="edit"><i class="fa fa-pencil"></i> এডিট</button>
+    <a href="tel:<?= e($o['phone']) ?>" class="btn btn-ghost btn-sm" data-no-spa><i class="fa fa-phone"></i> কল</a>
+  </div>
+
   <div class="order-layout">
     <div class="stack">
       <section class="card">

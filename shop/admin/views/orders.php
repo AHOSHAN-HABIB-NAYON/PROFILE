@@ -15,22 +15,30 @@
     <button class="btn btn-soft btn-sm">খুঁজুন</button>
   </form>
   <?php if ($orders): ?>
-  <div class="table-wrap">
-    <table class="table">
-      <thead><tr><th>অর্ডার</th><th>কাস্টমার</th><th>জেলা</th><th>মোট</th><th>স্ট্যাটাস</th><th>তারিখ</th></tr></thead>
-      <tbody>
-      <?php foreach ($orders as $o): ?>
-        <tr data-href="/admin/orders/<?= (int) $o['id'] ?>">
-          <td data-label="অর্ডার"><a href="/admin/orders/<?= (int) $o['id'] ?>" class="strong"><?= e($o['order_code']) ?></a><br><span class="small muted"><?= bn_num($o['items']) ?>টি আইটেম</span></td>
-          <td data-label="কাস্টমার"><?= e($o['customer_name']) ?><br><span class="small muted"><?= e($o['phone']) ?><?= $o['phone_orders'] > 1 ? ' · ' . bn_num($o['phone_orders']) . 'টি অর্ডার' : '' ?></span> <?php View::partial('admin/views/partials/risk-badge', ['risk' => $o['risk_level']]); ?></td>
-          <td data-label="জেলা"><?= e($o['district']) ?></td>
-          <td data-label="মোট"><b><?= money($o['total']) ?></b></td>
-          <td data-label="স্ট্যাটাস"><?php View::partial('admin/views/partials/status-badge', ['status' => $o['status']]); ?></td>
-          <td data-label="তারিখ" class="small"><?= date('d/m/y h:i A', strtotime($o['created_at'])) ?></td>
-        </tr>
-      <?php endforeach; ?>
-      </tbody>
-    </table>
+  <div class="ocard-list">
+    <?php foreach ($orders as $o): $id = (int) $o['id']; ?>
+    <article class="ocard">
+      <a href="/admin/orders/<?= $id ?>" class="ocard-head">
+        <span class="ocard-code"><?= e($o['order_code']) ?></span>
+        <?php View::partial('admin/views/partials/status-badge', ['status' => $o['status']]); ?>
+      </a>
+      <div class="ocard-body">
+        <div class="ocard-cust">
+          <b><?= e($o['customer_name']) ?></b> <?php View::partial('admin/views/partials/risk-badge', ['risk' => $o['risk_level']]); ?>
+          <a href="tel:<?= e($o['phone']) ?>" data-no-spa class="ocard-phone"><i class="fa fa-phone"></i> <?= e($o['phone']) ?></a>
+          <span class="ocard-addr"><i class="fa fa-map-marker"></i> <?= e(str_limit($o['address'] . ', ' . $o['district'], 70)) ?></span>
+        </div>
+        <div class="ocard-amt"><strong><?= money($o['total']) ?></strong><span><?= bn_num($o['items']) ?>টি আইটেম<?= $o['phone_orders'] > 1 ? ' · ' . bn_num($o['phone_orders']) . 'টি অর্ডার' : '' ?></span><span><?= date('d/m/y h:i A', strtotime($o['created_at'])) ?></span></div>
+      </div>
+      <div class="ocard-actions">
+        <?php if ($o['status'] === 'pending'): ?><button type="button" class="btn btn-primary btn-xs" data-post="/admin/api/orders/<?= $id ?>/status" data-body='{"status":"confirmed"}' data-reload><i class="fa fa-check"></i> কনফার্ম</button><?php endif; ?>
+        <?php if (!in_array($o['status'], ['courier_sent', 'delivered', 'cancelled', 'returned', 'failed'], true)): ?><a href="/admin/orders/<?= $id ?>?open=courier" class="btn btn-soft btn-xs"><i class="fa fa-paper-plane"></i> কুরিয়ার</a><?php endif; ?>
+        <a href="/admin/orders/<?= $id ?>?open=edit" class="btn btn-ghost btn-xs"><i class="fa fa-pencil"></i> এডিট</a>
+        <a href="/admin/orders/<?= $id ?>" class="btn btn-ghost btn-xs"><i class="fa fa-eye"></i> দেখুন</a>
+        <button type="button" class="btn btn-ghost btn-xs danger-text" data-post="/admin/api/orders/<?= $id ?>/trash" data-confirm="অর্ডারটি ট্র্যাশে পাঠাবেন?" data-reload><i class="fa fa-trash-o"></i> ডিলিট</button>
+      </div>
+    </article>
+    <?php endforeach; ?>
   </div>
   <?php View::partial('admin/views/partials/pagination', ['page' => $page, 'pages' => $pages]); ?>
   <?php else: ?>

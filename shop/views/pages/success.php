@@ -13,7 +13,7 @@ $stopped = in_array($order['status'], ['cancelled', 'returned', 'failed'], true)
 <div class="page container narrow" data-page="success" data-order="<?= e($order['order_code']) ?>" data-value="<?= e($order['total']) ?>">
   <section class="success-hero card">
     <?php View::partial('components/truck-art'); ?>
-    <h1>অর্ডার নিশ্চিত হয়েছে</h1>
+    <h1><i class="fa fa-check-circle"></i> অর্ডার নিশ্চিত হয়েছে</h1>
     <p>আমাদের সাথে শপিং করার জন্য ধন্যবাদ।<br>আমাদের একজন প্রতিনিধি আপনাকে কল করবেন।</p>
     <div class="order-id-chip">অর্ডার আইডি: <b><?= e($order['order_code']) ?></b> <button type="button" class="icon-btn" data-copy="<?= e($order['order_code']) ?>" aria-label="অর্ডার আইডি কপি"><i class="fa fa-clone"></i></button></div>
   </section>

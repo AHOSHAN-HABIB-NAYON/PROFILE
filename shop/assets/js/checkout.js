@@ -52,12 +52,30 @@
       if (dl) dl.innerHTML = list.map((p) => '<option></option>').join('');
       if (dl) [...dl.options].forEach((o, i) => (o.value = list[i].name));
       if (list.length && !f('phone').value) {
-        hint.textContent = 'আগের অর্ডারের তথ্য পাওয়া গেছে — ফোন নম্বর বা নাম লিখলে স্বয়ংক্রিয়ভাবে পূরণ হবে।';
+        hint.textContent = 'আগে এই ডিভাইস থেকে অর্ডার করেছেন — নাম বা ফোন নম্বর লিখলে আগের তথ্য দেখাবে।';
         hint.hidden = false;
+      }
+      /* Suggestion box: the customer decides whether to use previous details */
+      const box = root.querySelector('[data-suggest]');
+      let pending = null;
+      const suggest = (data) => {
+        if (!box || !data || (!data.name && !data.district)) return;
+        pending = data;
+        box.querySelector('[data-suggest-text]').textContent = [data.name, data.district, data.address].filter(Boolean).join(' · ');
+        box.hidden = false;
+        box.classList.remove('pop'); void box.offsetWidth; box.classList.add('pop');
+      };
+      if (box) {
+        box.querySelector('[data-suggest-use]').addEventListener('click', () => {
+          if (pending) { fillIfEmpty(pending, true); quote(); ['name', 'district', 'address'].forEach((k) => setErr(k, '')); }
+          box.hidden = true;
+          App.ui.toast('আগের তথ্য পূরণ করা হয়েছে — প্রয়োজনে পরিবর্তন করুন।', 'success');
+        }, { signal });
+        box.querySelector('[data-suggest-dismiss]').addEventListener('click', () => { box.hidden = true; }, { signal });
       }
       f('name').addEventListener('change', () => {
         const p = list.find((x) => x.name === f('name').value.trim());
-        if (p) { f('phone').value = p.phone; fillIfEmpty(p); quote(); }
+        if (p) { f('phone').value = p.phone; suggest(p); }
       }, { signal });
 
       /* Phone → previous order suggestion (server only returns address to the same device) */
@@ -68,15 +86,11 @@
         if (!phone || phone === lastLookup) return;
         lastLookup = phone;
         const local = list.find((x) => x.phone === phone);
-        if (local) { fillIfEmpty(local); showHint(); quote(); return; }
+        hint.hidden = true;
+        if (local) { suggest(local); return; }
         const r = await App.ajax.get('/api/customer-lookup?phone=' + phone);
-        if (r.success && r.data) { fillIfEmpty(r.data); showHint(); quote(); }
+        if (r.success && r.data) suggest(r.data);
       }, { signal });
-      function showHint() {
-        hint.textContent = 'আগের অর্ডার থেকে তথ্য পূরণ করা হয়েছে — প্রয়োজনে পরিবর্তন করুন।';
-        hint.classList.add('suggest');
-        hint.hidden = false;
-      }
 
       /* District → live delivery charge (debounced) */
       let qt = null;
@@ -86,7 +100,12 @@
         qctrl = new AbortController();
         try {
           const r = await App.ajax.get('/api/checkout/quote?district=' + encodeURIComponent(f('district').value.trim()), { signal: qctrl.signal });
-          if (r.success && summary) { summary.innerHTML = r.data.html; App.lazy.observe(summary); }
+          if (r.success && summary) {
+            summary.innerHTML = r.data.html;
+            App.lazy.observe(summary);
+            const zone = r.data.summary.delivery.zone;
+            root.querySelectorAll('[data-zone]').forEach((z) => z.classList.toggle('active', z.dataset.zone === zone));
+          }
         } catch (e) { /* aborted */ }
       }
       f('district').addEventListener('input', () => { clearTimeout(qt); qt = setTimeout(quote, 380); setErr('district', ''); }, { signal });
