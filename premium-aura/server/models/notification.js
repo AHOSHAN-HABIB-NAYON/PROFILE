@@ -4,13 +4,15 @@ const realtime = require('../services/realtime');
 
 const TYPES = ['service', 'resource', 'post', 'payment', 'premium', 'withdrawal', 'system'];
 
-async function notify(userId, { type = 'system', title, body = null, link = null }, conn = db) {
+async function notify(userId, { type = 'system', title, body = null, link = null, push = true }, conn = db) {
   const res = await conn.run(
     'INSERT INTO notifications (user_id, type, title, body, link) VALUES (?,?,?,?,?)',
     [userId, TYPES.includes(type) ? type : 'system', String(title).slice(0, 160), body ? String(body).slice(0, 500) : null, link],
   );
   const payload = { id: res.insertId, type, title, body, link, is_read: 0, created_at: new Date().toISOString() };
   realtime.toUser(userId, 'notification:new', payload);
+  // Also to the user's devices (browser push), if they allow it.
+  if (push) require('../services/push').sendToUser(userId, { title, body: body || '', link: link || '/notifications' }).catch(() => {});
   return payload;
 }
 

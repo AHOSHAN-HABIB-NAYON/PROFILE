@@ -1,4 +1,4 @@
-import { api, esc, $, $$, toast, toastError, flag, appIcon, pageHead, relEl, pagination, withLoading, sheet, debounce, copyText, chip, playSound } from '../core.js';
+import { api, esc, $, $$, toast, toastError, flag, appIcon, pageHead, relEl, pagination, withLoading, sheet, debounce, copyText, chip, playSound, state } from '../core.js';
 
 const otpPill = (code) => `<button class="otp-pill" data-copy="${esc(code)}" title="Copy OTP"><span class="mono">${esc(code)}</span><i class="fa-regular fa-copy"></i></button>`;
 
@@ -25,6 +25,7 @@ export async function mount(el, { query, live }) {
     <div class="stack access-stack">
       <div class="card get-card">
         <div class="card-head"><h2>Get Number</h2><span class="chip live">Live</span></div>
+        ${state.user.restrictions?.numbers && state.user.role !== 'admin' ? '<div class="alert warning" style="margin-bottom:12px"><i class="fa-solid fa-lock"></i><span>Your access to numbers has been restricted. Please contact support.</span></div>' : ''}
         <div class="range-select" data-range>
           <button type="button" class="range-trigger" data-range-toggle aria-haspopup="listbox" aria-expanded="false">
             <span class="range-current" data-range-current><span class="muted">Select Range</span></span>
@@ -80,7 +81,7 @@ export async function mount(el, { query, live }) {
         ${flag(x.flag_code)}<b>${esc(x.country_code)} ${esc(x.app_code)}</b>${x.hot ? '<span class="hot-dot">🔥</span>' : ''}</button>`).join('')}</div>` : '';
     const cur = active.find((x) => x.id === selected && usable(x));
     $('[data-range-current]', el).innerHTML = cur ? svcLabel(cur) : '<span class="range-placeholder"><i class="fa-solid fa-earth-asia"></i> Select Range</span>';
-    $('[data-get-selected]', el).disabled = !cur;
+    $('[data-get-selected]', el).disabled = !cur || (!!state.user.restrictions?.numbers && state.user.role !== 'admin');
     $('[data-get-label]', el).textContent = cur ? `Get ${cur.country_code} ${cur.app_code} Number` : 'Get Number';
   }
 
@@ -191,7 +192,8 @@ export async function mount(el, { query, live }) {
   $('[data-search]', el).addEventListener('submit', (e) => { e.preventDefault(); search(e.target.serial.value.trim()); });
   $('[data-range-filter]', el).addEventListener('input', (e) => renderPicker(e.target.value));
   // close the range list when tapping outside it
-  const outside = (e) => { if (!e.target.closest('[data-range]')) openRange(false); };
+  // (re-rendering the box replaces the tapped element, so a detached target is not an outside tap)
+  const outside = (e) => { if (e.target.isConnected && !e.target.closest('[data-range]')) openRange(false); };
   document.addEventListener('click', outside);
 
   await Promise.all([loadServices(), loadMine(1)]);

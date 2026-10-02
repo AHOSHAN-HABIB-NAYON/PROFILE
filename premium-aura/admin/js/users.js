@@ -15,7 +15,7 @@ export async function mount(el) {
     // One compact line per user; all actions live in the 👁 details sheet.
     row: (u) => `<div class="user-row">
       <span class="avatar">${esc(String(u.name || u.email).charAt(0).toUpperCase())}</span>
-      <div class="user-main"><div class="user-title">${esc(u.name)}${u.role === 'admin' ? ' <i class="fa-solid fa-shield-halved" style="color:var(--primary)" title="Admin"></i>' : ''}${u.premium_plan ? ' <i class="fa-solid fa-crown" style="color:#f59e0b" title="Premium"></i>' : ''}</div>
+      <div class="user-main"><div class="user-title">${esc(u.name)}${u.role === 'admin' ? ' <i class="fa-solid fa-shield-halved" style="color:var(--primary)" title="Admin"></i>' : ''}${u.premium_plan ? ' <i class="fa-solid fa-crown" style="color:#f59e0b" title="Premium"></i>' : ''}${u.block_numbers || u.block_otp ? ' <i class="fa-solid fa-lock" style="color:var(--danger)" title="Restricted"></i>' : ''}</div>
         <div class="user-sub">#${u.id} · ${esc(u.email)} · ${num(u.used_resources)} used</div></div>
       <span class="user-bal">${esc(money(u.balance))}</span>
       ${chip(u.status)}
@@ -71,6 +71,20 @@ export async function mount(el) {
         else toast(r.message);
         return;
       }
+      if (a === 'restrict') {
+        const full = (await api(`/admin/users/${u.id}`)).user;
+        const r = full.restrictions || {};
+        return formSheet({
+          title: `Restrict ${u.name}`, icon: 'fa-solid fa-lock', two: false,
+          fields: [
+            { name: 'numbers', label: 'Block getting numbers (Get Number & Advanced Search)', type: 'switch', value: !!r.numbers },
+            { name: 'otp', label: 'Block OTP access (OTP page, codes and OTP alerts)', type: 'switch', value: !!r.otp },
+            { type: 'html', html: '<p class="small muted" style="margin:0">The user can still sign in, see their wallet and contact you. Turn both off to remove the restriction.</p>' },
+          ],
+          submitLabel: 'Save restrictions',
+          onSubmit: async (d) => { const res = await api(`/admin/users/${u.id}/restrict`, { method: 'POST', body: d }); ctx.reload(); return res; },
+        });
+      }
       if (a === 'reset2fa') {
         if (!(await confirmSheet({ title: 'Turn off 2FA?', message: `${u.email} can then sign in with just the password and set 2FA up again. Only do this after confirming it is really them.`, confirm: 'Turn off 2FA', danger: true }))) return;
         const r = await api(`/admin/users/${u.id}/reset-2fa`, { method: 'POST' });
@@ -111,7 +125,7 @@ async function viewUser(row, run) {
   const u = r.user;
   const s = sheet({
     title: u.name, icon: 'fa-solid fa-user', wide: true,
-    body: `<div class="row-flex" style="margin-bottom:12px"><span class="avatar lg">${esc(u.initial)}</span><div><strong>${esc(u.email)}</strong><div class="row-flex" style="gap:6px">${chip(u.status)} ${u.twofa ? chip('info', '2FA') : ''} ${u.email_verified ? chip('success', 'verified') : chip('warning', 'unverified')}</div></div></div>
+    body: `<div class="row-flex" style="margin-bottom:12px"><span class="avatar lg">${esc(u.initial)}</span><div><strong>${esc(u.email)}</strong><div class="row-flex" style="gap:6px">${chip(u.status)} ${u.twofa ? chip('info', '2FA') : ''}${u.restrictions?.numbers ? chip('danger', 'no numbers') : ''}${u.restrictions?.otp ? chip('danger', 'no OTP') : ''} ${u.email_verified ? chip('success', 'verified') : chip('warning', 'unverified')}</div></div></div>
       <div class="grid grid-2"><dl class="kv"><dt>Joined</dt><dd>${esc(fmtDate(u.created_at))}</dd><dt>Last login</dt><dd>${u.last_login_at ? relEl(new Date(u.last_login_at).toISOString()) : '—'}</dd>
         <dt>Last IP</dt><dd>${esc(u.last_login_ip || '—')}</dd><dt>Failed logins</dt><dd>${u.security?.failed_login_attempts ?? 0}</dd><dt>Binance UID</dt><dd>${esc(u.binance_uid || '—')}</dd></dl>
       <dl class="kv"><dt>Balance</dt><dd>${esc(money(r.wallet.balance))}</dd><dt>Earned</dt><dd>${esc(money(r.wallet.earned))}</dd><dt>Withdrawn</dt><dd>${esc(money(r.wallet.withdrawn))}</dd>
@@ -121,6 +135,7 @@ async function viewUser(row, run) {
       <div class="divider"></div><h3>Recent resources</h3>
       <div class="list">${r.assignments.map((a) => `<div class="list-item"><div class="li-body"><div class="li-title mono">${esc(a.resource_value)}</div><div class="li-sub">${esc(a.country_code)} ${esc(a.app_code)}</div></div>${chip(a.status)}</div>`).join('') || '<div class="muted">None</div>'}</div>`,
     foot: `<div class="row-flex" style="width:100%">${ACTIONS.map(([k, i, l]) => `<button class="btn btn-ghost btn-sm" data-act="${k}"><i class="fa-solid ${i}"></i>${l}</button>`).join('')}
+      ${u.role !== 'admin' ? `<button class="btn ${u.restrictions?.numbers || u.restrictions?.otp ? 'btn-danger' : 'btn-ghost'} btn-sm" data-act="restrict"><i class="fa-solid fa-lock"></i>${u.restrictions?.numbers || u.restrictions?.otp ? 'Restricted' : 'Restrict'}</button>` : ''}
       ${u.twofa ? '<button class="btn btn-ghost btn-sm" data-act="reset2fa"><i class="fa-solid fa-shield-halved"></i>Reset 2FA</button>' : ''}
       ${u.status === 'pending' ? '<button class="btn btn-success btn-sm" data-act="approve"><i class="fa-solid fa-user-check"></i>Approve</button>' : ''}
       ${u.status === 'suspended' ? '<button class="btn btn-success btn-sm" data-act="unsuspend"><i class="fa-solid fa-user-check"></i>Unsuspend</button>'

@@ -14,6 +14,11 @@ function row(ev, isNew = false) {
 }
 
 export async function mount(el, { query, live }) {
+  if (state.user.restrictions?.otp && state.user.role !== 'admin') {
+    el.innerHTML = `${pageHead('fa-solid fa-shield-halved', 'OTP Services', 'Live OTPs')}<div class="card empty"><i class="fa-solid fa-lock"></i>
+      <div><strong>OTP access restricted</strong></div><div class="small">Your access to OTPs has been restricted by an administrator. Please contact support.</div></div>`;
+    return undefined;
+  }
   let page = 1;
   let app = '';
   let q = query.q || '';

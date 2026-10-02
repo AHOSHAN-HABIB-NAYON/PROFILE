@@ -857,6 +857,68 @@ test('per-range "+" setting: numbers shown with or without + whatever the import
   assert.ok((await u.get('/api/resources/mine')).data.items.every((x) => /^964\d+$/.test(x.resource_value)), 'shown without + when off');
 });
 
+test('restrictions, notification preferences, multi-channel admin messages, browser push subscription', async () => {
+  const email = `rx_${RUN}@example.com`;
+  await admin.post('/api/admin/users', { name: 'Rx User', email, password: 'RxUser1234' });
+  const id = (await admin.get(`/api/admin/users?q=${encodeURIComponent(email)}`)).data.items[0].id;
+  const u = new Client();
+  await u.login(email, 'RxUser1234');
+
+  // admin blocks numbers and OTPs
+  assert.equal((await admin.post(`/api/admin/users/${id}/restrict`, { numbers: true, otp: true })).status, 200);
+  const me = (await u.get('/api/me')).data.user;
+  assert.deepEqual(me.restrictions, { numbers: true, otp: true });
+  const a = await u.post('/api/resource/assign', { service_id: service.id });
+  assert.equal(a.status, 403);
+  assert.equal(a.data.code, 'RESTRICTED_NUMBERS');
+  assert.equal((await u.get('/api/resource/search?serial=12345')).status, 403);
+  const f = await u.get('/api/events');
+  assert.equal(f.status, 403);
+  assert.equal(f.data.code, 'RESTRICTED_OTP');
+  assert.equal((await admin.post(`/api/admin/users/${id}/restrict`, { numbers: false, otp: false })).status, 200);
+  assert.equal((await u.get('/api/events')).status, 200, 'restriction removed');
+  assert.equal((await admin.post(`/api/admin/users/1/restrict`, { numbers: true })).status, 400, 'admins cannot be restricted');
+
+  // the user's own notification preferences
+  assert.equal((await u.req('PUT', '/api/profile/notifications', { json: { email: false, security: false } })).status, 200);
+  assert.deepEqual((await u.get('/api/me')).data.user.notify, { inapp: true, email: false, push: true, security: false });
+
+  // admin message to specific users by email + in-app; this user opted out of email
+  const before = fs.readFileSync(MAIL_LOG, 'utf8').length;
+  const send = await admin.post('/api/admin/notifications', {
+    to: 'users', notify_users: `${email}, ${ADMIN_EMAIL}`, title: `Hello ${RUN}`, body: 'Fresh numbers', ch_inapp: '1', ch_email: '1', ch_push: '0',
+  });
+  assert.equal(send.status, 200, JSON.stringify(send.data));
+  assert.equal(send.data.sent.inapp, 2);
+  assert.equal(send.data.sent.email, 1, 'opted-out user gets no email');
+  await sleep(300);
+  const mails = fs.readFileSync(MAIL_LOG, 'utf8').slice(before).trim().split('\n').filter(Boolean).map((x) => JSON.parse(x).meta);
+  assert.ok(mails.some((m) => m.to === ADMIN_EMAIL && m.subject === `Hello ${RUN}`));
+  assert.ok(!mails.some((m) => m.to === email));
+  assert.ok((await u.get('/api/notifications')).data.items.some((n) => n.title === `Hello ${RUN}`));
+  const unknown = await admin.post('/api/admin/notifications', { to: 'users', notify_users: 'nobody@nowhere.test', title: 'x', ch_inapp: '1' });
+  assert.equal(unknown.status, 400);
+  assert.equal((await admin.post('/api/admin/notifications', { to: 'all', title: 'x', ch_inapp: '0', ch_email: '0', ch_push: '0' })).status, 400, 'a channel is required');
+
+  // browser push: key + subscription validation
+  const key = (await u.get('/api/push/key')).data.key;
+  assert.match(key, /^[A-Za-z0-9_-]{80,}$/);
+  assert.equal((await admin.get('/api/admin/settings')).data.settings.vapid_private_key, undefined, 'private key never sent');
+  assert.equal((await u.post('/api/push/subscribe', { subscription: { endpoint: 'http://insecure' } })).status, 400);
+  const sub = { endpoint: `https://127.0.0.1:1/push/${RUN}`, keys: { p256dh: 'BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XbjhazAkj7I99e8QcYP7DkM', auth: 'tBHItJI5svbpez7KI4CCXg' } };
+  assert.equal((await u.post('/api/push/subscribe', { subscription: sub })).status, 200);
+  assert.equal((await u.post('/api/push/unsubscribe', { endpoint: sub.endpoint })).status, 200);
+
+  // importing numbers can notify by email too (no counts in the text)
+  const fd = new FormData();
+  fd.append('file', new Blob([`92${NUM}777\n`], { type: 'text/plain' }), 'n.txt');
+  fd.append('service_id', String(service.id));
+  for (const [k, val] of Object.entries({ notify: '1', notify_to: 'users', notify_users: ADMIN_EMAIL, ch_inapp: '1', ch_email: '1', ch_push: '0' })) fd.append(k, val);
+  const imp = await admin.req('POST', '/api/admin/resources/import', { form: fd });
+  assert.equal(imp.status, 200, JSON.stringify(imp.data));
+  assert.deepEqual(imp.data.report.notified, { inapp: 1, email: 1, push: 0 });
+});
+
 test('PWA manifest, service worker, security headers, JSON errors without stack traces', async () => {
   const m = await fetch(`${BASE}/manifest.json`);
   const mj = await m.json();

@@ -1,4 +1,4 @@
-import { api, esc, $, $$, pageHead, listPage, formSheet, sheet, toast, toastError, withLoading, formData } from './kit.js';
+import { api, esc, $, $$, pageHead, listPage, formSheet, sheet, toast, toastError, withLoading, formData, notifyPanelHtml, bindNotifyPanel, notifyValues } from './kit.js';
 import { chip, flag, appIcon, num, relEl, APP_LIST, confirmSheet } from '/assets/js/core.js';
 
 const ICONS = [['', 'Auto (from app code)'], ...APP_LIST.map((a) => [a.name.toLowerCase().replace(/[^a-z]/g, ''), a.name])];
@@ -27,8 +27,10 @@ function replaceSheet(s, c) {
     body: `<p class="small muted">Old numbers are deleted and the numbers in your file are added. If the file has no valid numbers, nothing is deleted.</p>
       <form data-rep><label class="dropzone"><input type="file" name="file" accept=".csv,.txt,.xlsx" hidden required>
         <i class="fa-solid fa-file-arrow-up" style="font-size:24px;color:var(--primary)"></i><div><strong>Choose TXT, CSV or XLSX</strong></div><div class="small" data-fn></div></label>
-      <button class="btn btn-primary btn-block" type="submit" style="margin-top:12px"><i class="fa-solid fa-arrows-rotate"></i>Replace numbers</button></form><div data-out style="margin-top:10px"></div>`,
+      <div style="margin-top:12px">${notifyPanelHtml({ toggle: true, title: 'New numbers available', body: '' })}</div>
+      <button class="btn btn-primary btn-block" type="submit"><i class="fa-solid fa-arrows-rotate"></i>Replace numbers</button></form><div data-out style="margin-top:10px"></div>`,
   });
+  bindNotifyPanel(sh.el);
   const f = $('[name=file]', sh.el);
   f.addEventListener('change', () => { $('[data-fn]', sh.el).textContent = f.files[0]?.name || ''; });
   $('[data-rep]', sh.el).addEventListener('submit', async (e) => {
@@ -36,6 +38,7 @@ function replaceSheet(s, c) {
     if (!f.files[0]) return toast('Choose a file first', 'warning');
     const fd = new FormData();
     fd.append('file', f.files[0]); fd.append('service_id', String(s.id)); fd.append('replace', '1');
+    for (const [k, val] of Object.entries(notifyValues(sh.el))) fd.set(k, val);
     await withLoading(e.submitter, async () => {
       try {
         const r = await api('/admin/resources/import', { method: 'POST', form: fd });
@@ -142,7 +145,7 @@ export async function mount(el) {
             ${services.map((s) => `<option value="${s.id}">${esc(s.country_code)} ${esc(s.app_code)} · ${esc(s.country_name)} ${esc(s.app_name)}</option>`).join('')}</select></div>
           <label class="switch" style="margin-bottom:10px"><input type="checkbox" name="replace"><span class="track"></span><span>Replace: delete this service's old numbers first</span></label><br>
           <label class="switch" style="margin-bottom:10px"><input type="checkbox" name="create_missing"><span class="track"></span><span>Create missing services automatically</span></label><br>
-          <label class="switch" style="margin-bottom:14px"><input type="checkbox" name="notify"><span class="track"></span><span>Notify users about new numbers</span></label>
+          ${notifyPanelHtml({ toggle: true, title: 'New numbers available', body: '' })}
           <button class="btn btn-primary btn-block" type="submit"><i class="fa-solid fa-upload"></i>Import</button></form>
         <div data-report style="margin-top:14px"></div></div>
         <div class="card"><div class="card-head"><h2>Format</h2></div><p class="muted small">First row must be a header. Columns: <code>country, service, resource, status</code>.</p>
@@ -154,13 +157,14 @@ IQ,WS,TEST-200001,available</pre>
         <p class="small muted">Also accepted: <code>;</code> or tab separators and headers like <code>number</code> / <code>phone</code>. Duplicates are skipped. Status may be <code>available</code>, <code>disabled</code> or <code>retired</code>.</p>
         <a class="btn btn-ghost btn-sm" href="data:text/csv;charset=utf-8,country%2Cservice%2Cresource%2Cstatus%0APK%2CTG%2CTEST-100001%2Cavailable%0APK%2CTG%2CTEST-100002%2Cavailable%0AIQ%2CWS%2CTEST-200001%2Cavailable%0A" download="resources-sample.csv"><i class="fa-solid fa-download"></i>Sample CSV</a></div></div>`;
       const file = $('[name=file]', pane);
+      bindNotifyPanel(pane);
       file.addEventListener('change', () => { $('[data-fname]', pane).textContent = file.files[0]?.name || ''; });
       $('[data-import]', pane).addEventListener('submit', async (e) => {
         e.preventDefault();
         if (!file.files[0]) return toast('Choose a file first', 'warning');
         const fd = new FormData(e.target);
         fd.set('create_missing', e.target.create_missing.checked ? '1' : '0');
-        fd.set('notify', e.target.notify.checked ? '1' : '0');
+        for (const [k, val] of Object.entries(notifyValues(e.target))) fd.set(k, val);
         fd.set('replace', e.target.replace.checked ? '1' : '0');
         if (e.target.replace.checked && !e.target.service_id.value) return toast('Choose the service in "Import into" to replace its numbers', 'warning');
         await withLoading(e.submitter, async () => {
@@ -169,7 +173,7 @@ IQ,WS,TEST-200001,available</pre>
             toast(r.message);
             const rep = r.report;
             $('[data-report]', pane).innerHTML = rep ? `<div class="alert success"><i class="fa-solid fa-circle-check"></i><div>
-              <strong>${num(rep.inserted)}</strong> imported · ${num(rep.duplicates)} duplicates · ${num(rep.invalid)} invalid · ${num(rep.created_services)} services created (batch ${esc(rep.batch)})
+              <strong>${num(rep.inserted)}</strong> imported · ${num(rep.duplicates)} duplicates · ${num(rep.invalid)} invalid · ${num(rep.created_services)} services created (batch ${esc(rep.batch)})${rep.notified ? `<br><i class="fa-regular fa-bell"></i> Notified: ${num(rep.notified.inapp)} in-app · ${num(rep.notified.email)} email · ${num(rep.notified.push)} push` : ''}
               ${rep.errors.length ? `<ul class="small">${rep.errors.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}</div></div>` : `<div class="alert info">${esc(r.message)}</div>`;
           } catch (err) { toastError(err); }
         });

@@ -129,3 +129,58 @@ export function formSheet({ title, icon = 'fa-solid fa-pen', fields, submitLabel
 
 export const btn = (a, icon, title, cls = 'btn-ghost') => `<button class="btn btn-xs ${cls}" data-a="${esc(a)}" title="${esc(title)}" aria-label="${esc(title)}"><i class="${esc(icon)}"></i></button>`;
 export const tbtn = (a, label, cls = 'btn-ghost') => `<button class="btn btn-xs ${cls}" data-a="${esc(a)}">${esc(label)}</button>`;
+
+/**
+ * Shared "who gets told, and how" panel: all users or specific users (by email),
+ * a message, and the channels (in-app bell, email, browser push).
+ * `toggle: true` adds an on/off switch that reveals the panel.
+ */
+export function notifyPanelHtml({ toggle = false, title = '', body = '', showTitle = true } = {}) {
+  return `<div class="notify-panel" data-notify-panel>
+    ${toggle ? '<label class="switch" style="margin-bottom:10px"><input type="checkbox" name="notify" data-notify-on><span class="track"></span><span>Notify users</span></label>' : ''}
+    <div class="notify-body" ${toggle ? 'hidden' : ''}>
+      <div class="field"><label>Send to</label><div class="seg">
+        <label><input type="radio" name="notify_to" value="all" checked><span><i class="fa-solid fa-users"></i>All users</span></label>
+        <label><input type="radio" name="notify_to" value="users"><span><i class="fa-solid fa-user"></i>Specific users</span></label></div></div>
+      <div class="field" data-notify-users hidden><label>User emails</label><textarea class="input" name="notify_users" rows="2" placeholder="one@gmail.com, two@gmail.com"></textarea><span class="hint">Separate with commas or new lines.</span></div>
+      ${showTitle ? `<div class="field"><label>Title</label><input class="input" name="notify_title" maxlength="160" value="${esc(title)}" placeholder="New numbers available"></div>` : ''}
+      <div class="field"><label>Message</label><textarea class="input" name="notify_body" rows="3" maxlength="500" placeholder="Write your message…">${esc(body)}</textarea></div>
+      <div class="field"><label>Send by</label><div class="chk-row">
+        <label class="chk"><input type="checkbox" name="ch_inapp" checked><span><i class="fa-regular fa-bell"></i>In-app</span></label>
+        <label class="chk"><input type="checkbox" name="ch_email"><span><i class="fa-regular fa-envelope"></i>Email</span></label>
+        <label class="chk"><input type="checkbox" name="ch_push" checked><span><i class="fa-regular fa-paper-plane"></i>Push</span></label></div>
+        <span class="hint">Users who turned a channel off in their settings are skipped. Email needs SMTP.</span></div>
+    </div></div>`;
+}
+
+export function bindNotifyPanel(root) {
+  const panel = root.querySelector('[data-notify-panel]');
+  if (!panel) return;
+  const sync = () => {
+    const on = panel.querySelector('[data-notify-on]');
+    panel.querySelector('.notify-body').hidden = !!on && !on.checked;
+    const specific = panel.querySelector('[name=notify_to][value=users]').checked;
+    panel.querySelector('[data-notify-users]').hidden = !specific;
+  };
+  panel.addEventListener('change', sync);
+  sync();
+}
+
+/** The panel's values with explicit 1/0 for every channel (safe for JSON and multipart). */
+export function notifyValues(root) {
+  const q = (s) => root.querySelector(s);
+  const on = q('[data-notify-on]');
+  const out = {
+    notify: on ? (on.checked ? '1' : '0') : '1',
+    notify_to: q('[name=notify_to]:checked')?.value || 'all',
+    notify_users: q('[name=notify_users]')?.value || '',
+    notify_body: q('[name=notify_body]')?.value || '',
+    ch_inapp: q('[name=ch_inapp]')?.checked ? '1' : '0',
+    ch_email: q('[name=ch_email]')?.checked ? '1' : '0',
+    ch_push: q('[name=ch_push]')?.checked ? '1' : '0',
+  };
+  const t = q('[name=notify_title]');
+  if (t && t.value.trim()) out.notify_title = t.value;
+  if (!out.notify_body.trim()) delete out.notify_body;
+  return out;
+}

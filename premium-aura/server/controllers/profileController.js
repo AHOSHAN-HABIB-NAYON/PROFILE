@@ -7,6 +7,7 @@ const audit = require('../models/auditLog');
 const twofa = require('../services/twofa');
 const quota = require('../services/quota');
 const mailer = require('../services/mailer');
+const push = require('../services/push');
 const money = require('../utils/money');
 const v = require('../utils/validate');
 const { E } = require('../utils/errors');
@@ -64,7 +65,7 @@ exports.changePassword = async (req, res) => {
   await db.run('UPDATE user_security SET password_changed_at = UTC_TIMESTAMP() WHERE user_id = ?', [req.user.id]);
   await db.run('DELETE FROM user_sessions WHERE user_id = ? AND session_id <> ?', [req.user.id, req.sessionID]);
   await audit.log(req, 'password.changed', { category: 'security', targetType: 'user', targetId: req.user.id });
-  mailer.send({ to: req.user.email, subject: 'Your password was changed', title: 'Security alert',
+  if (req.user.notify_security !== 0) mailer.send({ to: req.user.email, subject: 'Your password was changed', title: 'Security alert',
     text: `Your ${await settings.get('site_name')} password was changed. Other sessions were signed out. If this was not you, reset your password immediately.` }).catch(() => {});
   res.json({ ok: true, message: 'Password changed. Other devices were signed out.' });
 };
@@ -99,7 +100,7 @@ exports.twofaConfirm = async (req, res) => {
   if (!out.ok) throw E.badRequest('That code is not valid. Check your authenticator app time and try again.');
   req.session.twofaSetupAt = null;
   await audit.log(req, '2fa.enabled', { category: 'security', targetType: 'user', targetId: req.user.id });
-  mailer.send({ to: req.user.email, subject: 'Two-factor authentication enabled', title: 'Security alert', text: '2FA was enabled on your account.' }).catch(() => {});
+  if (req.user.notify_security !== 0) mailer.send({ to: req.user.email, subject: 'Two-factor authentication enabled', title: 'Security alert', text: '2FA was enabled on your account.' }).catch(() => {});
   res.json({ ok: true, message: 'Two-factor authentication enabled', recovery_codes: out.recoveryCodes });
 };
 
@@ -110,7 +111,7 @@ exports.twofaDisable = async (req, res) => {
   if (!ok.ok) throw E.badRequest('Invalid verification code');
   await twofa.disable(req.user.id);
   await audit.log(req, '2fa.disabled', { category: 'security', targetType: 'user', targetId: req.user.id });
-  mailer.send({ to: req.user.email, subject: 'Two-factor authentication disabled', title: 'Security alert', text: '2FA was turned off on your account. If this was not you, secure your account now.' }).catch(() => {});
+  if (req.user.notify_security !== 0) mailer.send({ to: req.user.email, subject: 'Two-factor authentication disabled', title: 'Security alert', text: '2FA was turned off on your account. If this was not you, secure your account now.' }).catch(() => {});
   res.json({ ok: true, message: 'Two-factor authentication disabled' });
 };
 
@@ -138,4 +139,32 @@ exports.file = async (req, res) => {
   res.set('Content-Disposition', `inline; filename="file-${f.id}"`);
   res.set('Cache-Control', 'private, max-age=300');
   if (!(await fileStorage.sendStored(res, f))) throw E.notFound('This file is no longer available');
+};
+
+/** The user's own notification preferences (bell, email, push, security alerts). */
+exports.notificationPrefs = async (req, res) => {
+  const b = req.body || {};
+  const val = (k) => (b[k] === undefined ? undefined : (v.bool(b[k]) ? 1 : 0));
+  const prefs = { notify_inapp: val('inapp'), notify_email: val('email'), notify_push: val('push'), notify_security: val('security') };
+  const set = Object.entries(prefs).filter(([, x]) => x !== undefined);
+  if (!set.length) throw E.badRequest('Nothing to save');
+  await db.run(`UPDATE users SET ${set.map(([k]) => `${k} = ?`).join(', ')} WHERE id = ?`, [...set.map(([, x]) => x), req.user.id]);
+  res.json({ ok: true, message: 'Notification settings saved' });
+};
+
+exports.pushKey = async (req, res) => res.json({ ok: true, key: await push.publicKey() });
+
+exports.pushSubscribe = async (req, res) => {
+  if (!(await push.subscribe(req.user.id, req.body.subscription, req.get('user-agent')))) throw E.badRequest('Invalid push subscription');
+  res.json({ ok: true, message: 'Push notifications enabled on this device' });
+};
+
+exports.pushUnsubscribe = async (req, res) => {
+  await push.unsubscribe(req.user.id, req.body.endpoint);
+  res.json({ ok: true, message: 'Push notifications turned off on this device' });
+};
+
+exports.pushTest = async (req, res) => {
+  const n = await push.sendToUser(req.user.id, { title: 'Premium Aura', body: 'Push notifications are working ✅', link: '/settings' });
+  res.json({ ok: true, sent: n, message: n ? 'Test notification sent' : 'No device is subscribed (or push is turned off)' });
 };

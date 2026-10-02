@@ -175,7 +175,7 @@ io.use(async (socket, next) => {
   try {
     const uid = socket.request.session?.userId;
     if (!state.ready || !uid) return next(new Error('unauthorized'));
-    const user = await db.one("SELECT id, role, status FROM users WHERE id = ? AND status = 'active'", [uid]);
+    const user = await db.one("SELECT id, role, status, block_otp FROM users WHERE id = ? AND status = 'active'", [uid]);
     if (!user) return next(new Error('unauthorized'));
     socket.data.user = user;
     next();
@@ -183,7 +183,7 @@ io.use(async (socket, next) => {
 });
 io.on('connection', (socket) => {
   const u = socket.data.user;
-  socket.join(['feed', `user:${u.id}`]);
+  socket.join(u.block_otp && u.role !== 'admin' ? [`user:${u.id}`] : ['feed', `user:${u.id}`]);
   if (u.role === 'admin') socket.join('admins');
 });
 

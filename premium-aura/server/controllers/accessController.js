@@ -29,7 +29,11 @@ exports.list = async (req, res) => {
 };
 
 /** Allocate one available resource (or a specific one when claiming from search). */
+const RESTRICTED_NUMBERS = 'Your access to numbers has been restricted. Please contact support.';
+const restrictedNumbers = (req) => { if (req.user.block_numbers && req.user.role !== 'admin') throw E.forbidden(RESTRICTED_NUMBERS, { code: 'RESTRICTED_NUMBERS' }); };
+
 async function allocate(req, { serviceId = null, resourceId = null }) {
+  restrictedNumbers(req);
   const uid = req.user.id;
   await quota.checkInterval(uid);
   const result = await db.transaction(async (tx) => {
@@ -103,7 +107,8 @@ exports.mine = async (req, res) => {
     ),
     db.query(`SELECT COUNT(*) AS n FROM resource_assignments a WHERE ${where}`, [req.user.id]),
   ]);
-  res.json({ ok: true, items: items.map(withDisplay), pagination: meta(n, p) });
+  const hideCodes = !!req.user.block_otp && req.user.role !== 'admin';
+  res.json({ ok: true, items: items.map((x) => ({ ...withDisplay(x), last_code: hideCodes ? null : x.last_code })), pagination: meta(n, p), otp_restricted: hideCodes });
 };
 
 exports.release = async (req, res) => {
@@ -125,6 +130,7 @@ exports.release = async (req, res) => {
  * access — their own assignments, or currently-available authorized resources.
  */
 exports.search = async (req, res) => {
+  restrictedNumbers(req);
   const serial = v.str(req.query.serial, { name: 'Serial', required: true, pattern: /^\d{5,8}$/ });
   const serviceId = req.query.service_id ? v.id(req.query.service_id, 'service_id') : null;
   const like = `%${serial}%`;

@@ -17,6 +17,7 @@ exports.getSettings = async (req, res) => {
   const all = { ...(await settings.loadAll(true)) };
   all.has_google_secret = !!all.google_client_secret;
   all.google_client_secret = ''; // write-only
+  delete all.vapid_private_key;
   res.json({ ok: true, settings: all, has_sharp: fileStorage.hasSharp() });
 };
 

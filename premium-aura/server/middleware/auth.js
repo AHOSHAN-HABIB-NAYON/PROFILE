@@ -10,7 +10,8 @@ async function loadUser(req, res, next) {
     const uid = req.session?.userId;
     if (!uid || !db.isReady()) return next();
     const user = await db.one(
-      `SELECT id, name, email, role, status, email_verified_at, theme, timezone, created_at, address, binance_uid
+      `SELECT id, name, email, role, status, email_verified_at, theme, timezone, created_at, address, binance_uid,
+              block_numbers, block_otp, notify_inapp, notify_email, notify_push, notify_security
        FROM users WHERE id = ?`, [uid],
     );
     if (!user || user.status === 'suspended') {

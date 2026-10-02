@@ -6,6 +6,7 @@ const importer = require('../../services/importer');
 const fileStorage = require('../../services/fileStorage');
 const quota = require('../../services/quota');
 const realtime = require('../../services/realtime');
+const notifyService = require('../../services/notify');
 const { servicesWithCounts } = require('../accessController');
 const v = require('../../utils/validate');
 const { E } = require('../../utils/errors');
@@ -130,12 +131,12 @@ exports.importResources = async (req, res) => {
   if (report.inserted && v.bool(req.body.notify)) {
     // Tell users *where* numbers were added — never how many.
     const svcs = report.service_ids.length
-      ? await db.query("SELECT country_code, app_code, country_name, app_name FROM services WHERE id IN (?) AND status = 'active' LIMIT 6", [report.service_ids]) : [];
+      ? await db.query("SELECT country_code, app_code FROM services WHERE id IN (?) AND status = 'active' LIMIT 6", [report.service_ids]) : [];
     const where = svcs.map((x) => `${x.country_code} ${x.app_code}`).join(', ');
-    await notifications.broadcast({
-      type: 'resource', title: 'New numbers available',
-      body: where ? `Fresh numbers added: ${where}. Get yours now!` : 'Fresh numbers were added. Get yours now!', link: '/access',
+    const msg = await notifyService.fromRequest(req.body, {
+      title: 'New numbers available', body: where ? `Fresh numbers added: ${where}. Get yours now!` : 'Fresh numbers were added. Get yours now!',
     });
+    report.notified = await notifyService.deliver({ ...msg, type: 'resource', link: '/access' });
   }
   delete report.service_ids;
   const replaced = report.replaced ? ` · ${report.replaced.removed} old number(s) removed` : '';

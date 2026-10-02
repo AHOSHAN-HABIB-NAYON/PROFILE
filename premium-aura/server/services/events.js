@@ -8,6 +8,7 @@ const db = require('../config/database');
 const settings = require('../models/settings');
 const wallet = require('../models/wallet');
 const realtime = require('./realtime');
+const push = require('./push');
 const money = require('../utils/money');
 const { sha256 } = require('../utils/crypto');
 const { countryFromNumber } = require('../utils/dialCodes');
@@ -154,10 +155,18 @@ async function ingest(provider, events, sourceId = null) {
       [result.id],
     );
     realtime.broadcast('activity:new', activityItem(row, showCode));
-    if (result.userId) {
+    const owner = result.userId ? await db.one('SELECT block_otp FROM users WHERE id = ?', [result.userId]) : null;
+    if (result.userId && !owner?.block_otp) {
       // Instant in-place update of the owner's number list (Access page).
       if (result.assignmentId) realtime.toUser(result.userId, 'resource:otp', { assignment_id: result.assignmentId, code: ev.code, application: row.application });
       realtime.toUser(result.userId, 'event:new', publicEvent(row, { userId: result.userId }));
+      // …and to their phone/browser even when the app is closed.
+      push.sendToUser(result.userId, {
+        title: `🔑 ${ev.code} · ${row.country_code || ''} ${row.application}`.replace(/\s+/g, ' ').trim(),
+        body: `OTP received on ${maskNumber(row.resource_value)} — tap to open`, link: '/access', tag: `otp-${result.assignmentId || row.id}`,
+      }).catch(() => {});
+    }
+    if (result.userId) {
       if (result.balance !== null) { stats.credited += 1; wallet.emitBalance(result.userId, result.balance); }
     }
     if (publicFeed) realtime.broadcast('event:public', publicEvent(row)); // after the owner's copy so theirs is marked "Your number"

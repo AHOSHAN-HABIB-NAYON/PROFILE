@@ -35,6 +35,9 @@ const DEFAULTS = {
   admin_alert_email: '',
   // Users who lost their authenticator can get a one-time code by email (2FA is then turned off)
   twofa_email_recovery: '1',
+  // Browser push (generated automatically; private key encrypted)
+  vapid_public_key: '',
+  vapid_private_key: '',
   // Sign in with Google (OAuth 2.0). The client secret is stored encrypted.
   google_login_enabled: '0',
   google_client_id: '',

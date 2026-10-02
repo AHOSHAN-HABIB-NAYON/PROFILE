@@ -33,7 +33,7 @@ exports.list = async (req, res) => {
   const sort = SORTS[req.query.sort] || 'u.id';
   const dir = req.query.dir === 'asc' ? 'ASC' : 'DESC';
   const rows = await db.query(
-    `SELECT u.id, u.name, u.email, u.role, u.status, u.email_verified_at, u.created_at, u.last_active_at,
+    `SELECT u.id, u.name, u.email, u.role, u.status, u.email_verified_at, u.created_at, u.last_active_at, u.block_numbers, u.block_otp,
             COALESCE(w.balance, 0) AS balance,
             (SELECT COUNT(*) FROM resource_assignments a WHERE a.user_id = u.id) AS used_resources,
             (SELECT COUNT(*) FROM event_records e WHERE e.user_id = u.id) AS event_count,
@@ -100,6 +100,20 @@ exports.suspend = async (req, res) => { await setStatus(req, v.id(req.params.id)
 exports.unsuspend = async (req, res) => { await setStatus(req, v.id(req.params.id), 'active'); res.json({ ok: true, message: 'User reactivated' }); };
 
 /** User lost their authenticator and recovery codes: turn 2FA off so they can sign in with the password. */
+/** Restrict a user: no new numbers and/or no OTP access. */
+exports.restrict = async (req, res) => {
+  const id = v.id(req.params.id);
+  const u = await db.one('SELECT id, role FROM users WHERE id = ?', [id]);
+  if (!u) throw E.notFound('User not found');
+  if (u.role === 'admin') throw E.badRequest('Admins cannot be restricted');
+  const numbers = v.bool(req.body.numbers) ? 1 : 0;
+  const otp = v.bool(req.body.otp) ? 1 : 0;
+  await db.run('UPDATE users SET block_numbers = ?, block_otp = ? WHERE id = ?', [numbers, otp, id]);
+  await audit.log(req, 'user.restrict', { category: 'security', targetType: 'user', targetId: id, details: { numbers, otp } });
+  const parts = [numbers && 'numbers', otp && 'OTPs'].filter(Boolean);
+  res.json({ ok: true, message: parts.length ? `Blocked: ${parts.join(' and ')}` : 'All restrictions removed' });
+};
+
 exports.reset2fa = async (req, res) => {
   const id = v.id(req.params.id);
   const u = await db.one('SELECT id, email FROM users WHERE id = ?', [id]);

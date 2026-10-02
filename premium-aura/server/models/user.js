@@ -34,6 +34,8 @@ function toPublic(u) {
     initial: String(u.name || u.email || '?').trim().charAt(0).toUpperCase(),
     email_verified: !!u.email_verified_at, theme: u.theme, timezone: u.timezone,
     address: u.address || '', binance_uid: u.binance_uid || '', created_at: u.created_at,
+    restrictions: { numbers: !!u.block_numbers, otp: !!u.block_otp },
+    notify: { inapp: u.notify_inapp !== 0, email: u.notify_email !== 0, push: u.notify_push !== 0, security: u.notify_security !== 0 },
   };
 }
 

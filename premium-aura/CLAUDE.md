@@ -22,11 +22,11 @@ field gets what), and after each change send a fresh zip.
 - `npm test` runs `node --test tests/acceptance.test.js` against a **running installed server** on
   :3000 (admin@example.com / Admin12345), with MySQL up. Start the server with
   `GOOGLE_OAUTH_MOCK=http://127.0.0.1:4599` (the Google test uses a mock). Run the suite once per server
-  start: the login rate limiters remember earlier runs. All tests must pass before shipping (37 at last count).
+  start: the login rate limiters remember earlier runs. All tests must pass before shipping (38 at last count).
 - Zip for the owner: `git archive --format=zip --prefix=premium-aura/ HEAD:premium-aura -o premium-aura.zip`.
 
 ## Conventions and rules (keep these)
-- **Schema changes go only in `database/migrations/NNNN_*.sql`** (applied on boot, in order; 0009 is
+- **Schema changes go only in `database/migrations/NNNN_*.sql`** (applied on boot, in order; 0010 is
   the latest). Never edit `schema.sql` for new columns. The SQL must work on MariaDB too:
   `TIME_TRUNCATE_FRACTIONAL` is MySQL-only.
 - **CSP forbids inline scripts.** Put JS in files. `fit.js` is loaded in `<head>` of index/auth.
@@ -65,7 +65,12 @@ field gets what), and after each change send a fresh zip.
 - Auth: email verification, optional admin approval (Pending page with WhatsApp contact, emails to the
   admins), Google OAuth (`googleAuthController.js`), TOTP 2FA with recovery codes, email-code recovery
   (turns 2FA off), and admin "Reset 2FA".
-- Notifications are admin-originated only and deleted after 24 h.
+- Notifications are admin-originated only and deleted after 24 h. Admin messages and import notices go through
+  `services/notify.js`: to all users or specific emails, by in-app / email / browser push. Users choose channels on
+  Settings (`notify_*` columns). Browser push uses `services/push.js` (web-push, VAPID keys auto-generated and
+  stored in settings). The owner's OTPs are also pushed to their devices.
+- Admin can restrict a user (`block_numbers`, `block_otp`): no Get Number/search, no OTP page/codes/feed socket.
+- PWA install popup (`app.js`): shown after ~20 s, at most every 3 days, never when installed; iOS gets Share instructions.
 - Phones: `public/assets/js/fit.js` zooms the page to a 390 px design so DPI and system font size
   don't change the look.
 
@@ -75,7 +80,6 @@ overlapping elements, Live-Activity-style rows (flag, app logo, name/number, big
 live "x sec ago"). Show "Available / Not Available", never stock counts to users.
 
 ## Possible next steps discussed
-- Web Push notifications for OTPs.
 - `/.well-known/assetlinks.json`, a "Download App" button and a privacy policy page, for a TWA APK built
   with PWABuilder. Play Store has policy risk for this kind of app, so sideloading the APK is recommended.
 - 2oo9 Cloud provider: needs the owner's key and their API docs (auth scheme unknown).

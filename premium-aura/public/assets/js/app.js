@@ -338,6 +338,7 @@ function bindGlobal() {
 
   live.on('notification:new', (n) => {
     setUnread(state.unread + 1);
+    if (state.user.notify?.inapp === false) return; // the user turned in-app alerts off (still listed under the bell)
     toast(n.title, 'info');
     playSound('notify');
   });
@@ -362,7 +363,44 @@ export async function promptInstall() {
   deferredInstall = null;
   return r.outcome === 'accepted';
 }
-window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; live.emit('pwa:installable', true); });
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; live.emit('pwa:installable', true); scheduleInstallPopup(); });
+window.addEventListener('appinstalled', () => { deferredInstall = null; try { localStorage.setItem('aura.installed', '1'); } catch { /* ignore */ } });
+
+/*
+ * "Install the app" popup: shown now and then (first after ~20 s, then at most once every 3 days
+ * after "Not now"), never when the app is already installed / running standalone.
+ */
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+let installTimer = null;
+function scheduleInstallPopup() {
+  if (installTimer || isStandalone()) return;
+  let last = 0;
+  try { if (localStorage.getItem('aura.installed') === '1') return; last = Number(localStorage.getItem('aura.installAsk') || 0); } catch { /* ignore */ }
+  if (Date.now() - last < 3 * 86400_000) return;
+  installTimer = setTimeout(showInstallPopup, 20_000);
+}
+function showInstallPopup() {
+  if (isStandalone() || (!deferredInstall && !isIos()) || document.querySelector('.sheet.show')) return;
+  try { localStorage.setItem('aura.installAsk', String(Date.now())); } catch { /* ignore */ }
+  const name = esc(state.site?.pwa_name || state.site?.site_name || 'Premium Aura');
+  const s = sheet({
+    title: '', body: `<div class="install-pop">
+      <div class="install-icon"><img src="${esc(state.site?.pwa_icon_url || '/assets/icons/icon-192.png')}" alt=""></div>
+      <h2>Install ${name}</h2>
+      <p class="muted">Get OTPs faster with a full-screen app on your home screen.</p>
+      <ul class="install-points"><li><i class="fa-solid fa-bolt"></i>Opens instantly, no browser bar</li><li><i class="fa-regular fa-bell"></i>OTP notifications even when closed</li><li><i class="fa-solid fa-feather"></i>Tiny — no app store needed</li></ul>
+      ${deferredInstall ? '<button class="btn btn-primary btn-block" data-install-now><i class="fa-solid fa-download"></i>Install app</button>'
+    : '<div class="install-ios"><i class="fa-solid fa-arrow-up-from-bracket"></i> Tap <strong>Share</strong> in Safari, then <strong>Add to Home Screen</strong></div>'}
+      <button class="btn btn-ghost btn-block" data-close style="margin-top:8px">Not now</button></div>`,
+  });
+  s.el.querySelector('[data-install-now]')?.addEventListener('click', async () => {
+    const ok = await promptInstall();
+    s.close();
+    if (ok) toast('Installed! Open it from your home screen 🎉', 'success');
+  });
+}
+if (isIos()) scheduleInstallPopup();
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js').catch(() => {}));
 }

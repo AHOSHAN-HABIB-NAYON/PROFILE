@@ -3,6 +3,7 @@ const sanitizeHtml = require('sanitize-html');
 const db = require('../../config/database');
 const audit = require('../../models/auditLog');
 const notifications = require('../../models/notification');
+const notifyService = require('../../services/notify');
 const fileStorage = require('../../services/fileStorage');
 const { CATEGORIES } = require('../newsController');
 const v = require('../../utils/validate');
@@ -139,18 +140,12 @@ exports.notifications = async (req, res) => {
 
 exports.sendNotification = async (req, res) => {
   const type = v.oneOf(req.body.type, notifications.TYPES, { def: 'system' });
-  const title = v.str(req.body.title, { name: 'Title', required: true, max: 160 });
-  const body = v.str(req.body.body, { name: 'Message', max: 500 }) || null;
   const link = v.str(req.body.link, { name: 'Link', max: 255, pattern: /^\/[\w\-/?=&.]*$/ }) || null;
-  let count;
-  if (req.body.user_email) {
-    const u = await db.one('SELECT id FROM users WHERE email = ?', [v.email(req.body.user_email)]);
-    if (!u) throw E.notFound('User not found');
-    await notifications.notify(u.id, { type, title, body, link });
-    count = 1;
-  } else {
-    count = await notifications.broadcast({ type, title, body, link });
-  }
-  await audit.log(req, 'notification.send', { details: { type, title, count } });
-  res.json({ ok: true, message: `Sent to ${count} user(s)` });
+  // Backward compatible: a single "user_email" means "only this user".
+  const b = { ...req.body };
+  if (!b.to && b.user_email) b.to = 'users';
+  const msg = await notifyService.fromRequest(b);
+  const out = await notifyService.deliver({ ...msg, type, link });
+  await audit.log(req, 'notification.send', { details: { type, title: msg.title, to: msg.to, channels: msg.channels, ...out } });
+  res.json({ ok: true, sent: out, message: `Sent: ${notifyService.summary(out)}` });
 };
