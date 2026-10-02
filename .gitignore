@@ -1,0 +1,12 @@
+# Secrets & runtime data (created by the installer / at runtime)
+config/env.php
+config/install-key.txt
+storage/installed.lock
+storage/logs/*
+storage/cache/*
+storage/sessions/*
+storage/private/*
+!storage/**/.gitkeep
+assets/uploads/*
+!assets/uploads/.gitkeep
+!assets/uploads/.htaccess
