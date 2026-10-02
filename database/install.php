@@ -25,7 +25,6 @@ $req = [
     'mbstring' => extension_loaded('mbstring'),
     'GD (images)' => extension_loaded('gd'),
     'OpenSSL' => extension_loaded('openssl'),
-    'Sodium' => function_exists('sodium_crypto_secretbox'),
     'cURL' => extension_loaded('curl'),
     'fileinfo' => extension_loaded('fileinfo'),
     'config/ writable' => is_writable(ROOT . '/config'),
@@ -69,11 +68,8 @@ if (is_post()) {
             $sql = preg_replace('~^\s*--.*$~m', '', (string)file_get_contents(ROOT . '/database/schema.sql'));
             foreach (array_filter(array_map('trim', explode(";\n", $sql))) as $stmt) $pdo->exec($stmt);
 
-            $appKey = random_bytes(SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
-            $enc = function (string $plain) use ($appKey): string {
-                $n = random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
-                return 'enc:' . base64_encode($n . sodium_crypto_secretbox($plain, $n, $appKey));
-            };
+            $appKey = random_bytes(32);
+            $enc = fn(string $plain): string => encrypt_with_key($plain, $appKey);
             $pdo->beginTransaction();
             $pdo->prepare('INSERT INTO users (name, email, password_hash, role, email_verified_at, lang) VALUES (?, ?, ?, "admin", NOW(), ?)')
                 ->execute([$aName, $aEmail, password_hash($aPass, PASSWORD_BCRYPT, ['cost' => 12]), $lang]);

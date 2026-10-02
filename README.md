@@ -91,7 +91,7 @@ HttpOnly/Secure/SameSite cookies · login lockout + rate limits (MySQL-backed) �
 2FA (TOTP + one-time recovery codes) · passkeys (WebAuthn, ES256/RS256) · email login codes / new-device verification ·
 CSP with nonces + security headers · uploads checked by extension + MIME + decode, re-encoded, random names,
 non-executable folder; payment screenshots stored privately and served only to the owner or staff ·
-secrets (SMTP password, API keys, 2FA seeds, VAPID key) encrypted at rest with libsodium · role-based permissions
+secrets (SMTP password, API keys, 2FA seeds, VAPID key) encrypted at rest (AES-256-GCM via OpenSSL) · role-based permissions
 (admin, editor, support, user) · full admin audit log · friendly error pages (technical errors go only to
 `storage/logs/php-error.log`).
 

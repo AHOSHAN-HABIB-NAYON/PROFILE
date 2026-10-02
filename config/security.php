@@ -109,28 +109,47 @@ function rate_limit(string $bucket, int $max, int $seconds): void
 }
 
 // ---------------------------------------------------------------------
-// Encryption at rest (libsodium secretbox, key from env)
+// Encryption at rest: AES-256-GCM via OpenSSL (available on every host).
+// Values written by older builds with libsodium ("enc:") are still readable
+// when the sodium extension exists.
 // ---------------------------------------------------------------------
 function app_key(): string
 {
     $k = base64_decode((string)(ENV['app_key'] ?? ''), true);
-    if (!$k || strlen($k) !== SODIUM_CRYPTO_SECRETBOX_KEYBYTES) throw new RuntimeException('APP key missing');
+    if (!$k || strlen($k) !== 32) throw new RuntimeException('APP key missing');
     return $k;
+}
+
+/** Encrypt with an explicit 32-byte key (also used by the installer). */
+function encrypt_with_key(string $plain, string $key): string
+{
+    $iv = random_bytes(12);
+    $cipher = openssl_encrypt($plain, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag);
+    if ($cipher === false) throw new RuntimeException('Encryption failed');
+    return 'gcm:' . base64_encode($iv . $tag . $cipher);
 }
 
 function encrypt_value(string $plain): string
 {
-    $nonce = random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
-    return 'enc:' . base64_encode($nonce . sodium_crypto_secretbox($plain, $nonce, app_key()));
+    return encrypt_with_key($plain, app_key());
 }
 
 function decrypt_value(string $stored): string
 {
-    if (!str_starts_with($stored, 'enc:')) return $stored;
-    $raw = base64_decode(substr($stored, 4), true);
-    if ($raw === false || strlen($raw) < SODIUM_CRYPTO_SECRETBOX_NONCEBYTES) return '';
-    $plain = sodium_crypto_secretbox_open(substr($raw, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES), substr($raw, 0, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES), app_key());
-    return $plain === false ? '' : $plain;
+    if (str_starts_with($stored, 'gcm:')) {
+        $raw = base64_decode(substr($stored, 4), true);
+        if ($raw === false || strlen($raw) < 29) return '';
+        $plain = openssl_decrypt(substr($raw, 28), 'aes-256-gcm', app_key(), OPENSSL_RAW_DATA, substr($raw, 0, 12), substr($raw, 12, 16));
+        return $plain === false ? '' : $plain;
+    }
+    if (str_starts_with($stored, 'enc:')) {
+        if (!function_exists('sodium_crypto_secretbox_open')) return '';
+        $raw = base64_decode(substr($stored, 4), true);
+        if ($raw === false || strlen($raw) < 24) return '';
+        $plain = sodium_crypto_secretbox_open(substr($raw, 24), substr($raw, 0, 24), app_key());
+        return $plain === false ? '' : $plain;
+    }
+    return $stored;
 }
 
 /** Keyed hash for tokens/visitor ids (never store raw tokens). */

@@ -50,7 +50,7 @@ $q = mb_substr(input('q'), 0, 80);
         ['Storage writable', is_writable(ROOT . '/storage') && is_writable(ROOT . '/assets/uploads'), 'storage/ and assets/uploads/ must be writable by PHP.'],
         ['display_errors off', !ini_get('display_errors'), 'Errors are logged to storage/logs, never shown to visitors.'],
         ['GD WebP support', function_exists('imagewebp'), 'Needed for WebP conversion of uploads.'],
-        ['Sodium (encryption)', function_exists('sodium_crypto_secretbox'), 'Secrets (SMTP/API keys, 2FA seeds) are encrypted at rest.'],
+        ['OpenSSL AES-256-GCM', in_array('aes-256-gcm', openssl_get_cipher_methods(), true), 'Secrets (SMTP/API keys, 2FA seeds) are encrypted at rest.'],
         ['Admin 2FA required', setting_bool('security.require_2fa_admin'), 'Optional: force staff accounts to use 2FA.'],
         ['reCAPTCHA', recaptcha_enabled(), 'Optional: protects login, registration, contact.'],
     ];
