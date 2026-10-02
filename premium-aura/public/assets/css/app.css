@@ -825,11 +825,6 @@ table.table { width: 100%; border-collapse: separate; border-spacing: 0; }
 .bot-act { display: inline-flex; align-items: center; gap: 6px; margin: 6px 6px 0 0; padding: 6px 11px; border-radius: 99px; border: 1px solid var(--primary); background: var(--card); color: var(--primary); font-size: 12px; font-weight: 500; cursor: pointer; text-decoration: none; }
 .bot-act.wa { border-color: #25D366; background: #25D366; color: #fff; }
 .bot-quick .bot-act { margin: 0; }
-.bot-table { display: grid; gap: 6px; margin: 8px 0; }
-.bot-table > div { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; }
-.bot-table span { font-weight: 600; color: var(--primary); }
-.bot-bar { grid-column: 1 / -1; height: 5px; border-radius: 99px; background: var(--border); overflow: hidden; }
-.bot-bar i { display: block; height: 100%; background: var(--grad); border-radius: 99px; }
 .bot-note { font-size: 11.5px; color: var(--muted); margin: 6px 0 0; }
 .bot-chips { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0; }
 .bot-chips span { padding: 3px 8px; border-radius: 99px; background: var(--grad-soft); color: var(--primary); font-size: 11.5px; font-weight: 500; }
@@ -849,5 +844,9 @@ table.table { width: 100%; border-collapse: separate; border-spacing: 0; }
 .bot-msg { min-width: 0; max-width: 100%; }
 .bot-bubble { min-width: 0; overflow-wrap: anywhere; }
 .bot-msg.from-bot .bot-bubble { max-width: 92%; }
-.bot-table > div, .bot-plans > div { grid-template-columns: minmax(0, 1fr) auto; }
-.bot-table b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bot-plans > div { grid-template-columns: minmax(0, 1fr) auto; }
+.bot-countries { display: grid; gap: 6px; margin: 8px 0; }
+.bot-countries > div { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: var(--card-2); }
+.bot-countries .bot-flag { grid-row: 1 / 3; font-size: 22px; line-height: 1; }
+.bot-countries b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bot-countries small { color: var(--muted); font-size: 11px; }

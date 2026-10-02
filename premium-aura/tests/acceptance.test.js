@@ -255,14 +255,14 @@ test('serial search only returns accessible resources', async () => {
   assert.equal((await user.get('/api/resource/search?serial=123456789')).status, 400, 'max 8 digits');
 });
 
-test('chat bot info: ranges with success %, plans, support contact; no stock counts or provider names', async () => {
+test('chat bot info: active countries, plans, support contact; no %, stock counts or provider names', async () => {
   const r = await user.get('/api/bot/info');
   assert.equal(r.status, 200);
   assert.ok(Array.isArray(r.data.ranges) && r.data.ranges.length >= 1);
   for (const x of r.data.ranges) {
     assert.equal(typeof x.available, 'boolean');
-    assert.ok(x.success_rate === null || (x.success_rate >= 0 && x.success_rate <= 100));
-    assert.equal('provider' in x, false);
+    assert.ok(x.cc && x.app);
+    for (const key of ['success_rate', 'taken_24h', 'provider', 'count']) assert.equal(key in x, false);
   }
   assert.ok(Array.isArray(r.data.plans) && r.data.plans.length >= 1);
   assert.ok(r.data.support && 'whatsapp' in r.data.support);

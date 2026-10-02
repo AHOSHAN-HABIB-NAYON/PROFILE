@@ -34,8 +34,7 @@ const INTENTS = [
   { id: 'greet', words: k('hi', 'hello', 'hey', 'salam', 'assalamu', 'assalam', 'আসসালামু', 'সালাম', 'হাই', 'হ্যালো', 'হেলো', 'kemon', 'কেমন', 'good morning', 'good evening', 'start') },
   { id: 'thanks', words: k('thanks', 'thank', 'thx', 'ধন্যবাদ', 'dhonnobad', 'shukriya', 'ok thanks', 'great', 'nice') },
   { id: 'human', words: k('human', 'agent', 'admin', 'এডমিন', 'অ্যাডমিন', 'support', 'সাপোর্ট', 'contact', 'যোগাযোগ', 'whatsapp', 'হোয়াটসঅ্যাপ', 'হোয়াটসএপ', 'মানুষ', 'manush', 'call', 'কল', 'owner', 'মালিক', 'talk', 'কথা') },
-  { id: 'rate', words: k('%', 'percent', 'percentage', 'পার্সেন্ট', 'শতাংশ', 'success', 'rate', 'ঢুকে', 'ঢুকছে', 'dhuke', 'hit', 'hot', 'হট', 'best range', 'ভালো রেঞ্জ', 'bhalo range', 'কোন রেঞ্জ ভালো', 'koto percent', 'কত %', 'কতো %', 'live range', 'beshi', 'বেশি', 'most', 'kon range') },
-  { id: 'ranges', words: k('country', 'countries', 'দেশ', 'desh', 'range', 'ranges', 'রেঞ্জ', 'available', 'অ্যাভেইলেবল', 'কোন দেশ', 'kon desh', 'service list', 'list') },
+  { id: 'ranges', words: k('country', 'countries', 'দেশ', 'desh', 'range', 'ranges', 'রেঞ্জ', 'available', 'অ্যাভেইলেবল', 'কোন দেশ', 'kon desh', 'kon kon desh', 'কোন কোন দেশ', 'service list', 'list', 'active', 'একটিভ', 'অ্যাক্টিভ', 'এক্টিভ', 'ইক্টিভ', 'aktiv', 'চালু', 'chalu', 'on ache', 'kon range', 'কোন রেঞ্জ', 'live range', 'best range', 'ভালো রেঞ্জ', 'bhalo range') },
   { id: 'getnum', words: k('get number', 'number', 'নাম্বার', 'নম্বর', 'nambar', 'numbar', 'num', 'kivabe nibo', 'kemne nibo', 'নিব', 'নেব', 'নিবো', 'নেবো', 'নিতে', 'how to get', 'take number', 'claim') },
   { id: 'otp', words: k('otp', 'ওটিপি', 'code', 'কোড', 'sms', 'এসএমএস', 'message', 'মেসেজ', 'আসে না', 'আসছে না', 'ashena', 'asena', 'ase na', 'not coming', 'not received', 'pai na', 'পাই না', 'verification') },
   { id: 'return', words: k('return', 'ফেরত', 'ferot', 'cancel', 'বাতিল', 'release', 'x button', '10 min', '১০ মিনিট', 'pending', 'পেন্ডিং', 'expire') },
@@ -77,30 +76,32 @@ const L = (lang, bn, en) => (lang === 'bn' ? bn : en);
 const btn = (label, action, icon = '') => `<button type="button" class="bot-act" data-bot-act="${esc(action)}">${icon ? `<i class="${icon}"></i>` : ''}${esc(label)}</button>`;
 const humanBtn = (lang) => (waLink() ? `<a class="bot-act wa" href="${esc(waLink())}" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i>${L(lang, 'WhatsApp-এ কথা বলুন', 'Chat on WhatsApp')}</a>` : '');
 
-function rateList(lang) {
-  const r = (facts?.ranges || []).filter((x) => x.available);
-  if (!r.length) return L(lang, 'এই মুহূর্তে কোনো রেঞ্জে নাম্বার নেই। একটু পরে আবার দেখুন।', 'No range has numbers right now. Please check again a bit later.');
-  const rows = r.map((x) => ({ ...x, s: x.success_rate })).sort((a, b) => (b.s ?? -1) - (a.s ?? -1));
-  return `<div class="bot-table">${rows.slice(0, 8).map((x) => `<div><b>${esc(x.code)}</b><span>${x.s === null ? L(lang, 'নতুন', 'new') : `${x.s}%`}</span><div class="bot-bar"><i style="width:${x.s ?? 0}%"></i></div></div>`).join('')}</div>
-    <p class="bot-note">${L(lang, `গত ২৪ ঘণ্টায় যত নাম্বার নেওয়া হয়েছে তার কত %-এ OTP এসেছে। মোট OTP আজ: <b>${facts.otps_24h}</b>`, `Share of numbers taken in the last 24 h that received an OTP. OTPs in 24 h: <b>${facts.otps_24h}</b>`)}</p>`;
+const flag = (cc) => (/^[A-Z]{2}$/.test(cc) ? String.fromCodePoint(...[...cc].map((c) => 0x1f1a5 + c.charCodeAt(0))) : '🌐');
+
+// Active countries (ranges that have numbers right now), grouped by country. No counts.
+function countryList(lang) {
+  const by = new Map();
+  for (const x of (facts?.ranges || []).filter((r) => r.available)) {
+    const c = by.get(x.cc) || { cc: x.cc, name: x.country, apps: [] };
+    if (!c.apps.includes(x.app)) c.apps.push(x.app);
+    by.set(x.cc, c);
+  }
+  if (!by.size) return L(lang, 'এই মুহূর্তে কোনো দেশে নাম্বার নেই। একটু পরে আবার দেখুন।', 'No country has numbers right now. Please check again a bit later.');
+  return `<div class="bot-countries">${[...by.values()].map((c) => `<div><span class="bot-flag">${flag(c.cc)}</span><b>${esc(c.name || c.cc)}</b><small>${c.apps.map(esc).join(' · ')}</small></div>`).join('')}</div>`;
 }
 
 const ANSWERS = {
   greet: (l) => `${L(l, `হ্যালো${state.user?.name ? ` ${esc(state.user.name.split(' ')[0])}` : ''}! 👋 আমি Aura Assistant। কী জানতে চান?`, `Hi${state.user?.name ? ` ${esc(state.user.name.split(' ')[0])}` : ''}! 👋 I'm the Aura Assistant. What can I help with?`)}`,
   thanks: (l) => L(l, 'আপনাকেও ধন্যবাদ! 😊 আর কিছু লাগলে লিখুন।', "You're welcome! 😊 Ask me anything else."),
   human: (l) => `${L(l, 'আমাদের টিমের সাথে সরাসরি কথা বলুন:', 'Talk to our team directly:')}<br>${humanBtn(l) || L(l, 'সাপোর্ট নাম্বার এখনো সেট করা হয়নি।', 'No support number is set yet.')}`,
-  rate: (l) => `${L(l, '📊 <b>কোন রেঞ্জে কত % কোড আসছে</b>', '📊 <b>OTP success rate by range</b>')}${rateList(l)}${btn(L(l, 'নাম্বার নিন', 'Get a number'), 'go:/access', 'fa-solid fa-plus')}`,
-  ranges: (l) => {
-    const r = facts?.ranges || [];
-    const on = r.filter((x) => x.available);
-    return `${L(l, `🌍 মোট <b>${r.length}</b>টা রেঞ্জ, এখন <b>${on.length}</b>টায় নাম্বার আছে:`, `🌍 <b>${r.length}</b> ranges, <b>${on.length}</b> have numbers now:`)}<div class="bot-chips">${r.map((x) => `<span class="${x.available ? '' : 'off'}">${esc(x.code)}</span>`).join('')}</div>${btn(L(l, 'Access খুলুন', 'Open Access'), 'go:/access', 'fa-solid fa-sim-card')}`;
-  },
+  ranges: (l) => `${L(l, '🌍 <b>এখন যেসব দেশ Active আছে</b>', '🌍 <b>Countries active right now</b>')}${countryList(l)}${btn(L(l, 'নাম্বার নিন', 'Get a number'), 'go:/access', 'fa-solid fa-plus')}`,
+
   getnum: (l) => L(l,
     `📱 <b>নাম্বার নেওয়ার নিয়ম</b><ol><li><b>Access</b> পেজে যান।</li><li><b>Select Range</b> থেকে দেশ/অ্যাপ বাছুন (নিচের চিপেও চাপতে পারেন)।</li><li><b>Get Number</b> চাপুন — নাম্বার নিচের <b>Number List</b>-এ আসবে।</li><li>নাম্বার কপি করে অ্যাপে দিন — OTP এলে সাথে সাথে নাম্বারের নিচে দেখাবে।</li></ol>${btn('Access খুলুন', 'go:/access', 'fa-solid fa-sim-card')}`,
     `📱 <b>How to get a number</b><ol><li>Open <b>Access</b>.</li><li>Choose a range in <b>Select Range</b> (or tap a chip below it).</li><li>Tap <b>Get Number</b> — it appears in your <b>Number List</b>.</li><li>Copy it into the app — the OTP shows under the number instantly.</li></ol>${btn('Open Access', 'go:/access', 'fa-solid fa-sim-card')}`),
   otp: (l) => L(l,
-    `🔑 <b>OTP কোথায় দেখবেন</b><br>নাম্বার নেওয়ার পর OTP এলে <b>Number List</b>-এ নাম্বারের নিচে বসে যায় (চাপলেই কপি)। <b>OTP</b> পেজেও দেখা যায় — নাম্বারের শেষ ৪ সংখ্যা লিখে সার্চ করুন।<br><br><b>OTP আসছে না?</b><ul><li>নাম্বারটা ঠিকমতো (দেশের কোডসহ) দিয়েছেন কিনা দেখুন।</li><li>১০ মিনিটে না এলে নাম্বার ফেরত যায় — নতুন নাম্বার নিন।</li><li>যে রেঞ্জে বেশি % কোড আসছে সেটা নিন।</li></ul>${btn('কোন রেঞ্জে বেশি আসছে?', 'ask:rate', 'fa-solid fa-chart-simple')}`,
-    `🔑 <b>Where is my OTP?</b><br>When it arrives it appears under the number in your <b>Number List</b> (tap to copy). The <b>OTP</b> page shows it too — search the last 4 digits.<br><br><b>Not coming?</b><ul><li>Check you entered the number correctly (with country code).</li><li>No OTP in 10 minutes → the number returns; take a new one.</li><li>Pick a range with a higher success rate.</li></ul>${btn('Which range works best?', 'ask:rate', 'fa-solid fa-chart-simple')}`),
+    `🔑 <b>OTP কোথায় দেখবেন</b><br>নাম্বার নেওয়ার পর OTP এলে <b>Number List</b>-এ নাম্বারের নিচে বসে যায় (চাপলেই কপি)। <b>OTP</b> পেজেও দেখা যায় — নাম্বারের শেষ ৪ সংখ্যা লিখে সার্চ করুন।<br><br><b>OTP আসছে না?</b><ul><li>নাম্বারটা ঠিকমতো (দেশের কোডসহ) দিয়েছেন কিনা দেখুন।</li><li>১০ মিনিটে না এলে নাম্বার ফেরত যায় — নতুন নাম্বার নিন।</li><li>অন্য কোনো Active দেশের নাম্বার নিয়ে দেখুন।</li></ul>${btn('কোন কোন দেশ Active?', 'ask:ranges', 'fa-solid fa-earth-asia')}`,
+    `🔑 <b>Where is my OTP?</b><br>When it arrives it appears under the number in your <b>Number List</b> (tap to copy). The <b>OTP</b> page shows it too — search the last 4 digits.<br><br><b>Not coming?</b><ul><li>Check you entered the number correctly (with country code).</li><li>No OTP in 10 minutes → the number returns; take a new one.</li><li>Try a number from another active country.</li></ul>${btn('Which countries are active?', 'ask:ranges', 'fa-solid fa-earth-asia')}`),
   return: (l) => {
     const m = facts?.return_minutes || 10;
     return L(l, `⏱️ নাম্বার নেওয়ার <b>${m} মিনিটের</b> মধ্যে OTP না এলে নাম্বারটা নিজে থেকে ফেরত যায় (<b>Return</b> লেখা দেখাবে)। চাইলে আগেই ✕ চেপে ফেরত দিতে পারেন। OTP এসে গেলে নাম্বার আপনার থাকে।`,
@@ -150,7 +151,7 @@ const ANSWERS = {
 const QUICK = [
   ['getnum', 'নাম্বার কিভাবে নেব', 'How to get a number'],
   ['otp', 'OTP আসছে না', 'OTP not coming'],
-  ['rate', 'কত % কোড আসছে', 'Success rate %'],
+  ['ranges', 'কোন কোন দেশ Active', 'Active countries'],
   ['premium', 'প্রিমিয়াম প্ল্যান', 'Premium plans'],
   ['install', 'অ্যাপ ইনস্টল', 'Install app'],
   ['notify', 'নোটিফিকেশন', 'Notifications'],
@@ -167,13 +168,45 @@ let root = null;
 let lang = 'bn';
 let history = [];
 
-function save() { try { sessionStorage.setItem(HIST_KEY, JSON.stringify(history.slice(-30))); } catch { /* ignore */ } }
+const IDLE_MS = 2 * 60_000; // no chat for 2 minutes → the conversation is wiped
+let idleTimer = null;
+
+function save() { try { sessionStorage.setItem(HIST_KEY, JSON.stringify({ at: Date.now(), items: history.slice(-30) })); } catch { /* ignore */ } }
+
+function load() {
+  try {
+    const v = JSON.parse(sessionStorage.getItem(HIST_KEY) || 'null');
+    if (v && Array.isArray(v.items) && Date.now() - v.at < IDLE_MS) return v.items;
+    sessionStorage.removeItem(HIST_KEY);
+  } catch { /* ignore */ }
+  return [];
+}
+
+function wipe() {
+  clearTimeout(idleTimer);
+  history = [];
+  facts = null;
+  try { sessionStorage.removeItem(HIST_KEY); } catch { /* ignore */ }
+  const box = root?.querySelector('[data-bot-msgs]');
+  if (box) box.innerHTML = '';
+  if (root?.classList.contains('open')) greet();
+}
+
+function touch() {
+  clearTimeout(idleTimer);
+  if (history.length) idleTimer = setTimeout(wipe, IDLE_MS);
+}
+
+function greet() {
+  push('bot', ANSWERS.greet('bn'), false);
+  push('bot', `<div class="bot-quick">${QUICK.map(([id, bn]) => btn(bn, `ask:${id}`)).join('')}</div>`, false);
+}
 
 function push(who, html, persist = true) {
   const box = root.querySelector('[data-bot-msgs]');
   box.insertAdjacentHTML('beforeend', `<div class="bot-msg from-${who}"><div class="bot-bubble">${html}</div></div>`);
   box.scrollTop = box.scrollHeight;
-  if (persist) { history.push({ who, html }); save(); }
+  if (persist) { history.push({ who, html }); save(); touch(); }
 }
 
 async function answer(id, l = lang) {
@@ -198,10 +231,7 @@ function open(on) {
   root.querySelector('[data-bot-panel]').hidden = !on;
   if (on) {
     getFacts();
-    if (!history.length) {
-      push('bot', ANSWERS.greet('bn'));
-      push('bot', `<div class="bot-quick">${QUICK.map(([id, bn]) => btn(bn, `ask:${id}`)).join('')}</div>`);
-    }
+    if (!root.querySelector('[data-bot-msgs]').children.length) greet();
     setTimeout(() => root.querySelector('[data-bot-input]')?.focus({ preventScroll: true }), 200);
   }
 }
@@ -209,7 +239,7 @@ function open(on) {
 export function mountBot({ navigate } = {}) {
   if (root || !state.user) return;
   if (navigate) navigateFn = navigate;
-  try { history = JSON.parse(sessionStorage.getItem(HIST_KEY) || '[]'); } catch { history = []; }
+  history = load();
   root = document.createElement('div');
   root.className = 'bot';
   root.innerHTML = `<button class="bot-fab" data-bot-toggle aria-label="Help chat"><i class="fa-solid fa-comments"></i><span class="bot-dot"></span></button>
@@ -239,6 +269,7 @@ export function mountBot({ navigate } = {}) {
   });
   const box = root.querySelector('[data-bot-msgs]');
   box.scrollTop = box.scrollHeight;
+  touch();
 }
 
 // exported for tests

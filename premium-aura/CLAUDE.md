@@ -73,9 +73,12 @@ field gets what), and after each change send a fresh zip.
 - Welcome popup (`app.js`): 4 s after opening, offers Install and "Turn on notifications" (goes to
   `/settings#notifications`); skipped when already installed and push is on.
 - Help bot (`public/assets/js/chatbot.js`, bottom-right, "Online"): rule-based, Bangla/English/Banglish keyword
-  intents. Live facts come from `GET /api/bot/info` (`botController.js`): ranges with the 24 h success % (numbers
-  taken that got a code), plans, the user's limits, payments, and `support_whatsapp` for "Contact Human". Message
-  classes are `from-bot` / `from-me` (`.bot` is the fixed wrapper, so don't reuse it).
+  intents. Live facts come from `GET /api/bot/info` (`botController.js`): active countries (ranges with numbers,
+  no counts), plans, the user's limits, payments, and `support_whatsapp` for "Contact Human". The owner removed
+  the success-% feature, so don't add it back. The shared part is cached in memory for 60 s so the bot doesn't
+  load the server, and the client only fetches it when the panel opens. The chat lives only in sessionStorage and
+  is wiped after 2 minutes without chatting. Message classes are `from-bot` / `from-me` (`.bot` is the fixed
+  wrapper, so don't reuse it).
 - Advanced Search: the "Search" icon in the Access page header opens a sheet. It takes 3–8 digits, optional "+",
   and remembers the last value per user in localStorage (`aura.advSerial.<id>`). Claiming closes the sheet.
 - Phones: `public/assets/js/fit.js` zooms the page to a 390 px design so DPI and system font size
