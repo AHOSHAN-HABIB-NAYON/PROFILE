@@ -1,0 +1,3 @@
+Font Awesome 4.7.0 by Dave Gandy - http://fontawesome.io
+Font files: SIL Open Font License 1.1. CSS: MIT License.
+Only woff2/woff are bundled; the @font-face rule was trimmed accordingly.

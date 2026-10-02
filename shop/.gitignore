@@ -1,0 +1,9 @@
+# Secrets & runtime data — never commit
+.env
+storage/installed.lock
+storage/cache/*
+!storage/cache/.gitkeep
+storage/logs/*
+!storage/logs/.gitkeep
+uploads/*/
+!uploads/.htaccess
