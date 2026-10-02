@@ -16,7 +16,7 @@ DirectoryIndex index.php
 
     # Block private application folders and files
     RewriteRule ^(config|core|controllers|models|services|routes|views|storage|database|pwa)(/|$) - [F,L,NC]
-    RewriteRule ^(server\.php|README\.md|composer\.(json|lock)|.*\.(sql|log|ini|sh|bak|dist|example))$ - [F,L,NC]
+    RewriteRule ^(server\.php|composer\.(json|lock)|.*\.(sql|log|ini|sh|bak|dist|example|md))$ - [F,L,NC]
 
     # No PHP file except the front controller can be requested directly
     RewriteCond %{REQUEST_URI} !^/index\.php$
