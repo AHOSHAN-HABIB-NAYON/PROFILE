@@ -503,7 +503,7 @@
     if (!CFG.theme.dark) t = 'light';
     if (t === 'system') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', t);
-    $$('.theme-icon').forEach((i) => { i.className = 'fa-solid theme-icon ' + (t === 'dark' ? 'fa-sun' : 'fa-moon'); });
+    $$('.theme-icon').forEach((i) => { i.className = (t === 'dark' ? 'fa-solid fa-sun' : 'fa-regular fa-moon') + ' theme-icon'; });
     $$('[data-action="theme-set"]').forEach((b) => b.classList.toggle('active', b.dataset.theme === pref));
     const tc = document.querySelector('meta[name="theme-color"]');
     if (tc) { tc.dataset.light = tc.dataset.light || tc.content; tc.content = t === 'dark' ? '#0b1120' : tc.dataset.light; }
@@ -957,22 +957,50 @@
   // ------------------------------------------------------------------
   const panel = $('#chat-panel');
   const linkify = (s) => esc(s).replace(/(https?:\/\/[^\s<)]+)/g, (u) => `<a href="${u}"${u.startsWith(location.origin) ? '' : ' target="_blank" rel="noopener"'}>${u}</a>`);
-  function addMsg(body, text, who, meta = '') {
-    const d = document.createElement('div');
-    d.className = 'msg ' + (who === 'me' ? 'me' : 'bot');
-    d.innerHTML = linkify(text) + (meta ? `<span class="meta">${esc(meta)}</span>` : '');
-    body.appendChild(d);
+  /** Safe mini-markdown for bot replies: escape → links → **bold** → line breaks. */
+  const fmt = (s) => linkify(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+  function addMsg(body, text, who, meta = '', extra = {}) {
+    const row = document.createElement('div');
+    row.className = 'msg-row ' + (who === 'me' ? 'me' : 'bot');
+    const cards = (extra.cards || []).map((c) => `<a class="ai-card" href="${esc(c.url || '#')}"${/^https?:/.test(c.url || '') && !(c.url || '').startsWith(location.origin) ? ' target="_blank" rel="noopener"' : ''} data-ai-link>
+        <span class="icon-box"><i class="${esc(c.icon || 'fa-solid fa-circle')}"></i></span><span class="grow" style="min-width:0"><b class="truncate">${esc(c.title)}</b>${c.sub ? `<small class="truncate">${esc(c.sub)}</small>` : ''}</span>
+        ${c.price ? `<span class="pr">${esc(c.price)}</span>` : '<i class="fa-solid fa-chevron-right tiny muted"></i>'}</a>`).join('');
+    row.innerHTML = (who === 'me' ? '' : `<span class="msg-av"><i class="fa-solid ${extra.icon || 'fa-robot'}"></i></span>`)
+      + `<div class="msg">${who === 'me' ? linkify(text).replace(/\n/g, '<br>') : fmt(text)}${cards ? `<div class="ai-cards">${cards}</div>` : ''}${meta ? `<span class="meta">${esc(meta)}</span>` : ''}</div>`;
+    body.appendChild(row);
+    if (extra.chips && extra.chips.length) {
+      const chips = document.createElement('div');
+      chips.className = 'ai-chips';
+      extra.chips.forEach((c) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = c.t;
+        b.addEventListener('click', () => {
+          if (c.action === 'support') return switchChat('support');
+          if (c.url) { actions['chat-close'](); return go(c.url); }
+          chips.remove();
+          askAI(c.q || c.t);
+        });
+        chips.appendChild(b);
+      });
+      body.appendChild(chips);
+    }
     body.scrollTop = body.scrollHeight;
-    return d;
+    return row;
   }
   function typing(body) {
-    const d = document.createElement('div');
-    d.className = 'msg bot typing';
-    d.innerHTML = '<i></i><i></i><i></i>';
-    body.appendChild(d);
+    const row = document.createElement('div');
+    row.className = 'msg-row bot';
+    row.innerHTML = '<span class="msg-av"><i class="fa-solid fa-robot"></i></span><div class="msg typing"><i></i><i></i><i></i></div>';
+    body.appendChild(row);
     body.scrollTop = body.scrollHeight;
-    return d;
+    return row;
   }
+  // internal links inside bot cards navigate without reloading
+  panel && panel.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-ai-link]');
+    if (a && isSpaLink(a, e)) { e.preventDefault(); actions['chat-close'](); navigate(a.href); }
+  });
   let chatTab = $('.chat-head .tab.active') ? $('.chat-head .tab.active').dataset.tab : 'ai';
   actions['chat-open'] = (el) => {
     if (!panel) return;
@@ -1011,16 +1039,27 @@
   const aiBody = $('#ai-body');
   let aiHistory = [];
   try { aiHistory = JSON.parse(sessionStorage.getItem('ai-history') || '[]'); } catch {}
-  if (aiBody) aiHistory.forEach((m) => addMsg(aiBody, m.content, m.role === 'user' ? 'me' : 'bot'));
+  const welcomeChips = () => [
+    { t: T('chip_services'), q: T('q_services') }, { t: T('chip_prices'), q: T('q_prices') },
+    { t: T('chip_payment'), q: T('q_payment') }, { t: T('chip_human'), action: 'support' },
+  ];
+  if (aiBody) {
+    addMsg(aiBody, T('ai_welcome'), 'bot', '', aiHistory.length ? {} : { chips: welcomeChips() });
+    aiHistory.forEach((m) => addMsg(aiBody, m.content, m.role === 'user' ? 'me' : 'bot', '', { cards: m.cards }));
+  }
   async function askAI(text) {
     addMsg(aiBody, text, 'me');
     aiHistory.push({ role: 'user', content: text });
     const t = typing(aiBody);
+    const btn = aiForm && aiForm.querySelector('.send');
+    btn && btn.classList.add('loading');
     const r = await api(BASE + '/api/ai', { method: 'POST', data: { message: text } });
+    await new Promise((res) => setTimeout(res, 350)); // let the typing dots breathe
     t.remove();
+    btn && btn.classList.remove('loading');
     const reply = r.ok ? r.reply : (r.message || T('server_error'));
-    addMsg(aiBody, reply, 'bot');
-    if (r.ok) aiHistory.push({ role: 'assistant', content: reply });
+    addMsg(aiBody, reply, 'bot', '', r.ok ? { cards: r.cards, chips: r.chips } : { chips: [{ t: T('chip_human'), action: 'support' }] });
+    if (r.ok) aiHistory.push({ role: 'assistant', content: reply, cards: r.cards || [] });
     try { sessionStorage.setItem('ai-history', JSON.stringify(aiHistory.slice(-20))); } catch {}
     chime(true);
   }
@@ -1069,9 +1108,9 @@
         st.querySelector('.dot').classList.toggle('off', !r.online);
         st.querySelector('span:last-child').textContent = r.online ? T('support_online') : T('support_offline');
       }
-      if (first && !r.messages.length) addMsg(supBody, T('support_welcome'), 'bot');
+      if (first && !r.messages.length) addMsg(supBody, T('support_welcome'), 'bot', '', { icon: 'fa-headset' });
       r.messages.forEach((m) => {
-        addMsg(supBody, m.message, m.sender === 'user' ? 'me' : 'bot', m.time);
+        addMsg(supBody, m.message, m.sender === 'user' ? 'me' : 'bot', m.time, { icon: 'fa-headset' });
         supLast = Math.max(supLast, m.id);
         if (!first && m.sender === 'admin') chime();
       });

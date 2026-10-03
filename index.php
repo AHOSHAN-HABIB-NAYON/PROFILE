@@ -36,7 +36,7 @@ start_session();
 // ---------------------------------------------------------------------
 if (preg_match('~^/api/([a-z]+)$~', $path, $m)) {
     define('API_REQUEST', true);
-    $apis = ['navigation', 'auth', 'payment', 'notification', 'upload', 'ai', 'analytics', 'search', 'support', 'contact', 'admin'];
+    $apis = ['navigation', 'auth', 'payment', 'notification', 'upload', 'ai', 'analytics', 'search', 'support', 'contact', 'admin', 'prices'];
     if (!in_array($m[1], $apis, true)) render_error(404);
     send_security_headers();
     // every state-changing API call must carry the CSRF token

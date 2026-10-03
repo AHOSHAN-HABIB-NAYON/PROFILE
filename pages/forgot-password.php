@@ -9,6 +9,7 @@ meta(['title' => $reset ? t('auth.reset_title') : t('auth.forgot_title'), 'robot
 ?>
 <div class="page auth-wrap" data-page="forgot">
   <div class="card auth-card">
+    <?php include ROOT . '/includes/auth-brand.php'; ?>
     <?php if (!$reset): ?>
       <div class="auth-head"><span class="icon-box lg"><i class="fa-solid fa-key"></i></span><h1><?= e(t('auth.forgot_title')) ?></h1><p><?= e(t('auth.forgot_sub')) ?></p></div>
       <form method="post" action="<?= e(url('/api/auth?action=forgot')) ?>" data-ajax data-reset data-recaptcha="forgot" novalidate>

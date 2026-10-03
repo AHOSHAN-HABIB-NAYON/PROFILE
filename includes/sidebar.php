@@ -16,8 +16,8 @@ $links = [
 <div class="drawer-scrim" data-action="drawer-close"></div>
 <aside class="app-sidebar" id="app-sidebar" aria-label="<?= e(t('nav.menu')) ?>">
   <div class="sb-head">
-    <strong><?= e(setting('site_name')) ?></strong>
-    <button class="icon-btn" data-action="drawer-close" aria-label="<?= e(t('common.close')) ?>"><i class="fa-solid fa-xmark"></i></button>
+    <span class="brand" style="font-size:1.08rem"><span class="brand-logo"><?php if (setting('logo')): ?><img src="<?= e(media_url(setting('logo'))) ?>" alt=""><?php else: ?><i class="fa-solid fa-code"></i><?php endif ?></span><span class="brand-name"><?= e(setting('site_name')) ?></span></span>
+    <button class="sq-btn" data-action="drawer-close" aria-label="<?= e(t('common.close')) ?>"><i class="fa-solid fa-xmark"></i></button>
   </div>
   <nav class="sb-scroll">
     <?php if ($u): ?>
@@ -28,8 +28,8 @@ $links = [
       </a>
     <?php else: ?>
       <div class="row" style="margin-bottom:12px">
-        <a class="btn btn-sm grow" href="<?= e(url('/login')) ?>"><?= e(t('auth.login')) ?></a>
-        <a class="btn btn-sm btn-soft grow" href="<?= e(url('/register')) ?>"><?= e(t('auth.register')) ?></a>
+        <a class="btn grow" href="<?= e(url('/login')) ?>"><i class="fa-solid fa-right-to-bracket"></i><?= e(t('auth.login')) ?></a>
+        <a class="btn btn-ghost grow" href="<?= e(url('/register')) ?>"><?= e(t('auth.signup')) ?></a>
       </div>
     <?php endif ?>
 

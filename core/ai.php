@@ -5,9 +5,31 @@
  */
 defined('APP') || exit;
 
+require_once ROOT . '/core/ai-local.php';
+
+/** The assistant always works: the built-in engine needs no API key. */
 function ai_ready(): bool
 {
-    return setting_bool('ai.enabled') && (string)setting('ai.api_key') !== '';
+    return setting_bool('ai.enabled');
+}
+
+/** True when an external model (OpenAI / compatible) is configured and selected. */
+function ai_remote_ready(): bool
+{
+    return setting('ai.provider', 'local') !== 'local' && (string)setting('ai.api_key') !== '';
+}
+
+/**
+ * Answer a visitor: external model when configured, built-in engine otherwise
+ * (and as an automatic fallback if the API call fails).
+ */
+function ai_answer(array $history, string $message): array
+{
+    if (ai_remote_ready()) {
+        $r = ai_complete($history);
+        if ($r['ok']) return ['reply' => $r['reply'], 'cards' => [], 'chips' => [], 'source' => 'ai', 'tokens' => $r['tokens']];
+    }
+    return ai_local_reply($message) + ['source' => 'local', 'tokens' => 0];
 }
 
 /** Site knowledge injected into the system prompt (cached 10 min). */

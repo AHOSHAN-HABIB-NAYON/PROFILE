@@ -124,9 +124,15 @@ case 'ai_test':
     rate_limit('ai-test:' . $me['id'], 20, 600);
     require_once ROOT . '/core/ai.php';
     session_write_close();
-    $r = ai_complete([['role' => 'user', 'content' => mb_substr(input('message'), 0, 500) ?: 'Hello']]);
-    if (!$r['ok']) fail('AI error: ' . $r['error'], 502);
-    ok('AI responded (' . (int)$r['tokens'] . ' tokens)', ['reply' => $r['reply']]);
+    $q = mb_substr(input('message'), 0, 500) ?: 'Hello';
+    if (ai_remote_ready()) {
+        $r = ai_complete([['role' => 'user', 'content' => $q]]);
+        if (!$r['ok']) fail('AI error: ' . $r['error'] . ' (visitors get the built-in assistant as fallback)', 502);
+        ok('External model responded (' . (int)$r['tokens'] . ' tokens)', ['reply' => $r['reply']]);
+    }
+    $r = ai_local_reply($q);
+    $extra = $r['cards'] ? "\n\n" . implode("\n", array_map(fn($c) => '▸ ' . $c['title'] . (isset($c['price']) ? ' — ' . $c['price'] : ''), $r['cards'])) : '';
+    ok('Built-in assistant responded', ['reply' => $r['reply'] . $extra]);
 
 case 'maintenance_restart':
     $need('settings');

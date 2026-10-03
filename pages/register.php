@@ -10,9 +10,9 @@ $open = setting_bool('security.allow_registration');
 ?>
 <div class="page auth-wrap" data-page="register">
   <div class="card auth-card">
+    <?php include ROOT . '/includes/auth-brand.php'; ?>
     <div class="auth-head">
-      <span class="icon-box lg"><i class="fa-solid fa-user-plus"></i></span>
-      <h1><?= e(t('auth.create_account')) ?></h1>
+      <h1><?= e(t('auth.create_account')) ?> ✨</h1>
       <p><?= e(t('auth.register_sub')) ?></p>
     </div>
     <?php if (!$open): ?>
@@ -32,11 +32,12 @@ $open = setting_bool('security.allow_registration');
       <div class="form-group"><label class="label" for="r-pass2"><?= e(t('form.confirm_password')) ?></label>
         <div class="input-icon"><i class="fa-solid fa-lock"></i><input class="input" id="r-pass2" type="password" name="password_confirm" required maxlength="200" autocomplete="new-password"></div></div>
       <label class="check form-group"><input type="checkbox" name="agree" value="1" required> <span class="small"><?= e(t('auth.agree')) ?></span></label>
-      <button class="btn btn-block btn-lg" type="submit"><?= e(t('auth.create_account')) ?></button>
+      <button class="btn btn-block btn-lg" type="submit"><i class="fa-solid fa-user-plus"></i><?= e(t('auth.create_account')) ?></button>
       <?php if (google_enabled()): ?>
         <div class="or"><?= e(t('auth.or')) ?></div>
-        <a class="btn btn-block btn-google" href="<?= e(url('/auth/google?next=' . rawurlencode($next))) ?>" data-no-spa><i class="fa-brands fa-google" style="color:#ea4335"></i><?= e(t('auth.google')) ?></a>
+        <a class="btn btn-block btn-google" href="<?= e(url('/auth/google?next=' . rawurlencode($next))) ?>" data-no-spa><?php include ROOT . '/includes/google-icon.php'; ?><?= e(t('auth.google')) ?></a>
       <?php endif ?>
+      <p class="auth-safe"><i class="fa-solid fa-shield-halved"></i><?= e(t('auth.protected')) ?></p>
     </form>
     <?php endif ?>
     <p class="auth-foot"><?= e(t('auth.have_account')) ?> <a href="<?= e(url('/login')) ?>"><?= e(t('auth.login')) ?></a></p>

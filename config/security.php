@@ -276,3 +276,42 @@ function safe_url_attr(string $url, string $tag): bool
     if (!str_contains($u, ':')) return true; // relative path
     return false;
 }
+
+/**
+ * Sanitised rich text plus "$BTC"-style coin tags turned into live price chips
+ * (prices are filled in by app.js from /api/prices).
+ */
+function render_rich(string $html): string
+{
+    $html = sanitize_html($html);
+    if (!str_contains($html, '$')) return $html;
+    $skip = 0; // inside <a>, <code> or <pre>
+    $parts = preg_split('~(<[^>]+>)~', $html, -1, PREG_SPLIT_DELIM_CAPTURE);
+    foreach ($parts as $i => $part) {
+        if ($part !== '' && $part[0] === '<') {
+            if (preg_match('~^<(a|code|pre)\b~i', $part)) $skip++;
+            elseif (preg_match('~^</(a|code|pre)>~i', $part)) $skip = max(0, $skip - 1);
+            continue;
+        }
+        if ($skip) continue;
+        $parts[$i] = preg_replace_callback('~(?<![\w$])\$([A-Za-z][A-Za-z0-9]{1,9})\b~', fn($m) => coin_chip($m[1]), $part);
+    }
+    return implode('', $parts);
+}
+
+/** Markup of one coin price chip (symbol is validated by the caller's regex). */
+function coin_chip(string $sym): string
+{
+    $sym = strtoupper($sym);
+    $lc = strtolower($sym);
+    return '<span class="coin-chip" data-coin="' . $sym . '"><img class="coin-ic" src="https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/32/color/' . $lc . '.png" alt="" width="22" height="22" loading="lazy" data-coin-ic="' . $sym[0] . '">'
+        . '<span>' . $sym . '</span><span class="coin-p"></span><span class="coin-c"></span></span>';
+}
+
+/** Coin symbols used in a piece of HTML, in order of appearance. */
+function coin_symbols(string $html, int $max = 6): array
+{
+    preg_match_all('~(?<![\w$])\$([A-Za-z][A-Za-z0-9]{1,9})\b~', strip_tags($html), $m);
+    return array_slice(array_values(array_unique(array_map('strtoupper', $m[1]))), 0, $max);
+}
+

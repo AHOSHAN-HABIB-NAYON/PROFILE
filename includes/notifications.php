@@ -18,13 +18,13 @@ $flashes = flash('get') ?? [];
 .sr-item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;color:var(--text)}
 .sr-item:hover,.sr-item.focus{background:var(--soft)}
 @keyframes fadeIn{from{opacity:0}}@keyframes slideDown{from{transform:translateY(-14px);opacity:0}}
-.to-top{position:fixed;right:18px;bottom:calc(var(--bottom-h) + var(--safe-b) + 84px);z-index:80;width:42px;height:42px;border-radius:14px;border:1px solid var(--border);background:var(--card);color:var(--text);
+.to-top{position:fixed;right:20px;bottom:calc(var(--bottom-h) + var(--safe-b) + 90px);z-index:80;width:52px;height:52px;border-radius:17px;border:1px solid var(--border);background:var(--card);color:var(--primary);font-size:1.15rem;
   box-shadow:var(--shadow);display:grid;place-items:center;cursor:pointer;opacity:0;transform:translateY(12px) scale(.9);pointer-events:none;transition:opacity .25s,transform .3s var(--ease)}
 .to-top.show{opacity:1;transform:none;pointer-events:auto}
 .to-top:active{transform:scale(.9)}
 .to-top.launch i{animation:launch .6s var(--ease)}
 @keyframes launch{40%{transform:translateY(-8px)}100%{transform:none}}
-@media (min-width:1024px){.to-top{bottom:96px;right:28px}}
+@media (min-width:1024px){.to-top{bottom:100px;right:32px}}
 .offline-bar{position:fixed;left:50%;bottom:calc(var(--bottom-h) + var(--safe-b) + 12px);transform:translateX(-50%);z-index:950;background:#13203a;color:#fff;font-size:.82rem;padding:8px 14px;border-radius:999px;display:none;box-shadow:var(--shadow-lg)}
 .offline-bar.show{display:flex;gap:8px;align-items:center}
 </style>

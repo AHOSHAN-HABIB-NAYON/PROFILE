@@ -255,7 +255,14 @@ function finish_login(array $u, string $method): array
 {
     $next = $_SESSION['pending_login']['next'] ?? '/';
     unset($_SESSION['pending_login']);
+    $remember = $_SESSION['remember'] ?? true;
+    unset($_SESSION['remember']);
     session_regenerate_id(true);
+    if (!$remember) {
+        // "Remember me" unchecked: session cookie ends when the browser closes
+        $p = session_get_cookie_params();
+        setcookie(session_name(), session_id(), ['expires' => 0, 'path' => $p['path'], 'secure' => $p['secure'], 'httponly' => true, 'samesite' => 'Lax']);
+    }
     $_SESSION['uid'] = (int)$u['id'];
     $_SESSION['csrf'] = b64url_encode(random_bytes(32));
     insert('user_sessions', [

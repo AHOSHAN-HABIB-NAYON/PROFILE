@@ -11,7 +11,7 @@ $stats = row("SELECT COUNT(*) total, SUM(created_at > NOW() - INTERVAL 1 DAY) to
 $recent = rows("SELECT * FROM ai_conversations ORDER BY id DESC LIMIT 30");
 ?>
 <div class="page">
-  <div class="adm-title"><h1>AI Assistant</h1><span class="badge <?= ai_ready() ? 'success' : 'warning' ?>"><?= ai_ready() ? 'Ready' : 'Not configured' ?></span></div>
+  <div class="adm-title"><h1>AI Assistant</h1><span class="badge <?= ai_ready() ? 'success' : 'warning' ?>"><?= !ai_ready() ? 'Disabled' : (ai_remote_ready() ? 'External model' : 'Built-in assistant (no API key)') ?></span></div>
   <div class="stat-grid mb-2">
     <?php foreach ([['Replies (30d)', $stats['total'], 'fa-robot'], ['Replies today', $stats['today'], 'fa-calendar-day'], ['Visitors helped', $stats['visitors'], 'fa-users'], ['Tokens (30d)', $stats['tokens'], 'fa-coins']] as [$l, $v, $i]): ?>
       <div class="card stat-card"><span class="icon-box sm secondary"><i class="fa-solid <?= $i ?>"></i></span><div><div class="v"><?= number_format((int)$v) ?></div><div class="l"><?= $l ?></div></div></div>

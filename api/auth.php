@@ -66,6 +66,7 @@ case 'login':
         send_verification_email($u);
         fail(t('auth.verify_first'), 403);
     }
+    $_SESSION['remember'] = input_bool('remember');
     ok('', login_continue($u, 'password', input('next', '/')));
 
 // ---------------------------------------------------------------------
