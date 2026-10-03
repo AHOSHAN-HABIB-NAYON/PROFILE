@@ -4,6 +4,7 @@ $links = [
     ['home', '/', 'fa-solid fa-house', t('nav.home')],
     ['services', '/services', 'fa-solid fa-layer-group', t('nav.services')],
     ['news', '/news', 'fa-solid fa-newspaper', t('nav.news')],
+    ['projects', '/projects', 'fa-solid fa-briefcase', t('nav.projects')],
     ['team', '/team', 'fa-solid fa-users', t('nav.team')],
     ['payment', '/payment', 'fa-solid fa-wallet', t('nav.payment')],
     ['faq', '/faq', 'fa-solid fa-circle-question', t('nav.faq')],
@@ -12,6 +13,7 @@ $links = [
 ?>
 <aside class="sidebar" id="sidebar" aria-label="<?= e(t('nav.menu')) ?>">
     <div class="sidebar-inner">
+        <a class="side-brand" href="<?= e(url('/')) ?>"><?= brand_avatar() ?><span><strong><?= e(setting('site_name')) ?></strong><small><?= e(lang() === 'bn' ? setting('site_tagline_bn') : setting('site_tagline')) ?></small></span></a>
         <?php if ($user): ?>
             <a class="side-user" href="<?= e(url('/profile')) ?>" data-nav="profile">
                 <?= avatar_html($user) ?>

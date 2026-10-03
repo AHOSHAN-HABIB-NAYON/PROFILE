@@ -1,6 +1,6 @@
 /* Oryzenx — authentication pages */
 .auth-wrap { position: relative; max-width: 410px; margin: .4rem auto 1rem; display: grid; gap: .8rem; }
-.auth-wrap::before { content: ""; position: absolute; z-index: -1; inset: -30px -60px auto; height: 260px; border-radius: 50%;
+.auth-wrap::before { content: ""; position: absolute; z-index: -1; inset: -30px 0 auto; height: 260px; border-radius: 50%;
   background: radial-gradient(closest-side, rgba(var(--primary-rgb), .18), transparent), radial-gradient(closest-side at 80% 30%, color-mix(in srgb, var(--accent) 18%, transparent), transparent); filter: blur(8px); }
 .auth-brand { display: inline-flex; align-items: center; justify-content: center; gap: .55rem; color: var(--text); font-weight: 800; font-size: 1.15rem; }
 .auth-brand:hover { color: var(--text); }
@@ -15,13 +15,11 @@
 .auth-card .btn-primary { height: 46px; border-radius: 13px; font-size: .95rem; }
 .otp-input { text-align: center; font-size: 1.3rem !important; letter-spacing: .35em; font-family: var(--mono); height: 50px !important; }
 .social-login { display: flex; justify-content: center; gap: .8rem; }
-.social-btn { width: 54px; height: 54px; border-radius: 16px; display: grid; place-items: center; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 1.45rem; box-shadow: var(--shadow-sm); transition: transform var(--t-fast), border-color var(--t-fast), box-shadow var(--t-fast); }
+.social-btn { position: relative; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 1.15rem; box-shadow: var(--shadow-sm); transition: transform var(--t-fast), border-color var(--t-fast), box-shadow var(--t-fast); }
 .social-btn:hover { transform: translateY(-2px); border-color: rgba(var(--primary-rgb), .45); box-shadow: var(--shadow); color: var(--primary); }
 .social-btn .fa-fingerprint { color: var(--primary); }
 .social-btn.is-loading::after { position: absolute; }
-.auth-secure { display: flex; align-items: center; gap: .65rem; padding: .7rem .85rem; border-radius: 16px; background: color-mix(in srgb, var(--success) 8%, var(--surface)); border: 1px solid color-mix(in srgb, var(--success) 25%, var(--border)); }
-.auth-secure-ic { width: 36px; height: 36px; flex: none; border-radius: 11px; display: grid; place-items: center; background: var(--success); color: #fff; box-shadow: 0 6px 14px -6px var(--success); }
-.auth-secure div { display: grid; line-height: 1.35; }
-.auth-secure strong { font-size: .84rem; color: var(--success); }
-.auth-secure span { font-size: .74rem; color: var(--text-muted); }
+.auth-secure { display: flex; align-items: center; justify-content: center; gap: .4rem; margin: .9rem 0 0; padding-top: .75rem; border-top: 1px dashed var(--border); font-size: .74rem; font-weight: 600; color: var(--success); }
+.auth-secure i { font-size: .8rem; }
+.auth-secure .auth-secure-lock { font-size: .65rem; opacity: .7; }
 @media (min-width: 640px) { .auth-wrap { margin-top: 1.2rem; } .auth-card { padding: 1.6rem 1.5rem; } }

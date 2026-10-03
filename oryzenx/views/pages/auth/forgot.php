@@ -14,6 +14,6 @@
             <button class="btn btn-primary btn-block" type="submit"><?= e(t('auth.send_link')) ?></button>
         </form>
         <p class="center small mt-2 mb-0"><a href="<?= e(url('/login')) ?>"><i class="fa-solid fa-arrow-left"></i> <?= e(t('auth.back_login')) ?></a> · <a href="<?= e(url('/contact')) ?>"><?= e(t('nav.contact')) ?></a></p>
+        <?php require VIEWS . '/components/auth-secure.php'; ?>
     </div>
-    <?php require VIEWS . '/components/auth-secure.php'; ?>
 </div>

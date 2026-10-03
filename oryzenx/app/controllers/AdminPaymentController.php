@@ -52,6 +52,8 @@ final class AdminPaymentController
                 Wallet::log((int)$pay['user_id'], $credit > 0 ? 'refund' : 'adjust', abs($credit), ['note' => 'Payment #' . $pay['id'] . ($credit > 0 ? '' : ' refund reversed')]);
             }
         });
+        if ($status === 'rejected' && $pay['status'] !== 'rejected') Offer::release((int)$pay['id']);
+        elseif ($pay['status'] === 'rejected' && $status !== 'rejected' && (float)($pay['discount'] ?? 0) > 0) Offer::markUsed((int)$pay['user_id'], (int)$pay['id']);
         if ($credit != 0.0) {
             Auth::activity('balance_' . ($credit > 0 ? 'refund' : 'refund_reversed'), "#{$pay['id']} " . money(abs($credit)), (int)$pay['user_id']);
             if ($credit > 0) $note = trim(($note ? $note . "\n" : '') . t('notif.refund_balance', ['amount' => money($credit)]));

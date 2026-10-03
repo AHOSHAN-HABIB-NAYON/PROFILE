@@ -11,7 +11,7 @@ $favicon = setting('favicon') ? upload_url(setting('favicon')) : url('/icon-192.
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title><?= e($page['full_title']) ?></title>
 <meta name="description" content="<?= e($page['description']) ?>">
-<?php if (setting('seo_keywords')): ?><meta name="keywords" content="<?= e(setting('seo_keywords')) ?>"><?php endif; ?>
+<?php if ($page['keywords'] ?? ''): ?><meta name="keywords" content="<?= e($page['keywords']) ?>"><?php endif; ?>
 <meta name="robots" content="<?= e($page['robots']) ?>">
 <link rel="canonical" href="<?= e($page['canonical']) ?>">
 <meta property="og:site_name" content="<?= e($siteName) ?>">
@@ -19,8 +19,16 @@ $favicon = setting('favicon') ? upload_url(setting('favicon')) : url('/icon-192.
 <meta property="og:title" content="<?= e($page['title'] ?: (setting('og_title') ?: $page['full_title'])) ?>">
 <meta property="og:description" content="<?= e($page['description'] ?: setting('og_description')) ?>">
 <meta property="og:url" content="<?= e($page['canonical']) ?>">
-<?php if ($page['image']): ?><meta property="og:image" content="<?= e($page['image']) ?>"><?php endif; ?>
+<?php $ogImage = $page['image'] ?: View::defaultImage(); ?>
+<meta property="og:image" content="<?= e($ogImage) ?>">
+<meta property="og:image:alt" content="<?= e($page['title'] ?: $siteName) ?>">
+<meta property="og:locale" content="<?= lang() === 'bn' ? 'bn_BD' : 'en_US' ?>">
+<?php if (!empty($page['published'])): ?><meta property="article:published_time" content="<?= e($page['published']) ?>"><meta property="article:modified_time" content="<?= e($page['modified']) ?>"><?php endif; ?>
+<?php foreach (($page['tags'] ?? []) as $tag): ?><meta property="article:tag" content="<?= e($tag) ?>"><?php endforeach; ?>
 <meta name="twitter:card" content="<?= e(setting('twitter_card') ?: 'summary_large_image') ?>">
+<meta name="twitter:title" content="<?= e($page['title'] ?: $page['full_title']) ?>">
+<meta name="twitter:description" content="<?= e($page['description']) ?>">
+<meta name="twitter:image" content="<?= e($ogImage) ?>">
 <?php if (setting('twitter_site')): ?><meta name="twitter:site" content="<?= e(setting('twitter_site')) ?>"><?php endif; ?>
 <meta name="theme-color" content="<?= e(setting('pwa_theme_color') ?: $primary) ?>">
 <meta name="ozx-base" content="<?= e(base_path()) ?>">

@@ -23,13 +23,26 @@
 .hbtn:active { transform: scale(.94); }
 .hbtn .fa-language { font-size: 1.05rem; }
 .hbtn .dot-badge { top: -6px; right: -6px; min-width: 19px; height: 19px; font-size: .64rem; border: 2px solid var(--surface); box-shadow: 0 2px 6px rgba(220, 38, 38, .35); }
-.layout-app .topbar { gap: .5rem; padding-left: .7rem; padding-right: .7rem; }
-.layout-app .brand { gap: .6rem; font-size: 1.22rem; font-weight: 800; letter-spacing: -.02em; }
-.layout-app .brand-mark, .layout-app .brand-logo { width: 38px; height: 38px; border-radius: 11px; }
-.layout-app .brand-mark { padding-bottom: 10px; gap: 3px; box-shadow: 0 4px 12px rgba(var(--primary-rgb), .3); }
-.layout-app .brand-mark i { width: 3.5px; }
-@media (max-width: 400px) { .hbtn { width: 35px; height: 35px; border-radius: 11px; font-size: .9rem; } .layout-app .topbar-actions { gap: .3rem; } .layout-app .brand { font-size: 1.08rem; } .layout-app .brand-mark, .layout-app .brand-logo { width: 34px; height: 34px; } }
-@media (max-width: 350px) { .layout-app .brand-name { display: none; } }
+.topbar { gap: .45rem; padding-left: .75rem; padding-right: .75rem; }
+.topbar .brand { gap: .55rem; font-size: 1.15rem; font-weight: 800; letter-spacing: -.02em; }
+.topbar .brand-mark, .topbar .brand-logo { width: 36px; height: 36px; border-radius: 11px; }
+.topbar .brand-mark { padding-bottom: 9px; gap: 3px; box-shadow: 0 4px 12px rgba(var(--primary-rgb), .3); }
+.topbar .brand-mark i { width: 3.5px; }
+.topbar .brand .badge { font-size: .62rem; padding: .1rem .4rem; }
+.topbar-actions { gap: .35rem; }
+.hbtn { width: 36px; height: 36px; border-radius: 11px; font-size: .92rem; }
+.hbtn.lang-txt { font-size: .72rem; font-weight: 800; }
+@media (max-width: 400px) { .hbtn { width: 34px; height: 34px; border-radius: 10px; font-size: .86rem; } .topbar-actions { gap: .28rem; } .topbar .brand { font-size: 1.04rem; gap: .45rem; } .topbar .brand-mark, .topbar .brand-logo { width: 33px; height: 33px; } }
+@media (max-width: 350px) { .topbar .brand-name { display: none; } }
+/* Sidebar brand block */
+.side-brand { display: flex; align-items: center; gap: .6rem; padding: .35rem .4rem .7rem; border-bottom: 1px solid var(--border); color: var(--text); }
+.side-brand:hover { color: var(--text); }
+.side-brand .brand-avatar { width: 40px; height: 40px; border-radius: 12px; flex: none; box-shadow: 0 6px 14px -6px rgba(var(--primary-rgb), .7); object-fit: contain; }
+.side-brand .brand-mark { padding-bottom: 10px; gap: 3px; } .side-brand .brand-mark i { width: 3.5px; }
+.side-brand span { display: grid; line-height: 1.25; min-width: 0; }
+.side-brand strong { font-size: 1.05rem; font-weight: 800; letter-spacing: -.01em; }
+.side-brand small { font-size: .72rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (min-width: 992px) { .side-brand { display: none; } }
 .lang-btn { font-size: .78rem; font-weight: 700; }
 .theme-ic-light { display: none; }
 [data-theme="dark"] .theme-ic-light { display: inline; }

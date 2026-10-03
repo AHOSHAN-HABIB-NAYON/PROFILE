@@ -18,6 +18,7 @@ $router->get('/news', [NewsController::class, 'index']);
 $router->get('/news/{id:\d+}', [NewsController::class, 'show']);
 $router->get('/news/{id:\d+}/{slug}', [NewsController::class, 'show']);
 $router->post('/news/{id:\d+}/like', [NewsController::class, 'like']);
+$router->get('/projects', [ProjectController::class, 'index']);
 $router->get('/team', [TeamController::class, 'index']);
 $router->get('/team/{id:\d+}', [TeamController::class, 'show']);
 $router->get('/contact', [ContactController::class, 'index']);
@@ -93,6 +94,9 @@ $router->post('/notifications/read-all', [NotificationController::class, 'readAl
 $router->get('/api/notifications', [NotificationController::class, 'api']);
 $router->post('/api/push/subscribe', [NotificationController::class, 'subscribe']);
 $router->post('/api/push/unsubscribe', [NotificationController::class, 'unsubscribe']);
+
+// Promo offer
+$router->post('/offer/claim', [OfferController::class, 'claim']);
 
 // AI assistant
 $router->get('/api/ai/history', [AiController::class, 'history']);

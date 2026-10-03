@@ -24,7 +24,7 @@ final class Notifier
         }
 
         if (($o['push'] ?? true) && setting('push_enabled') === '1') self::push($userIds, $row);
-        if (!empty($o['email']) && Mailer::configured()) self::email($userIds, $row);
+        if (($o['email'] ?? $userIds !== null) && Mailer::configured()) self::email($userIds, $row);
         return $count;
     }
 
@@ -54,7 +54,7 @@ final class Notifier
             ? DB::all('SELECT email FROM users WHERE deleted_at IS NULL AND email_verified_at IS NOT NULL LIMIT 500')
             : ($userIds ? DB::all('SELECT email FROM users WHERE id IN (' . implode(',', array_map('intval', $userIds)) . ')') : []);
         $body = '<p>' . nl2br(e($n['message'])) . '</p>' . ($n['link'] ? Mailer::button(abs_url(url($n['link'])), t('common.open')) : '');
-        foreach ($users as $u) Mailer::send($u['email'], $n['title'], $body);
+        foreach ($users as $u) Mailer::queue($u['email'], $n['title'], $body);
     }
 
     public static function unreadCount(array $user): int

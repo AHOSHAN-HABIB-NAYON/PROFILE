@@ -171,6 +171,32 @@ final class AdminCrudController
                     'button_text' => ['type' => 'text', 'label' => 'admin.button_text', 'max' => 60, 'half' => true],
                 ] + $active,
             ],
+            'projects' => [
+                'table' => 'projects', 'title' => 'admin.projects', 'icon' => 'fa-solid fa-briefcase', 'order' => 'sort_order, id DESC', 'search' => ['title', 'title_bn', 'brand', 'tags'],
+                'view' => fn($r) => url('/projects') . '#project-' . $r['id'],
+                'list' => [
+                    'title' => ['label' => 'admin.title', 'render' => fn($r) => '<span class="row">' . ($r['image1'] ? '<img class="thumb-sm" src="' . e(upload_url($r['image1'])) . '" width="48" height="36" alt="" style="object-fit:cover;border-radius:6px">' : '') . '<span><strong>' . e($r['title']) . '</strong><br><small class="muted">' . e($r['brand'] ?: '') . '</small></span></span>'],
+                    'images' => ['label' => 'admin.images', 'render' => fn($r) => num(count(array_filter([$r['image1'], $r['image2'], $r['image3'], $r['image4'], $r['image5']])))],
+                    'link' => ['label' => 'admin.link', 'render' => fn($r) => $r['link'] ? '<a class="xs" href="' . e($r['link']) . '" target="_blank" rel="noopener" data-no-spa>' . e(str_limit(preg_replace('#^https?://#', '', $r['link']), 28)) . '</a>' : '—'],
+                    'is_active' => ['label' => 'admin.active', 'render' => fn($r) => $yes($r['is_active'])],
+                ],
+                'fields' => [
+                    'title' => ['type' => 'text', 'label' => 'admin.title', 'required' => true, 'max' => 160, 'half' => true],
+                    'title_bn' => ['type' => 'text', 'label' => 'admin.title_bn', 'max' => 160, 'half' => true],
+                    'brand' => ['type' => 'text', 'label' => 'admin.brand', 'max' => 120, 'half' => true, 'hint' => 'admin.brand_hint'],
+                    'category' => ['type' => 'text', 'label' => 'admin.category', 'max' => 80, 'half' => true, 'hint' => 'admin.project_cat_hint'],
+                    'link' => ['type' => 'url', 'label' => 'admin.project_link', 'max' => 255],
+                    'image1' => ['type' => 'image', 'label' => 'admin.cover_image', 'dir' => 'projects', 'opts' => ['max_width' => 1400, 'thumb' => true]],
+                    'image2' => ['type' => 'image', 'label' => 'admin.image_2', 'dir' => 'projects', 'opts' => ['max_width' => 1400, 'thumb' => true], 'half' => true],
+                    'image3' => ['type' => 'image', 'label' => 'admin.image_3', 'dir' => 'projects', 'opts' => ['max_width' => 1400, 'thumb' => true], 'half' => true],
+                    'image4' => ['type' => 'image', 'label' => 'admin.image_4', 'dir' => 'projects', 'opts' => ['max_width' => 1400, 'thumb' => true], 'half' => true],
+                    'image5' => ['type' => 'image', 'label' => 'admin.image_5', 'dir' => 'projects', 'opts' => ['max_width' => 1400, 'thumb' => true], 'half' => true],
+                    'description' => ['type' => 'textarea', 'label' => 'admin.short_desc', 'max' => 600, 'rows' => 2],
+                    'description_bn' => ['type' => 'textarea', 'label' => 'admin.short_desc_bn', 'max' => 600, 'rows' => 2],
+                    'tags' => ['type' => 'text', 'label' => 'admin.tech_used', 'max' => 300, 'hint' => 'admin.tags_hint'],
+                    'is_featured' => ['type' => 'checkbox', 'label' => 'admin.on_home', 'default' => 1],
+                ] + $active,
+            ],
             'payment-methods' => [
                 'table' => 'payment_methods', 'title' => 'admin.payment_methods', 'icon' => 'fa-solid fa-building-columns', 'order' => 'sort_order, id', 'search' => ['name', 'code'],
                 'list' => [

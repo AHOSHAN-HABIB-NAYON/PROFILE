@@ -5,6 +5,7 @@ final class AuthController
 
     public function loginForm(): void
     {
+        if (isset($_GET['claim'])) $_SESSION['offer_intent'] = 1;
         View::page('pages/auth/login', [], ['title' => t('auth.login')] + self::OPTS);
     }
 
@@ -115,6 +116,7 @@ final class AuthController
 
     public function registerForm(): void
     {
+        if (isset($_GET['claim'])) $_SESSION['offer_intent'] = 1;
         View::page('pages/auth/register', [], ['title' => t('auth.register')] + self::OPTS);
     }
 
@@ -143,7 +145,7 @@ final class AuthController
         $u = DB::row('SELECT * FROM users WHERE id = ?', [$id]);
         Auth::activity('register', $u['role'] === 'admin' ? 'initial administrator' : '', $id);
         self::sendVerification($u);
-        Notifier::send([$id], t('notif.welcome_title', ['site' => setting('site_name')]), t('notif.welcome_text'), ['icon' => 'fa-solid fa-hand-sparkles', 'link' => '/services', 'push' => false]);
+        Notifier::send([$id], t('notif.welcome_title', ['site' => setting('site_name')]), t('notif.welcome_text'), ['icon' => 'fa-solid fa-hand-sparkles', 'link' => '/services', 'push' => false, 'email' => false]);
         Auth::login($u, 'register');
         respond(true, t('auth.registered'), $u['role'] === 'admin' ? '/admin' : '/profile', ['reload' => true]);
     }

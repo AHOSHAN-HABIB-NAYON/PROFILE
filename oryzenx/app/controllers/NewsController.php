@@ -31,8 +31,11 @@ final class NewsController
         $image = $post['featured_image'] ? abs_url(upload_url($post['featured_image'])) : null;
         View::page('pages/post', ['post' => $post, 'related' => $related, 'shareUrl' => abs_url(url('/news/' . $post['id']))], [
             'title' => $post['seo_title'] ?: $post['title'], 'nav' => 'news', 'css' => ['news'], 'type' => 'article',
-            'description' => $post['seo_description'] ?: ($post['excerpt'] ?: str_limit($post['content'], 160)),
-            'image' => $image, 'canonical' => '/news/' . $post['id'], 'page_key' => 'post', 'ref_id' => (int)$post['id'], 'cache' => false,
+            'description' => $post['seo_description'] ?: View::autoDescription($post['excerpt'] ?: $post['content']),
+            'keywords' => View::autoKeywords(array_merge(array_map('trim', explode(',', (string)$post['tags'])), [$post['cat_name'] ?? '']), $post['title'] . ' ' . $post['content']),
+            'published' => date('c', strtotime((string)$post['published_at'])), 'modified' => date('c', strtotime((string)($post['updated_at'] ?: $post['published_at']))),
+            'tags' => array_values(array_filter(array_map('trim', explode(',', (string)$post['tags'])))),
+            'image' => $image ?? View::defaultImage(), 'canonical' => '/news/' . $post['id'], 'page_key' => 'post', 'ref_id' => (int)$post['id'], 'cache' => false,
             'schema' => ['@context' => 'https://schema.org', '@type' => 'NewsArticle', 'headline' => $post['title'], 'datePublished' => date('c', strtotime((string)$post['published_at'])),
                 'dateModified' => date('c', strtotime((string)($post['updated_at'] ?: $post['published_at']))), 'image' => $image ? [$image] : null,
                 'author' => ['@type' => 'Organization', 'name' => setting('site_name')], 'publisher' => ['@type' => 'Organization', 'name' => setting('site_name')]],

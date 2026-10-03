@@ -9,11 +9,12 @@ final class HomeController
             'featured' => DB::all('SELECT * FROM services WHERE is_active = 1 AND is_featured = 1 ORDER BY sort_order, id LIMIT 8'),
             'grid' => DB::all('SELECT slug, title, title_bn, icon, icon_color, icon_image FROM services WHERE is_active = 1 ORDER BY is_featured DESC, sort_order, id LIMIT 6'),
             'posts' => Content::latestPosts(5),
+            'projects' => DB::all('SELECT * FROM projects WHERE is_active = 1 AND is_featured = 1 ORDER BY sort_order, id DESC LIMIT 10'),
             'team' => DB::all('SELECT id, name, role, role_bn, photo, is_vip, badge_text, badge_animated FROM team_members WHERE is_active = 1 ORDER BY sort_order, id LIMIT 4'),
             'faqs' => DB::all('SELECT * FROM faqs WHERE is_active = 1 AND show_home = 1 ORDER BY sort_order, id LIMIT 5'),
             'methods' => Content::paymentMethods(),
         ];
-        View::page('pages/home', $data, ['nav' => 'home', 'css' => ['home', 'services'], 'page_key' => 'home']);
+        View::page('pages/home', $data, ['nav' => 'home', 'css' => ['home', 'services', 'projects'], 'page_key' => 'home']);
     }
 
     public function faq(): void

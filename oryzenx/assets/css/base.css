@@ -52,7 +52,7 @@
 
 /* Fixed px root keeps type consistent across Android font/display scaling;
    the footer A-/A/A+ control adjusts it deliberately. */
-html { font-size: 14px; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-behavior: smooth; }
+html { font-size: 14px; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-behavior: smooth; overflow-x: clip; }
 html[data-fs="md"] { font-size: 15px; }
 html[data-fs="lg"] { font-size: 16.5px; }
 *, *::before, *::after { box-sizing: border-box; }

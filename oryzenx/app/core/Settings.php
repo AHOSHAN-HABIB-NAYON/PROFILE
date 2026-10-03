@@ -62,6 +62,11 @@ final class Settings
             // images
             'img_quality' => '75', 'img_max_upload_mb' => '8', 'img_max_width' => '1600', 'img_format' => 'webp',
             'img_auto_webp' => '1', 'img_thumbnail' => '1', 'img_thumb_width' => '400',
+            // offer
+            'offer_enabled' => '1', 'offer_percent' => '20', 'offer_campaign' => '1', 'offer_until' => '',
+            'offer_title' => '20% OFF on every service!', 'offer_title_bn' => 'সব সার্ভিসে ২০% ছাড়!',
+            'offer_text' => 'Claim your one-time welcome discount now and use it on any service you order.',
+            'offer_text_bn' => 'এখনই আপনার এককালীন স্বাগত ছাড় ক্লেইম করুন — যেকোনো সার্ভিস অর্ডারে ব্যবহার করতে পারবেন।',
             // analytics
             'analytics_enabled' => '1', 'analytics_geo_lookup' => '0',
         ];
@@ -85,6 +90,7 @@ final class Settings
             'notifications' => ['notify_sound', 'push_enabled', 'vapid_public', 'vapid_private', 'vapid_subject'],
             'images' => ['img_quality', 'img_max_upload_mb', 'img_max_width', 'img_format', 'img_auto_webp', 'img_thumbnail', 'img_thumb_width'],
             'analytics' => ['analytics_enabled', 'analytics_geo_lookup'],
+            'offer' => ['offer_enabled', 'offer_percent', 'offer_campaign', 'offer_until', 'offer_title', 'offer_title_bn', 'offer_text', 'offer_text_bn'],
         ];
     }
 

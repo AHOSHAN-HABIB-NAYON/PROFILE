@@ -1,5 +1,5 @@
 <?php
-/** @var array $slides @var array $categories @var array $featured @var array $grid @var array $posts @var array $team @var array $faqs @var array $methods */
+/** @var array $slides @var array $categories @var array $featured @var array $grid @var array $posts @var array $projects @var array $team @var array $faqs @var array $methods */
 $wa = preg_replace('/\D/', '', setting('contact_whatsapp'));
 ?>
 <section class="hero">
@@ -94,8 +94,23 @@ $wa = preg_replace('/\D/', '', setting('contact_whatsapp'));
 <?php if ($featured): ?>
 <section class="section">
     <div class="section-head"><h2 class="section-title"><?= e(t('home.featured')) ?></h2><a class="small" href="<?= e(url('/services')) ?>"><?= e(t('common.view_all')) ?></a></div>
-    <div class="h-scroll">
-        <?php foreach ($featured as $s) require VIEWS . '/components/service-card.php'; ?>
+    <div class="marquee" style="--marquee-dur: <?= max(18, count($featured) * 5) ?>s">
+        <div class="marquee-track">
+            <?php foreach ([0, 1] as $copy): ?>
+                <div class="marquee-group"<?= $copy ? ' aria-hidden="true" inert' : '' ?>>
+                    <?php foreach ($featured as $s) require VIEWS . '/components/service-card.php'; ?>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</section>
+<?php endif; ?>
+
+<?php if ($projects): ?>
+<section class="section">
+    <div class="section-head"><h2 class="section-title"><i class="fa-solid fa-briefcase text-primary"></i> <?= e(t('home.projects')) ?></h2><a class="small" href="<?= e(url('/projects')) ?>"><?= e(t('common.view_all')) ?></a></div>
+    <div class="project-strip">
+        <?php foreach ($projects as $p) require VIEWS . '/components/project-card.php'; ?>
     </div>
 </section>
 <?php endif; ?>

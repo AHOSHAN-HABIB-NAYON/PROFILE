@@ -49,7 +49,7 @@ final class Auth
 
     public static function login(array $u, string $method = 'password', bool $remember = false): void
     {
-        session_regenerate_id(true);
+        Session::rotate();
         unset($_SESSION['pending_login']);
         $token = bin2hex(random_bytes(32));
         $_SESSION['uid'] = (int)$u['id'];
@@ -63,7 +63,10 @@ final class Auth
         ]);
         DB::q('UPDATE users SET last_login_at = NOW() WHERE id = ?', [$u['id']]);
         self::logAttempt((int)$u['id'], $u['email'], $method, true);
+        if ($method !== 'register') Mailer::alert((int)$u['id'], 'login', $method);
         self::$user = null;
+        // Visitor tapped "Claim offer" before signing in: claim it now and show the result on the next page.
+        if (!empty($_SESSION['offer_intent'])) { unset($_SESSION['offer_intent']); Session::flash('offer_result', Offer::tryClaim((int)$u['id'])); }
     }
 
     public static function logout(): void
@@ -113,7 +116,9 @@ final class Auth
 
     public static function activity(string $action, string $details = '', ?int $userId = null): void
     {
-        DB::insert('activity_logs', ['user_id' => $userId ?? self::id(), 'action' => $action, 'details' => mb_substr($details, 0, 500), 'ip' => client_ip()]);
+        $uid = $userId ?? self::id();
+        DB::insert('activity_logs', ['user_id' => $uid, 'action' => $action, 'details' => mb_substr($details, 0, 500), 'ip' => client_ip()]);
+        if ($uid) Mailer::alert((int)$uid, $action, $details);
     }
 
     public static function hash(string $password): string

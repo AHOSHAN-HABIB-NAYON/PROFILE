@@ -46,7 +46,7 @@
                         <input class="input" type="file" id="<?= $id ?>" name="<?= $key ?>" accept="image/jpeg,image/png,image/webp"><span class="hint" data-file-info></span>
                     </div>
                 <?php else: ?>
-                    <input class="input" type="<?= $f['type'] === 'number' ? 'number' : ($f['type'] === 'email' ? 'email' : ($f['type'] === 'url' ? 'url' : 'text')) ?>" id="<?= $id ?>" name="<?= $key ?>" value="<?= e($val) ?>" placeholder="<?= e($f['placeholder'] ?? '') ?>" <?= isset($f['min']) ? 'min="' . $f['min'] . '"' : '' ?> <?= isset($f['max']) && $f['type'] === 'number' ? 'max="' . $f['max'] . '"' : '' ?>>
+                    <input class="input" type="<?= $f['type'] === 'number' ? 'number' : ($f['type'] === 'email' ? 'email' : ($f['type'] === 'url' ? 'url' : ($f['type'] === 'datetime' ? 'datetime-local' : 'text'))) ?>" id="<?= $id ?>" name="<?= $key ?>" value="<?= e($val) ?>" placeholder="<?= e($f['placeholder'] ?? '') ?>" <?= isset($f['min']) ? 'min="' . $f['min'] . '"' : '' ?> <?= isset($f['max']) && $f['type'] === 'number' ? 'max="' . $f['max'] . '"' : '' ?>>
                 <?php endif; ?>
                 <?php if (!empty($f['hint'])): ?><span class="hint"><?= e(t($f['hint'])) ?></span><?php endif; ?>
             </div>

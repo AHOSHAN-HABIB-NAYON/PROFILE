@@ -8,6 +8,24 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const csrf = () => $('meta[name="csrf-token"]')?.content || '';
   const components = (window.OZXComponents = window.OZXComponents || {});
+
+  // Project cards: tap a thumbnail to swap the main image.
+  components['project-card'] = (el) => {
+    const main = el.querySelector('.project-main');
+    el.addEventListener('click', (e) => {
+      const b = e.target.closest('.project-thumb'); if (!b || !main || b.classList.contains('active')) return;
+      el.querySelectorAll('.project-thumb').forEach(x => x.classList.toggle('active', x === b));
+      main.classList.add('swap');
+      setTimeout(() => { main.src = b.dataset.src; main.onload = () => main.classList.remove('swap'); setTimeout(() => main.classList.remove('swap'), 300); }, 150);
+    });
+  };
+  components['project-filter'] = (el) => {
+    el.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-cat]'); if (!b) return;
+      el.querySelectorAll('.chip').forEach(x => x.classList.toggle('active', x === b));
+      document.querySelectorAll('.project-grid .project-card').forEach(c => { c.hidden = !!b.dataset.cat && c.dataset.cat !== b.dataset.cat; });
+    });
+  };
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const store = {
@@ -192,6 +210,7 @@
     setMeta('robots', data.meta?.robots);
     const can = $('link[rel="canonical"]'); if (can && data.meta?.canonical) can.href = data.meta.canonical;
     setMeta('og:title', data.title, true); setMeta('og:description', data.meta?.description, true); setMeta('og:url', data.meta?.canonical, true);
+    setMeta('og:image', data.meta?.image, true); setMeta('twitter:image', data.meta?.image); setMeta('keywords', data.meta?.keywords);
     const finalUrl = BASE + data.url + hash;
     if (replace) history.replaceState({ spa: 1 }, '', finalUrl);
     else if (push) history.pushState({ spa: 1 }, '', finalUrl);
@@ -369,7 +388,14 @@
     async 'notif-read-all'() { await api('/notifications/read-all', { method: 'POST' }); setBadge(0); $$('.notif-item.unread').forEach((n) => n.classList.remove('unread')); },
     async copy(el) { await copyText(el.dataset.copy); },
     share(el) { openShare(el.dataset.shareUrl || location.href, el.dataset.shareTitle || document.title); },
-    'pw-toggle'(el) { const i = el.parentElement.querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; el.querySelector('i').className = 'fa-solid ' + (i.type === 'password' ? 'fa-eye' : 'fa-eye-slash'); },
+    'pw-toggle'(el) {
+      // One eye shows/hides every new-password field in the form (password + confirmation).
+      const i = el.parentElement.querySelector('input'); const show = i.type === 'password';
+      const scope = i.autocomplete === 'new-password' && el.closest('form');
+      (scope ? $$('input[autocomplete="new-password"]', scope) : [i]).forEach(x => { x.type = show ? 'text' : 'password'; });
+      (scope ? $$('[data-action="pw-toggle"]', scope) : [el]).forEach(b => { b.querySelector('i').className = 'fa-solid ' + (show ? 'fa-eye-slash' : 'fa-eye'); });
+    },
+    'offer-open'() { if (!O.offer) return; if (O.offer.state !== 'open') return toast(O.offer.state === 'used' ? O.offer.i.used : O.offer.i.already, 'info'); showOffer('open'); },
     'push-enable'() { unlockAudio(); enablePush(true).then(() => { if (window.Notification && Notification.permission === 'denied') showEngage('denied'); }); },
     async like(el) {
       if (el.dataset.busy) return; el.dataset.busy = '1';
@@ -674,7 +700,7 @@
   // Decides what to ask for: install the app first, then notifications. Nothing once both are done.
   function engage(force = false) {
     if (!force && +(store.get('ozx-engage-snooze') || 0) > Date.now()) return;
-    if (document.body.classList.contains('engage-open')) return;
+    if (document.body.classList.contains('engage-open') || document.body.classList.contains('offer-open')) return;
     const installed = isStandalone() || store.get('ozx-installed') === '1';
     if (!installed && O.pwa?.prompt) {
       if (deferredInstall) return showEngage('install');
@@ -686,6 +712,81 @@
       store.set('ozx-denied-shown', Date.now()); return showEngage('denied');
     }
     if (Notification.permission === 'granted') enablePush(false); // keep the subscription fresh
+  }
+
+
+  /* ---------------- Promo offer popup ---------------- */
+  const OF = O.offer;
+  let offerEl = null;
+  const OFFER_SNOOZE = 6 * 3600e3;
+  function closeOffer(snooze = true) {
+    if (snooze && OF) store.set('ozx-offer-' + OF.key, Date.now() + OFFER_SNOOZE);
+    offerEl?.classList.add('closing'); const el = offerEl; offerEl = null;
+    setTimeout(() => { el?.remove(); document.body.classList.remove('offer-open'); }, 220);
+    clearInterval(closeOffer.t);
+    setTimeout(() => engage(), 1500);
+  }
+  function offerView(state) {
+    const i = OF.i;
+    if (state === 'claimed') return `<div class="offer-state ok"><span class="offer-state-ic"><i class="fa-solid fa-circle-check"></i></span>
+      <h3 id="of-t">${esc(i.claimed_title)}</h3><p>${esc(i.claimed_text)}</p>
+      <a class="btn btn-primary btn-block offer-go" href="${BASE}/services">${esc(i.go_services)} <i class="fa-solid fa-arrow-right"></i></a></div>`;
+    if (state === 'ip') return `<div class="offer-state warn"><span class="offer-state-ic"><i class="fa-solid fa-triangle-exclamation"></i></span>
+      <h3 id="of-t">${esc(i.ip_title)}</h3><p>${esc(i.ip_warning)}</p>
+      <button type="button" class="btn btn-outline btn-block offer-x2">${esc(S.ok)}</button></div>`;
+    return `<div class="offer-hero"><span class="offer-badge"><i class="fa-solid fa-bolt"></i> ${esc(i.badge)}</span>
+        <div class="offer-big"><span class="offer-gift"><i class="fa-solid fa-gift"></i></span><span class="offer-pct"><strong>${esc(OF.percent_txt || OF.percent)}%</strong><small>${esc(i.off)}</small></span></div>
+        <i class="offer-dot d1"></i><i class="offer-dot d2"></i><i class="offer-dot d3"></i><i class="offer-dot d4"></i></div>
+      <div class="offer-body"><h3 id="of-t">${esc(OF.title)}</h3><p>${esc(OF.text)}</p>
+        ${OF.until ? `<div class="offer-timer" data-until="${esc(OF.until)}"><i class="fa-regular fa-clock"></i> ${esc(i.ends_in)} <b></b></div>` : ''}
+        <button type="button" class="btn btn-primary btn-block offer-claim"><i class="fa-solid fa-gift"></i> ${esc(O.user ? i.claim : i.claim_login)}</button>
+        <button type="button" class="offer-later">${esc(i.later)}</button>
+        <p class="offer-rules"><i class="fa-solid fa-shield-halved"></i> ${esc(i.rules)}</p></div>`;
+  }
+  function renderOffer(state) {
+    const card = offerEl.querySelector('.offer-card');
+    card.className = 'offer-card' + (state === 'open' ? '' : ' offer-card-state');
+    card.querySelector('.offer-inner').innerHTML = offerView(state);
+    if (state === 'claimed') { chime('chat'); OF.state = 'claimed'; }
+    const timer = card.querySelector('.offer-timer');
+    clearInterval(closeOffer.t);
+    if (timer) {
+      const end = Date.parse(timer.dataset.until), b = timer.querySelector('b');
+      const tick = () => { let d = Math.max(0, end - Date.now()) / 1000; const dd = Math.floor(d / 86400); d %= 86400;
+        b.textContent = (dd ? dd + 'd ' : '') + [d / 3600, (d % 3600) / 60, d % 60].map(x => String(Math.floor(x)).padStart(2, '0')).join(':'); };
+      tick(); closeOffer.t = setInterval(tick, 1000);
+    }
+  }
+  function showOffer(state = 'open') {
+    if (!OF || offerEl || O.layout === 'admin') return false;
+    if (document.body.classList.contains('engage-open')) return false;
+    offerEl = document.createElement('div');
+    offerEl.className = 'offer-backdrop';
+    offerEl.innerHTML = `<div class="offer-card" role="dialog" aria-modal="true" aria-labelledby="of-t">
+      <button type="button" class="offer-x" aria-label="${esc(S.cancel)}"><i class="fa-solid fa-xmark"></i></button><div class="offer-inner"></div></div>`;
+    document.body.appendChild(offerEl); document.body.classList.add('offer-open');
+    renderOffer(state);
+    offerEl.addEventListener('click', async (e) => {
+      if (e.target === offerEl || e.target.closest('.offer-x, .offer-later, .offer-x2')) return closeOffer(true);
+      if (e.target.closest('.offer-go')) return closeOffer(false);
+      const btn = e.target.closest('.offer-claim'); if (!btn || btn.disabled) return;
+      unlockAudio(); btn.disabled = true; btn.classList.add('is-loading');
+      const r = await api('/offer/claim', { method: 'POST' });
+      btn.disabled = false; btn.classList.remove('is-loading');
+      if (r.state === 'login') { store.set('ozx-offer-' + OF.key, Date.now() + 600e3); location.href = r.redirect; return; }
+      if (r.state === 'claimed' || r.state === 'ip') return renderOffer(r.state);
+      toast(r.message || S.error, r.ok ? 'info' : 'error'); if (r.ok) closeOffer(true);
+    });
+    setTimeout(() => offerEl?.querySelector('.offer-claim, .offer-go, .offer-x2')?.focus({ preventScroll: true }), 60);
+    return true;
+  }
+  function offerOnLoad() {
+    if (!OF) return false;
+    if (OF.result === 'claimed' || OF.result === 'ip') return showOffer(OF.result);
+    if (OF.result === 'already') toast(OF.i.already, 'info');
+    if (OF.state !== 'open') return false;
+    if (+(store.get('ozx-offer-' + OF.key) || 0) > Date.now()) return false;
+    return showOffer('open');
   }
 
   function registerSW() {
@@ -736,7 +837,9 @@
         p.hidden = false; p.classList.remove('minimized');
         $('[data-chat-greet]') && ($('[data-chat-greet]').hidden = true);
         $('.fab-chat')?.setAttribute('aria-expanded', 'true');
-        loadHistory(); setTimeout(() => $('#chat-input')?.focus(), 50);
+        loadHistory();
+        // Only desktop gets auto-focus; on phones the keyboard opens when the user taps the input.
+        if (matchMedia('(hover: hover) and (pointer: fine)').matches) setTimeout(() => $('#chat-input')?.focus(), 50);
       },
       close() { const p = panel(); if (p) p.hidden = true; $('.fab-chat')?.setAttribute('aria-expanded', 'false'); },
       toggle() { this.isOpen() ? this.close() : this.open(); },
@@ -890,7 +993,7 @@
     initComponents(document);
     registerSW();
     if (O.user) { pollNotifications(true); setInterval(pollNotifications, 15000); document.addEventListener('visibilitychange', () => !document.hidden && pollNotifications()); }
-    setTimeout(() => engage(), 3500);
+    setTimeout(() => { if (!offerOnLoad()) engage(); }, OF?.result ? 400 : 3000);
     chatGreeting();
     idlePrefetch();
     history.replaceState({ spa: 1, y: 0 }, '');

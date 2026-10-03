@@ -36,6 +36,12 @@ final class AdminSettingsController
             'payment' => ['icon' => 'fa-solid fa-wallet', 'fields' => [
                 'require_verified_for_payment' => $yes, 'max_screenshot_mb' => ['type' => 'number', 'min' => 1, 'max' => 20], 'wallet_min_withdraw' => ['type' => 'number', 'min' => 1, 'max' => 10000],
             ], 'links' => [['/admin/payment-methods', 'admin.payment_methods', 'fa-solid fa-building-columns'], ['/admin/wallet', 'wallet.admin_title', 'fa-solid fa-wallet']], 'methods' => true],
+            'offer' => ['icon' => 'fa-solid fa-gift', 'fields' => [
+                'offer_enabled' => $yes, 'offer_percent' => ['type' => 'number', 'min' => 1, 'max' => 90],
+                'offer_title' => ['type' => 'text', 'max' => 120], 'offer_title_bn' => ['type' => 'text', 'max' => 120],
+                'offer_text' => ['type' => 'textarea'], 'offer_text_bn' => ['type' => 'textarea'],
+                'offer_until' => ['type' => 'datetime', 'hint' => 'set.offer_until_hint'], 'offer_campaign' => ['type' => 'number', 'min' => 1, 'max' => 9999, 'hint' => 'set.offer_campaign_hint'],
+            ], 'info' => 'set.offer_info'],
             'security' => ['icon' => 'fa-solid fa-shield-halved', 'fields' => [
                 'security_max_attempts' => ['type' => 'number', 'min' => 3, 'max' => 50], 'security_lock_minutes' => ['type' => 'number', 'min' => 1, 'max' => 1440],
                 'registration_enabled' => $yes, 'require_email_verification' => $yes,

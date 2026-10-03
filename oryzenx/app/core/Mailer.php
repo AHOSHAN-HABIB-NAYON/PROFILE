@@ -21,6 +21,51 @@ final class Mailer
         }
     }
 
+    private static array $queue = [];
+
+    /** Sends after the response is flushed, so emails never slow a page down. */
+    public static function queue(string $to, string $subject, string $bodyHtml): void
+    {
+        if (!self::configured() || $to === '') return;
+        if (!self::$queue) register_shutdown_function([self::class, 'flushQueue']);
+        self::$queue[] = [$to, $subject, $bodyHtml];
+    }
+
+    public static function flushQueue(): void
+    {
+        if (function_exists('fastcgi_finish_request')) @fastcgi_finish_request();
+        elseif (function_exists('litespeed_finish_request')) @litespeed_finish_request();
+        ignore_user_abort(true);
+        @set_time_limit(60);
+        $q = self::$queue; self::$queue = [];
+        foreach ($q as [$to, $subject, $body]) self::send($to, $subject, $body);
+    }
+
+    /** Security / account alert for a user action (login, password, 2FA, passkeys…). */
+    public static function alert(int $userId, string $action, string $details = ''): void
+    {
+        $map = [
+            'register' => 'welcome', 'login' => 'login', 'password_changed' => 'pw_changed', 'password_reset' => 'pw_reset',
+            'email_changed' => 'email_changed', 'email_verified' => 'email_verified', '2fa_enabled' => 'tfa_on', '2fa_disabled' => 'tfa_off',
+            '2fa_reset_by_email' => 'tfa_off', '2fa_recovery_regenerated' => 'tfa_codes', 'passkey_added' => 'passkey_added',
+            'passkey_removed' => 'passkey_removed', 'sessions_revoked_all' => 'sessions_revoked', 'payment_submitted' => 'payment_submitted',
+        ];
+        if (!isset($map[$action]) || !self::configured() || str_ends_with($details, '(balance)')) return;
+        $u = DB::row('SELECT name, email FROM users WHERE id = ? AND deleted_at IS NULL', [$userId]);
+        if (!$u) return;
+        $k = $map[$action];
+        $site = setting('site_name');
+        $rows = '';
+        foreach ([t('mail.when') => date('Y-m-d H:i') . ' (' . date_default_timezone_get() . ')', t('mail.ip') => client_ip(), t('mail.device') => UA::summary(user_agent())] as $l => $v) {
+            $rows .= '<tr><td style="padding:4px 10px 4px 0;color:#64748b">' . e($l) . '</td><td style="padding:4px 0;font-weight:600">' . e($v) . '</td></tr>';
+        }
+        $body = '<p>' . e(t('mail.hi', ['name' => $u['name']])) . '</p><p>' . e(t('mail.act_' . $k, ['site' => $site, 'details' => $details])) . '</p>'
+            . '<table style="font-size:13px;margin:12px 0;border-collapse:collapse">' . $rows . '</table>';
+        if ($k === 'welcome') $body .= self::button(abs_url(url('/services')), t('mail.explore'));
+        elseif ($k !== 'email_verified' && $k !== 'payment_submitted') $body .= '<p style="color:#b91c1c;font-size:13px">' . e(t('mail.not_you')) . '</p>' . self::button(abs_url(url('/profile/security')), t('mail.review_security'));
+        self::queue($u['email'], t('mail.act_' . $k . '_subject', ['site' => $site]), $body);
+    }
+
     public static function wrap(string $title, string $body): string
     {
         $site = e(setting('site_name'));

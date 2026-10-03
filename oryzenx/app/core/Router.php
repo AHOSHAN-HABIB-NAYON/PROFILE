@@ -8,7 +8,7 @@ final class Router
     public function add(string $methods, string $pattern, callable|array $handler, array $mw = []): void
     {
         $pattern = rtrim($this->group['prefix'] . $pattern, '/') ?: '/';
-        $regex = preg_replace_callback('/\{(\w+)(?::([^}]+))?\}/', fn($m) => '(?P<' . $m[1] . '>' . ($m[2] ?? '[^/]+') . ')', $pattern);
+        $regex = preg_replace_callback('/\{(\w+)(?::((?:[^{}]|\{\d+(?:,\d*)?\})+))?\}/', fn($m) => '(?P<' . $m[1] . '>' . ($m[2] ?? '[^/]+') . ')', $pattern);
         foreach (explode('|', $methods) as $m) {
             $this->routes[$m][] = ['re' => '#^' . $regex . '$#u', 'h' => $handler, 'mw' => [...$this->group['mw'], ...$mw]];
         }

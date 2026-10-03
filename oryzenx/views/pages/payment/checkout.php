@@ -1,6 +1,8 @@
 <?php /** @var array $s @var array $u @var array $methods */
 $needVerify = setting('require_verified_for_payment') === '1' && !$u['email_verified_at'];
-$priceUsd = Wallet::toUsd((float)$s['price'], $s['currency']);
+[$price, $disc, $pct] = Offer::price($s, (int)$u['id']);
+$priceUsd = Wallet::toUsd($price, $s['currency']);
+$offerOpen = !$disc && Offer::enabled() && !Offer::claim((int)$u['id']);
 $bal = (float)$u['balance'];
 $canBalance = $bal > 0 && $bal >= $priceUsd;
 ?>
@@ -10,8 +12,13 @@ $canBalance = $bal > 0 && $bal >= $priceUsd;
 <section class="card checkout-summary">
     <?= svc_logo($s, 'lg') ?>
     <div class="grow" style="min-width:0"><strong class="truncate" style="display:block"><?= e(tr($s, 'title')) ?></strong><span class="xs muted"><?= e(tr($s, 'short_desc')) ?></span></div>
-    <span class="price-tag"><?= money($s['price'], $s['currency']) ?></span>
+    <span class="price-tag"><?php if ($disc): ?><s class="price-old"><?= money($s['price'], $s['currency']) ?></s><?php endif; ?><?= money($price, $s['currency']) ?></span>
 </section>
+<?php if ($disc): ?>
+    <div class="offer-applied"><i class="fa-solid fa-gift"></i><span><?= e(t('offer.applied', ['p' => num($pct)])) ?></span><strong>−<?= money($disc, $s['currency']) ?></strong></div>
+<?php elseif ($offerOpen): ?>
+    <button type="button" class="offer-applied offer-cta" data-action="offer-open"><i class="fa-solid fa-gift"></i><span><?= e(t('offer.claim_here', ['p' => num(Offer::percent())])) ?></span><i class="fa-solid fa-chevron-right"></i></button>
+<?php endif; ?>
 
 <?php if ($needVerify): ?>
     <div class="alert alert-warning mt-2"><i class="fa-solid fa-envelope"></i><span><?= e(t('payment.verify_first')) ?> <a href="<?= e(url('/profile/security')) ?>"><?= e(t('nav.security')) ?></a></span></div>
@@ -51,8 +58,8 @@ $canBalance = $bal > 0 && $bal >= $priceUsd;
                         <div class="copy-box"><span><?= e($m['account_number']) ?></span><button class="btn btn-xs btn-primary" type="button" data-action="copy" data-copy="<?= e($m['account_number']) ?>"><i class="fa-regular fa-copy"></i> <?= e(t('payment.copy')) ?></button></div></div>
                 <?php endif; ?>
                 <?php if ($m['account_name']): ?><p class="small mb-0"><?= e(t('payment.account_name')) ?>: <strong><?= e($m['account_name']) ?></strong></p><?php endif; ?>
-                <p class="small mb-0"><?= e(t('payment.send_exact')) ?>: <strong class="text-primary"><?= money($s['price'], $s['currency']) ?></strong>
-                    <?php if ($s['currency'] === 'USD' && $m['type'] === 'mobile' && (float)setting('usd_to_bdt') > 0): ?> ≈ <strong><?= money(ceil($s['price'] * (float)setting('usd_to_bdt')), 'BDT') ?></strong><?php endif; ?></p>
+                <p class="small mb-0"><?= e(t('payment.send_exact')) ?>: <strong class="text-primary"><?= money($price, $s['currency']) ?></strong>
+                    <?php if ($s['currency'] === 'USD' && $m['type'] === 'mobile' && (float)setting('usd_to_bdt') > 0): ?> ≈ <strong><?= money(ceil($price * (float)setting('usd_to_bdt')), 'BDT') ?></strong><?php endif; ?></p>
                 <?php if ($m['qr_image']): ?><div class="pay-qr-wrap"><img class="pay-qr" src="<?= e(upload_url($m['qr_image'])) ?>" alt="QR" loading="lazy"><span class="xs muted"><i class="fa-solid fa-qrcode"></i> <?= e(t('payment.scan_qr')) ?></span></div><?php endif; ?>
                 <?php if ($m['link']): ?><a class="pay-open pay-open-<?= e(preg_replace('/[^a-z0-9_]/', '', $m['code'])) ?>" href="<?= e($m['link']) ?>" target="_blank" rel="noopener" data-no-spa><img src="<?= e(Content::media($m['logo'])) ?>" alt="" width="22" height="22"><span><?= e(t('payment.open_link', ['m' => $m['name']])) ?></span><i class="fa-solid fa-arrow-up-right-from-square"></i></a><?php endif; ?>
                 <?php if (tr($m, 'instructions')): ?><p class="small muted mb-0"><?= nl2br(e(tr($m, 'instructions'))) ?></p><?php endif; ?>

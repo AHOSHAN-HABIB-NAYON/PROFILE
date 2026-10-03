@@ -14,6 +14,7 @@ $boot = [
     'ai' => ['greet' => setting('ai_greeting') === '1', 'sound' => setting('ai_sound') === '1'],
     'pwa' => ['enabled' => setting('pwa_enabled') === '1', 'prompt' => setting('pwa_install_prompt') === '1', 'version' => setting('pwa_version')],
     'recaptcha' => Recaptcha::enabled() ? setting('recaptcha_site_key') : null,
+    'offer' => ($o = Offer::boot($user)) ? $o + ['result' => Session::flash('offer_result')] : null,
     'js' => array_map(fn($j) => asset("js/$j.js"), $page['js']),
 ];
 ?>

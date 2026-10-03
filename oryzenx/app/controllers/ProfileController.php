@@ -104,7 +104,6 @@ final class ProfileController
         DB::q('INSERT INTO user_security (user_id, password_changed_at) VALUES (?, NOW()) ON DUPLICATE KEY UPDATE password_changed_at = NOW()', [$u['id']]);
         $n = Auth::revokeOthers((int)$u['id']);
         Auth::activity('password_changed', $n ? "$n other sessions signed out" : '');
-        if (Mailer::configured()) Mailer::send($u['email'], t('mail.pw_changed_subject'), '<p>' . e(t('mail.pw_changed_body')) . '</p>');
         respond(true, t('profile.pw_changed'), null, ['reset' => true]);
     }
 

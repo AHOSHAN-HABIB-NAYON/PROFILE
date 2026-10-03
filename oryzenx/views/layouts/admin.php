@@ -22,6 +22,7 @@ $groups = [
         ['post-categories', '/admin/post-categories', 'fa-solid fa-tags', 'admin.post_categories', 0],
         ['team', '/admin/team', 'fa-solid fa-user-tie', 'admin.team', 0],
         ['faqs', '/admin/faqs', 'fa-solid fa-circle-question', 'admin.faqs', 0],
+        ['projects', '/admin/projects', 'fa-solid fa-briefcase', 'admin.projects', 0],
         ['slides', '/admin/slides', 'fa-solid fa-images', 'admin.slider', 0],
     ],
     'admin.g_system' => [
@@ -38,9 +39,9 @@ require VIEWS . '/partials/head.php';
 <div id="progress" aria-hidden="true"></div>
 <a class="skip-link" href="#main"><?= e(t('a11y.skip')) ?></a>
 <header class="topbar admin-topbar" role="banner">
-    <button class="icon-btn only-mobile" type="button" data-action="drawer" aria-label="<?= e(t('nav.menu')) ?>" aria-controls="sidebar" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
+    <button class="hbtn only-mobile" type="button" data-action="drawer" aria-label="<?= e(t('nav.menu')) ?>" aria-controls="sidebar" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
     <a class="brand" href="<?= e(url('/admin')) ?>">
-        <?php if (setting('logo')): ?><img class="brand-logo" src="<?= e(upload_url(setting('logo'))) ?>" alt="" width="28" height="28">
+        <?php if (setting('logo')): ?><img class="brand-logo" src="<?= e(upload_url(setting('logo'))) ?>" alt="" width="36" height="36">
         <?php else: ?><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span><?php endif; ?>
         <span class="brand-name"><?= e(setting('site_name')) ?></span><span class="badge badge-primary">Admin</span>
     </a>
@@ -48,11 +49,11 @@ require VIEWS . '/partials/head.php';
         <i class="fa-solid fa-magnifying-glass"></i><input name="q" placeholder="<?= e(t('admin.search_ph')) ?>" aria-label="<?= e(t('admin.search')) ?>">
     </form>
     <div class="topbar-actions">
-        <a class="icon-btn only-mobile" href="<?= e(url('/admin/search')) ?>" aria-label="<?= e(t('admin.search')) ?>"><i class="fa-solid fa-magnifying-glass"></i></a>
-        <a class="icon-btn" href="<?= e(url('/')) ?>" data-no-spa target="_blank" rel="noopener" aria-label="<?= e(t('admin.view_site')) ?>" title="<?= e(t('admin.view_site')) ?>"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
-        <button class="icon-btn" type="button" data-action="theme" aria-label="<?= e(t('nav.theme')) ?>"><i class="fa-solid fa-moon theme-ic-dark"></i><i class="fa-solid fa-sun theme-ic-light"></i></button>
-        <button class="icon-btn lang-btn" type="button" data-action="lang" data-lang="<?= lang() === 'bn' ? 'en' : 'bn' ?>" aria-label="<?= e(t('nav.language')) ?>"><?= lang() === 'bn' ? 'EN' : 'বাং' ?></button>
-        <button class="icon-btn notif-btn" type="button" data-action="notifications" aria-label="<?= e(t('nav.notifications')) ?>"><i class="fa-solid fa-bell"></i><span class="dot-badge" data-notif-count hidden></span></button>
+        <a class="hbtn only-mobile" href="<?= e(url('/admin/search')) ?>" aria-label="<?= e(t('admin.search')) ?>"><i class="fa-solid fa-magnifying-glass"></i></a>
+        <a class="hbtn only-desktop" href="<?= e(url('/')) ?>" data-no-spa target="_blank" rel="noopener" aria-label="<?= e(t('admin.view_site')) ?>" title="<?= e(t('admin.view_site')) ?>"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+        <button class="hbtn" type="button" data-action="theme" aria-label="<?= e(t('nav.theme')) ?>"><i class="fa-regular fa-moon theme-ic-dark"></i><i class="fa-solid fa-sun theme-ic-light"></i></button>
+        <button class="hbtn" type="button" data-action="lang" data-lang="<?= lang() === 'bn' ? 'en' : 'bn' ?>" aria-label="<?= e(t('nav.language')) ?>" title="<?= lang() === 'bn' ? 'English' : 'বাংলা' ?>"><i class="fa-solid fa-language"></i></button>
+        <button class="hbtn notif-btn" type="button" data-action="notifications" aria-label="<?= e(t('nav.notifications')) ?>"><i class="fa-regular fa-bell"></i><span class="dot-badge" data-notif-count hidden></span></button>
         <a class="only-desktop topbar-user" href="<?= e(url('/profile')) ?>" data-no-spa><?= avatar_html($user, 'avatar-sm') ?></a>
     </div>
     <div class="notif-panel card" id="notif-panel" hidden role="dialog" aria-label="<?= e(t('nav.notifications')) ?>">
@@ -64,6 +65,7 @@ require VIEWS . '/partials/head.php';
 <div class="shell">
     <aside class="sidebar" id="sidebar" aria-label="Admin">
         <div class="sidebar-inner">
+            <a class="side-brand" href="<?= e(url('/admin')) ?>"><?= brand_avatar() ?><span><strong><?= e(setting('site_name')) ?></strong><small>Admin panel</small></span></a>
             <a class="side-user" href="<?= e(url('/profile')) ?>" data-no-spa><?= avatar_html($user) ?><span><strong><?= e($user['name']) ?></strong><small><?= e(t('admin.administrator')) ?></small></span></a>
             <?php foreach ($groups as $label => $links): ?>
                 <nav class="side-nav" aria-label="<?= e(t($label)) ?>">

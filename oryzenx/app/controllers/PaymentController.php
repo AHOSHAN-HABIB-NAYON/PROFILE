@@ -46,34 +46,39 @@ final class PaymentController
             $shot = Upload::image('screenshot', 'payments', ['private' => true, 'max_mb' => (float)setting('max_screenshot_mb'), 'format' => 'webp', 'quality' => 82, 'max_width' => 1600]);
         } catch (UploadError $e) { fail($e->getMessage(), ['screenshot' => $e->getMessage()]); }
 
-        $payId = DB::tx(function () use ($s, $u, $code, $txn, $sender, $shot) {
+        [$price, $disc] = Offer::price($s, (int)$u['id']);
+        $payId = DB::tx(function () use ($s, $u, $code, $txn, $sender, $shot, $price, $disc) {
             $orderNo = 'OZX' . date('ymd') . strtoupper(bin2hex(random_bytes(3)));
             $orderId = DB::insert('orders', ['order_no' => $orderNo, 'user_id' => $u['id'], 'service_id' => $s['id'], 'service_title' => $s['title'],
-                'amount' => $s['price'], 'currency' => $s['currency'], 'note' => mb_substr((string)input('note'), 0, 1000) ?: null]);
-            return DB::insert('payments', ['order_id' => $orderId, 'user_id' => $u['id'], 'method_code' => $code, 'amount' => $s['price'], 'currency' => $s['currency'],
+                'amount' => $price, 'currency' => $s['currency'], 'note' => mb_substr((string)input('note'), 0, 1000) ?: null]);
+            $payId = DB::insert('payments', ['order_id' => $orderId, 'user_id' => $u['id'], 'method_code' => $code, 'amount' => $price, 'discount' => $disc, 'currency' => $s['currency'],
                 'transaction_id' => $txn, 'sender' => $sender ?: null, 'screenshot' => $shot]);
+            if ($disc > 0) Offer::markUsed((int)$u['id'], $payId);
+            return $payId;
         });
         Auth::activity('payment_submitted', "#$payId {$s['title']}");
         $admins = DB::col("SELECT id FROM users WHERE role = 'admin' AND deleted_at IS NULL");
-        if ($admins) Notifier::send($admins, t('notif.new_payment'), $u['name'] . ' · ' . $s['title'] . ' · ' . money($s['price'], $s['currency']),
+        if ($admins) Notifier::send($admins, t('notif.new_payment'), $u['name'] . ' · ' . $s['title'] . ' · ' . money($price, $s['currency']) . ($disc > 0 ? ' (−' . money($disc, $s['currency']) . ')' : ''),
             ['icon' => 'fa-solid fa-wallet', 'link' => '/admin/payments/' . $payId, 'priority' => 'high']);
-        Notifier::send([(int)$u['id']], t('notif.payment_received'), t('notif.payment_received_text', ['s' => $s['title']]), ['icon' => 'fa-solid fa-hourglass-half', 'link' => '/profile/payments/' . $payId, 'push' => false]);
+        Notifier::send([(int)$u['id']], t('notif.payment_received'), t('notif.payment_received_text', ['s' => $s['title']]), ['icon' => 'fa-solid fa-hourglass-half', 'link' => '/profile/payments/' . $payId, 'push' => false, 'email' => false]);
         respond(true, t('payment.submitted'), '/profile/payments/' . $payId);
     }
 
     /** Instant purchase from the wallet balance: no proof needed, the order starts right away. */
     private function payWithBalance(array $s, array $u): never
     {
-        $usd = Wallet::toUsd((float)$s['price'], $s['currency']);
+        [$price, $disc] = Offer::price($s, (int)$u['id']);
+        $usd = Wallet::toUsd($price, $s['currency']);
         if ($usd <= 0) fail(t('valid.numeric'));
         if (!RateLimit::hit('pay|' . $u['id'], 10, 3600)) fail(t('error.429'), [], 429);
-        $payId = DB::tx(function () use ($s, $u, $usd) {
+        $payId = DB::tx(function () use ($s, $u, $usd, $price, $disc) {
             if (!Wallet::debit((int)$u['id'], $usd)) return 0;
             $orderNo = 'OZX' . date('ymd') . strtoupper(bin2hex(random_bytes(3)));
             $orderId = DB::insert('orders', ['order_no' => $orderNo, 'user_id' => $u['id'], 'service_id' => $s['id'], 'service_title' => $s['title'],
-                'amount' => $s['price'], 'currency' => $s['currency'], 'status' => 'processing']);
-            $payId = DB::insert('payments', ['order_id' => $orderId, 'user_id' => $u['id'], 'method_code' => 'balance', 'amount' => $s['price'], 'currency' => $s['currency'],
+                'amount' => $price, 'currency' => $s['currency'], 'status' => 'processing']);
+            $payId = DB::insert('payments', ['order_id' => $orderId, 'user_id' => $u['id'], 'method_code' => 'balance', 'amount' => $price, 'discount' => $disc, 'currency' => $s['currency'],
                 'transaction_id' => 'BAL-' . $orderNo, 'status' => 'approved', 'reviewed_at' => now()]);
+            if ($disc > 0) Offer::markUsed((int)$u['id'], $payId);
             Wallet::log((int)$u['id'], 'purchase', $usd, ['method_code' => 'balance', 'transaction_id' => 'BAL-' . $orderNo, 'note' => $s['title']]);
             return $payId;
         });

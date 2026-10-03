@@ -5,7 +5,7 @@ final class SystemController
     public function sitemap(): void
     {
         $base = rtrim(setting('canonical_base') ?: base_url(), '/');
-        $urls = [['/', null, '1.0'], ['/services', null, '0.9'], ['/news', null, '0.8'], ['/team', null, '0.6'], ['/contact', null, '0.6'], ['/faq', null, '0.5']];
+        $urls = [['/', null, '1.0'], ['/services', null, '0.9'], ['/news', null, '0.8'], ['/team', null, '0.6'], ['/projects', null, '0.7'], ['/contact', null, '0.6'], ['/faq', null, '0.5']];
         foreach (DB::all('SELECT slug, COALESCE(updated_at, created_at) AS m FROM services WHERE is_active = 1') as $s) $urls[] = ['/services/' . $s['slug'], $s['m'], '0.8'];
         foreach (DB::all("SELECT id, COALESCE(updated_at, published_at) AS m FROM posts WHERE status = 'published' AND published_at <= NOW() ORDER BY published_at DESC LIMIT 5000") as $p) $urls[] = ['/news/' . $p['id'], $p['m'], '0.7'];
         foreach (DB::all('SELECT id FROM team_members WHERE is_active = 1') as $m) $urls[] = ['/team/' . $m['id'], null, '0.4'];

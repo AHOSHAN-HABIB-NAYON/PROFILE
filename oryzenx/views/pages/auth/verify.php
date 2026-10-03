@@ -22,6 +22,6 @@
             <?php endif; ?>
             <a class="btn btn-ghost btn-sm btn-block" href="<?= e(url('/login')) ?>"><i class="fa-solid fa-arrow-left"></i> <?= e(t('auth.back_login')) ?></a>
         </div>
+        <?php require VIEWS . '/components/auth-secure.php'; ?>
     </div>
-    <?php require VIEWS . '/components/auth-secure.php'; ?>
 </div>

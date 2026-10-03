@@ -20,10 +20,10 @@
         <div class="social-login">
             <button class="social-btn" type="button" data-component="passkey-login" hidden aria-label="<?= e(t('auth.passkey_login')) ?>" title="<?= e(t('auth.passkey_login')) ?>"><i class="fa-solid fa-fingerprint"></i></button>
             <?php if (GoogleController::enabled()): ?>
-                <a class="social-btn" href="<?= e(url('/auth/google')) ?>" data-no-spa aria-label="<?= e(t('auth.google')) ?>" title="<?= e(t('auth.google')) ?>"><img src="<?= e(asset('img/google.svg')) ?>" alt="" width="22" height="22"></a>
+                <a class="social-btn" href="<?= e(url('/auth/google')) ?>" data-no-spa aria-label="<?= e(t('auth.google')) ?>" title="<?= e(t('auth.google')) ?>"><img src="<?= e(asset('img/google.svg')) ?>" alt="" width="19" height="19"></a>
             <?php endif; ?>
         </div>
         <p class="center small mt-2 mb-0"><?= e(t('auth.no_account')) ?> <a href="<?= e(url('/register')) ?>"><?= e(t('auth.register')) ?></a></p>
+        <?php require VIEWS . '/components/auth-secure.php'; ?>
     </div>
-    <?php require VIEWS . '/components/auth-secure.php'; ?>
 </div>

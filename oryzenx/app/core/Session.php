@@ -18,6 +18,20 @@ final class Session
             'samesite' => 'Lax',
         ]);
         session_start();
+        // A request that raced a login (e.g. a background prefetch sent with the old cookie) follows the
+        // old session to its replacement instead of creating an empty one and logging the user out.
+        if (!empty($_SESSION['_destroyed'])) {
+            $next = $_SESSION['_new_id'] ?? '';
+            if ($_SESSION['_destroyed'] < time() - 120 || !preg_match('/^[a-zA-Z0-9,-]{22,256}$/', $next)) {
+                $_SESSION = [];
+                session_regenerate_id(true);
+            } else {
+                session_write_close();
+                ini_set('session.use_strict_mode', '0');
+                session_id($next);
+                session_start();
+            }
+        }
         // Idle timeout for non-remembered sessions (30 days for remembered).
         $now = time();
         $limit = !empty($_SESSION['remember']) ? 2592000 : 86400;
@@ -26,6 +40,24 @@ final class Session
             session_regenerate_id(true);
         }
         $_SESSION['_last'] = $now;
+    }
+
+    /**
+     * Race-safe session ID rotation (PHP manual pattern): the old session stays readable for a short time and
+     * points to the new one, so parallel in-flight requests never wipe a fresh login.
+     */
+    public static function rotate(): void
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) return;
+        $data = $_SESSION;
+        $newId = session_create_id();
+        $_SESSION = ['_destroyed' => time(), '_new_id' => $newId];
+        session_write_close();
+        ini_set('session.use_strict_mode', '0');
+        session_id($newId);
+        session_start();
+        $_SESSION = $data;
+        unset($_SESSION['_destroyed'], $_SESSION['_new_id']);
     }
 
     public static function flash(string $key, ?string $value = null): ?string
