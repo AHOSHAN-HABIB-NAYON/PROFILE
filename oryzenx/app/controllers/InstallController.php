@@ -75,10 +75,12 @@ final class InstallController
         @chmod(APP . '/config/config.php', 0640);
 
         // From here on, the app runs as installed.
+        $existing = (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn() > 0;
         (require ROOT . '/database/seed.php')();
         $site = input('site_name');
-        if ($site !== '') DB::q("INSERT INTO settings (setting_key, setting_value, group_name) VALUES ('site_name', ?, 'general')", [mb_substr($site, 0, 80)]);
-        DB::q("INSERT INTO settings (setting_key, setting_value, group_name) VALUES ('db_version', ?, 'general') ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)", [(string)Migrations::LATEST]);
+        if ($site !== '') DB::q("INSERT INTO settings (setting_key, setting_value, group_name) VALUES ('site_name', ?, 'general') ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)", [mb_substr($site, 0, 80)]);
+        // Re-installing over an existing database keeps all data and only adds what is missing.
+        Migrations::run();
         Settings::flush();
 
         if ($adminEmail !== '') {
@@ -89,6 +91,6 @@ final class InstallController
         try { WebPush::ensureKeys(); } catch (Throwable $e) { ErrorHandler::log('install', 'VAPID: ' . $e->getMessage()); }
         SystemController::buildIcons();
 
-        json_out(['ok' => true, 'message' => 'Installed successfully.', 'redirect' => url($adminEmail !== '' ? '/login' : '/register')]);
+        json_out(['ok' => true, 'message' => $existing ? 'Installed. Your existing data was kept — log in with your old account.' : 'Installed successfully.', 'redirect' => url($adminEmail !== '' || $existing ? '/login' : '/register')]);
     }
 }
