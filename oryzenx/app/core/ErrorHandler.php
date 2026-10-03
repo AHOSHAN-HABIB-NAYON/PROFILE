@@ -49,13 +49,17 @@ final class ErrorHandler
             }
             View::errorPage($code, $msg);
         } catch (Throwable $inner) {
-            // Last-resort output that cannot fail.
+            // Last-resort output that cannot fail. A short reference (no paths or secrets) helps support find the cause in the log.
+            self::log('error', 'error page failed: ' . $inner->getMessage(), ['file' => $inner->getFile() . ':' . $inner->getLine(), 'url' => $_SERVER['REQUEST_URI'] ?? '']);
+            $ref = (new ReflectionClass($e))->getShortName() . ' · ' . basename($e->getFile()) . ':' . $e->getLine()
+                . ($inner !== $e ? ' / ' . basename($inner->getFile()) . ':' . $inner->getLine() : '');
             if (!headers_sent()) header('Content-Type: text/html; charset=utf-8');
             echo '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
                . '<div style="font-family:system-ui,sans-serif;max-width:420px;margin:15vh auto;padding:24px;text-align:center">'
                . '<h2 style="font-size:20px">দুঃখিত, কিছু সমস্যা হয়েছে।</h2><p>আবার চেষ্টা করুন।</p>'
                . '<h2 style="font-size:20px">Something went wrong.</h2><p>Please try again.</p>'
-               . '<a href="javascript:location.reload()">Retry</a></div>';
+               . '<a href="javascript:location.reload()">Retry</a>'
+               . '<p style="margin-top:28px;font-size:12px;color:#94a3b8">Ref: ' . htmlspecialchars($ref, ENT_QUOTES) . '</p></div>';
         }
         exit;
     }

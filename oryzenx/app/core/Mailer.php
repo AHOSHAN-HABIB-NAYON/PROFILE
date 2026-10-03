@@ -33,6 +33,8 @@ final class Mailer
 
     public static function flushQueue(): void
     {
+        // Save the session first so the user's next request is never blocked while mail is being sent.
+        if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
         if (function_exists('fastcgi_finish_request')) @fastcgi_finish_request();
         elseif (function_exists('litespeed_finish_request')) @litespeed_finish_request();
         ignore_user_abort(true);

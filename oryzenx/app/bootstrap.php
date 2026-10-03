@@ -33,3 +33,13 @@ spl_autoload_register(function (string $class): void {
 require APP . '/helpers.php';
 
 ErrorHandler::register();
+
+// After uploading a new version: drop stale OPcache entries and caches once, so old and new files never mix.
+(function (): void {
+    $build = OZX_VERSION . '-' . @filemtime(APP . '/routes.php') . '-' . @filemtime(APP . '/core/View.php') . '-' . @filemtime(VIEWS . '/partials/boot.php');
+    $stamp = STORAGE . '/cache/build.txt';
+    if (@file_get_contents($stamp) === $build) return;
+    if (function_exists('opcache_reset')) @opcache_reset();
+    foreach (array_merge(glob(STORAGE . '/cache/*.php') ?: [], glob(STORAGE . '/cache/*.txt') ?: []) as $f) @unlink($f);
+    @file_put_contents($stamp, $build, LOCK_EX);
+})();
