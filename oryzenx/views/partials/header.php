@@ -3,7 +3,7 @@
 $logo = setting('logo');
 ?>
 <header class="topbar" role="banner">
-    <button class="icon-btn only-mobile" type="button" data-action="drawer" aria-label="<?= e(t('nav.menu')) ?>" aria-controls="sidebar" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
+    <button class="hbtn only-mobile" type="button" data-action="drawer" aria-label="<?= e(t('nav.menu')) ?>" aria-controls="sidebar" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
     <a class="brand" href="<?= e(url('/')) ?>" aria-label="<?= e(setting('site_name')) ?>">
         <?php if ($logo): ?>
             <img class="brand-logo" src="<?= e(upload_url($logo)) ?>" alt="" width="28" height="28">
@@ -14,13 +14,13 @@ $logo = setting('logo');
     </a>
     <button class="search-trigger only-desktop" type="button" data-action="search"><i class="fa-solid fa-magnifying-glass"></i><span><?= e(t('search.placeholder')) ?></span><kbd>/</kbd></button>
     <div class="topbar-actions">
-        <button class="icon-btn only-mobile" type="button" data-action="search" aria-label="<?= e(t('search.title')) ?>"><i class="fa-solid fa-magnifying-glass"></i></button>
-        <button class="icon-btn lang-btn" type="button" data-action="lang" data-lang="<?= lang() === 'bn' ? 'en' : 'bn' ?>" aria-label="<?= e(t('nav.language')) ?>"><?= lang() === 'bn' ? 'EN' : 'বাং' ?></button>
+        <button class="hbtn only-mobile" type="button" data-action="search" aria-label="<?= e(t('search.title')) ?>"><i class="fa-solid fa-magnifying-glass"></i></button>
+        <button class="hbtn" type="button" data-action="lang" data-lang="<?= lang() === 'bn' ? 'en' : 'bn' ?>" aria-label="<?= e(t('nav.language')) ?>" title="<?= lang() === 'bn' ? 'English' : 'বাংলা' ?>"><i class="fa-solid fa-language"></i></button>
         <?php if (setting('allow_dark') === '1'): ?>
-        <button class="icon-btn" type="button" data-action="theme" aria-label="<?= e(t('nav.theme')) ?>"><i class="fa-solid fa-moon theme-ic-dark"></i><i class="fa-solid fa-sun theme-ic-light"></i></button>
+        <button class="hbtn" type="button" data-action="theme" aria-label="<?= e(t('nav.theme')) ?>"><i class="fa-regular fa-moon theme-ic-dark"></i><i class="fa-solid fa-sun theme-ic-light"></i></button>
         <?php endif; ?>
-        <button class="icon-btn notif-btn" type="button" data-action="notifications" aria-label="<?= e(t('nav.notifications')) ?>" aria-haspopup="true">
-            <i class="fa-solid fa-bell"></i><span class="dot-badge" data-notif-count hidden></span>
+        <button class="hbtn notif-btn" type="button" data-action="notifications" aria-label="<?= e(t('nav.notifications')) ?>" aria-haspopup="true">
+            <i class="fa-regular fa-bell"></i><span class="dot-badge" data-notif-count hidden></span>
         </button>
         <?php if ($user): ?>
             <a class="only-desktop topbar-user" href="<?= e(url('/profile')) ?>" data-nav="profile"><?= avatar_html($user, 'avatar-sm') ?></a>

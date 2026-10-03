@@ -7,7 +7,7 @@ $bdt = $s['currency'] === 'USD' && (float)setting('usd_to_bdt') > 0 ? (float)$s[
     <div class="stack">
         <section class="card">
             <div class="row">
-                <span class="ic-box ic-box-lg" style="--c:<?= e($s['icon_color'] ?: 'var(--primary)') ?>"><?= icon_html($s['icon'], $s['icon_image']) ?></span>
+                <?= svc_logo($s, 'lg') ?>
                 <div class="grow">
                     <?php if ($s['cat_name']): ?><a class="xs muted" href="<?= e(url('/services?cat=' . $s['cat_slug'])) ?>"><?= e(tr($s, 'cat_name')) ?></a><?php endif; ?>
                     <h1 class="svc-h1"><?= e(tr($s, 'title')) ?></h1>
@@ -61,7 +61,7 @@ $bdt = $s['currency'] === 'USD' && (float)setting('usd_to_bdt') > 0 ? (float)$s[
             <div class="list">
                 <?php foreach ($related as $r): ?>
                     <a class="list-item" href="<?= e(url('/services/' . $r['slug'])) ?>">
-                        <span class="ic-box ic-box-sm" style="--c:<?= e($r['icon_color'] ?: 'var(--primary)') ?>"><?= icon_html($r['icon'], $r['icon_image']) ?></span>
+                        <?= svc_logo($r, 'sm') ?>
                         <span class="title truncate grow"><?= e(tr($r, 'title')) ?></span>
                         <span class="meta text-primary bold"><?= money($r['price'], $r['currency'], (bool)$r['price_plus']) ?></span>
                     </a>

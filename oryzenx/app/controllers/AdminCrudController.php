@@ -14,7 +14,7 @@ final class AdminCrudController
                 'table' => 'services', 'title' => 'admin.services', 'icon' => 'fa-solid fa-layer-group', 'order' => 'sort_order, id', 'search' => ['title', 'title_bn', 'slug'],
                 'view' => fn($r) => url('/services/' . $r['slug']),
                 'list' => [
-                    'title' => ['label' => 'admin.title', 'render' => fn($r) => '<span class="row">' . '<span class="ic-box ic-box-sm" style="--c:' . e($r['icon_color'] ?: 'var(--primary)') . '">' . icon_html($r['icon'], $r['icon_image']) . '</span><span><strong>' . e($r['title']) . '</strong><br><small class="muted">/' . e($r['slug']) . '</small></span></span>'],
+                    'title' => ['label' => 'admin.title', 'render' => fn($r) => '<span class="row">' . svc_logo($r, 'sm') . '<span><strong>' . e($r['title']) . '</strong><br><small class="muted">/' . e($r['slug']) . '</small></span></span>'],
                     'price' => ['label' => 'admin.price', 'render' => fn($r) => money($r['price'], $r['currency'], (bool)$r['price_plus']) . ($r['old_price'] ? ' <s class="muted xs">' . money($r['old_price'], $r['currency']) . '</s>' : '')],
                     'is_featured' => ['label' => 'admin.featured', 'render' => fn($r) => $yes($r['is_featured']) . ($r['is_vip'] ? ' <span class="badge badge-vip">VIP</span>' : '')],
                     'views' => ['label' => 'admin.views'],

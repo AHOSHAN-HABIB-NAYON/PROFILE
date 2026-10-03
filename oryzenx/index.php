@@ -16,6 +16,8 @@ if (!INSTALLED && !str_starts_with($path, '/install')) {
     exit;
 }
 
+if (INSTALLED) Migrations::run();
+
 // Maintenance mode: admins and the sign-in flow keep working.
 if (INSTALLED && setting('maintenance_enabled') === '1' && !Auth::isAdmin()
     && !preg_match('#^/(admin|login|logout|manifest\.json|sw\.js|icon-\d+\.png|offline|lang/)#', $path)) {

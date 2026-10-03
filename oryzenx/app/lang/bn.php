@@ -45,7 +45,7 @@ return [
     'services.custom_d' => 'আপনার আইডিয়া জানান, কোটেশন নিন।', 'services.approx' => 'প্রায়', 'services.includes' => 'যা যা পাবেন', 'services.details' => 'প্রজেক্ট বিস্তারিত',
     'services.delivery' => 'ডেলিভারি', 'services.support' => 'ফ্রি সাপোর্ট', 'services.days' => 'দিন', 'services.buy' => 'অর্ডার করুন', 'services.ask' => 'প্রশ্ন করুন', 'services.related' => 'সম্পর্কিত সার্ভিস',
 
-    'news.title' => 'নিউজ', 'news.sub' => 'আপডেট, গাইড ও ঘোষণা', 'news.meta' => 'Oryzenx এর সর্বশেষ খবর, ডেভেলপমেন্ট টিপস ও আপডেট।',
+    'news.read_more' => 'আরও পড়ুন', 'news.like' => 'লাইক', 'news.title' => 'নিউজ', 'news.sub' => 'আপডেট, গাইড ও ঘোষণা', 'news.meta' => 'Oryzenx এর সর্বশেষ খবর, ডেভেলপমেন্ট টিপস ও আপডেট।',
     'news.none' => 'এখনো কোনো পোস্ট নেই।', 'news.share' => 'শেয়ার', 'news.copy' => 'লিংক কপি', 'news.more' => 'আরও', 'news.related' => 'সম্পর্কিত পোস্ট', 'news.draft_preview' => 'খসড়া প্রিভিউ — সাধারণ ভিজিটররা দেখতে পাবে না।',
 
     'team.title' => 'আমাদের টিম', 'team.sub' => 'অভিজ্ঞ এবং দক্ষ ডেভেলপারদের একটি দল', 'team.profile' => 'প্রোফাইল', 'team.skills' => 'দক্ষতা', 'team.contact' => 'যোগাযোগ', 'team.cv' => 'সিভি ডাউনলোড',
@@ -59,7 +59,7 @@ return [
     'form.name' => 'আপনার নাম', 'form.email' => 'ইমেইল', 'form.subject' => 'বিষয়', 'form.message' => 'বার্তা', 'form.attachment' => 'সংযুক্তি',
     'form.password' => 'পাসওয়ার্ড', 'form.password_confirm' => 'পাসওয়ার্ড নিশ্চিত করুন', 'form.phone' => 'ফোন',
 
-    'footer.company' => 'কোম্পানি', 'footer.support' => 'সাপোর্ট', 'footer.font_size' => 'লেখার আকার', 'footer.rights' => 'সর্বস্বত্ব সংরক্ষিত।',
+    'footer.explore' => 'এক্সপ্লোর', 'footer.get_app' => 'অ্যাপ নিন', 'footer.get_app_d' => 'ফোনে ইনস্টল করুন — ফুল-স্ক্রিনে খুলবে, দ্রুত লোড হবে।', 'footer.company' => 'কোম্পানি', 'footer.support' => 'সাপোর্ট', 'footer.font_size' => 'লেখার আকার', 'footer.rights' => 'সর্বস্বত্ব সংরক্ষিত।',
 
     'pwa.install' => 'অ্যাপ ইনস্টল', 'pwa.install_title' => 'Oryzenx অ্যাপ ইনস্টল করুন', 'pwa.install_text' => 'দ্রুত অ্যাক্সেস, অফলাইনে চলে, নোটিফিকেশন পান।', 'pwa.later' => 'পরে',
 
@@ -99,7 +99,7 @@ return [
     'mail.recover_btn' => '2FA সরান', 'mail.pw_changed_subject' => 'আপনার পাসওয়ার্ড পরিবর্তন হয়েছে', 'mail.pw_changed_body' => 'আপনার অ্যাকাউন্টের পাসওয়ার্ড এইমাত্র পরিবর্তন হয়েছে। এটি আপনি না করলে দ্রুত পাসওয়ার্ড রিসেট করে সাপোর্টে জানান।',
     'mail.ignore' => 'আপনি অনুরোধ না করে থাকলে এই ইমেইলটি উপেক্ষা করুন।',
 
-    'profile.overview' => 'ওভারভিউ', 'profile.edit' => 'এডিট', 'profile.payments' => 'পেমেন্ট', 'profile.payment' => 'পেমেন্ট', 'profile.joined' => 'যোগদান',
+    'profile.paid_with' => 'পেমেন্ট মাধ্যম', 'profile.overview' => 'ওভারভিউ', 'profile.edit' => 'এডিট', 'profile.payments' => 'পেমেন্ট', 'profile.payment' => 'পেমেন্ট', 'profile.joined' => 'যোগদান',
     'profile.verified' => 'যাচাইকৃত', 'profile.unverified' => 'যাচাই হয়নি', 'profile.verify_banner' => 'অ্যাকাউন্ট সুরক্ষিত করতে আপনার ইমেইল যাচাই করুন।', 'profile.resend' => 'আবার পাঠান',
     'profile.account_status' => 'অ্যাকাউন্ট স্ট্যাটাস', 'profile.total_payments' => 'মোট পেমেন্ট', 'profile.approved' => 'অনুমোদিত', 'profile.pending' => 'অপেক্ষমাণ',
     'profile.services_bought' => 'কেনা সার্ভিস', 'profile.total_spent' => 'মোট খরচ', 'profile.security_score' => 'নিরাপত্তা স্কোর', 'profile.recent_payments' => 'সাম্প্রতিক পেমেন্ট',

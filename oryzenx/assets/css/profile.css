@@ -35,3 +35,8 @@
 .notif-full .t { font-weight: 600; font-size: .9rem; }
 .notif-full.prio-high .ic-box { --c: var(--danger); }
 .pay-row .meta { line-height: 1.6; }
+.pay-logo-sm { width: 40px; height: 40px; border-radius: 12px; flex: none; display: grid; place-items: center; background: var(--surface-soft); border: 1px solid var(--border); overflow: hidden; color: var(--primary); }
+.pay-logo-sm img { width: 30px; height: 30px; border-radius: 8px; }
+.pay-logo-lg { width: 60px; height: 60px; border-radius: 16px; flex: none; display: grid; place-items: center; background: var(--surface-soft); border: 1px solid var(--border); font-size: 1.4rem; color: var(--primary); }
+.pay-logo-lg img { width: 46px; height: 46px; border-radius: 12px; }
+.pay-method-name { font-size: 1.05rem; }

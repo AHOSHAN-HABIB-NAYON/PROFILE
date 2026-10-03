@@ -78,6 +78,7 @@ final class InstallController
         (require ROOT . '/database/seed.php')();
         $site = input('site_name');
         if ($site !== '') DB::q("INSERT INTO settings (setting_key, setting_value, group_name) VALUES ('site_name', ?, 'general')", [mb_substr($site, 0, 80)]);
+        DB::q("INSERT INTO settings (setting_key, setting_value, group_name) VALUES ('db_version', ?, 'general') ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)", [(string)Migrations::LATEST]);
         Settings::flush();
 
         if ($adminEmail !== '') {

@@ -1,0 +1,61 @@
+/* Oryzenx — animated service logos */
+.svc-logo {
+  --s: 46px; position: relative; width: var(--s); height: var(--s); flex: none; display: inline-grid; place-items: center;
+  border-radius: 30%; overflow: hidden; isolation: isolate; color: #fff;
+  background: linear-gradient(140deg, var(--g1), var(--g2));
+  box-shadow: 0 8px 18px -8px var(--g1), inset 0 1px 0 rgba(255, 255, 255, .28), inset 0 -2px 6px rgba(0, 0, 0, .12);
+}
+.svc-logo::before { content: ""; position: absolute; inset: 0; background: radial-gradient(120% 80% at 20% 0%, rgba(255, 255, 255, .28), transparent 55%); z-index: -1; }
+.svc-logo::after {
+  content: ""; position: absolute; top: -50%; left: -80%; width: 50%; height: 200%; transform: rotate(25deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .35), transparent); animation: lgShine 5s ease-in-out infinite;
+}
+.svc-logo svg { width: 62%; height: 62%; overflow: visible; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .18)); }
+.svc-logo svg [class*="lg-"] { transform-box: fill-box; transform-origin: center; }
+.svc-logo-sm { --s: 32px; border-radius: 28%; }
+.svc-logo-lg { --s: 64px; }
+.svc-logo-xl { --s: 84px; }
+.svc-logo-fa i { font-size: calc(var(--s) * .44); }
+.svc-logo-img { background: var(--surface-soft); box-shadow: inset 0 0 0 1px var(--border); }
+.svc-logo-img img { width: 70%; height: 70%; object-fit: contain; }
+.card-link:hover .svc-logo, .tile:hover .svc-logo { transform: translateY(-2px) scale(1.04); }
+.svc-logo { transition: transform var(--t) var(--ease); }
+
+@keyframes lgShine { 0%, 70% { left: -80%; } 100% { left: 140%; } }
+@keyframes lgSpin { to { transform: rotate(360deg); } }
+@keyframes lgPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.18); opacity: .85; } }
+@keyframes lgFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@keyframes lgDraw { 0% { stroke-dashoffset: 100; } 45%, 80% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: -100; } }
+@keyframes lgBar { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(.55); } }
+@keyframes lgBlink { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@keyframes lgDrop { 0% { transform: translateY(-9px); opacity: 0; } 30%, 75% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(0); opacity: 0; } }
+@keyframes lgBounce { 0%, 100% { transform: translateY(-2px); } 50% { transform: translateY(3px); } }
+@keyframes lgNeedle { 0%, 100% { transform: rotate(-70deg); } 50% { transform: rotate(10deg); } }
+@keyframes lgScan { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(2px, -2px); } }
+@keyframes lgWedge { to { transform: rotate(360deg); } }
+@keyframes lgLeft { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-2px); } }
+@keyframes lgRight { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(2px); } }
+@keyframes lgTwinkle { 0%, 100% { transform: scale(1) rotate(0); } 50% { transform: scale(.82) rotate(20deg); } }
+@keyframes lgWrite { 0%, 100% { transform: translate(0, 0) rotate(0); } 50% { transform: translate(-3px, 2px) rotate(-6deg); } }
+@keyframes lgPlug { 0%, 100% { transform: translateY(-2px); } 50% { transform: translateY(1px); } }
+
+.lg-spin { animation: lgSpin 9s linear infinite; }
+.lg-gear .lg-spin { animation-duration: 6s; }
+.lg-pulse { animation: lgPulse 2s ease-in-out infinite; }
+.lg-float { animation: lgFloat 3s ease-in-out infinite; }
+.lg-draw { stroke-dasharray: 100; animation: lgDraw 3.6s ease-in-out infinite; }
+.lg-bar { transform-origin: bottom !important; animation: lgBar 1.8s ease-in-out infinite; }
+.lg-blink { animation: lgBlink 1.6s ease-in-out infinite; }
+.lg-drop { animation: lgDrop 2.4s ease-in-out infinite; }
+.lg-bounce { animation: lgBounce 1.4s ease-in-out infinite; }
+.lg-needle { transform-origin: 0% 100% !important; animation: lgNeedle 2.8s ease-in-out infinite; }
+.lg-scan { animation: lgScan 3s ease-in-out infinite; }
+.lg-wedge { transform-origin: 0% 100% !important; transform-box: view-box !important; transform-origin: 24px 24px !important; animation: lgWedge 8s linear infinite; }
+.lg-left { animation: lgLeft 1.8s ease-in-out infinite; }
+.lg-right { animation: lgRight 1.8s ease-in-out infinite; }
+.lg-twinkle { animation: lgTwinkle 2.6s ease-in-out infinite; }
+.lg-write { animation: lgWrite 1.8s ease-in-out infinite; }
+.lg-plug { animation: lgPlug 1.6s ease-in-out infinite; }
+.d2 { animation-delay: -.5s !important; }
+.d3 { animation-delay: -1s !important; }
+@media (prefers-reduced-motion: reduce) { .svc-logo *, .svc-logo::after { animation: none !important; } }

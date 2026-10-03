@@ -204,8 +204,10 @@ a.list-item:hover { color: inherit; background: var(--surface-soft); }
 @keyframes sheetIn { from { transform: translateY(24px); opacity: 0; } }
 
 /* Pager */
-.pager { display: flex; align-items: center; justify-content: center; gap: .6rem; margin: 1rem 0; }
-.pager-info { font-size: .84rem; color: var(--text-muted); }
+.pager { display: flex; align-items: center; justify-content: center; gap: .55rem; margin: 1.2rem 0; }
+.pager-info { display: inline-grid; place-items: center; min-width: 64px; height: 40px; padding: 0 .9rem; border-radius: 12px; background: var(--primary-light); color: var(--primary); font-weight: 800; font-size: .95rem; letter-spacing: .02em; }
+.pager-btn { width: 44px; height: 40px; display: grid; place-items: center; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm); }
+.pager-btn:hover { border-color: var(--primary); color: var(--primary); }
 
 /* Key-value rows */
 .kv { display: grid; grid-template-columns: minmax(110px, 38%) 1fr; gap: .45rem .8rem; font-size: .87rem; }

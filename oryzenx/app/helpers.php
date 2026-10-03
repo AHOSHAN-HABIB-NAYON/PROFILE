@@ -218,9 +218,9 @@ function paginate_links(array $p, string $base): string
     if ($p['pages'] <= 1) return '';
     $sep = str_contains($base, '?') ? '&' : '?';
     $h = '<nav class="pager" aria-label="Pagination">';
-    if ($p['page'] > 1) $h .= '<a class="btn btn-sm btn-ghost" href="' . e(url($base . $sep . 'page=' . ($p['page'] - 1))) . '"><i class="fa-solid fa-chevron-left"></i></a>';
+    if ($p['page'] > 1) $h .= '<a class="pager-btn" href="' . e(url($base . $sep . 'page=' . ($p['page'] - 1))) . '" aria-label="Previous"><i class="fa-solid fa-chevron-left"></i></a>';
     $h .= '<span class="pager-info">' . num($p['page']) . ' / ' . num($p['pages']) . '</span>';
-    if ($p['page'] < $p['pages']) $h .= '<a class="btn btn-sm btn-ghost" href="' . e(url($base . $sep . 'page=' . ($p['page'] + 1))) . '"><i class="fa-solid fa-chevron-right"></i></a>';
+    if ($p['page'] < $p['pages']) $h .= '<a class="pager-btn" href="' . e(url($base . $sep . 'page=' . ($p['page'] + 1))) . '" aria-label="Next"><i class="fa-solid fa-chevron-right"></i></a>';
     return $h . '</nav>';
 }
 function validate(array $rules): array
@@ -246,3 +246,19 @@ function validate(array $rules): array
     if ($errors) fail(t('valid.fix'), $errors);
     return $errors;
 }
+/** Plain-text preview of rich content that keeps line breaks and emojis. */
+function rich_preview(?string $html, int $max = 320): string
+{
+    $s = preg_replace('#<(br\s*/?|/p|/li|/h[1-6]|/div|/blockquote)>#i', "\n", (string)$html);
+    $s = html_entity_decode(strip_tags((string)$s), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $s = trim(preg_replace(["/[ \t]+/", "/\n{3,}/"], [' ', "\n\n"], $s));
+    return mb_strlen($s) > $max ? rtrim(mb_substr($s, 0, $max - 1)) . '…' : $s;
+}
+/** Brand avatar (logo or generated mark) used for posts by the site. */
+function brand_avatar(string $class = ''): string
+{
+    $logo = setting('logo');
+    return $logo ? '<img class="brand-avatar ' . $class . '" src="' . e(upload_url($logo)) . '" alt="" width="40" height="40" loading="lazy">'
+        : '<span class="brand-avatar brand-mark ' . $class . '" aria-hidden="true"><i></i><i></i><i></i><i></i></span>';
+}
+function svc_logo(array $s, string $size = 'md'): string { return ServiceLogo::render($s, $size); }

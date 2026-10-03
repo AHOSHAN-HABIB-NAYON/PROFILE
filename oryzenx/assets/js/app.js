@@ -351,7 +351,7 @@
       d.dataset.theme = next; store.set('ozx-theme', next);
       $('meta[name="theme-color"]')?.setAttribute('content', next === 'dark' ? '#0b1220' : getComputedStyle(d).getPropertyValue('--primary').trim());
     },
-    fs(el) { const v = el.dataset.fs; v ? document.documentElement.setAttribute('data-fs', v) : document.documentElement.removeAttribute('data-fs'); store.set('ozx-fs', v); },
+    fs(el) { const v = el.dataset.fs; v ? document.documentElement.setAttribute('data-fs', v) : document.documentElement.removeAttribute('data-fs'); store.set('ozx-fs', v); syncFs(); },
     'scroll-top'() { window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }); },
     notifications() { toggleNotif(); },
     async 'notif-read-all'() { await api('/notifications/read-all', { method: 'POST' }); setBadge(0); $$('.notif-item.unread').forEach((n) => n.classList.remove('unread')); },
@@ -359,6 +359,17 @@
     share(el) { openShare(el.dataset.shareUrl || location.href, el.dataset.shareTitle || document.title); },
     'pw-toggle'(el) { const i = el.parentElement.querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; el.querySelector('i').className = 'fa-solid ' + (i.type === 'password' ? 'fa-eye' : 'fa-eye-slash'); },
     'push-enable'() { enablePush(true); },
+    async like(el) {
+      if (el.dataset.busy) return; el.dataset.busy = '1';
+      const was = el.classList.contains('liked');
+      const cnt = el.querySelector('[data-like-count]');
+      el.classList.toggle('liked', !was); el.classList.remove('pop'); void el.offsetWidth; if (!was) el.classList.add('pop');
+      const d = await api(`/news/${el.dataset.id}/like`, { method: 'POST' }).catch(() => ({ ok: false }));
+      delete el.dataset.busy;
+      if (!d.ok) { el.classList.toggle('liked', was); toast(d.message || S.error, 'error'); return; }
+      el.classList.toggle('liked', d.liked); el.setAttribute('aria-pressed', d.liked);
+      if (cnt) cnt.textContent = O.lang === 'bn' ? String(d.count).replace(/\d/g, (x) => '০১২৩৪৫৬৭৮৯'[x]) : d.count;
+    },
     install() { doInstall(); },
     'install-later'() { store.set('ozx-install-snooze', Date.now() + 3 * 864e5); $('#install-card').hidden = true; },
     'install-close'() { store.set('ozx-install-snooze', Date.now() + 30 * 864e5); $('#install-card').hidden = true; },
@@ -397,6 +408,11 @@
     if (e.key === 'Escape') { closeOverlays(); Chat.isOpen() && Chat.close(); }
     if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && !document.activeElement.isContentEditable) { e.preventDefault(); openSearch(); }
   });
+
+  function syncFs() {
+    const cur = document.documentElement.getAttribute('data-fs') || '';
+    $$('[data-action="fs"]').forEach((b) => { b.classList.toggle('on', b.dataset.fs === cur); b.setAttribute('aria-pressed', b.dataset.fs === cur); });
+  }
 
   function toggleDrawer(force) {
     const sb = $('#sidebar'); const bd = $('.drawer-backdrop'); const btn = $('[data-action="drawer"]');
@@ -766,6 +782,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     setActiveNav(O.nav);
+    syncFs();
     initComponents(document);
     registerSW();
     if (O.user) { pollNotifications(true); setInterval(pollNotifications, 60000); document.addEventListener('visibilitychange', () => !document.hidden && pollNotifications()); }

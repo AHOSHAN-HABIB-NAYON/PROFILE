@@ -48,7 +48,7 @@ $wa = preg_replace('/\D/', '', setting('contact_whatsapp'));
     <div class="tile-grid">
         <?php foreach ($grid as $s): ?>
             <a class="tile card-link" href="<?= e(url('/services/' . $s['slug'])) ?>">
-                <span class="ic-box" style="--c:<?= e($s['icon_color'] ?: 'var(--primary)') ?>"><?= icon_html($s['icon'], $s['icon_image']) ?></span>
+                <?= svc_logo($s, 'md') ?>
                 <span class="tile-label"><?= e(tr($s, 'title')) ?></span>
             </a>
         <?php endforeach; ?>

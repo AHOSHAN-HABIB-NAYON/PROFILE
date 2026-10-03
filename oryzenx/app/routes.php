@@ -17,6 +17,7 @@ $router->get('/services/{slug}', [ServiceController::class, 'show']);
 $router->get('/news', [NewsController::class, 'index']);
 $router->get('/news/{id:\d+}', [NewsController::class, 'show']);
 $router->get('/news/{id:\d+}/{slug}', [NewsController::class, 'show']);
+$router->post('/news/{id:\d+}/like', [NewsController::class, 'like']);
 $router->get('/team', [TeamController::class, 'index']);
 $router->get('/team/{id:\d+}', [TeamController::class, 'show']);
 $router->get('/contact', [ContactController::class, 'index']);

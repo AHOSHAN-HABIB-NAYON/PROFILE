@@ -5,7 +5,7 @@ $needVerify = setting('require_verified_for_payment') === '1' && !$u['email_veri
 <div class="page-head"><h1><?= e(t('payment.make')) ?></h1></div>
 
 <section class="card checkout-summary">
-    <span class="ic-box ic-box-lg" style="--c:<?= e($s['icon_color'] ?: 'var(--primary)') ?>"><?= icon_html($s['icon'], $s['icon_image']) ?></span>
+    <?= svc_logo($s, 'lg') ?>
     <div class="grow" style="min-width:0"><strong class="truncate" style="display:block"><?= e(tr($s, 'title')) ?></strong><span class="xs muted"><?= e(tr($s, 'short_desc')) ?></span></div>
     <span class="price-tag"><?= money($s['price'], $s['currency']) ?></span>
 </section>

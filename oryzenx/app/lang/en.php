@@ -45,7 +45,7 @@ return [
     'services.custom_d' => 'Tell us your idea and get a quote.', 'services.approx' => 'approx.', 'services.includes' => 'What you get', 'services.details' => 'Project details',
     'services.delivery' => 'Delivery', 'services.support' => 'Free support', 'services.days' => 'days', 'services.buy' => 'Buy now', 'services.ask' => 'Ask a question', 'services.related' => 'Related services',
 
-    'news.title' => 'News', 'news.sub' => 'Updates, guides and announcements', 'news.meta' => 'Latest news, development tips and updates from Oryzenx.',
+    'news.read_more' => 'Read more', 'news.like' => 'Like', 'news.title' => 'News', 'news.sub' => 'Updates, guides and announcements', 'news.meta' => 'Latest news, development tips and updates from Oryzenx.',
     'news.none' => 'No posts yet.', 'news.share' => 'Share', 'news.copy' => 'Copy link', 'news.more' => 'More', 'news.related' => 'Related posts', 'news.draft_preview' => 'Draft preview — not visible to the public.',
 
     'team.title' => 'Our team', 'team.sub' => 'Experienced and skilled developers', 'team.profile' => 'Profile', 'team.skills' => 'Skills', 'team.contact' => 'Contact', 'team.cv' => 'Download CV',
@@ -59,7 +59,7 @@ return [
     'form.name' => 'Your name', 'form.email' => 'Email', 'form.subject' => 'Subject', 'form.message' => 'Message', 'form.attachment' => 'Attachment',
     'form.password' => 'Password', 'form.password_confirm' => 'Confirm password', 'form.phone' => 'Phone',
 
-    'footer.company' => 'Company', 'footer.support' => 'Support', 'footer.font_size' => 'Text size', 'footer.rights' => 'All rights reserved.',
+    'footer.explore' => 'Explore', 'footer.get_app' => 'Get the app', 'footer.get_app_d' => 'Install on your phone — opens full-screen, loads faster.', 'footer.company' => 'Company', 'footer.support' => 'Support', 'footer.font_size' => 'Text size', 'footer.rights' => 'All rights reserved.',
 
     'pwa.install' => 'Install app', 'pwa.install_title' => 'Install the Oryzenx app', 'pwa.install_text' => 'Faster access, works offline, gets notifications.', 'pwa.later' => 'Later',
 
@@ -99,7 +99,7 @@ return [
     'mail.recover_btn' => 'Remove 2FA', 'mail.pw_changed_subject' => 'Your password was changed', 'mail.pw_changed_body' => 'Your account password was just changed. If this was not you, reset your password and contact support immediately.',
     'mail.ignore' => 'If you did not request this, you can ignore this email.',
 
-    'profile.overview' => 'Overview', 'profile.edit' => 'Edit', 'profile.payments' => 'Payments', 'profile.payment' => 'Payment', 'profile.joined' => 'Joined',
+    'profile.paid_with' => 'Paid with', 'profile.overview' => 'Overview', 'profile.edit' => 'Edit', 'profile.payments' => 'Payments', 'profile.payment' => 'Payment', 'profile.joined' => 'Joined',
     'profile.verified' => 'Verified', 'profile.unverified' => 'Not verified', 'profile.verify_banner' => 'Please verify your email address to secure your account.', 'profile.resend' => 'Resend email',
     'profile.account_status' => 'Account status', 'profile.total_payments' => 'Total payments', 'profile.approved' => 'Approved', 'profile.pending' => 'Pending',
     'profile.services_bought' => 'Services purchased', 'profile.total_spent' => 'Total spent', 'profile.security_score' => 'Security score', 'profile.recent_payments' => 'Recent payments',

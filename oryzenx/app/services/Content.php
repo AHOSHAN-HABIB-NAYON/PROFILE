@@ -23,6 +23,12 @@ final class Content
         return array_values(array_filter($rows, fn($m) => trim((string)$m['account_number']) !== '' || trim((string)$m['link']) !== '' || !empty($m['qr_image'])));
     }
 
+    /** All payment methods keyed by code (including disabled ones, for history). */
+    public static function methodMap(): array
+    {
+        return self::$memo['mm'] ??= array_column(DB::all('SELECT code, name, logo, network, type FROM payment_methods'), null, 'code');
+    }
+
     public static function postUrl(array $p): string { return url('/news/' . $p['id']); }
 
     public static function media(?string $path): string

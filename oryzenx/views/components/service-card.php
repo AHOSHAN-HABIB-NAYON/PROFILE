@@ -2,7 +2,7 @@
 <a class="svc-card card card-link" href="<?= e(url('/services/' . $s['slug'])) ?>"
    data-filter-item data-cat="<?= e($s['cat_slug'] ?? '') ?>" data-text="<?= e(mb_strtolower($s['title'] . ' ' . $s['title_bn'] . ' ' . $s['short_desc'] . ' ' . $s['slug'])) ?>">
     <div class="svc-top">
-        <span class="ic-box" style="--c:<?= e($s['icon_color'] ?: 'var(--primary)') ?>"><?= icon_html($s['icon'], $s['icon_image']) ?></span>
+        <?= svc_logo($s, 'md') ?>
         <?php if ($s['is_vip']): ?><span class="badge badge-vip">VIP</span><?php elseif ($s['is_featured']): ?><span class="badge badge-warning"><i class="fa-solid fa-star"></i> <?= e(t('services.featured')) ?></span><?php endif; ?>
     </div>
     <strong class="svc-title clamp-2"><?= e(tr($s, 'title')) ?></strong>

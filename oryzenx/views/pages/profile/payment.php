@@ -26,11 +26,14 @@ $done = in_array($pay['status'], ['approved', 'rejected', 'refunded'], true);
             <div class="alert alert-info mt-2"><i class="fa-solid fa-user-shield"></i><span><strong><?= e(t('profile.admin_note')) ?>:</strong> <?= nl2br(e($pay['admin_note'])) ?></span></div>
         <?php endif; ?>
     </section>
-    <section class="card">
-        <h2 class="card-title mb-1"><?= e(t('profile.screenshot')) ?></h2>
-        <?php if ($pay['screenshot']): ?>
-            <a href="<?= e(url('/files/payment/' . $pay['id'])) ?>" target="_blank" rel="noopener" data-no-spa><img class="shot" src="<?= e(url('/files/payment/' . $pay['id'])) ?>" alt="<?= e(t('profile.screenshot')) ?>" loading="lazy"></a>
-        <?php else: ?><div class="empty-sm"><?= e(t('common.empty')) ?></div><?php endif; ?>
+    <section class="card pay-method-box">
+        <h2 class="card-title mb-1"><?= e(t('profile.paid_with')) ?></h2>
+        <div class="row">
+            <span class="pay-logo-lg"><?php if ($method && $method['logo']): ?><img src="<?= e(Content::media($method['logo'])) ?>" alt="" width="52" height="52"><?php else: ?><i class="fa-solid fa-wallet"></i><?php endif; ?></span>
+            <div class="grow"><strong class="pay-method-name"><?= e($method['name'] ?? $pay['method_code']) ?></strong>
+                <span class="xs muted" style="display:block"><?= e(!empty($method['network']) ? $method['network'] . ' · ' : '') ?><?= money($pay['amount'], $pay['currency']) ?></span></div>
+            <?= status_badge($pay['status']) ?>
+        </div>
         <a class="btn btn-sm btn-outline btn-block mt-2" href="<?= e(url('/contact?subject=' . rawurlencode(t('profile.payment') . ' #' . $pay['id'] . ' ' . $pay['order_no']))) ?>"><i class="fa-solid fa-headset"></i> <?= e(t('profile.need_help')) ?></a>
     </section>
 </div>

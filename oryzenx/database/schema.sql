@@ -229,6 +229,7 @@ CREATE TABLE IF NOT EXISTS posts (
   status ENUM('draft','published') NOT NULL DEFAULT 'draft',
   published_at DATETIME NULL,
   views INT UNSIGNED NOT NULL DEFAULT 0,
+  likes INT UNSIGNED NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY uq_posts_slug (slug),
@@ -245,6 +246,14 @@ CREATE TABLE IF NOT EXISTS post_views (
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_post_visitor (post_id, visitor_hash),
   CONSTRAINT fk_pviews_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS post_likes (
+  post_id INT UNSIGNED NOT NULL,
+  liker_hash CHAR(64) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (post_id, liker_hash),
+  CONSTRAINT fk_plikes_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS notifications (

@@ -33,7 +33,7 @@
     <div class="card"><div class="list">
         <?php foreach ($services as $s): ?>
             <a class="list-item" href="<?= e(url('/payment/' . $s['slug'])) ?>">
-                <span class="ic-box ic-box-sm" style="--c:<?= e($s['icon_color'] ?: 'var(--primary)') ?>"><?= icon_html($s['icon'], $s['icon_image']) ?></span>
+                <?= svc_logo($s, 'sm') ?>
                 <span class="title truncate grow"><?= e(tr($s, 'title')) ?></span>
                 <span class="meta text-primary bold"><?= money($s['price'], $s['currency'], (bool)$s['price_plus']) ?></span>
                 <i class="fa-solid fa-chevron-right muted xs"></i>

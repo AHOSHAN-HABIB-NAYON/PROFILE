@@ -44,6 +44,7 @@ if(t)d.setAttribute('data-theme',t);var f=localStorage.getItem('ozx-fs');if(f)d.
 <link rel="stylesheet" href="<?= e(asset('css/components.css')) ?>">
 <link rel="stylesheet" href="<?= e(asset('css/layout.css')) ?>">
 <link rel="stylesheet" href="<?= e(asset('css/chat.css')) ?>">
+<link rel="stylesheet" href="<?= e(asset('css/logos.css')) ?>">
 <?php foreach ($page['css'] as $css): ?><link rel="stylesheet" href="<?= e(asset("css/$css.css")) ?>" data-page-css><?php endforeach; ?>
 <style>:root{--primary:<?= e($pal['primary']) ?>;--primary-dark:<?= e($pal['dark']) ?>;--primary-rgb:<?= e($pal['rgb']) ?>;--secondary:<?= e($pal['secondary']) ?>;--accent:<?= e($pal['accent']) ?>;--radius:<?= (int)setting('card_radius', 14) ?>px}</style>
 <?php if (!empty($page['schema'])): ?><script type="application/ld+json"><?= json_encode($page['schema'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?></script><?php endif; ?>
