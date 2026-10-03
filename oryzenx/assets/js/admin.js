@@ -57,6 +57,19 @@
   };
 
   /* ---------- Rich text editor (contenteditable, sanitized server-side) ---------- */
+  // Brand/tech icons for posts: Font Awesome brands where available, CSS SVG badges otherwise (ti-svg).
+  const TECH = [
+    ['node', 'fa-brands fa-node-js', 'Node.js'], ['vite', 'svg', 'Vite'], ['php', 'fa-brands fa-php', 'PHP'], ['react', 'fa-brands fa-react', 'React'],
+    ['next', 'svg', 'Next.js'], ['vue', 'fa-brands fa-vuejs', 'Vue'], ['angular', 'fa-brands fa-angular', 'Angular'], ['js', 'fa-brands fa-js', 'JavaScript'],
+    ['ts', 'svg', 'TypeScript'], ['html', 'fa-brands fa-html5', 'HTML5'], ['css', 'fa-brands fa-css3-alt', 'CSS3'], ['tailwind', 'svg', 'Tailwind'],
+    ['bootstrap', 'fa-brands fa-bootstrap', 'Bootstrap'], ['sass', 'fa-brands fa-sass', 'Sass'], ['laravel', 'fa-brands fa-laravel', 'Laravel'], ['python', 'fa-brands fa-python', 'Python'],
+    ['java', 'fa-brands fa-java', 'Java'], ['mysql', 'fa-solid fa-database', 'MySQL'], ['mongo', 'svg', 'MongoDB'], ['docker', 'fa-brands fa-docker', 'Docker'],
+    ['git', 'fa-brands fa-git-alt', 'Git'], ['github', 'fa-brands fa-github', 'GitHub'], ['npm', 'fa-brands fa-npm', 'npm'], ['aws', 'fa-brands fa-aws', 'AWS'],
+    ['cloudflare', 'fa-brands fa-cloudflare', 'Cloudflare'], ['wordpress', 'fa-brands fa-wordpress', 'WordPress'], ['figma', 'fa-brands fa-figma', 'Figma'], ['android', 'fa-brands fa-android', 'Android'],
+    ['apple', 'fa-brands fa-apple', 'Apple'], ['linux', 'fa-brands fa-linux', 'Linux'], ['google', 'fa-brands fa-google', 'Google'], ['openai', 'fa-solid fa-robot', 'OpenAI'],
+    ['bitcoin', 'fa-brands fa-bitcoin', 'Bitcoin'], ['ethereum', 'fa-brands fa-ethereum', 'Ethereum'], ['telegram', 'fa-brands fa-telegram', 'Telegram'], ['whatsapp', 'fa-brands fa-whatsapp', 'WhatsApp'],
+  ];
+  const techHtml = ([k, ic]) => ic === 'svg' ? `<span class="ti ti-svg ti-${k}">&#8203;</span>` : `<i class="${ic} ti ti-${k}"></i>`;
   const EMOJIS = ['🔥', '🚀', '📈', '⚡', '👑', '✅', '❌', '💡', '🎉', '⭐', '💰', '📢', '🛡️', '🤖', '💻', '📱', '🌐', '🔒', '🎯', '📊', '🧠', '⏰', '👉', '❤️'];
   C.editor = (el) => {
     const ta = $('textarea', el);
@@ -64,7 +77,7 @@
       ${[['bold', 'fa-bold'], ['italic', 'fa-italic'], ['underline', 'fa-underline'], ['strikeThrough', 'fa-strikethrough'], '|',
         ['h2', 'fa-heading', 'H2'], ['h3', 'fa-h', 'H3'], ['p', 'fa-paragraph'], '|',
         ['insertUnorderedList', 'fa-list-ul'], ['insertOrderedList', 'fa-list-ol'], ['blockquote', 'fa-quote-left'], ['code', 'fa-code'], '|',
-        ['link', 'fa-link'], ['image', 'fa-image'], ['emoji', 'fa-face-smile'], ['hr', 'fa-minus'], ['removeFormat', 'fa-eraser'], ['source', 'fa-file-code']]
+        ['link', 'fa-link'], ['image', 'fa-image'], ['emoji', 'fa-face-smile'], ['techicon', 'fa-cubes', 'Tech icon'], ['hr', 'fa-minus'], ['removeFormat', 'fa-eraser'], ['source', 'fa-file-code']]
         .map((b) => b === '|' ? '<span class="sep"></span>' : `<button type="button" data-cmd="${b[0]}" title="${b[2] || b[0]}" aria-label="${b[2] || b[0]}"><i class="fa-solid ${b[1]}"></i></button>`).join('')}
       </div><div class="ed-area prose" contenteditable="true" data-placeholder="Write…"></div><input type="file" accept="image/*" hidden>`);
     const area = $('.ed-area', el); const file = $('input[type=file]', el);
@@ -87,6 +100,17 @@
       if (cmd === 'hr') return exec('insertHorizontalRule');
       if (cmd === 'link') { const u = prompt('URL (https://…)'); if (u && /^(https?:\/\/|\/|mailto:)/.test(u)) exec('createLink', u); return; }
       if (cmd === 'image') { file.click(); return; }
+      if (cmd === 'techicon') {
+        const range = getSelection().rangeCount ? getSelection().getRangeAt(0).cloneRange() : null;
+        const m = app().modal(`<div class="tech-pick">${TECH.map((x, i) => `<button type="button" data-i="${i}" title="${esc(x[2])}">${techHtml(x)}<small>${esc(x[2])}</small></button>`).join('')}</div>`, { title: 'Tech icons' });
+        m.el.addEventListener('click', (ev) => {
+          const tb = ev.target.closest('.tech-pick button'); if (!tb) return;
+          m.close(); area.focus();
+          if (range) { const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range); }
+          exec('insertHTML', techHtml(TECH[+tb.dataset.i]) + '&nbsp;');
+        });
+        return;
+      }
       if (cmd === 'emoji') {
         const range = getSelection().rangeCount ? getSelection().getRangeAt(0).cloneRange() : null;
         const m = app().modal(`<div class="emoji-pop">${EMOJIS.map((x) => `<button type="button">${x}</button>`).join('')}</div>`, { title: 'Emoji' });

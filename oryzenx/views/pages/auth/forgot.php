@@ -1,4 +1,5 @@
 <div class="auth-wrap">
+    <a class="auth-brand" href="<?= e(url('/')) ?>"><?= brand_avatar('auth-logo') ?><span><?= e(setting('site_name')) ?></span></a>
     <div class="auth-card card">
         <div class="auth-head">
             <span class="auth-icon"><i class="fa-solid fa-key"></i></span>
@@ -14,4 +15,5 @@
         </form>
         <p class="center small mt-2 mb-0"><a href="<?= e(url('/login')) ?>"><i class="fa-solid fa-arrow-left"></i> <?= e(t('auth.back_login')) ?></a> · <a href="<?= e(url('/contact')) ?>"><?= e(t('nav.contact')) ?></a></p>
     </div>
+    <?php require VIEWS . '/components/auth-secure.php'; ?>
 </div>

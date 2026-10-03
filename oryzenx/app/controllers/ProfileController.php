@@ -209,7 +209,7 @@ final class ProfileController
         $pay = DB::row('SELECT p.*, o.service_title, o.order_no, o.status AS order_status, o.note, s.slug FROM payments p JOIN orders o ON o.id = p.order_id
             LEFT JOIN services s ON s.id = o.service_id WHERE p.id = ? AND p.user_id = ?', [(int)$id, Auth::id()]);
         if (!$pay) throw new HttpException(t('error.404'), 404);
-        $method = DB::row('SELECT * FROM payment_methods WHERE code = ?', [$pay['method_code']]);
+        $method = Content::methodMap()[$pay['method_code']] ?? null;
         $this->show('payment', ['pay' => $pay, 'method' => $method], t('profile.payment') . ' #' . $pay['id']);
     }
 }

@@ -26,7 +26,8 @@ final class Content
     /** All payment methods keyed by code (including disabled ones, for history). */
     public static function methodMap(): array
     {
-        return self::$memo['mm'] ??= array_column(DB::all('SELECT code, name, logo, network, type FROM payment_methods'), null, 'code');
+        return self::$memo['mm'] ??= array_column(DB::all('SELECT code, name, logo, network, type FROM payment_methods'), null, 'code')
+            + ['balance' => ['code' => 'balance', 'name' => t('wallet.balance_method'), 'logo' => 'img/pay/wallet.svg', 'network' => null, 'type' => 'wallet']];
     }
 
     public static function postUrl(array $p): string { return url('/news/' . $p['id']); }

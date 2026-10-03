@@ -31,7 +31,7 @@ $router->get('/sw.js', [SystemController::class, 'serviceWorker']);
 $router->get('/offline', [SystemController::class, 'offline']);
 $router->get('/icon-{size:192|512}.png', [SystemController::class, 'icon']);
 $router->get('/favicon.ico', [SystemController::class, 'favicon']);
-$router->get('/files/{type:payment|contact}/{id:\d+}', [SystemController::class, 'privateFile'], ['auth']);
+$router->get('/files/{type:payment|contact|wallet}/{id:\d+}', [SystemController::class, 'privateFile'], ['auth']);
 
 // Authentication
 $router->get('/login', [AuthController::class, 'loginForm'], ['guest']);
@@ -75,6 +75,11 @@ $router->group('/profile', ['auth'], function (Router $r) {
     $r->post('/passkeys/{id:\d+}/delete', [ProfileController::class, 'deletePasskey']);
     $r->get('/payments', [ProfileController::class, 'payments']);
     $r->get('/payments/{id:\d+}', [ProfileController::class, 'payment']);
+    $r->get('/wallet', [WalletController::class, 'index']);
+    $r->get('/wallet/deposit', [WalletController::class, 'depositForm']);
+    $r->post('/wallet/deposit', [WalletController::class, 'deposit']);
+    $r->get('/wallet/withdraw', [WalletController::class, 'withdrawForm']);
+    $r->post('/wallet/withdraw', [WalletController::class, 'withdraw']);
 });
 
 // Payment
@@ -112,6 +117,8 @@ $router->group('/admin', ['admin'], function (Router $r) {
     $r->get('/payments/{id:\d+}', [AdminPaymentController::class, 'show']);
     $r->post('/payments/{id:\d+}', [AdminPaymentController::class, 'update']);
 
+    $r->get('/wallet', [AdminWalletController::class, 'index']);
+    $r->post('/wallet/{id:\d+}', [AdminWalletController::class, 'update']);
     $r->get('/messages', [AdminMessageController::class, 'index']);
     $r->get('/messages/{id:\d+}', [AdminMessageController::class, 'show']);
     $r->post('/messages/{id:\d+}', [AdminMessageController::class, 'reply']);

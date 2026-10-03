@@ -11,6 +11,7 @@ $groups = [
     'admin.g_business' => [
         ['users', '/admin/users', 'fa-solid fa-users', 'admin.users', 0],
         ['payments', '/admin/payments', 'fa-solid fa-wallet', 'admin.payments', $pending],
+        ['wallet', '/admin/wallet', 'fa-solid fa-wallet', 'wallet.admin_title', (int)DB::val("SELECT COUNT(*) FROM wallet_transactions WHERE status = 'pending'")],
         ['messages', '/admin/messages', 'fa-solid fa-inbox', 'admin.messages', $newMsgs],
         ['notifications', '/admin/notifications', 'fa-solid fa-bell', 'admin.notifications', 0],
     ],

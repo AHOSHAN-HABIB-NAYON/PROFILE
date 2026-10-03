@@ -21,7 +21,7 @@
 <?php endif; ?>
 <nav class="tabs mt-1" aria-label="<?= e(t('nav.profile')) ?>">
     <?php foreach (['overview' => ['/profile', 'fa-solid fa-chart-simple', 'profile.overview'], 'edit' => ['/profile/edit', 'fa-solid fa-user-pen', 'profile.edit'],
-        'security' => ['/profile/security', 'fa-solid fa-shield-halved', 'nav.security'], 'payments' => ['/profile/payments', 'fa-solid fa-receipt', 'profile.payments']] as $k => [$href, $ic, $lbl]): ?>
+        'security' => ['/profile/security', 'fa-solid fa-shield-halved', 'nav.security'], 'payments' => ['/profile/payments', 'fa-solid fa-receipt', 'profile.payments'], 'wallet' => ['/profile/wallet', 'fa-solid fa-wallet', 'wallet.title']] as $k => [$href, $ic, $lbl]): ?>
         <a class="tab<?= $tab === $k || ($tab === 'payment' && $k === 'payments') ? ' active' : '' ?>" href="<?= e(url($href)) ?>"><i class="<?= $ic ?>"></i><?= e(t($lbl)) ?></a>
     <?php endforeach; ?>
 </nav>

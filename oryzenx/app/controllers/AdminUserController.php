@@ -94,7 +94,11 @@ final class AdminUserController
             case 'balance':
                 $amount = (float)input('amount');
                 if ($amount == 0.0 || abs($amount) > 1_000_000) fail(t('valid.numeric'), ['amount' => t('valid.numeric')]);
-                DB::q('UPDATE users SET balance = balance + ? WHERE id = ?', [$amount, $u['id']]);
+                if ($amount < 0 && (float)$u['balance'] + $amount < 0) fail(t('wallet.insufficient'));
+                DB::tx(function () use ($u, $amount) {
+                    Wallet::credit((int)$u['id'], $amount);
+                    Wallet::log((int)$u['id'], 'adjust', $amount, ['note' => mb_substr((string)input('reason'), 0, 500) ?: 'Admin adjustment']);
+                });
                 Notifier::send([(int)$u['id']], t('notif.balance_title'), t('notif.balance_text', ['amount' => money(abs($amount)), 'dir' => $amount > 0 ? '+' : '−']), ['icon' => 'fa-solid fa-coins', 'link' => '/profile']);
                 break;
             case 'notify':

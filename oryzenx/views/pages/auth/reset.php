@@ -1,5 +1,6 @@
 <?php /** @var string $token @var bool $valid */ ?>
 <div class="auth-wrap">
+    <a class="auth-brand" href="<?= e(url('/')) ?>"><?= brand_avatar('auth-logo') ?><span><?= e(setting('site_name')) ?></span></a>
     <div class="auth-card card">
         <div class="auth-head">
             <span class="auth-icon"><i class="fa-solid fa-unlock-keyhole"></i></span>
@@ -17,4 +18,5 @@
         </form>
         <?php endif; ?>
     </div>
+    <?php require VIEWS . '/components/auth-secure.php'; ?>
 </div>

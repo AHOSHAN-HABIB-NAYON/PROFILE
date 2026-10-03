@@ -55,6 +55,27 @@ $wa = preg_replace('/\D/', '', setting('contact_whatsapp'));
     </div>
 </section>
 
+<section class="section promo">
+    <div class="promo-body">
+        <span class="promo-badge"><i class="fa-solid fa-handshake"></i> <?= e(t('home.promo_badge')) ?></span>
+        <h2><?= e(t('home.promo_title')) ?></h2>
+        <p><?= e(t('home.promo_text')) ?></p>
+        <ul class="promo-points">
+            <?php foreach (['fa-comments' => 'home.promo_p1', 'fa-file-signature' => 'home.promo_p2', 'fa-code' => 'home.promo_p3', 'fa-shield-heart' => 'home.promo_p4'] as $ic => $k): ?>
+                <li><i class="fa-solid <?= $ic ?>"></i><?= e(t($k)) ?></li>
+            <?php endforeach; ?>
+        </ul>
+        <div class="row-gap">
+            <a class="btn btn-white" href="<?= e(url('/contact?subject=' . rawurlencode(t('home.promo_subject')))) ?>"><i class="fa-solid fa-rocket"></i> <?= e(t('home.promo_cta')) ?></a>
+            <?php if ($wa): ?><a class="btn btn-glass" href="https://wa.me/<?= e($wa) ?>" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a><?php endif; ?>
+        </div>
+    </div>
+    <div class="promo-trust" aria-hidden="true">
+        <div><strong><?= e(num(setting('stat_projects'))) ?></strong><span><?= e(t('home.stat_projects')) ?></span></div>
+        <div><strong><?= e(num(setting('stat_satisfaction'))) ?></strong><span><?= e(t('home.stat_clients')) ?></span></div>
+    </div>
+</section>
+
 <?php if ($posts): ?>
 <section class="section card">
     <div class="section-head"><h2 class="section-title"><i class="fa-solid fa-bolt text-warning"></i> <?= e(t('home.latest_posts')) ?></h2><a class="small" href="<?= e(url('/news')) ?>"><?= e(t('common.view_all')) ?></a></div>
@@ -105,14 +126,10 @@ $wa = preg_replace('/\D/', '', setting('contact_whatsapp'));
         ['fa-brands fa-github', 'GitHub', '#24292f'], ['fa-brands fa-aws', 'AWS', '#ff9900'], ['fa-brands fa-cloudflare', 'Cloudflare', '#f38020'], ['fa-brands fa-wordpress', 'WordPress', '#21759b'],
         ['fa-brands fa-figma', 'Figma', '#a259ff'], ['fa-brands fa-bootstrap', 'Bootstrap', '#7952b3'], ['fa-brands fa-npm', 'npm', '#cb3837'], ['fa-solid fa-robot', 'OpenAI', '#10a37f'],
     ];
-    $rows = [array_slice($techs, 0, 10), array_slice($techs, 10)]; ?>
-    <div class="tech-marquee" aria-label="<?= e(t('home.tech')) ?>">
-        <?php foreach ($rows as $ri => $row): ?>
-            <div class="tech-track<?= $ri ? ' reverse' : '' ?>">
-                <?php foreach ([0, 1] as $copy): foreach ($row as [$ic, $n, $c]): ?>
-                    <span class="tech-chip" style="--c:<?= $c ?>" <?= $copy ? 'aria-hidden="true"' : '' ?>><span class="tech-ic"><i class="<?= $ic ?>"></i></span><?= e($n) ?></span>
-                <?php endforeach; endforeach; ?>
-            </div>
+    $techs = array_slice($techs, 0, 16); ?>
+    <div class="tech-grid">
+        <?php foreach ($techs as [$ic, $n, $c]): ?>
+            <div class="tech-tile" style="--c:<?= $c ?>"><i class="<?= $ic ?>" aria-hidden="true"></i><span><?= e($n) ?></span></div>
         <?php endforeach; ?>
     </div>
 </section>

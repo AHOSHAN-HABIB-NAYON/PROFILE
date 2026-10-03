@@ -9,6 +9,7 @@ $boot = [
     'user' => $user ? ['id' => (int)$user['id'], 'name' => $user['name']] : null,
     'strings' => Lang::js(),
     'sound' => setting('notify_sound') === '1',
+    'wa' => preg_replace('/\D/', '', (string)setting('contact_whatsapp')),
     'push' => setting('push_enabled') === '1' && setting('vapid_public') !== '' ? setting('vapid_public') : null,
     'ai' => ['greet' => setting('ai_greeting') === '1', 'sound' => setting('ai_sound') === '1'],
     'pwa' => ['enabled' => setting('pwa_enabled') === '1', 'prompt' => setting('pwa_install_prompt') === '1', 'version' => setting('pwa_version')],

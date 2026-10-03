@@ -34,8 +34,8 @@ final class AdminSettingsController
                 'social_x' => ['type' => 'url'], 'social_linkedin' => ['type' => 'url'], 'social_github' => ['type' => 'url'], 'social_youtube' => ['type' => 'url'],
             ]],
             'payment' => ['icon' => 'fa-solid fa-wallet', 'fields' => [
-                'require_verified_for_payment' => $yes, 'max_screenshot_mb' => ['type' => 'number', 'min' => 1, 'max' => 20],
-            ], 'links' => [['/admin/payment-methods', 'admin.payment_methods', 'fa-solid fa-building-columns']], 'methods' => true],
+                'require_verified_for_payment' => $yes, 'max_screenshot_mb' => ['type' => 'number', 'min' => 1, 'max' => 20], 'wallet_min_withdraw' => ['type' => 'number', 'min' => 1, 'max' => 10000],
+            ], 'links' => [['/admin/payment-methods', 'admin.payment_methods', 'fa-solid fa-building-columns'], ['/admin/wallet', 'wallet.admin_title', 'fa-solid fa-wallet']], 'methods' => true],
             'security' => ['icon' => 'fa-solid fa-shield-halved', 'fields' => [
                 'security_max_attempts' => ['type' => 'number', 'min' => 3, 'max' => 50], 'security_lock_minutes' => ['type' => 'number', 'min' => 1, 'max' => 1440],
                 'registration_enabled' => $yes, 'require_email_verification' => $yes,

@@ -1,5 +1,8 @@
 <?php /** @var array $s @var array $u @var array $methods */
 $needVerify = setting('require_verified_for_payment') === '1' && !$u['email_verified_at'];
+$priceUsd = Wallet::toUsd((float)$s['price'], $s['currency']);
+$bal = (float)$u['balance'];
+$canBalance = $bal > 0 && $bal >= $priceUsd;
 ?>
 <a class="back-link" href="<?= e(url('/services/' . $s['slug'])) ?>"><i class="fa-solid fa-arrow-left"></i> <?= e(tr($s, 'title')) ?></a>
 <div class="page-head"><h1><?= e(t('payment.make')) ?></h1></div>
@@ -12,7 +15,7 @@ $needVerify = setting('require_verified_for_payment') === '1' && !$u['email_veri
 
 <?php if ($needVerify): ?>
     <div class="alert alert-warning mt-2"><i class="fa-solid fa-envelope"></i><span><?= e(t('payment.verify_first')) ?> <a href="<?= e(url('/profile/security')) ?>"><?= e(t('nav.security')) ?></a></span></div>
-<?php elseif (!$methods): ?>
+<?php elseif (!$methods && $bal <= 0): ?>
     <div class="alert alert-warning mt-2"><i class="fa-solid fa-circle-info"></i><span><?= e(t('payment.no_methods')) ?></span></div>
 <?php else: ?>
 <form class="checkout" method="post" action="<?= e(url('/payment/' . $s['slug'])) ?>" enctype="multipart/form-data" data-ajax novalidate>
@@ -20,9 +23,17 @@ $needVerify = setting('require_verified_for_payment') === '1' && !$u['email_veri
     <section class="card mt-2" data-component="pay-methods">
         <h2 class="card-title mb-1"><?= e(t('payment.method')) ?></h2>
         <div class="pay-options" role="radiogroup" aria-label="<?= e(t('payment.method')) ?>">
+            <?php if ($bal > 0): ?>
+                <label class="pay-option pay-balance<?= $canBalance ? '' : ' is-disabled' ?>">
+                    <input type="radio" name="method" value="balance" <?= $canBalance ? 'checked' : 'disabled' ?>>
+                    <img src="<?= e(asset('img/pay/wallet.svg')) ?>" alt="" width="30" height="30">
+                    <span class="grow"><strong><?= e(t('wallet.balance_method')) ?></strong><small class="muted" style="display:block"><?= e(t('wallet.available')) ?>: <?= money($bal) ?><?= $canBalance ? '' : ' · ' . e(t('wallet.not_enough')) ?></small></span>
+                    <span class="pay-radio" aria-hidden="true"></span>
+                </label>
+            <?php endif; ?>
             <?php foreach ($methods as $i => $m): ?>
                 <label class="pay-option">
-                    <input type="radio" name="method" value="<?= e($m['code']) ?>" <?= $i === 0 ? 'checked' : '' ?>>
+                    <input type="radio" name="method" value="<?= e($m['code']) ?>" <?= $i === 0 && !$canBalance ? 'checked' : '' ?>>
                     <img src="<?= e(Content::media($m['logo'])) ?>" alt="" width="30" height="30">
                     <span class="grow"><strong><?= e($m['name']) ?></strong><?php if ($m['account_type']): ?><small class="muted"> · <?= e($m['account_type']) ?></small><?php endif; ?></span>
                     <span class="pay-radio" aria-hidden="true"></span>
@@ -32,7 +43,7 @@ $needVerify = setting('require_verified_for_payment') === '1' && !$u['email_veri
     </section>
 
     <?php foreach ($methods as $i => $m): ?>
-        <section class="card mt-2 pay-panel" data-method-panel="<?= e($m['code']) ?>" <?= $i === 0 ? '' : 'hidden' ?>>
+        <section class="card mt-2 pay-panel" data-method-panel="<?= e($m['code']) ?>" <?= $i === 0 && !$canBalance ? '' : 'hidden' ?>>
             <h2 class="card-title mb-1"><i class="fa-solid fa-circle-info text-primary"></i> <?= e(t('payment.instructions')) ?> · <?= e($m['name']) ?></h2>
             <div class="pay-details">
                 <?php if ($m['account_number']): ?>
@@ -50,18 +61,23 @@ $needVerify = setting('require_verified_for_payment') === '1' && !$u['email_veri
         </section>
     <?php endforeach; ?>
 
-    <section class="card mt-2 form">
+    <?php if ($bal > 0): ?>
+    <section class="card mt-2 pay-panel balance-panel" data-method-panel="balance" <?= $canBalance ? '' : 'hidden' ?>>
+        <div class="row"><img src="<?= e(asset('img/pay/wallet.svg')) ?>" alt="" width="44" height="44">
+            <div class="grow"><strong><?= e(t('wallet.pay_from_balance')) ?></strong><p class="xs muted mb-0"><?= money($bal) ?> → <?= money(max(0, $bal - $priceUsd)) ?></p></div></div>
+        <button class="btn btn-primary btn-block mt-2" type="submit"><i class="fa-solid fa-bolt"></i> <?= e(t('wallet.pay_now', ['n' => money($priceUsd)])) ?></button>
+    </section>
+    <?php endif; ?>
+    <section class="card mt-2 form" data-proof <?= $canBalance ? 'hidden' : '' ?>>
         <h2 class="card-title"><?= e(t('payment.confirm')) ?></h2>
-        <div class="field"><label class="req" for="txn"><?= e(t('profile.txn')) ?></label><input class="input mono" id="txn" name="transaction_id" required maxlength="120" autocomplete="off" placeholder="<?= e(t('payment.txn_ph')) ?>"></div>
-        <div class="field"><label for="sender"><?= e(t('payment.sender')) ?></label><input class="input mono" id="sender" name="sender" maxlength="190" autocomplete="off" placeholder="<?= e(t('payment.sender_ph')) ?>"></div>
+        <div class="field"><label class="req" for="txn"><?= e(t('profile.txn')) ?></label><input class="input mono" id="txn" name="transaction_id" maxlength="120" autocomplete="off" placeholder="<?= e(t('payment.txn_ph')) ?>"></div>
         <div class="field" data-component="file-preview"><label class="req" for="shot"><?= e(t('profile.screenshot')) ?></label>
             <label class="upload-box" for="shot">
                 <span class="upload-ic"><i class="fa-solid fa-cloud-arrow-up"></i></span>
                 <span class="grow"><strong><?= e(t('payment.upload_shot')) ?></strong><span class="hint" data-file-info><?= e(t('payment.shot_hint', ['n' => setting('max_screenshot_mb')])) ?></span></span>
                 <img class="shot-preview" alt="" hidden>
             </label>
-            <input class="sr-only" type="file" id="shot" name="screenshot" accept="image/jpeg,image/png,image/webp" required></div>
-        <div class="field" data-component="char-count"><label for="note"><?= e(t('payment.note')) ?></label><textarea class="textarea" id="note" name="note" rows="3" maxlength="1000" placeholder="<?= e(t('payment.note_ph')) ?>"></textarea><span class="hint right" data-count></span></div>
+            <input class="sr-only" type="file" id="shot" name="screenshot" accept="image/jpeg,image/png,image/webp"></div>
         <button class="btn btn-primary btn-block" type="submit"><i class="fa-solid fa-paper-plane"></i> <?= e(t('payment.submit')) ?></button>
         <p class="xs muted center mb-0"><i class="fa-solid fa-lock"></i> <?= e(t('payment.secure_note')) ?></p>
     </section>

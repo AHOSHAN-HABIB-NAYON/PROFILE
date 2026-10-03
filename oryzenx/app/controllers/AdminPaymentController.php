@@ -25,7 +25,7 @@ final class AdminPaymentController
     public function show(string $id): void
     {
         $pay = $this->find($id);
-        $method = DB::row('SELECT * FROM payment_methods WHERE code = ?', [$pay['method_code']]);
+        $method = Content::methodMap()[$pay['method_code']] ?? null;
         $others = (int)DB::val('SELECT COUNT(*) FROM payments WHERE user_id = ? AND id <> ?', [$pay['user_id'], $pay['id']]);
         View::page('admin/payment', ['pay' => $pay, 'method' => $method, 'others' => $others], ['layout' => 'admin', 'title' => t('admin.payment') . ' #' . $pay['id'], 'nav' => 'payments', 'cache' => false]);
     }
@@ -42,12 +42,15 @@ final class AdminPaymentController
         $note = mb_substr((string)input('admin_note'), 0, 1000) ?: null;
         // Refunds go to the user's wallet balance (kept in USD). Undoing a refund takes it back.
         $credit = 0.0;
-        if ($status === 'refunded' && $pay['status'] !== 'refunded') $credit = self::toUsd((float)$pay['amount'], $pay['currency']);
-        if ($pay['status'] === 'refunded' && $status !== 'refunded') $credit = -self::toUsd((float)$pay['amount'], $pay['currency']);
+        if ($status === 'refunded' && $pay['status'] !== 'refunded') $credit = Wallet::toUsd((float)$pay['amount'], $pay['currency']);
+        if ($pay['status'] === 'refunded' && $status !== 'refunded') $credit = -Wallet::toUsd((float)$pay['amount'], $pay['currency']);
         DB::tx(function () use ($pay, $status, $orderStatus, $note, $credit) {
             DB::q('UPDATE payments SET status = ?, admin_note = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?', [$status, $note, Auth::id(), $pay['id']]);
             DB::q('UPDATE orders SET status = ? WHERE id = ?', [$orderStatus, $pay['oid']]);
-            if ($credit != 0.0) DB::q('UPDATE users SET balance = balance + ? WHERE id = ?', [round($credit, 2), $pay['user_id']]);
+            if ($credit != 0.0) {
+                Wallet::credit((int)$pay['user_id'], $credit);
+                Wallet::log((int)$pay['user_id'], $credit > 0 ? 'refund' : 'adjust', abs($credit), ['note' => 'Payment #' . $pay['id'] . ($credit > 0 ? '' : ' refund reversed')]);
+            }
         });
         if ($credit != 0.0) {
             Auth::activity('balance_' . ($credit > 0 ? 'refund' : 'refund_reversed'), "#{$pay['id']} " . money(abs($credit)), (int)$pay['user_id']);
@@ -60,12 +63,5 @@ final class AdminPaymentController
         }
         Auth::activity('admin_payment_' . $status, "#{$pay['id']}");
         respond(true, t('admin.payment_updated'), '/admin/payments/' . $pay['id']);
-    }
-
-    private static function toUsd(float $amount, string $currency): float
-    {
-        if ($currency === 'USD') return $amount;
-        $rate = (float)setting('usd_to_bdt');
-        return $rate > 0 ? $amount / $rate : $amount;
     }
 }

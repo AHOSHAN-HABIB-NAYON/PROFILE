@@ -32,7 +32,7 @@ final class Settings
             'contact_hours' => 'Every day, 9am – 11pm (GMT+6)', 'contact_hours_bn' => 'প্রতিদিন, সকাল ৯টা – রাত ১১টা',
             'social_x' => '', 'social_linkedin' => '', 'social_github' => '', 'social_youtube' => '',
             // payment
-            'require_verified_for_payment' => '0', 'max_screenshot_mb' => '5',
+            'require_verified_for_payment' => '0', 'max_screenshot_mb' => '5', 'wallet_min_withdraw' => '5',
             // security
             'security_max_attempts' => '5', 'security_lock_minutes' => '15', 'recaptcha_enabled' => '0',
             'recaptcha_site_key' => '', 'recaptcha_secret' => '', 'registration_enabled' => '1', 'require_email_verification' => '0',
@@ -74,7 +74,7 @@ final class Settings
             'homepage' => ['hero_title', 'hero_title_bn', 'hero_subtitle', 'hero_subtitle_bn', 'stat_projects', 'stat_satisfaction', 'stat_support'],
             'theme' => ['color_primary', 'color_secondary', 'color_accent', 'card_radius', 'default_theme', 'allow_dark'],
             'contact' => ['contact_email', 'contact_whatsapp', 'contact_telegram', 'contact_facebook', 'contact_address', 'contact_address_bn', 'contact_hours', 'contact_hours_bn', 'social_x', 'social_linkedin', 'social_github', 'social_youtube'],
-            'payment' => ['require_verified_for_payment', 'max_screenshot_mb'],
+            'payment' => ['require_verified_for_payment', 'max_screenshot_mb', 'wallet_min_withdraw'],
             'security' => ['security_max_attempts', 'security_lock_minutes', 'recaptcha_enabled', 'recaptcha_site_key', 'recaptcha_secret', 'registration_enabled', 'require_email_verification'],
             'smtp' => ['smtp_host', 'smtp_port', 'smtp_user', 'smtp_pass', 'smtp_encryption', 'smtp_from_email', 'smtp_from_name'],
             'google' => ['google_enabled', 'google_client_id', 'google_client_secret'],

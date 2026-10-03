@@ -110,9 +110,11 @@ final class SystemController
     public function privateFile(string $type, string $id): void
     {
         $u = auth();
-        $row = $type === 'payment'
-            ? DB::row('SELECT user_id, screenshot AS f FROM payments WHERE id = ?', [(int)$id])
-            : DB::row('SELECT user_id, attachment AS f FROM contact_messages WHERE id = ?', [(int)$id]);
+        $row = match ($type) {
+            'payment' => DB::row('SELECT user_id, screenshot AS f FROM payments WHERE id = ?', [(int)$id]),
+            'wallet' => DB::row('SELECT user_id, screenshot AS f FROM wallet_transactions WHERE id = ?', [(int)$id]),
+            default => DB::row('SELECT user_id, attachment AS f FROM contact_messages WHERE id = ?', [(int)$id]),
+        };
         if (!$row || !$row['f'] || ($u['role'] !== 'admin' && (int)$row['user_id'] !== (int)$u['id'])) throw new HttpException(t('error.404'), 404);
         $path = realpath(STORAGE . '/uploads/' . $row['f']);
         if (!$path || !str_starts_with($path, realpath(STORAGE . '/uploads')) || !is_file($path)) throw new HttpException(t('error.404'), 404);

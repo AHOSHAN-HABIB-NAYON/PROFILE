@@ -9,7 +9,7 @@ $spent = money($stats['spent_usd']) . ((float)$stats['spent_bdt'] > 0 ? ' + ' . 
     <div class="stat"><span class="label"><i class="fa-solid fa-hourglass-half"></i> <?= e(t('profile.pending')) ?></span><span class="value text-warning"><?= num((int)$stats['pending']) ?></span></div>
     <div class="stat"><span class="label"><i class="fa-solid fa-box"></i> <?= e(t('profile.services_bought')) ?></span><span class="value"><?= num($services) ?></span></div>
     <div class="stat"><span class="label"><i class="fa-solid fa-sack-dollar"></i> <?= e(t('profile.total_spent')) ?></span><span class="value"><?= $spent ?></span></div>
-    <div class="stat"><span class="label"><i class="fa-solid fa-wallet"></i> <?= e(t('admin.balance')) ?></span><span class="value"><?= money($u['balance']) ?></span></div>
+    <a class="stat card-link" href="<?= e(url('/profile/wallet')) ?>"><span class="label"><i class="fa-solid fa-wallet"></i> <?= e(t('admin.balance')) ?></span><span class="value"><?= money($u['balance']) ?></span></a>
     <a class="stat card-link" href="<?= e(url('/profile/security')) ?>"><span class="label"><i class="fa-solid fa-shield-halved"></i> <?= e(t('profile.security_score')) ?></span><span class="value <?= $security['score'] >= 60 ? 'text-success' : 'text-warning' ?>"><?= num($security['score']) ?>%</span></a>
 </div>
 

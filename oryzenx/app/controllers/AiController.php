@@ -39,6 +39,12 @@ final class AiController
 
         $c = $this->conversation(true);
         DB::insert('ai_messages', ['conversation_id' => $c['id'], 'role' => 'user', 'content' => $msg]);
+        // "Human / agent" requests go straight to the team on WhatsApp.
+        if (preg_match('/human|agent|real person|support team|মানুষ|এজেন্ট|লাইভ সাপোর্ট|হিউম্যান|কথা বল/iu', $msg)) {
+            $reply = t('chat.human_reply');
+            DB::insert('ai_messages', ['conversation_id' => $c['id'], 'role' => 'assistant', 'content' => $reply, 'source' => 'human']);
+            json_out(['ok' => true, 'reply' => $reply, 'source' => 'human', 'human' => true]);
+        }
         $history = DB::all('SELECT role, content FROM (SELECT id, role, content FROM ai_messages WHERE conversation_id = ? ORDER BY id DESC LIMIT 10) x ORDER BY id', [$c['id']]);
         $reply = Assistant::reply($history, $source);
         DB::insert('ai_messages', ['conversation_id' => $c['id'], 'role' => 'assistant', 'content' => $reply, 'source' => $source]);

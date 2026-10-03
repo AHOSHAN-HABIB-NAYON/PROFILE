@@ -32,12 +32,13 @@ final class PaymentController
         $s = $this->service($slug);
         $u = DB::row('SELECT * FROM users WHERE id = ?', [Auth::id()]);
         if (setting('require_verified_for_payment') === '1' && !$u['email_verified_at']) fail(t('payment.verify_first'));
-        $methods = array_column(Content::paymentMethods(), null, 'code');
         $code = (string)input('method');
+        if ($code === 'balance') $this->payWithBalance($s, $u);
+        $methods = array_column(Content::paymentMethods(), null, 'code');
         if (!isset($methods[$code])) fail(t('payment.choose_method'), ['method' => t('payment.choose_method')]);
         $txn = preg_replace('/\s+/', '', (string)input('transaction_id'));
         if (!preg_match('/^[A-Za-z0-9\-_.:#]{4,120}$/', $txn)) fail(t('payment.bad_txn'), ['transaction_id' => t('payment.bad_txn')]);
-        $sender = mb_substr((string)input('sender'), 0, 190);
+        $sender = null;
         if (!Upload::present('screenshot')) fail(t('payment.need_screenshot'), ['screenshot' => t('payment.need_screenshot')]);
         if (!RateLimit::hit('pay|' . $u['id'], 10, 3600)) fail(t('error.429'), [], 429);
         if (DB::val('SELECT 1 FROM payments WHERE method_code = ? AND transaction_id = ?', [$code, $txn])) fail(t('payment.dup_txn'), ['transaction_id' => t('payment.dup_txn')]);
@@ -58,5 +59,29 @@ final class PaymentController
             ['icon' => 'fa-solid fa-wallet', 'link' => '/admin/payments/' . $payId, 'priority' => 'high']);
         Notifier::send([(int)$u['id']], t('notif.payment_received'), t('notif.payment_received_text', ['s' => $s['title']]), ['icon' => 'fa-solid fa-hourglass-half', 'link' => '/profile/payments/' . $payId, 'push' => false]);
         respond(true, t('payment.submitted'), '/profile/payments/' . $payId);
+    }
+
+    /** Instant purchase from the wallet balance: no proof needed, the order starts right away. */
+    private function payWithBalance(array $s, array $u): never
+    {
+        $usd = Wallet::toUsd((float)$s['price'], $s['currency']);
+        if ($usd <= 0) fail(t('valid.numeric'));
+        if (!RateLimit::hit('pay|' . $u['id'], 10, 3600)) fail(t('error.429'), [], 429);
+        $payId = DB::tx(function () use ($s, $u, $usd) {
+            if (!Wallet::debit((int)$u['id'], $usd)) return 0;
+            $orderNo = 'OZX' . date('ymd') . strtoupper(bin2hex(random_bytes(3)));
+            $orderId = DB::insert('orders', ['order_no' => $orderNo, 'user_id' => $u['id'], 'service_id' => $s['id'], 'service_title' => $s['title'],
+                'amount' => $s['price'], 'currency' => $s['currency'], 'status' => 'processing']);
+            $payId = DB::insert('payments', ['order_id' => $orderId, 'user_id' => $u['id'], 'method_code' => 'balance', 'amount' => $s['price'], 'currency' => $s['currency'],
+                'transaction_id' => 'BAL-' . $orderNo, 'status' => 'approved', 'reviewed_at' => now()]);
+            Wallet::log((int)$u['id'], 'purchase', $usd, ['method_code' => 'balance', 'transaction_id' => 'BAL-' . $orderNo, 'note' => $s['title']]);
+            return $payId;
+        });
+        if (!$payId) fail(t('wallet.insufficient'), ['method' => t('wallet.insufficient')]);
+        Auth::activity('payment_submitted', "#$payId {$s['title']} (balance)");
+        $admins = DB::col("SELECT id FROM users WHERE role = 'admin' AND deleted_at IS NULL");
+        if ($admins) Notifier::send($admins, t('notif.new_order_balance'), $u['name'] . ' · ' . $s['title'] . ' · ' . money($usd), ['icon' => 'fa-solid fa-cart-shopping', 'link' => '/admin/payments/' . $payId, 'priority' => 'high']);
+        Notifier::send([(int)$u['id']], t('notif.payment_approved'), t('notif.paid_balance', ['s' => $s['title']]), ['icon' => 'fa-solid fa-circle-check', 'link' => '/profile/payments/' . $payId, 'push' => false]);
+        respond(true, t('wallet.paid'), '/profile/payments/' . $payId);
     }
 }

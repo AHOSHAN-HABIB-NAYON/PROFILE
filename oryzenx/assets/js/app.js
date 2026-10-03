@@ -68,17 +68,23 @@
     return { el: bd, close };
   }
 
+  // Centered confirmation popup (logout, deletes, etc.)
   function confirmDialog(text) {
     return new Promise((resolve) => {
-      let done = false;
-      const m = modal(`<p class="mb-2">${esc(text)}</p><div class="form-actions" style="justify-content:flex-end">
-        <button class="btn btn-sm btn-ghost" data-c="0">${esc(S.cancel || 'Cancel')}</button>
-        <button class="btn btn-sm btn-primary" data-c="1">${esc(S.ok || 'OK')}</button></div>`,
-      { title: S.confirm || 'Are you sure?', onClose: () => { if (!done) resolve(false); } });
-      m.el.addEventListener('click', (e) => {
-        const b = e.target.closest('[data-c]'); if (!b) return;
-        done = true; resolve(b.dataset.c === '1'); m.close();
-      });
+      const danger = /log ?out|লগআউট|delete|মুছ|disable|বন্ধ|suspend|স্থগিত/i.test(text);
+      const bd = document.createElement('div');
+      bd.className = 'confirm-backdrop';
+      bd.innerHTML = `<div class="confirm-box" role="alertdialog" aria-modal="true" aria-labelledby="cf-t">
+        <span class="confirm-ic ${danger ? 'danger' : ''}"><i class="fa-solid ${/log ?out|লগআউট/i.test(text) ? 'fa-right-from-bracket' : danger ? 'fa-triangle-exclamation' : 'fa-circle-question'}"></i></span>
+        <h3 id="cf-t">${esc(S.confirm || 'Are you sure?')}</h3><p>${esc(text)}</p>
+        <div class="confirm-actions"><button class="btn btn-outline" type="button" data-c="0">${esc(S.cancel || 'Cancel')}</button>
+        <button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" type="button" data-c="1">${esc(S.ok || 'OK')}</button></div></div>`;
+      const done = (v) => { bd.classList.add('leaving'); setTimeout(() => bd.remove(), 150); document.removeEventListener('keydown', onKey); resolve(v); };
+      const onKey = (e) => { if (e.key === 'Escape') done(false); };
+      bd.addEventListener('click', (e) => { const b = e.target.closest('[data-c]'); if (b) done(b.dataset.c === '1'); else if (e.target === bd) done(false); });
+      document.addEventListener('keydown', onKey);
+      document.body.appendChild(bd);
+      setTimeout(() => bd.querySelector('[data-c="1"]').focus(), 30);
     });
   }
 
@@ -297,7 +303,7 @@
     // GET forms (filters, search) navigate without reload
     if ((form.getAttribute('method') || 'get').toLowerCase() === 'get' && form.dataset.noSpa === undefined && !form.matches('[data-chat-form]')) {
       e.preventDefault();
-      const u = new URL(form.action || location.href, location.href);
+      const u = new URL(form.getAttribute('action') || location.href, location.href);
       u.search = new URLSearchParams(new FormData(form)).toString();
       const a = document.createElement('a'); a.href = u.href;
       spaEligible(a) ? navigate(u.href) : (location.href = u.href);
@@ -314,7 +320,7 @@
     form.dispatchEvent(new CustomEvent('ozx:before-submit', { detail: fd }));
     let data;
     try {
-      const res = await fetch(form.action, { method: 'POST', body: fd, credentials: 'same-origin',
+      const res = await fetch(form.getAttribute('action') || location.href, { method: 'POST', body: fd, credentials: 'same-origin',
         headers: { 'X-CSRF-Token': csrf(), 'X-Requested-With': 'fetch', Accept: 'application/json' } });
       try { data = await res.json(); } catch { data = { ok: false, message: S.error }; }
       if (res.status === 419) setTimeout(() => location.reload(), 1200);
@@ -352,7 +358,13 @@
       $('meta[name="theme-color"]')?.setAttribute('content', next === 'dark' ? '#0b1220' : getComputedStyle(d).getPropertyValue('--primary').trim());
     },
     fs(el) { const v = el.dataset.fs; v ? document.documentElement.setAttribute('data-fs', v) : document.documentElement.removeAttribute('data-fs'); store.set('ozx-fs', v); syncFs(); },
-    'scroll-top'() { window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }); },
+    'scroll-top'(el) {
+      el.classList.add('flying');
+      window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+      const done = () => { if (scrollY < 40) { el.classList.remove('flying'); window.removeEventListener('scroll', done); } };
+      window.addEventListener('scroll', done, { passive: true });
+      setTimeout(() => { el.classList.remove('flying'); window.removeEventListener('scroll', done); }, 1600);
+    },
     notifications() { toggleNotif(); },
     async 'notif-read-all'() { await api('/notifications/read-all', { method: 'POST' }); setBadge(0); $$('.notif-item.unread').forEach((n) => n.classList.remove('unread')); },
     async copy(el) { await copyText(el.dataset.copy); },
@@ -439,16 +451,18 @@
   function openShare(url, title) {
     const u = encodeURIComponent(url); const t = encodeURIComponent(title);
     const opts = [
-      ['Facebook', 'fa-brands fa-facebook-f', '#1877f2', `https://www.facebook.com/sharer/sharer.php?u=${u}`],
-      ['X', 'fa-brands fa-x-twitter', '#000', `https://twitter.com/intent/tweet?url=${u}&text=${t}`],
-      ['WhatsApp', 'fa-brands fa-whatsapp', '#25d366', `https://wa.me/?text=${t}%20${u}`],
-      ['Telegram', 'fa-brands fa-telegram', '#229ed9', `https://t.me/share/url?url=${u}&text=${t}`],
-      ['LinkedIn', 'fa-brands fa-linkedin-in', '#0a66c2', `https://www.linkedin.com/sharing/share-offsite/?url=${u}`],
-      ['Instagram', 'fa-brands fa-instagram', '#e1306c', 'instagram'],
+      ['Facebook', 'fa-brands fa-facebook-f', 'facebook', `https://www.facebook.com/sharer/sharer.php?u=${u}`],
+      ['WhatsApp', 'fa-brands fa-whatsapp', 'whatsapp', `https://wa.me/?text=${t}%20${u}`],
+      ['Messenger', 'fa-brands fa-facebook-messenger', 'messenger', `fb-messenger://share/?link=${u}`],
+      ['Telegram', 'fa-brands fa-telegram', 'telegram', `https://t.me/share/url?url=${u}&text=${t}`],
+      ['X', 'fa-brands fa-x-twitter', 'x', `https://twitter.com/intent/tweet?url=${u}&text=${t}`],
+      ['LinkedIn', 'fa-brands fa-linkedin-in', 'linkedin', `https://www.linkedin.com/sharing/share-offsite/?url=${u}`],
+      ['Instagram', 'fa-brands fa-instagram', 'instagram', 'instagram'],
+      ['Email', 'fa-solid fa-envelope', 'email', `mailto:?subject=${t}&body=${u}`],
     ];
-    const html = `<div class="share-grid">${opts.map(([n, ic, c, href]) => href === 'instagram'
-      ? `<button type="button" class="share-opt" data-share-ig style="--c:${c}"><span class="ic-box" style="--c:${c}"><i class="${ic}"></i></span>${n}</button>`
-      : `<a class="share-opt" href="${href}" target="_blank" rel="noopener" style="--c:${c}"><span class="ic-box" style="--c:${c}"><i class="${ic}"></i></span>${n}</a>`).join('')}
+    const html = `<div class="share-grid">${opts.map(([n, ic, k, href]) => href === 'instagram'
+      ? `<button type="button" class="share-opt" data-share-ig><span class="soc-dot soc soc-${k}"><i class="${ic}"></i></span>${n}</button>`
+      : `<a class="share-opt" href="${href}" target="_blank" rel="noopener"><span class="soc-dot soc soc-${k}"><i class="${ic}"></i></span>${n}</a>`).join('')}
       </div><div class="copy-box mt-2"><span>${esc(url)}</span><button class="btn btn-xs btn-primary" type="button" data-share-copy><i class="fa-regular fa-copy"></i> ${esc(S.share_copy || 'Copy')}</button></div>
       ${navigator.share ? `<button class="btn btn-sm btn-outline btn-block mt-1" type="button" data-share-native><i class="fa-solid fa-share-nodes"></i> More…</button>` : ''}`;
     const m = modal(html, { title: 'Share' });
@@ -472,6 +486,14 @@
     const i = $('#global-search'); i.focus(); i.select();
   }
   function closeSearch() { const o = $('#search-overlay'); if (o) o.hidden = true; }
+  // Live BDT equivalent for USD amount inputs (wallet deposit)
+  document.addEventListener('input', (e) => {
+    const rate = +e.target.dataset?.bdtRate;
+    if (!rate) return;
+    const out = e.target.closest('.field')?.querySelector('[data-bdt-out]');
+    const v = +e.target.value;
+    if (out) out.textContent = v > 0 ? (S.bdt_equiv || '≈ {n}').replace('{n}', '৳' + Math.ceil(v * rate).toLocaleString()) : '';
+  });
   document.addEventListener('input', (e) => {
     if (e.target.id !== 'global-search') return;
     clearTimeout(searchTimer);
@@ -524,12 +546,12 @@
     if (kind === 'notify' && navigator.vibrate) try { navigator.vibrate([90, 50, 90]); } catch { /* noop */ }
     try {
       const now = audioCtx.currentTime;
-      const notes = kind === 'chat' ? [660] : [784, 1047, 1319];
+      const notes = kind === 'chat' ? [880, 1175] : kind === 'send' ? [1320] : [784, 1047, 1319];
       notes.forEach((f, i) => {
         const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
         o.type = 'sine'; o.frequency.value = f;
         g.gain.setValueAtTime(0.0001, now + i * 0.12);
-        g.gain.exponentialRampToValueAtTime(kind === 'chat' ? 0.06 : 0.14, now + i * 0.12 + 0.02);
+        g.gain.exponentialRampToValueAtTime(kind === 'send' ? 0.04 : kind === 'chat' ? 0.08 : 0.14, now + i * 0.12 + 0.02);
         g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.12 + 0.35);
         o.connect(g).connect(audioCtx.destination); o.start(now + i * 0.12); o.stop(now + i * 0.12 + 0.3);
       });
@@ -692,18 +714,20 @@
     let loaded = false; let busy = false;
     const linkify = (t) => esc(t).replace(/(https?:\/\/[^\s<]+|\/(?:services|news|team|contact|payment|faq)[^\s<]*)/g, (u) => `<a href="${u.startsWith('/') && !u.startsWith(BASE + '/') ? BASE + u : u}">${u}</a>`)
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    function add(role, text) {
+    const HUMAN_RE = /human|agent|real person|support team|মানুষ|এজেন্ট|লাইভ সাপোর্ট|হিউম্যান|কথা বল/i;
+    function add(role, text, human = false) {
       const body = $('[data-chat-body]');
       const d = document.createElement('div');
       d.className = 'msg ' + (role === 'user' ? 'msg-user' : 'msg-bot');
-      d.innerHTML = `<div class="bubble">${role === 'user' ? esc(text) : linkify(text)}</div>`;
+      const wa = human && O.wa ? `<br><a class="wa-chip" href="https://wa.me/${esc(O.wa)}" target="_blank" rel="noopener" data-no-spa><i class="fa-brands fa-whatsapp"></i> ${esc(S.wa_chat || 'WhatsApp')}</a>` : '';
+      d.innerHTML = `<div class="bubble">${role === 'user' ? esc(text) : linkify(text)}${wa}</div>`;
       body.appendChild(d); body.scrollTop = body.scrollHeight;
       return d;
     }
     async function loadHistory() {
       if (loaded) return; loaded = true;
       const d = await api('/api/ai/history').catch(() => null);
-      (d?.messages || []).forEach((m) => add(m.role, m.content));
+      (d?.messages || []).forEach((m) => add(m.role, m.content, m.role === 'assistant' && HUMAN_RE.test(m.content) && /WhatsApp/i.test(m.content)));
     }
     return {
       isOpen: () => panel() && !panel().hidden,
@@ -717,17 +741,17 @@
       close() { const p = panel(); if (p) p.hidden = true; $('.fab-chat')?.setAttribute('aria-expanded', 'false'); },
       toggle() { this.isOpen() ? this.close() : this.open(); },
       minimize() { panel()?.classList.toggle('minimized'); },
-      async clear() { await api('/api/ai/clear', { method: 'POST' }); $('[data-chat-body]').innerHTML = ''; add('assistant', S.ai_cleared || '👋'); },
+      async clear() { await api('/api/ai/clear', { method: 'POST' }); $('[data-chat-body]').innerHTML = ''; add('assistant', S.ai_cleared || '👋'); chime('send'); },
       async send(text) {
         text = (text || '').trim(); if (!text || busy) return;
         this.open(); busy = true;
-        add('user', text);
+        add('user', text); chime('send');
         const typing = add('assistant', '');
         typing.querySelector('.bubble').innerHTML = `<span class="typing" aria-label="${esc(S.typing)}"><i></i><i></i><i></i></span>`;
         const d = await api('/api/ai/chat', { method: 'POST', json: { message: text } }).catch(() => ({ ok: false }));
         typing.remove(); busy = false;
-        add('assistant', d.ok ? d.reply : (d.message || S.ai_error));
-        if (d.ok && O.ai?.sound) chime('chat');
+        add('assistant', d.ok ? d.reply : (d.message || S.ai_error), !!d.human || HUMAN_RE.test(text));
+        if (O.ai?.sound) chime('chat');
       },
     };
   })();
@@ -815,11 +839,16 @@
     },
     'pay-methods'(el) {
       const radios = $$('input[name="method"]', el);
-      const sync = () => radios.forEach((r) => {
-        const panel = $(`[data-method-panel="${r.value}"]`, el.closest('form') || document);
-        if (panel) panel.hidden = !r.checked;
-        r.closest('.pay-option')?.classList.toggle('selected', r.checked);
-      });
+      const form = el.closest('form') || document;
+      const sync = () => {
+        radios.forEach((r) => {
+          const panel = $(`[data-method-panel="${r.value}"]`, form);
+          if (panel) panel.hidden = !r.checked;
+          r.closest('.pay-option')?.classList.toggle('selected', r.checked);
+        });
+        const proof = $('[data-proof]', form);
+        if (proof) proof.hidden = radios.some((r) => r.checked && r.value === 'balance');
+      };
       radios.forEach((r) => r.addEventListener('change', sync)); sync();
     },
     'file-preview'(el) {

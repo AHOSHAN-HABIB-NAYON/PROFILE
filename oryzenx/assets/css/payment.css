@@ -35,3 +35,6 @@
 .pay-guide { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; counter-reset: g; }
 .pay-guide li { display: flex; gap: .6rem; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .55rem .7rem; font-size: .86rem; }
 .pay-guide span { width: 22px; height: 22px; border-radius: 50%; background: var(--primary-light); color: var(--primary); font-weight: 700; font-size: .74rem; display: grid; place-items: center; flex: none; }
+.pay-option.is-disabled { opacity: .55; cursor: not-allowed; }
+.pay-balance { border-color: rgba(var(--primary-rgb), .35); }
+.balance-panel img { border-radius: 12px; }

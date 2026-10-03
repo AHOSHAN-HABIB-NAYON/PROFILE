@@ -1,5 +1,6 @@
 <?php /** @var string $method */ ?>
 <div class="auth-wrap">
+    <a class="auth-brand" href="<?= e(url('/')) ?>"><?= brand_avatar('auth-logo') ?><span><?= e(setting('site_name')) ?></span></a>
     <div class="auth-card card">
         <div class="auth-head">
             <span class="auth-icon"><i class="fa-solid <?= $method === 'totp' ? 'fa-mobile-screen' : 'fa-envelope-open-text' ?>"></i></span>
@@ -22,4 +23,5 @@
             <a class="btn btn-ghost btn-sm btn-block" href="<?= e(url('/login')) ?>"><i class="fa-solid fa-arrow-left"></i> <?= e(t('auth.back_login')) ?></a>
         </div>
     </div>
+    <?php require VIEWS . '/components/auth-secure.php'; ?>
 </div>

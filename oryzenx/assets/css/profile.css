@@ -40,3 +40,14 @@
 .pay-logo-lg { width: 60px; height: 60px; border-radius: 16px; flex: none; display: grid; place-items: center; background: var(--surface-soft); border: 1px solid var(--border); font-size: 1.4rem; color: var(--primary); }
 .pay-logo-lg img { width: 46px; height: 46px; border-radius: 12px; }
 .pay-method-name { font-size: 1.05rem; }
+
+/* Wallet */
+.wallet-card { border-radius: calc(var(--radius) + 6px); padding: 1.1rem 1rem 1rem; color: #fff; background: radial-gradient(120% 120% at 100% 0%, rgba(255,255,255,.18), transparent 50%), linear-gradient(135deg, var(--primary), var(--primary-dark) 60%, var(--accent) 140%); box-shadow: 0 12px 28px -12px rgba(var(--primary-rgb), .7); }
+.wallet-top { display: grid; gap: .15rem; }
+.wallet-top .xs { opacity: .85; }
+.wallet-amount { font-size: 2rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.2; }
+.wallet-pending { background: rgba(255,255,255,.16); border-radius: 999px; padding: .15rem .6rem; width: fit-content; }
+.wallet-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin-top: 1rem; }
+.wallet-btn { display: grid; justify-items: center; gap: .3rem; color: #fff; font-size: .8rem; font-weight: 700; padding: .6rem .3rem; border-radius: 14px; background: rgba(255,255,255,.12); }
+.wallet-btn:hover { color: #fff; background: rgba(255,255,255,.2); }
+.wallet-btn span { width: 36px; height: 36px; border-radius: 50%; background: #fff; color: var(--primary); display: grid; place-items: center; }

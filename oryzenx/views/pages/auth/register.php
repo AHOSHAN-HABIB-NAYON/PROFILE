@@ -1,4 +1,5 @@
 <div class="auth-wrap">
+    <a class="auth-brand" href="<?= e(url('/')) ?>"><?= brand_avatar('auth-logo') ?><span><?= e(setting('site_name')) ?></span></a>
     <div class="auth-card card">
         <div class="auth-head">
             <span class="auth-icon"><i class="fa-solid fa-user-plus"></i></span>
@@ -19,10 +20,11 @@
             <button class="btn btn-primary btn-block" type="submit"><?= e(t('auth.create_account')) ?></button>
         </form>
         <?php if (GoogleController::enabled()): ?>
-            <div class="divider-text"><?= e(t('auth.or')) ?></div>
-            <a class="btn btn-outline btn-block" href="<?= e(url('/auth/google')) ?>" data-no-spa><img src="<?= e(asset('img/google.svg')) ?>" alt="" width="18" height="18"> <?= e(t('auth.google')) ?></a>
+            <div class="divider-text"><?= e(t('auth.or_continue')) ?></div>
+            <div class="social-login"><a class="social-btn" href="<?= e(url('/auth/google')) ?>" data-no-spa aria-label="<?= e(t('auth.google')) ?>" title="<?= e(t('auth.google')) ?>"><img src="<?= e(asset('img/google.svg')) ?>" alt="" width="22" height="22"></a></div>
         <?php endif; ?>
         <?php endif; ?>
         <p class="center small mt-2 mb-0"><?= e(t('auth.have_account')) ?> <a href="<?= e(url('/login')) ?>"><?= e(t('auth.login')) ?></a></p>
     </div>
+    <?php require VIEWS . '/components/auth-secure.php'; ?>
 </div>

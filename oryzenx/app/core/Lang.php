@@ -40,7 +40,7 @@ final class Lang
             'js.cancel', 'js.ok', 'js.searching', 'js.saved', 'js.chars', 'js.view_all', 'js.mark_read', 'js.no_notifications', 'js.days', 'js.hours', 'js.minutes', 'js.seconds', 'js.ai_cleared',
             'js.eg_install_title', 'js.eg_install_text', 'js.eg_ios_text', 'js.eg_ios1', 'js.eg_ios2', 'js.eg_install_btn', 'js.eg_ok', 'js.eg_if1', 'js.eg_if2', 'js.eg_if3',
             'js.eg_push_title', 'js.eg_push_text', 'js.eg_allow', 'js.eg_pf1', 'js.eg_pf2', 'js.eg_pf3', 'js.eg_later', 'js.eg_denied_title', 'js.eg_denied_text',
-            'js.eg_den1', 'js.eg_den2', 'js.eg_recheck', 'js.eg_still_blocked'];
+            'js.eg_den1', 'js.eg_den2', 'js.eg_recheck', 'js.eg_still_blocked', 'js.wa_chat', 'js.bdt_equiv'];
         $out = [];
         foreach ($keys as $k) $out[substr($k, 3)] = self::get($k);
         return $out;
