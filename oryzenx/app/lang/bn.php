@@ -35,7 +35,7 @@ return [
     'home.platforms' => 'প্ল্যাটফর্ম', 'home.our_services' => 'আমাদের সার্ভিস সমূহ', 'home.latest_posts' => 'সর্বশেষ আপডেট', 'home.featured' => 'ফিচার্ড প্রজেক্ট ও সার্ভিস',
     'home.why' => 'কেন Oryzenx', 'home.why_fast' => 'দ্রুত ডেলিভারি', 'home.why_fast_d' => 'বেশিরভাগ প্রজেক্ট ৩–৭ দিনে।', 'home.why_secure' => 'নিরাপদ',
     'home.why_secure_d' => 'সুরক্ষিত কোড, 2FA ও বেস্ট প্র্যাকটিস।', 'home.why_mobile' => 'মোবাইল ফার্স্ট', 'home.why_mobile_d' => 'সব ফোনে সুন্দর দেখায়।',
-    'home.why_support' => 'সরাসরি সাপোর্ট', 'home.why_support_d' => 'ডেভেলপারদের সাথে সরাসরি কথা বলুন।', 'home.tech' => 'আমাদের প্রযুক্তি', 'home.how' => 'কিভাবে অর্ডার করবেন',
+    'home.why_support' => 'সরাসরি সাপোর্ট', 'home.why_support_d' => 'ডেভেলপারদের সাথে সরাসরি কথা বলুন।', 'home.tech_sub' => 'যেসব প্রযুক্তি দিয়ে আমরা কাজ করি', 'home.tech' => 'আমাদের প্রযুক্তি', 'home.how' => 'কিভাবে অর্ডার করবেন',
     'home.step1' => 'সার্ভিস বাছাই করুন', 'home.step1_d' => 'প্রয়োজনীয় সার্ভিসটি খুলুন।', 'home.step2' => 'নিরাপদে পেমেন্ট', 'home.step2_d' => 'বিকাশ, USDT বা Binance Pay।',
     'home.step3' => 'প্রমাণ জমা দিন', 'home.step3_d' => 'ট্রানজেকশন আইডি ও স্ক্রিনশট।', 'home.step4' => 'কাজ শুরু', 'home.step4_d' => 'প্রোফাইলে স্ট্যাটাস দেখুন।',
     'home.payments' => 'পেমেন্ট পদ্ধতি', 'home.cta' => 'দারুণ কিছু তৈরি করতে প্রস্তুত?', 'home.cta_d' => 'আপনার প্রজেক্ট সম্পর্কে জানান — আমরা দ্রুত উত্তর দিই।',
@@ -69,7 +69,7 @@ return [
     'chat.q_payment' => 'কিভাবে পেমেন্ট করব?', 'chat.q_contact' => 'কিভাবে যোগাযোগ করব?', 'chat.limit' => 'প্রতি ১০ মিনিটে {n}টি বার্তার সীমা পূর্ণ হয়েছে। একটু অপেক্ষা করুন।',
     'chat.disabled' => 'সহকারী এখন উপলব্ধ নেই।',
 
-    'auth.login' => 'লগইন', 'auth.logout' => 'লগআউট', 'auth.register' => 'রেজিস্টার', 'auth.login_title' => 'আবার স্বাগতম', 'auth.login_sub' => 'আপনার {site} অ্যাকাউন্টে লগইন করুন',
+    'auth.logout_confirm' => 'আপনি কি লগআউট করতে চান?', 'auth.login' => 'লগইন', 'auth.logout' => 'লগআউট', 'auth.register' => 'রেজিস্টার', 'auth.login_title' => 'আবার স্বাগতম', 'auth.login_sub' => 'আপনার {site} অ্যাকাউন্টে লগইন করুন',
     'auth.register_title' => 'অ্যাকাউন্ট তৈরি করুন', 'auth.register_sub' => 'এক মিনিটেরও কম সময় লাগবে।', 'auth.forgot' => 'পাসওয়ার্ড ভুলে গেছেন?', 'auth.remember' => 'লগইন থাকুন',
     'auth.or' => 'অথবা', 'auth.passkey_login' => 'পাসকি দিয়ে লগইন', 'auth.google' => 'Google দিয়ে চালিয়ে যান', 'auth.no_account' => 'অ্যাকাউন্ট নেই?',
     'auth.have_account' => 'অ্যাকাউন্ট আছে?', 'auth.secure_note' => 'এনক্রিপশন, রেট লিমিট ও ঐচ্ছিক 2FA দিয়ে সুরক্ষিত।', 'auth.show_pw' => 'পাসওয়ার্ড দেখুন',
@@ -126,7 +126,7 @@ return [
     'profile.screenshot' => 'পেমেন্ট স্ক্রিনশট', 'profile.admin_note' => 'অ্যাডমিন নোট', 'profile.tl_submitted' => 'পেমেন্ট জমা হয়েছে', 'profile.tl_review' => 'যাচাই চলছে',
     'profile.tl_review_d' => 'সাধারণত কয়েক ঘণ্টার মধ্যে', 'profile.need_help' => 'এই পেমেন্ট নিয়ে সাহায্য দরকার?',
 
-    'payment.title' => 'পেমেন্ট', 'payment.sub' => 'বিকাশ, USDT বা Binance Pay দিয়ে নিরাপদে পেমেন্ট করুন।', 'payment.your_payments' => 'আপনার সাম্প্রতিক পেমেন্ট', 'payment.login_needed' => 'সার্ভিস কিনতে লগইন করুন',
+    'payment.scan_qr' => 'পেমেন্ট করতে QR কোড স্ক্যান করুন', 'payment.upload_shot' => 'পেমেন্টের স্ক্রিনশট আপলোড করুন', 'payment.title' => 'পেমেন্ট', 'payment.sub' => 'বিকাশ, USDT বা Binance Pay দিয়ে নিরাপদে পেমেন্ট করুন।', 'payment.your_payments' => 'আপনার সাম্প্রতিক পেমেন্ট', 'payment.login_needed' => 'সার্ভিস কিনতে লগইন করুন',
     'payment.login_needed_d' => 'আপনার পেমেন্ট ও স্ট্যাটাস প্রোফাইলে দেখা যাবে।', 'payment.methods' => 'গ্রহণযোগ্য পদ্ধতি', 'payment.available' => 'উপলব্ধ',
     'payment.no_methods' => 'এখনো কোনো পেমেন্ট পদ্ধতি সেট করা হয়নি। সাপোর্টে যোগাযোগ করুন।', 'payment.choose_service' => 'সার্ভিস বাছাই করুন', 'payment.g1' => 'সার্ভিস খুলে “অর্ডার করুন” চাপুন।',
     'payment.g2' => 'পেমেন্ট পদ্ধতি বাছাই করে সঠিক পরিমাণ পাঠান।', 'payment.g3' => 'ট্রানজেকশন আইডি দিন ও স্ক্রিনশট আপলোড করুন।', 'payment.g4' => 'অ্যাডমিন পেমেন্ট যাচাই করবেন।',
@@ -140,7 +140,7 @@ return [
     'payment.need_screenshot' => 'পেমেন্টের স্ক্রিনশট আপলোড করুন।', 'payment.dup_txn' => 'এই ট্রানজেকশন আইডি আগেই জমা দেওয়া হয়েছে।',
     'payment.verify_first' => 'পেমেন্টের আগে আপনার ইমেইল যাচাই করুন।',
 
-    'notif.mark_all' => 'সব পঠিত', 'notif.view_all' => 'সব নোটিফিকেশন দেখুন', 'notif.login_to_see' => 'নোটিফিকেশন দেখতে লগইন করুন।', 'notif.sub' => 'আপনার সর্বশেষ আপডেট',
+    'notif.refund_balance' => '{amount} আপনার অ্যাকাউন্ট ব্যালেন্সে যোগ হয়েছে।', 'act.balance_refund' => 'রিফান্ড ব্যালেন্সে যোগ', 'act.balance_refund_reversed' => 'রিফান্ড বাতিল', 'notif.mark_all' => 'সব পঠিত', 'notif.view_all' => 'সব নোটিফিকেশন দেখুন', 'notif.login_to_see' => 'নোটিফিকেশন দেখতে লগইন করুন।', 'notif.sub' => 'আপনার সর্বশেষ আপডেট',
     'notif.new_message' => 'নতুন সাপোর্ট বার্তা', 'notif.new_payment' => 'যাচাইয়ের জন্য নতুন পেমেন্ট', 'notif.payment_received' => 'পেমেন্ট পাওয়া গেছে',
     'notif.payment_received_text' => '{s} এর পেমেন্ট পাওয়া গেছে। এখন যাচাই চলছে।', 'notif.payment_approved' => '✅ পেমেন্ট অনুমোদিত', 'notif.payment_rejected' => '❌ পেমেন্ট বাতিল',
     'notif.payment_refunded' => 'পেমেন্ট ফেরত দেওয়া হয়েছে', 'notif.payment_pending' => 'পেমেন্ট আবার যাচাইয়ে', 'notif.payment_status_text' => '{s} এর পেমেন্টের স্ট্যাটাস: {status}।',
@@ -150,7 +150,7 @@ return [
     'offline.title' => 'আপনি অফলাইনে আছেন', 'offline.text' => 'ইন্টারনেট সংযোগ দেখুন। সম্প্রতি দেখা পেজগুলো এখনো উপলব্ধ।', 'offline.retry' => 'আবার চেষ্টা',
     'maint.title' => 'শীঘ্রই ফিরছি', 'maint.eta' => 'আনুমানিক শেষ সময়', 'maint.admin_login' => 'অ্যাডমিন লগইন',
 
-    'js.copied' => 'কপি হয়েছে!', 'js.offline' => 'আপনি অফলাইনে আছেন।', 'js.error' => 'দুঃখিত, কিছু সমস্যা হয়েছে। আবার চেষ্টা করুন।', 'js.loading' => 'লোড হচ্ছে…',
+    'js.eg_install_title' => 'Oryzenx অ্যাপ ইনস্টল করুন', 'js.eg_install_text' => 'ফোনে পুরো অ্যাপের অভিজ্ঞতা নিন — এক ট্যাপে, প্লে স্টোর লাগবে না।', 'js.eg_ios_text' => 'দুই ধাপে হোম স্ক্রিনে Oryzenx যোগ করুন:', 'js.eg_ios1' => 'Safari-র Share বাটনে চাপুন', 'js.eg_ios2' => '“Add to Home Screen” বেছে নিন', 'js.eg_install_btn' => 'এখনই ইনস্টল করুন', 'js.eg_ok' => 'ঠিক আছে', 'js.eg_if1' => 'তাৎক্ষণিক খোলে, ফুল-স্ক্রিন', 'js.eg_if2' => 'দুর্বল ইন্টারনেটেও চলে', 'js.eg_if3' => 'পেমেন্ট ও নিউজের সাথে সাথে নোটিফিকেশন', 'js.eg_push_title' => 'নোটিফিকেশন চালু করুন', 'js.eg_push_text' => 'পেমেন্ট অনুমোদন, উত্তর ও নতুন আপডেট মিস করবেন না। শুধু জরুরি নোটিফিকেশন পাঠানো হয়।', 'js.eg_allow' => 'নোটিফিকেশন চালু করুন', 'js.eg_pf1' => 'সাউন্ডসহ লাইভ নোটিফিকেশন', 'js.eg_pf2' => 'পেমেন্ট স্ট্যাটাস সাথে সাথে জানুন', 'js.eg_pf3' => 'অফার ও নতুন সার্ভিস সবার আগে', 'js.eg_later' => 'এখন না', 'js.eg_denied_title' => 'নোটিফিকেশন বন্ধ করা আছে', 'js.eg_denied_text' => 'আপনি এই সাইটের নোটিফিকেশন ব্লক করেছেন। পেমেন্ট আপডেট মিস না করতে আবার চালু করুন:', 'js.eg_den1' => 'অ্যাড্রেস বারের পাশের 🔒 আইকনে চাপুন', 'js.eg_den2' => 'Permissions → Notifications → Allow', 'js.eg_recheck' => 'চালু করেছি', 'js.eg_still_blocked' => 'এখনো বন্ধ — আগে সাইট সেটিংস থেকে নোটিফিকেশন চালু করুন।', 'js.copied' => 'কপি হয়েছে!', 'js.offline' => 'আপনি অফলাইনে আছেন।', 'js.error' => 'দুঃখিত, কিছু সমস্যা হয়েছে। আবার চেষ্টা করুন।', 'js.loading' => 'লোড হচ্ছে…',
     'js.update_ready' => 'নতুন ভার্সন উপলব্ধ।', 'js.reload' => 'আপডেট', 'js.confirm' => 'আপনি কি নিশ্চিত?', 'js.no_results' => 'কোনো ফলাফল পাওয়া যায়নি।', 'js.share_copy' => 'কপি',
     'js.install_title' => 'অ্যাপ ইনস্টল', 'js.install_text' => 'ব্রাউজার মেনু → “Add to Home screen” দিয়ে ইনস্টল করুন।', 'js.typing' => 'লিখছে…',
     'js.ai_error' => 'দুঃখিত, এখন উত্তর দিতে পারছি না। আবার চেষ্টা করুন।', 'js.notif_enabled' => 'নোটিফিকেশন চালু', 'js.notif_denied' => 'এই ব্রাউজারে নোটিফিকেশন বন্ধ বা সমর্থিত নয়।',

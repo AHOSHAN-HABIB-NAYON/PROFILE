@@ -4,7 +4,7 @@ $wa = preg_replace('/\D/', '', setting('contact_whatsapp'));
 $tg = ltrim((string)setting('contact_telegram'), '@');
 $socials = array_filter([
     ['https://wa.me/' . $wa, 'fa-brands fa-whatsapp', 'WhatsApp', $wa !== ''],
-    ['mailto:' . setting('contact_email'), 'fa-regular fa-envelope', 'Email', setting('contact_email') !== ''],
+    ['mailto:' . setting('contact_email'), 'fa-solid fa-envelope', 'Email', setting('contact_email') !== ''],
     ['https://t.me/' . $tg, 'fa-brands fa-telegram', 'Telegram', $tg !== ''],
     [setting('contact_facebook'), 'fa-brands fa-facebook-f', 'Facebook', setting('contact_facebook') !== ''],
     [setting('social_x'), 'fa-brands fa-x-twitter', 'X', setting('social_x') !== ''],
@@ -25,7 +25,7 @@ $socials = array_filter([
             <?php if ($socials): ?>
             <div class="footer-social">
                 <?php foreach ($socials as [$href, $ic, $label]): ?>
-                    <a href="<?= e($href) ?>" <?= str_starts_with($href, 'mailto:') ? '' : 'target="_blank" rel="noopener"' ?> aria-label="<?= e($label) ?>"><i class="<?= $ic ?>"></i></a>
+                    <a class="soc soc-<?= strtolower(preg_replace('/[^A-Za-z]/', '', $label)) ?>" href="<?= e($href) ?>" <?= str_starts_with($href, 'mailto:') ? '' : 'target="_blank" rel="noopener"' ?> aria-label="<?= e($label) ?>" title="<?= e($label) ?>"><i class="<?= $ic ?>"></i></a>
                 <?php endforeach; ?>
             </div>
             <?php endif; ?>
@@ -62,8 +62,8 @@ $socials = array_filter([
             <?php endif; ?>
             <div class="app-controls">
                 <div class="seg-group" role="group" aria-label="<?= e(t('footer.font_size')) ?>">
-                    <button type="button" data-action="fs" data-fs="sm">A−</button>
-                    <button type="button" data-action="fs" data-fs="">A</button>
+                    <button type="button" data-action="fs" data-fs="">A−</button>
+                    <button type="button" data-action="fs" data-fs="md">A</button>
                     <button type="button" data-action="fs" data-fs="lg">A+</button>
                 </div>
                 <div class="seg-group" role="group" aria-label="<?= e(t('nav.language')) ?>">

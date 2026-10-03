@@ -33,7 +33,7 @@ $favicon = setting('favicon') ? upload_url(setting('favicon')) : url('/icon-192.
 <script>
 (function(){try{var d=document.documentElement,t=localStorage.getItem('ozx-theme');<?php if (setting('allow_dark') !== '1'): ?>t='light';<?php endif; ?>
 if(!t&&<?= setting('default_theme') === 'auto' ? 'true' : 'false' ?>)t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
-if(t)d.setAttribute('data-theme',t);var f=localStorage.getItem('ozx-fs');if(f)d.setAttribute('data-fs',f);}catch(e){}})();
+if(t)d.setAttribute('data-theme',t);var f=localStorage.getItem('ozx-fs');if(f&&f!=='sm')d.setAttribute('data-fs',f);}catch(e){}})();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

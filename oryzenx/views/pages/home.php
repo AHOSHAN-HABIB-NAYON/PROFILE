@@ -96,13 +96,23 @@ $wa = preg_replace('/\D/', '', setting('contact_whatsapp'));
     </div>
 </section>
 
-<section class="section">
-    <div class="section-head"><h2 class="section-title"><?= e(t('home.tech')) ?></h2></div>
-    <div class="tech-row">
-        <?php foreach ([['fa-brands fa-node-js', 'Node.js', '#16a34a'], ['fa-brands fa-react', 'React', '#0ea5e9'], ['fa-brands fa-php', 'PHP', '#6366f1'], ['fa-solid fa-database', 'MySQL', '#0369a1'],
-            ['fa-brands fa-js', 'JavaScript', '#ca8a04'], ['fa-brands fa-html5', 'HTML5', '#ea580c'], ['fa-brands fa-css3-alt', 'CSS3', '#2563eb'], ['fa-solid fa-robot', 'OpenAI', '#10a37f'],
-            ['fa-brands fa-laravel', 'Laravel', '#dc2626'], ['fa-brands fa-docker', 'Docker', '#0284c7'], ['fa-brands fa-git-alt', 'Git', '#f97316'], ['fa-brands fa-aws', 'Cloud', '#f59e0b']] as [$ic, $n, $c]): ?>
-            <span class="tech" style="--c:<?= $c ?>"><i class="<?= $ic ?>"></i><?= e($n) ?></span>
+<section class="section tech-section">
+    <div class="section-head"><h2 class="section-title"><?= e(t('home.tech')) ?></h2><span class="xs muted"><?= e(t('home.tech_sub')) ?></span></div>
+    <?php $techs = [
+        ['fa-brands fa-node-js', 'Node.js', '#3c873a'], ['fa-brands fa-react', 'React', '#149eca'], ['fa-brands fa-php', 'PHP', '#777bb4'], ['fa-brands fa-js', 'JavaScript', '#e8b400'],
+        ['fa-brands fa-html5', 'HTML5', '#e34f26'], ['fa-brands fa-css3-alt', 'CSS3', '#1572b6'], ['fa-brands fa-laravel', 'Laravel', '#ff2d20'], ['fa-brands fa-vuejs', 'Vue.js', '#41b883'],
+        ['fa-solid fa-database', 'MySQL', '#00758f'], ['fa-brands fa-python', 'Python', '#3776ab'], ['fa-brands fa-docker', 'Docker', '#2496ed'], ['fa-brands fa-git-alt', 'Git', '#f05032'],
+        ['fa-brands fa-github', 'GitHub', '#24292f'], ['fa-brands fa-aws', 'AWS', '#ff9900'], ['fa-brands fa-cloudflare', 'Cloudflare', '#f38020'], ['fa-brands fa-wordpress', 'WordPress', '#21759b'],
+        ['fa-brands fa-figma', 'Figma', '#a259ff'], ['fa-brands fa-bootstrap', 'Bootstrap', '#7952b3'], ['fa-brands fa-npm', 'npm', '#cb3837'], ['fa-solid fa-robot', 'OpenAI', '#10a37f'],
+    ];
+    $rows = [array_slice($techs, 0, 10), array_slice($techs, 10)]; ?>
+    <div class="tech-marquee" aria-label="<?= e(t('home.tech')) ?>">
+        <?php foreach ($rows as $ri => $row): ?>
+            <div class="tech-track<?= $ri ? ' reverse' : '' ?>">
+                <?php foreach ([0, 1] as $copy): foreach ($row as [$ic, $n, $c]): ?>
+                    <span class="tech-chip" style="--c:<?= $c ?>" <?= $copy ? 'aria-hidden="true"' : '' ?>><span class="tech-ic"><i class="<?= $ic ?>"></i></span><?= e($n) ?></span>
+                <?php endforeach; endforeach; ?>
+            </div>
         <?php endforeach; ?>
     </div>
 </section>

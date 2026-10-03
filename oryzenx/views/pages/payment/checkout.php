@@ -42,8 +42,8 @@ $needVerify = setting('require_verified_for_payment') === '1' && !$u['email_veri
                 <?php if ($m['account_name']): ?><p class="small mb-0"><?= e(t('payment.account_name')) ?>: <strong><?= e($m['account_name']) ?></strong></p><?php endif; ?>
                 <p class="small mb-0"><?= e(t('payment.send_exact')) ?>: <strong class="text-primary"><?= money($s['price'], $s['currency']) ?></strong>
                     <?php if ($s['currency'] === 'USD' && $m['type'] === 'mobile' && (float)setting('usd_to_bdt') > 0): ?> ≈ <strong><?= money(ceil($s['price'] * (float)setting('usd_to_bdt')), 'BDT') ?></strong><?php endif; ?></p>
-                <?php if ($m['qr_image']): ?><img class="pay-qr" src="<?= e(upload_url($m['qr_image'])) ?>" alt="QR" loading="lazy"><?php endif; ?>
-                <?php if ($m['link']): ?><a class="btn btn-sm btn-outline" href="<?= e($m['link']) ?>" target="_blank" rel="noopener" data-no-spa><i class="fa-solid fa-arrow-up-right-from-square"></i> <?= e(t('payment.open_link', ['m' => $m['name']])) ?></a><?php endif; ?>
+                <?php if ($m['qr_image']): ?><div class="pay-qr-wrap"><img class="pay-qr" src="<?= e(upload_url($m['qr_image'])) ?>" alt="QR" loading="lazy"><span class="xs muted"><i class="fa-solid fa-qrcode"></i> <?= e(t('payment.scan_qr')) ?></span></div><?php endif; ?>
+                <?php if ($m['link']): ?><a class="pay-open pay-open-<?= e(preg_replace('/[^a-z0-9_]/', '', $m['code'])) ?>" href="<?= e($m['link']) ?>" target="_blank" rel="noopener" data-no-spa><img src="<?= e(Content::media($m['logo'])) ?>" alt="" width="22" height="22"><span><?= e(t('payment.open_link', ['m' => $m['name']])) ?></span><i class="fa-solid fa-arrow-up-right-from-square"></i></a><?php endif; ?>
                 <?php if (tr($m, 'instructions')): ?><p class="small muted mb-0"><?= nl2br(e(tr($m, 'instructions'))) ?></p><?php endif; ?>
                 <?php if ($m['type'] === 'crypto'): ?><div class="alert alert-warning mb-0"><i class="fa-solid fa-triangle-exclamation"></i><span><?= e(t('payment.crypto_warn', ['n' => $m['network'] ?: $m['name']])) ?></span></div><?php endif; ?>
             </div>
@@ -55,8 +55,12 @@ $needVerify = setting('require_verified_for_payment') === '1' && !$u['email_veri
         <div class="field"><label class="req" for="txn"><?= e(t('profile.txn')) ?></label><input class="input mono" id="txn" name="transaction_id" required maxlength="120" autocomplete="off" placeholder="<?= e(t('payment.txn_ph')) ?>"></div>
         <div class="field"><label for="sender"><?= e(t('payment.sender')) ?></label><input class="input mono" id="sender" name="sender" maxlength="190" autocomplete="off" placeholder="<?= e(t('payment.sender_ph')) ?>"></div>
         <div class="field" data-component="file-preview"><label class="req" for="shot"><?= e(t('profile.screenshot')) ?></label>
-            <input class="input" type="file" id="shot" name="screenshot" accept="image/jpeg,image/png,image/webp" required>
-            <img class="shot-preview" alt="" hidden><span class="hint" data-file-info><?= e(t('payment.shot_hint', ['n' => setting('max_screenshot_mb')])) ?></span></div>
+            <label class="upload-box" for="shot">
+                <span class="upload-ic"><i class="fa-solid fa-cloud-arrow-up"></i></span>
+                <span class="grow"><strong><?= e(t('payment.upload_shot')) ?></strong><span class="hint" data-file-info><?= e(t('payment.shot_hint', ['n' => setting('max_screenshot_mb')])) ?></span></span>
+                <img class="shot-preview" alt="" hidden>
+            </label>
+            <input class="sr-only" type="file" id="shot" name="screenshot" accept="image/jpeg,image/png,image/webp" required></div>
         <div class="field" data-component="char-count"><label for="note"><?= e(t('payment.note')) ?></label><textarea class="textarea" id="note" name="note" rows="3" maxlength="1000" placeholder="<?= e(t('payment.note_ph')) ?>"></textarea><span class="hint right" data-count></span></div>
         <button class="btn btn-primary btn-block" type="submit"><i class="fa-solid fa-paper-plane"></i> <?= e(t('payment.submit')) ?></button>
         <p class="xs muted center mb-0"><i class="fa-solid fa-lock"></i> <?= e(t('payment.secure_note')) ?></p>

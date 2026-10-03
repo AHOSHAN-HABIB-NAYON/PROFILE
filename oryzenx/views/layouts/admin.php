@@ -74,7 +74,7 @@ require VIEWS . '/partials/head.php';
             <?php endforeach; ?>
             <div class="side-extra">
                 <a class="side-link" href="<?= e(url('/')) ?>" data-no-spa><i class="fa-solid fa-globe"></i><span><?= e(t('admin.view_site')) ?></span></a>
-                <form method="post" action="<?= e(url('/logout')) ?>" data-ajax data-full-reload><?= csrf_field() ?><button class="side-link text-danger" type="submit"><i class="fa-solid fa-right-from-bracket"></i><span><?= e(t('auth.logout')) ?></span></button></form>
+                <form method="post" action="<?= e(url('/logout')) ?>" data-ajax data-full-reload data-confirm="<?= e(t('auth.logout_confirm')) ?>"><?= csrf_field() ?><button class="side-link text-danger" type="submit"><i class="fa-solid fa-right-from-bracket"></i><span><?= e(t('auth.logout')) ?></span></button></form>
             </div>
         </div>
     </aside>

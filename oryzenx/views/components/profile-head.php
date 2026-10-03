@@ -9,7 +9,7 @@
     </div>
     <div class="profile-actions">
         <?php if ($u['role'] === 'admin'): ?><a class="btn btn-sm btn-soft" href="<?= e(url('/admin')) ?>" data-no-spa><i class="fa-solid fa-gauge-high"></i> <span class="hide-xs">Admin</span></a><?php endif; ?>
-        <form method="post" action="<?= e(url('/logout')) ?>" data-ajax data-full-reload><?= csrf_field() ?>
+        <form method="post" action="<?= e(url('/logout')) ?>" data-ajax data-full-reload data-confirm="<?= e(t('auth.logout_confirm')) ?>"><?= csrf_field() ?>
             <button class="btn btn-sm btn-outline" type="submit" aria-label="<?= e(t('auth.logout')) ?>"><i class="fa-solid fa-right-from-bracket"></i> <span class="hide-xs"><?= e(t('auth.logout')) ?></span></button></form>
     </div>
 </section>

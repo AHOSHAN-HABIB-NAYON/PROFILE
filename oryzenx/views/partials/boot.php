@@ -28,13 +28,6 @@ $boot = [
         <div class="search-results" id="search-results"></div>
     </div>
 </div>
-<div class="install-card card" id="install-card" hidden role="dialog" aria-label="<?= e(t('pwa.install')) ?>">
-    <img src="<?= e(url('/icon-192.png')) ?>" alt="" width="40" height="40">
-    <div><strong><?= e(t('pwa.install_title')) ?></strong><p class="muted small"><?= e(t('pwa.install_text')) ?></p>
-        <div class="row-gap"><button class="btn btn-sm btn-primary" type="button" data-action="install"><?= e(t('pwa.install')) ?></button>
-            <button class="btn btn-sm btn-ghost" type="button" data-action="install-later"><?= e(t('pwa.later')) ?></button></div></div>
-    <button class="icon-btn icon-btn-sm install-x" type="button" data-action="install-close" aria-label="<?= e(t('common.close')) ?>"><i class="fa-solid fa-xmark"></i></button>
-</div>
 <script>window.OZX = <?= json_encode($boot, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) ?>;</script>
 <script src="<?= e(asset('js/app.js')) ?>" defer></script>
 <?php foreach ($boot['js'] as $js): ?><script src="<?= e($js) ?>" defer></script><?php endforeach; ?>

@@ -246,3 +246,17 @@ a.list-item:hover { color: inherit; background: var(--surface-soft); }
 /* Error page */
 .error-page { text-align: center; padding: 3rem 1rem; max-width: 460px; margin: 0 auto; }
 .error-code { font-size: 3.4rem; font-weight: 800; line-height: 1; background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: .5rem; }
+
+/* Brand social buttons (official colours + logos) */
+.soc { color: #fff !important; border-color: transparent !important; background: var(--sc, var(--primary)) !important; box-shadow: 0 6px 14px -6px var(--sc, rgba(0,0,0,.3)) !important; }
+.soc:hover { filter: brightness(1.08); transform: translateY(-2px); }
+.soc-whatsapp { --sc: #25d366; }
+.soc-email { --sc: #ea4335; }
+.soc-telegram { --sc: #229ed9; }
+.soc-facebook { --sc: #1877f2; }
+.soc-x { --sc: #000; }
+.soc-linkedin { --sc: #0a66c2; }
+.soc-github { --sc: #24292f; }
+.soc-youtube { --sc: #ff0000; }
+.soc-instagram { --sc: #e1306c; background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285aeb 90%) !important; }
+[data-theme="dark"] .soc-x, [data-theme="dark"] .soc-github { --sc: #fff; color: #000 !important; }

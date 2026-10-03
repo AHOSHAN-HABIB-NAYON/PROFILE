@@ -17,18 +17,18 @@
 .brand-mark i { width: 3px; background: #fff; border-radius: 2px; }
 .brand-mark i:nth-child(1) { height: 7px; } .brand-mark i:nth-child(2) { height: 12px; } .brand-mark i:nth-child(3) { height: 9px; } .brand-mark i:nth-child(4) { height: 14px; }
 .topbar-actions { margin-left: auto; display: flex; align-items: center; gap: .4rem; }
-.hbtn { width: 42px; height: 42px; flex: none; display: inline-grid; place-items: center; position: relative; border-radius: 13px; border: 1px solid var(--border);
-  background: var(--surface); color: var(--text); font-size: 1.08rem; box-shadow: 0 1px 2px rgba(15, 23, 42, .05); transition: border-color var(--t-fast), color var(--t-fast), transform var(--t-fast); }
+.hbtn { width: 38px; height: 38px; flex: none; display: inline-grid; place-items: center; position: relative; border-radius: 12px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); font-size: .95rem; box-shadow: 0 1px 2px rgba(15, 23, 42, .05); transition: border-color var(--t-fast), color var(--t-fast), transform var(--t-fast); }
 .hbtn:hover { border-color: rgba(var(--primary-rgb), .45); color: var(--primary); }
 .hbtn:active { transform: scale(.94); }
-.hbtn .fa-language { font-size: 1.2rem; }
-.hbtn .dot-badge { top: -7px; right: -7px; min-width: 21px; height: 21px; font-size: .68rem; border: 2px solid var(--surface); box-shadow: 0 2px 6px rgba(220, 38, 38, .35); }
+.hbtn .fa-language { font-size: 1.05rem; }
+.hbtn .dot-badge { top: -6px; right: -6px; min-width: 19px; height: 19px; font-size: .64rem; border: 2px solid var(--surface); box-shadow: 0 2px 6px rgba(220, 38, 38, .35); }
 .layout-app .topbar { gap: .5rem; padding-left: .7rem; padding-right: .7rem; }
 .layout-app .brand { gap: .6rem; font-size: 1.22rem; font-weight: 800; letter-spacing: -.02em; }
 .layout-app .brand-mark, .layout-app .brand-logo { width: 38px; height: 38px; border-radius: 11px; }
 .layout-app .brand-mark { padding-bottom: 10px; gap: 3px; box-shadow: 0 4px 12px rgba(var(--primary-rgb), .3); }
 .layout-app .brand-mark i { width: 3.5px; }
-@media (max-width: 400px) { .hbtn { width: 38px; height: 38px; border-radius: 12px; } .layout-app .topbar-actions { gap: .3rem; } .layout-app .brand { font-size: 1.08rem; } .layout-app .brand-mark, .layout-app .brand-logo { width: 34px; height: 34px; } }
+@media (max-width: 400px) { .hbtn { width: 35px; height: 35px; border-radius: 11px; font-size: .9rem; } .layout-app .topbar-actions { gap: .3rem; } .layout-app .brand { font-size: 1.08rem; } .layout-app .brand-mark, .layout-app .brand-logo { width: 34px; height: 34px; } }
 @media (max-width: 350px) { .layout-app .brand-name { display: none; } }
 .lang-btn { font-size: .78rem; font-weight: 700; }
 .theme-ic-light { display: none; }
@@ -148,11 +148,27 @@ body { padding-bottom: calc(var(--bnav-h) + env(safe-area-inset-bottom)); }
 .fab-top { width: 36px; height: 36px; font-size: .9rem; background: var(--surface); color: var(--text); border: 1px solid var(--border); animation: fadeIn var(--t); }
 .fab-badge { position: absolute; top: -3px; right: -4px; background: var(--warning); color: #fff; font-size: .55rem; font-weight: 800; border-radius: 6px; padding: 1px 4px; border: 2px solid var(--surface); }
 
-/* Install card */
-.install-card { position: fixed; z-index: 700; left: .6rem; right: .6rem; bottom: calc(var(--bnav-h) + 10px + env(safe-area-inset-bottom)); display: flex; gap: .7rem; align-items: flex-start; max-width: 380px; box-shadow: var(--shadow-lg); animation: sheetIn var(--t) var(--ease); padding-right: 2.2rem; }
-.install-card img { border-radius: 10px; flex: none; }
-.install-card p { margin: .1rem 0 .5rem; }
-.install-x { position: absolute; top: 6px; right: 6px; }
+/* Install / notification "engage" sheet */
+body.engage-open { overflow: hidden; }
+.engage-backdrop { position: fixed; inset: 0; z-index: 950; display: grid; place-items: end center; padding: 0; background: rgba(2, 6, 23, .55); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); animation: fadeIn var(--t); }
+.engage-sheet { width: 100%; max-width: 420px; background: var(--surface); border-radius: 26px 26px 0 0; padding: 1.4rem 1.2rem calc(1rem + env(safe-area-inset-bottom)); text-align: center; box-shadow: var(--shadow-lg); animation: sheetUp .38s var(--ease); }
+@keyframes sheetUp { from { transform: translateY(100%); } }
+.engage-hero { position: relative; width: 84px; height: 84px; margin: -3.4rem auto .8rem; display: grid; place-items: center; }
+.engage-icon { width: 76px; height: 76px; border-radius: 24px; display: grid; place-items: center; font-size: 2rem; color: #fff; background: linear-gradient(140deg, var(--primary), var(--accent)); box-shadow: 0 14px 30px -10px rgba(var(--primary-rgb), .8); position: relative; z-index: 1; }
+.engage-hero.mode-push .engage-icon i { animation: ring 1.6s ease infinite; transform-origin: 50% 10%; }
+.engage-hero.mode-denied .engage-icon { background: linear-gradient(140deg, #ef4444, #f97316); }
+.engage-hero.mode-install .engage-icon i, .engage-hero.mode-ios .engage-icon i { animation: lgBounce 1.6s ease-in-out infinite; }
+.engage-ring { position: absolute; inset: -6px; border-radius: 30px; border: 2px solid rgba(var(--primary-rgb), .35); animation: egPulse 2s ease-out infinite; }
+@keyframes egPulse { from { transform: scale(.9); opacity: 1; } to { transform: scale(1.35); opacity: 0; } }
+@keyframes lgBounce { 0%, 100% { transform: translateY(-2px); } 50% { transform: translateY(3px); } }
+.engage-sheet h3 { font-size: 1.25rem; font-weight: 800; margin: 0 0 .35rem; }
+.engage-sheet > p { color: var(--text-muted); font-size: .92rem; margin: 0 0 .9rem; }
+.engage-feats, .engage-steps { list-style: none; margin: 0 0 1rem; padding: 0; display: grid; gap: .45rem; text-align: left; }
+.engage-feats li, .engage-steps li { display: flex; align-items: center; gap: .65rem; padding: .55rem .7rem; border-radius: 12px; background: var(--surface-soft); font-size: .88rem; font-weight: 600; }
+.engage-feats i, .engage-steps i { width: 30px; height: 30px; flex: none; border-radius: 9px; display: grid; place-items: center; background: var(--primary-light); color: var(--primary); font-size: .9rem; }
+.engage-go { height: 50px; font-size: 1rem; border-radius: 14px; }
+.engage-later { margin-top: .35rem; color: var(--text-muted); }
+@media (min-width: 640px) { .engage-backdrop { place-items: center; } .engage-sheet { border-radius: 26px; } }
 
 @media (min-width: 992px) {
   :root { --header-h: 66px; }
@@ -166,7 +182,6 @@ body { padding-bottom: calc(var(--bnav-h) + env(safe-area-inset-bottom)); }
   .bottom-nav { display: none; }
   body { padding-bottom: 0; }
   .fab-stack { bottom: 20px; right: 20px; }
-  .install-card { left: auto; right: 20px; bottom: 90px; }
   .footer { padding: 2rem 1.6rem 1.2rem; }
   .footer-inner { grid-template-columns: 1.2fr 1.3fr 1fr; align-items: start; }
   .toast-stack { left: auto; right: 20px; transform: none; top: calc(var(--header-h) + 12px); }

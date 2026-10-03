@@ -35,7 +35,7 @@ return [
     'home.platforms' => 'Platforms', 'home.our_services' => 'Our services', 'home.latest_posts' => 'Latest updates', 'home.featured' => 'Featured projects & services',
     'home.why' => 'Why choose Oryzenx', 'home.why_fast' => 'Fast delivery', 'home.why_fast_d' => 'Most projects ship in 3–7 days.', 'home.why_secure' => 'Secure by default',
     'home.why_secure_d' => 'Hardened code, 2FA and best practices.', 'home.why_mobile' => 'Mobile first', 'home.why_mobile_d' => 'Looks great on every phone.',
-    'home.why_support' => 'Real support', 'home.why_support_d' => 'Talk to the developers directly.', 'home.tech' => 'Technologies we use', 'home.how' => 'How ordering works',
+    'home.why_support' => 'Real support', 'home.why_support_d' => 'Talk to the developers directly.', 'home.tech_sub' => 'Trusted tools that power our projects', 'home.tech' => 'Technologies we use', 'home.how' => 'How ordering works',
     'home.step1' => 'Choose a service', 'home.step1_d' => 'Browse and open the service you need.', 'home.step2' => 'Pay securely', 'home.step2_d' => 'bKash, USDT or Binance Pay.',
     'home.step3' => 'Submit proof', 'home.step3_d' => 'Transaction ID and screenshot.', 'home.step4' => 'We start building', 'home.step4_d' => 'Track status in your profile.',
     'home.payments' => 'Payment methods', 'home.cta' => 'Ready to build something great?', 'home.cta_d' => 'Tell us about your project — we reply quickly.',
@@ -69,7 +69,7 @@ return [
     'chat.q_payment' => 'How can I pay?', 'chat.q_contact' => 'How do I contact you?', 'chat.limit' => 'You have reached the limit of {n} messages per 10 minutes. Please wait a little.',
     'chat.disabled' => 'The assistant is currently unavailable.',
 
-    'auth.login' => 'Log in', 'auth.logout' => 'Log out', 'auth.register' => 'Sign up', 'auth.login_title' => 'Welcome back', 'auth.login_sub' => 'Log in to your {site} account',
+    'auth.logout_confirm' => 'Do you want to log out?', 'auth.login' => 'Log in', 'auth.logout' => 'Log out', 'auth.register' => 'Sign up', 'auth.login_title' => 'Welcome back', 'auth.login_sub' => 'Log in to your {site} account',
     'auth.register_title' => 'Create your account', 'auth.register_sub' => 'It takes less than a minute.', 'auth.forgot' => 'Forgot password?', 'auth.remember' => 'Keep me signed in',
     'auth.or' => 'or', 'auth.passkey_login' => 'Sign in with a passkey', 'auth.google' => 'Continue with Google', 'auth.no_account' => "Don't have an account?",
     'auth.have_account' => 'Already have an account?', 'auth.secure_note' => 'Protected with encryption, rate limiting and optional 2FA.', 'auth.show_pw' => 'Show password',
@@ -126,7 +126,7 @@ return [
     'profile.screenshot' => 'Payment screenshot', 'profile.admin_note' => 'Admin note', 'profile.tl_submitted' => 'Payment submitted', 'profile.tl_review' => 'Under review',
     'profile.tl_review_d' => 'Usually within a few hours', 'profile.need_help' => 'Need help with this payment?',
 
-    'payment.title' => 'Payments', 'payment.sub' => 'Pay securely with bKash, USDT or Binance Pay.', 'payment.your_payments' => 'Your recent payments', 'payment.login_needed' => 'Log in to buy a service',
+    'payment.scan_qr' => 'Scan the QR code to pay', 'payment.upload_shot' => 'Upload payment screenshot', 'payment.title' => 'Payments', 'payment.sub' => 'Pay securely with bKash, USDT or Binance Pay.', 'payment.your_payments' => 'Your recent payments', 'payment.login_needed' => 'Log in to buy a service',
     'payment.login_needed_d' => 'Your payments and their status appear in your profile.', 'payment.methods' => 'Accepted methods', 'payment.available' => 'Available',
     'payment.no_methods' => 'No payment method is configured yet. Please contact support.', 'payment.choose_service' => 'Choose a service', 'payment.g1' => 'Open a service and tap “Buy now”.',
     'payment.g2' => 'Choose a payment method and send the exact amount.', 'payment.g3' => 'Enter the transaction ID and upload a screenshot.', 'payment.g4' => 'An admin verifies your payment.',
@@ -140,7 +140,7 @@ return [
     'payment.need_screenshot' => 'Please upload the payment screenshot.', 'payment.dup_txn' => 'This transaction ID has already been submitted.',
     'payment.verify_first' => 'Please verify your email address before making a payment.',
 
-    'notif.mark_all' => 'Mark all read', 'notif.view_all' => 'View all notifications', 'notif.login_to_see' => 'Log in to see your notifications.', 'notif.sub' => 'Your latest updates',
+    'notif.refund_balance' => '{amount} has been added to your account balance.', 'act.balance_refund' => 'Refund added to balance', 'act.balance_refund_reversed' => 'Refund reversed', 'notif.mark_all' => 'Mark all read', 'notif.view_all' => 'View all notifications', 'notif.login_to_see' => 'Log in to see your notifications.', 'notif.sub' => 'Your latest updates',
     'notif.new_message' => 'New support message', 'notif.new_payment' => 'New payment to review', 'notif.payment_received' => 'Payment received',
     'notif.payment_received_text' => 'We received your payment for {s}. It is now under review.', 'notif.payment_approved' => '✅ Payment approved', 'notif.payment_rejected' => '❌ Payment rejected',
     'notif.payment_refunded' => 'Payment refunded', 'notif.payment_pending' => 'Payment back in review', 'notif.payment_status_text' => 'Your payment for {s} is now: {status}.',
@@ -150,7 +150,7 @@ return [
     'offline.title' => 'You are offline', 'offline.text' => 'Check your connection. Pages you visited recently are still available.', 'offline.retry' => 'Try again',
     'maint.title' => 'We’ll be back soon', 'maint.eta' => 'Estimated completion', 'maint.admin_login' => 'Admin login',
 
-    'js.copied' => 'Copied!', 'js.offline' => 'You are offline.', 'js.error' => 'Something went wrong. Please try again.', 'js.loading' => 'Loading…',
+    'js.eg_install_title' => 'Install the Oryzenx app', 'js.eg_install_text' => 'Get the full app experience on your phone — one tap, no Play Store needed.', 'js.eg_ios_text' => 'Add Oryzenx to your Home Screen in two quick steps:', 'js.eg_ios1' => 'Tap the Share button in Safari', 'js.eg_ios2' => 'Choose “Add to Home Screen”', 'js.eg_install_btn' => 'Install now', 'js.eg_ok' => 'Done', 'js.eg_if1' => 'Opens instantly, full-screen', 'js.eg_if2' => 'Works even with weak internet', 'js.eg_if3' => 'Instant payment & news alerts', 'js.eg_push_title' => 'Turn on notifications', 'js.eg_push_text' => 'Don’t miss payment approvals, replies and new updates. We only send important alerts.', 'js.eg_allow' => 'Allow notifications', 'js.eg_pf1' => 'Live alerts with sound', 'js.eg_pf2' => 'Payment status the moment it changes', 'js.eg_pf3' => 'Offers and new services first', 'js.eg_later' => 'Not now', 'js.eg_denied_title' => 'Notifications are blocked', 'js.eg_denied_text' => 'You blocked notifications for this site. Turn them back on so you don’t miss payment updates:', 'js.eg_den1' => 'Tap the 🔒 icon next to the address bar', 'js.eg_den2' => 'Permissions → Notifications → Allow', 'js.eg_recheck' => 'I’ve turned them on', 'js.eg_still_blocked' => 'Still blocked — enable notifications in site settings first.', 'js.copied' => 'Copied!', 'js.offline' => 'You are offline.', 'js.error' => 'Something went wrong. Please try again.', 'js.loading' => 'Loading…',
     'js.update_ready' => 'A new version is available.', 'js.reload' => 'Update', 'js.confirm' => 'Are you sure?', 'js.no_results' => 'No results found.', 'js.share_copy' => 'Copy',
     'js.install_title' => 'Install app', 'js.install_text' => 'Use your browser menu → “Add to Home screen” to install.', 'js.typing' => 'Typing…',
     'js.ai_error' => 'Sorry, I could not answer right now. Please try again.', 'js.notif_enabled' => 'Notifications enabled', 'js.notif_denied' => 'Notifications are blocked or not supported in this browser.',

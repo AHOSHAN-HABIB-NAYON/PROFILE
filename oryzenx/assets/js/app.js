@@ -358,7 +358,7 @@
     async copy(el) { await copyText(el.dataset.copy); },
     share(el) { openShare(el.dataset.shareUrl || location.href, el.dataset.shareTitle || document.title); },
     'pw-toggle'(el) { const i = el.parentElement.querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; el.querySelector('i').className = 'fa-solid ' + (i.type === 'password' ? 'fa-eye' : 'fa-eye-slash'); },
-    'push-enable'() { enablePush(true); },
+    'push-enable'() { unlockAudio(); enablePush(true).then(() => { if (window.Notification && Notification.permission === 'denied') showEngage('denied'); }); },
     async like(el) {
       if (el.dataset.busy) return; el.dataset.busy = '1';
       const was = el.classList.contains('liked');
@@ -371,8 +371,6 @@
       if (cnt) cnt.textContent = O.lang === 'bn' ? String(d.count).replace(/\d/g, (x) => '০১২৩৪৫৬৭৮৯'[x]) : d.count;
     },
     install() { doInstall(); },
-    'install-later'() { store.set('ozx-install-snooze', Date.now() + 3 * 864e5); $('#install-card').hidden = true; },
-    'install-close'() { store.set('ozx-install-snooze', Date.now() + 30 * 864e5); $('#install-card').hidden = true; },
     'chat-open'() { toggleDrawer(false); Chat.open(); },
     'chat-toggle'() { Chat.toggle(); },
     'chat-close'() { Chat.close(); },
@@ -512,18 +510,27 @@
 
   /* ---------------- Sound ---------------- */
   let audioCtx = null;
-  document.addEventListener('pointerdown', () => { if (!audioCtx && window.AudioContext) try { audioCtx = new AudioContext(); } catch { /* noop */ } }, { once: true, passive: true });
+  // Browsers only allow sound after the first tap/key press, so unlock audio on any interaction.
+  function unlockAudio() {
+    try {
+      if (!audioCtx && (window.AudioContext || window.webkitAudioContext)) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx?.state === 'suspended') audioCtx.resume();
+    } catch { /* noop */ }
+  }
+  ['pointerdown', 'touchstart', 'keydown', 'click'].forEach((ev) => document.addEventListener(ev, unlockAudio, { passive: true }));
   function chime(kind = 'notify') {
+    unlockAudio();
     if (!audioCtx || audioCtx.state === 'closed') return;
+    if (kind === 'notify' && navigator.vibrate) try { navigator.vibrate([90, 50, 90]); } catch { /* noop */ }
     try {
       const now = audioCtx.currentTime;
-      const notes = kind === 'chat' ? [660] : [880, 1320];
+      const notes = kind === 'chat' ? [660] : [784, 1047, 1319];
       notes.forEach((f, i) => {
         const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
         o.type = 'sine'; o.frequency.value = f;
         g.gain.setValueAtTime(0.0001, now + i * 0.12);
-        g.gain.exponentialRampToValueAtTime(0.06, now + i * 0.12 + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.12 + 0.25);
+        g.gain.exponentialRampToValueAtTime(kind === 'chat' ? 0.06 : 0.14, now + i * 0.12 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.12 + 0.35);
         o.connect(g).connect(audioCtx.destination); o.start(now + i * 0.12); o.stop(now + i * 0.12 + 0.3);
       });
     } catch { /* noop */ }
@@ -533,8 +540,8 @@
   function setBadge(n) {
     $$('[data-notif-count]').forEach((b) => { b.hidden = !n; b.textContent = n > 99 ? '99+' : n; });
   }
-  async function pollNotifications(first = false) {
-    if (!O.user || document.hidden) return;
+  async function pollNotifications(first = false, live = false) {
+    if (!O.user || (document.hidden && !live)) return;
     try {
       const d = await api('/api/notifications?summary=1');
       if (!d.ok) return;
@@ -580,22 +587,85 @@
     } catch (err) { if (interactive) toast(S.notif_denied, 'error'); }
   }
 
-  /* ---------------- PWA ---------------- */
+  /* ---------------- PWA install + push permission (persistent "engage" sheet) ---------------- */
   let deferredInstall = null;
+  const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  const pushSupported = () => !!(O.push && 'serviceWorker' in navigator && 'PushManager' in window && window.Notification);
+  const SNOOZE_MS = 15 * 60 * 1000; // "Later" only postpones; the sheet comes back on the next visit after 15 minutes.
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault(); deferredInstall = e;
     $$('[data-install-btn]').forEach((b) => { b.hidden = false; });
-    const snooze = +(store.get('ozx-install-snooze') || 0);
-    if (O.pwa?.prompt && Date.now() > snooze) setTimeout(() => { if (deferredInstall) $('#install-card').hidden = false; }, 25000);
   });
-  window.addEventListener('appinstalled', () => { deferredInstall = null; $('#install-card').hidden = true; $$('[data-install-btn]').forEach((b) => { b.hidden = true; }); });
+  window.addEventListener('appinstalled', () => {
+    deferredInstall = null; store.set('ozx-installed', '1');
+    $$('[data-install-btn]').forEach((b) => { b.hidden = true; });
+    closeEngage(); setTimeout(() => engage(true), 1200); // straight to notification permission
+  });
   async function doInstall() {
-    $('#install-card').hidden = true;
-    if (!deferredInstall) { toast(S.install_text, 'info'); return; }
+    if (isIOS && !isStandalone()) { showEngage('ios'); return; }
+    if (!deferredInstall) { toast(S.install_text, 'info', 5000); return; }
     deferredInstall.prompt();
-    await deferredInstall.userChoice.catch(() => null);
+    const choice = await deferredInstall.userChoice.catch(() => null);
     deferredInstall = null;
+    if (choice?.outcome === 'accepted') { closeEngage(); store.set('ozx-installed', '1'); }
   }
+
+  let engageEl = null;
+  function closeEngage() { engageEl?.remove(); engageEl = null; document.body.classList.remove('engage-open'); }
+  function showEngage(mode) {
+    closeEngage();
+    const feats = mode === 'push' || mode === 'denied'
+      ? [['fa-bolt', S.eg_pf1], ['fa-wallet', S.eg_pf2], ['fa-gift', S.eg_pf3]]
+      : [['fa-gauge-high', S.eg_if1], ['fa-wifi', S.eg_if2], ['fa-bell', S.eg_if3]];
+    const icon = mode === 'push' ? 'fa-bell' : mode === 'denied' ? 'fa-bell-slash' : 'fa-mobile-screen-button';
+    const title = { install: S.eg_install_title, ios: S.eg_install_title, push: S.eg_push_title, denied: S.eg_denied_title }[mode];
+    const text = { install: S.eg_install_text, ios: S.eg_ios_text, push: S.eg_push_text, denied: S.eg_denied_text }[mode];
+    const btn = { install: `<i class="fa-solid fa-download"></i> ${esc(S.eg_install_btn)}`, ios: `<i class="fa-solid fa-check"></i> ${esc(S.eg_ok)}`,
+      push: `<i class="fa-solid fa-bell"></i> ${esc(S.eg_allow)}`, denied: `<i class="fa-solid fa-rotate"></i> ${esc(S.eg_recheck)}` }[mode];
+    engageEl = document.createElement('div');
+    engageEl.className = 'engage-backdrop';
+    engageEl.innerHTML = `<div class="engage-sheet" role="dialog" aria-modal="true" aria-labelledby="eg-t">
+      <div class="engage-hero mode-${mode}"><span class="engage-ring"></span><span class="engage-icon"><i class="fa-solid ${icon}"></i></span></div>
+      <h3 id="eg-t">${esc(title)}</h3><p>${esc(text)}</p>
+      ${mode === 'ios' ? `<ol class="engage-steps"><li><i class="fa-solid fa-arrow-up-from-bracket"></i> ${esc(S.eg_ios1)}</li><li><i class="fa-regular fa-square-plus"></i> ${esc(S.eg_ios2)}</li></ol>` : ''}
+      ${mode === 'denied' ? `<ol class="engage-steps"><li><i class="fa-solid fa-lock"></i> ${esc(S.eg_den1)}</li><li><i class="fa-solid fa-toggle-on"></i> ${esc(S.eg_den2)}</li></ol>` : ''}
+      ${mode === 'denied' || mode === 'ios' ? '' : `<ul class="engage-feats">${feats.map(([i, t]) => `<li><i class="fa-solid ${i}"></i>${esc(t)}</li>`).join('')}</ul>`}
+      <button class="btn btn-primary btn-block engage-go" type="button">${btn}</button>
+      <button class="btn btn-ghost btn-sm btn-block engage-later" type="button">${esc(S.eg_later)}</button>
+    </div>`;
+    document.body.appendChild(engageEl); document.body.classList.add('engage-open');
+    setTimeout(() => engageEl?.querySelector('.engage-go')?.focus(), 50);
+    engageEl.querySelector('.engage-later').onclick = () => { store.set('ozx-engage-snooze', Date.now() + SNOOZE_MS); closeEngage(); };
+    engageEl.querySelector('.engage-go').onclick = async (ev) => {
+      if (mode === 'install') return doInstall();
+      if (mode === 'ios') { store.set('ozx-engage-snooze', Date.now() + SNOOZE_MS); return closeEngage(); }
+      if (mode === 'denied') { if (Notification.permission === 'granted') { closeEngage(); enablePush(true); } else toast(S.eg_still_blocked, 'error', 4000); return; }
+      ev.currentTarget.classList.add('is-loading');
+      unlockAudio();
+      await enablePush(true);
+      closeEngage();
+      if (Notification.permission === 'denied') showEngage('denied');
+      else if (Notification.permission === 'granted') chime();
+    };
+  }
+  // Decides what to ask for: install the app first, then notifications. Nothing once both are done.
+  function engage(force = false) {
+    if (!force && +(store.get('ozx-engage-snooze') || 0) > Date.now()) return;
+    if (document.body.classList.contains('engage-open')) return;
+    const installed = isStandalone() || store.get('ozx-installed') === '1';
+    if (!installed && O.pwa?.prompt) {
+      if (deferredInstall) return showEngage('install');
+      if (isIOS) return showEngage('ios');
+    }
+    if (!pushSupported()) return;
+    if (Notification.permission === 'default') return showEngage('push');
+    if (Notification.permission === 'denied' && +(store.get('ozx-denied-shown') || 0) < Date.now() - 864e5) {
+      store.set('ozx-denied-shown', Date.now()); return showEngage('denied');
+    }
+    if (Notification.permission === 'granted') enablePush(false); // keep the subscription fresh
+  }
+
   function registerSW() {
     if (!O.pwa?.enabled || !('serviceWorker' in navigator)) return;
     navigator.serviceWorker.register(BASE + '/sw.js', { scope: BASE + '/' }).then((reg) => {
@@ -605,10 +675,15 @@
         const w = reg.installing;
         w?.addEventListener('statechange', () => { if (w.state === 'installed' && navigator.serviceWorker.controller) onWaiting(w); });
       });
-      if (O.user && O.push && window.Notification && Notification.permission === 'granted') enablePush(false);
     }).catch(() => {});
     let reloading = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => { if (!reloading) { reloading = true; location.reload(); } });
+    // Live push while the site is open: play the sound and refresh the badge immediately.
+    navigator.serviceWorker.addEventListener('message', (e) => {
+      if (e.data?.type !== 'push') return;
+      if (O.user) pollNotifications(false, true);
+      else { if (O.sound) chime(); toast(e.data.title || '', 'info', 5000); }
+    });
   }
 
   /* ---------------- AI Chat ---------------- */
@@ -785,7 +860,8 @@
     syncFs();
     initComponents(document);
     registerSW();
-    if (O.user) { pollNotifications(true); setInterval(pollNotifications, 60000); document.addEventListener('visibilitychange', () => !document.hidden && pollNotifications()); }
+    if (O.user) { pollNotifications(true); setInterval(pollNotifications, 15000); document.addEventListener('visibilitychange', () => !document.hidden && pollNotifications()); }
+    setTimeout(() => engage(), 3500);
     chatGreeting();
     idlePrefetch();
     history.replaceState({ spa: 1, y: 0 }, '');

@@ -54,11 +54,15 @@ self.addEventListener('fetch', (e) => {
 self.addEventListener('push', (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch { d = { title: 'Notification', body: e.data && e.data.text() }; }
-  e.waitUntil(self.registration.showNotification(d.title || 'Oryzenx', {
-    body: d.body || '', icon: d.icon || BASE + '/icon-192.png', badge: BASE + '/icon-192.png',
-    data: { url: d.url || BASE + '/notifications' }, tag: d.tag || undefined, renotify: !!d.tag,
-    requireInteraction: d.priority === 'high',
-  }));
+  e.waitUntil(Promise.all([
+    self.registration.showNotification(d.title || 'Oryzenx', {
+      body: d.body || '', icon: d.icon || BASE + '/icon-192.png', badge: BASE + '/icon-192.png',
+      data: { url: d.url || BASE + '/notifications' }, tag: d.tag || undefined, renotify: !!d.tag,
+      requireInteraction: d.priority === 'high', silent: false, vibrate: [120, 60, 120],
+    }),
+    // Tell open tabs so they can play the in-app sound and update the badge live.
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((all) => all.forEach((c) => c.postMessage({ type: 'push', title: d.title, body: d.body }))),
+  ]));
 });
 
 self.addEventListener('notificationclick', (e) => {
