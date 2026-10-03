@@ -37,10 +37,11 @@
 /* Sidebar brand block */
 .side-brand { display: flex; align-items: center; gap: .6rem; padding: .35rem .4rem .7rem; border-bottom: 1px solid var(--border); color: var(--text); }
 .side-brand:hover { color: var(--text); }
-.side-brand .brand-avatar { width: 40px; height: 40px; border-radius: 12px; flex: none; box-shadow: 0 6px 14px -6px rgba(var(--primary-rgb), .7); object-fit: contain; }
-.side-brand .brand-mark { padding-bottom: 10px; gap: 3px; } .side-brand .brand-mark i { width: 3.5px; }
-.side-brand span { display: grid; line-height: 1.25; min-width: 0; }
-.side-brand strong { font-size: 1.05rem; font-weight: 800; letter-spacing: -.01em; }
+.side-brand .brand-avatar { width: 50px; height: 50px; border-radius: 15px; flex: none; box-shadow: 0 6px 14px -6px rgba(var(--primary-rgb), .7); object-fit: contain; }
+.side-brand .brand-mark { display: inline-flex; flex-direction: row; align-items: flex-end; justify-content: center; padding: 0 0 13px; gap: 4px; } .side-brand .brand-mark i { width: 4.5px; }
+.side-brand .brand-mark i:nth-child(1) { height: 9px; } .side-brand .brand-mark i:nth-child(2) { height: 16px; } .side-brand .brand-mark i:nth-child(3) { height: 12px; } .side-brand .brand-mark i:nth-child(4) { height: 19px; }
+.side-brand > span:last-child { display: grid; line-height: 1.25; min-width: 0; }
+.side-brand strong { font-size: 1.2rem; font-weight: 800; letter-spacing: -.01em; }
 .side-brand small { font-size: .72rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (min-width: 992px) { .side-brand { display: none; } }
 .lang-btn { font-size: .78rem; font-weight: 700; }
