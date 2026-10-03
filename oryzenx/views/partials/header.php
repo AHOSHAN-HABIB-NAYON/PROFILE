@@ -19,13 +19,14 @@ $logo = setting('logo');
         <?php if (setting('allow_dark') === '1'): ?>
         <button class="hbtn" type="button" data-action="theme" aria-label="<?= e(t('nav.theme')) ?>"><i class="fa-regular fa-moon theme-ic-dark"></i><i class="fa-solid fa-sun theme-ic-light"></i></button>
         <?php endif; ?>
-        <button class="hbtn notif-btn" type="button" data-action="notifications" aria-label="<?= e(t('nav.notifications')) ?>" aria-haspopup="true">
-            <i class="fa-regular fa-bell"></i><span class="dot-badge" data-notif-count hidden></span>
-        </button>
         <?php if ($user): ?>
+            <button class="hbtn notif-btn" type="button" data-action="notifications" aria-label="<?= e(t('nav.notifications')) ?>" aria-haspopup="true">
+                <i class="fa-regular fa-bell"></i><span class="dot-badge" data-notif-count hidden></span>
+            </button>
             <a class="only-desktop topbar-user" href="<?= e(url('/profile')) ?>" data-nav="profile"><?= avatar_html($user, 'avatar-sm') ?></a>
         <?php else: ?>
-            <a class="btn btn-sm btn-primary only-desktop" href="<?= e(url('/login')) ?>"><?= e(t('auth.login')) ?></a>
+            <a class="btn btn-sm btn-ghost only-desktop" href="<?= e(url('/login')) ?>"><?= e(t('auth.login')) ?></a>
+            <a class="hsignup" href="<?= e(url('/register')) ?>"><?= e(t('auth.signup')) ?></a>
         <?php endif; ?>
     </div>
     <div class="notif-panel card" id="notif-panel" hidden role="dialog" aria-label="<?= e(t('nav.notifications')) ?>">
