@@ -1,0 +1,21 @@
+/* Oryzenx — payment & checkout */
+.checkout-summary { display: flex; align-items: center; gap: .75rem; }
+.price-tag { font-size: 1.15rem; font-weight: 800; color: var(--primary); white-space: nowrap; }
+.checkout { max-width: 720px; }
+.pay-options { display: grid; gap: .45rem; }
+@media (min-width: 640px) { .pay-options { grid-template-columns: 1fr 1fr; } }
+.pay-option { display: flex; align-items: center; gap: .65rem; padding: .6rem .7rem; border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; background: var(--surface); transition: border-color var(--t-fast), background var(--t-fast); }
+.pay-option input { position: absolute; opacity: 0; }
+.pay-option img { width: 30px; height: 30px; border-radius: 8px; }
+.pay-option strong { font-size: .9rem; }
+.pay-radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); flex: none; }
+.pay-option.selected { border-color: var(--primary); background: var(--primary-light); }
+.pay-option.selected .pay-radio { border: 5px solid var(--primary); }
+.pay-option:focus-within { outline: 2px solid var(--primary); outline-offset: 2px; }
+.pay-details { display: grid; gap: .6rem; }
+.pay-qr { width: 170px; height: 170px; object-fit: contain; border-radius: 10px; border: 1px solid var(--border); background: #fff; padding: 6px; }
+.shot-preview { max-width: 180px; max-height: 240px; border-radius: 10px; border: 1px solid var(--border); }
+.pay-method-card img { border-radius: 10px; }
+.pay-guide { list-style: none; margin: 0; padding: 0; display: grid; gap: .4rem; counter-reset: g; }
+.pay-guide li { display: flex; gap: .6rem; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .55rem .7rem; font-size: .86rem; }
+.pay-guide span { width: 22px; height: 22px; border-radius: 50%; background: var(--primary-light); color: var(--primary); font-weight: 700; font-size: .74rem; display: grid; place-items: center; flex: none; }

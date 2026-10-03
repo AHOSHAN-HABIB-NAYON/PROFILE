@@ -1,0 +1,160 @@
+<?php
+/** @var array $slides @var array $categories @var array $featured @var array $grid @var array $posts @var array $team @var array $faqs @var array $methods */
+$wa = preg_replace('/\D/', '', setting('contact_whatsapp'));
+?>
+<section class="hero">
+    <div class="hero-text">
+        <span class="hero-kicker"><i class="fa-solid fa-bolt"></i> <?= e(sl('site_tagline')) ?></span>
+        <h1><?= e(sl('hero_title')) ?></h1>
+        <p><?= e(sl('hero_subtitle')) ?></p>
+        <div class="row-gap">
+            <a class="btn btn-sm btn-white" href="<?= e(url('/services')) ?>"><i class="fa-solid fa-layer-group"></i> <?= e(t('home.explore')) ?></a>
+            <a class="btn btn-sm btn-glass" href="<?= e(url('/contact')) ?>"><i class="fa-solid fa-headset"></i> <?= e(t('home.contact')) ?></a>
+        </div>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+        <div class="hero-screen"><i class="fa-solid fa-code"></i><span></span><span></span><span class="short"></span></div>
+        <span class="hero-float f1"><i class="fa-brands fa-react"></i></span>
+        <span class="hero-float f2"><i class="fa-brands fa-node-js"></i></span>
+        <span class="hero-float f3"><i class="fa-solid fa-shield-halved"></i></span>
+    </div>
+</section>
+
+<section class="stats-row">
+    <div><strong><?= e(num(setting('stat_projects'))) ?></strong><span><?= e(t('home.stat_projects')) ?></span></div>
+    <div><strong><?= e(num(setting('stat_satisfaction'))) ?></strong><span><?= e(t('home.stat_clients')) ?></span></div>
+    <div><strong><?= e(num(setting('stat_support'))) ?></strong><span><?= e(t('home.stat_support')) ?></span></div>
+</section>
+
+<?php if ($slides): ?>
+<section class="section slider" data-component="slider" aria-roledescription="carousel" aria-label="<?= e(t('home.platforms')) ?>">
+    <div class="slider-track">
+        <?php foreach ($slides as $sl): ?>
+            <a class="slide card" href="<?= e(url($sl['link'] ?: '/services')) ?>">
+                <span class="ic-box ic-box-lg"><?= $sl['image'] ? '<img src="' . e(upload_url($sl['image'])) . '" alt="" loading="lazy">' : icon_html($sl['icon']) ?></span>
+                <span class="grow"><strong><?= e(tr($sl, 'title')) ?></strong><small class="muted clamp-2"><?= e(tr($sl, 'subtitle')) ?></small></span>
+                <span class="btn btn-xs btn-soft"><?= e($sl['button_text'] ?: t('common.view')) ?> <i class="fa-solid fa-arrow-right"></i></span>
+            </a>
+        <?php endforeach; ?>
+    </div>
+    <?php if (count($slides) > 1): ?>
+        <div class="slider-dots"><?php foreach ($slides as $i => $_): ?><button class="slider-dot<?= $i === 0 ? ' active' : '' ?>" type="button" aria-label="<?= $i + 1 ?>"></button><?php endforeach; ?></div>
+    <?php endif; ?>
+</section>
+<?php endif; ?>
+
+<section class="section">
+    <div class="section-head"><h2 class="section-title"><?= e(t('home.our_services')) ?></h2><a class="small" href="<?= e(url('/services')) ?>"><?= e(t('common.view_all')) ?></a></div>
+    <div class="tile-grid">
+        <?php foreach ($grid as $s): ?>
+            <a class="tile card-link" href="<?= e(url('/services/' . $s['slug'])) ?>">
+                <span class="ic-box" style="--c:<?= e($s['icon_color'] ?: 'var(--primary)') ?>"><?= icon_html($s['icon'], $s['icon_image']) ?></span>
+                <span class="tile-label"><?= e(tr($s, 'title')) ?></span>
+            </a>
+        <?php endforeach; ?>
+    </div>
+</section>
+
+<?php if ($posts): ?>
+<section class="section card">
+    <div class="section-head"><h2 class="section-title"><i class="fa-solid fa-bolt text-warning"></i> <?= e(t('home.latest_posts')) ?></h2><a class="small" href="<?= e(url('/news')) ?>"><?= e(t('common.view_all')) ?></a></div>
+    <div class="list">
+        <?php foreach ($posts as $p): ?>
+            <a class="list-item post-line" href="<?= e(url('/news/' . $p['id'])) ?>">
+                <span class="post-emoji"><?= e($p['icon'] ?: '📰') ?></span>
+                <span class="title truncate grow"><?= e($p['title']) ?></span>
+                <span class="meta"><?= e(time_ago($p['published_at'])) ?></span>
+            </a>
+        <?php endforeach; ?>
+    </div>
+</section>
+<?php endif; ?>
+
+<?php if ($featured): ?>
+<section class="section">
+    <div class="section-head"><h2 class="section-title"><?= e(t('home.featured')) ?></h2><a class="small" href="<?= e(url('/services')) ?>"><?= e(t('common.view_all')) ?></a></div>
+    <div class="h-scroll">
+        <?php foreach ($featured as $s) require VIEWS . '/components/service-card.php'; ?>
+    </div>
+</section>
+<?php endif; ?>
+
+<section class="section">
+    <div class="section-head"><h2 class="section-title"><?= e(t('home.why')) ?></h2></div>
+    <div class="grid grid-2 md-grid-4">
+        <?php foreach ([
+            ['fa-solid fa-gauge-high', '#16a34a', 'home.why_fast', 'home.why_fast_d'],
+            ['fa-solid fa-shield-halved', '#2563eb', 'home.why_secure', 'home.why_secure_d'],
+            ['fa-solid fa-mobile-screen', '#7c3aed', 'home.why_mobile', 'home.why_mobile_d'],
+            ['fa-solid fa-headset', '#ea580c', 'home.why_support', 'home.why_support_d'],
+        ] as [$ic, $c, $tk, $dk]): ?>
+            <div class="card why">
+                <span class="ic-box ic-box-sm" style="--c:<?= $c ?>"><i class="<?= $ic ?>"></i></span>
+                <strong><?= e(t($tk)) ?></strong><p class="muted xs mb-0"><?= e(t($dk)) ?></p>
+            </div>
+        <?php endforeach; ?>
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head"><h2 class="section-title"><?= e(t('home.tech')) ?></h2></div>
+    <div class="tech-row">
+        <?php foreach ([['fa-brands fa-node-js', 'Node.js', '#16a34a'], ['fa-brands fa-react', 'React', '#0ea5e9'], ['fa-brands fa-php', 'PHP', '#6366f1'], ['fa-solid fa-database', 'MySQL', '#0369a1'],
+            ['fa-brands fa-js', 'JavaScript', '#ca8a04'], ['fa-brands fa-html5', 'HTML5', '#ea580c'], ['fa-brands fa-css3-alt', 'CSS3', '#2563eb'], ['fa-solid fa-robot', 'OpenAI', '#10a37f'],
+            ['fa-brands fa-laravel', 'Laravel', '#dc2626'], ['fa-brands fa-docker', 'Docker', '#0284c7'], ['fa-brands fa-git-alt', 'Git', '#f97316'], ['fa-brands fa-aws', 'Cloud', '#f59e0b']] as [$ic, $n, $c]): ?>
+            <span class="tech" style="--c:<?= $c ?>"><i class="<?= $ic ?>"></i><?= e($n) ?></span>
+        <?php endforeach; ?>
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head"><h2 class="section-title"><?= e(t('home.how')) ?></h2></div>
+    <ol class="steps">
+        <?php foreach ([['fa-solid fa-hand-pointer', 'home.step1', 'home.step1_d'], ['fa-solid fa-wallet', 'home.step2', 'home.step2_d'], ['fa-solid fa-receipt', 'home.step3', 'home.step3_d'], ['fa-solid fa-rocket', 'home.step4', 'home.step4_d']] as $i => [$ic, $tk, $dk]): ?>
+            <li class="step"><span class="step-no"><?= num($i + 1) ?></span><div><strong><i class="<?= $ic ?> text-primary"></i> <?= e(t($tk)) ?></strong><p class="muted xs mb-0"><?= e(t($dk)) ?></p></div></li>
+        <?php endforeach; ?>
+    </ol>
+</section>
+
+<?php if ($methods): ?>
+<section class="section card">
+    <div class="section-head"><h2 class="section-title"><?= e(t('home.payments')) ?></h2><a class="small" href="<?= e(url('/payment')) ?>"><?= e(t('nav.payment')) ?></a></div>
+    <div class="pay-logos">
+        <?php foreach ($methods as $m): ?>
+            <span class="pay-logo"><img src="<?= e(Content::media($m['logo'])) ?>" alt="" width="26" height="26" loading="lazy"><?= e($m['name']) ?></span>
+        <?php endforeach; ?>
+    </div>
+</section>
+<?php endif; ?>
+
+<?php if ($team): ?>
+<section class="section">
+    <div class="section-head"><h2 class="section-title"><?= e(t('team.title')) ?></h2><a class="small" href="<?= e(url('/team')) ?>"><?= e(t('common.view_all')) ?></a></div>
+    <div class="grid grid-2 md-grid-4">
+        <?php foreach ($team as $m): ?>
+            <a class="card card-link team-mini" href="<?= e(url('/team/' . $m['id'])) ?>">
+                <?= $m['photo'] ? '<img class="avatar" src="' . e(upload_url($m['photo'])) . '" alt="" loading="lazy">' : avatar_html(['name' => $m['name'], 'email' => $m['name']]) ?>
+                <span class="grow truncate"><strong class="truncate"><?= e($m['name']) ?></strong><small class="muted truncate"><?= e(tr($m, 'role')) ?></small></span>
+                <?php if ($m['is_vip']): ?><span class="badge badge-vip<?= $m['badge_animated'] ? ' animated' : '' ?>"><?= e($m['badge_text'] ?: 'VIP') ?></span><?php endif; ?>
+            </a>
+        <?php endforeach; ?>
+    </div>
+</section>
+<?php endif; ?>
+
+<?php if ($faqs): ?>
+<section class="section">
+    <div class="section-head"><h2 class="section-title"><?= e(t('nav.faq')) ?></h2><a class="small" href="<?= e(url('/faq')) ?>"><?= e(t('common.view_all')) ?></a></div>
+    <?php foreach ($faqs as $f): ?>
+        <details class="acc"><summary><?= e(tr($f, 'question')) ?></summary><div class="acc-body"><?= nl2br(e(tr($f, 'answer'))) ?></div></details>
+    <?php endforeach; ?>
+</section>
+<?php endif; ?>
+
+<section class="section cta">
+    <div><h2><?= e(t('home.cta')) ?></h2><p><?= e(t('home.cta_d')) ?></p></div>
+    <div class="row-gap">
+        <a class="btn btn-sm btn-white" href="<?= e(url('/contact')) ?>"><i class="fa-solid fa-paper-plane"></i> <?= e(t('home.contact')) ?></a>
+        <?php if ($wa): ?><a class="btn btn-sm btn-glass" href="https://wa.me/<?= e($wa) ?>" target="_blank" rel="noopener"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a><?php endif; ?>
+    </div>
+</section>

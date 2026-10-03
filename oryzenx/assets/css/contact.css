@@ -1,0 +1,5 @@
+/* Oryzenx — contact */
+.contact-layout { display: grid; gap: .75rem; }
+@media (min-width: 900px) { .contact-layout { grid-template-columns: 340px minmax(0, 1fr); align-items: start; } }
+.support-card { display: flex; align-items: center; gap: .65rem; }
+.recaptcha { min-height: 78px; }
