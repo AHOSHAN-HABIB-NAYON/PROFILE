@@ -293,6 +293,11 @@
   const ICONS = ['fa-solid fa-fire', 'fa-solid fa-rocket', 'fa-solid fa-chart-line', 'fa-solid fa-arrow-trend-up', 'fa-solid fa-arrow-trend-down', 'fa-solid fa-triangle-exclamation', 'fa-solid fa-coins', 'fa-solid fa-crown',
     'fa-solid fa-circle-check', 'fa-solid fa-circle-xmark', 'fa-solid fa-star', 'fa-solid fa-bolt', 'fa-solid fa-gift', 'fa-solid fa-bell', 'fa-solid fa-shield-halved', 'fa-solid fa-lock', 'fa-brands fa-bitcoin', 'fa-brands fa-ethereum',
     'fa-solid fa-sack-dollar', 'fa-solid fa-wallet', 'fa-solid fa-gem', 'fa-solid fa-thumbs-up', 'fa-solid fa-heart', 'fa-solid fa-code', 'fa-brands fa-node-js', 'fa-brands fa-php', 'fa-brands fa-react', 'fa-solid fa-robot'];
+  const BN = document.documentElement.lang === 'bn';
+  // one-tap coloured icons for market / news posts (sanitizer keeps fa-* and rt-* classes)
+  const QUICK = [['fa-solid fa-arrow-trend-up rt-up', 'Up'], ['fa-solid fa-circle-check rt-green', 'Check'], ['fa-solid fa-certificate rt-blue', 'Badge'], ['fa-solid fa-fire rt-orange', 'Hot'],
+    ['fa-solid fa-rocket rt-blue', 'Rocket'], ['fa-solid fa-arrow-trend-down rt-down', 'Down'], ['fa-solid fa-triangle-exclamation rt-gold', 'Warning'], ['fa-solid fa-sack-dollar rt-green', 'Money'],
+    ['fa-solid fa-bullseye rt-red', 'Target'], ['fa-solid fa-bolt rt-gold', 'Bolt'], ['fa-solid fa-crown rt-gold', 'Crown'], ['fa-solid fa-circle-xmark rt-down', 'No']];
   inits.rte = (wrap) => {
     if (wrap.dataset.ready) return;
     wrap.dataset.ready = '1';
@@ -304,7 +309,9 @@
       ${B('bold', 'fa-bold', 'Bold')}${B('italic', 'fa-italic', 'Italic')}${B('underline', 'fa-underline', 'Underline')}${B('strikeThrough', 'fa-strikethrough', 'Strike')}<span class="sep"></span>
       ${B('insertUnorderedList', 'fa-list-ul', 'Bullet list')}${B('insertOrderedList', 'fa-list-ol', 'Numbered list')}${B('link', 'fa-link', 'Link')}${B('unlink', 'fa-link-slash', 'Remove link')}<span class="sep"></span>
       ${B('image', 'fa-image', 'Image')}${B('button', 'fa-square-plus', 'Button')}${B('badge', 'fa-certificate', 'Badge')}${B('alert', 'fa-circle-exclamation', 'Alert box')}${B('highlight', 'fa-highlighter', 'Highlight')}
-      ${B('icon', 'fa-icons', 'Icon')}${B('emoji', 'fa-face-smile', 'Emoji')}${B('video', 'fa-brands fa-youtube', 'YouTube')}<span class="sep"></span>${B('removeFormat', 'fa-eraser', 'Clear formatting')}${B('source', 'fa-code', 'HTML source')}`;
+      ${B('icon', 'fa-icons', 'Icon')}${B('emoji', 'fa-face-smile', 'Emoji')}${B('color', 'fa-palette', 'Text color')}${B('video', 'fa-brands fa-youtube', 'YouTube')}<span class="sep"></span>
+      <button type="button" data-cmd="coin" title="Coin price ($BTC)" aria-label="Coin"><i class="fa-brands fa-bitcoin"></i> ${BN ? 'কয়েন' : 'Coin'}</button><span class="sep"></span>${B('removeFormat', 'fa-eraser', 'Clear formatting')}${B('source', 'fa-code', 'HTML source')}
+      <div class="rte-quick" role="group" aria-label="Quick icons">${QUICK.map(([ic, t]) => `<button type="button" data-quick="${ic}" title="${t}" aria-label="${t}"><i class="${ic}"></i></button>`).join('')}</div>`;
     const area = document.createElement('div');
     area.className = 'rte-area rt';
     area.contentEditable = 'true';
@@ -333,6 +340,8 @@
     bar.addEventListener('change', (e) => { if (e.target.matches('[data-block]')) { restore(); document.execCommand('formatBlock', false, e.target.value); ta.value = area.innerHTML; } });
     bar.addEventListener('mousedown', (e) => { if (e.target.closest('button')) e.preventDefault(); });
     bar.addEventListener('click', async (e) => {
+      const q = e.target.closest('[data-quick]');
+      if (q) { keep(); insert(`<i class="${q.dataset.quick}"></i>&nbsp;`); return; }
       const b = e.target.closest('[data-cmd]');
       if (!b) return;
       const cmd = b.dataset.cmd;
@@ -361,6 +370,19 @@
       } else if (cmd === 'alert') {
         choose('Alert box', `<div class="stack">${[['', 'Info'], ['success', 'Success'], ['warning', 'Warning'], ['danger', 'Danger']].map(([c, l]) => `<button type="button" class="btn btn-ghost btn-block" data-v="${c}">${l}</button>`).join('')}</div>`,
           (c) => wrapSel(`<div class="rt-alert${c ? ' rt-alert-' + c : ''}">`, '</div><p><br></p>', 'Important message'));
+      } else if (cmd === 'coin') {
+        let sym = '';
+        const ok = await modal({ title: BN ? 'কয়েন প্রাইস চিপ' : 'Coin price chip',
+          html: `<p class="small muted">${BN ? 'সিম্বল লিখুন (যেমন BTC, ETH, SOL)। পোস্টে লাইভ দাম ও ২৪ ঘণ্টার পরিবর্তন দেখাবে।' : 'Enter a symbol (e.g. BTC, ETH, SOL). The post shows its live price and 24h change.'}</p>
+            <input class="input" data-sym maxlength="10" placeholder="BTC" autocapitalize="characters">
+            <div class="row wrap mt-1">${['BTC', 'ETH', 'BNB', 'SOL', 'XRP', 'TON', 'DOGE', 'TRX'].map((x) => `<button type="button" class="chip" data-pick="${x}">${x}</button>`).join('')}</div>`,
+          onOpen: (m) => m.addEventListener('click', (ev) => { const p = ev.target.closest('[data-pick]'); if (p) $('[data-sym]', m).value = p.dataset.pick; }),
+          actions: [{ label: BN ? 'যোগ করুন' : 'Insert', onClick: (m) => { sym = $('[data-sym]', m).value.trim().toUpperCase(); } }] });
+        if (ok && /^[A-Z][A-Z0-9]{1,9}$/.test(sym)) insert(`$${sym}&nbsp;`);
+        else if (sym) toast(BN ? 'সঠিক সিম্বল দিন (২–১০ অক্ষর)' : 'Enter a valid symbol (2–10 letters)', 'error');
+      } else if (cmd === 'color') {
+        choose(BN ? 'টেক্সট কালার' : 'Text color', `<div class="row wrap">${[['green', '#16a34a'], ['red', '#dc2626'], ['orange', '#f97316'], ['blue', '#2b44d8'], ['gold', '#f59e0b']].map(([c, h]) => `<button type="button" class="btn btn-ghost" data-v="${c}"><b style="color:${h}">${c}</b></button>`).join('')}</div>`,
+          (c) => wrapSel(`<span class="rt-${c}">`, '</span>', 'text'));
       } else if (cmd === 'highlight') {
         wrapSel('<mark>', '</mark>', 'highlight');
       } else if (cmd === 'emoji') {

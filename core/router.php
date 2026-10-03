@@ -94,7 +94,12 @@ function render_route(string $path): array
         } else {
             $file = ROOT . '/' . $route['file'];
         }
+        if ($route['layout'] === 'admin') require_once ROOT . '/core/admin-lang.php';
         $html = capture_page($file, $route['params']);
+        if ($route['layout'] === 'admin' && lang() === 'bn') {
+            $html = admin_tr($html);
+            if (!empty(meta()['title'])) meta(['title' => at(meta()['title'])]);
+        }
         $m = meta();
         return [
             'status' => $m['status'] ?? 200, 'html' => $html, 'meta' => $m, 'layout' => $route['layout'],

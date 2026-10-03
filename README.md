@@ -107,3 +107,16 @@ secrets (SMTP password, API keys, 2FA seeds, VAPID key) encrypted at rest (AES-2
   notification, so no payload encryption library is needed.
 * **Real-time** features (notifications, live chat) use adaptive polling that pauses while the tab is hidden.
 * The included GitHub Pages workflow can only publish static files. Deploy this PHP app to PHP hosting.
+
+## 6. Changelog
+
+**1.1.0**
+- New look across the whole site and admin panel: Plus Jakarta Sans + Hind Siliguri, square header buttons, card-style lists, navy status cards, stat tiles.
+- Built-in AI assistant that works without any API key. It answers from your services, prices, FAQ, news and contact settings, in Bangla, English and Banglish. OpenAI or compatible APIs are optional (Admin → AI Assistant → Provider).
+- New chat widget with suggestion chips, service cards and a one-tap handoff to live support.
+- News feed with post cards, like and share, and **live coin price chips**: type `$BTC`, `$ETH` and so on in a post, or use the "Coin" button in the editor. Prices come from Binance public market data and are cached for 60 seconds (`/api/prices`).
+- Editor: one-tap coloured icons (up/down, check, fire, rocket, warning…) and a text colour picker.
+- Admin panel in Bangla when the site language is Bangla, with a language toggle in the admin header.
+- Login page: Google first, "Remember me" (unchecked means the session ends when the browser closes).
+
+**1.0.1**: encryption uses OpenSSL AES-256-GCM, so the sodium extension is no longer needed.

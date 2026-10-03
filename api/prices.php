@@ -21,11 +21,17 @@ foreach ($syms as $s) {
         $c = json_decode((string)file_get_contents($f), true);
         if (is_array($c)) { if ($c) $out[$s] = $c; continue; }
     }
-    $r = http_request('GET', 'https://api.binance.com/api/v3/ticker/24hr?symbol=' . $s . 'USDT', ['timeout' => 6]);
+    // data-api.binance.vision is Binance's public market-data mirror (not geo-restricted)
+    foreach (['https://data-api.binance.vision', 'https://api.binance.com'] as $host) {
+        $r = http_request('GET', $host . '/api/v3/ticker/24hr?symbol=' . $s . 'USDT', ['timeout' => 6]);
+        if ($r['status'] === 200 || $r['status'] === 400) break;
+    }
     $j = $r['json'];
     $c = ($r['status'] === 200 && isset($j['lastPrice'])) ? ['p' => (float)$j['lastPrice'], 'c' => round((float)$j['priceChangePercent'], 2)] : [];
     // failed lookups are cached too (empty) so unknown symbols don't hammer the API
     if ($c || $r['status'] === 400) @file_put_contents($f, json_encode($c), LOCK_EX);
+    // network trouble: fall back to the last known price (up to a day old)
+    if (!$c && $r['status'] !== 400 && is_file($f) && filemtime($f) > time() - 86400) $c = json_decode((string)file_get_contents($f), true) ?: [];
     if ($c) $out[$s] = $c;
 }
 header('Cache-Control: public, max-age=30');

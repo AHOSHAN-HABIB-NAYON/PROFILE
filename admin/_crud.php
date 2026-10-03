@@ -6,6 +6,7 @@
  * categories, services, products, news, team, payment methods and socials.
  */
 defined('APP') || exit;
+require_once ROOT . '/core/admin-lang.php';
 require_once ROOT . '/core/upload.php';
 
 function admin_resources(): array
@@ -90,7 +91,7 @@ function admin_resources(): array
         'news' => [
             'table' => 'news', 'perm' => 'news', 'title' => 'Post', 'order' => 'publish_at DESC, id DESC', 'search' => ['title_en', 'title_bn', 'tags'],
             'filter' => ['field' => 'status', 'label' => 'All statuses', 'options' => fn() => ['published' => 'Published', 'draft' => 'Draft']],
-            'list' => ['title' => fn($x) => ($x['emoji'] ? $x['emoji'] . ' ' : '') . ($x['title_en'] ?: $x['title_bn']), 'sub' => fn($x) => date('M j, Y H:i', strtotime($x['publish_at'])) . ' · ' . (int)$x['views'] . ' views', 'icon' => 'icon', 'image' => 'image',
+            'list' => ['title' => fn($x) => ($x['emoji'] ? $x['emoji'] . ' ' : '') . ($x['title_en'] ?: $x['title_bn']), 'sub' => fn($x) => date('M j, Y H:i', strtotime($x['publish_at'])) . ' · ' . (lang() === 'bn' ? num((int)$x['views']) . ' ভিউ' : (int)$x['views'] . ' views'), 'icon' => 'icon', 'image' => 'image',
                 'badges' => fn($x) => array_filter([[$x['status'] === 'published' ? (strtotime($x['publish_at']) > time() ? 'Scheduled' : 'Published') : 'Draft', $x['status'] === 'published' ? 'success' : 'muted'], $x['is_featured'] ? ['Featured', ''] : null])],
             'toggles' => ['is_featured'],
             'view' => fn($x) => '/news/' . $x['id'],
@@ -229,14 +230,14 @@ function crud_render(string $name, string $base): void
     ?>
     <form class="toolbar" method="get" action="<?= e(url(parse_url($base, PHP_URL_PATH))) ?>" data-get-form>
       <?php parse_str((string)parse_url($base, PHP_URL_QUERY), $bq); foreach ($bq as $k => $v): ?><input type="hidden" name="<?= e($k) ?>" value="<?= e($v) ?>"><?php endforeach ?>
-      <div class="input-icon grow"><i class="fa-solid fa-magnifying-glass"></i><input class="input" type="search" name="q" value="<?= e($q) ?>" placeholder="Search <?= e(strtolower($r['title'])) ?>s…"></div>
+      <div class="input-icon grow"><i class="fa-solid fa-magnifying-glass"></i><input class="input" type="search" name="q" value="<?= e($q) ?>" placeholder="<?= e(at_search($r['title'])) ?>"></div>
       <?php if (!empty($r['filter'])): ?>
         <select class="select" name="f" data-autosubmit style="width:auto;max-width:220px"><option value=""><?= e($r['filter']['label']) ?></option>
           <?php foreach (($r['filter']['options'])() as $k => $v): ?><option value="<?= e($k) ?>" <?= (string)$fv === (string)$k ? 'selected' : '' ?>><?= e($v) ?></option><?php endforeach ?></select>
       <?php endif ?>
-      <a class="btn" href="<?= e(url($base . $sep . 'new=1')) ?>"><i class="fa-solid fa-plus"></i><span class="hide-sm">Add <?= e(strtolower($r['title'])) ?></span></a>
+      <a class="btn" href="<?= e(url($base . $sep . 'new=1')) ?>"><i class="fa-solid fa-plus"></i><span class="hide-sm"><?= e(at_add($r['title'])) ?></span></a>
     </form>
-    <p class="tiny muted mb-1"><?= number_format($pg['total']) ?> item(s)</p>
+    <p class="tiny muted mb-1"><?= lang() === 'bn' ? num($pg['total']) . 'টি আইটেম' : number_format($pg['total']) . ' item(s)' ?></p>
     <?php if (!$items): ?><div class="card empty"><div class="icon-box"><i class="fa-regular fa-folder-open"></i></div>Nothing here yet.</div><?php endif ?>
     <div class="list crud-list">
       <?php foreach ($items as $it):

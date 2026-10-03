@@ -49,7 +49,7 @@ $cards = [
 $checks = [];
 if (!setting('smtp.username')) $checks[] = ['SMTP is not configured — emails use PHP mail() and may land in spam.', '/admin/settings?tab=smtp'];
 if (!val('SELECT 1 FROM payment_methods WHERE enabled = 1')) $checks[] = ['No payment method is enabled yet — add your bKash / USDT / Binance Pay details.', '/admin/settings?tab=payment'];
-if (setting_bool('ai.enabled') && !setting('ai.api_key')) $checks[] = ['AI chatbot is enabled but no API key is set.', '/admin/ai'];
+if (setting_bool('ai.enabled') && setting('ai.provider', 'local') !== 'local' && !setting('ai.api_key')) $checks[] = ['An external AI provider is selected but no API key is set — the built-in assistant answers instead.', '/admin/ai'];
 if (setting_bool('notify.push_enabled') && !setting('pwa.vapid_public')) $checks[] = ['Generate VAPID keys to enable Web Push notifications.', '/admin/settings?tab=pwa'];
 if (!val('SELECT enabled FROM user_2fa WHERE user_id = ?', [user()['id']])) $checks[] = ['Protect your admin account with two-factor authentication.', '/profile/security'];
 if (setting_bool('maintenance.enabled')) $checks[] = ['Maintenance mode is ON — visitors see the maintenance page.', '/admin/settings?tab=maintenance'];
@@ -62,7 +62,7 @@ $recentPay = rows('SELECT p.*, u.name, o.code FROM payments p JOIN users u ON u.
 $recentUsers = rows('SELECT id, name, email, created_at FROM users ORDER BY id DESC LIMIT 5');
 ?>
 <div class="page">
-  <div class="adm-title"><div><h1>Dashboard</h1><p class="muted small mb-0">Welcome back, <?= e(user()['name']) ?> · <?= e(date('l, M j')) ?></p></div>
+  <div class="adm-title"><div><h1>Dashboard</h1><p class="muted small mb-0"><?= e(at('Welcome back,')) ?> <?= e(user()['name']) ?> · <?= e(fmt_date(date('Y-m-d H:i:s'))) ?></p></div>
     <div class="row"><a class="btn btn-sm btn-soft" href="<?= e(url('/admin/news?new=1')) ?>"><i class="fa-solid fa-pen"></i>New post</a><a class="btn btn-sm" href="<?= e(url('/admin/notifications')) ?>"><i class="fa-solid fa-paper-plane"></i>Notify</a></div></div>
 
   <?php if ($checks): ?><div class="stack mb-2"><?php foreach ($checks as [$msg, $link]): ?>

@@ -237,9 +237,9 @@ a.list-row:hover,button.list-row:hover{border-color:color-mix(in srgb,var(--prim
 .hero-navy .kicker{display:inline-flex;align-items:center;gap:8px;font-size:.75rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;opacity:.85}
 .hero-navy h1,.hero-navy h2{color:#fff}
 .hero-navy p{opacity:.85}
-.btn-glass{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3);backdrop-filter:blur(6px)}
-.btn-glass:hover{background:rgba(255,255,255,.2)}
-.btn-white{--b:#fff;color:var(--navy)!important}.btn-white:hover{background:#eef1ff}
+.btn.btn-glass{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3);backdrop-filter:blur(6px)}
+.btn.btn-glass:hover{background:rgba(255,255,255,.2)}
+.btn.btn-white{--b:#fff;color:var(--navy)!important}.btn.btn-white:hover{background:#eef1ff}
 
 /* ---------- buttons ---------- */
 .btn{--b:var(--primary);display:inline-flex;align-items:center;justify-content:center;gap:.55em;min-height:46px;padding:0 20px;border-radius:15px;border:1px solid transparent;

@@ -2,6 +2,7 @@
 /** News feed: featured post, category filter, "load more" pagination. */
 defined('APP') || exit;
 require_once ROOT . '/core/upload.php';
+require_once ROOT . '/core/analytics.php';
 
 $cats = rows('SELECT * FROM news_categories ORDER BY sort, id');
 $catSlug = input('category');

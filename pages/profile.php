@@ -17,16 +17,14 @@ $status = fn(string $s) => '<span class="status status-' . e($s) . '">' . e(t('s
 $methodName = array_column(rows('SELECT code, name FROM payment_methods'), 'name', 'code') + ['balance' => t('pay.balance')];
 ?>
 <style data-css="profile">
-.p-hero{position:relative;overflow:hidden;padding:20px;border-radius:calc(var(--radius) + 4px);color:#fff;background:linear-gradient(135deg,var(--primary),var(--primary-dark) 55%,var(--secondary));margin-bottom:14px}
-.p-hero::after{content:"";position:absolute;width:240px;height:240px;border-radius:50%;border:34px solid rgba(255,255,255,.07);right:-80px;top:-100px}
-.p-hero .avatar{border:3px solid rgba(255,255,255,.6);background:rgba(255,255,255,.18)}
-.p-hero h1{font-size:1.2rem;margin:0}
-.p-hero .sub{opacity:.85;font-size:.84rem}
-.p-hero .btn-out{background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.25)}
-.p-hero .chips span{background:rgba(255,255,255,.16);border-radius:999px;padding:3px 10px;font-size:.74rem}
-.p-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+.p-head{display:flex;align-items:center;gap:14px;padding:18px}
+.p-head h1{font-size:1.2rem;margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.p-head .sub{color:var(--muted);font-size:.86rem;margin-top:2px}
+.p-head .pill{display:inline-flex;align-items:center;gap:6px;margin-top:8px;padding:4px 11px;border-radius:999px;background:var(--soft);font-size:.76rem;font-weight:700;color:var(--text-2)}
+.p-head .logout{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 25%,var(--border));background:color-mix(in srgb,var(--danger) 7%,var(--card))}
+.hero-navy.p-status{margin:14px 0}
+.p-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:18px}
 @media (min-width:720px){.p-stats{grid-template-columns:repeat(4,1fr)}}
-.p-stats .card b{display:block;font-size:1.15rem}.p-stats .card span{font-size:.76rem;color:var(--muted)}
 .sec-score{display:flex;align-items:center;gap:14px}
 .ring{--p:0;width:64px;height:64px;border-radius:50%;background:conic-gradient(var(--success) calc(var(--p)*1%),var(--soft) 0);display:grid;place-items:center;flex:0 0 64px}
 .ring b{width:50px;height:50px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-size:.9rem}
@@ -42,22 +40,14 @@ $methodName = array_column(rows('SELECT code, name FROM payment_methods'), 'name
 .secret{font-family:ui-monospace,monospace;letter-spacing:.12em;background:var(--soft);padding:6px 10px;border-radius:8px;word-break:break-all}
 </style>
 <div class="page" data-page="profile">
-  <section class="p-hero">
-    <div class="row">
-      <span class="avatar lg"><?php if ($u['avatar']): ?><img src="<?= e(media_url($u['avatar'])) ?>" alt=""><?php else: ?><?= e(mb_strtoupper(mb_substr($u['name'], 0, 1))) ?><?php endif ?></span>
-      <div class="grow" style="min-width:0">
-        <h1 class="truncate"><?= e($u['name']) ?> <?php if ($u['is_vip']): ?><span class="badge vip"><i class="fa-solid fa-crown"></i>VIP</span><?php endif ?></h1>
-        <div class="sub truncate"><?= e($u['email']) ?></div>
-        <div class="sub"><i class="fa-regular fa-calendar"></i> <?= e(t('profile.joined', ['date' => fmt_date($u['created_at'])])) ?></div>
-      </div>
+  <section class="card p-head">
+    <span class="avatar lg"><?php if ($u['avatar']): ?><img src="<?= e(media_url($u['avatar'])) ?>" alt=""><?php else: ?><?= e(mb_strtoupper(mb_substr($u['name'], 0, 1))) ?><?php endif ?></span>
+    <div class="grow" style="min-width:0">
+      <h1><span class="truncate"><?= e($u['name']) ?></span><?php if ($u['is_vip']): ?><span class="badge vip"><i class="fa-solid fa-crown"></i>VIP</span><?php endif ?><span class="badge <?= is_staff($u) ? 'solid' : '' ?>"><?= e(t('role.' . $u['role'])) ?></span></h1>
+      <div class="sub truncate"><?= e($u['email']) ?></div>
+      <span class="pill"><i class="fa-regular fa-calendar"></i><?= e(t('profile.joined', ['date' => fmt_date($u['created_at'])])) ?></span>
     </div>
-    <div class="row-between mt-2" style="position:relative;z-index:1">
-      <div class="chips"><span><i class="fa-solid fa-wallet"></i> <?= e(money($u['balance'])) ?></span><span><?= e(t('role.' . $u['role'])) ?></span></div>
-      <div class="row">
-        <?php if (is_staff($u)): ?><a class="btn btn-sm btn-out" href="<?= e(url('/admin')) ?>" data-no-spa><i class="fa-solid fa-gauge-high"></i><?= e(t('nav.admin')) ?></a><?php endif ?>
-        <button class="btn btn-sm btn-out" data-action="logout"><i class="fa-solid fa-arrow-right-from-bracket"></i><?= e(t('auth.logout')) ?></button>
-      </div>
-    </div>
+    <button class="sq-btn logout" data-action="logout" aria-label="<?= e(t('auth.logout')) ?>" title="<?= e(t('auth.logout')) ?>"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
   </section>
 
   <?php if (!$u['email_verified_at']): ?>
@@ -72,15 +62,24 @@ $methodName = array_column(rows('SELECT code, name FROM payment_methods'), 'name
   </nav>
 
 <?php if ($tab === 'overview'):
-    $st = row("SELECT (SELECT COUNT(*) FROM orders WHERE user_id = ?) o, (SELECT COUNT(*) FROM payments WHERE user_id = ? AND status = 'pending') p,
-               (SELECT COUNT(*) FROM orders WHERE user_id = ? AND status IN ('approved','completed')) c", [$uid, $uid, $uid]);
+    $st = row("SELECT (SELECT COUNT(*) FROM payments WHERE user_id = ?) n, (SELECT COUNT(*) FROM payments WHERE user_id = ? AND status = 'pending') p", [$uid, $uid]);
+    $spent = implode(' · ', array_map(fn($r) => money($r['s'], $r['currency']),
+        rows("SELECT currency, SUM(amount) s FROM payments WHERE user_id = ? AND status IN ('approved','completed') GROUP BY currency ORDER BY currency = 'USD' DESC", [$uid])));
     $recent = rows('SELECT * FROM orders WHERE user_id = ? ORDER BY id DESC LIMIT 4', [$uid]);
     $bal = rows('SELECT * FROM balance_transactions WHERE user_id = ? ORDER BY id DESC LIMIT 5', [$uid]); ?>
+  <section class="hero-navy p-status">
+    <i class="fa-solid fa-crown wm" aria-hidden="true"></i>
+    <span class="kicker"><i class="fa-solid fa-shield-halved"></i><?= e(t('profile.status')) ?></span>
+    <h2 class="mt-1 mb-0"><?= e(is_staff($u) ? t('role.' . $u['role']) : ($u['is_vip'] ? t('profile.vip') : t('profile.member'))) ?></h2>
+    <p class="mb-2"><?= e(is_staff($u) ? t('profile.status_admin') : t('profile.status_user')) ?></p>
+    <?php if (is_staff($u)): ?><a class="btn btn-white" href="<?= e(url('/admin')) ?>" data-no-spa><i class="fa-solid fa-gauge-high"></i><?= e(t('profile.admin_panel')) ?></a>
+    <?php else: ?><a class="btn btn-white" href="<?= e(url('/services')) ?>"><i class="fa-solid fa-compass"></i><?= e(t('profile.explore')) ?></a><?php endif ?>
+  </section>
   <div class="p-stats">
-    <div class="card"><span class="icon-box sm"><i class="fa-solid fa-bag-shopping"></i></span><b><?= num((int)$st['o']) ?></b><span><?= e(t('profile.total_orders')) ?></span></div>
-    <div class="card"><span class="icon-box sm warning"><i class="fa-solid fa-hourglass-half"></i></span><b><?= num((int)$st['p']) ?></b><span><?= e(t('profile.pending_payments')) ?></span></div>
-    <div class="card"><span class="icon-box sm success"><i class="fa-solid fa-circle-check"></i></span><b><?= num((int)$st['c']) ?></b><span><?= e(t('profile.completed')) ?></span></div>
-    <div class="card"><span class="icon-box sm secondary"><i class="fa-solid fa-wallet"></i></span><b><?= e(money($u['balance'])) ?></b><span><?= e(t('profile.balance')) ?></span></div>
+    <div class="card stat-tile"><span class="lbl"><?= e(t('profile.payments')) ?></span><span class="val"><?= num((int)$st['n']) ?></span><i class="fa-solid fa-receipt ic"></i></div>
+    <div class="card stat-tile"><span class="lbl"><?= e(t('profile.total_spent')) ?></span><span class="val"><?= e($spent ?: money(0)) ?></span><i class="fa-solid fa-sack-dollar ic"></i></div>
+    <div class="card stat-tile"><span class="lbl"><?= e(t('profile.under_review')) ?></span><span class="val"><?= num((int)$st['p']) ?></span><i class="fa-solid fa-hourglass-half ic"></i></div>
+    <div class="card stat-tile"><span class="lbl"><?= e(t('profile.balance')) ?></span><span class="val"><?= e(money($u['balance'])) ?></span><i class="fa-solid fa-wallet ic"></i></div>
   </div>
   <section class="section">
     <div class="section-head"><h2><?= e(t('profile.recent_orders')) ?></h2><a href="<?= e(url('/profile/orders')) ?>"><?= e(t('common.view_all')) ?></a></div>

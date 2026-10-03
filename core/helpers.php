@@ -124,6 +124,11 @@ function json_out(array $data, int $code = 200): never
         header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: no-store');
     }
+    // admin API messages are written in English; show them in Bangla when that's the UI language
+    if (defined('ADMIN_API') && function_exists('at')) {
+        if (isset($data['message']) && is_string($data['message'])) $data['message'] = at($data['message']);
+        if (!empty($data['errors']) && is_array($data['errors'])) $data['errors'] = array_map(fn($m) => is_string($m) ? at($m) : $m, $data['errors']);
+    }
     echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
     exit;
 }

@@ -8,7 +8,7 @@ declare(strict_types=1);
 
 define('APP', true);
 define('ROOT', dirname(__DIR__));
-define('APP_VERSION', '1.0.0');
+define('APP_VERSION', '1.1.0');
 
 // ---------------------------------------------------------------------
 // Never show raw PHP errors to visitors – log them privately instead.

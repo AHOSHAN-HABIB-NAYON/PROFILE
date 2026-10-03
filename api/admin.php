@@ -6,6 +6,7 @@
  */
 defined('APP') || exit;
 require_once ROOT . '/admin/_crud.php';
+define('ADMIN_API', true);
 
 $me = require_login();
 if (!is_staff($me)) fail(t('err.forbidden'), 403);

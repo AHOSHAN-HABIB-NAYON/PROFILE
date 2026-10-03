@@ -38,6 +38,8 @@ $menu = [
         ['security', 'Security & Audit', 'fa-shield-halved', 'security'],
     ],
 ];
+require_once ROOT . '/core/admin-lang.php';
+ob_start(); // the whole admin chrome goes through admin_tr() (Bangla UI)
 include ROOT . '/includes/header.php';
 ?>
 <style>
@@ -46,11 +48,13 @@ include ROOT . '/includes/header.php';
 .bn-item .count{position:absolute;top:0;right:calc(50% - 26px);background:var(--danger);color:#fff;font-size:.6rem;min-width:16px;height:16px;border-radius:8px;display:grid;place-items:center;padding:0 4px}
 .adm-side .sb-link .count{margin-left:auto;background:var(--danger);color:#fff;font-size:.68rem;font-weight:700;min-width:20px;height:20px;border-radius:10px;display:grid;place-items:center;padding:0 6px}
 .is-admin .to-top{bottom:calc(var(--bottom-h) + var(--safe-b) + 16px)}
-@media (min-width:1024px){.is-admin .to-top{right:auto;left:calc(var(--sidebar-w) + 16px);bottom:20px}}
 .adm-main{padding-bottom:calc(var(--bottom-h) + var(--safe-b) + 28px)}
-@media (min-width:1024px){.is-admin .to-top{bottom:calc(var(--bottom-h) + var(--safe-b) + 16px)}
-@media (min-width:1024px){.is-admin .to-top{right:auto;left:calc(var(--sidebar-w) + 16px);bottom:20px}}
-.adm-main{padding-bottom:48px}}
+@media (min-width:1024px){.is-admin .to-top{right:32px;bottom:24px}.adm-main{padding-bottom:48px}}
+.adm-title h1{font-size:1.45rem;letter-spacing:-.02em}
+@media (max-width:420px){.hide-xs{display:none}}
+.stat-card{border-radius:var(--radius)}
+.stat-card .l{font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2)}
+.dtable{border-color:var(--line);box-shadow:var(--shadow)}
 .adm-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:2px 0 16px;flex-wrap:wrap}
 .adm-title h1{font-size:1.3rem;margin:0}
 .toolbar{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
@@ -94,6 +98,8 @@ include ROOT . '/includes/header.php';
 .rte-bar button,.rte-bar select{height:34px;min-width:34px;border:0;border-radius:8px;background:transparent;color:var(--text);cursor:pointer;font-size:.86rem;padding:0 8px}
 .rte-bar button:hover{background:var(--card)}
 .rte-bar .sep{width:1px;background:var(--border);margin:4px 3px}
+.rte-quick{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:2px;padding-top:4px;margin-top:2px;border-top:1px dashed var(--border)}
+.rte-quick button{font-size:1rem}
 .rte-area{min-height:260px;max-height:70vh;overflow:auto;padding:14px 16px;outline:none}
 .rte-area:empty::before{content:attr(data-placeholder);color:var(--muted)}
 .rte-src{width:100%;min-height:260px;border:0;padding:14px;font-family:ui-monospace,monospace;font-size:.82rem;background:#0f172a;color:#e2e8f0;resize:vertical}
@@ -115,21 +121,26 @@ include ROOT . '/includes/header.php';
 </style>
 <header class="app-header" role="banner">
   <div class="bar">
-    <button class="icon-btn menu-btn" data-action="drawer-open" aria-label="Menu" aria-controls="app-sidebar" aria-expanded="false"><i class="fa-solid fa-bars-staggered"></i></button>
+    <button class="sq-btn menu-btn" data-action="drawer-open" aria-label="Menu" aria-controls="app-sidebar" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
     <a href="<?= e(url('/admin')) ?>" class="brand"><span class="brand-logo"><?php if (setting('logo')): ?><img src="<?= e(media_url(setting('logo'))) ?>" alt=""><?php else: ?><i class="fa-solid fa-code"></i><?php endif ?></span>
       <span class="brand-name"><?= e(setting('site_name')) ?></span><small>ADMIN</small></a>
     <button class="hdr-search" data-action="search-open"><i class="fa-solid fa-magnifying-glass"></i><span>Search users, orders, payments…</span><kbd>/</kbd></button>
     <div class="hdr-actions">
-      <button class="icon-btn search-mobile" data-action="search-open" aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
-      <?php if (setting_bool('theme.dark_enabled')): ?><button class="icon-btn" data-action="theme-toggle" aria-label="Theme"><i class="fa-solid fa-moon theme-icon"></i></button><?php endif ?>
-      <a class="icon-btn" href="<?= e(url('/')) ?>" data-no-spa aria-label="View site" title="View site"><i class="fa-solid fa-globe"></i></a>
-      <a class="icon-btn" href="<?= e(url('/notifications')) ?>" data-no-spa aria-label="Notifications"><i class="fa-regular fa-bell"></i><span class="notif-badge" data-unread <?= $unread ? '' : 'hidden' ?>><?= $unread ?></span></a>
+      <button class="sq-btn search-mobile" data-action="search-open" aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
+      <button class="sq-btn" data-action="lang-toggle" data-lang="<?= lang() === 'bn' ? 'en' : 'bn' ?>" aria-label="Language" title="<?= lang() === 'bn' ? 'English' : 'বাংলা' ?>"><i class="fa-solid fa-language"></i></button>
+      <?php if (setting_bool('theme.dark_enabled')): ?><button class="sq-btn" data-action="theme-toggle" aria-label="Theme"><i class="fa-regular fa-moon theme-icon"></i></button><?php endif ?>
+      <a class="sq-btn hide-xs" href="<?= e(url('/')) ?>" data-no-spa aria-label="View site" title="View site"><i class="fa-solid fa-globe"></i></a>
+      <a class="sq-btn" href="<?= e(url('/notifications')) ?>" data-no-spa aria-label="Notifications"><i class="fa-regular fa-bell"></i><span class="notif-badge" data-unread <?= $unread ? '' : 'hidden' ?>><?= $unread ?></span></a>
       <a class="hdr-user" href="<?= e(url('/profile')) ?>" data-no-spa><span class="avatar sm"><?= e(mb_strtoupper(mb_substr($au['name'], 0, 1))) ?></span></a>
     </div>
   </div>
 </header>
 <div class="drawer-scrim" data-action="drawer-close"></div>
 <aside class="app-sidebar adm-side" id="app-sidebar" aria-label="Admin menu">
+  <div class="sb-head">
+    <a href="<?= e(url('/admin')) ?>" class="brand"><span class="brand-logo"><?php if (setting('logo')): ?><img src="<?= e(media_url(setting('logo'))) ?>" alt=""><?php else: ?><i class="fa-solid fa-code"></i><?php endif ?></span><span class="brand-name"><?= e(setting('site_name')) ?></span></a>
+    <button class="sq-btn" data-action="drawer-close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+  </div>
   <nav class="sb-scroll">
     <?php foreach ($menu as $group => $items):
         $items = array_filter($items, fn($i) => can($i[3]));
@@ -160,3 +171,4 @@ include ROOT . '/includes/header.php';
 include ROOT . '/includes/notifications.php';
 $bare = true; // footer: scripts only
 include ROOT . '/includes/footer.php';
+echo admin_tr((string)ob_get_clean());

@@ -1191,7 +1191,42 @@
   // ------------------------------------------------------------------
   // Generic per-page behaviours
   // ------------------------------------------------------------------
+  // ------------------------------------------------------------------
+  // Live coin price chips ($BTC in rich text → price + 24h change)
+  // ------------------------------------------------------------------
+  const coinCache = {};
+  const fmtPrice = (p) => '$' + (p >= 1000 ? p.toLocaleString('en-US', { maximumFractionDigits: 0 }) : p >= 1 ? p.toLocaleString('en-US', { maximumFractionDigits: 2 }) : p.toPrecision(3));
+  function paintCoins(root) {
+    $$('.coin-chip[data-coin]', root).forEach((chip) => {
+      const d = coinCache[chip.dataset.coin];
+      if (!d) return;
+      const p = chip.querySelector('.coin-p'), c = chip.querySelector('.coin-c');
+      if (p) p.textContent = fmtPrice(d.p);
+      if (c) { c.textContent = (d.c >= 0 ? '+' : '') + d.c.toFixed(2) + '%'; c.className = 'coin-c ' + (d.c >= 0 ? 'up' : 'down'); }
+    });
+  }
+  async function hydrateCoins(root) {
+    const syms = [...new Set($$('.coin-chip[data-coin]', root).map((c) => c.dataset.coin))];
+    if (!syms.length) return;
+    const need = syms.filter((s) => !coinCache[s]);
+    if (need.length) {
+      const res = await api(BASE + '/api/prices?s=' + encodeURIComponent(need.join(',')), { silent: true }).catch(() => null);
+      if (res && res.ok) Object.assign(coinCache, res.prices);
+    }
+    paintCoins(root);
+  }
+  // coin logos that don't exist fall back to a letter badge (inline onerror is blocked by CSP)
+  document.addEventListener('error', (e) => {
+    const img = e.target;
+    if (!(img instanceof HTMLImageElement) || !img.dataset.coinIc) return;
+    const s = document.createElement('span');
+    s.className = 'coin-ic';
+    s.textContent = img.dataset.coinIc;
+    img.replaceWith(s);
+  }, true);
+
   function genericInit(root) {
+    hydrateCoins(root);
     // file inputs with live preview
     $$('input[type=file][data-preview]', root).forEach((inp) => {
       inp.addEventListener('change', () => {

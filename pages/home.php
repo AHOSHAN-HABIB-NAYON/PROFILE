@@ -19,27 +19,16 @@ $split = fn(string $key) => array_map(fn($l) => array_map('trim', explode('|', $
 $L = lang() === 'bn' ? 1 : 0;
 ?>
 <style data-css="home">
-.hero{position:relative;overflow:hidden;border-radius:calc(var(--radius) + 6px);padding:28px 20px 26px;background:var(--card);border:1px solid var(--border);isolation:isolate}
-.hero-bg{position:absolute;inset:0;z-index:-1;overflow:hidden}
-.hero-bg span{position:absolute;border-radius:50%;filter:blur(40px);opacity:.5;will-change:transform}
-.hero-bg span:nth-child(1){width:240px;height:240px;background:color-mix(in srgb,var(--primary) 45%,transparent);top:-90px;right:-60px;animation:float1 14s ease-in-out infinite}
-.hero-bg span:nth-child(2){width:200px;height:200px;background:color-mix(in srgb,var(--accent) 35%,transparent);bottom:-100px;left:-40px;animation:float2 16s ease-in-out infinite}
-.hero-bg span:nth-child(3){width:140px;height:140px;background:color-mix(in srgb,var(--secondary) 35%,transparent);top:40%;left:55%;animation:float1 18s ease-in-out infinite reverse}
-.hero-grid{position:absolute;inset:0;z-index:-1;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:28px 28px;mask-image:radial-gradient(circle at 70% 20%,#000 0,transparent 70%);opacity:.55}
-@keyframes float1{50%{transform:translate(-24px,18px)}}@keyframes float2{50%{transform:translate(26px,-14px)}}
-.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:5px 12px 5px 6px;border-radius:999px;background:var(--primary-soft);color:var(--primary);font-size:.78rem;font-weight:600;margin-bottom:14px}
-.hero-badge i{width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;font-size:.65rem}
-.hero h1{font-size:clamp(1.55rem,1.15rem + 2.2vw,2.6rem);max-width:720px;margin-bottom:.45em}
-.hero h1 .grad{background:linear-gradient(90deg,var(--primary),var(--secondary));-webkit-background-clip:text;background-clip:text;color:transparent}
-.hero p{color:var(--muted);max-width:620px;font-size:clamp(.92rem,.88rem + .25vw,1.05rem)}
-.hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
-.hero-tech{display:flex;gap:14px;margin-top:22px;color:var(--muted);font-size:1.25rem;flex-wrap:wrap}
-.hero-tech i{transition:color .2s,transform .2s}.hero-tech i:hover{color:var(--primary);transform:translateY(-2px)}
-@media (min-width:900px){.hero{padding:48px 44px}}
-.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.hero.hero-navy{padding:30px 22px 26px}
+.hero h1{font-size:clamp(1.6rem,1.15rem + 2.3vw,2.7rem);max-width:720px;margin:12px 0 .4em;line-height:1.2;letter-spacing:-.02em}
+.hero h1 .grad{background:linear-gradient(90deg,#a5b4ff,#ffd27a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{max-width:620px;font-size:clamp(.94rem,.9rem + .25vw,1.06rem)}
+.hero-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.hero-tech{display:flex;gap:16px;margin-top:24px;font-size:1.25rem;flex-wrap:wrap;opacity:.7}
+.hero-dots{position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.14) 1px,transparent 1px);background-size:20px 20px;mask-image:radial-gradient(circle at 85% 15%,#000,transparent 65%);pointer-events:none}
+@media (min-width:900px){.hero.hero-navy{padding:52px 46px}}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
 @media (min-width:720px){.stats{grid-template-columns:repeat(4,1fr)}}
-.stat{display:flex;align-items:center;gap:12px}
-.stat b{display:block;font-size:1.2rem;line-height:1.2}.stat span{font-size:.78rem;color:var(--muted)}
 .cat-tile{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:14px}
 .cat-tile strong{font-size:.9rem;line-height:1.35}.cat-tile small{color:var(--muted);font-size:.74rem}
 .hscroll{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(240px,78%);gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 2px 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -59,31 +48,28 @@ $L = lang() === 'bn' ? 1 : 0;
 .about{display:grid;gap:18px;align-items:center}
 .about img{border-radius:var(--radius);width:100%;object-fit:cover;aspect-ratio:16/10}
 @media (min-width:820px){.about{grid-template-columns:1.2fr 1fr}}
-.cta{border-radius:calc(var(--radius) + 6px);padding:26px 22px;color:#fff;background:linear-gradient(135deg,var(--primary),var(--primary-dark) 60%,var(--secondary));position:relative;overflow:hidden}
-.cta::after{content:"";position:absolute;width:220px;height:220px;border-radius:50%;border:30px solid rgba(255,255,255,.08);right:-60px;top:-80px}
-.cta p{opacity:.88}.cta .btn{--b:#fff;color:var(--primary)}
+.cta.hero-navy{padding:28px 22px}
 .contact-strip{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
 </style>
 <div class="page" data-page="home">
 <?php foreach ($sections as $sec): switch ($sec):
 case 'hero': ?>
-  <section class="hero section" aria-labelledby="hero-title">
-    <div class="hero-bg" aria-hidden="true"><span></span><span></span><span></span></div><div class="hero-grid" aria-hidden="true"></div>
-    <span class="hero-badge"><i class="fa-solid fa-bolt"></i><?= e(setting_l('home.hero_badge')) ?></span>
+  <section class="hero hero-navy section" aria-labelledby="hero-title">
+    <span class="hero-dots" aria-hidden="true"></span><i class="fa-solid fa-code wm" aria-hidden="true"></i>
+    <span class="kicker"><i class="fa-solid fa-bolt"></i><?= e(setting_l('home.hero_badge')) ?></span>
     <?php $title = setting_l('home.hero_title'); $parts = preg_split('~(?<=[.।!?])\s+~u', $title, 2); ?>
     <h1 id="hero-title"><?= e($parts[0]) ?><?php if (isset($parts[1])): ?> <span class="grad"><?= e($parts[1]) ?></span><?php endif ?></h1>
     <p><?= e(setting_l('home.hero_subtitle')) ?></p>
     <div class="hero-actions">
-      <a class="btn btn-lg" href="<?= e(url(setting('home.btn1_link') ?: '/services')) ?>"><i class="fa-solid fa-layer-group"></i><?= e(setting_l('home.btn1')) ?></a>
-      <a class="btn btn-lg btn-ghost" href="<?= e(url(setting('home.btn2_link') ?: '/contact')) ?>"><i class="fa-regular fa-comments"></i><?= e(setting_l('home.btn2')) ?></a>
+      <a class="btn btn-lg btn-white" href="<?= e(url(setting('home.btn1_link') ?: '/services')) ?>"><i class="fa-solid fa-layer-group"></i><?= e(setting_l('home.btn1')) ?></a>
+      <a class="btn btn-lg btn-glass" href="<?= e(url(setting('home.btn2_link') ?: '/contact')) ?>"><i class="fa-regular fa-comments"></i><?= e(setting_l('home.btn2')) ?></a>
     </div>
     <div class="hero-tech" aria-hidden="true"><i class="fa-brands fa-node-js"></i><i class="fa-brands fa-react"></i><i class="fa-brands fa-php"></i><i class="fa-solid fa-database"></i><i class="fa-brands fa-js"></i><i class="fa-brands fa-html5"></i><i class="fa-brands fa-css3-alt"></i><i class="fa-solid fa-robot"></i></div>
   </section>
 <?php break; case 'stats': $stats = $split('home.stats'); if (!$stats) break; ?>
   <section class="section stats" aria-label="<?= e(t('home.stats')) ?>">
     <?php foreach ($stats as $i => $s): ?>
-      <div class="card stat"><span class="icon-box <?= ['', 'success', 'secondary', 'accent'][$i % 4] ?>"><i class="<?= e(fa($s[3] ?? '', 'fa-solid fa-star')) ?>"></i></span>
-        <div><b><?= e(lang() === 'bn' ? bn_digits($s[0]) : $s[0]) ?></b><span><?= e($s[1 + $L] ?? $s[1] ?? '') ?></span></div></div>
+      <div class="card stat-tile"><span class="lbl"><?= e($s[1 + $L] ?? $s[1] ?? '') ?></span><span class="val"><?= e(lang() === 'bn' ? bn_digits($s[0]) : $s[0]) ?></span><i class="<?= e(fa($s[3] ?? '', 'fa-solid fa-star')) ?> ic"></i></div>
     <?php endforeach ?>
   </section>
 <?php break; case 'categories': if (!$cats) break; ?>
@@ -117,7 +103,7 @@ case 'hero': ?>
   <section class="section" aria-labelledby="h-news">
     <div class="section-head"><h2 id="h-news"><?= e(t('home.latest_news')) ?></h2><a href="<?= e(url('/news')) ?>"><?= e(t('common.view_all')) ?></a></div>
     <?php if ($news): ?>
-    <div class="list">
+    <div class="list flat">
       <?php foreach ($news as $n): ?>
         <a class="list-row news-row" href="<?= e(url('/news/' . $n['id'])) ?>">
           <span class="nr-icon"><?php if ($n['emoji']): ?><?= e($n['emoji']) ?><?php else: ?><i class="<?= e(fa($n['icon'], 'fa-regular fa-newspaper')) ?>" style="color:var(--primary)"></i><?php endif ?></span>
@@ -158,10 +144,11 @@ case 'hero': ?>
     <?php if (setting('home.about_image')): ?><?= img_tag(setting('home.about_image'), setting_l('home.about_title')) ?><?php endif ?>
   </section>
 <?php break; case 'cta': ?>
-  <section class="section cta">
+  <section class="section cta hero-navy">
+    <i class="fa-solid fa-rocket wm" aria-hidden="true"></i>
     <h2><?= e(setting_l('home.cta_title')) ?></h2>
     <p><?= e(setting_l('home.cta_text')) ?></p>
-    <a class="btn btn-lg" href="<?= e(url(setting('home.cta_link') ?: '/contact')) ?>"><?= e(setting_l('home.cta_btn')) ?> <i class="fa-solid fa-arrow-right"></i></a>
+    <a class="btn btn-lg btn-white" href="<?= e(url(setting('home.cta_link') ?: '/contact')) ?>"><?= e(setting_l('home.cta_btn')) ?> <i class="fa-solid fa-arrow-right"></i></a>
   </section>
 <?php break; case 'contact': ?>
   <section class="section contact-strip" aria-label="<?= e(t('contact.title')) ?>">
