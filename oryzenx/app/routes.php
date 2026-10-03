@@ -30,7 +30,7 @@ $router->get('/robots.txt', [SystemController::class, 'robots']);
 $router->get('/manifest.json', [SystemController::class, 'manifest']);
 $router->get('/sw.js', [SystemController::class, 'serviceWorker']);
 $router->get('/offline', [SystemController::class, 'offline']);
-$router->get('/icon-{size:192|512}.png', [SystemController::class, 'icon']);
+$router->get('/icon-{size:192|512|maskable}.png', [SystemController::class, 'icon']);
 $router->get('/favicon.ico', [SystemController::class, 'favicon']);
 $router->get('/files/{type:payment|contact|wallet}/{id:\d+}', [SystemController::class, 'privateFile'], ['auth']);
 

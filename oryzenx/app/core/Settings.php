@@ -46,7 +46,7 @@ final class Settings
             'ai_api_key' => '', 'ai_rate_limit' => '10', 'ai_greeting' => '1', 'ai_sound' => '1',
             'ai_system_prompt' => "You are Oryzenx Assistant, a friendly and concise support agent for Oryzenx, a web development company. Answer only using the company information provided. Reply in the user's language (Bengali or English). Keep answers short. If unsure, suggest contacting support.",
             // pwa
-            'pwa_enabled' => '1', 'pwa_name' => 'Oryzenx', 'pwa_short_name' => 'Oryzenx', 'pwa_theme_color' => '#2563eb',
+            'pwa_enabled' => '1', 'pwa_name' => '', 'pwa_short_name' => '', 'pwa_theme_color' => '#2563eb',
             'pwa_background_color' => '#f5f7fb', 'pwa_install_prompt' => '1', 'pwa_version' => '1',
             // seo
             'seo_title' => 'Oryzenx — Web Development, Apps & APIs', 'seo_description' => 'Professional Node.js, React, PHP, API and e-commerce development by Oryzenx.',

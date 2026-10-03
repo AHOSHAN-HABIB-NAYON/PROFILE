@@ -154,7 +154,7 @@ final class AdminSettingsController
                 : '';
         }
         Settings::set($values);
-        if (isset($values['app_icon']) || isset($values['color_primary'])) SystemController::buildIcons();
+        if (array_intersect_key($values, array_flip(['app_icon', 'logo', 'favicon', 'color_primary', 'pwa_background_color', 'site_name']))) SystemController::buildIcons();
         if ($section === 'notifications' && ($values['push_enabled'] ?? '') === '1') WebPush::ensureKeys();
         @array_map('unlink', glob(STORAGE . '/cache/ai-knowledge-*.txt') ?: []);
         Auth::activity('admin_settings_' . $section);

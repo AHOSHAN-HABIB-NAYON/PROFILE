@@ -3,7 +3,7 @@
 $primary = (string)setting('color_primary');
 $pal = Theme::palette();
 $siteName = setting('site_name');
-$favicon = setting('favicon') ? upload_url(setting('favicon')) : url('/icon-192.png');
+$favicon = setting('favicon') ? upload_url(setting('favicon')) : url('/icon-192.png?v=' . SystemController::iconVersion());
 ?><!doctype html>
 <html lang="<?= e(lang()) ?>" data-theme="<?= e(setting('default_theme') === 'dark' ? 'dark' : 'light') ?>" data-layout="<?= e($page['layout']) ?>">
 <head>
@@ -33,9 +33,12 @@ $favicon = setting('favicon') ? upload_url(setting('favicon')) : url('/icon-192.
 <meta name="theme-color" content="<?= e(setting('pwa_theme_color') ?: $primary) ?>">
 <meta name="ozx-base" content="<?= e(base_path()) ?>">
 <meta name="csrf-token" content="<?= e(csrf_token()) ?>">
-<?php if (setting('pwa_enabled') === '1'): ?><link rel="manifest" href="<?= e(url('/manifest.json')) ?>"><?php endif; ?>
+<?php $iv = SystemController::iconVersion(); ?>
+<?php if (setting('pwa_enabled') === '1'): ?><link rel="manifest" href="<?= e(url('/manifest.json?v=' . $iv)) ?>"><?php endif; ?>
+<meta name="application-name" content="<?= e(SystemController::appName()) ?>">
+<meta name="apple-mobile-web-app-title" content="<?= e(SystemController::appName(true)) ?>">
 <link rel="icon" href="<?= e($favicon) ?>">
-<link rel="apple-touch-icon" href="<?= e(url('/icon-192.png')) ?>">
+<link rel="apple-touch-icon" href="<?= e(url('/icon-maskable.png?v=' . $iv)) ?>">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <script>

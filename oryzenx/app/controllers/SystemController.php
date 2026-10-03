@@ -31,16 +31,17 @@ final class SystemController
     {
         if (setting('pwa_enabled') !== '1') throw new HttpException(t('error.404'), 404);
         $b = base_path();
+        $v = self::iconVersion();
         $m = [
-            'id' => $b . '/', 'name' => setting('pwa_name') ?: setting('site_name'), 'short_name' => setting('pwa_short_name') ?: setting('site_name'),
+            'id' => $b . '/', 'name' => self::appName(), 'short_name' => self::appName(true),
             'description' => sl('site_description'), 'lang' => lang(), 'dir' => 'ltr',
             'start_url' => $b . '/?source=pwa', 'scope' => $b . '/', 'display' => 'standalone', 'display_override' => ['standalone', 'minimal-ui'],
             'orientation' => 'portrait', 'theme_color' => setting('pwa_theme_color'), 'background_color' => setting('pwa_background_color'),
             'categories' => ['business', 'productivity', 'developer'],
             'icons' => [
-                ['src' => $b . '/icon-192.png', 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'],
-                ['src' => $b . '/icon-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any'],
-                ['src' => $b . '/icon-512.png', 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'maskable'],
+                ['src' => $b . '/icon-192.png?v=' . $v, 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any'],
+                ['src' => $b . '/icon-512.png?v=' . $v, 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any'],
+                ['src' => $b . '/icon-maskable.png?v=' . $v, 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'maskable'],
             ],
             'shortcuts' => [
                 ['name' => t('nav.services'), 'url' => $b . '/services', 'icons' => [['src' => $b . '/icon-192.png', 'sizes' => '192x192']]],
@@ -49,7 +50,7 @@ final class SystemController
             ],
         ];
         header('Content-Type: application/manifest+json; charset=utf-8');
-        header('Cache-Control: public, max-age=3600');
+        header('Cache-Control: no-cache');
         echo json_encode($m, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
         exit;
     }
@@ -57,8 +58,8 @@ final class SystemController
     public function serviceWorker(): void
     {
         $b = base_path();
-        $version = 'ozx-' . OZX_VERSION . '-' . setting('pwa_version') . '-' . substr(md5((string)@filemtime(ROOT . '/assets/js/app.js') . @filemtime(ROOT . '/assets/css/components.css')), 0, 8);
-        $precache = [$b . '/offline', asset('css/base.css'), asset('css/components.css'), asset('css/layout.css'), asset('css/chat.css'), asset('js/app.js'), $b . '/icon-192.png'];
+        $version = 'ozx-' . OZX_VERSION . '-' . setting('pwa_version') . '-' . self::iconVersion() . '-' . substr(md5((string)@filemtime(ROOT . '/assets/js/app.js') . @filemtime(ROOT . '/assets/css/components.css')), 0, 8);
+        $precache = [$b . '/offline', asset('css/base.css'), asset('css/components.css'), asset('css/layout.css'), asset('css/chat.css'), asset('js/app.js'), $b . '/icon-192.png?v=' . self::iconVersion()];
         header('Content-Type: application/javascript; charset=utf-8');
         header('Cache-Control: no-cache');
         header('Service-Worker-Allowed: ' . ($b === '' ? '/' : $b . '/'));
@@ -77,10 +78,10 @@ final class SystemController
     /** Generates (once) and serves the PWA icons. */
     public function icon(string $size): void
     {
-        $file = self::iconPath((int)$size);
+        $file = self::iconPath($size === 'maskable' ? 'mask' : (int)$size);
         if (!is_file($file)) self::buildIcons();
         header('Content-Type: image/png');
-        header('Cache-Control: public, max-age=86400');
+        header('Cache-Control: public, max-age=604800');
         readfile($file);
         exit;
     }
@@ -92,18 +93,72 @@ final class SystemController
         $this->icon('192');
     }
 
-    public static function iconPath(int $size): string { return PUBLIC_UPLOADS . "/pwa/icon-$size.png"; }
+    /** App icon source: dedicated app icon → site logo → favicon. */
+    public static function iconSource(): string
+    {
+        foreach (['app_icon', 'logo', 'favicon'] as $k) {
+            $v = (string)setting($k);
+            if ($v !== '' && is_file(PUBLIC_UPLOADS . '/' . $v)) return PUBLIC_UPLOADS . '/' . $v;
+        }
+        return '';
+    }
+
+    /** Changes whenever the logo, colours or name change, so phones fetch the new icon. */
+    public static function iconVersion(): string
+    {
+        $src = self::iconSource();
+        return substr(md5($src . '|' . ($src ? @filemtime($src) : '') . '|' . setting('color_primary') . '|' . setting('pwa_background_color') . '|' . setting('site_name')), 0, 10);
+    }
+
+    public static function iconPath(int|string $size): string { return PUBLIC_UPLOADS . "/pwa/icon-$size-" . self::iconVersion() . '.png'; }
+
+    public static function appName(bool $short = false): string
+    {
+        $site = (string)setting('site_name');
+        $v = trim((string)setting($short ? 'pwa_short_name' : 'pwa_name'));
+        // The installer default ("Oryzenx") must not override a renamed site.
+        if ($v === '' || ($v === 'Oryzenx' && $site !== 'Oryzenx')) $v = $site;
+        return $short ? mb_substr($v, 0, 12) : $v;
+    }
 
     public static function buildIcons(): void
     {
-        $src = setting('app_icon') ? PUBLIC_UPLOADS . '/' . setting('app_icon') : '';
+        $src = self::iconSource();
+        $dir = PUBLIC_UPLOADS . '/pwa';
+        if (!is_dir($dir)) mkdir($dir, 0775, true);
+        foreach (glob($dir . '/icon-*.png') ?: [] as $old) @unlink($old);
+        $img = $src ? ImageTool::load($src) : null;
         foreach ([192, 512] as $size) {
             $dest = self::iconPath($size);
-            if (!is_dir(dirname($dest))) mkdir(dirname($dest), 0775, true);
-            if (!$src || !is_file($src) || !ImageTool::squarePng($src, $dest, $size)) {
-                ImageTool::generateIcon($size, $dest, (string)setting('color_primary'));
-            }
+            if (!$img || !self::fitIcon($img, $dest, $size, null, 1.0)) ImageTool::generateIcon($size, $dest, (string)setting('color_primary'));
         }
+        // Maskable / Apple icon: solid background with safe-zone padding so Android & iOS never crop the logo.
+        $mask = self::iconPath('mask');
+        if (!$img || !self::fitIcon($img, $mask, 512, (string)(setting('pwa_background_color') ?: '#ffffff'), .72)) ImageTool::generateIcon(512, $mask, (string)setting('color_primary'));
+    }
+
+    /** Fits the whole logo (no cropping) inside a square canvas; transparent unless $bg is given. */
+    private static function fitIcon(GdImage $img, string $dest, int $size, ?string $bg, float $scale): bool
+    {
+        $w = imagesx($img); $h = imagesy($img);
+        if ($w < 1 || $h < 1) return false;
+        $c = imagecreatetruecolor($size, $size);
+        imagesavealpha($c, true);
+        imagealphablending($c, false);
+        if ($bg && preg_match('/^#?([0-9a-f]{6})$/i', $bg, $m)) {
+            [$r, $g, $b] = sscanf($m[1], '%02x%02x%02x');
+            imagefill($c, 0, 0, imagecolorallocate($c, $r, $g, $b));
+        } else {
+            imagefill($c, 0, 0, imagecolorallocatealpha($c, 0, 0, 0, 127));
+        }
+        imagealphablending($c, true);
+        $box = (int)round($size * $scale);
+        $k = min($box / $w, $box / $h);
+        $nw = max(1, (int)round($w * $k)); $nh = max(1, (int)round($h * $k));
+        imagecopyresampled($c, $img, (int)(($size - $nw) / 2), (int)(($size - $nh) / 2), 0, 0, $nw, $nh, $w, $h);
+        $ok = imagepng($c, $dest, 6);
+        imagedestroy($c);
+        return $ok;
     }
 
     /** Payment screenshots and contact attachments live outside the web root and are authorised per request. */
