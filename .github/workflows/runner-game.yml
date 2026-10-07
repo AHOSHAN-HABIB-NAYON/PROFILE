@@ -1,0 +1,55 @@
+# Builds the "দৌড়বাজ" runner game and publishes the APK as a GitHub Release,
+# so it can be downloaded straight to a phone from the Releases page.
+name: Build runner game
+
+on:
+  push:
+    paths:
+      - "runner-game/**"
+      - ".github/workflows/runner-game.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: runner-game
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk dourbaj.apk
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dourbaj-apk
+          path: runner-game/dourbaj.apk
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: runner-v${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: দৌড়বাজ — গেম v${{ github.run_number }}
+          body: |
+            নিচের **dourbaj.apk** ফাইলটা ফোনে ডাউনলোড করে খুলুন, তারপর Install চাপুন।
+          files: runner-game/dourbaj.apk
+          make_latest: true

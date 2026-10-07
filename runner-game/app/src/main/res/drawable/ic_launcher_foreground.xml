@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sun, hills and a running figure. Content stays inside the 66dp safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFE082"
+        android:pathData="M70,40 m-9,0 a9,9 0 1,0 18,0 a9,9 0 1,0 -18,0" />
+    <path
+        android:fillColor="#5E9E5A"
+        android:pathData="M21,74 Q36,56 52,68 Q66,58 87,70 L87,87 L21,87 Z" />
+    <path
+        android:fillColor="#6CC04A"
+        android:pathData="M21,76 L87,76 L87,87 L21,87 Z" />
+    <path
+        android:fillColor="#8B5A2B"
+        android:pathData="M21,80 L87,80 L87,87 L21,87 Z" />
+    <path
+        android:strokeColor="#283593"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M48,59 L43,67 L37,69 M48,59 L54,66 L53,75" />
+    <path
+        android:strokeColor="#2E7D32"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:pathData="M48,59 L51,47" />
+    <path
+        android:strokeColor="#F1C27D"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M51,48 L45,53 L41,50 M51,48 L57,53 L61,49" />
+    <path
+        android:fillColor="#F1C27D"
+        android:pathData="M53,41 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0" />
+    <path
+        android:fillColor="#2D1B10"
+        android:pathData="M49,40.5 A4,4 0 0,1 56.5,39 L53,41 Z" />
+    <path
+        android:fillColor="#D32F2F"
+        android:pathData="M51,51 m-1.6,0 a1.6,1.6 0 1,0 3.2,0 a1.6,1.6 0 1,0 -3.2,0" />
+</vector>
