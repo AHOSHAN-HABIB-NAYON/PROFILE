@@ -10,27 +10,46 @@ final class Crypto
         return hash_hmac('sha256', $purpose, APP_KEY, true);
     }
 
+    /**
+     * Encrypt with libsodium when available ("v1:"), otherwise OpenSSL AES-256-GCM ("v2:").
+     * Many shared hosts (e.g. some Hostinger plans) disable the sodium extension.
+     */
     public static function encrypt(string $plain): string
     {
         if ($plain === '') {
             return '';
         }
-        $nonce = random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
-        return 'v1:' . base64_encode($nonce . sodium_crypto_secretbox($plain, $nonce, self::key('encryption')));
+        if (function_exists('sodium_crypto_secretbox')) {
+            $nonce = random_bytes(24);
+            return 'v1:' . base64_encode($nonce . sodium_crypto_secretbox($plain, $nonce, self::key('encryption')));
+        }
+        $iv = random_bytes(12);
+        $tag = '';
+        $cipher = openssl_encrypt($plain, 'aes-256-gcm', self::key('encryption'), OPENSSL_RAW_DATA, $iv, $tag);
+        if ($cipher === false) {
+            throw new RuntimeException('Encryption unavailable: enable the sodium or openssl PHP extension.');
+        }
+        return 'v2:' . base64_encode($iv . $tag . $cipher);
     }
 
     public static function decrypt(?string $cipher): string
     {
-        if (!$cipher || !str_starts_with($cipher, 'v1:')) {
+        if (!$cipher || strlen($cipher) < 4) {
             return '';
         }
         $raw = base64_decode(substr($cipher, 3), true);
-        if ($raw === false || strlen($raw) <= SODIUM_CRYPTO_SECRETBOX_NONCEBYTES) {
+        if ($raw === false) {
             return '';
         }
-        $nonce = substr($raw, 0, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
-        $plain = sodium_crypto_secretbox_open(substr($raw, SODIUM_CRYPTO_SECRETBOX_NONCEBYTES), $nonce, self::key('encryption'));
-        return $plain === false ? '' : $plain;
+        if (str_starts_with($cipher, 'v1:') && function_exists('sodium_crypto_secretbox_open') && strlen($raw) > 24) {
+            $plain = sodium_crypto_secretbox_open(substr($raw, 24), substr($raw, 0, 24), self::key('encryption'));
+            return $plain === false ? '' : $plain;
+        }
+        if (str_starts_with($cipher, 'v2:') && strlen($raw) > 28) {
+            $plain = openssl_decrypt(substr($raw, 28), 'aes-256-gcm', self::key('encryption'), OPENSSL_RAW_DATA, substr($raw, 0, 12), substr($raw, 12, 16));
+            return $plain === false ? '' : $plain;
+        }
+        return '';
     }
 
     public static function encryptArray(array $data): string

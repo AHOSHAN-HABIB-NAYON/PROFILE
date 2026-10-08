@@ -96,7 +96,7 @@ ecommerce/
 
 ## Installation on Hostinger (step by step)
 
-> Requirements: PHP **8.1 or newer** (8.2/8.3 recommended) with `pdo_mysql`, `gd` (WebP), `mbstring`, `curl`, `sodium`, `fileinfo`, `intl` (optional, improves slugs). MySQL 5.7+/8 or MariaDB 10.3+.
+> Requirements: PHP **8.1 or newer** (8.2/8.3 recommended) with `pdo_mysql`, `gd` (WebP), `mbstring`, `curl`, `sodium` **or** `openssl`, `fileinfo`, `intl` (optional, improves slugs). MySQL 5.7+/8 or MariaDB 10.3+.
 
 1. **Upload files** — hPanel → *File Manager* → open `public_html`. Upload the ZIP and click *Extract* so that `index.php`, `.htaccess` and `.user.ini` sit directly in `public_html` (enable "show hidden files" to confirm the dot-files are there).
 2. **Create an empty database** — hPanel → *Databases → MySQL Databases*: create a database + user with *All privileges*. Note the full names (e.g. `u123456789_shop`) and the password.

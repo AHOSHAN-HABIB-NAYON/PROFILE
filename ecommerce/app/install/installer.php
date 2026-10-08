@@ -34,7 +34,7 @@ $checks = [
     ['PDO MySQL extension', extension_loaded('pdo_mysql')],
     ['GD (ছবি কম্প্রেশন) + WebP', extension_loaded('gd') && function_exists('imagewebp')],
     ['mbstring', extension_loaded('mbstring')],
-    ['sodium (এনক্রিপশন)', extension_loaded('sodium')],
+    ['এনক্রিপশন (sodium বা OpenSSL)', extension_loaded('sodium') || extension_loaded('openssl')],
     ['cURL (কুরিয়ার/পিক্সেল API)', extension_loaded('curl')],
     ['fileinfo (আপলোড যাচাই)', extension_loaded('fileinfo')],
     ['মূল ফোল্ডারে config.php লেখার অনুমতি', is_writable(ROOT_PATH)],
