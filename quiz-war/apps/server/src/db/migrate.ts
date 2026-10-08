@@ -1,9 +1,21 @@
+import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Pool } from 'mysql2/promise';
 
-export const MIGRATIONS_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../database/migrations');
+/** Finds database/migrations by walking up from this file (works from src/ and bundled dist/). */
+function findMigrationsDir() {
+  let dir = path.dirname(fileURLToPath(import.meta.url));
+  for (let i = 0; i < 6; i++) {
+    const candidate = path.join(dir, 'database', 'migrations');
+    if (existsSync(candidate)) return candidate;
+    dir = path.dirname(dir);
+  }
+  return path.resolve(process.cwd(), 'database/migrations');
+}
+
+export const MIGRATIONS_DIR = findMigrationsDir();
 
 /** Split a migration file into statements. Migrations must end statements with `;` + newline. */
 export function splitSql(sql: string): string[] {

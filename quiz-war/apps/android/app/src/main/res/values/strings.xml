@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">QUIZ WAR</string>
+    <string name="title_activity_main">QUIZ WAR</string>
+    <string name="package_name">app.quizwar.bd</string>
+    <string name="custom_url_scheme">quizwar</string>
+</resources>

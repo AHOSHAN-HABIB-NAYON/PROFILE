@@ -8,8 +8,8 @@
     "build": "tsc --noEmit -p . && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p .",
-    "test": "vitest run",
-    "icons": "node scripts/generate-icons.mjs",
+    "test": "vitest run --passWithNoTests",
+    "icons": "node scripts/generate-icons.mjs && node scripts/generate-android-assets.mjs",
     "cap:sync": "npm run build && cap sync android",
     "android:open": "cap open android"
   },

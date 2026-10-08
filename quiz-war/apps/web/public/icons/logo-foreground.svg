@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Adaptive-icon foreground: symbol only, kept inside the 66/108 safe zone -->
+  <g transform="translate(256 256) scale(0.62) translate(-256 -256)">
+    <circle cx="256" cy="256" r="150" fill="none" stroke="#22d3ee" stroke-width="18"/>
+    <path d="M168 344 L328 184 M184 168 l-24 24 M344 328 l-24 24" stroke="#fff" stroke-width="30" stroke-linecap="round"/>
+    <path d="M344 344 L184 184 M328 168 l24 24 M168 328 l24 24" stroke="#fde047" stroke-width="30" stroke-linecap="round"/>
+    <circle cx="256" cy="256" r="34" fill="#dc2626" stroke="#fff" stroke-width="10"/>
+  </g>
+</svg>

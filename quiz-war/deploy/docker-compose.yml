@@ -1,0 +1,59 @@
+# Single-server production stack. For larger scale see docs/deployment.md (managed MySQL,
+# managed Redis, multiple API nodes behind a sticky load balancer, CDN for /media).
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: quizwar
+      MYSQL_USER: quizwar
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?set MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD}
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--default-time-zone=+00:00"]
+    volumes: [mysql:/var/lib/mysql]
+    healthcheck: { test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"], interval: 10s, retries: 10 }
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redis:/data]
+
+  api:
+    build: { context: .., dockerfile: Dockerfile }
+    restart: unless-stopped
+    env_file: ../.env            # production secrets — never committed
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: mysql://quizwar:${MYSQL_PASSWORD}@mysql:3306/quizwar
+      REDIS_URL: redis://redis:6379
+      TRUST_PROXY: "true"
+      MIGRATE_ON_START: "true"
+    volumes: [uploads:/app/uploads]
+    depends_on:
+      mysql: { condition: service_healthy }
+      redis: { condition: service_started }
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ../apps/web/dist:/srv/web:ro
+      - ../apps/admin/dist:/srv/admin:ro
+      - uploads:/srv/media:ro
+      - ${TLS_CERT_DIR:-./certs}:/etc/nginx/certs:ro
+    depends_on: [api]
+
+  backup:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_PWD: ${MYSQL_ROOT_PASSWORD}
+      RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+    volumes: [./backup.sh:/backup.sh:ro, backups:/backups]
+    entrypoint: ["/bin/sh", "-c", "while true; do /bin/sh /backup.sh; sleep 86400; done"]
+    depends_on: [mysql]
+
+volumes: { mysql: {}, redis: {}, uploads: {}, backups: {} }
