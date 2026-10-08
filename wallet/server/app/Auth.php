@@ -186,7 +186,11 @@ final class Auth
         return (int) Db::pdo()->lastInsertId();
     }
 
-    /** Ten failures per IP or five per email in 15 minutes locks login for a while. */
+    /**
+     * Five failures for one email, or thirty from one IP, in 15 minutes pauses
+     * password login. The IP limit is generous because many mobile users in
+     * Bangladesh share one carrier IP address.
+     */
     private static function throttle(string $email): void
     {
         $row = Db::one(
@@ -197,7 +201,7 @@ final class Auth
              WHERE created_at > DATE_SUB(NOW(), INTERVAL 15 MINUTE) AND (ip = ? OR email = ?)',
             [Http::ip(), $email, Http::ip(), $email]
         );
-        if ((int) ($row['by_ip'] ?? 0) >= 10 || (int) ($row['by_email'] ?? 0) >= 5) {
+        if ((int) ($row['by_ip'] ?? 0) >= 30 || (int) ($row['by_email'] ?? 0) >= 5) {
             throw new ApiError(429, 'too_many_attempts',
                 'অনেকবার ভুল চেষ্টা হয়েছে। ১৫ মিনিট পরে আবার চেষ্টা করুন।');
         }

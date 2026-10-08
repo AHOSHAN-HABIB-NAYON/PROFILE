@@ -11,6 +11,9 @@ declare(strict_types=1);
  * google_jwks_url that serves <jwks-dir>/jwks.json. The test signs its own
  * Google tokens with a key it publishes there, and plays the part of a
  * passkey authenticator with its own P-256 key.
+ *
+ * Each run records one failed login, so clear login_attempts between many
+ * runs (the server pauses logins after repeated failures, by design).
  */
 
 $base = rtrim($argv[1] ?? 'http://localhost:8080', '/');
@@ -224,6 +227,16 @@ check($s === 401 && $j['error']['code'] === 'bad_credentials', 'wrong password i
 $tokenA = $j['token'] ?? null;
 check($s === 200 && $tokenA !== null, 'correct password logs in', [$s, $j]);
 
+$emailC = 'locked' . bin2hex(random_bytes(3)) . '@example.com';
+call('POST', '/api/auth/register', ['name' => 'লক', 'email' => $emailC, 'password' => 'right-pass-123'], ['app' => true]);
+for ($i = 0; $i < 5; $i++) {
+    call('POST', '/api/auth/login', ['email' => $emailC, 'password' => 'guess-' . $i], ['app' => true]);
+}
+[$s, $j] = call('POST', '/api/auth/login', ['email' => $emailC, 'password' => 'right-pass-123'], ['app' => true]);
+check($s === 429, 'five wrong passwords pause logins for that email', [$s, $j]);
+[$s] = call('POST', '/api/auth/login', ['email' => $emailA, 'password' => 'secret-pass-1'], ['app' => true]);
+check($s === 200, 'other accounts on the same network can still log in');
+
 [$s, $j] = call('GET', '/api/me', null, ['cookie' => $cookieA]);
 check($s === 200 && $j['user']['email'] === $emailA && $j['user']['name'] === 'রহিম', '/me works with the web cookie', $j);
 [$s] = call('GET', '/api/me');
@@ -309,13 +322,15 @@ if ($jwksDir === null) {
 } else {
     $google = openssl_pkey_new(['private_key_type' => OPENSSL_KEYTYPE_RSA, 'private_key_bits' => 2048]);
     $rsa = openssl_pkey_get_details($google)['rsa'];
+    // A new key id each run: the server caches Google's keys by id, and Google never reuses one.
+    $kid = 'test-' . bin2hex(random_bytes(4));
     file_put_contents("{$jwksDir}/jwks.json", json_encode(['keys' => [
-        ['kty' => 'RSA', 'kid' => 'test-kid', 'alg' => 'RS256', 'use' => 'sig', 'n' => b64u($rsa['n']), 'e' => b64u($rsa['e'])],
+        ['kty' => 'RSA', 'kid' => $kid, 'alg' => 'RS256', 'use' => 'sig', 'n' => b64u($rsa['n']), 'e' => b64u($rsa['e'])],
     ]]));
-    $makeToken = function (array $claims, $signingKey = null) use ($google): string {
+    $makeToken = function (array $claims, $signingKey = null) use ($google, $kid): string {
         $payload = $claims + ['iss' => 'https://accounts.google.com', 'aud' => 'test-client.apps.googleusercontent.com',
             'iat' => time(), 'exp' => time() + 3600, 'email_verified' => true];
-        $input = b64u(json_encode(['alg' => 'RS256', 'kid' => 'test-kid', 'typ' => 'JWT'])) . '.' . b64u(json_encode($payload));
+        $input = b64u(json_encode(['alg' => 'RS256', 'kid' => $kid, 'typ' => 'JWT'])) . '.' . b64u(json_encode($payload));
         openssl_sign($input, $sig, $signingKey ?? $google, OPENSSL_ALGO_SHA256);
         return $input . '.' . b64u($sig);
     };
@@ -327,7 +342,7 @@ if ($jwksDir === null) {
     [$s, $j2] = call('POST', '/api/auth/google', ['id_token' => $makeToken(['sub' => 'g-1-' . $gEmail, 'email' => $gEmail, 'name' => 'x'])], ['app' => true]);
     check($s === 200 && $j2['user']['id'] === $j['user']['id'], 'signing in again finds the same account');
 
-    [$s, $j] = call('POST', '/api/auth/google', ['id_token' => $makeToken(['sub' => 'g-2', 'email' => $emailA, 'name' => 'রহিম'])], ['app' => true]);
+    [$s, $j] = call('POST', '/api/auth/google', ['id_token' => $makeToken(['sub' => 'g-2-' . $emailA, 'email' => $emailA, 'name' => 'রহিম'])], ['app' => true]);
     check($s === 200 && $j['user']['email'] === $emailA && $j['user']['google_linked'] && $j['user']['has_password'],
         'Google sign-in with an existing email links to that account', $j);
 
