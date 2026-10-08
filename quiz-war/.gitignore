@@ -1,0 +1,19 @@
+node_modules/
+dist/
+build/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+uploads/
+# Android — never commit signing material or local machine config
+*.jks
+*.keystore
+keystore.properties
+local.properties
+apps/android/app/release/
+apps/android/.gradle/
+apps/android/build/
+apps/android/app/build/
+google-services.json
