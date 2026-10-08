@@ -1,0 +1,106 @@
+# =====================================================================
+# NovaShop — Apache / LiteSpeed (Hostinger shared hosting)
+# Clean URLs → index.php front controller; only public assets are served directly.
+# =====================================================================
+
+Options -Indexes -MultiViews
+DirectoryIndex index.php
+AddDefaultCharset UTF-8
+ServerSignature Off
+
+# /admin and /api are real folders; don't redirect them to "/admin/" — the router handles them.
+<IfModule mod_dir.c>
+  DirectorySlash Off
+</IfModule>
+
+# Upload limits when PHP runs as an Apache module (LiteSpeed/FPM hosts use .user.ini instead)
+<IfModule mod_php.c>
+  php_value upload_max_filesize 10M
+  php_value post_max_size 40M
+  php_flag display_errors off
+</IfModule>
+
+<IfModule mod_mime.c>
+  AddType image/webp .webp
+  AddType image/svg+xml .svg
+  AddType application/manifest+json .webmanifest
+  AddType font/woff2 .woff2
+</IfModule>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  # Installed in a sub-folder (e.g. example.com/shop)? Change to: RewriteBase /shop/
+  RewriteBase /
+
+  # --- Force HTTPS (skipped on localhost and behind proxies that already terminate TLS)
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+  RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:[0-9]+)?$ [NC]
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # --- Block hidden files (.env, .git, .user.ini) but keep SSL validation working
+  RewriteRule (^|/)\.(?!well-known/) - [F,L]
+
+  # --- Public URLs for static files
+  RewriteRule ^assets/(.+)$ public/assets/$1 [L]
+  RewriteRule ^uploads/(.+)$ public/uploads/$1 [L]
+
+  # --- Real files that may be served directly
+  RewriteRule ^public/(assets|uploads)/ - [L]
+  RewriteRule ^admin/assets/ - [L]
+  RewriteRule ^(sw\.js|favicon\.ico)$ - [L]
+
+  # --- Everything else (pages, API, admin, sitemap, and any attempt to reach
+  #     app/, storage/, database/, config.php …) goes through the front controller.
+  RewriteRule ^index\.php$ - [L]
+  RewriteRule ^ index.php [L,QSA]
+</IfModule>
+
+# --- Defence in depth: never serve configuration, logs, backups, dumps or docs
+<FilesMatch "(^config(\.example)?\.php|\.(sql|log|md|gz|zip|bak|ini|sh|lock|dist|env)|^composer\.(json|lock))$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# --- Security headers (PHP also sends a nonce-based Content-Security-Policy for pages)
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+  Header unset X-Powered-By
+
+  # Versioned assets (?v=mtime) and uploads (random names) never change → cache 1 year
+  <FilesMatch "\.(css|js|webp|png|jpe?g|gif|svg|ico|woff2?)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  # The service worker must always be revalidated
+  <Files "sw.js">
+    Header set Cache-Control "no-cache"
+    Header set Service-Worker-Allowed "/"
+  </Files>
+</IfModule>
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
+</IfModule>
+
+# --- Compression (Brotli when available, otherwise gzip)
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS text/html text/css text/plain text/xml application/xml application/javascript application/json application/manifest+json image/svg+xml
+</IfModule>
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml application/xml application/javascript application/json application/manifest+json image/svg+xml
+</IfModule>

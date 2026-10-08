@@ -9,6 +9,14 @@ final class AnalyticsApi
     public function event(Request $r): Response
     {
         $name = $r->str('name', 40);
+        if ($name === 'view') {
+            $page = preg_replace('/[^a-z-]/', '', $r->str('page', 30));
+            Analytics::pageView($r, $page);
+            if ($page === 'product') {
+                Analytics::record('product_views', 1);
+            }
+            return Response::success('OK');
+        }
         if (!in_array($name, self::CLIENT_EVENTS, true)) {
             return Response::error('Unknown event', 422);
         }

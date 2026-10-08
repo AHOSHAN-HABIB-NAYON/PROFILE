@@ -61,7 +61,9 @@
         this.controller = ctrl;
       }
       var p = fetch(url, {
-        headers: { 'X-SPA': '1', 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        headers: opts.prefetch
+          ? { 'X-SPA': '1', 'X-Prefetch': '1', 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+          : { 'X-SPA': '1', 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
         credentials: 'same-origin', signal: ctrl.signal, priority: opts.prefetch ? 'low' : 'high'
       }).then(function (res) {
         var finalUrl = res.url || url;

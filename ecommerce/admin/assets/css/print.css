@@ -1,0 +1,46 @@
+/* print.css — professional invoice / order slip (A4 & thermal-friendly) */
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'Hind Siliguri', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; color: #0f172a; background: #eef0f6; font-size: 14px; line-height: 1.5; }
+.toolbar { display: flex; gap: 10px; justify-content: center; padding: 12px; }
+.toolbar button, .toolbar a { font: inherit; padding: 8px 18px; border-radius: 10px; border: 1px solid #cbd5e1; background: #fff; color: #0f172a; text-decoration: none; cursor: pointer; }
+.toolbar button { background: var(--primary, #4f46e5); color: #fff; border-color: transparent; }
+.invoice { max-width: 800px; margin: 0 auto 24px; background: #fff; padding: 36px 40px; border-radius: 14px; box-shadow: 0 10px 30px rgba(15, 23, 42, .1); }
+.inv-head { display: flex; justify-content: space-between; gap: 24px; padding-bottom: 18px; border-bottom: 3px solid var(--primary, #4f46e5); }
+.inv-brand { display: flex; gap: 14px; align-items: flex-start; }
+.inv-logo { max-height: 56px; max-width: 160px; object-fit: contain; }
+.inv-brand h1 { margin: 0 0 4px; font-size: 22px; }
+.inv-brand p, .inv-meta p { margin: 0; color: #475569; font-size: 13px; }
+.inv-meta { text-align: right; }
+.inv-meta h2 { margin: 0 0 6px; font-size: 20px; letter-spacing: .15em; color: var(--primary, #4f46e5); }
+.inv-party { margin: 20px 0; padding: 14px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; }
+.inv-party h3 { margin: 0 0 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: #64748b; }
+.inv-party p { margin: 0; }
+.inv-party .big { font-size: 17px; font-weight: 700; }
+.inv-party .note { margin-top: 6px; color: #475569; font-size: 13px; }
+.inv-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.inv-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #64748b; padding: 10px 8px; border-bottom: 2px solid #e2e8f0; }
+.inv-table td { padding: 10px 8px; border-bottom: 1px solid #eef2f7; vertical-align: top; }
+.inv-table small { display: block; color: #64748b; font-size: 12px; }
+.r { text-align: right !important; }
+.inv-totals { margin: 16px 0 0 auto; min-width: 280px; border-collapse: collapse; }
+.inv-totals th { text-align: left; font-weight: 500; color: #475569; padding: 6px 8px; }
+.inv-totals td { text-align: right; padding: 6px 8px; }
+.inv-totals .grand th, .inv-totals .grand td { font-size: 17px; font-weight: 800; color: #0f172a; border-top: 2px solid #0f172a; padding-top: 10px; }
+.inv-foot { margin-top: 28px; padding-top: 14px; border-top: 1px dashed #cbd5e1; text-align: center; font-size: 13px; }
+.inv-foot p { margin: 2px 0; }
+.muted { color: #94a3b8; }
+
+@media (max-width: 600px) {
+  .invoice { padding: 20px 16px; border-radius: 0; }
+  .inv-head { flex-direction: column; }
+  .inv-meta { text-align: left; }
+}
+@media print {
+  @page { size: A4; margin: 12mm; }
+  body { background: #fff; font-size: 12px; }
+  .no-print { display: none !important; }
+  .invoice { box-shadow: none; padding: 0; max-width: none; margin: 0; border-radius: 0; }
+  .inv-party { break-inside: avoid; }
+  .inv-table tr { break-inside: avoid; }
+  a { color: inherit; text-decoration: none; }
+}

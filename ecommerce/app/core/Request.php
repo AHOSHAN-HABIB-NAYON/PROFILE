@@ -95,6 +95,12 @@ final class Request
         return $this->header('X-SPA') === '1';
     }
 
+    /** Speculative prefetch by the client router — must not count as a real view. */
+    public function isPrefetch(): bool
+    {
+        return $this->header('X-Prefetch') === '1' || str_contains((string)$this->header('Sec-Purpose'), 'prefetch');
+    }
+
     public function isAjax(): bool
     {
         return $this->header('X-Requested-With') === 'XMLHttpRequest' || $this->isSpa();

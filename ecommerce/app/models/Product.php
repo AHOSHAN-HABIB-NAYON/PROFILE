@@ -217,6 +217,9 @@ final class Product
 
     public static function incrementViews(int $id): void
     {
+        if (Request::current()->isPrefetch()) {
+            return;
+        }
         Deferred::add(static fn() => DB::exec('UPDATE products SET views = views + 1 WHERE id = ?', [$id]));
     }
 

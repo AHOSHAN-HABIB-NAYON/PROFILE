@@ -279,7 +279,11 @@
     try { data = pd ? JSON.parse(pd.textContent) : {}; } catch (e) { data = {}; }
     setTimeout(function () { Tracker.fireAll(data.track); }, 0);
   });
-  App.on('route:change', function (d) { Tracker.fireAll(d.data.track, { fromCache: d.fromCache }); });
+  App.on('route:change', function (d) {
+    Tracker.fireAll(d.data.track, { fromCache: d.fromCache });
+    // Pages shown from the client cache/prefetch never hit the server as a view — count them with a beacon.
+    if (d.fromCache) App.post(App.url('/api/analytics/event'), { name: 'view', page: d.data.page || '' }, { keepalive: true }).catch(function () {});
+  });
 
   // =============================================================== WhatsApp
   var greet = App.$('[data-wa-greeting]');

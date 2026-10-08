@@ -71,7 +71,7 @@ final class Tracking
     /** Queue a server-side CAPI event (sent after the response). */
     public static function server(string $name, string $eventId, array $custom = [], array $user = [], ?string $sourceUrl = null): void
     {
-        if (!self::allowed('meta', $name, 'server') || !PluginManager::enabled('meta_capi')) {
+        if (Request::current()->isPrefetch() || !self::allowed('meta', $name, 'server') || !PluginManager::enabled('meta_capi')) {
             return;
         }
         $pixel = self::pixelId();

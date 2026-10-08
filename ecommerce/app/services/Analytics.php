@@ -9,6 +9,9 @@ final class Analytics
 
     public static function record(string $metric, int $value = 1, string $dim = ''): void
     {
+        if (Request::current()->isPrefetch()) {
+            return;
+        }
         $date = date('Y-m-d');
         Deferred::add(static function () use ($date, $metric, $value, $dim) {
             DB::exec(
@@ -22,7 +25,7 @@ final class Analytics
     public static function pageView(Request $r, string $page): void
     {
         $ua = $r->userAgent();
-        if ($ua === '' || device_type($ua) === 'bot') {
+        if ($ua === '' || device_type($ua) === 'bot' || $r->isPrefetch()) {
             return;
         }
         self::record('page_views', 1, '');

@@ -38,6 +38,11 @@ require ROOT_PATH . '/api/routes.php';
 require ADMIN_PATH . '/routes.php';
 
 try {
+    if ($request->method === 'POST' && empty($_POST) && empty($_FILES) && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 0
+        && !str_contains((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'application/json')) {
+        // Body larger than post_max_size: PHP silently dropped it.
+        throw new HttpException(413, 'ফাইল/ডেটার আকার অনেক বড়। ছোট ফাইল দিয়ে আবার চেষ্টা করুন।');
+    }
     $response = Maintenance::check($request) ?? $router->dispatch($request);
 } catch (HttpException $e) {
     $isPage = $request->method === 'GET' && !str_starts_with($request->path, '/api/') && (!$request->expectsJson() || $request->isSpa());
