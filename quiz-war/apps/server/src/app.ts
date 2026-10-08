@@ -46,6 +46,8 @@ export async function buildApp(ctx: AppContext, opts: { logger?: boolean } = {})
     global: true,
     max: 300,
     timeWindow: '1 minute',
+    // Automated tests bypass limits unless a test opts in (never active outside NODE_ENV=test).
+    allowList: (req) => env.NODE_ENV === 'test' && req.headers['x-test-rate-limit'] !== 'on',
     ...(ctx.redis ? { redis: ctx.redis, nameSpace: 'qw-rl:' } : {}),
     errorResponseBuilder: (_req, c) => ({ statusCode: 429, error: { code: 'rate_limited', message: `Too many requests. Try again in ${Math.ceil(c.ttl / 1000)}s.` } }),
   });

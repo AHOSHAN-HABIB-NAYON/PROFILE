@@ -81,17 +81,17 @@ export async function loadIdentity(userId: number): Promise<PlayerIdentity & { a
   };
 }
 
-export function createContext(env: Env, log: Logger) {
+export function createContext(env: Env, log: Logger, overrides: { mailer?: Mailer; google?: GoogleVerifier } = {}) {
   const settings = new SettingsService();
   const redis = env.REDIS_URL ? new Redis(env.REDIS_URL, { maxRetriesPerRequest: 2, lazyConnect: false }) : null;
   redis?.on('error', (err) => log.warn({ err: err.message }, 'redis error'));
 
   const emitter = new SocketEmitter();
-  const mailer: Mailer = env.SMTP_URL ? new SmtpMailer(env.SMTP_URL, env.MAIL_FROM) : new LogMailer((o, m) => log.info(o, m));
+  const mailer: Mailer = overrides.mailer ?? (env.SMTP_URL ? new SmtpMailer(env.SMTP_URL, env.MAIL_FROM) : new LogMailer((o, m) => log.info(o, m)));
   if (!env.SMTP_URL && (env.NODE_ENV === 'production' || env.NODE_ENV === 'staging')) log.warn('SMTP_URL is not set — emails are only logged');
 
   const googleAudiences = [env.GOOGLE_CLIENT_ID, ...(env.GOOGLE_EXTRA_AUDIENCES?.split(',') ?? [])].filter((x): x is string => !!x?.trim()).map((s) => s.trim());
-  const google: GoogleVerifier = new GoogleIdTokenVerifier(googleAudiences);
+  const google: GoogleVerifier = overrides.google ?? new GoogleIdTokenVerifier(googleAudiences);
   const push = new PushService(
     { vapidPublicKey: env.VAPID_PUBLIC_KEY, vapidPrivateKey: env.VAPID_PRIVATE_KEY, vapidSubject: env.VAPID_SUBJECT, fcmServiceAccountJson: env.FCM_SERVICE_ACCOUNT_JSON },
     { warn: (o, m) => log.warn(o, m), error: (o, m) => log.error(o, m) },
