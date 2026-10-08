@@ -7,7 +7,8 @@ coverage/
 !.env.example
 !.env.production.example
 *.log
-uploads/
+/uploads/
+/apps/server/uploads/
 # Android — never commit signing material or local machine config
 *.jks
 *.keystore
