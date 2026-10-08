@@ -4,18 +4,18 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Pool } from 'mysql2/promise';
 
-/** Finds database/migrations by walking up from this file (works from src/ and bundled dist/). */
-function findMigrationsDir() {
+/** Finds a repo-relative path by walking up from this file (works from src/ and bundled dist/). */
+export function findUp(rel: string): string {
   let dir = path.dirname(fileURLToPath(import.meta.url));
-  for (let i = 0; i < 6; i++) {
-    const candidate = path.join(dir, 'database', 'migrations');
+  for (let i = 0; i < 7; i++) {
+    const candidate = path.join(dir, rel);
     if (existsSync(candidate)) return candidate;
     dir = path.dirname(dir);
   }
-  return path.resolve(process.cwd(), 'database/migrations');
+  return path.resolve(process.cwd(), rel);
 }
 
-export const MIGRATIONS_DIR = findMigrationsDir();
+export const MIGRATIONS_DIR = findUp('database/migrations');
 
 /** Split a migration file into statements. Migrations must end statements with `;` + newline. */
 export function splitSql(sql: string): string[] {

@@ -1,10 +1,37 @@
 import { loadEnv } from './config/env';
 import { createContext } from './context';
-import { closePool, createPool } from './db/pool';
+import { closePool, createPool, exec, queryOne } from './db/pool';
+import { hashPassword } from './lib/crypto';
+import { seedDevQuestions } from './scripts/seed-dev';
 import { migrate } from './db/migrate';
 import { buildApp } from './app';
 import { createGateway } from './realtime/gateway';
 import { startJobs } from './jobs';
+
+/**
+ * Hosting without a terminal (e.g. Hostinger): optional one-time bootstrap from env vars.
+ *  - ADMIN_BOOTSTRAP_EMAIL + ADMIN_BOOTSTRAP_PASSWORD: creates the first Super Admin if no admin exists.
+ *  - SEED_SAMPLE_QUESTIONS=true: loads the bundled sample questions if the question table is empty.
+ */
+async function bootstrap(log: { info: (m: string) => void; warn: (m: string) => void }) {
+  const email = process.env.ADMIN_BOOTSTRAP_EMAIL?.trim().toLowerCase();
+  const password = process.env.ADMIN_BOOTSTRAP_PASSWORD;
+  if (email && password) {
+    const existing = await queryOne<{ n: number }>('SELECT COUNT(*) n FROM admin_users');
+    if (Number(existing?.n) === 0) {
+      if (password.length < 12) log.warn('ADMIN_BOOTSTRAP_PASSWORD must be at least 12 characters — admin not created');
+      else {
+        const role = await queryOne<{ id: number }>(`SELECT id FROM admin_roles WHERE role_key = 'super_admin'`);
+        await exec('INSERT INTO admin_users (email, name, password_hash, role_id) VALUES (?, ?, ?, ?)', [email, 'Super Admin', await hashPassword(password), role!.id]);
+        log.info(`Bootstrap Super Admin created: ${email} — remove ADMIN_BOOTSTRAP_PASSWORD from the environment now`);
+      }
+    }
+  }
+  if (process.env.SEED_SAMPLE_QUESTIONS === 'true') {
+    const q = await queryOne<{ n: number }>('SELECT COUNT(*) n FROM questions');
+    if (Number(q?.n) === 0) log.info(`Seeded ${await seedDevQuestions()} sample questions`);
+  }
+}
 
 async function main() {
   const env = loadEnv();
@@ -18,6 +45,7 @@ async function main() {
   (ctx as any).log = app.log;
   Object.assign(ctx.log, { info: app.log.info.bind(app.log), warn: app.log.warn.bind(app.log), error: app.log.error.bind(app.log) });
 
+  await bootstrap(app.log);
   await ctx.settings.load(true);
   await ctx.seasons.tick((m) => app.log.info(m));
   ctx.matchmaking.start();

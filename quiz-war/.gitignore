@@ -19,3 +19,7 @@ apps/android/.gradle/
 apps/android/build/
 apps/android/app/build/
 google-services.json
+
+# Local release bundles (zips for hosting upload)
+/release/
+*.zip

@@ -2,7 +2,7 @@
   "name": "quiz-war",
   "private": true,
   "version": "1.0.0",
-  "description": "QUIZ WAR: Bangladesh — realtime multiplayer quiz game (Web + Android + Admin)",
+  "description": "QUIZ WAR: Bangladesh \u2014 realtime multiplayer quiz game (Web + Android + Admin)",
   "workspaces": [
     "packages/*",
     "apps/server",
@@ -19,8 +19,9 @@
     "db:migrate": "npm run db:migrate -w @quizwar/server",
     "db:seed": "npm run db:seed -w @quizwar/server",
     "admin:create": "npm run admin:create -w @quizwar/server",
-    "build": "npm run build -w @quizwar/server && npm run build -w @quizwar/web && npm run build -w @quizwar/admin",
+    "build": "npm run build -w @quizwar/web && npm run build -w @quizwar/admin && npm run build -w @quizwar/server",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "start": "node apps/server/dist/index.js"
   }
 }

@@ -5,7 +5,7 @@ import type { AppContext } from '../context';
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 
 /** Public, unauthenticated endpoints: config, health, Android App Links, SEO share pages. */
-export async function publicRoutes(app: FastifyInstance, ctx: AppContext) {
+export async function publicRoutes(app: FastifyInstance, ctx: AppContext, staticWeb: { web: boolean; webIndex?: string | null; isBot?: (ua?: string) => boolean } = { web: false }) {
   app.get('/api/v1/config', async (_req, reply): Promise<PublicConfig> => {
     reply.header('cache-control', 'public, max-age=30');
     const a = ctx.settings.app();
@@ -46,9 +46,11 @@ export async function publicRoutes(app: FastifyInstance, ctx: AppContext) {
    * get real text + Open Graph tags; browsers are sent on to the SPA profile page.
    */
   app.get('/u/:uid', async (req, reply) => {
+    reply.header('content-type', 'text/html; charset=utf-8');
+    // Same-origin hosting: real browsers get the SPA; only crawlers get the share page.
+    if (staticWeb.web && staticWeb.webIndex && !staticWeb.isBot?.(req.headers['user-agent'])) return staticWeb.webIndex;
     const uid = normalizeUid(String((req.params as any).uid));
     const web = ctx.env.PUBLIC_WEB_URL.replace(/\/$/, '');
-    reply.header('content-type', 'text/html; charset=utf-8');
     if (!uid) return reply.status(404).send('<!doctype html><title>Not found</title><p>Player not found</p>');
     let p: Awaited<ReturnType<typeof ctx.profile.publicProfile>> | null = null;
     try {

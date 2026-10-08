@@ -4,14 +4,14 @@
  */
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { findUp } from '../db/migrate';
 import { questionInputSchema } from '@quizwar/shared';
 import { loadEnv } from '../config/env';
 import { closePool, createPool, query } from '../db/pool';
 import { QuestionAdminService } from '../modules/questions/question.admin.service';
 
 export async function seedDevQuestions() {
-  const file = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../database/seed/questions.dev.json');
+  const file = findUp('database/seed/questions.dev.json');
   const data = JSON.parse(await readFile(file, 'utf8')) as { questions: any[] };
   const cats = await query<{ id: number; slug: string }>('SELECT id, slug FROM categories');
   const svc = new QuestionAdminService();
@@ -27,7 +27,8 @@ export async function seedDevQuestions() {
   return created;
 }
 
-if (process.argv[1] && import.meta.url.endsWith(path.basename(process.argv[1]))) {
+// Only when run directly as the seed script (not when bundled into the server).
+if (process.argv[1] && /seed-dev\.(ts|js)$/.test(process.argv[1])) {
   const env = loadEnv();
   if (env.NODE_ENV === 'production') {
     console.error('Refusing to seed development data in production.');

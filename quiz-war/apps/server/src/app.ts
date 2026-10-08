@@ -15,6 +15,7 @@ import { adminRoutes } from './routes/admin.routes';
 import { authRoutes } from './routes/auth.routes';
 import { gameRoutes } from './routes/game.routes';
 import { publicRoutes } from './routes/public.routes';
+import { registerStaticWeb } from './static-web';
 import { socialRoutes } from './routes/social.routes';
 import { userRoutes } from './routes/user.routes';
 
@@ -86,7 +87,12 @@ export async function buildApp(ctx: AppContext, opts: { logger?: boolean } = {})
     // Never leak stack traces or internals to clients.
     return reply.status(500).send({ error: { code: 'server_error', message: 'Something went wrong. Please try again.' } });
   });
-  app.setNotFoundHandler((_req, reply) => reply.status(404).send({ error: { code: 'not_found', message: 'Not found' } }));
+  let spaFallback: ((req: any, reply: any) => unknown) | undefined;
+  app.setNotFoundHandler((req, reply) => {
+    const r = spaFallback?.(req, reply);
+    if (r) return r;
+    return reply.status(404).send({ error: { code: 'not_found', message: 'Not found' } });
+  });
 
   // Maintenance mode + force update gate for the player API (admin, config and health stay up).
   app.addHook('onRequest', async (req, reply) => {
@@ -102,7 +108,9 @@ export async function buildApp(ctx: AppContext, opts: { logger?: boolean } = {})
     }
   });
 
-  await app.register(async (pub) => publicRoutes(pub, ctx));
+  const staticWeb = await registerStaticWeb(app);
+  if (staticWeb.web || 'spaFallback' in staticWeb) spaFallback = (staticWeb as any).spaFallback;
+  await app.register(async (pub) => publicRoutes(pub, ctx, staticWeb));
   await app.register(async (api) => {
     await authRoutes(api, ctx);
     await userRoutes(api, ctx);
