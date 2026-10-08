@@ -125,7 +125,7 @@ export interface NotificationView {
 
 /* ----------------------------- Socket contract ---------------------------- */
 
-export type Ack<T = Record<string, never>> = (res: ({ ok: true } & T) | { ok: false; code: string; message: string }) => void;
+export type Ack<T extends object = object> = (res: ({ ok: true } & T) | { ok: false; code: string; message: string }) => void;
 
 export interface ClientToServerEvents {
   'presence:set': (p: { status?: Exclude<PresenceStatus, 'offline' | 'in_match'>; available?: boolean }) => void;

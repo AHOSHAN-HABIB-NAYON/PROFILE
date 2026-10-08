@@ -342,10 +342,14 @@ export class AuthService {
    * Deletes the account: personal data is erased/anonymised, sessions/passkeys/devices are
    * removed. Match history rows stay (anonymised) so opponents' history remains consistent.
    */
-  async deleteAccount(userId: number, password: string | null, confirmation: string) {
+  async verifyDeletion(userId: number, password: string | null, confirmation: string) {
     if (confirmation !== 'DELETE') throw badRequest('Type DELETE to confirm');
     const u = await queryOne<{ password_hash: string | null }>('SELECT password_hash FROM users WHERE id = ?', [userId]);
     if (u?.password_hash && !(password && (await verifyPassword(password, u.password_hash)))) throw badRequest('Password is incorrect');
+  }
+
+  async deleteAccount(userId: number, password: string | null, confirmation: string) {
+    await this.verifyDeletion(userId, password, confirmation);
     await tx(async (conn) => {
       await exec(
         `UPDATE users SET email = NULL, password_hash = NULL, google_sub = NULL, status = 'deleted', deleted_at = UTC_TIMESTAMP() WHERE id = ?`,

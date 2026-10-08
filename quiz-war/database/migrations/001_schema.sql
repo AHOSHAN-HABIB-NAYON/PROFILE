@@ -388,6 +388,7 @@ CREATE TABLE match_questions (
   match_id CHAR(26) NOT NULL,
   question_index SMALLINT UNSIGNED NOT NULL,
   question_id BIGINT UNSIGNED NOT NULL,
+  option_order VARCHAR(20) NOT NULL DEFAULT '0,1,2,3',
   PRIMARY KEY (match_id, question_index),
   KEY ix_mq_question (question_id),
   CONSTRAINT fk_mq_match FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
