@@ -74,3 +74,34 @@ See [docs/testing.md](docs/testing.md).
 - [Security](docs/security.md) — auth, anti-cheat, API hardening, privacy
 - [Backup & restore](docs/backup.md)
 - [Testing](docs/testing.md) and [API reference](docs/api.md)
+
+## Production checklist
+
+Status legend: ✅ implemented and verified in this repo (tests / live run) · 🔧 implemented, needs your
+credentials or a device to verify · 📋 owner action.
+
+| Item | Status |
+|---|---|
+| Web app, PWA (manifest, service worker, offline shell, install, update prompt) | ✅ |
+| Email/password login, verification, reset, lockout, sessions, logout-all | ✅ (emails need `SMTP_URL` 🔧) |
+| Google login | 🔧 code + server verification done; needs OAuth client ids |
+| Passkeys (web) | 🔧 implemented; verify on HTTPS domain with `WEBAUTHN_RP_ID` |
+| Passkeys (Android WebView via Credential Manager) | 🔧 needs device + assetlinks fingerprints |
+| UID, QR show/scan, public profile, deep links | ✅ web · 🔧 Android App Links need fingerprints |
+| Friends, blocks, online presence, Available for Battle | ✅ |
+| Battle requests (expiry, duplicates, limits) → War Room → 1 VS 1 | ✅ (two-browser E2E run) |
+| Duo 2v2 matchmaking, 3v3/4v4 squad War Rooms | ✅ engine + matchmaking tests |
+| AI opponents (4 levels, fallback, first-match beginner AI) | ✅ |
+| Server-authoritative timer/answers/score/winner/rewards, anti-cheat flags | ✅ |
+| Disconnect grace, reconnect + resume, forfeit | ✅ engine tests · 🔧 verify on real mobile network |
+| XP, coins, streaks, daily reward, achievements, shop | ✅ |
+| Leagues, ranked Elo + anti-boosting, seasons, 8 leaderboards | ✅ |
+| Solo, Survival, Speed Round, Daily Challenge, review + Practice Mistakes | ✅ |
+| Profile image compression (client + server WebP pipeline) | ✅ |
+| In-app notifications | ✅ · Push: 🔧 needs VAPID keys / Firebase |
+| Admin panel, RBAC, audit log, reports, moderation, settings | ✅ (browser run + API tests) |
+| Android project, icons, splash, signing config, versioning | ✅ configured · 🔧 build runs in CI (SDK not available in the dev sandbox) |
+| Signed AAB | 🔧 add signing secrets (docs/android-release.md) |
+| Privacy Policy, Terms, Community Guidelines, account deletion | ✅ (review the legal text with a lawyer 📋) |
+| Database backup + restore procedure | ✅ documented + compose job · 📋 off-site copy |
+| Question bank | 📋 import your production questions (dev seed is for development only) |
