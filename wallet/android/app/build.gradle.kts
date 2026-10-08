@@ -18,8 +18,8 @@ android {
         applicationId = "com.ahoshan.joma"
         minSdk = 28
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
         buildConfigField("String", "BASE_URL", "\"${wallet.getProperty("base_url", "").trimEnd('/')}\"")
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${wallet.getProperty("google_web_client_id", "")}\"")
@@ -30,6 +30,17 @@ android {
         // Use your own private key for a Play Store release.
         getByName("debug") {
             storeFile = file("joma-test.keystore")
+        }
+    }
+
+    buildTypes {
+        release {
+            // R8 strips unused code and resources: the APK shrinks from ~27 MB to a few MB.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Same test key as debug builds, so the Google and passkey fingerprints stay the same.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
