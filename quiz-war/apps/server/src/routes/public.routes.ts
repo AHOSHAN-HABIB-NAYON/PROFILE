@@ -12,7 +12,7 @@ export async function publicRoutes(app: FastifyInstance, ctx: AppContext) {
     const g = ctx.settings.game();
     return {
       ...a,
-      game: { match: g.match, powerUps: g.powerUps, leagues: g.ranked.leagues, aiEnabled: g.ai.enabled },
+      game: { match: g.match, powerUps: g.powerUps, levels: g.levels, leagues: g.ranked.leagues, aiEnabled: g.ai.enabled },
       googleClientId: ctx.env.GOOGLE_CLIENT_ID ?? null,
       vapidPublicKey: ctx.env.VAPID_PUBLIC_KEY ?? null,
     };

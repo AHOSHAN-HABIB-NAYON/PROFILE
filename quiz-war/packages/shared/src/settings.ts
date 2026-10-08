@@ -246,7 +246,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
 
 /** Public subset of app settings exposed to clients (no admin-only flags). */
 export type PublicConfig = AppSettings & {
-  game: Pick<GameSettings, 'match' | 'powerUps'> & { leagues: GameSettings['ranked']['leagues']; aiEnabled: boolean };
+  game: Pick<GameSettings, 'match' | 'powerUps' | 'levels'> & { leagues: GameSettings['ranked']['leagues']; aiEnabled: boolean };
   googleClientId: string | null;
   vapidPublicKey: string | null;
 };

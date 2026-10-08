@@ -1,0 +1,91 @@
+import type { JSX } from 'react';
+import { useParams } from 'react-router';
+import { PageHeader } from '../components/AppShell';
+
+const UPDATED = 'October 2026';
+const CONTACT = 'support@quizwar.app';
+
+const DOCS: Record<string, { title: string; body: JSX.Element }> = {
+  privacy: {
+    title: 'Privacy Policy',
+    body: (
+      <>
+        <p>Last updated: {UPDATED}. This policy explains what QUIZ WAR: Bangladesh (“we”) collects and why. We collect only what we need to run a fair multiplayer game.</p>
+        <h2>What we collect</h2>
+        <ul>
+          <li><b>Account:</b> email address (if you sign up with email), a Google account identifier (if you use Google sign-in), a hashed password, and passkey public keys. We never see your fingerprint, face or screen lock.</li>
+          <li><b>Profile:</b> username, optional photo and bio, your public Player ID (UID).</li>
+          <li><b>Gameplay:</b> matches, answers, response times, scores, XP, coins, rating, achievements, friends, squads, reports you send.</li>
+          <li><b>Security:</b> device/session information (platform, browser/app version), IP address and login history, used to protect your account and prevent cheating.</li>
+          <li><b>Notifications:</b> push tokens if you enable notifications.</li>
+        </ul>
+        <h2>What is public</h2>
+        <p>Your username, UID, photo, level, league, rating, game statistics, achievements and squad are visible to other players and on public profile/leaderboard pages. Your email address is never shown to other players.</p>
+        <h2>How we use data</h2>
+        <ul><li>To run matches, matchmaking, leaderboards and rewards.</li><li>To keep the game fair (anti-cheat, moderation of reports).</li><li>To secure accounts (rate limiting, suspicious login detection).</li><li>To send emails you request (verification, password reset) and notifications you enable.</li></ul>
+        <p>We do not sell personal data and do not show personalised ads.</p>
+        <h2>Retention & deletion</h2>
+        <p>You can delete your account anytime in Settings → Delete account. We then delete your email, login methods, passkeys, photo, friends, notifications and squad membership. Match records are kept in anonymised form so other players’ history stays correct. Security logs are kept for up to 90 days. Backups roll over within 30 days.</p>
+        <h2>Children</h2>
+        <p>QUIZ WAR is intended for players aged 13 and above.</p>
+        <h2>Contact</h2>
+        <p>Questions or data requests: {CONTACT}</p>
+      </>
+    ),
+  },
+  terms: {
+    title: 'Terms of Service',
+    body: (
+      <>
+        <p>Last updated: {UPDATED}. By using QUIZ WAR you agree to these terms.</p>
+        <h2>Your account</h2>
+        <p>Keep your login secure. One person per account. You’re responsible for activity on your account.</p>
+        <h2>Fair play</h2>
+        <p>No cheating, bots, automation, exploiting bugs, account sharing for boosting, or match fixing. We may remove rewards, reset ratings, suspend or ban accounts that break these rules.</p>
+        <h2>Virtual items</h2>
+        <p>Coins, power-ups and cosmetics are a limited licence to use in the game, have no cash value and cannot be exchanged for money. QUIZ WAR contains no gambling or betting. Competitive rankings never depend on spending money.</p>
+        <h2>Content</h2>
+        <p>Usernames, photos and bios must follow the Community Guidelines. Questions are provided for entertainment and learning; we try to keep them accurate — report mistakes and we’ll fix them.</p>
+        <h2>Service</h2>
+        <p>The service is provided “as is”. Online battles require an internet connection. We may change features or end seasons with notice in the app.</p>
+        <h2>Contact</h2><p>{CONTACT}</p>
+      </>
+    ),
+  },
+  guidelines: {
+    title: 'Community Guidelines',
+    body: (
+      <>
+        <p>QUIZ WAR is for everyone. Play hard, play fair, be kind.</p>
+        <ul>
+          <li>No abusive, hateful, sexual or violent usernames, photos or bios.</li>
+          <li>No harassment or spamming challenges / friend requests.</li>
+          <li>No cheating, scripts, multiple accounts to boost rating, or intentionally losing.</li>
+          <li>Don’t share personal information — use your UID or QR to connect.</li>
+        </ul>
+        <p>Use Report on a profile or match to tell us about problems. You can block any player at any time.</p>
+      </>
+    ),
+  },
+  data: {
+    title: 'Data handling',
+    body: (
+      <>
+        <p>Data is transmitted over HTTPS and stored in our database with access limited to authorised staff. Passwords are hashed (scrypt); refresh tokens are stored hashed; Android refresh tokens are kept in the Android Keystore-backed secure storage.</p>
+        <p>Admins can see game data and moderation information but never passwords, tokens or passkey secrets. Admin actions are recorded in an audit log.</p>
+        <p>To request a copy of your data or deletion, use Settings or email {CONTACT}.</p>
+      </>
+    ),
+  },
+};
+
+export default function Legal() {
+  const { doc = 'privacy' } = useParams();
+  const d = DOCS[doc] ?? DOCS.privacy;
+  return (
+    <div className="page full legal">
+      <PageHeader title={d.title} back />
+      <article className="card pad-lg">{d.body}</article>
+    </div>
+  );
+}
