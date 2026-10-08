@@ -14,11 +14,8 @@ define('PUBLIC_PATH', ROOT_PATH . '/public');
 if (is_file(ROOT_PATH . '/config.php')) {
     require ROOT_PATH . '/config.php';
 } else {
-    http_response_code(503);
-    header('Content-Type: text/html; charset=utf-8');
-    echo '<!doctype html><meta charset="utf-8"><title>Setup required</title>'
-        . '<p style="font-family:sans-serif;padding:2rem">config.php পাওয়া যায়নি। '
-        . 'config.example.php কপি করে config.php তৈরি করুন (README.md দেখুন)।</p>';
+    // First run: no config.php yet → show the web installer (it disables itself once config.php exists).
+    require APP_PATH . '/install/installer.php';
     exit;
 }
 

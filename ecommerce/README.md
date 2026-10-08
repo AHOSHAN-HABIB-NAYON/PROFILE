@@ -98,14 +98,18 @@ ecommerce/
 
 > Requirements: PHP **8.1 or newer** (8.2/8.3 recommended) with `pdo_mysql`, `gd` (WebP), `mbstring`, `curl`, `sodium`, `fileinfo`, `intl` (optional, improves slugs). MySQL 5.7+/8 or MariaDB 10.3+.
 
-1. **Upload files** — hPanel → *File Manager* → open `public_html` (or a sub-folder). Upload the **contents** of the `ecommerce/` folder (zip it locally, upload, then *Extract*). `index.php`, `.htaccess` and `.user.ini` must sit directly in `public_html`. Show hidden files to confirm the dot-files were extracted.
-2. **Create the database** — hPanel → *Databases → MySQL Databases*: create a database and user, give the user *All privileges*. Note the full names (e.g. `u123456789_shop`).
-3. **Import the schema** — hPanel → *phpMyAdmin* → select the database → *Import* → `database/schema.sql`, then import `database/seed.sql` (icon library, plugin rows, sample catalog — delete the samples later from Admin → Products/Categories).
-4. **Configure database credentials** — in File Manager copy `config.example.php` to `config.php` and edit `DB_HOST` (usually `localhost`), `DB_NAME`, `DB_USER`, `DB_PASS`.
-5. **Configure base URL & secrets** — in `config.php` set `APP_URL` (e.g. `https://yourshop.com`), a random 64-char `APP_KEY` (`php -r "echo bin2hex(random_bytes(32));"` or any password generator) and a private `INSTALL_KEY`. Keep `APP_DEBUG` = `false`.
-6. **Configure `.htaccess`** — works as-is in the domain root. If you install in a sub-folder (e.g. `/shop`), change `RewriteBase /` to `RewriteBase /shop/`. HTTPS redirect is built in — enable the free SSL in hPanel → *Security → SSL* first.
-7. **Storage permissions** — folders `storage/cache`, `storage/logs`, `storage/backups`, `storage/tmp` and `public/uploads/*` must be writable (755 folders / 644 files is the Hostinger default and works because PHP runs as your user). Never make them 777.
-8. **Login to admin** — open `https://yourshop.com/admin`. The first visit redirects to `/admin/setup`: enter your `INSTALL_KEY`, name, email and a strong password. The setup page disables itself once an admin exists. Then enable 2FA under the avatar menu → *Account & 2FA*.
+1. **Upload files** — hPanel → *File Manager* → open `public_html`. Upload the ZIP and click *Extract* so that `index.php`, `.htaccess` and `.user.ini` sit directly in `public_html` (enable "show hidden files" to confirm the dot-files are there).
+2. **Create an empty database** — hPanel → *Databases → MySQL Databases*: create a database + user with *All privileges*. Note the full names (e.g. `u123456789_shop`) and the password.
+3. **Open your domain** — the **web installer** appears automatically (it only exists while `config.php` is missing). Fill in:
+   * Database host (`localhost`), name, user, password
+   * Store name, WhatsApp number, site URL (auto-detected)
+   * Your admin name, email and a strong password
+   * Optionally tick "নমুনা পণ্য" to load demo products
+4. Click **ইনস্টল করুন**. The installer checks server requirements, tests the database, imports all tables, creates your owner account and writes `config.php` with new random secret keys. If the server does not allow writing `config.php`, it shows the file content to paste into a new `config.php` via File Manager.
+5. **SSL** — enable the free SSL in hPanel → *Security → SSL*; HTTPS redirect is built into `.htaccess`. (Installing in a sub-folder like `/shop`? Change `RewriteBase /` to `RewriteBase /shop/` in `.htaccess` first.)
+6. **Permissions** — Hostinger defaults (folders 755, files 644) work. The installer shows ✖ if `storage/*` or `public/uploads` are not writable.
+7. **Login to admin** — `https://yourshop.com/admin` with the email/password you entered. Enable 2FA under the avatar menu → *Account & 2FA*.
+8. *(Manual alternative to the installer: import `database/schema.sql` + `database/seed.sql` in phpMyAdmin, copy `config.example.php` to `config.php`, fill in the values, then create the admin at `/admin/setup` with your `INSTALL_KEY`.)*
 9. **Configure the store** — Admin → *Settings*: store name, logo, favicon, colours, contact, social links, WhatsApp number (default `+8801757827996` — change it), home sections, texts and policy pages. Admin → *Delivery*: inside/outside Dhaka charges (defaults ৳70 / ৳130), inside-Dhaka districts, free delivery rules.
 10. **Add courier credentials** — Admin → *Plugins* → Steadfast / Pathao / RedX → paste API credentials → *Save* → *Test connection*. For customer courier history / fraud check open *BD Courier* and paste your `api.bdcourier.com` token. Credentials are stored **encrypted** and are never sent to the browser.
 11. **Add Meta Pixel** — Plugins → *Meta Pixel* → Pixel ID → enable. Plugins → *Meta Conversions API* → Access Token (+ Test Event Code while testing in Events Manager) → enable → *Test connection*. Admin → *Pixel & Tracking* lets you toggle each event for browser/server.
