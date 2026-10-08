@@ -1,0 +1,55 @@
+# Builds the জমা ওয়ালেট Android app and publishes the APK as a GitHub Release.
+name: Build wallet app
+
+on:
+  push:
+    paths:
+      - "wallet/android/**"
+      - ".github/workflows/wallet-android.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: wallet/android
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk joma-wallet.apk
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: joma-wallet-apk
+          path: wallet/android/joma-wallet.apk
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: wallet-v${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: জমা ওয়ালেট — অ্যাপ v${{ github.run_number }}
+          body: |
+            নিচের **joma-wallet.apk** ফাইলটা ফোনে ডাউনলোড করে খুলুন, তারপর Install চাপুন।
+            অ্যাপ চালানোর আগে ওয়েবসাইট সেটআপ করতে হবে — wallet/README.md দেখুন।
+          files: wallet/android/joma-wallet.apk
+          make_latest: true

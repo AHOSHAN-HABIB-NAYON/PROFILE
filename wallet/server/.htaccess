@@ -1,0 +1,16 @@
+Options -Indexes
+DirectoryIndex index.php
+
+<FilesMatch "^(config(\.sample)?\.php|router\.php|\.gitignore)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^\.well-known/assetlinks\.json$ api.php?route=/.well-known/assetlinks.json [L,QSA]
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^api/(.*)$ api.php?route=/$1 [L,QSA]
+</IfModule>
+
+# Let PHP see the Authorization header on Apache/LiteSpeed (needed by the Android app).
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
