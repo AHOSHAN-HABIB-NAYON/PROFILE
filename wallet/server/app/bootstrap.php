@@ -7,9 +7,14 @@ const APP_ROOT = __DIR__ . '/..';
 
 $configFile = APP_ROOT . '/config.php';
 if (!is_file($configFile)) {
-    http_response_code(500);
-    header('Content-Type: text/plain; charset=utf-8');
-    exit("config.php is missing. Copy config.sample.php to config.php and fill it in.\n");
+    // Not set up yet: pages go to the setup wizard, API calls get a JSON error.
+    if (defined('JOMA_API')) {
+        http_response_code(503);
+        header('Content-Type: application/json; charset=utf-8');
+        exit('{"error":{"code":"setup_required","message":"ওয়েবসাইট এখনো সেটআপ করা হয়নি।"}}');
+    }
+    header('Location: install.php');
+    exit;
 }
 
 $GLOBALS['config'] = require $configFile;

@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 // JSON API shared by the website (jQuery AJAX) and the Android app.
 
+const JOMA_API = true;
+
 require __DIR__ . '/app/bootstrap.php';
 
 $route = '/' . trim((string) ($_GET['route'] ?? ''), '/');

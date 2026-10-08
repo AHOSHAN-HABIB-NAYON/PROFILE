@@ -446,6 +446,22 @@ button, input { font: inherit; color: inherit; }
 .toast.is-error { background: #9A1B12; }
 @keyframes toast-in { from { opacity: 0; transform: translate(-50%, 10px); } }
 
+/* ------------------------------------------------------------ setup page */
+
+.setup { max-width: 560px; margin: 0 auto; padding: 40px 16px 64px; display: grid; gap: 22px; }
+.setup-head { display: flex; align-items: center; gap: 16px; }
+.setup-head h1 { font-size: 1.6rem; line-height: 1.25; }
+.setup .auth-card h2 { font-size: 1.25rem; }
+.setup code { padding: 1px 6px; border-radius: 6px; background: var(--surface-2); font-size: 0.9em; }
+.checks { list-style: none; margin: 0; padding: 14px 16px; display: grid; gap: 6px; border-radius: var(--radius); background: var(--surface-2); font-size: 0.94rem; }
+.checks li { display: flex; gap: 10px; }
+.checks .ok span { color: var(--in); font-weight: 700; }
+.checks .bad { color: var(--out); font-weight: 600; }
+.setup-group { margin: 0; padding: 16px; display: grid; gap: 14px; border: 1px solid var(--line); border-radius: var(--radius); }
+.setup-group legend { padding: 0 6px; font-weight: 600; font-size: 0.92rem; color: var(--muted); }
+.setup-row { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+.config-box { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); font: 0.82rem/1.5 ui-monospace, monospace; color: var(--text); }
+
 /* ------------------------------------------------------------ responsive */
 
 @media (max-width: 860px) {
