@@ -19,6 +19,11 @@ import { registerStaticWeb } from './static-web';
 import { socialRoutes } from './routes/social.routes';
 import { userRoutes } from './routes/user.routes';
 
+/** Configured origins plus the Android app's WebView origins (https://localhost, capacitor://localhost). */
+export function corsOrigins(list: string) {
+  return [...new Set([...list.split(',').map((s) => s.trim()).filter(Boolean), 'https://localhost', 'capacitor://localhost'])];
+}
+
 export async function buildApp(ctx: AppContext, opts: { logger?: boolean } = {}): Promise<FastifyInstance> {
   const { env } = ctx;
   const app = Fastify({
@@ -28,7 +33,7 @@ export async function buildApp(ctx: AppContext, opts: { logger?: boolean } = {})
     disableRequestLogging: env.NODE_ENV === 'production',
   });
 
-  const origins = env.CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean);
+  const origins = corsOrigins(env.CORS_ORIGINS);
   await app.register(helmet, {
     // The API serves JSON (and a tiny share page); a strict CSP is applied by the web host.
     contentSecurityPolicy: false,

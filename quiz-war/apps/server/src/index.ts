@@ -4,7 +4,7 @@ import { closePool, createPool, exec, queryOne } from './db/pool';
 import { hashPassword } from './lib/crypto';
 import { seedDevQuestions } from './scripts/seed-dev';
 import { migrate } from './db/migrate';
-import { buildApp } from './app';
+import { buildApp, corsOrigins } from './app';
 import { createGateway } from './realtime/gateway';
 import { startJobs } from './jobs';
 
@@ -52,7 +52,7 @@ async function main() {
   const stopJobs = startJobs(ctx);
 
   await app.ready();
-  createGateway(ctx, app.server, env.CORS_ORIGINS.split(',').map((s) => s.trim()));
+  createGateway(ctx, app.server, corsOrigins(env.CORS_ORIGINS));
   await app.listen({ port: env.PORT, host: env.HOST });
   app.log.info(`QUIZ WAR API listening on ${env.HOST}:${env.PORT} (${env.NODE_ENV})`);
 

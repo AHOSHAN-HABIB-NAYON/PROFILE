@@ -15,7 +15,8 @@ const config: CapacitorConfig = {
   },
   server: {
     androidScheme: 'https',
-    hostname: process.env.CAP_HOSTNAME ?? 'quizwar.app',
+    // The WebView serves the bundled app from this host, so it must NOT be the API's domain.
+    hostname: process.env.CAP_HOSTNAME ?? 'localhost',
   },
   plugins: {
     SplashScreen: {
