@@ -1,0 +1,13 @@
+/config.php
+/storage/cache/*
+/storage/logs/*
+/storage/backups/*
+/storage/tmp/*
+/public/uploads/products/*
+/public/uploads/banners/*
+/public/uploads/categories/*
+/public/uploads/site/*
+/public/uploads/editor/*
+!/storage/**/.htaccess
+!/storage/**/.gitkeep
+!/public/uploads/**/.gitkeep

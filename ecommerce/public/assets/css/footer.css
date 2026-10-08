@@ -1,0 +1,28 @@
+/* footer.css — persistent footer (sits under the swappable main area) */
+.footer {
+  margin: 10px var(--gutter) calc(var(--bn-h) + 30px + env(safe-area-inset-bottom));
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 22px 18px 16px; font-size: .9rem;
+}
+.footer-grid { display: grid; gap: 20px; grid-template-columns: 1fr 1fr; }
+.footer-brand { grid-column: 1 / -1; }
+.footer-name { font-weight: 800; font-size: 1.1rem; }
+.footer-tag { color: var(--muted); font-size: .86rem; margin-top: 2px; }
+.footer-social { display: flex; gap: 4px; margin-top: 10px; }
+.footer-social .icon-btn { background: var(--surface-2); width: 40px; height: 40px; }
+.footer-title { font-weight: 700; margin-bottom: 8px; }
+.footer-grid > div:not(.footer-brand) { display: grid; gap: 6px; align-content: start; }
+.footer-grid a { color: var(--text-2); }
+.footer-grid a:hover { color: var(--primary); }
+.footer-grid i { width: 18px; color: var(--muted); }
+.cod-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--success-soft); color: var(--success); padding: 6px 10px; border-radius: 10px; font-weight: 600; font-size: .84rem; width: fit-content; }
+.cod-chip i { color: inherit; }
+.footer-copy { border-top: 1px solid var(--border); margin-top: 18px; padding-top: 12px; text-align: center; color: var(--muted); font-size: .8rem; }
+
+@media (min-width: 768px) {
+  .footer-grid { grid-template-columns: 1.4fr 1fr 1fr 1fr; }
+  .footer-brand { grid-column: auto; }
+}
+@media (min-width: 1024px) {
+  .footer { margin: 0 24px 24px; }
+}

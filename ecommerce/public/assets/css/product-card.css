@@ -1,0 +1,57 @@
+/* product-card.css — product card + responsive product grid (shared by most pages) */
+.grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 600px) { .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; } }
+@media (min-width: 1100px) { .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; } }
+@media (min-width: 1360px) { .grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+
+/* Horizontal scroller variant on mobile (flash sale / combos) */
+@media (max-width: 599px) {
+  .grid-scroll {
+    display: grid; grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 44%;
+    overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none;
+    margin: 0 calc(var(--gutter) * -1); padding: 2px var(--gutter) 8px;
+  }
+  .grid-scroll::-webkit-scrollbar { display: none; }
+  .grid-scroll > * { scroll-snap-align: start; }
+}
+
+.pcard {
+  position: relative; display: flex; flex-direction: column; min-width: 0;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  overflow: hidden; box-shadow: var(--shadow-sm);
+  transition: transform var(--normal) var(--ease), box-shadow var(--normal) var(--ease);
+  content-visibility: auto; contain-intrinsic-size: 260px 360px;
+}
+@media (hover: hover) {
+  .pcard:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+  .pcard:hover .pcard-media img { transform: scale(1.04); }
+}
+.pcard-media { position: relative; display: block; aspect-ratio: 1; background: var(--surface-2); overflow: hidden; }
+.pcard-media img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s var(--ease); }
+.pcard-badges { position: absolute; top: 8px; left: 8px; display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.pbadge { padding: 2px 8px; border-radius: 8px; font-size: .72rem; font-weight: 700; color: #fff; line-height: 1.6; box-shadow: var(--shadow-sm); }
+.pbadge-sale { background: var(--danger); }
+.pbadge-free { background: var(--success); }
+.pbadge-combo { background: var(--secondary); }
+.pcard-out { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(15, 23, 42, .45); color: #fff; font-weight: 700; font-size: .95rem; }
+.pcard-body { display: flex; flex-direction: column; gap: 6px; padding: 10px; flex: 1; }
+.pcard-title { font-size: .9rem; font-weight: 500; line-height: 1.4; min-height: 2.8em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pcard-title a:hover { color: var(--primary); }
+.price-row { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 8px; margin-top: auto; }
+.price-row .price { font-size: 1.02rem; }
+.pcard .btn { margin-top: 4px; }
+
+.skeleton-card { padding-bottom: 12px; }
+.skeleton-card .sk-media { aspect-ratio: 1; border-radius: 0; }
+.skeleton-card .sk-line { margin: 10px 10px 0; }
+.skeleton-card .sk-short { margin-top: 8px; }
+
+/* Shared section header for product rows */
+.home-section { margin: 22px 0; }
+.section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.section-link { margin-left: auto; font-size: .86rem; font-weight: 600; color: var(--primary); display: inline-flex; align-items: center; gap: 6px; padding: 6px 4px; }
+.section-link i { font-size: .75rem; transition: transform var(--fast); }
+.section-link:hover i { transform: translateX(3px); }
+
+/* "Added" fly-to-cart dot */
+.fly-dot { position: fixed; z-index: 500; width: 14px; height: 14px; border-radius: 50%; background: var(--gradient); pointer-events: none; box-shadow: 0 0 0 4px var(--primary-soft); }

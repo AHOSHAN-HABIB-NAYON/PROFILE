@@ -1,0 +1,33 @@
+/* cart.css — cart lines, quantity steppers, summary card, coupon form */
+.cart-layout { display: grid; gap: 16px; }
+@media (min-width: 960px) { .cart-layout { grid-template-columns: minmax(0, 1fr) 360px; align-items: start; } .cart-layout .summary { position: sticky; top: calc(var(--header-h) + 16px); } }
+.cart-lines { display: grid; gap: 10px; }
+.cart-line {
+  display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 12px; padding: 12px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  transition: opacity var(--normal), transform var(--normal) var(--ease);
+}
+.cart-line.is-removing { opacity: 0; transform: translateX(-16px); }
+.cart-line.skeleton-line { display: flex; align-items: center; }
+.cart-line-img { width: 76px; height: 76px; border-radius: 12px; object-fit: cover; background: var(--surface-2); }
+.cart-line-body { display: grid; gap: 4px; min-width: 0; }
+.cart-line-name { font-weight: 600; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cart-line-meta { font-size: .8rem; color: var(--muted); }
+.cart-line-msg { font-size: .8rem; color: var(--warning); font-weight: 600; }
+.cart-line-msg.is-error { color: var(--danger); }
+.cart-line-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+.cart-line .qty { border-radius: 11px; }
+.cart-line .qty-btn { width: 38px; height: 38px; }
+.cart-line .qty-input { width: 40px; height: 38px; }
+.cart-line-total { font-weight: 800; color: var(--primary); }
+.cart-remove { color: var(--muted); }
+.cart-remove:hover { color: var(--danger); background: var(--danger-soft); }
+
+.summary { padding: 16px; }
+.summary-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 12px; }
+.coupon-form { display: flex; gap: 8px; }
+.coupon-form .input { min-height: 46px; text-transform: uppercase; }
+.coupon-msg { margin-top: 6px; font-weight: 600; color: var(--danger); }
+.coupon-msg.is-ok { color: var(--success); }
+.delivery-note { margin: -4px 0 12px; }
+.summary .btn + .btn { margin-top: 8px; }

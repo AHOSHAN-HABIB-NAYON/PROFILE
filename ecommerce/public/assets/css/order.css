@@ -1,0 +1,83 @@
+/* order.css — order confirmation (animated delivery van) + my orders / tracking */
+.success-page { max-width: 640px; margin: 0 auto; }
+
+.scene { position: relative; height: 170px; overflow: hidden; border-radius: var(--radius-lg); background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 22%, var(--surface)) 0%, var(--surface) 78%); border: 1px solid var(--border); }
+.road { position: absolute; left: 0; right: 0; bottom: 0; height: 34px; background: #334155; }
+[data-theme="dark"] .road { background: #1e293b; }
+.road-lines { position: absolute; top: 15px; left: 0; width: 200%; height: 4px; background: repeating-linear-gradient(90deg, #f8fafc 0 26px, transparent 26px 56px); animation: road 0.6s linear infinite; }
+.cloud { position: absolute; width: 70px; height: 22px; border-radius: 20px; background: #fff; opacity: .9; box-shadow: 22px -8px 0 2px #fff; }
+[data-theme="dark"] .cloud { opacity: .12; }
+.cloud-1 { top: 22px; left: 18%; animation: drift 9s linear infinite; }
+.cloud-2 { top: 40px; left: 70%; transform: scale(.75); animation: drift 12s linear infinite; }
+
+.van { position: absolute; bottom: 14px; left: 50%; width: 230px; margin-left: -115px; animation: van-drive 1.9s var(--ease-out) both; will-change: transform; }
+.van-svg { width: 100%; height: auto; filter: drop-shadow(0 8px 10px rgba(15, 23, 42, .25)); animation: van-bob .32s ease-in-out infinite alternate; }
+.van .wheel { transform-box: fill-box; transform-origin: center; animation: wheel .35s linear infinite; }
+.speed { position: absolute; right: -40px; top: 34%; display: grid; gap: 9px; }
+.speed i { display: block; height: 3px; border-radius: 3px; background: color-mix(in srgb, var(--primary) 60%, transparent); width: 40px; animation: speed .4s linear infinite; }
+.speed i:nth-child(2) { width: 26px; margin-left: 12px; animation-delay: .1s; }
+.speed i:nth-child(3) { width: 34px; animation-delay: .2s; }
+
+@keyframes van-drive {
+  from { transform: translateX(calc(50vw + 240px)); }
+  to   { transform: translateX(0); }
+}
+@keyframes van-bob { to { transform: translateY(-2px); } }
+@keyframes wheel { to { transform: rotate(-360deg); } }
+@keyframes road { to { transform: translateX(56px); } }
+@keyframes drift { to { transform: translateX(-60vw); } }
+@keyframes speed { 0% { opacity: 0; transform: translateX(-12px); } 50% { opacity: 1; } 100% { opacity: 0; transform: translateX(16px); } }
+
+.success-card {
+  position: relative; margin-top: -26px; z-index: 1;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow);
+  padding: 26px 18px 20px; text-align: center;
+  animation: success-in .5s var(--ease-out) 1.7s both;
+}
+.success-check {
+  width: 68px; height: 68px; border-radius: 50%; display: grid; place-items: center; margin: -60px auto 12px;
+  background: var(--success); color: #fff; font-size: 1.9rem; border: 6px solid var(--surface);
+  box-shadow: 0 10px 24px rgba(22, 163, 74, .35);
+  animation: check-pop .55s cubic-bezier(.34, 1.56, .64, 1) 2s both;
+}
+.success-title { font-size: 1.45rem; font-weight: 800; }
+.success-text { margin-top: 6px; }
+.order-facts { display: grid; gap: 8px; margin: 18px 0 12px; padding: 14px; background: var(--surface-2); border-radius: var(--radius); text-align: left; }
+.order-facts > div { display: flex; justify-content: space-between; gap: 12px; font-size: .92rem; }
+.order-facts dt { color: var(--muted); flex: none; }
+.order-facts dd { text-align: right; display: flex; align-items: center; gap: 4px; justify-content: flex-end; }
+.order-items { text-align: left; display: grid; gap: 8px; }
+.order-items-title { font-weight: 700; }
+.order-item { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; font-size: .9rem; }
+.order-item img { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; background: var(--surface-2); }
+.order-item-qty { color: var(--muted); }
+.order-item-price { font-weight: 700; }
+.success-card .totals { text-align: left; }
+.cod-note { background: var(--success-soft); color: var(--success); border-radius: 12px; padding: 10px 12px; font-weight: 600; font-size: .9rem; }
+.success-actions { display: grid; gap: 10px; margin-top: 18px; }
+@media (min-width: 600px) { .success-actions { grid-template-columns: 1fr 1fr; } }
+
+@keyframes success-in { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes check-pop { from { transform: scale(0); } to { transform: scale(1); } }
+
+/* My orders / tracking */
+.orders-page { max-width: 760px; }
+.track-card { padding: 16px; }
+.track-form { display: grid; gap: 4px; }
+@media (min-width: 640px) { .track-form { grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; } .track-form .field { margin-bottom: 0; } }
+.track-result { margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border); display: grid; gap: 10px; }
+.timeline { list-style: none; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.timeline li { display: grid; justify-items: center; gap: 6px; text-align: center; font-size: .74rem; color: var(--muted); position: relative; }
+.timeline li::before { content: ''; position: absolute; top: 8px; left: -50%; right: 50%; height: 3px; background: var(--border); z-index: 0; }
+.timeline li:first-child::before { display: none; }
+.timeline li.is-done::before { background: var(--success); }
+.tl-dot { width: 18px; height: 18px; border-radius: 50%; background: var(--border); position: relative; z-index: 1; border: 3px solid var(--surface); }
+.timeline li.is-done { color: var(--text); font-weight: 600; }
+.timeline li.is-done .tl-dot { background: var(--success); }
+.timeline li.is-current .tl-dot { box-shadow: 0 0 0 4px var(--success-soft); }
+.order-list { display: grid; gap: 10px; }
+.order-row { display: flex; align-items: center; gap: 12px; padding: 12px; transition: transform var(--fast) var(--ease); }
+.order-row:active { transform: scale(.98); }
+.order-row-icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); flex: none; }
+.order-row-main { flex: 1; min-width: 0; }
+.order-row-side { display: grid; justify-items: end; gap: 4px; }
