@@ -245,8 +245,14 @@ final class WebAuthn
         ) {
             throw self::invalid();
         }
-        if (!in_array(rtrim((string) ($data['origin'] ?? ''), '/'), self::allowedOrigins(), true)) {
-            throw new ApiError(400, 'bad_origin', 'এই ঠিকানা থেকে পাসকি ব্যবহার করা যাবে না।');
+        // Compare without trailing "/" or base64 "=" padding, which some clients add.
+        $normalise = fn (string $origin) => rtrim($origin, '/=');
+        $origin = (string) ($data['origin'] ?? '');
+        if (!in_array($normalise($origin), array_map($normalise, self::allowedOrigins()), true)) {
+            error_log('[wallet] passkey origin not allowed: ' . $origin);
+            // The origin is not secret; showing it makes a wrong fingerprint easy to spot.
+            throw new ApiError(400, 'bad_origin',
+                'এই ঠিকানা থেকে পাসকি ব্যবহার করা যাবে না। (' . mb_substr($origin, 0, 120) . ')');
         }
     }
 
