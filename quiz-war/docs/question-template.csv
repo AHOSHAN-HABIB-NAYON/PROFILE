@@ -1,0 +1,4 @@
+﻿category,difficulty,language,text,option_a,option_b,option_c,option_d,correct,explanation,hint,image_url
+bangladesh,easy,bn,বাংলাদেশের রাজধানীর নাম কী?,চট্টগ্রাম,ঢাকা,খুলনা,রাজশাহী,B,ঢাকা বাংলাদেশের রাজধানী।,,
+bcs,medium,bn,"বাংলাদেশের জাতীয় সংসদের আসন সংখ্যা কত (সংরক্ষিত সহ)?",300,330,350,400,C,৩০০টি সাধারণ ও ৫০টি সংরক্ষিত মহিলা আসন।,সংরক্ষিত আসন যোগ করুন,
+english,easy,en,Choose the correct synonym of 'Happy'.,Sad,Joyful,Angry,Tired,B,Joyful means happy.,,
