@@ -14,6 +14,13 @@ import type { SettingsService } from '../settings/settings.service';
 import { AUTH_COLUMNS, type UserAuthRow } from '../users/users.repo';
 import type { AuthService, ClientMeta, TokenPair } from './auth.service';
 
+/** `android:apk-key-hash:<base64url sha256>` — the origin Android Credential Manager reports for our app. */
+export function apkKeyHashOrigin(sha256Fingerprint: string) {
+  const hex = sha256Fingerprint.replace(/[^0-9a-f]/gi, '');
+  if (hex.length !== 64) return null;
+  return `android:apk-key-hash:${Buffer.from(hex, 'hex').toString('base64url')}`;
+}
+
 export interface PasskeyConfig {
   rpId: string;
   rpName: string;
@@ -26,11 +33,24 @@ export interface PasskeyConfig {
  * typing an email. Challenges are stored server-side (single use, 5 minute expiry).
  */
 export class PasskeyService {
+  /** Last verification failure, shown in the admin Connections card to help setup. */
+  lastError: { at: string; stage: 'register' | 'login'; reason: string } | null = null;
+
+  private fail(stage: 'register' | 'login', e: unknown) {
+    const reason = e instanceof Error ? e.message : String(e);
+    this.lastError = { at: new Date().toISOString(), stage, reason: reason.slice(0, 300) };
+    console.warn(`[passkey] ${stage} verification failed: ${reason}`);
+  }
+
   constructor(
     private readonly cfg: PasskeyConfig,
     private readonly auth: AuthService,
     private readonly settings: SettingsService,
   ) {}
+
+  get origins() {
+    return this.cfg.origins;
+  }
 
   private ensureEnabled() {
     if (!this.settings.app().passkeyEnabled) throw new AppError(403, 'passkey_disabled', 'Passkey login is currently disabled');
@@ -97,10 +117,14 @@ export class PasskeyService {
         expectedRPID: this.cfg.rpId,
         requireUserVerification: false,
       });
-    } catch {
+    } catch (e) {
+      this.fail('register', e);
       throw badRequest('Passkey could not be verified');
     }
-    if (!verification.verified || !verification.registrationInfo) throw badRequest('Passkey could not be verified');
+    if (!verification.verified || !verification.registrationInfo) {
+      this.fail('register', new Error('not verified'));
+      throw badRequest('Passkey could not be verified');
+    }
     const { credential, credentialDeviceType, credentialBackedUp } = verification.registrationInfo;
     await exec(
       `INSERT INTO passkeys (user_id, credential_id, public_key, counter, transports, device_type, backed_up, name)
@@ -152,7 +176,8 @@ export class PasskeyService {
           transports: (pk.transports?.split(',').filter(Boolean) ?? []) as AuthenticatorTransportFuture[],
         },
       });
-    } catch {
+    } catch (e) {
+      this.fail('login', e);
       verification = { verified: false } as const;
     }
     if (!verification.verified) {

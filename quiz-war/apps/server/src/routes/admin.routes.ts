@@ -460,7 +460,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/integrations', can('dashboard.view'), async () => {
     const env = ctx.env;
     const appS = ctx.settings.app();
-    const origins = env.WEBAUTHN_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean);
+    const origins = ctx.passkeys.origins;
     const fingerprints = (env.ANDROID_SHA256_CERT_FINGERPRINTS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
     const smtpHost = env.SMTP_HOST ?? (env.SMTP_URL ? (() => { try { return new URL(env.SMTP_URL!).hostname; } catch { return 'custom'; } })() : null);
     return {
@@ -477,6 +477,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
         androidOrigin: origins.some((o) => o.startsWith('android:apk-key-hash:')),
         androidFingerprints: fingerprints.length,
         rpMatchesSite: (() => { try { return new URL(env.PUBLIC_WEB_URL).hostname.endsWith(env.WEBAUTHN_RP_ID); } catch { return false; } })(),
+        lastError: ctx.passkeys.lastError,
       },
       email: { configured: ctx.mailer instanceof SmtpMailer, host: smtpHost, from: env.MAIL_FROM },
       push: ctx.push.status,

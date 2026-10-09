@@ -285,7 +285,7 @@ function Legal({ a }: { a: App }) {
 
 type Integrations = {
   google: { configured: boolean; enabled: boolean; clientId: string | null; extraAudiences: number };
-  passkey: { enabled: boolean; rpId: string; webOrigins: string[]; androidOrigin: boolean; androidFingerprints: number; rpMatchesSite: boolean };
+  passkey: { enabled: boolean; rpId: string; webOrigins: string[]; androidOrigin: boolean; androidFingerprints: number; rpMatchesSite: boolean; lastError: { at: string; stage: string; reason: string } | null };
   email: { configured: boolean; host: string | null; from: string };
   push: { web: boolean; android: boolean; firebaseProject: string | null };
   ai: { configured: boolean };
@@ -346,7 +346,8 @@ function IntegrationsCard() {
             ok={data.passkey.enabled && data.passkey.rpMatchesSite && data.passkey.androidOrigin && data.passkey.androidFingerprints > 0}
             warn={data.passkey.enabled && data.passkey.rpMatchesSite}
             title="Passkey"
-            detail={<>RP ID <code>{data.passkey.rpId}</code> · web {data.passkey.webOrigins.join(', ') || '—'} · Android app {data.passkey.androidOrigin && data.passkey.androidFingerprints ? 'ready' : 'not linked'}</>}
+            detail={<>RP ID <code>{data.passkey.rpId}</code> · web {data.passkey.webOrigins.join(', ') || '—'} · Android app {data.passkey.androidOrigin && data.passkey.androidFingerprints ? 'ready' : 'not linked'}
+              {data.passkey.lastError && <><br />Last failed {data.passkey.lastError.stage} ({new Date(data.passkey.lastError.at).toLocaleString()}): <code>{data.passkey.lastError.reason}</code></>}</>}
             fix={<>Website passkeys need <code>WEBAUTHN_RP_ID</code> = your domain. For the Android app add <code>ANDROID_SHA256_CERT_FINGERPRINTS</code> and append <code>android:apk-key-hash:…</code> to <code>WEBAUTHN_ORIGIN</code> (values are printed on the GitHub APK release page).</>}
           />
           <StatusRow
