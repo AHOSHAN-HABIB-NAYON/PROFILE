@@ -111,18 +111,16 @@ jobs:
           fi
       - name: Certificate fingerprints (for Google login, passkeys, App Links)
         id: certs
-        env:
-          QW_KEYSTORE_PASSWORD: ${{ secrets.QW_KEYSTORE_PASSWORD }}
-          QW_KEY_ALIAS: ${{ secrets.QW_KEY_ALIAS }}
+        continue-on-error: true
         run: |
-          if [ "$HAS_KEYSTORE" = "true" ]; then
-            out=$(keytool -list -v -keystore "$QW_KEYSTORE_FILE" -alias "$QW_KEY_ALIAS" -storepass:env QW_KEYSTORE_PASSWORD)
-          else
-            out=$(keytool -list -v -keystore "$HOME/.android/debug.keystore" -alias androiddebugkey -storepass android)
-          fi
-          sha1=$(echo "$out" | grep -m1 'SHA1:' | awk '{print $2}')
-          sha256=$(echo "$out" | grep -m1 'SHA256:' | awk '{print $2}')
-          hash=$(echo "$sha256" | tr -d ':' | xxd -r -p | base64 | tr '+/' '-_' | tr -d '=')
+          # Read the certificate straight from the built APK, so it is always the key that was really used.
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          out=$("$APKSIGNER" verify --print-certs "$RUNNER_TEMP/QuizWar.apk")
+          colon() { tr 'a-f' 'A-F' | sed 's/../&:/g; s/:$//'; }
+          raw256=$(echo "$out" | grep -m1 'SHA-256 digest:' | awk '{print $NF}')
+          sha1=$(echo "$out" | grep -m1 'SHA-1 digest:' | awk '{print $NF}' | colon)
+          sha256=$(echo "$raw256" | colon)
+          hash=$(python3 -c "import base64,sys; print(base64.urlsafe_b64encode(bytes.fromhex(sys.argv[1])).decode().rstrip('='))" "$raw256")
           {
             echo "sha1=$sha1"
             echo "sha256=$sha256"
