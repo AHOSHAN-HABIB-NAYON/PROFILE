@@ -8,7 +8,7 @@ declare const self: ServiceWorkerGlobalScope;
 // App shell (offline UI). Precached at build time.
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
-registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html'), { denylist: [/^\/v2admin/, /^\/api\//, /^\/socket\.io/, /^\/media\//, /^\/u\/[^/]+\/?$/i] }));
+registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html'), { denylist: [/^\/v2admin/, /^\/api\//, /^\/socket\.io/, /^\/media\//, /^\/\.well-known\//, /^\/health/, /\.(json|xml|txt|mp3)$/, /^\/u\/[^/]+\/?$/i] }));
 
 // Only PUBLIC, non-personal API responses are cached (config + category list).
 registerRoute(({ url }) => url.pathname === '/api/v1/config' || url.pathname === '/api/v1/categories', new StaleWhileRevalidate({ cacheName: 'qw-public-api' }));
