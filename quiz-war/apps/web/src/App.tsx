@@ -1,11 +1,12 @@
 import { App as CapApp } from '@capacitor/app';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { StatusBar, Style } from '@capacitor/status-bar';
-import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { AppShell } from './components/AppShell';
 import { Empty, Skeleton } from './components/Feedback';
-import { Icon } from './components/Icon';
+import { Icon, IconTile } from './components/Icon';
+import { Modal } from './components/Sheet';
 import { NativeExtras } from './components/NativeExtras';
 import { OpenInApp } from './components/OpenInApp';
 import { Splash } from './components/Splash';
@@ -47,6 +48,30 @@ const Onboarding = lazy(() => import('./pages/Onboarding'));
 const Legal = lazy(() => import('./pages/Legal'));
 const About = lazy(() => import('./pages/About'));
 const AccountFlows = lazy(() => import('./pages/AccountFlows'));
+
+/** Android Back on the home screen: confirm before closing the app. */
+function ExitConfirm() {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const on = () => setOpen(true);
+    window.addEventListener('qw:exit-app', on);
+    return () => window.removeEventListener('qw:exit-app', on);
+  }, []);
+  return (
+    <Modal open={open} onClose={() => setOpen(false)} label={t('Exit QUIZ WAR?', 'QUIZ WAR থেকে বের হবেন?')}>
+      <div className="m-art"><IconTile name="door" tone="primary" size={68} /></div>
+      <h2>{t('Exit QUIZ WAR?', 'QUIZ WAR থেকে বের হবেন?')}</h2>
+      <p>{t('Your progress is saved. Come back soon for daily rewards!', 'আপনার সব অগ্রগতি সেভ আছে। ডেইলি রিওয়ার্ডের জন্য আবার আসবেন!')}</p>
+      <div className="modal-actions">
+        <button className="btn outline" onClick={() => setOpen(false)}>{t('Stay', 'থাকুন')}</button>
+        <button className="btn primary" onClick={() => void CapApp.exitApp()}>
+          <Icon name="door" /> {t('Exit', 'বের হন')}
+        </button>
+      </div>
+    </Modal>
+  );
+}
 
 function PageFallback() {
   return (
@@ -159,7 +184,6 @@ export function App() {
       return true;
     }
   });
-  const lastBack = useRef(0);
 
   useEffect(() => {
     setNavigator((to) => nav(to));
@@ -224,17 +248,16 @@ export function App() {
       const path = window.location.pathname;
       const open = document.querySelector('dialog[open]') as HTMLDialogElement | null;
       if (open) return open.dispatchEvent(new Event('cancel', { cancelable: true }));
+      // In a running match Back opens the same "Leave match?" popup as the flag button.
       if (path.startsWith('/match/') && useGame.getState().snapshot?.state !== 'finished') {
-        toast.info(tr('Battle in progress', 'ব্যাটল চলছে'), tr('Use the flag button to leave the match.', 'ম্যাচ ছাড়তে উপরের পতাকা বাটন চাপুন।'), 'swords');
+        window.dispatchEvent(new Event('qw:leave-match'));
         return;
       }
       const top = ['/', '/intro', '/login', '/onboarding'].includes(path);
       if (canGoBack && !top) return history.back();
       if (path !== '/' && !top) return nav('/', { replace: true });
-      const now = Date.now();
-      if (now - lastBack.current < 2000) return void CapApp.exitApp();
-      lastBack.current = now;
-      toast.info(tr('Press back again to exit', 'বের হতে আবার Back চাপুন'), undefined, 'door');
+      // On the home screen, ask before closing the app.
+      window.dispatchEvent(new Event('qw:exit-app'));
     });
     return () => {
       void a.then((x) => x.remove());
@@ -267,6 +290,7 @@ export function App() {
   return (
     <>
       <Toasts />
+      <ExitConfirm />
       {!splash && <OpenInApp />}
       {splash && <Splash ready={status !== 'loading'} onDone={() => {
             try {

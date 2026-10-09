@@ -13,6 +13,7 @@ import { MissionService } from './modules/missions/mission.service';
 import { AuthService } from './modules/auth/auth.service';
 import { GoogleIdTokenVerifier, type GoogleVerifier } from './modules/auth/google';
 import { LogMailer, SmtpMailer, smtpConfigFromEnv, type Mailer } from './modules/auth/mailer';
+import { AppReleaseFeed } from './modules/app-release';
 import { apkKeyHashOrigin, expandAndroidOrigins, PasskeyService } from './modules/auth/passkey.service';
 import { DailyChallengeService } from './modules/daily/daily.service';
 import { LeaderboardService } from './modules/leaderboard/leaderboard.service';
@@ -178,9 +179,11 @@ export function createContext(env: Env, log: Logger, overrides: { mailer?: Maile
     settings,
   );
   const adminAuth = new AdminAuthService(env.ADMIN_JWT_SECRET, env.ADMIN_SESSION_TTL_HOURS);
+  const appRelease = new AppReleaseFeed(env.APP_UPDATE_FEED_URL || null, env.APP_DOWNLOAD_URL);
 
   return {
     env,
+    appRelease,
     log,
     redis,
     settings,

@@ -312,4 +312,6 @@ export type PublicConfig = AppSettings & {
   /** SMTP is configured, so verification / reset emails are really sent. */
   emailEnabled?: boolean;
   vapidPublicKey: string | null;
+  /** Where the "Update" button goes: Play Store when set, otherwise the latest APK. */
+  appDownloadUrl?: string;
 };

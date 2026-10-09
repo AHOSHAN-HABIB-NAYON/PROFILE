@@ -38,6 +38,10 @@ const envSchema = z.object({
   WEBAUTHN_ORIGIN: z.string().default('http://localhost:5173'),
 
   ANDROID_PACKAGE_NAME: z.string().default('app.quizwar.bd'),
+  /** version.json published with each CI APK build; empty string turns automatic update checks off. */
+  APP_UPDATE_FEED_URL: z.string().default('https://github.com/AHOSHAN-HABIB-NAYON/PROFILE/releases/download/app-latest/version.json'),
+  /** Where "Update" sends players until the app is on Google Play (playStoreUrl in admin wins). */
+  APP_DOWNLOAD_URL: z.string().default('https://github.com/AHOSHAN-HABIB-NAYON/PROFILE/releases/download/app-latest/QuizWar.apk'),
   /** SHA-256 fingerprints of the Play App Signing + upload certificates (for assetlinks.json). */
   ANDROID_SHA256_CERT_FINGERPRINTS: z.string().optional(),
 

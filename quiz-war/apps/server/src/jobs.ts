@@ -18,6 +18,7 @@ export function startJobs(ctx: AppContext) {
 
   every(15_000, 'battle-request-sweep', () => ctx.battles.sweep());
   every(30_000, 'settings-refresh', () => ctx.settings.load(true));
+  void every(20 * 60_000, 'app-release-check', () => ctx.appRelease.refresh())();
   every(10 * 60_000, 'season-tick', () => ctx.seasons.tick((m) => ctx.log.info(m)));
   every(6 * 60 * 60_000, 'verified-auto', () => ctx.verified.autoGrant());
   every(60 * 60_000, 'cleanup', async () => {

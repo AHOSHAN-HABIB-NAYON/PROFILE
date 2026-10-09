@@ -179,6 +179,12 @@ export default function Match() {
   const g = useGame();
   const [missing, setMissing] = useState(false);
   const [quitOpen, setQuitOpen] = useState(false);
+  // Android Back during a match opens this same "Leave match?" sheet.
+  useEffect(() => {
+    const on = () => setQuitOpen(true);
+    window.addEventListener('qw:leave-match', on);
+    return () => window.removeEventListener('qw:leave-match', on);
+  }, []);
   const [float, setFloat] = useState<{ pts: number; key: number } | null>(null);
   const [comboShow, setComboShow] = useState<number>(0);
   const sending = useRef(false);

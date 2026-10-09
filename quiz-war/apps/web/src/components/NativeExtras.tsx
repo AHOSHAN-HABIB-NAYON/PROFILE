@@ -31,7 +31,8 @@ function UpdatePrompt() {
   const optional = !forced && code < cfg.latestAppVersionCode && dismissed < cfg.latestAppVersionCode;
   if (!forced && !optional) return null;
   const open = () => {
-    const url = cfg.playStoreUrl || 'https://play.google.com/store/apps/details?id=app.quizwar.bd';
+    const url = cfg.appDownloadUrl || cfg.playStoreUrl || 'https://play.google.com/store/apps/details?id=app.quizwar.bd';
+    // The WebView hands external links to the browser / Play Store.
     window.location.href = url;
   };
   return (

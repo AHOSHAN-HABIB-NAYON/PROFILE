@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { PageHeader } from '../components/AppShell';
 import { Icon, IconTile, type IconName } from '../components/Icon';
-import { Sheet } from '../components/Sheet';
+import { Modal, Sheet } from '../components/Sheet';
 import { useConfig } from '../hooks/queries';
 import { api, friendlyError } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -116,6 +116,7 @@ export default function Settings() {
   const qc = useQueryClient();
   const { data: cfg } = useConfig();
   const [sheet, setSheet] = useState<null | 'password' | 'devices' | 'history' | 'delete'>(null);
+  const [confirmOut, setConfirmOut] = useState<null | 'one' | 'all'>(null);
   const logins = useQuery({ queryKey: ['login-history'], queryFn: async () => (await api<{ items: any[] }>('/auth/login-history')).items, enabled: sheet === 'history' });
   const sessions = useQuery({ queryKey: ['sessions'], queryFn: async () => (await api<{ items: any[] }>('/auth/sessions')).items, enabled: sheet === 'devices' });
   const passkeys = useQuery({ queryKey: ['passkeys'], queryFn: async () => (await api<{ items: any[] }>('/auth/passkeys')).items });
@@ -295,7 +296,7 @@ export default function Settings() {
       </section>
 
       <section className="menu">
-        <Row icon="logout" tone="warning" title={t('Sign out', 'লগআউট')} onClick={() => void signOut()} />
+        <Row icon="logout" tone="warning" title={t('Sign out', 'লগআউট')} onClick={() => setConfirmOut('one')} />
         <Row icon="trash" danger title={t('Delete account', 'অ্যাকাউন্ট মুছে ফেলুন')} sub={t('Permanently remove your data', 'আপনার তথ্য স্থায়ীভাবে মুছে যাবে')} onClick={() => setSheet('delete')} />
       </section>
 
@@ -323,7 +324,7 @@ export default function Settings() {
             </div>
           ))}
         </div>
-        <button className="btn outline block mt" onClick={() => void signOut(true)}>
+        <button className="btn outline block mt" onClick={() => (setSheet(null), setConfirmOut('all'))}>
           <Icon name="logout" /> {t('Sign out of all devices', 'সব ডিভাইস থেকে লগআউট')}
         </button>
       </Sheet>
@@ -353,6 +354,18 @@ export default function Settings() {
         )}
         <p className="xs muted mt">{t('Don’t recognise a sign-in? Change your password and sign out of all devices.', 'অচেনা কোনো লগইন দেখলে পাসওয়ার্ড বদলান এবং সব ডিভাইস থেকে লগআউট করুন।')}</p>
       </Sheet>
+
+      <Modal open={!!confirmOut} onClose={() => setConfirmOut(null)} label={t('Sign out?', 'লগআউট করবেন?')}>
+        <div className="m-art"><IconTile name="logout" tone="warning" size={68} /></div>
+        <h2>{confirmOut === 'all' ? t('Sign out of all devices?', 'সব ডিভাইস থেকে লগআউট করবেন?') : t('Sign out of QUIZ WAR?', 'QUIZ WAR থেকে লগআউট করবেন?')}</h2>
+        <p>{t('You can sign back in anytime with your email, Google or passkey.', 'ইমেইল, Google বা পাসকি দিয়ে যেকোনো সময় আবার লগইন করতে পারবেন।')}</p>
+        <div className="modal-actions">
+          <button className="btn outline" onClick={() => setConfirmOut(null)}>{t('Stay', 'থাকুন')}</button>
+          <button className="btn danger" onClick={() => { const all = confirmOut === 'all'; setConfirmOut(null); void signOut(all); }}>
+            <Icon name="logout" /> {t('Sign out', 'লগআউট')}
+          </button>
+        </div>
+      </Modal>
 
       <Sheet open={sheet === 'delete'} onClose={() => setSheet(null)} title={t('Delete your account', 'অ্যাকাউন্ট মুছে ফেলুন')} icon="trash">
         <form
