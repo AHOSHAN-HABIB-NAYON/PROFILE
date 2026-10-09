@@ -90,6 +90,15 @@ export default function Result() {
         </div>
       </section>
 
+      {!!mine?.penaltyCoins || !!mine?.penaltyXp ? (
+        <div className="penalty-box" role="status">
+          <span className="pb-icon" aria-hidden>⚠️</span>
+          <div><strong>ম্যাচ ছেড়ে যাওয়ার জরিমানা</strong><div className="pb-amounts">{!!mine.penaltyCoins && <span>🪙 −{mine.penaltyCoins}</span>}{!!mine.penaltyXp && <span>⭐ −{mine.penaltyXp} XP</span>}</div></div>
+        </div>
+      ) : null}
+      {!!mine?.bonusCoins && (
+        <div className="bonus-box" role="status"><span aria-hidden>🎁</span> প্রতিপক্ষ ম্যাচ ছেড়ে যাওয়ায় তার জরিমানার <b>🪙 {mine.bonusCoins}</b> কয়েন আপনি পেয়েছেন!</div>
+      )}
       {leagueUp && (
         <div className="rank-up" role="status">
           <span className="ru-icon">{leagueUp.icon}</span>

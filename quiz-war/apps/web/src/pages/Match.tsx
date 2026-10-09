@@ -6,6 +6,7 @@ import { Avatar } from '../components/Avatar';
 import { Empty } from '../components/Feedback';
 import { Icon } from '../components/Icon';
 import { Sheet } from '../components/Sheet';
+import { useConfig } from '../hooks/queries';
 import { api, friendlyError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { serverNow, useGame } from '../lib/game';
@@ -84,6 +85,7 @@ function SideScore({ players, score, right, answered, label }: { players: MatchP
 }
 
 export default function Match() {
+  const config = useConfig();
   const { id = '' } = useParams();
   const nav = useNavigate();
   const me = useAuth((s) => s.user)!;
@@ -129,6 +131,8 @@ export default function Match() {
 
   const mode = MODES[snap.mode];
   const solo = mode.kind === 'solo';
+  const pen = config.data?.game.penalties;
+  const fined = !!pen?.enabled && !solo && (snap.type === 'pvp' || (pen.applyToAiMatches && snap.type === 'ai'));
   const myTeam = snap.players.find((p) => p.userId === me.id)?.team ?? 0;
   const myPlayers = snap.players.filter((p) => p.team === myTeam);
   const oppPlayers = snap.players.filter((p) => p.team !== myTeam);
@@ -290,7 +294,20 @@ export default function Match() {
       )}
 
       <Sheet open={quitOpen} onClose={() => setQuitOpen(false)} title="Leave this match?">
-        <p className="muted">{solo ? 'Your run ends now and counts with your current score.' : 'Leaving counts as a forfeit — your opponent wins and ranked rating is lost.'}</p>
+        <p className="muted">{solo ? 'Your run ends now and counts with your current score.' : 'ম্যাচ ছেড়ে গেলে এটা হার (forfeit) হিসেবে গণ্য হবে — প্রতিপক্ষ জিতবে।'}</p>
+        {fined && pen && (pen.quitCoins > 0 || pen.quitXp > 0) && (
+          <div className="penalty-box" role="alert">
+            <span className="pb-icon" aria-hidden>⚠️</span>
+            <div>
+              <strong>জরিমানা কাটা হবে</strong>
+              <div className="pb-amounts">
+                {pen.quitCoins > 0 && <span>🪙 −{pen.quitCoins} কয়েন</span>}
+                {pen.quitXp > 0 && <span>⭐ −{pen.quitXp} XP</span>}
+              </div>
+              <span className="small muted">{pen.giveCoinsToOpponents ? 'কাটা কয়েন প্রতিপক্ষ পাবে। ' : ''}অ্যাপ বন্ধ করলে বা নেট কেটে গিয়ে ফিরে না এলেও একই জরিমানা হবে।</span>
+            </div>
+          </div>
+        )}
         <div className="row mt-lg">
           <button className="btn outline grow" onClick={() => setQuitOpen(false)}>Keep playing</button>
           <button

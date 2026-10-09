@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { Avatar } from '../components/Avatar';
 import { CountUp, Skeleton } from '../components/Feedback';
 import { LeagueBadge, LevelBar } from '../components/Game';
+import { useMissions } from '../hooks/queries';
 import { api, friendlyError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { haptic } from '../lib/platform';
@@ -74,6 +75,26 @@ function DailyChallengeCard() {
   );
 }
 
+function MissionsCard() {
+  const nav = useNavigate();
+  const { data } = useMissions();
+  const items = data?.items ?? [];
+  if (!items.length) return null;
+  const today = items.filter((m) => m.period === 'daily');
+  const done = today.filter((m) => m.completed).length;
+  const claimable = data?.claimable ?? 0;
+  return (
+    <section className={`card row ${claimable ? 'mission ready' : ''}`} style={{ cursor: 'pointer' }} onClick={() => nav('/shop?tab=missions')} role="link" aria-label="Missions">
+      <div style={{ fontSize: 34 }} aria-hidden>🎯</div>
+      <div className="grow">
+        <h3>মিশন ও রিওয়ার্ড</h3>
+        <p className="xs muted">{claimable ? `${claimable}টি রিওয়ার্ড Claim করার অপেক্ষায়!` : `আজকের মিশন ${done}/${today.length} সম্পূর্ণ`}</p>
+      </div>
+      {claimable ? <span className="btn sm primary claim-btn">Claim</span> : <span className="chip">দেখুন</span>}
+    </section>
+  );
+}
+
 function FriendsOnline() {
   const { data } = useQuery({ queryKey: ['friends'], queryFn: async () => (await api<{ items: any[] }>('/friends')).items });
   const online = (data ?? []).filter((f) => f.status !== 'offline').slice(0, 10);
@@ -138,6 +159,7 @@ export default function Home() {
 
       <DailyChallengeCard />
       <DailyReward />
+      <MissionsCard />
       <FriendsOnline />
 
       <section className="stat-grid" aria-label="Quick stats">

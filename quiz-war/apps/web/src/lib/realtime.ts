@@ -119,10 +119,17 @@ export function registerRealtime() {
     s.on('notification:new', (n) => {
       void queryClient.invalidateQueries({ queryKey: ['notifications'] });
       if (n.type === 'battle_request') return;
-      if (n.type === 'achievement') sfx('reward');
+      if (n.type === 'achievement' || n.type === 'mission') sfx('reward');
+      if (n.type === 'mission') void queryClient.invalidateQueries({ queryKey: ['missions'] });
       toast.info(n.title, n.body, n.type === 'achievement' ? '🏅' : '🔔');
     });
     s.on('account:update', (p) => useAuth.getState().patchUser(p));
+    s.on('missions:update', () => void queryClient.invalidateQueries({ queryKey: ['missions'] }));
+    s.on('match:afk_warning', ({ limit }) => {
+      haptic('error');
+      sfx('tick');
+      toast.error('আপনি কি আছেন? 👀', `পরপর ${limit}টি প্রশ্নের উত্তর না দিলে ম্যাচ থেকে বের করে দেওয়া হবে এবং জরিমানা কাটা হবে।`);
+    });
     s.on('server:announcement', (a) => toast.info(a.title, a.body, '📢'));
     s.on('presence:update', () => void queryClient.invalidateQueries({ queryKey: ['friends'] }));
   });

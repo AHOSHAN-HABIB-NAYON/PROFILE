@@ -462,3 +462,26 @@ dialog.sheet .sheet-head h2 { flex: 1; }
 :root.reduce-motion *, :root.reduce-motion *::before, :root.reduce-motion *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
 @media (min-width: 900px) { .topbar .brand { display: none; } }
 @media (max-width: 380px) { .topbar .brand .hide-desktop { display: none; } }
+
+/* Quit fines */
+.penalty-box { display: flex; gap: 12px; align-items: flex-start; margin-top: 12px; padding: 12px 14px; border-radius: var(--r); background: color-mix(in srgb, var(--danger, #dc2626) 10%, var(--surface)); border: 1px solid color-mix(in srgb, var(--danger, #dc2626) 30%, transparent); }
+.penalty-box .pb-icon { font-size: 22px; line-height: 1; }
+.penalty-box strong { color: var(--danger, #dc2626); }
+.pb-amounts { display: flex; gap: 12px; margin: 4px 0; font-weight: 800; font-size: var(--fs-lg, 18px); }
+.bonus-box { padding: 12px 14px; border-radius: var(--r); background: color-mix(in srgb, #16a34a 12%, var(--surface)); border: 1px solid color-mix(in srgb, #16a34a 30%, transparent); font-weight: 600; animation: pop-in .4s; }
+
+/* Missions */
+.tab-badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 6px; border-radius: 99px; background: var(--danger, #dc2626); color: #fff; font-size: 11px; font-weight: 800; }
+.mission { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--border); transition: border-color var(--dur-fast), box-shadow var(--dur-fast); }
+.mission .mi-icon { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 12px; background: var(--surface-2); font-size: 22px; }
+.mission .mi-body { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.mission .mi-body strong { font-size: var(--fs-md, 15px); }
+.mi-bar { height: 7px; border-radius: 99px; background: var(--surface-2); overflow: hidden; margin: 3px 0 1px; }
+.mi-bar span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--primary), var(--accent, var(--primary))); transition: width .6s cubic-bezier(.2, .8, .2, 1); }
+.mission.ready { border-color: color-mix(in srgb, #f59e0b 60%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, #f59e0b 18%, transparent); }
+.mission.ready .mi-icon { background: color-mix(in srgb, #f59e0b 20%, var(--surface)); }
+.mission.claimed { opacity: .65; }
+.claim-btn { animation: claim-pulse 1.6s ease-in-out infinite; }
+@keyframes claim-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+.reduce-motion .claim-btn { animation: none; }
+@media (prefers-reduced-motion: reduce) { .claim-btn { animation: none; } }

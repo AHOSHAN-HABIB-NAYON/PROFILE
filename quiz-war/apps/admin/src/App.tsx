@@ -15,6 +15,8 @@ import Announcements from './pages/Announcements';
 import Content from './pages/Content';
 import Admins from './pages/Admins';
 import Audit from './pages/Audit';
+import AiGenerator from './pages/AiGenerator';
+import Missions from './pages/Missions';
 
 const NAV: { group: string; items: { to: string; label: string; icon: string; perm: string }[] }[] = [
   { group: 'Overview', items: [{ to: '/', label: 'Dashboard', icon: '📊', perm: 'dashboard.view' }] },
@@ -25,8 +27,10 @@ const NAV: { group: string; items: { to: string; label: string; icon: string; pe
   ] },
   { group: 'Content', items: [
     { to: '/questions', label: 'Questions', icon: '❓', perm: 'questions.view' },
+    { to: '/ai', label: 'AI Generator', icon: '✨', perm: 'questions.manage' },
     { to: '/categories', label: 'Categories', icon: '🗂️', perm: 'questions.view' },
     { to: '/content', label: 'Achievements & Shop', icon: '🏅', perm: 'content.manage' },
+    { to: '/missions', label: 'Missions', icon: '🎯', perm: 'content.manage' },
     { to: '/announcements', label: 'Announcements', icon: '📢', perm: 'announcements.send' },
   ] },
   { group: 'Configuration', items: [
@@ -109,6 +113,8 @@ export function App() {
           <Route path="/users" element={<Guard perm="users.view"><Users /></Guard>} />
           <Route path="/users/:id" element={<Guard perm="users.view"><UserDetail /></Guard>} />
           <Route path="/questions" element={<Guard perm="questions.view"><Questions /></Guard>} />
+ <Route path="/ai" element={<Guard perm="questions.manage"><AiGenerator /></Guard>} />
+          <Route path="/missions" element={<Guard perm="content.manage"><Missions /></Guard>} />
           <Route path="/categories" element={<Guard perm="questions.view"><Categories /></Guard>} />
           <Route path="/matches" element={<Guard perm="matches.view"><Matches /></Guard>} />
           <Route path="/reports" element={<Guard perm="reports.view"><Reports /></Guard>} />

@@ -106,7 +106,8 @@ export class AiGeneratorService {
   ) {}
 
   get configured() {
-    return !!this.cfg.apiKey;
+    // A placeholder left in the env (e.g. "PASTE_YOUR_OPENAI_KEY_HERE") counts as not set.
+    return !!this.cfg.apiKey && !/paste|your[_ -]?openai/i.test(this.cfg.apiKey);
   }
 
   /* ------------------------------- Settings ------------------------------- */

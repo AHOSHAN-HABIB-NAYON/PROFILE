@@ -12,6 +12,7 @@ const SECTIONS: Record<string, string> = {
   matchmaking: 'Matchmaking & AI fallback timeout',
   ai: 'AI opponents (availability, difficulty, speed, accuracy)',
   disconnect: 'Disconnect grace period',
+  penalties: 'Quit fines & AFK (coins/XP taken from players who leave)',
   ranked: 'Ranked, rating & leagues',
   battleRequests: 'Battle requests (expiry & limits)',
   survival: 'Survival mode',

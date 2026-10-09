@@ -20,3 +20,19 @@ export const useNotifications = () => {
   const authed = useAuth((s) => s.status === 'authed');
   return useQuery({ queryKey: ['notifications'], queryFn: () => api<{ unread: number; items: any[] }>('/notifications'), enabled: authed, staleTime: 60_000 });
 };
+
+export interface Mission {
+  id: number;
+  title: string;
+  description: string | null;
+  icon: string;
+  period: 'daily' | 'weekly' | 'once';
+  target: number;
+  progress: number;
+  rewardCoins: number;
+  rewardXp: number;
+  completed: boolean;
+  claimed: boolean;
+}
+
+export const useMissions = () => useQuery({ queryKey: ['missions'], queryFn: () => api<{ items: Mission[]; claimable: number }>('/missions'), staleTime: 30_000 });
