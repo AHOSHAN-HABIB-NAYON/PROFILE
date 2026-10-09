@@ -150,8 +150,9 @@ export class ProgressionService implements RewardHandler, PowerUpWallet {
     if (result.milestone) {
       await this.notifications.notify(userId, {
         type: 'streak',
-        title: `🔥 ${result.streakDays} Day Streak!`,
-        body: `You earned ${result.milestone.coins} coins and ${result.milestone.xp} XP.`,
+        title: { en: `${result.streakDays}-day streak!`, bn: `টানা ${result.streakDays} দিন!` },
+        body: { en: `You earned ${result.milestone.coins} coins and ${result.milestone.xp} XP.`, bn: `আপনি ${result.milestone.coins} কয়েন আর ${result.milestone.xp} XP পেয়েছেন।` },
+        data: { milestone: result.streakDays },
         url: '/profile',
       });
     }
@@ -251,8 +252,9 @@ export class ProgressionService implements RewardHandler, PowerUpWallet {
         unlocked.push({ key: a.ach_key, name: a.name, icon: a.icon });
         await this.notifications.notify(userId, {
           type: 'achievement',
-          title: `${a.icon} Achievement unlocked!`,
-          body: `${a.name}${a.reward_coins ? ` · +${a.reward_coins} coins` : ''}`,
+          title: { en: 'Achievement unlocked!', bn: 'নতুন অ্যাচিভমেন্ট!' },
+          body: { en: `${a.name}${a.reward_coins ? ` · +${a.reward_coins} coins` : ''}`, bn: `${a.name}${a.reward_coins ? ` · +${a.reward_coins} কয়েন` : ''}` },
+          data: { achievement: a.ach_key },
           url: '/profile/achievements',
         });
       }
@@ -505,16 +507,19 @@ export class ProgressionService implements RewardHandler, PowerUpWallet {
     if (res.penaltyCoins || res.penaltyXp) {
       await this.notifications.notify(p.userId, {
         type: 'penalty',
-        title: '⚠️ ম্যাচ ছেড়ে যাওয়ার জরিমানা',
-        body: `ম্যাচ শেষ না করে বের হয়ে যাওয়ায় ${res.penaltyCoins} কয়েন ও ${res.penaltyXp} XP কাটা হয়েছে।`,
+        title: { en: 'Penalty for leaving a match', bn: 'ম্যাচ ছেড়ে যাওয়ার জরিমানা' },
+        body: {
+          en: `You left a match before it ended: ${res.penaltyCoins} coins and ${res.penaltyXp} XP were deducted.`,
+          bn: `ম্যাচ শেষ না করে বের হয়ে যাওয়ায় ${res.penaltyCoins} কয়েন ও ${res.penaltyXp} XP কাটা হয়েছে।`,
+        },
         url: '/history',
       });
     }
     if (res.bonusCoins) {
       await this.notifications.notify(p.userId, {
         type: 'reward',
-        title: `🪙 +${res.bonusCoins} কয়েন বোনাস`,
-        body: 'প্রতিপক্ষ ম্যাচ ছেড়ে যাওয়ায় তার জরিমানার কয়েন আপনি পেয়েছেন।',
+        title: { en: `+${res.bonusCoins} bonus coins`, bn: `+${res.bonusCoins} কয়েন বোনাস` },
+        body: { en: 'Your opponent left the match — you received their penalty coins.', bn: 'প্রতিপক্ষ ম্যাচ ছেড়ে যাওয়ায় তার জরিমানার কয়েন আপনি পেয়েছেন।' },
         url: '/history',
       });
     }
@@ -528,8 +533,9 @@ export class ProgressionService implements RewardHandler, PowerUpWallet {
       const up = res.ratingAfter > res.ratingBefore;
       await this.notifications.notify(p.userId, {
         type: 'rank',
-        title: up ? `${league?.icon ?? '🏆'} Promoted to ${league?.name}!` : `Your league changed to ${league?.name}`,
-        body: up ? 'Your rank changed — keep climbing!' : 'Win ranked battles to climb back up.',
+        title: up ? { en: `Promoted to ${league?.name}!`, bn: `${league?.name} লীগে উন্নীত!` } : { en: `Your league changed to ${league?.name}`, bn: `আপনার লীগ এখন ${league?.name}` },
+        body: up ? { en: 'Your rank changed — keep climbing!', bn: 'দারুণ! এভাবেই এগিয়ে চলুন।' } : { en: 'Win ranked battles to climb back up.', bn: 'র‍্যাংকড ব্যাটল জিতে আবার উপরে উঠুন।' },
+        data: { league: res.leagueAfter, up },
         url: '/rank',
       });
     }

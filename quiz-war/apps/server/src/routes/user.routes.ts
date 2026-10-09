@@ -28,7 +28,9 @@ export async function userRoutes(app: FastifyInstance, ctx: AppContext) {
 
   app.post('/me/onboarding', auth, async (req) => {
     const b = parse(z.object({ username: usernameSchema }), req.body);
-    return { user: await ctx.profile.completeOnboarding(uid(req), b.username) };
+    const user = await ctx.profile.completeOnboarding(uid(req), b.username);
+    void ctx.emails.welcome(uid(req)).catch(() => undefined);
+    return { user };
   });
 
   app.patch('/me', auth, async (req) => {
@@ -37,8 +39,18 @@ export async function userRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   app.patch('/me/preferences', auth, async (req) => {
-    const b = parse(z.object({ availableForBattle: z.boolean().optional(), dnd: z.boolean().optional(), tutorialDone: z.boolean().optional() }), req.body);
+    const b = parse(
+      z.object({
+        availableForBattle: z.boolean().optional(),
+        dnd: z.boolean().optional(),
+        tutorialDone: z.boolean().optional(),
+        lang: z.enum(['bn', 'en']).optional(),
+        emailActivity: z.boolean().optional(),
+      }),
+      req.body,
+    );
     await ctx.profile.setPreferences(uid(req), b);
+    if (b.lang) ctx.notifications.forgetLang(uid(req));
     if (b.availableForBattle !== undefined || b.dnd !== undefined) {
       ctx.presence.set(uid(req), { available: b.availableForBattle, status: b.dnd === undefined ? undefined : b.dnd ? 'dnd' : 'online' });
     }

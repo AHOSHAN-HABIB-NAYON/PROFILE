@@ -56,6 +56,10 @@ export interface MeUser extends PublicUser {
   availableForBattle: boolean;
   dnd: boolean;
   bio: string | null;
+  lang: 'bn' | 'en';
+  emailActivity: boolean;
+  hasPassword: boolean;
+  hasGoogle: boolean;
 }
 
 export interface QuestionPublic {
@@ -75,3 +79,7 @@ export interface QuestionPublic {
 export interface ApiErrorBody {
   error: { code: string; message: string; details?: unknown };
 }
+
+/** In-match reactions players can send (rendered as animated stickers). */
+export const MATCH_REACTIONS = ['👍', '🔥', '😂', '😮', '👏', '💪', '😅', '🤝'] as const;
+export type MatchReaction = (typeof MATCH_REACTIONS)[number];

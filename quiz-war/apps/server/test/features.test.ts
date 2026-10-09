@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closePool, exec, query, queryOne } from '../src/db/pool';
 import { hashPassword } from '../src/lib/crypto';
 import { AiGeneratorService, normalizeQuestion } from '../src/modules/ai/ai-generator.service';
+import { audioKind } from '../src/routes/admin.routes';
 import { client, dbAvailable, makeTestApp, resetDb } from './db';
 
 const hasDb = await dbAvailable();
@@ -228,6 +229,60 @@ d('Features (MySQL)', () => {
       const missions = await adm('GET', '/missions');
       expect(missions.json().items.length).toBeGreaterThan(5);
       expect(missions.json().metrics).toHaveProperty('battle_wins');
+    });
+  });
+
+  describe('emails, language and support settings', () => {
+    it('sends one branded welcome email after onboarding, in the player language', async () => {
+      const p = await newPlayer('welcome');
+      await new Promise((r) => setTimeout(r, 50));
+      const email = (await queryOne<any>('SELECT email FROM users WHERE id = ?', [p.id])).email;
+      const welcome = t.mailer.sent.filter((m) => m.to === email && m.subject.includes('স্বাগতম'));
+      expect(welcome).toHaveLength(1);
+      expect(welcome[0].text).toContain('QW-');
+      // Onboarding again (e.g. after a username reset) never re-sends it.
+      await t.ctx.emails.welcome(p.id);
+      expect(t.mailer.sent.filter((m) => m.to === email && m.subject.includes('স্বাগতম'))).toHaveLength(1);
+    });
+
+    it('notifications follow the chosen language; activity emails respect verification and the preference', async () => {
+      const p = await newPlayer('lang');
+      const email = (await queryOne<any>('SELECT email FROM users WHERE id = ?', [p.id])).email;
+      const r = await api('PATCH', '/me/preferences', { lang: 'en', emailActivity: true }, p.token);
+      expect(r.status).toBe(200);
+      const me = await api('GET', '/me', undefined, p.token);
+      expect(me.body.user).toMatchObject({ lang: 'en', emailActivity: true, hasPassword: true });
+
+      await t.ctx.notifications.notify(p.id, { type: 'achievement', title: { en: 'Achievement unlocked!', bn: 'নতুন অ্যাচিভমেন্ট!' }, body: { en: 'First Victory', bn: 'প্রথম জয়' } });
+      const n = await queryOne<any>(`SELECT title FROM notifications WHERE user_id = ? AND type = 'achievement'`, [p.id]);
+      expect(n.title).toBe('Achievement unlocked!');
+      await new Promise((r) => setTimeout(r, 50));
+      // Not verified yet → no activity email.
+      expect(t.mailer.sent.some((m) => m.to === email && m.subject.includes('Achievement'))).toBe(false);
+
+      await exec('UPDATE users SET email_verified_at = UTC_TIMESTAMP() WHERE id = ?', [p.id]);
+      await t.ctx.notifications.notify(p.id, { type: 'achievement', title: { en: 'Achievement unlocked!', bn: 'x' }, body: { en: 'Ten Wins', bn: 'x' } });
+      await new Promise((r) => setTimeout(r, 50));
+      expect(t.mailer.sent.filter((m) => m.to === email && m.subject.includes('Achievement'))).toHaveLength(1);
+      // At most one activity email per 12 hours.
+      await t.ctx.notifications.notify(p.id, { type: 'achievement', title: { en: 'Achievement unlocked!', bn: 'x' }, body: { en: 'More', bn: 'x' } });
+      await new Promise((r) => setTimeout(r, 50));
+      expect(t.mailer.sent.filter((m) => m.to === email && m.subject.includes('Achievement'))).toHaveLength(1);
+    });
+
+    it('public config carries support email, contacts, music and update settings', async () => {
+      const r = await api('GET', '/config');
+      expect(r.body.supportEmail).toBe('support.quizwarbd@gmail.com');
+      expect(r.body.contacts).toEqual([]);
+      expect(r.body.music).toMatchObject({ menuUrl: null, volume: expect.any(Number) });
+      expect(r.body.game.leagues[0].icon).toBe('bronze');
+    });
+
+    it('recognises audio uploads by magic bytes only', () => {
+      expect(audioKind(Buffer.from('ID3\x04\x00\x00\x00\x00\x00\x00\x00\x00', 'latin1'))?.ext).toBe('mp3');
+      expect(audioKind(Buffer.concat([Buffer.from([0, 0, 0, 0x20]), Buffer.from('ftypM4A \x00\x00', 'latin1')]))?.ext).toBe('m4a');
+      expect(audioKind(Buffer.from('OggS\x00\x02\x00\x00\x00\x00\x00\x00', 'latin1'))?.ext).toBe('ogg');
+      expect(audioKind(Buffer.from('<?php echo 1; ?>   ', 'latin1'))).toBeNull();
     });
   });
 });

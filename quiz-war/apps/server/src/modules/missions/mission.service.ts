@@ -90,11 +90,12 @@ export class MissionService {
       );
       if (done.affectedRows === 1) {
         completed++;
+        const rewardEn = [ms.reward_coins ? `${ms.reward_coins} coins` : '', ms.reward_xp ? `${ms.reward_xp} XP` : ''].filter(Boolean).join(' + ');
         const reward = [ms.reward_coins ? `${ms.reward_coins} কয়েন` : '', ms.reward_xp ? `${ms.reward_xp} XP` : ''].filter(Boolean).join(' + ');
         await this.notifications.notify(p.userId, {
           type: 'mission',
-          title: '🎯 মিশন সম্পূর্ণ! রিওয়ার্ড Claim করুন',
-          body: `"${ms.title}" শেষ হয়েছে। ${reward} নিতে এখনই Claim করুন।`,
+          title: { en: 'Mission complete! Claim your reward', bn: 'মিশন সম্পূর্ণ! রিওয়ার্ড Claim করুন' },
+          body: { en: `"${ms.title}" is done. Claim ${rewardEn} now.`, bn: `"${ms.title}" শেষ হয়েছে। ${reward} নিতে এখনই Claim করুন।` },
           url: '/shop?tab=missions',
         });
       }

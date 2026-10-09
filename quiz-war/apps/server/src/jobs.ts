@@ -43,7 +43,12 @@ export function startJobs(ctx: AppContext) {
     for (const r of rows) {
       await ctx.notifications.notify(
         r.user_id,
-        { type: 'streak_warning', title: `🔥 Your ${r.streak_days}-day streak is about to expire!`, body: 'Play one quick battle today to keep it alive.', url: '/' },
+        {
+          type: 'streak',
+          title: { en: `Your ${r.streak_days}-day streak is about to expire!`, bn: `আপনার টানা ${r.streak_days} দিনের স্ট্রিক শেষ হতে চলেছে!` },
+          body: { en: 'Play one quick battle today to keep it alive.', bn: 'স্ট্রিক ধরে রাখতে আজ একটা ছোট ব্যাটল খেলে নিন।' },
+          url: '/',
+        },
         { forcePush: true },
       );
     }

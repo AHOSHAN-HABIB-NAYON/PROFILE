@@ -245,6 +245,8 @@ export class GameEngine {
       graceUntil: null,
       forfeited: false,
       missedInRow: 0,
+      reactions: 0,
+      lastReactionAt: 0,
       score: 0,
       combo: 0,
       bestCombo: 0,
@@ -850,6 +852,21 @@ export class GameEngine {
     }
     // If the round was only waiting on this player, close it now.
     if (m.state === 'question' && m.players.filter((x) => !x.forfeited && !x.answers.has(m.currentIndex)).length === 0) this.endRound(m);
+  }
+
+  /**
+   * Quick emoji reaction. Only players of a live match; at most one every 1.5 s and 40 per
+   * match per player so it can't be used to spam.
+   */
+  react(matchId: string, userId: number, reaction: string) {
+    const m = this.mustGet(matchId);
+    const p = this.mustPlayer(m, userId);
+    if (p.isBot || p.forfeited || m.state === 'finished' || m.state === 'aborted') throw new GameError('forbidden', 'Not allowed');
+    const now = Date.now();
+    if (now - p.lastReactionAt < 1500 || p.reactions >= 40) throw new GameError('rate_limited', 'Slow down');
+    p.lastReactionAt = now;
+    p.reactions++;
+    this.d.emitter.toMatch(m.id, 'match:reaction', { matchId: m.id, userId, team: p.team, reaction });
   }
 
   /** Admin action. */

@@ -63,7 +63,7 @@ export async function getUserByUid(uid: string): Promise<PublicUser | null> {
 export async function getMe(id: number): Promise<MeUser | null> {
   const r = await queryOne<any>(
     `SELECT ${PUBLIC_USER_COLUMNS}, u.email, u.email_verified_at, p.xp, p.coins, p.streak_days,
-            p.available_for_battle, p.dnd, p.bio, p.onboarded_at
+            p.available_for_battle, p.dnd, p.bio, p.onboarded_at, p.lang, p.email_activity, (u.password_hash IS NOT NULL) AS has_password, (u.google_sub IS NOT NULL) AS has_google
      FROM users u JOIN user_profiles p ON p.user_id = u.id WHERE u.id = ? AND u.status <> 'deleted'`,
     [id],
   );
@@ -79,6 +79,10 @@ export async function getMe(id: number): Promise<MeUser | null> {
     availableForBattle: !!r.available_for_battle,
     dnd: !!r.dnd,
     bio: r.bio,
+    lang: r.lang === 'en' ? 'en' : 'bn',
+    emailActivity: !!r.email_activity,
+    hasPassword: !!r.has_password,
+    hasGoogle: !!r.has_google,
   };
 }
 

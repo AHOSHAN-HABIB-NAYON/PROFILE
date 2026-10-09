@@ -6,7 +6,31 @@ export interface UserEmitter {
   toUser<E extends keyof ServerToClientEvents>(userId: number, event: E, payload: Parameters<ServerToClientEvents[E]>[0]): void;
 }
 
+/** A user-facing text in both languages; the user's language picks one. */
+export type LText = string | { en: string; bn: string };
+export type Lang = 'bn' | 'en';
+export const pick = (t: LText, lang: Lang) => (typeof t === 'string' ? t : t[lang] ?? t.bn);
+
 export class NotificationService {
+  private langs = new Map<number, { lang: Lang; at: number }>();
+  /** Hook for follow-ups such as activity emails (set by the context). */
+  onDelivered: ((userId: number, n: { type: string; title: string; body: string; data?: Record<string, unknown> }) => void) | null = null;
+
+  /** The player's app language (cached for a minute). */
+  async langOf(userId: number): Promise<Lang> {
+    const c = this.langs.get(userId);
+    if (c && Date.now() - c.at < 60_000) return c.lang;
+    const r = await queryOne<{ lang: Lang }>('SELECT lang FROM user_profiles WHERE user_id = ?', [userId]).catch(() => null);
+    const lang: Lang = r?.lang === 'en' ? 'en' : 'bn';
+    if (this.langs.size > 5000) this.langs.clear();
+    this.langs.set(userId, { lang, at: Date.now() });
+    return lang;
+  }
+
+  forgetLang(userId: number) {
+    this.langs.delete(userId);
+  }
+
   constructor(
     private readonly push: PushService,
     private readonly emitter: () => UserEmitter | null,
@@ -20,9 +44,11 @@ export class NotificationService {
    */
   async notify(
     userId: number,
-    n: { type: string; title: string; body: string; data?: Record<string, unknown>; url?: string },
+    input: { type: string; title: LText; body: LText; data?: Record<string, unknown>; url?: string },
     opts: { push?: boolean; forcePush?: boolean; store?: boolean } = {},
   ): Promise<NotificationView | null> {
+    const lang = typeof input.title === 'string' && typeof input.body === 'string' ? 'bn' : await this.langOf(userId);
+    const n = { ...input, title: pick(input.title, lang), body: pick(input.body, lang) };
     let view: NotificationView | null = null;
     if (opts.store !== false) {
       const res = await exec('INSERT INTO notifications (user_id, type, title, body, data) VALUES (?, ?, ?, ?, ?)', [
@@ -35,6 +61,7 @@ export class NotificationService {
       view = { id: res.insertId, type: n.type, title: n.title, body: n.body, data: { ...(n.data ?? {}), url: n.url }, readAt: null, createdAt: new Date().toISOString() };
       this.emitter()?.toUser(userId, 'notification:new', view);
     }
+    this.onDelivered?.(userId, n);
     if (this.pushEnabled() && (opts.forcePush || (opts.push !== false && !this.isOnline(userId)))) {
       const msg: PushMessage = { title: n.title, body: n.body, url: n.url, tag: n.type };
       void this.push.sendToUser(userId, msg).catch(() => undefined);

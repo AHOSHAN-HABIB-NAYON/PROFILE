@@ -180,7 +180,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     await exec(`INSERT INTO moderation_actions (user_id, admin_id, action, reason) VALUES (?, ?, ?, ?)`, [id, req.admin!.id, `reset_${b.field}`, b.reason]);
     await log(req, `user.reset_${b.field}`, { type: 'user', id, before, summary: b.reason });
-    await ctx.notifications.notify(id, { type: 'moderation', title: 'Profile updated by moderators', body: `Your ${b.field} was reset: ${b.reason}`, url: '/profile' });
+    await ctx.notifications.notify(id, { type: 'moderation', title: { en: 'Profile updated by moderators', bn: 'মডারেটর আপনার প্রোফাইল আপডেট করেছেন' }, body: { en: `Your ${b.field} was reset: ${b.reason}`, bn: `আপনার ${b.field} রিসেট করা হয়েছে: ${b.reason}` }, url: '/profile' });
     return { ok: true };
   });
 
@@ -465,6 +465,33 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     await log(req, 'settings.game', { type: 'settings', id: section, before, after });
     return { section: after };
   });
+  /** Background music upload (MP3 / M4A / OGG, max 12 MB) for the menu or match slot. */
+  app.post('/music/:slot', { ...can('settings.app'), bodyLimit: 14 * 1024 * 1024 }, async (req) => {
+    const { slot } = parse(z.object({ slot: z.enum(['menu', 'match']) }), req.params);
+    const file = await (req as any).file({ limits: { fileSize: 12 * 1024 * 1024, files: 1 } });
+    if (!file) throw badRequest('No file uploaded');
+    const buf: Buffer = await file.toBuffer();
+    if (file.file.truncated) throw new AppError(413, 'file_too_large', 'Music file must be 12 MB or smaller');
+    const kind = audioKind(buf);
+    if (!kind) throw badRequest('Upload an MP3, M4A or OGG audio file');
+    const url = await ctx.storage.put(`music/${slot}-${Date.now()}.${kind.ext}`, buf);
+    const before = ctx.settings.app();
+    const old = slot === 'menu' ? before.music.menuUrl : before.music.matchUrl;
+    const after = await ctx.settings.updateApp({ music: { ...before.music, [slot === 'menu' ? 'menuUrl' : 'matchUrl']: url } }, req.admin!.id);
+    if (old) await ctx.storage.remove(old);
+    await log(req, 'settings.music', { type: 'settings', summary: `Uploaded ${slot} music (${Math.round(buf.length / 1024)} KB)` });
+    return { music: after.music };
+  });
+  app.delete('/music/:slot', can('settings.app'), async (req) => {
+    const { slot } = parse(z.object({ slot: z.enum(['menu', 'match']) }), req.params);
+    const before = ctx.settings.app();
+    const old = slot === 'menu' ? before.music.menuUrl : before.music.matchUrl;
+    const after = await ctx.settings.updateApp({ music: { ...before.music, [slot === 'menu' ? 'menuUrl' : 'matchUrl']: null } }, req.admin!.id);
+    if (old) await ctx.storage.remove(old);
+    await log(req, 'settings.music', { type: 'settings', summary: `Removed ${slot} music` });
+    return { music: after.music };
+  });
+
   app.put('/settings/app', can('settings.app'), async (req) => {
     const before = ctx.settings.app();
     let after;
@@ -690,10 +717,19 @@ async function moderate(
     await ctx.auth.revokeAllSessions(userId, action);
   }
   if (action === 'warn') {
-    await ctx.notifications.notify(userId, { type: 'moderation', title: '⚠️ Warning from moderators', body: reason, url: '/legal/guidelines' }, { forcePush: true });
+    await ctx.notifications.notify(userId, { type: 'moderation', title: { en: 'Warning from moderators', bn: 'মডারেটরদের সতর্কবার্তা' }, body: { en: reason, bn: reason }, url: '/legal/guidelines' }, { forcePush: true });
   }
   const after = await queryOne<any>('SELECT status, suspended_until, moderation_reason FROM users WHERE id = ?', [userId]);
   const target = await queryOne<{ uid: string }>('SELECT uid FROM users WHERE id = ?', [userId]);
   await audit(req.admin!, `user.${action}`, { type: 'user', id: userId, before, after, summary: `${action} ${target?.uid}: ${reason}` }, { ip: req.ip, userAgent: req.headers['user-agent'] ?? null });
   return { ok: true };
+}
+
+/** Recognises audio by its magic bytes (never trusts the file name or MIME type). */
+export function audioKind(b: Buffer): { ext: string; type: string } | null {
+  if (b.length < 12) return null;
+  if (b.subarray(0, 3).toString('latin1') === 'ID3' || (b[0] === 0xff && (b[1] & 0xe0) === 0xe0)) return { ext: 'mp3', type: 'audio/mpeg' };
+  if (b.subarray(0, 4).toString('latin1') === 'OggS') return { ext: 'ogg', type: 'audio/ogg' };
+  if (b.subarray(4, 8).toString('latin1') === 'ftyp') return { ext: 'm4a', type: 'audio/mp4' };
+  return null;
 }

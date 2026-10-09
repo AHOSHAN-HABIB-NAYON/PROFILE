@@ -82,8 +82,8 @@ export class FriendsService {
     const me = await queryOne<{ username: string }>('SELECT username FROM user_profiles WHERE user_id = ?', [fromId]);
     await this.notifications.notify(to.id, {
       type: 'friend_request',
-      title: '👥 New friend request',
-      body: `${me?.username ?? 'A player'} wants to be your friend.`,
+      title: { en: 'New friend request', bn: 'নতুন ফ্রেন্ড রিকোয়েস্ট' },
+      body: { en: `${me?.username ?? 'A player'} wants to be your friend.`, bn: `${me?.username ?? 'একজন প্লেয়ার'} আপনার বন্ধু হতে চায়।` },
       url: '/friends?tab=requests',
     });
     return { status: 'sent' };
@@ -107,8 +107,8 @@ export class FriendsService {
       const me = await queryOne<{ username: string }>('SELECT username FROM user_profiles WHERE user_id = ?', [userId]);
       await this.notifications.notify(fromId, {
         type: 'friend_accepted',
-        title: '🤝 Friend request accepted',
-        body: `${me?.username ?? 'A player'} is now your friend.`,
+        title: { en: 'Friend request accepted', bn: 'ফ্রেন্ড রিকোয়েস্ট গ্রহণ করেছে' },
+        body: { en: `${me?.username ?? 'A player'} is now your friend.`, bn: `${me?.username ?? 'একজন প্লেয়ার'} এখন আপনার বন্ধু।` },
         url: '/friends',
       });
     }

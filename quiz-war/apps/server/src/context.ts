@@ -8,6 +8,7 @@ import type { Emitter, PlayerIdentity } from './game/types';
 import { queryOne } from './db/pool';
 import { AdminAuthService } from './modules/admin/admin.auth';
 import { AiGeneratorService } from './modules/ai/ai-generator.service';
+import { EmailService } from './modules/emails/email.service';
 import { MissionService } from './modules/missions/mission.service';
 import { AuthService } from './modules/auth/auth.service';
 import { GoogleIdTokenVerifier, type GoogleVerifier } from './modules/auth/google';
@@ -103,6 +104,11 @@ export function createContext(env: Env, log: Logger, overrides: { mailer?: Maile
   let engineRef: GameEngine | null = null;
   const presence = new PresenceService((uid) => engineRef?.isInMatch(uid) ?? false, redis);
   const notifications = new NotificationService(push, () => emitter, (uid) => presence.isOnline(uid), () => settings.app().notificationsEnabled);
+  const emails = new EmailService(mailer, settings, env.PUBLIC_WEB_URL, { error: (o, m) => log.error(o, m) });
+  notifications.onDelivered = (uid, n) => {
+    const kind = n.type === 'achievement' ? 'achievement' : n.type === 'rank' && n.data?.up ? 'rank' : n.type === 'streak' && n.data?.milestone ? 'streak' : null;
+    if (kind) void emails.activity(uid, kind, n.title, n.body).catch(() => undefined);
+  };
   const seasons = new SeasonService(() => settings.game());
   const progression = new ProgressionService(settings, seasons, notifications, () => emitter, { error: (o, m) => log.error(o, m) });
   const questionSource = new MysqlQuestionSource();
@@ -191,6 +197,7 @@ export function createContext(env: Env, log: Logger, overrides: { mailer?: Maile
     questionsAdmin,
     ai,
     missions,
+    emails,
     auth,
     passkeys,
     adminAuth,

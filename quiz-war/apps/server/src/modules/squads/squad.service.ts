@@ -129,8 +129,8 @@ export class SquadService {
     const s = await queryOne<{ name: string }>('SELECT name FROM squads WHERE id = ?', [squadId]);
     await this.notifications.notify(targetId, {
       type: 'squad_invite',
-      title: '🛡️ Squad invitation',
-      body: `You were invited to join ${s?.name}.`,
+      title: { en: 'Squad invitation', bn: 'স্কোয়াডের আমন্ত্রণ' },
+      body: { en: `You were invited to join ${s?.name}.`, bn: `আপনাকে ${s?.name} স্কোয়াডে যোগ দিতে আমন্ত্রণ জানানো হয়েছে।` },
       url: `/squads/${squadId}`,
       data: { inviteId: res.insertId, squadId },
     });

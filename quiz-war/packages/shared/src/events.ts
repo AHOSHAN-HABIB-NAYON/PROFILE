@@ -148,6 +148,8 @@ export interface ClientToServerEvents {
   'match:answer': (p: { matchId: string; questionIndex: number; optionIndex: number }, ack: Ack<{ correct: boolean; points: number; combo: number }>) => void;
   'match:powerup': (p: { matchId: string; questionIndex: number; powerUp: PowerUp }, ack: Ack<{ removedOptions?: number[]; hint?: string; deadline?: number }>) => void;
   'match:forfeit': (p: { matchId: string }, ack?: Ack) => void;
+  /** Quick emoji reaction during a match (rate-limited, from a fixed set). */
+  'match:react': (p: { matchId: string; reaction: string }, ack?: Ack) => void;
   'time:sync': (p: { clientTime: number }, ack: Ack<{ serverTime: number; clientTime: number }>) => void;
 }
 
@@ -167,6 +169,7 @@ export interface ServerToClientEvents {
   'match:reveal': (p: RevealPayload) => void;
   'match:player': (p: { matchId: string; userId: number; connected: boolean; graceUntil: number | null }) => void;
   'match:end': (p: MatchEndPayload) => void;
+  'match:reaction': (p: { matchId: string; userId: number; team: number; reaction: string }) => void;
   /** You missed questions in a row; one more and you are removed (and fined). */
   'match:afk_warning': (p: { matchId: string; missed: number; limit: number }) => void;
   'missions:update': (p: { claimable: number }) => void;

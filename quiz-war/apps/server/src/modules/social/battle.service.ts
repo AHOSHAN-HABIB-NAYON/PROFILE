@@ -92,7 +92,7 @@ export class BattleRequestService {
     void this.notifications
       .notify(
         toId,
-        { type: 'battle_request', title: '⚔️ Battle Request', body: `${v.from.username} challenged you! ${MODES.duel.label} · ${questionCount} questions`, url: '/battle/requests', data: { requestId: v.id } },
+        { type: 'battle_request', title: { en: 'Battle request', bn: 'ব্যাটল চ্যালেঞ্জ' }, body: { en: `${v.from.username} challenged you! ${MODES.duel.label} · ${questionCount} questions`, bn: `${v.from.username} আপনাকে চ্যালেঞ্জ করেছে! ১ বনাম ১ · ${questionCount}টি প্রশ্ন` }, url: '/battle/requests', data: { requestId: v.id } },
         { store: false },
       )
       .catch(() => undefined);

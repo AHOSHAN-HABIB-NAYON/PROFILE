@@ -1,3 +1,4 @@
+import { renderEmail } from '../emails/email.service';
 import nodemailer, { type Transporter } from 'nodemailer';
 
 export interface Mailer {
@@ -24,18 +25,23 @@ export class SmtpMailer implements Mailer {
   }
 }
 
-const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-
-export function actionEmail(title: string, intro: string, buttonText: string, url: string) {
-  const text = `${title}\n\n${intro}\n\n${url}\n\nIf you did not request this, you can ignore this email.\n— QUIZ WAR: Bangladesh`;
-  const html = `<!doctype html><html><body style="margin:0;background:#f3f6fb;font-family:Segoe UI,Roboto,Arial,sans-serif">
-  <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 12px">
-  <table width="480" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:16px;padding:28px">
-  <tr><td style="font-weight:800;font-size:18px;color:#1d4ed8">⚔️ QUIZ WAR</td></tr>
-  <tr><td style="padding-top:16px;font-size:20px;font-weight:700;color:#0f172a">${esc(title)}</td></tr>
-  <tr><td style="padding-top:8px;font-size:15px;color:#334155;line-height:1.5">${esc(intro)}</td></tr>
-  <tr><td style="padding-top:20px"><a href="${esc(url)}" style="display:inline-block;background:#1d4ed8;color:#fff;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:12px">${esc(buttonText)}</a></td></tr>
-  <tr><td style="padding-top:20px;font-size:12px;color:#64748b">If you did not request this, you can ignore this email.</td></tr>
-  </table></td></tr></table></body></html>`;
-  return { text, html };
+/** Bilingual (Bangla first) account emails: verify address / reset password. */
+export function actionEmail(webUrl: string, supportEmail: string, kind: 'verify' | 'reset', url: string) {
+  const p =
+    kind === 'verify'
+      ? {
+          preheader: 'আপনার ইমেইল ঠিকানা নিশ্চিত করুন · Confirm your email',
+          title: 'ইমেইল নিশ্চিত করুন · Verify your email',
+          intro: 'আপনার QUIZ WAR অ্যাকাউন্ট সুরক্ষিত রাখতে নিচের বাটনে চাপ দিয়ে ইমেইল ঠিকানা নিশ্চিত করুন। Confirm your email address to secure your QUIZ WAR account.',
+          button: { text: 'ইমেইল নিশ্চিত করুন · Verify email', url },
+          note: 'লিংকটি ২৪ ঘণ্টা কার্যকর থাকবে। The link expires in 24 hours.',
+        }
+      : {
+          preheader: 'পাসওয়ার্ড রিসেট করুন · Reset your password',
+          title: 'পাসওয়ার্ড রিসেট · Reset your password',
+          intro: 'নতুন পাসওয়ার্ড দিতে নিচের বাটনে চাপ দিন। Use the button below to choose a new password.',
+          button: { text: 'নতুন পাসওয়ার্ড দিন · Reset password', url },
+          note: 'লিংকটি ৩০ মিনিট কার্যকর থাকবে। আপনি অনুরোধ না করে থাকলে এই ইমেইল উপেক্ষা করুন। The link expires in 30 minutes; ignore this email if you did not request it.',
+        };
+  return renderEmail(webUrl, supportEmail, p, 'QUIZ WAR: Bangladesh');
 }

@@ -119,8 +119,8 @@ export class AuthService {
   async sendVerification(userId: number, email: string) {
     const token = await this.createEmailToken(userId, 'verify', 60 * 24);
     const url = `${this.cfg.webUrl}/verify-email?token=${encodeURIComponent(token)}`;
-    const mail = actionEmail('Verify your email', 'Confirm your email address to secure your QUIZ WAR account.', 'Verify email', url);
-    await this.mailer.send({ to: email, subject: 'Verify your QUIZ WAR email', ...mail });
+    const mail = actionEmail(this.cfg.webUrl, this.settings.app().supportEmail, 'verify', url);
+    await this.mailer.send({ to: email, subject: 'QUIZ WAR · ইমেইল নিশ্চিত করুন / Verify your email', ...mail });
   }
 
   async resendVerification(userId: number) {
@@ -151,8 +151,8 @@ export class AuthService {
     if ((recent?.n ?? 0) >= 3) return;
     const token = await this.createEmailToken(u.id, 'reset', 30);
     const url = `${this.cfg.webUrl}/reset-password?token=${encodeURIComponent(token)}`;
-    const mail = actionEmail('Reset your password', 'Use the button below to choose a new password. The link expires in 30 minutes.', 'Reset password', url);
-    await this.mailer.send({ to: email, subject: 'Reset your QUIZ WAR password', ...mail });
+    const mail = actionEmail(this.cfg.webUrl, this.settings.app().supportEmail, 'reset', url);
+    await this.mailer.send({ to: email, subject: 'QUIZ WAR · পাসওয়ার্ড রিসেট / Reset your password', ...mail });
   }
 
   async resetPassword(token: string, newPassword: string) {

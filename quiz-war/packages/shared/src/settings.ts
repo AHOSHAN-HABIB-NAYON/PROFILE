@@ -201,13 +201,13 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
     minRating: 0,
     sameOpponentDailyLimit: 3,
     leagues: [
-      { key: 'bronze', name: 'Bronze', icon: '🥉', minRating: 0 },
-      { key: 'silver', name: 'Silver', icon: '🥈', minRating: 1100 },
-      { key: 'gold', name: 'Gold', icon: '🥇', minRating: 1250 },
-      { key: 'platinum', name: 'Platinum', icon: '💠', minRating: 1400 },
-      { key: 'diamond', name: 'Diamond', icon: '💎', minRating: 1600 },
-      { key: 'master', name: 'Master', icon: '👑', minRating: 1800 },
-      { key: 'champion', name: 'Champion', icon: '🏆', minRating: 2050 },
+      { key: 'bronze', name: 'Bronze', icon: 'bronze', minRating: 0 },
+      { key: 'silver', name: 'Silver', icon: 'silver', minRating: 1100 },
+      { key: 'gold', name: 'Gold', icon: 'gold', minRating: 1250 },
+      { key: 'platinum', name: 'Platinum', icon: 'platinum', minRating: 1400 },
+      { key: 'diamond', name: 'Diamond', icon: 'diamond', minRating: 1600 },
+      { key: 'master', name: 'Master', icon: 'master', minRating: 1800 },
+      { key: 'champion', name: 'Champion', icon: 'champion', minRating: 2050 },
     ],
   },
   battleRequests: { expirySec: 45, maxPendingOutgoing: 5, perMinuteLimit: 6, defaultQuestionCount: 15 },
@@ -215,6 +215,9 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
   speedRound: { totalTimeSec: 60 },
   dailyChallenge: { questionCount: 25, totalTimeSec: 300 },
 };
+
+export const CONTACT_TYPES = ['whatsapp', 'facebook', 'messenger', 'telegram', 'youtube', 'website', 'phone', 'email'] as const;
+export type ContactType = (typeof CONTACT_TYPES)[number];
 
 export const appSettingsSchema = z.object({
   appName: z.string().min(1).max(60),
@@ -234,6 +237,28 @@ export const appSettingsSchema = z.object({
   playStoreUrl: z.string().max(500),
   privacyUrl: z.string().max(500),
   termsUrl: z.string().max(500),
+  /** Shown in the update popup (native app). */
+  updateMessage: z.string().max(300),
+  /** Help & support. The mail button opens the player's mail app. */
+  supportEmail: z.string().email().max(190),
+  contacts: z
+    .array(
+      z.object({
+        type: z.enum(CONTACT_TYPES),
+        label: z.string().trim().min(1).max(40),
+        url: z.string().trim().min(3).max(500),
+      }),
+    )
+    .max(12),
+  /** Background music (admin-uploaded). Null = the built-in soft synth theme. */
+  music: z.object({
+    menuUrl: z.string().max(500).nullable(),
+    matchUrl: z.string().max(500).nullable(),
+    volume: z.number().min(0).max(1),
+  }),
+  /** Ask happy players to rate the app after this many wins (0 = never). */
+  ratePromptAfterWins: z.number().int().min(0).max(1000),
+  emails: z.object({ welcome: z.boolean(), activity: z.boolean() }),
 });
 export type AppSettings = z.infer<typeof appSettingsSchema>;
 
@@ -255,6 +280,12 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   playStoreUrl: '',
   privacyUrl: '/legal/privacy',
   termsUrl: '/legal/terms',
+  updateMessage: 'নতুন ফিচার আর উন্নতি সহ QUIZ WAR-এর নতুন ভার্সন এসেছে।',
+  supportEmail: 'support.quizwarbd@gmail.com',
+  contacts: [],
+  music: { menuUrl: null, matchUrl: null, volume: 0.5 },
+  ratePromptAfterWins: 5,
+  emails: { welcome: true, activity: true },
 };
 
 /** Public subset of app settings exposed to clients (no admin-only flags). */

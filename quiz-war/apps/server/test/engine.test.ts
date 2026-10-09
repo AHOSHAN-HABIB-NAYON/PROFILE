@@ -154,6 +154,18 @@ describe('GameEngine — disconnect handling', () => {
     expect(last('match:end')).toMatchObject({ reason: 'forfeit', winnerTeam: 0 });
   });
 
+  it('reactions are broadcast to the match and rate-limited', async () => {
+    const { engine, events } = makeEngine();
+    const m = await engine.createMatch({ mode: 'duel', source: 'matchmaking', players: [player(1, 0), player(2, 1)], autoStart: true, questionCount: 5 });
+    await toFirstQuestion(engine, m);
+    engine.react(m.id, 1, '👏');
+    expect(events.find((e) => e.event === 'match:reaction')?.payload).toMatchObject({ userId: 1, team: 0, reaction: '👏' });
+    expect(() => engine.react(m.id, 1, '🔥')).toThrow(/Slow down/);
+    await vi.advanceTimersByTimeAsync(1600);
+    expect(() => engine.react(m.id, 1, '🔥')).not.toThrow();
+    expect(() => engine.react(m.id, 99, '🔥')).toThrow();
+  });
+
   it('a match where nobody is playing any more is aborted without rewards', async () => {
     const { engine, rewardsCalls } = makeEngine();
     const m = await engine.createMatch({ mode: 'duel', source: 'matchmaking', players: [player(1, 0), player(2, 1)], autoStart: true, questionCount: 10 });
@@ -191,7 +203,7 @@ describe('GameEngine — AI opponent', () => {
     expect(m.type).toBe('ai');
     expect(m.ranked).toBe(false);
     const bot = m.players.find((p) => p.isBot)!;
-    expect(bot.username).toContain('🤖');
+    expect(bot.username).not.toMatch(/\p{Extended_Pictographic}/u);
     await toFirstQuestion(engine, m);
     await vi.advanceTimersByTimeAsync(m.questionTimeMs);
     expect(bot.answers.has(0)).toBe(true);

@@ -57,12 +57,14 @@ export class ProfileService {
     return getMe(userId);
   }
 
-  async setPreferences(userId: number, p: { availableForBattle?: boolean; dnd?: boolean; tutorialDone?: boolean }) {
+  async setPreferences(userId: number, p: { availableForBattle?: boolean; dnd?: boolean; tutorialDone?: boolean; lang?: 'bn' | 'en'; emailActivity?: boolean }) {
     const sets: string[] = [];
     const params: unknown[] = [];
     if (p.availableForBattle !== undefined) (sets.push('available_for_battle = ?'), params.push(p.availableForBattle ? 1 : 0));
     if (p.dnd !== undefined) (sets.push('dnd = ?'), params.push(p.dnd ? 1 : 0));
     if (p.tutorialDone !== undefined) (sets.push('tutorial_done = ?'), params.push(p.tutorialDone ? 1 : 0));
+    if (p.lang !== undefined) (sets.push('lang = ?'), params.push(p.lang));
+    if (p.emailActivity !== undefined) (sets.push('email_activity = ?'), params.push(p.emailActivity ? 1 : 0));
     if (sets.length) await exec(`UPDATE user_profiles SET ${sets.join(', ')} WHERE user_id = ?`, [...params, userId]);
   }
 

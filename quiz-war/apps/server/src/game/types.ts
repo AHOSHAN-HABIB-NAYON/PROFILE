@@ -72,6 +72,8 @@ export interface LivePlayer extends PlayerIdentity {
   forfeited: boolean;
   /** Questions left unanswered in a row while connected (AFK detection). */
   missedInRow: number;
+  reactions: number;
+  lastReactionAt: number;
   score: number;
   combo: number;
   bestCombo: number;

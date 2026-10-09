@@ -7,6 +7,7 @@ import {
   POWER_UPS,
   type ClientToServerEvents,
   type ServerToClientEvents,
+  MATCH_REACTIONS,
 } from '@quizwar/shared';
 import { Server, type Socket } from 'socket.io';
 import { z } from 'zod';
@@ -42,6 +43,7 @@ const schemas = {
   roomJoin: z.object({ matchId, team: z.number().int().min(0).max(7).optional() }),
   ready: z.object({ matchId, ready: z.boolean() }),
   matchOnly: z.object({ matchId }),
+  react: z.object({ matchId, reaction: z.enum(MATCH_REACTIONS) }),
   resume: z.object({ matchId: matchId.optional() }),
   answer: z.object({ matchId, questionIndex: z.number().int().min(0).max(10000), optionIndex: z.number().int().min(0).max(9) }),
   powerUp: z.object({ matchId, questionIndex: z.number().int().min(0).max(10000), powerUp: z.enum(POWER_UPS) }),
@@ -307,6 +309,7 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
     socket.on('match:answer', guard(schemas.answer, (p) => ctx.engine.submitAnswer(p.matchId, userId, p.questionIndex, p.optionIndex)));
     socket.on('match:powerup', guard(schemas.powerUp, (p) => ctx.engine.usePowerUp(p.matchId, userId, p.questionIndex, p.powerUp)));
     socket.on('match:forfeit', guard(schemas.matchOnly, (p) => ctx.engine.forfeit(p.matchId, userId)));
+    socket.on('match:react', guard(schemas.react, (p) => ctx.engine.react(p.matchId, userId, p.reaction)));
     socket.on('time:sync', guard(schemas.timeSync, (p) => ({ serverTime: Date.now(), clientTime: p.clientTime })));
 
     socket.on('disconnect', () => {
