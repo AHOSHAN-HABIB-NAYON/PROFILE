@@ -160,6 +160,13 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   });
   app.get('/users/:id/logins', can('users.view'), async (req) => ({ items: await ctx.auth.loginHistory(parse(idParam, req.params).id, 100) }));
 
+  app.post('/users/:id/verified', can('users.moderate'), async (req) => {
+    const id = Number((req.params as any).id);
+    const b = parse(z.object({ verified: z.boolean() }), req.body);
+    await ctx.verified.setByAdmin(id, b.verified);
+    await log(req, b.verified ? 'user.verify' : 'user.unverify', { type: 'user', id });
+    return { ok: true };
+  });
   app.post('/users/:id/moderate', can('users.moderate'), async (req) => {
     const { id } = parse(idParam, req.params);
     const b = parse(

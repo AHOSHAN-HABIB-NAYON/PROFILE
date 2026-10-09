@@ -96,6 +96,10 @@ export interface LivePlayer extends PlayerIdentity {
 export type MatchSource = 'matchmaking' | 'challenge' | 'room' | 'ai' | 'solo' | 'tutorial' | 'daily';
 
 export interface LiveMatch {
+  /** Short, easy-to-type code for custom War Rooms (e.g. K7P4QX). */
+  roomCode?: string | null;
+  /** Whole-match time limit (seconds) — e.g. a room set to "10 minutes". */
+  totalTimeSec?: number | null;
   id: string;
   mode: ModeDefinition;
   type: MatchType;

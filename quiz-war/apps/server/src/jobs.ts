@@ -19,6 +19,7 @@ export function startJobs(ctx: AppContext) {
   every(15_000, 'battle-request-sweep', () => ctx.battles.sweep());
   every(30_000, 'settings-refresh', () => ctx.settings.load(true));
   every(10 * 60_000, 'season-tick', () => ctx.seasons.tick((m) => ctx.log.info(m)));
+  every(6 * 60 * 60_000, 'verified-auto', () => ctx.verified.autoGrant());
   every(60 * 60_000, 'cleanup', async () => {
     await exec('DELETE FROM webauthn_challenges WHERE expires_at < UTC_TIMESTAMP()');
     await exec('DELETE FROM email_tokens WHERE expires_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)');

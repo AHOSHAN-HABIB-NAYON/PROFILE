@@ -99,6 +99,16 @@ export const gameSettingsSchema = z.object({
     forfeitOnTimeout: z.boolean(),
   }),
   /** Leaving a started match (quit, disconnect timeout or AFK) costs coins and XP. */
+  /** Verified badge: auto for the month's best, or claimable with coins once eligible. */
+  verified: z
+    .object({
+      enabled: z.boolean(),
+      price: z.number().int().min(0),
+      minMonthlyMatches: z.number().int().min(1),
+      minMonthlyWinRate: z.number().min(1).max(100),
+      autoTopN: z.number().int().min(0).max(1000),
+    })
+    .default({ enabled: true, price: 50000, minMonthlyMatches: 30, minMonthlyWinRate: 65, autoTopN: 10 }),
   penalties: z.object({
     enabled: z.boolean(),
     quitCoins: z.number().int().min(0).max(100000),
@@ -199,6 +209,7 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
     },
   },
   disconnect: { graceSec: 15, forfeitOnTimeout: true },
+  verified: { enabled: true, price: 50000, minMonthlyMatches: 30, minMonthlyWinRate: 65, autoTopN: 10 },
   penalties: { enabled: true, quitCoins: 30, quitXp: 20, giveCoinsToOpponents: true, applyToAiMatches: false, afkMissLimit: 3 },
   ranked: {
     enabled: true,
@@ -296,7 +307,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
 
 /** Public subset of app settings exposed to clients (no admin-only flags). */
 export type PublicConfig = AppSettings & {
-  game: Pick<GameSettings, 'match' | 'powerUps' | 'levels' | 'penalties'> & { leagues: GameSettings['ranked']['leagues']; aiEnabled: boolean };
+  game: Pick<GameSettings, 'match' | 'powerUps' | 'levels' | 'penalties' | 'verified'> & { leagues: GameSettings['ranked']['leagues']; aiEnabled: boolean };
   googleClientId: string | null;
   /** SMTP is configured, so verification / reset emails are really sent. */
   emailEnabled?: boolean;

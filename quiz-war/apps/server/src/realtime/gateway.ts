@@ -56,7 +56,15 @@ const schemas = {
     questionTimeSec: z.number().int().min(3).max(60).nullish(),
     squadId: z.number().int().positive().nullish(),
   }),
-  roomJoin: z.object({ matchId, team: z.number().int().min(0).max(7).optional() }),
+  roomJoin: z.object({ matchId: z.union([matchId, z.string().regex(/^[A-Za-z2-9]{6}$/)]), team: z.number().int().min(0).max(7).optional() }),
+  roomSettings: z.object({
+    matchId,
+    questionCount: z.number().int().min(3).max(500).nullish(),
+    questionTimeSec: z.number().int().min(3).max(120).optional(),
+    totalTimeSec: z.number().int().min(60).max(3 * 3600).nullish(),
+    difficulty: z.enum(DIFFICULTIES).nullish(),
+    categoryId: z.number().int().positive().nullish(),
+  }),
   ready: z.object({ matchId, ready: z.boolean() }),
   matchOnly: z.object({ matchId }),
   react: z.object({ matchId, reaction: z.enum(MATCH_REACTIONS) }),
@@ -322,8 +330,22 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
           }
           if (m.hostUserId && (await ctx.friends.isBlockedEitherWay(userId, m.hostUserId))) throw new GameError('match_not_found', 'This War Room no longer exists');
         }
-        const joined = await ctx.engine.joinMatch(p.matchId, id, p.team);
+        const joined = await ctx.engine.joinMatch(m.id, id, p.team);
         return { snapshot: ctx.engine.snapshot(joined, userId) };
+      }),
+    );
+
+    socket.on(
+      'room:settings',
+      guard(schemas.roomSettings, async (p) => {
+        ctx.engine.updateRoom(p.matchId, userId, {
+          questionCount: p.questionCount,
+          questionTimeSec: p.questionTimeSec,
+          totalTimeSec: p.totalTimeSec,
+          difficulty: p.difficulty,
+          category: p.categoryId === undefined ? undefined : await category(p.categoryId),
+        });
+        return {};
       }),
     );
 

@@ -44,7 +44,12 @@ export class MysqlMatchPersistence implements MatchPersistence {
   }
 
   async markStarted(m: LiveMatch) {
-    await exec(`UPDATE matches SET status = 'active', started_at = UTC_TIMESTAMP(), question_count = ? WHERE id = ?`, [m.questionCount, m.id]);
+    await exec(`UPDATE matches SET status = 'active', started_at = UTC_TIMESTAMP(), question_count = ?, question_time_sec = ?, category_id = ? WHERE id = ?`, [
+      m.questionCount,
+      Math.round(m.questionTimeMs / 1000),
+      m.categoryId,
+      m.id,
+    ]);
   }
 
   async saveQuestions(m: LiveMatch, from: number) {

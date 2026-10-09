@@ -78,6 +78,22 @@ export default function UserDetail() {
             {u.status !== 'suspended' && <button className="btn" onClick={() => setAction('suspend')}><Icon name="pause" size={16} />Suspend</button>}
             {u.status === 'suspended' && <button className="btn" onClick={() => setAction('unsuspend')}><Icon name="play" size={16} />Unsuspend</button>}
             {u.status !== 'banned' ? <button className="btn danger" onClick={() => setAction('ban')}><Icon name="ban" size={16} />Ban</button> : <button className="btn" onClick={() => setAction('unban')}>Unban</button>}
+            <button
+              className="btn"
+              onClick={async () => {
+                setMsg({});
+                try {
+                  await api(`/users/${id}/verified`, { body: { verified: !u.verified_at } });
+                  setMsg({ ok: u.verified_at ? 'Verified badge removed.' : 'Verified badge given.' });
+                  void qc.invalidateQueries({ queryKey: ['user', id] });
+                } catch (e2) {
+                  setMsg({ err: errMsg(e2) });
+                }
+              }}
+            >
+              <Icon name="shield-check" size={16} />
+              {u.verified_at ? 'Remove verified' : 'Give verified badge'}
+            </button>
             {can('users.reset') && <>
               <span className="faint" aria-hidden>|</span>
               <button className="btn sm" onClick={() => setAction('reset_username')}>Reset username</button>

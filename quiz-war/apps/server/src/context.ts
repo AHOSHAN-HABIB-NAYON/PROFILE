@@ -33,6 +33,7 @@ import { FriendsService } from './modules/social/friends.service';
 import { SquadService } from './modules/squads/squad.service';
 import { ImageService } from './modules/uploads/image.service';
 import { LocalStorage, MediaBackup } from './modules/uploads/storage';
+import { VerifiedService } from './modules/verified/verified.service';
 import { ProfileService } from './modules/users/profile.service';
 
 export interface Logger {
@@ -112,6 +113,7 @@ export function createContext(env: Env, log: Logger, overrides: { mailer?: Maile
   };
   const seasons = new SeasonService(() => settings.game());
   const progression = new ProgressionService(settings, seasons, notifications, () => emitter, { error: (o, m) => log.error(o, m) });
+  const verified = new VerifiedService(() => settings.game(), progression, notifications);
   const questionSource = new MysqlQuestionSource();
 
   const hooks: { finished: ((m: any) => void)[] } = { finished: [] };
@@ -199,6 +201,7 @@ export function createContext(env: Env, log: Logger, overrides: { mailer?: Maile
     ai,
     missions,
     emails,
+    verified,
     auth,
     passkeys,
     adminAuth,

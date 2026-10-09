@@ -105,7 +105,18 @@ export class GameEngine {
   /* ------------------------------------------------------------------------ */
 
   get(matchId: string): LiveMatch | undefined {
-    return this.matches.get(matchId);
+    return this.matches.get(matchId) ?? this.matches.get(this.roomCodes.get(matchId.toUpperCase()) ?? '');
+  }
+
+  private roomCodes = new Map<string, string>();
+  private newRoomCode() {
+    const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I — easy to read aloud
+    for (let i = 0; i < 50; i++) {
+      let c = '';
+      for (let j = 0; j < 6; j++) c += abc[Math.floor(this.rnd() * abc.length)];
+      if (!this.roomCodes.has(c)) return c;
+    }
+    return null;
   }
 
   activeMatchOf(userId: number): LiveMatch | undefined {
@@ -186,7 +197,11 @@ export class GameEngine {
       persistChain: Promise.resolve(),
       fetchingMore: false,
     };
-    (m as any).totalTimeSec = totalTimeSec;
+    m.totalTimeSec = totalTimeSec;
+    if (o.source === 'room') {
+      m.roomCode = this.newRoomCode();
+      if (m.roomCode) this.roomCodes.set(m.roomCode, m.id);
+    }
 
     for (const p of o.players) m.players.push(this.newPlayer(p, p.team, false, null, s));
     for (const b of bots) {
@@ -283,7 +298,7 @@ export class GameEngine {
     let t = team ?? counts.indexOf(Math.min(...counts));
     if (t < 0 || t >= m.mode.teams || counts[t] >= m.mode.teamSize) {
       t = counts.findIndex((c) => c < m.mode.teamSize);
-      if (t === -1) throw new GameError('room_full', 'This War Room is full');
+      if (t === -1) throw new GameError('room_full', 'Squad full — this War Room has no free seats');
     }
     const p = this.newPlayer(who, t, false, null, m.settings);
     m.players.push(p);
@@ -322,6 +337,37 @@ export class GameEngine {
     this.broadcastState(m);
     // Challenge rooms (1v1 from a battle request) start as soon as both are ready.
     if (m.source === 'challenge' && this.lobbyCanStart(m)) void this.startMatch(m.id).catch((err) => this.logErr(err, m));
+  }
+
+  /** Host changes the room's rules before the start. Any change un-readies everyone. */
+  updateRoom(
+    matchId: string,
+    userId: number,
+    patch: {
+      questionCount?: number | null;
+      questionTimeSec?: number;
+      totalTimeSec?: number | null;
+      difficulty?: Difficulty | null;
+      category?: { id: number; name: string; icon: string } | null;
+    },
+  ) {
+    const m = this.mustGet(matchId);
+    if (m.state !== 'lobby') throw new GameError('match_started', 'This match has already started');
+    if (m.source !== 'room') throw new GameError('forbidden', 'Only custom rooms can be changed');
+    if (m.hostUserId !== userId) throw new GameError('not_host', 'Only the host can change the room');
+    if (patch.questionCount !== undefined) m.questionCount = patch.questionCount;
+    if (patch.questionTimeSec !== undefined) m.questionTimeMs = patch.questionTimeSec * 1000;
+    if (patch.totalTimeSec !== undefined) m.totalTimeSec = patch.totalTimeSec;
+    if (patch.difficulty !== undefined) m.difficulties = patch.difficulty ? [patch.difficulty] : null;
+    if (patch.category !== undefined) {
+      m.category = patch.category;
+      m.categoryId = patch.category?.id ?? null;
+    }
+    // Time-limited rooms keep serving questions until the clock runs out.
+    if (m.totalTimeSec && patch.questionCount === undefined) m.questionCount = null;
+    if (m.questionCount === null && !m.totalTimeSec) m.questionCount = m.settings.match.questionCount;
+    for (const p of m.players) if (!p.isBot && p.userId !== userId) p.ready = false;
+    this.broadcastState(m);
   }
 
   lobbyCanStart(m: LiveMatch) {
@@ -371,7 +417,7 @@ export class GameEngine {
     const countdownMs = m.mode.kind === 'solo' ? Math.min(m.settings.match.countdownSec, 2) * 1000 : m.settings.match.countdownSec * 1000;
     m.startsAt = now + countdownMs;
     m.startedAt = now;
-    const totalTimeSec = (m as any).totalTimeSec as number | null;
+    const totalTimeSec = m.totalTimeSec ?? null;
     if (totalTimeSec) m.endsAt = m.startsAt + totalTimeSec * 1000;
     for (const p of m.players) if (!p.isBot) this.d.hooks?.onPlayerMatchState?.(p.userId, true);
     this.persist(m, () => this.d.persistence.markStarted(m));
@@ -712,6 +758,7 @@ export class GameEngine {
     const t = setTimeout(() => {
       for (const p of m.players) if (!p.isBot) this.d.emitter.leaveMatch(p.userId, m.id);
       this.matches.delete(m.id);
+      if (m.roomCode) this.roomCodes.delete(m.roomCode);
     }, this.d.retainFinishedMs ?? 120_000);
     t.unref?.();
   }
@@ -946,6 +993,8 @@ export class GameEngine {
       questionCount: m.questionCount,
       questionTimeSec: m.questionTimeMs / 1000,
       difficulty: m.difficulties?.length === 1 ? m.difficulties[0] : null,
+      roomCode: m.roomCode ?? null,
+      totalTimeSec: m.totalTimeSec ?? null,
       players,
       teamScores: this.teamScores(m),
       currentQuestion: inQuestion ? { ...this.publicQuestion(m, m.currentIndex), deadline: me?.roundDeadline ?? m.roundDeadline } : null,

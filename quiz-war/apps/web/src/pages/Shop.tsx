@@ -5,6 +5,7 @@ import { PageHeader } from '../components/AppShell';
 import { CountUp, Empty, Skeleton } from '../components/Feedback';
 import { Icon, IconTile, type IconName } from '../components/Icon';
 import { PullToRefresh } from '../components/PullToRefresh';
+import { VerifiedBadge } from '../components/Verified';
 import { useMissions, type Mission } from '../hooks/queries';
 import { api, friendlyError } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -103,6 +104,85 @@ function Missions() {
   );
 }
 
+type VerifiedStatus = {
+  enabled: boolean;
+  verified: boolean;
+  price: number;
+  eligible: boolean;
+  requirements: { matches: number; winRate: number; autoTopN: number };
+  progress: { played: number; won: number; winRate: number };
+};
+
+/** Verified badge: only for real top players — shows the requirements and lets eligible players claim it. */
+function VerifiedCard() {
+  const t = useT();
+  const lang = useLang();
+  const qc = useQueryClient();
+  const coins = useAuth((s) => s.user?.coins ?? 0);
+  const { data } = useQuery({ queryKey: ['verified'], queryFn: () => api<VerifiedStatus>('/verified') });
+  const [busy, setBusy] = useState(false);
+  if (!data?.enabled) return null;
+  const r = data.requirements;
+  const p = data.progress;
+  const matchPct = Math.min(100, Math.round((p.played / r.matches) * 100));
+  const ratePct = Math.min(100, Math.round((p.winRate / r.winRate) * 100));
+  const claim = async () => {
+    setBusy(true);
+    try {
+      await api('/verified/claim', { method: 'POST', body: {} });
+      sfx('reward');
+      haptic('success');
+      toast.success(t('You are verified!', 'আপনি এখন ভেরিফায়েড!'), t('The badge now shows next to your name.', 'এখন আপনার নামের পাশে ব্যাজ দেখাবে।'), 'verified');
+      void qc.invalidateQueries({ queryKey: ['verified'] });
+      void useAuth.getState().loadMe();
+    } catch (e) {
+      toast.error(t('Could not claim', 'Claim করা যায়নি'), friendlyError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className={`verified-card ${data.verified ? 'done' : ''}`}>
+      <div className="vc-head">
+        <VerifiedBadge size={44} />
+        <div className="grow">
+          <b>{t('Verified badge', 'ভেরিফায়েড ব্যাজ')}</b>
+          <p className="xs">{t('Only for top players — shows next to your name everywhere.', 'শুধু সেরা প্লেয়ারদের জন্য — সব জায়গায় নামের পাশে দেখাবে।')}</p>
+        </div>
+      </div>
+      {data.verified ? (
+        <span className="chip success"><Icon name="check" /> {t('You are verified', 'আপনি ভেরিফায়েড')}</span>
+      ) : (
+        <>
+          <div className="vc-req">
+            <div>
+              <span className="xs">{t('Real matches (30 days)', 'আসল ম্যাচ (৩০ দিন)')}</span>
+              <b className="num">{num(p.played, lang)} / {num(r.matches, lang)}</b>
+              <i><span style={{ width: `${matchPct}%` }} /></i>
+            </div>
+            <div>
+              <span className="xs">{t('Win rate', 'জয়ের হার')}</span>
+              <b className="num">{num(p.winRate, lang)}% / {num(r.winRate, lang)}%</b>
+              <i><span style={{ width: `${ratePct}%` }} /></i>
+            </div>
+          </div>
+          <p className="xs vc-note">
+            {t(`The top ${r.autoTopN} eligible players of the month get it free. Eligible players can also claim it now.`, `মাসের সেরা ${num(r.autoTopN, lang)} জন যোগ্য প্লেয়ার এটা ফ্রি পান। যোগ্য হলে এখনই Claim-ও করতে পারবেন।`)}
+          </p>
+          <button className="btn primary block" disabled={!data.eligible || busy || coins < data.price} onClick={() => void claim()}>
+            {busy ? <span className="spinner" /> : <Icon name="coin" size={18} />}{' '}
+            {data.eligible
+              ? coins >= data.price
+                ? t(`Claim for ${data.price.toLocaleString()} coins`, `${num(data.price, lang)} কয়েনে Claim করুন`)
+                : t(`Need ${data.price.toLocaleString()} coins`, `${num(data.price, lang)} কয়েন লাগবে`)
+              : t('Locked — reach the targets above', 'লক — উপরের লক্ষ্য পূরণ করুন')}
+          </button>
+        </>
+      )}
+    </section>
+  );
+}
+
 export default function Shop() {
   const t = useT();
   const lang = useLang();
@@ -158,6 +238,7 @@ export default function Shop() {
           <Missions />
         ) : (
           <>
+            <VerifiedCard />
             <p className="small muted row top gap-sm">
               <Icon name="shield-check" size={18} style={{ color: 'var(--success)', marginTop: 1 }} />
               {t('Cosmetics and practice power-ups, bought only with coins you earn by playing. Ranked battles stay fair — power-ups are disabled there.', 'শুধু খেলে অর্জিত কয়েন দিয়ে কেনা যায় এমন সাজসজ্জা আর অনুশীলনের পাওয়ার-আপ। র‍্যাংকড ব্যাটলে পাওয়ার-আপ বন্ধ থাকে, তাই খেলা সবসময় ন্যায্য।')}

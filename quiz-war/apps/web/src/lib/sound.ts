@@ -55,13 +55,15 @@ export function sfx(name: Sfx) {
  * blocks playback, it starts on the next tap.
  */
 type Slot = 'menu' | 'match';
-let sources: { menu: string | null; match: string | null; volume: number } = { menu: null, match: null, volume: 0.5 };
+/** Built-in original loops (bundled with the app, work offline). Admin uploads replace them. */
+const DEFAULT_MUSIC = { menu: '/audio/menu.mp3', match: '/audio/match.mp3' };
+let sources: { menu: string | null; match: string | null; volume: number } = { menu: DEFAULT_MUSIC.menu, match: DEFAULT_MUSIC.match, volume: 0.5 };
 let current: { slot: Slot; audio: HTMLAudioElement | null; synth: { stop: () => void } | null } | null = null;
 let wanted: { on: boolean; slot: Slot } = { on: false, slot: 'menu' };
 
 export function setMusicSources(s: { menuUrl: string | null; matchUrl: string | null; volume: number }) {
-  const changed = s.menuUrl !== sources.menu || s.matchUrl !== sources.match;
-  sources = { menu: s.menuUrl, match: s.matchUrl, volume: s.volume };
+  const changed = (s.menuUrl || DEFAULT_MUSIC.menu) !== sources.menu || (s.matchUrl || DEFAULT_MUSIC.match) !== sources.match;
+  sources = { menu: s.menuUrl || DEFAULT_MUSIC.menu, match: s.matchUrl || DEFAULT_MUSIC.match, volume: s.volume };
   if (current?.audio) current.audio.volume = sources.volume * 0.6;
   if (changed && wanted.on) {
     stopCurrent();
@@ -143,6 +145,17 @@ export function setMusic(on: boolean, slot: Slot = 'menu') {
       a.loop = true;
       a.preload = 'auto';
       a.volume = 0;
+      // If a track can't load (bad upload, offline), fall back to the built-in loop, then to the synth pad.
+      a.onerror = () => {
+        if (current?.audio !== a) return;
+        const fallback = DEFAULT_MUSIC[slot];
+        if (a.src.endsWith(fallback)) {
+          current = { slot, audio: null, synth: slot === 'menu' ? synthPad() : null };
+          return;
+        }
+        a.src = fallback;
+        playWhenAllowed(a);
+      };
       current = { slot, audio: a, synth: null };
       playWhenAllowed(a);
       fade(a, sources.volume * 0.6, 1200);

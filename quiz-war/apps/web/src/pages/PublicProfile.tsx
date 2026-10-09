@@ -19,6 +19,7 @@ import { haptic } from '../lib/platform';
 import { toast } from '../lib/toast';
 import { StatsGrid } from './Profile';
 import { SquadLogo } from './Squads';
+import { VerifiedBadge } from '../components/Verified';
 
 export default function PublicProfile() {
   const t = useT();
@@ -80,7 +81,7 @@ export default function PublicProfile() {
         <div className="pc-band" />
         <div className="pc-body">
           <div className="pc-avatar"><Avatar name={data.user.username} src={data.user.avatarUrl} size={100} frame={data.user.frame} status={rel?.status} /></div>
-          <h1>{data.user.username}</h1>
+          <h1 className="name-with-badge">{data.user.username}{data.user.verified && <VerifiedBadge size={22} />}</h1>
           {data.user.title && <span className="chip accent">{data.user.title}</span>}
           <span className="uid-badge">{data.user.uid}</span>
           {rel && <p className={`xs status-text s-${rel.status}`}>{statusLabel(rel.status)}</p>}

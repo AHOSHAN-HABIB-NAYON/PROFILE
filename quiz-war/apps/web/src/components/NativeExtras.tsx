@@ -210,6 +210,35 @@ export function VerifyEmailPrompt() {
   );
 }
 
+/** Small reminder card (Home) while the email is unverified. */
+export function VerifyEmailBanner() {
+  const t = useT();
+  const cfg = useConfig().data;
+  const user = useAuth((s) => s.user);
+  const [sent, setSent] = useState(false);
+  if (!cfg?.emailEnabled || !user?.email || user.emailVerified) return null;
+  return (
+    <div className="verify-banner" role="status">
+      <IconTile name="mail" tone="warning" size={40} />
+      <div className="grow">
+        <b>{t('Verify your email', 'ইমেইল যাচাই করুন')}</b>
+        <p className="xs muted">{sent ? t('Sent! Check your inbox and Spam.', 'পাঠানো হয়েছে! ইনবক্স ও Spam দেখুন।') : t('Secure your account and recover it anytime.', 'অ্যাকাউন্ট সুরক্ষিত রাখুন, পাসওয়ার্ড ভুলে গেলেও ফিরে পাবেন।')}</p>
+      </div>
+      <button
+        className="btn sm primary"
+        disabled={sent}
+        onClick={() =>
+          void api('/auth/resend-verification', { method: 'POST' })
+            .then(() => setSent(true))
+            .catch((e) => toast.error(t('Could not send', 'পাঠানো যায়নি'), friendlyError(e)))
+        }
+      >
+        {sent ? <Icon name="check" /> : <Icon name="mail" />} {sent ? t('Sent', 'পাঠানো হয়েছে') : t('Send link', 'লিংক পাঠান')}
+      </button>
+    </div>
+  );
+}
+
 /** App-wide extras for signed-in players: music sources, language sync, update + permission prompts. */
 export function NativeExtras() {
   const cfg = useConfig().data;

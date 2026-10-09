@@ -24,6 +24,8 @@ export async function gameRoutes(app: FastifyInstance, ctx: AppContext) {
 
   app.get('/daily', { preHandler: requireUser(ctx) }, async (req) => ctx.daily.status(uid(req)));
 
+  app.get('/verified', { preHandler: requireUser(ctx) }, async (req) => ctx.verified.status(uid(req)));
+  app.post('/verified/claim', { preHandler: requireUser(ctx), config: { rateLimit: { max: 5, timeWindow: '1 minute' } } }, async (req) => ctx.verified.claim(uid(req)));
   app.get('/missions', { preHandler: requireUser(ctx) }, async (req) => ctx.missions.list(uid(req)));
   app.post('/missions/:id/claim', { preHandler: requireUser(ctx), config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, async (req) => {
     const { id } = parse(z.object({ id: z.coerce.number().int().positive() }), req.params);

@@ -13,7 +13,7 @@ export async function publicRoutes(app: FastifyInstance, ctx: AppContext, static
     const g = ctx.settings.game();
     return {
       ...a,
-      game: { match: g.match, powerUps: g.powerUps, levels: g.levels, penalties: g.penalties, leagues: g.ranked.leagues, aiEnabled: g.ai.enabled },
+      game: { match: g.match, powerUps: g.powerUps, levels: g.levels, penalties: g.penalties, verified: g.verified, leagues: g.ranked.leagues, aiEnabled: g.ai.enabled },
       googleClientId: ctx.env.GOOGLE_CLIENT_ID ?? null,
       vapidPublicKey: ctx.env.VAPID_PUBLIC_KEY ?? null,
       emailEnabled: ctx.mailer instanceof SmtpMailer,

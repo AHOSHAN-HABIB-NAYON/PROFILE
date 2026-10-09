@@ -4,7 +4,9 @@ import { useNavigate, useParams } from 'react-router';
 import { Avatar } from '../components/Avatar';
 import { Empty } from '../components/Feedback';
 import { categoryIcon, Icon } from '../components/Icon';
-import { DIFFICULTY_INFO } from '../components/MatchOptions';
+import { QrCode } from '../components/Qr';
+import { RoomSettings } from '../components/RoomSettings';
+import { Sheet } from '../components/Sheet';
 import { friendlyError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useGame } from '../lib/game';
@@ -25,13 +27,34 @@ export default function WarRoom() {
   const snap = useGame((s) => (s.matchId === id ? s.snapshot : null));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
 
   useEffect(() => {
     if (conn !== 'connected') return;
     if (useGame.getState().matchId !== id) useGame.getState().reset(id);
     emit('room:join', { matchId: id })
-      .then((r) => useGame.getState().applySnapshot(r.snapshot))
-      .catch((e) => setError(friendlyError(e)));
+      .then((r) => {
+        if (r.snapshot.matchId !== id) {
+          // Joined with the short room code: continue on the real room address.
+          useGame.getState().reset(r.snapshot.matchId);
+          useGame.getState().applySnapshot(r.snapshot);
+          nav(`/war-room/${r.snapshot.matchId}`, { replace: true });
+          return;
+        }
+        useGame.getState().applySnapshot(r.snapshot);
+      })
+      .catch((e) => {
+        const code = (e as any)?.code;
+        setError(
+          code === 'room_full'
+            ? t('Squad full — every seat in this room is taken.', 'স্কোয়াড ফুল — এই রুমে আর জায়গা নেই।')
+            : code === 'match_not_found'
+              ? t('This room was closed or the code is wrong.', 'রুমটি বন্ধ হয়ে গেছে অথবা কোডটি ভুল।')
+              : code === 'match_started'
+                ? t('This battle has already started.', 'এই ব্যাটল ইতিমধ্যে শুরু হয়ে গেছে।')
+                : friendlyError(e),
+        );
+      });
   }, [conn, id]);
 
   useEffect(() => {
@@ -67,7 +90,8 @@ export default function WarRoom() {
   const isHost = snap.hostUserId === me.id;
   const teams = Array.from({ length: MODES[snap.mode].teams }, (_, i) => snap.players.filter((p) => p.team === i));
   const allReady = snap.players.every((p) => p.ready) && teams.every((x) => x.length > 0);
-  const link = `${PUBLIC_WEB_URL.replace(/\/$/, '')}/war-room/${id}`;
+  const link = `${PUBLIC_WEB_URL.replace(/\/$/, '')}/war-room/${snap.roomCode ?? id}`;
+  const full = snap.players.length >= MODES[snap.mode].teams * MODES[snap.mode].teamSize;
   const readyCount = snap.players.filter((p) => p.ready).length;
 
   const toggleReady = async () => {
@@ -105,14 +129,33 @@ export default function WarRoom() {
         <header className="wr-head">
           <p className="wr-kicker">QUIZ WAR</p>
           <h1><Icon name="swords" size={26} /> {t('War room', 'ওয়ার রুম')}</h1>
+          {snap.roomCode && (
+            <div className="room-code">
+              <div>
+                <span className="xs dim">{t('Room code', 'রুম কোড')}</span>
+                <b className="rc-code" aria-label={snap.roomCode.split('').join(' ')}>{snap.roomCode}</b>
+              </div>
+              <button
+                className="btn icon sm white"
+                aria-label={t('Copy room code', 'রুম কোড কপি')}
+                onClick={() => void navigator.clipboard?.writeText(snap.roomCode!).then(() => (haptic('tap'), toast.success(t('Code copied', 'কোড কপি হয়েছে'), snap.roomCode!, 'copy')))}
+              >
+                <Icon name="copy" size={18} />
+              </button>
+              <button className="btn icon sm white" aria-label={t('Show QR code', 'QR কোড দেখান')} onClick={() => setQrOpen(true)}>
+                <Icon name="qr" size={18} />
+              </button>
+            </div>
+          )}
           <div className="wr-chips">
             <span className="chip on-dark"><Icon name={modeIcon(snap.mode)} /> {modeLabel(snap.mode)}</span>
-            <span className="chip on-dark"><Icon name={snap.category ? categoryIcon(snap.category as any) : 'sparkles'} /> {snap.category ? snap.category.name : t('Mixed', 'মিশ্র')}</span>
-            <span className="chip on-dark"><Icon name="list" /> {snap.questionCount ? num(snap.questionCount, lang) : '∞'}</span>
-            <span className="chip on-dark"><Icon name="timer" /> {num(snap.questionTimeSec, lang)}{t('s', ' সে.')}</span>
-            {snap.difficulty && <span className="chip on-dark"><Icon name={DIFFICULTY_INFO[snap.difficulty].icon} /> {t(DIFFICULTY_INFO[snap.difficulty].en, DIFFICULTY_INFO[snap.difficulty].bn)}</span>}
+            <span className={`chip on-dark ${full ? 'full' : ''}`}>
+              <Icon name="users" /> {num(snap.players.length, lang)}/{num(MODES[snap.mode].teams * MODES[snap.mode].teamSize, lang)} {full ? t('· Squad full', '· স্কোয়াড ফুল') : ''}
+            </span>
           </div>
         </header>
+
+        <RoomSettings snap={snap} isHost={isHost} />
 
         <div className={`wr-teams ${teams.length > 1 ? 'versus' : ''}`}>
           {teams.map((players, ti) => (
@@ -170,6 +213,13 @@ export default function WarRoom() {
           <button className="btn outline-dark" onClick={leave}><Icon name="door" /> {t('Leave', 'চলে যান')}</button>
         </div>
       </div>
+      <Sheet open={qrOpen} onClose={() => setQrOpen(false)} title={t('Scan to join', 'স্ক্যান করে যোগ দিন')} icon="qr">
+        <div className="col center">
+          <div className="qr-box"><QrCode value={link} size={220} /></div>
+          <b className="rc-code light">{snap.roomCode}</b>
+          <p className="small muted center">{t('Friends can scan this QR, open the link, or type the code in Battle → Join room.', 'বন্ধুরা QR স্ক্যান করে, লিংক খুলে, বা ব্যাটল → রুমে যোগ দিন-এ কোড লিখে ঢুকতে পারবে।')}</p>
+        </div>
+      </Sheet>
     </div>
   );
 }

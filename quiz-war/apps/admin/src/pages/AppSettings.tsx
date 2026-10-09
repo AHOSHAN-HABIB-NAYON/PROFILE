@@ -180,7 +180,7 @@ function MusicCard({ a }: { a: App }) {
     void run(slot, () => api(`/music/${slot}`, { form }), 'Uploaded. Players hear it the next time the app loads.');
   };
   return (
-    <Card icon="music" title="Music" desc="Background music for the player app. Without an upload the built-in soft theme plays." saving={s.busy} msg={s.msg} saveLabel="Save volume"
+    <Card icon="music" title="Music" desc="Background music for the player app. It plays by default when the app opens; players can turn it off in Settings. Upload your own to replace the built-in theme." saving={s.busy} msg={s.msg} saveLabel="Save volume"
       onSubmit={() => void s.save({ music }, 'Volume saved.')}>
       {SLOTS.map(({ slot, key, title, hint }) => {
         const url = music[key];
@@ -188,7 +188,14 @@ function MusicCard({ a }: { a: App }) {
         return (
           <div key={slot} className="music-slot">
             <div><h3>{title}</h3><p className="small muted" style={{ margin: 0 }}>{hint}</p></div>
-            {url ? <audio controls preload="none" src={url} aria-label={`${title} preview`} /> : <p className="small faint" style={{ margin: 0 }}>Using the built-in theme.</p>}
+            {url ? (
+              <audio controls preload="none" src={url} aria-label={`${title} preview`} />
+            ) : (
+              <>
+                <p className="small faint" style={{ margin: 0 }}>Using the built-in QUIZ WAR theme (original, royalty-free). Listen:</p>
+                <audio controls preload="none" src={`/audio/${slot}.mp3`} aria-label={`Built-in ${title.toLowerCase()} preview`} />
+              </>
+            )}
             <div className="field">
               <label htmlFor={`mu-${slot}`}>{url ? 'Replace file' : 'Upload file'}</label>
               <input id={`mu-${slot}`} type="file" className="input" accept=".mp3,.m4a,.ogg,audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg" disabled={slotBusy === slot}

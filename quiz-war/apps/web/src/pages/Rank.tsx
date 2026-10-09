@@ -9,6 +9,7 @@ import { Empty, ErrorBox, ListSkeleton, N } from '../components/Feedback';
 import { useLeagues } from '../components/Game';
 import { Icon, type IconName } from '../components/Icon';
 import { LeagueEmblem, RankMedal } from '../components/LeagueEmblem';
+import { PlayerName } from '../components/Verified';
 import { PullToRefresh } from '../components/PullToRefresh';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -85,7 +86,7 @@ export default function Rank() {
   const items = q.data?.pages.flatMap((p) => p.items) ?? [];
   const myRank = q.data?.pages[0]?.me;
   const top = scope !== 'squad' ? items.slice(0, 3) : [];
-  const rest = scope !== 'squad' && items.length >= 3 ? items.slice(3) : items;
+  const rest = scope !== 'squad' ? items.slice(3) : items;
 
   return (
     <PullToRefresh onRefresh={() => q.refetch()}>
@@ -119,24 +120,28 @@ export default function Rank() {
           <Empty icon="trophy" tone="warning" title={t('No rankings yet', 'এখনো কোনো র‍্যাংকিং নেই')} body={t('Play battles to get on the board!', 'ব্যাটল খেলে লিডারবোর্ডে নাম তুলুন!')} />
         ) : (
           <>
-            {top.length === 3 && (
-              <div className="podium">
+            {top.length > 0 && (
+              <div className="podium" role="list" aria-label={t('Top 3', 'সেরা ৩')}>
                 {[top[1], top[0], top[2]].map((e, i) => {
                   const place = [2, 1, 3][i];
+                  if (!e) return <div key={`empty-${place}`} className={`p p${place} empty`} aria-hidden />;
                   return (
-                    <Link key={e.user.id} to={`/u/${e.user.uid}`} className={`p p${place}`}>
-                      {place === 1 && <Icon name="crown" size={26} className="p-crown" />}
-                      <Avatar name={e.user.username} src={e.user.avatarThumbUrl} size={place === 1 ? 64 : 52} frame={e.user.frame} />
-                      <RankMedal rank={place} size={28} />
-                      <b className="xs ellipsis" style={{ maxWidth: '100%' }}>{e.user.username}</b>
-                      <span className="chip num">{num(e.score, lang)}</span>
+                    <Link key={e.user.id} to={`/u/${e.user.uid}`} className={`p p${place} ${e.user.id === me.id ? 'me' : ''}`} role="listitem">
+                      <span className="p-ava">
+                        {place === 1 && <Icon name="crown" size={28} className="p-crown" />}
+                        <span className="p-ring"><Avatar name={e.user.username} src={e.user.avatarThumbUrl} size={place === 1 ? 72 : 58} frame={e.user.frame} /></span>
+                        <span className="p-medal"><RankMedal rank={place} size={26} /></span>
+                      </span>
+                      <b className="p-name"><PlayerName name={e.user.username} verified={e.user.verified} size={14} /></b>
+                      <span className="p-score num">{num(e.score, lang)}</span>
+                      <span className="p-base"><b>{num(place, lang)}</b></span>
                     </Link>
                   );
                 })}
               </div>
             )}
             <div className="card lb-card">
-              {(top.length === 3 ? rest : items).map((e: any) =>
+              {(top.length > 0 ? rest : items).map((e: any) =>
                 scope === 'squad' ? (
                   <Link key={e.squad.id} to={`/squads/${e.squad.id}`} className="lb-row">
                     <span className="rank">{e.rank <= 3 ? <RankMedal rank={e.rank} size={26} /> : num(e.rank, lang)}</span>
@@ -149,7 +154,7 @@ export default function Rank() {
                     <span className="rank">{num(e.rank, lang)}</span>
                     <Avatar name={e.user.username} src={e.user.avatarThumbUrl} size={42} frame={e.user.frame} />
                     <div className="grow" style={{ minWidth: 0 }}>
-                      <b className="ellipsis" style={{ display: 'block' }}>{e.user.username}</b>
+                      <b style={{ display: 'block' }}><PlayerName name={e.user.username} verified={e.user.verified} /></b>
                       <p className="xs muted">{t('Lv', 'লেভেল')} {num(e.user.level, lang)}{e.wins ? t(` · ${e.wins} wins`, ` · ${num(e.wins, lang)} জয়`) : ''}</p>
                     </div>
                     <b className="num">{num(e.score, lang)}</b>

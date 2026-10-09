@@ -132,9 +132,6 @@ export default function Battle({ tab: initialTab }: { tab?: 'play' | 'requests' 
   const opts = useMatchOptions();
   const [aiCount, setAiCount] = useState(opts.defaultCount);
   const [soloCount, setSoloCount] = useState(10);
-  const [roomCount, setRoomCount] = useState(opts.defaultCount);
-  const [roomDiff, setRoomDiff] = useState<Difficulty | null>(null);
-  const [roomTime, setRoomTime] = useState<number | null>(null);
   const { busy, start } = useStart();
   const daily = useQuery({ queryKey: ['daily'], queryFn: () => api('/daily') });
   const stats = useQuery({ queryKey: ['my-stats'], queryFn: () => api('/me/stats'), staleTime: 120_000 });
@@ -252,7 +249,7 @@ export default function Battle({ tab: initialTab }: { tab?: 'play' | 'requests' 
 
             <section className="card" aria-labelledby="wr-h">
               <div className="card-title"><h2 id="wr-h"><IconTile name="shield" tone="primary" size={34} /> {t('Custom war room', 'কাস্টম ওয়ার রুম')}</h2></div>
-              <p className="small muted">{t('Create a private room, share the link and start when everyone is ready.', 'প্রাইভেট রুম বানান, লিংক শেয়ার করুন, সবাই প্রস্তুত হলে শুরু করুন।')}</p>
+              <p className="small muted">{t('Pick the size and create the room — set questions, time and difficulty inside. Friends join with the code or QR.', 'সাইজ বাছাই করে রুম বানান — প্রশ্ন, সময় ও কঠিনতা রুমের ভিতরে ঠিক করবেন। বন্ধুরা কোড বা QR দিয়ে যোগ দেবে।')}</p>
               <div className="tabs mt" role="radiogroup" aria-label={t('Room size', 'রুমের আকার')}>
                 {(['duel', 'duo', 'trio', 'squad'] as const).map((m) => (
                   <button key={m} role="radio" aria-checked={roomMode === m} aria-selected={roomMode === m} onClick={() => setRoomMode(m)}>
@@ -260,23 +257,10 @@ export default function Battle({ tab: initialTab }: { tab?: 'play' | 'requests' 
                   </button>
                 ))}
               </div>
-              <CountPicker value={roomCount} onChange={setRoomCount} />
-              <DifficultyPicker value={roomDiff} onChange={(d) => (setRoomDiff(d), setRoomTime(null))} />
-              <div className="opt-block">
-                <span className="opt-label"><Icon name="timer" size={14} /> {t('Time per question', 'প্রতি প্রশ্নে সময়')}</span>
-                <div className="opt-chips" role="radiogroup" aria-label={t('Time per question', 'প্রতি প্রশ্নে সময়')}>
-                  {[null, 4, 5, 8, 10, 15, 20, 30].map((sec) => (
-                    <button key={String(sec)} type="button" role="radio" aria-checked={roomTime === sec} className="select-chip" onClick={() => (haptic('tap'), setRoomTime(sec))}>
-                      {sec === null ? t('Auto', 'অটো') : `${num(sec, lang)}${t('s', 'সে')}`}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <MatchSummary count={roomCount} difficulty={roomDiff} seconds={roomTime ?? opts.timeFor(roomDiff)} />
               <button
                 className="btn outline block mt"
                 disabled={busy}
-                onClick={() => void start('room:create', { mode: roomMode, categoryId: category, questionCount: roomCount, difficulty: roomDiff, questionTimeSec: roomTime })}
+                onClick={() => void start('room:create', { mode: roomMode, categoryId: category })}
               >
                 <Icon name="plus" /> {t('Create war room', 'ওয়ার রুম তৈরি করুন')}
               </button>
@@ -290,7 +274,7 @@ export default function Battle({ tab: initialTab }: { tab?: 'play' | 'requests' 
               >
                 <div className="input-wrap grow">
                   <Icon name="link" size={18} />
-                  <input className="input" aria-label={t('Room link or code', 'রুম লিংক বা কোড')} placeholder={t('Paste room link or code', 'রুম লিংক বা কোড দিন')} value={joinCode} onChange={(e) => setJoinCode(e.target.value)} />
+                  <input className="input" aria-label={t('Room link or code', 'রুম লিংক বা কোড')} placeholder={t('Room code, e.g. K7P4QX', 'রুম কোড, যেমন K7P4QX')} autoCapitalize="characters" maxLength={80} value={joinCode} onChange={(e) => setJoinCode(e.target.value)} />
                 </div>
                 <button className="btn soft" disabled={!joinCode.trim()}>{t('Join', 'যোগ দিন')}</button>
               </form>

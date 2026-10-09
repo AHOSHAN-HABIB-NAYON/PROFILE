@@ -35,6 +35,10 @@ export interface MatchSnapshot {
   questionTimeSec: number;
   /** Chosen question difficulty (null = mixed). */
   difficulty?: Difficulty | null;
+  /** Custom War Room join code (6 characters). */
+  roomCode?: string | null;
+  /** Whole-match time limit in seconds (time-limited rooms). */
+  totalTimeSec?: number | null;
   players: MatchPlayerView[];
   teamScores: number[];
   currentQuestion: QuestionPublic | null;
@@ -146,6 +150,10 @@ export interface ClientToServerEvents {
   'solo:start': (p: { mode: 'solo' | 'survival' | 'speed' | 'daily'; categoryId?: number | null; difficulty?: Difficulty | null; practiceMistakes?: boolean; questionCount?: number | null }, ack: Ack<{ matchId: string }>) => void;
   'room:create': (p: { mode: ModeKey; categoryId?: number | null; questionCount?: number; difficulty?: Difficulty | null; questionTimeSec?: number | null; squadId?: number | null }, ack: Ack<{ matchId: string }>) => void;
   'room:join': (p: { matchId: string; team?: number }, ack: Ack<{ snapshot: MatchSnapshot }>) => void;
+  'room:settings': (
+    p: { matchId: string; questionCount?: number | null; questionTimeSec?: number; totalTimeSec?: number | null; difficulty?: Difficulty | null; categoryId?: number | null },
+    ack?: Ack,
+  ) => void;
   'room:ready': (p: { matchId: string; ready: boolean }, ack?: Ack) => void;
   'room:start': (p: { matchId: string }, ack?: Ack) => void;
   'room:leave': (p: { matchId: string }, ack?: Ack) => void;

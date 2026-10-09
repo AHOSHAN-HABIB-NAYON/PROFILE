@@ -46,6 +46,8 @@ export interface PublicUser {
   league: string;
   frame?: string | null;
   title?: string | null;
+  /** Verified badge (top players). */
+  verified?: boolean;
 }
 
 export interface MeUser extends PublicUser {

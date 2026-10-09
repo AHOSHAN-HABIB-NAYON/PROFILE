@@ -13,6 +13,8 @@ import { haptic } from '../lib/platform';
 import { useConn } from '../lib/socket';
 import { sfx } from '../lib/sound';
 import { toast } from '../lib/toast';
+import { PlayerName, VerifiedBadge } from '../components/Verified';
+import { VerifyEmailBanner } from '../components/NativeExtras';
 
 const REWARD_ICON: Record<string, IconName> = { coins: 'coin', xp: 'xp', power_up: 'bolt', mystery: 'gift' };
 
@@ -138,7 +140,7 @@ function FriendsOnline() {
           {online.map((f) => (
             <Link key={f.user.id} to={`/u/${f.user.uid}`} className="fs-item">
               <Avatar name={f.user.username} src={f.user.avatarThumbUrl} status={f.status} size={54} frame={f.user.frame} />
-              <span className="xs bold ellipsis">{f.user.username}</span>
+              <span className="xs bold"><PlayerName name={f.user.username} verified={f.user.verified} size={12} /></span>
             </Link>
           ))}
         </div>
@@ -185,10 +187,12 @@ export default function Home() {
           <Link to="/profile"><Avatar name={user.username} src={user.avatarThumbUrl ?? user.avatarUrl} size={54} frame={user.frame} status="online" /></Link>
           <div className="grow">
             <p className="xs faint bold">{greeting(t)}</p>
-            <div className="row gap-sm"><h2 className="ellipsis">{user.username}</h2><LeagueBadge rating={user.rating} compact /></div>
+            <div className="row gap-sm"><h2 className="name-with-badge"><span className="ellipsis">{user.username}</span>{user.verified && <VerifiedBadge size={18} />}</h2><LeagueBadge rating={user.rating} compact /></div>
             <LevelBar xp={user.xp} />
           </div>
         </section>
+
+        <VerifyEmailBanner />
 
         <section className="hero-battle" aria-labelledby="qb">
           <div className="hb-art" aria-hidden>

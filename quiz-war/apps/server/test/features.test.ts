@@ -337,6 +337,46 @@ d('Features (MySQL)', () => {
     });
   });
 
+  describe('war room codes and settings', () => {
+    it('gives rooms a short code, lets only the host change rules, supports a time limit', async () => {
+      const host = await newPlayer('host');
+      const guest = await newPlayer('guest');
+      const who = (id: number, n: string) => ({ userId: id, username: n, uid: null, avatarUrl: null, level: 1, rating: 1000 });
+      const m = await t.ctx.engine.createMatch({ mode: 'duel', source: 'room', hostUserId: host.id, players: [{ ...who(host.id, 'host'), team: 0 }] });
+      expect(m.roomCode).toMatch(/^[A-HJ-NP-Z2-9]{6}$/);
+      expect(t.ctx.engine.get(m.roomCode!.toLowerCase())?.id).toBe(m.id);
+      await t.ctx.engine.joinMatch(m.id, who(guest.id, 'guest'));
+      expect(() => t.ctx.engine.updateRoom(m.id, guest.id, { questionCount: 100 })).toThrow(/host/);
+      t.ctx.engine.updateRoom(m.id, host.id, { questionCount: 300, difficulty: 'hard', questionTimeSec: 5 });
+      expect(m.questionCount).toBe(300);
+      expect(m.difficulties).toEqual(['hard']);
+      t.ctx.engine.updateRoom(m.id, host.id, { totalTimeSec: 600 });
+      expect(m.totalTimeSec).toBe(600);
+      expect(m.questionCount).toBeNull();
+      expect(t.ctx.engine.snapshot(m, host.id).roomCode).toBe(m.roomCode);
+      const third = await newPlayer('third');
+      await expect(t.ctx.engine.joinMatch(m.id, who(third.id, 'third'))).rejects.toThrow(/full/i);
+      await t.ctx.engine.leaveLobby(m.id, guest.id);
+      await t.ctx.engine.leaveLobby(m.id, host.id);
+    });
+  });
+
+  describe('verified badge', () => {
+    it('cannot be bought without the win-rate requirement; admins can grant it and it shows publicly', async () => {
+      const p = await newPlayer('verif');
+      const st = await api('GET', '/verified', undefined, p.token);
+      expect(st.body.eligible).toBe(false);
+      expect(st.body.price).toBe(50000);
+      const claim = await api('POST', '/verified/claim', {}, p.token);
+      expect(claim.status).toBe(403);
+      await t.ctx.verified.setByAdmin(p.id, true);
+      const uid = (await queryOne<any>('SELECT uid FROM users WHERE id = ?', [p.id])).uid;
+      const pub = await api('GET', `/users/${uid}`, undefined, p.token);
+      expect(pub.body.user.verified).toBe(true);
+      expect((await api('GET', '/verified', undefined, p.token)).body.verified).toBe(true);
+    });
+  });
+
   describe('uploads survive a redeploy', () => {
     it('keeps a database copy and restores wiped files on sync and on request', async () => {
       const { rm, readFile } = await import('node:fs/promises');
