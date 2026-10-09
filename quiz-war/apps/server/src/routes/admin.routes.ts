@@ -11,6 +11,8 @@ import { audit } from '../modules/admin/admin.auth';
 import { categoryInputSchema } from '../modules/questions/category.service';
 import { aiJobInputSchema, aiSettingsSchema } from '../modules/ai/ai-generator.service';
 import { MISSION_METRICS, missionInputSchema } from '../modules/missions/mission.service';
+import { SmtpMailer } from '../modules/auth/mailer';
+import { renderEmail } from '../modules/emails/email.service';
 
 const COOKIE = 'qw_admin_rt';
 const COOKIE_PATH = '/api/v1/admin/auth';
@@ -443,6 +445,60 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       id,
     ]);
     await log(req, 'report.resolve', { type: 'report', id, after: b });
+    return { ok: true };
+  });
+
+  /* --------------------------- Integrations --------------------------- */
+  // Which server-side services are configured. Never returns secrets — only on/off and public ids.
+  app.get('/integrations', can('dashboard.view'), async () => {
+    const env = ctx.env;
+    const appS = ctx.settings.app();
+    const origins = env.WEBAUTHN_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean);
+    const fingerprints = (env.ANDROID_SHA256_CERT_FINGERPRINTS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+    const smtpHost = env.SMTP_HOST ?? (env.SMTP_URL ? (() => { try { return new URL(env.SMTP_URL!).hostname; } catch { return 'custom'; } })() : null);
+    return {
+      google: {
+        configured: !!env.GOOGLE_CLIENT_ID,
+        enabled: appS.googleLoginEnabled,
+        clientId: env.GOOGLE_CLIENT_ID ?? null,
+        extraAudiences: (env.GOOGLE_EXTRA_AUDIENCES ?? '').split(',').filter(Boolean).length,
+      },
+      passkey: {
+        enabled: appS.passkeyEnabled,
+        rpId: env.WEBAUTHN_RP_ID,
+        webOrigins: origins.filter((o) => !o.startsWith('android:')),
+        androidOrigin: origins.some((o) => o.startsWith('android:apk-key-hash:')),
+        androidFingerprints: fingerprints.length,
+        rpMatchesSite: (() => { try { return new URL(env.PUBLIC_WEB_URL).hostname.endsWith(env.WEBAUTHN_RP_ID); } catch { return false; } })(),
+      },
+      email: { configured: ctx.mailer instanceof SmtpMailer, host: smtpHost, from: env.MAIL_FROM },
+      push: ctx.push.status,
+      ai: { configured: ctx.ai.configured },
+      publicWebUrl: env.PUBLIC_WEB_URL,
+    };
+  });
+  app.post('/integrations/test-email', { ...can('settings.app'), config: { rateLimit: { max: 5, timeWindow: '10 minutes' } } }, async (req) => {
+    const b = parse(z.object({ to: z.string().email().max(190) }), req.body);
+    if (ctx.mailer instanceof SmtpMailer) {
+      try {
+        await ctx.mailer.verify();
+      } catch (err: any) {
+        throw new AppError(400, 'smtp_failed', `SMTP login failed: ${String(err?.message ?? err).slice(0, 200)}`);
+      }
+    } else throw new AppError(400, 'smtp_missing', 'SMTP is not configured on the server');
+    const appS = ctx.settings.app();
+    const mail = renderEmail(ctx.env.PUBLIC_WEB_URL, appS.supportEmail, {
+      preheader: 'SMTP পরীক্ষা সফল · SMTP test',
+      title: 'ইমেইল কাজ করছে · Email works',
+      intro: 'এটি QUIZ WAR এডমিন প্যানেল থেকে পাঠানো একটি পরীক্ষামূলক ইমেইল। This is a test email from the QUIZ WAR admin panel.',
+      note: 'এখন থেকে স্বাগত ইমেইল, ইমেইল যাচাই ও পাসওয়ার্ড রিসেট ইমেইল যাবে। Welcome, verification and password-reset emails will now be delivered.',
+    }, appS.appName);
+    try {
+      await ctx.mailer.send({ to: b.to, subject: 'QUIZ WAR — SMTP test', ...mail });
+    } catch (err: any) {
+      throw new AppError(400, 'smtp_failed', `Sending failed: ${String(err?.message ?? err).slice(0, 200)}`);
+    }
+    await log(req, 'integrations.test_email', { type: 'email', id: 0, after: { to: b.to } });
     return { ok: true };
   });
 

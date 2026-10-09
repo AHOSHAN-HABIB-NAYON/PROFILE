@@ -221,7 +221,7 @@ function MusicCard({ a }: { a: App }) {
 function Emails({ a }: { a: App }) {
   const s = useSaver();
   return (
-    <Card icon="mail" title="Emails" desc={<>Emails are only sent when SMTP is configured on the server with the <code>SMTP_URL</code> environment variable.</>} saving={s.busy} msg={s.msg} saveLabel="Save email settings"
+    <Card icon="mail" title="Emails" desc={<>Emails are only sent when SMTP is configured on the server (see Connections above).</>} saving={s.busy} msg={s.msg} saveLabel="Save email settings"
       onSubmit={(e) => {
         const f = new FormData(e.currentTarget);
         void s.save({ emails: { welcome: f.get('welcome') === 'on', activity: f.get('activity') === 'on' } }, 'Email settings saved.');
@@ -276,6 +276,100 @@ function Legal({ a }: { a: App }) {
   );
 }
 
+type Integrations = {
+  google: { configured: boolean; enabled: boolean; clientId: string | null; extraAudiences: number };
+  passkey: { enabled: boolean; rpId: string; webOrigins: string[]; androidOrigin: boolean; androidFingerprints: number; rpMatchesSite: boolean };
+  email: { configured: boolean; host: string | null; from: string };
+  push: { web: boolean; android: boolean; firebaseProject: string | null };
+  ai: { configured: boolean };
+  publicWebUrl: string;
+};
+
+function StatusRow({ ok, warn, title, detail, fix }: { ok: boolean; warn?: boolean; title: string; detail: ReactNode; fix?: ReactNode }) {
+  const tone = ok ? 'var(--success)' : warn ? 'var(--warning, #d97706)' : 'var(--danger)';
+  return (
+    <div className="int-row">
+      <span className="int-dot" style={{ color: tone }}><Icon name={ok ? 'check' : 'alert'} size={18} /></span>
+      <div className="grow">
+        <b>{title}</b> <span className="small" style={{ color: tone, fontWeight: 700 }}>{ok ? 'Working · চালু' : warn ? 'Partly set · আংশিক' : 'Not set · সেট করা নেই'}</span>
+        <div className="small muted">{detail}</div>
+        {!ok && fix && <div className="small int-fix">{fix}</div>}
+      </div>
+    </div>
+  );
+}
+
+/** Live check of server-side services — shows what is missing and which Hostinger variable fixes it. */
+function IntegrationsCard() {
+  const { data, isLoading, error } = useQuery({ queryKey: ['integrations'], queryFn: () => api<Integrations>('/integrations') });
+  const [to, setTo] = useState('');
+  const [msg, setMsg] = useState<Msg>({});
+  const [busy, setBusy] = useState(false);
+  const test = async () => {
+    setBusy(true);
+    setMsg({});
+    try {
+      await api('/integrations/test-email', { method: 'POST', body: { to } });
+      setMsg({ ok: `Test email sent to ${to} · টেস্ট ইমেইল পাঠানো হয়েছে` });
+    } catch (e) {
+      setMsg({ err: errMsg(e) });
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="card form span-all" aria-label="Connections">
+      <div className="card-head">
+        <span className="cat-ic"><Icon name="link" size={20} /></span>
+        <div>
+          <h2>Connections · সংযোগ অবস্থা</h2>
+          <p className="small muted">Google login, passkeys, email and push only switch on when their keys are set in Hostinger → Node.js app → Environment variables (then restart). Secrets are never shown here.</p>
+        </div>
+      </div>
+      {isLoading ? <Loading rows={4} /> : error || !data ? <p className="err">{errMsg(error)}</p> : (
+        <div className="int-list">
+          <StatusRow
+            ok={data.google.configured && data.google.enabled}
+            warn={data.google.configured && !data.google.enabled}
+            title="Google login"
+            detail={data.google.configured ? <>Client ID …{data.google.clientId?.slice(-28)} {data.google.enabled ? '' : '· turned off in Access & features'}</> : 'Players do not see the "Continue with Google" button.'}
+            fix={<>Set <code>GOOGLE_CLIENT_ID</code> (Web client ID from Google Cloud Console). For the Android app also create an Android OAuth client with the app's SHA-1.</>}
+          />
+          <StatusRow
+            ok={data.passkey.enabled && data.passkey.rpMatchesSite && data.passkey.androidOrigin && data.passkey.androidFingerprints > 0}
+            warn={data.passkey.enabled && data.passkey.rpMatchesSite}
+            title="Passkey"
+            detail={<>RP ID <code>{data.passkey.rpId}</code> · web {data.passkey.webOrigins.join(', ') || '—'} · Android app {data.passkey.androidOrigin && data.passkey.androidFingerprints ? 'ready' : 'not linked'}</>}
+            fix={<>Website passkeys need <code>WEBAUTHN_RP_ID</code> = your domain. For the Android app add <code>ANDROID_SHA256_CERT_FINGERPRINTS</code> and append <code>android:apk-key-hash:…</code> to <code>WEBAUTHN_ORIGIN</code> (values are printed on the GitHub APK release page).</>}
+          />
+          <StatusRow
+            ok={data.email.configured}
+            title="Email (SMTP)"
+            detail={data.email.configured ? <>Server {data.email.host} · from {data.email.from}</> : 'Welcome, verification and password-reset emails are NOT being sent.'}
+            fix={<>Gmail: set <code>SMTP_HOST=smtp.gmail.com</code>, <code>SMTP_PORT=465</code>, <code>SMTP_USER</code>=your Gmail, <code>SMTP_PASS</code>=16-letter App Password, <code>MAIL_FROM</code>.</>}
+          />
+          <StatusRow
+            ok={data.push.web && data.push.android}
+            warn={data.push.web || data.push.android}
+            title="Push notifications"
+            detail={<>Website/PWA {data.push.web ? 'on' : 'off'} · Android {data.push.android ? `on (${data.push.firebaseProject})` : 'off'}</>}
+            fix={<>Website: <code>VAPID_PUBLIC_KEY</code> + <code>VAPID_PRIVATE_KEY</code>. Android: <code>FCM_SERVICE_ACCOUNT_JSON</code> on the server and the <code>QW_GOOGLE_SERVICES_JSON_BASE64</code> GitHub secret for the APK.</>}
+          />
+          <StatusRow ok={data.ai.configured} title="AI question generator" detail={data.ai.configured ? 'OpenAI key found.' : 'OpenAI key missing.'} fix={<>Set <code>OPENAI_API_KEY</code>.</>} />
+        </div>
+      )}
+      {data?.email.configured && (
+        <form className="row" onSubmit={(e) => (e.preventDefault(), void test())}>
+          <input className="input grow" type="email" required placeholder="you@gmail.com" value={to} onChange={(e) => setTo(e.target.value)} aria-label="Send a test email to" />
+          <button className="btn" disabled={busy || !to}><Icon name="mail" size={16} /> {busy ? 'Sending…' : 'Send test email'}</button>
+        </form>
+      )}
+      {msg.ok && <p className="small" role="status" style={{ color: 'var(--success)', fontWeight: 700 }}>{msg.ok}</p>}
+      {msg.err && <p className="err" role="alert">{msg.err}</p>}
+    </section>
+  );
+}
+
 export default function AppSettings() {
   const { data, isLoading, error } = useQuery({ queryKey: ['settings'], queryFn: () => api('/settings') });
   if (isLoading) return <Loading rows={10} />;
@@ -285,6 +379,7 @@ export default function AppSettings() {
     <>
       <div className="head"><h1>App settings</h1><span className="small faint">Each card saves on its own. Every change is audit-logged.</span></div>
       <div className="settings-grid">
+        <IntegrationsCard />
         <Branding a={a} />
         <Access a={a} />
         <Support a={a} />

@@ -15,10 +15,16 @@ export class LogMailer implements Mailer {
   }
 }
 
+export type SmtpConfig = string | { host: string; port: number; secure: boolean; auth?: { user: string; pass: string } };
+
 export class SmtpMailer implements Mailer {
   private transport: Transporter;
-  constructor(url: string, private readonly from: string) {
-    this.transport = nodemailer.createTransport(url);
+  constructor(cfg: SmtpConfig, private readonly from: string) {
+    this.transport = nodemailer.createTransport(cfg as any);
+  }
+  /** Connects and authenticates without sending anything (admin "test connection"). */
+  async verify() {
+    await this.transport.verify();
   }
   async send(msg: { to: string; subject: string; text: string; html: string }) {
     await this.transport.sendMail({ from: this.from, ...msg });
@@ -44,4 +50,15 @@ export function actionEmail(webUrl: string, supportEmail: string, kind: 'verify'
           note: 'লিংকটি ৩০ মিনিট কার্যকর থাকবে। আপনি অনুরোধ না করে থাকলে এই ইমেইল উপেক্ষা করুন। The link expires in 30 minutes; ignore this email if you did not request it.',
         };
   return renderEmail(webUrl, supportEmail, p, 'QUIZ WAR: Bangladesh');
+}
+
+/** SMTP settings from env: SMTP_URL, or SMTP_HOST/PORT/USER/PASS (Gmail: smtp.gmail.com, 465, app password). */
+export function smtpConfigFromEnv(env: { SMTP_URL?: string; SMTP_HOST?: string; SMTP_PORT?: number; SMTP_USER?: string; SMTP_PASS?: string; SMTP_SECURE?: string }): SmtpConfig | null {
+  if (env.SMTP_URL) return env.SMTP_URL;
+  if (!env.SMTP_HOST) return null;
+  const port = env.SMTP_PORT ?? 465;
+  const secure = env.SMTP_SECURE ? env.SMTP_SECURE === 'true' || env.SMTP_SECURE === '1' : port === 465;
+  // Gmail shows app passwords in groups of four ("abcd efgh ijkl mnop"); spaces are not part of it.
+  const pass = (env.SMTP_PASS ?? '').replace(/\s+/g, '');
+  return { host: env.SMTP_HOST, port, secure, auth: env.SMTP_USER ? { user: env.SMTP_USER, pass } : undefined };
 }

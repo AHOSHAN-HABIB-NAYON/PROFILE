@@ -48,6 +48,27 @@ export class FriendsService {
       .sort((a, b) => order[a.status] - order[b.status]);
   }
 
+  /** "Find players": people online and available for battle (never blocked ones), closest rating first. */
+  async onlinePlayers(userId: number, candidateIds: number[], limit = 30) {
+    const ids = candidateIds.filter((id) => id !== userId);
+    if (!ids.length) return [];
+    const blocked = await this.blockedSet(userId);
+    const usable = ids.filter((id) => !blocked.has(id)).slice(0, 200);
+    if (!usable.length) return [];
+    const me = await queryOne<{ rating: number }>('SELECT rating FROM user_profiles WHERE user_id = ?', [userId]);
+    const rows = await query<any>(
+      `SELECT ${PUBLIC_USER_COLUMNS}, (SELECT 1 FROM friends f WHERE f.user_id = ? AND f.friend_id = u.id) AS is_friend
+       FROM users u JOIN user_profiles p ON p.user_id = u.id
+       WHERE u.id IN (?) AND u.status = 'active' AND p.username IS NOT NULL`,
+      [userId, usable],
+    );
+    const mine = Number(me?.rating ?? 1000);
+    return rows
+      .map((r) => ({ user: toPublicUser(r), status: this.presence(Number(r.id)), isFriend: !!r.is_friend }))
+      .sort((a, b) => Math.abs(a.user.rating - mine) - Math.abs(b.user.rating - mine))
+      .slice(0, limit);
+  }
+
   async requests(userId: number) {
     const incoming = await query<any>(
       `SELECT fr.id AS request_id, fr.created_at AS created, ${PUBLIC_USER_COLUMNS} FROM friend_requests fr

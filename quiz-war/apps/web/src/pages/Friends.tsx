@@ -21,12 +21,18 @@ export default function Friends() {
   const t = useT();
   const lang = useLang();
   const [params, setParams] = useSearchParams();
-  const tab = (params.get('tab') as 'friends' | 'requests' | 'add') ?? 'friends';
+  const tab = (params.get('tab') as 'friends' | 'online' | 'requests' | 'add') ?? 'friends';
   const setTab = (x: string) => setParams({ tab: x }, { replace: true });
   const me = useAuth((s) => s.user)!;
   const qc = useQueryClient();
   const nav = useNavigate();
   const friends = useQuery({ queryKey: ['friends'], queryFn: async () => (await api<{ items: any[] }>('/friends')).items });
+  const online = useQuery({
+    queryKey: ['players-online'],
+    queryFn: async () => (await api<{ items: { user: PublicUser; status: string; isFriend: boolean }[] }>('/players/online')).items,
+    enabled: tab === 'online',
+    refetchInterval: tab === 'online' ? 20_000 : false,
+  });
   const requests = useQuery({ queryKey: ['friend-requests'], queryFn: () => api<{ incoming: any[]; outgoing: any[] }>('/friends/requests') });
   const [challenge, setChallenge] = useState<PublicUser | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
@@ -95,6 +101,9 @@ export default function Friends() {
           <button role="tab" aria-selected={tab === 'friends'} onClick={() => setTab('friends')}>
             <Icon name="users" /> {t('Friends', 'বন্ধু')} {friends.data ? <span className="tab-count">{num(onlineCount, lang)}/{num(friends.data.length, lang)}</span> : null}
           </button>
+          <button role="tab" aria-selected={tab === 'online'} onClick={() => setTab('online')}>
+            <Icon name="wifi" /> {t('Online', 'অনলাইন')}
+          </button>
           <button role="tab" aria-selected={tab === 'requests'} onClick={() => setTab('requests')}>
             <Icon name="user-add" /> {t('Requests', 'রিকোয়েস্ট')} {incoming ? <span className="tab-badge">{num(incoming, lang)}</span> : null}
           </button>
@@ -135,6 +144,44 @@ export default function Friends() {
               })}
             </div>
           ))}
+
+        {tab === 'online' && (
+          <>
+            <p className="small muted">{t('Players who are online and open to battles right now — closest skill first.', 'এই মুহূর্তে অনলাইনে আছেন আর ব্যাটলের জন্য প্রস্তুত এমন প্লেয়ার — আপনার কাছাকাছি দক্ষতার প্লেয়ার আগে।')}</p>
+            {online.isLoading ? (
+              <ListSkeleton rows={5} />
+            ) : online.error ? (
+              <ErrorBox error={online.error} retry={online.refetch} />
+            ) : !online.data?.length ? (
+              <Empty
+                icon="wifi"
+                title={t('Nobody available right now', 'এখন কেউ ফ্রি নেই')}
+                body={t('Try Quick Battle — we will find an opponent or an AI player for you.', 'কুইক ব্যাটল চাপুন — আমরা প্রতিপক্ষ বা এআই প্লেয়ার খুঁজে দেব।')}
+                action={<button className="btn primary" onClick={() => nav('/battle')}><Icon name="swords" /> {t('Quick battle', 'কুইক ব্যাটল')}</button>}
+              />
+            ) : (
+              <div className="card list stagger">
+                {online.data.map((f) => (
+                  <div key={f.user.id} className="list-row">
+                    <Link to={`/u/${f.user.uid}`}><Avatar name={f.user.username} src={f.user.avatarThumbUrl} status={f.status as any} size={48} frame={f.user.frame} /></Link>
+                    <Link to={`/u/${f.user.uid}`} className="grow" style={{ color: 'var(--text)', minWidth: 0 }}>
+                      <b className="ellipsis" style={{ display: 'block' }}>{f.user.username}{f.isFriend && <span className="chip success xs-chip">{t('Friend', 'বন্ধু')}</span>}</b>
+                      <span className="xs muted">{t('Lv', 'লেভেল')} {num(f.user.level, lang)} · {t('Rating', 'রেটিং')} {num(f.user.rating, lang)}</span>
+                    </Link>
+                    {!f.isFriend && (
+                      <button className="btn icon sm soft" onClick={() => void addFriend(f.user)} aria-label={t(`Add ${f.user.username} as friend`, `${f.user.username}-কে বন্ধু করুন`)}>
+                        <Icon name="user-plus" size={18} />
+                      </button>
+                    )}
+                    <button className="btn sm primary" onClick={() => (haptic('tap'), setChallenge(f.user))} aria-label={t(`Challenge ${f.user.username}`, `${f.user.username}-কে চ্যালেঞ্জ`)}>
+                      <Icon name="swords" /> {t('Challenge', 'চ্যালেঞ্জ')}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
 
         {tab === 'requests' &&
           (requests.isLoading ? (

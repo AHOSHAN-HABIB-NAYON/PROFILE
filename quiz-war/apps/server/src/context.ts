@@ -12,7 +12,7 @@ import { EmailService } from './modules/emails/email.service';
 import { MissionService } from './modules/missions/mission.service';
 import { AuthService } from './modules/auth/auth.service';
 import { GoogleIdTokenVerifier, type GoogleVerifier } from './modules/auth/google';
-import { LogMailer, SmtpMailer, type Mailer } from './modules/auth/mailer';
+import { LogMailer, SmtpMailer, smtpConfigFromEnv, type Mailer } from './modules/auth/mailer';
 import { PasskeyService } from './modules/auth/passkey.service';
 import { DailyChallengeService } from './modules/daily/daily.service';
 import { LeaderboardService } from './modules/leaderboard/leaderboard.service';
@@ -90,7 +90,8 @@ export function createContext(env: Env, log: Logger, overrides: { mailer?: Maile
   redis?.on('error', (err) => log.warn({ err: err.message }, 'redis error'));
 
   const emitter = new SocketEmitter();
-  const mailer: Mailer = overrides.mailer ?? (env.SMTP_URL ? new SmtpMailer(env.SMTP_URL, env.MAIL_FROM) : new LogMailer((o, m) => log.info(o, m)));
+  const smtp = smtpConfigFromEnv(env);
+  const mailer: Mailer = overrides.mailer ?? (smtp ? new SmtpMailer(smtp, env.MAIL_FROM) : new LogMailer((o, m) => log.info(o, m)));
   if (!env.SMTP_URL && (env.NODE_ENV === 'production' || env.NODE_ENV === 'staging')) log.warn('SMTP_URL is not set — emails are only logged');
 
   const googleAudiences = [env.GOOGLE_CLIENT_ID, ...(env.GOOGLE_EXTRA_AUDIENCES?.split(',') ?? [])].filter((x): x is string => !!x?.trim()).map((s) => s.trim());

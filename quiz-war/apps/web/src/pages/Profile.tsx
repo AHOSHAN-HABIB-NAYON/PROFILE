@@ -54,6 +54,7 @@ export default function Profile({ tab: initial }: { tab?: 'stats' | 'achievement
   const pub = useQuery({ queryKey: ['profile', me.uid], queryFn: () => api(`/users/${me.uid}`) });
   const ach = useQuery({ queryKey: ['achievements'], queryFn: async () => (await api<{ items: any[] }>('/me/achievements')).items, enabled: tab === 'achievements' });
   const stats = useQuery({ queryKey: ['my-stats'], queryFn: () => api('/me/stats'), enabled: tab === 'stats' });
+  const seasons = useQuery({ queryKey: ['my-seasons'], queryFn: async () => (await api<{ items: any[] }>('/me/seasons')).items, enabled: tab === 'stats' });
   const league = leagueForRating(me.rating, leagues);
   const s = pub.data?.stats;
 
@@ -145,6 +146,27 @@ export default function Profile({ tab: initial }: { tab?: 'stats' | 'achievement
                     </div>
                   </div>
                 ))}
+              </section>
+            )}
+            {!!seasons.data?.length && (
+              <section className="card">
+                <div className="card-title"><h3><Icon name="trophy" size={18} /> {t('Season history', 'সিজন হিস্ট্রি')}</h3></div>
+                <div className="list">
+                  {seasons.data.map((x: any) => (
+                    <div key={x.id} className="list-row">
+                      <LeagueEmblem league={x.league ?? 'bronze'} size={38} />
+                      <div className="grow" style={{ minWidth: 0 }}>
+                        <b className="small ellipsis" style={{ display: 'block' }}>
+                          {x.name} {x.status === 'active' && <span className="chip primary xs-chip">{t('Current', 'চলমান')}</span>}
+                        </b>
+                        <span className="xs muted">
+                          {t('Won', 'জয়')} {num(x.wins ?? 0, lang)} · {t('Lost', 'পরাজয়')} {num(x.losses ?? 0, lang)} · {t('Peak', 'সর্বোচ্চ')} {num(x.peakRating ?? x.rating ?? 0, lang)}
+                        </span>
+                      </div>
+                      {x.finalRank ? <b className="num">#{num(x.finalRank, lang)}</b> : <b className="num">{num(x.rating ?? 0, lang)}</b>}
+                    </div>
+                  ))}
+                </div>
               </section>
             )}
             <Link to="/history" className="card tap row" style={{ color: 'var(--text)' }}>

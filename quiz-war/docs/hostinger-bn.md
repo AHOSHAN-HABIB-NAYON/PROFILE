@@ -75,15 +75,63 @@ Deploy চাপুন। প্রথমবার চালু হলে অ্
 
 ---
 
-## ঐচ্ছিক ফিচার চালু করা
-| ফিচার | কী লাগবে | কোথায় সেট |
-|---|---|---|
-| Email verification / password reset | SMTP (Hostinger Email-এর SMTP দিয়েও হবে: `smtp.hostinger.com:465`) | `SMTP_URL=smtps://you%40yourdomain.com:পাসওয়ার্ড@smtp.hostinger.com:465`, `MAIL_FROM` |
-| Google Login | Google Cloud OAuth Client ID | `GOOGLE_CLIENT_ID` (docs/deployment.md দেখুন) |
-| Web Push notification | VAPID key (`npx web-push generate-vapid-keys`) | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` |
-| Android push | Firebase | `FCM_SERVICE_ACCOUNT_JSON` (docs/android-release.md) |
+## গুগল লগইন, পাসকি, ইমেইল (SMTP) ও পুশ — ধাপে ধাপে
 
-সেট না করলেও গেম চলবে — ইমেইল সার্ভার লগে প্রিন্ট হবে, Google বাটন লুকানো থাকবে।
+কোডে সব ফিচার আছে, কিন্তু এগুলোর চাবি (key) শুধু আপনিই দিতে পারবেন। চাবি না দিলে বাটন/ফিচার লুকানো থাকে।
+**কোনটা চালু আর কোনটা বাকি, দেখুন: এডমিন → App settings → "Connections · সংযোগ অবস্থা" কার্ড।**
+সব মান বসাবেন Hostinger → Node.js অ্যাপ → **Environment variables**-এ, তারপর **Restart**। কোনো পাসওয়ার্ড/key চ্যাটে বা GitHub কোডে দেবেন না।
+
+### ১) ইমেইল (SMTP) — Gmail দিয়ে (সবচেয়ে সহজ)
+1. যে Gmail থেকে মেইল যাবে (যেমন support.quizwarbd@gmail.com) তাতে **2-Step Verification** চালু করুন।
+2. https://myaccount.google.com/apppasswords → নাম দিন "QUIZ WAR" → ১৬ অক্ষরের **App Password** কপি করুন।
+3. Hostinger env-এ বসান:
+   ```
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=465
+   SMTP_USER=support.quizwarbd@gmail.com
+   SMTP_PASS=<১৬ অক্ষরের app password>
+   MAIL_FROM=QUIZ WAR Bangladesh <support.quizwarbd@gmail.com>
+   ```
+4. Restart → এডমিন → App settings → Connections → **Send test email** দিয়ে পরীক্ষা করুন।
+   (Hostinger-এর নিজের ইমেইল হলে: `SMTP_HOST=smtp.hostinger.com`, ইউজার = পুরো ইমেইল, পাস = ইমেইলের পাসওয়ার্ড।)
+
+এরপর স্বাগত ইমেইল, ইমেইল যাচাই, পাসওয়ার্ড রিসেট ও অ্যাক্টিভিটি ইমেইল যাবে।
+
+### ২) অ্যাপের স্থায়ী সাইনিং কী (গুগল লগইন ও পাসকি অ্যাপে চালাতে **বাধ্যতামূলক**)
+অ্যাপে গুগল লগইন ও পাসকি অ্যাপের সার্টিফিকেটের ফিঙ্গারপ্রিন্টের সাথে বাঁধা। কী না থাকলে প্রতি বিল্ডে নতুন অস্থায়ী কী হয়, তাই কাজ করবে না।
+1. যেকোনো কম্পিউটারে (Java/Android Studio থাকলে) একবার চালান:
+   ```
+   keytool -genkeypair -v -keystore quizwar-upload.jks -alias quizwar -keyalg RSA -keysize 2048 -validity 10000
+   ```
+   পাসওয়ার্ড দিন ও মনে রাখুন। ফাইলটি **দুই জায়গায় ব্যাকআপ** রাখুন (হারালে Play Store-এ আপডেট দিতে সমস্যা হবে)।
+2. `base64 -w0 quizwar-upload.jks` (Windows: `certutil -encode`) এর আউটপুট কপি করুন।
+3. GitHub → রিপো → Settings → Secrets and variables → Actions → **New repository secret**:
+   `QW_UPLOAD_KEYSTORE_BASE64`, `QW_KEYSTORE_PASSWORD`, `QW_KEY_ALIAS` (= quizwar), `QW_KEY_PASSWORD`।
+4. পরের বিল্ডে APK সাইন হবে, আর রিলিজ পেজে (https://github.com/AHOSHAN-HABIB-NAYON/PROFILE/releases/tag/app-latest) একটা টেবিলে **SHA-1, SHA-256 আর apk-key-hash** দেখাবে — নিচের ধাপে লাগবে।
+
+### ৩) গুগল লগইন
+1. https://console.cloud.google.com → নতুন প্রজেক্ট "QUIZ WAR"।
+2. **APIs & Services → OAuth consent screen**: External, অ্যাপের নাম, সাপোর্ট ইমেইল, প্রাইভেসি লিংক `https://quizwar.webtecit.com/legal/privacy` → **Publish app**।
+3. **Credentials → Create credentials → OAuth client ID**:
+   - Type **Web application** → Authorized JavaScript origins: `https://quizwar.webtecit.com` → তৈরি হলে **Client ID** কপি করুন।
+   - আবার **Android** টাইপ → Package: `app.quizwar.bd` → SHA-1: রিলিজ পেজের SHA-1 (Play Store-এ দিলে Play Console → App signing-এর SHA-1 দিয়ে আরেকটা Android client বানান)।
+4. Hostinger env: `GOOGLE_CLIENT_ID=<Web client ID>` → Restart। ওয়েবসাইট আর অ্যাপ দুটোতেই "Google দিয়ে লগইন" বাটন আসবে (অ্যাপে ব্রাউজারে না গিয়ে ফোনের নিজের অ্যাকাউন্ট লিস্ট থেকে)।
+
+### ৪) পাসকি (আঙুলের ছাপ/ফেস দিয়ে লগইন)
+- ওয়েবসাইটে ইতিমধ্যে চালু: `WEBAUTHN_RP_ID=quizwar.webtecit.com`, `WEBAUTHN_ORIGIN=https://quizwar.webtecit.com`।
+  প্লেয়ার আগে **সেটিংস → পাসকি যোগ করুন** করবে, তারপর লগইন পেজে "পাসকি দিয়ে লগইন" কাজ করবে।
+- অ্যাপে চালাতে (ধাপ ২ শেষ হলে) Hostinger env:
+  ```
+  ANDROID_SHA256_CERT_FINGERPRINTS=<রিলিজ পেজের SHA-256>
+  WEBAUTHN_ORIGIN=https://quizwar.webtecit.com,android:apk-key-hash:<রিলিজ পেজের apk-key-hash>
+  ```
+  এতে `https://quizwar.webtecit.com/.well-known/assetlinks.json` অ্যাপকে চিনবে। Play Store-এর সাইনিং কী-র SHA-256 থাকলে কমা দিয়ে সেটাও যোগ করুন।
+
+### ৫) পুশ নোটিফিকেশন
+- **ওয়েবসাইট/PWA:** কম্পিউটারে `npx web-push generate-vapid-keys` → `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` বসান।
+- **অ্যান্ড্রয়েড অ্যাপ:** Firebase কনসোল → Project settings → Service accounts → **Generate new private key** → JSON ফাইলের পুরো লেখা এক লাইনে `FCM_SERVICE_ACCOUNT_JSON`-এ বসান; আর নিচের "পুশ নোটিফিকেশন চালু করা (Firebase)" অংশ অনুযায়ী GitHub secret দিন।
+
+সেট না করলেও গেম চলবে — শুধু ঐ ফিচার লুকানো থাকবে।
 
 ## সমস্যা হলে
 - **অ্যাপ চালু হচ্ছে না:** Node.js অ্যাপের Logs দেখুন। `Invalid environment configuration` → কোনো env ভুল/বাদ।
@@ -124,7 +172,7 @@ Deploy চাপুন। প্রথমবার চালু হলে অ্
 
 ## পুশ নোটিফিকেশন চালু করা (Firebase) — ঐচ্ছিক
 
-1. https://console.firebase.google.com এ একটি প্রজেক্ট খুলুন → Android অ্যাপ যোগ করুন দুইবার: `app.quizwar.bd` এবং `app.quizwar.bd.debug`।
+1. https://console.firebase.google.com এ একটি প্রজেক্ট খুলুন → Android অ্যাপ যোগ করুন: `app.quizwar.bd` (সাইনিং কী না দিলে টেস্ট বিল্ডের জন্য `app.quizwar.bd.debug`-ও যোগ করুন)।
 2. `google-services.json` ডাউনলোড করুন। ফাইলটি **রিপোতে রাখবেন না**।
 3. ফাইলটিকে base64 করুন (`base64 -w0 google-services.json`) এবং GitHub → Settings → Secrets → Actions-এ `QW_GOOGLE_SERVICES_JSON_BASE64` নামে সেভ করুন।
 4. পরের বিল্ডে APK-তে পুশ চালু হবে। Secret না থাকলে অ্যাপ ঠিকমতো চলবে, শুধু পুশ লুকানো থাকবে।

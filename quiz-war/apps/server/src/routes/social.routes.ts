@@ -77,6 +77,9 @@ export async function socialRoutes(app: FastifyInstance, ctx: AppContext) {
 
   /* -------------------------------- Online -------------------------------- */
   app.get('/online', async () => ({ online: await ctx.presence.onlineCount() }));
+  app.get('/players/online', { ...auth, config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, async (req) => ({
+    items: await ctx.friends.onlinePlayers(uid(req), ctx.presence.availableUsers(400)),
+  }));
 
   /* -------------------------------- Squads -------------------------------- */
   app.get('/squads', auth, async (req) => {

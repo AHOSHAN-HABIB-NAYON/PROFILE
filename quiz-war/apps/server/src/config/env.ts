@@ -46,6 +46,12 @@ const envSchema = z.object({
   OPENAI_BASE_URL: z.string().url().default('https://api.openai.com/v1'),
 
   SMTP_URL: z.string().optional(),
+  /** Alternative to SMTP_URL (easier with Gmail app passwords: no URL-encoding needed). */
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_SECURE: z.string().optional(),
   MAIL_FROM: z.string().default('QUIZ WAR <no-reply@quizwar.app>'),
 
   VAPID_PUBLIC_KEY: z.string().optional(),

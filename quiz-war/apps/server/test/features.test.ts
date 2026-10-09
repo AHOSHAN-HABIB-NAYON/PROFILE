@@ -4,6 +4,7 @@ import { closePool, exec, query, queryOne } from '../src/db/pool';
 import { hashPassword } from '../src/lib/crypto';
 import { AiGeneratorService, normalizeQuestion } from '../src/modules/ai/ai-generator.service';
 import { audioKind } from '../src/routes/admin.routes';
+import { smtpConfigFromEnv } from '../src/modules/auth/mailer';
 import { client, dbAvailable, makeTestApp, resetDb } from './db';
 
 const hasDb = await dbAvailable();
@@ -229,6 +230,15 @@ d('Features (MySQL)', () => {
       const missions = await adm('GET', '/missions');
       expect(missions.json().items.length).toBeGreaterThan(5);
       expect(missions.json().metrics).toHaveProperty('battle_wins');
+
+      // Connections card: on/off flags only, never secrets.
+      const integ = await adm('GET', '/integrations');
+      expect(integ.statusCode).toBe(200);
+      expect(integ.json().email.configured).toBe(false);
+      expect(integ.json().google).toHaveProperty('configured');
+      expect(JSON.stringify(integ.json())).not.toMatch(/JWT|PRIVATE|password/i);
+      const te = await adm('POST', '/integrations/test-email', { to: 'x@test.dev' });
+      expect(te.statusCode).toBe(400);
     });
   });
 
@@ -284,5 +294,36 @@ d('Features (MySQL)', () => {
       expect(audioKind(Buffer.from('OggS\x00\x02\x00\x00\x00\x00\x00\x00', 'latin1'))?.ext).toBe('ogg');
       expect(audioKind(Buffer.from('<?php echo 1; ?>   ', 'latin1'))).toBeNull();
     });
+  });
+
+  describe('find online players', () => {
+    it('lists available players by closest rating, hides blocked and unavailable ones', async () => {
+      const me = await newPlayer('finder');
+      const a = await newPlayer('avail');
+      const b = await newPlayer('blocked');
+      const c = await newPlayer('busy');
+      for (const p of [me, a, b]) t.ctx.presence.connect(p.id, `s-${p.id}`, { available: true, dnd: false });
+      t.ctx.presence.connect(c.id, `s-${c.id}`, { available: false, dnd: false });
+      await api('POST', '/blocks', { userId: b.id }, me.token);
+      const r = await api('GET', '/players/online', undefined, me.token);
+      expect(r.status).toBe(200);
+      const ids = r.body.items.map((x: any) => x.user.id);
+      expect(ids).toContain(a.id);
+      expect(ids).not.toContain(me.id);
+      expect(ids).not.toContain(b.id);
+      expect(ids).not.toContain(c.id);
+      for (const p of [me, a, b, c]) t.ctx.presence.disconnect(p.id, `s-${p.id}`);
+    });
+  });
+});
+
+describe('smtp config', () => {
+  it('builds a Gmail transport from host/user/pass and strips app-password spaces', () => {
+    expect(smtpConfigFromEnv({})).toBeNull();
+    expect(smtpConfigFromEnv({ SMTP_URL: 'smtps://a:b@x:465' })).toBe('smtps://a:b@x:465');
+    expect(smtpConfigFromEnv({ SMTP_HOST: 'smtp.gmail.com', SMTP_USER: 'a@gmail.com', SMTP_PASS: 'abcd efgh ijkl mnop' })).toEqual({
+      host: 'smtp.gmail.com', port: 465, secure: true, auth: { user: 'a@gmail.com', pass: 'abcdefghijklmnop' },
+    });
+    expect((smtpConfigFromEnv({ SMTP_HOST: 'h', SMTP_PORT: 587 }) as any).secure).toBe(false);
   });
 });

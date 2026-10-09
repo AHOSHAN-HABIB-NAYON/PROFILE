@@ -115,7 +115,8 @@ export default function Settings() {
   const nav = useNavigate();
   const qc = useQueryClient();
   const { data: cfg } = useConfig();
-  const [sheet, setSheet] = useState<null | 'password' | 'devices' | 'delete'>(null);
+  const [sheet, setSheet] = useState<null | 'password' | 'devices' | 'history' | 'delete'>(null);
+  const logins = useQuery({ queryKey: ['login-history'], queryFn: async () => (await api<{ items: any[] }>('/auth/login-history')).items, enabled: sheet === 'history' });
   const sessions = useQuery({ queryKey: ['sessions'], queryFn: async () => (await api<{ items: any[] }>('/auth/sessions')).items, enabled: sheet === 'devices' });
   const passkeys = useQuery({ queryKey: ['passkeys'], queryFn: async () => (await api<{ items: any[] }>('/auth/passkeys')).items });
   const [perm, setPerm] = useState<string>('…');
@@ -282,6 +283,7 @@ export default function Settings() {
           />
         ))}
         <Row icon="smartphone" tone="cyan" title={t('Devices & sessions', 'ডিভাইস ও সেশন')} sub={t('See where you’re signed in', 'কোথায় কোথায় লগইন আছে দেখুন')} onClick={() => setSheet('devices')} />
+        <Row icon="history" tone="neutral" title={t('Login history', 'লগইন হিস্ট্রি')} sub={t('Recent sign-ins and failed attempts', 'সাম্প্রতিক লগইন ও ব্যর্থ চেষ্টা')} onClick={() => setSheet('history')} />
       </section>
 
       <div className="section-label">{t('Help & information', 'সাহায্য ও তথ্য')}</div>
@@ -324,6 +326,32 @@ export default function Settings() {
         <button className="btn outline block mt" onClick={() => void signOut(true)}>
           <Icon name="logout" /> {t('Sign out of all devices', 'সব ডিভাইস থেকে লগআউট')}
         </button>
+      </Sheet>
+
+      <Sheet open={sheet === 'history'} onClose={() => setSheet(null)} title={t('Login history', 'লগইন হিস্ট্রি')} icon="history">
+        {logins.isLoading ? (
+          <span className="spinner" />
+        ) : !logins.data?.length ? (
+          <p className="small muted">{t('No sign-ins recorded yet.', 'এখনো কোনো লগইন রেকর্ড নেই।')}</p>
+        ) : (
+          <div className="list">
+            {logins.data.map((x, i) => (
+              <div key={i} className="list-row">
+                <IconTile name={x.success ? (x.method === 'passkey' ? 'fingerprint' : x.method === 'google' ? 'google' : x.method === 'refresh' ? 'refresh' : 'key') : 'alert'} tone={x.success ? 'success' : 'danger'} size={40} />
+                <div className="grow" style={{ minWidth: 0 }}>
+                  <b className="small">
+                    {{ password: t('Email & password', 'ইমেইল ও পাসওয়ার্ড'), google: 'Google', passkey: t('Passkey', 'পাসকি'), refresh: t('Session renewed', 'সেশন নবায়ন') }[x.method as string] ?? x.method}
+                    {!x.success && <span className="chip danger xs-chip">{t('Failed', 'ব্যর্থ')}</span>}
+                  </b>
+                  <p className="xs muted ellipsis">
+                    {new Date(x.createdAt).toLocaleString(lang === 'bn' ? 'bn-BD' : 'en-GB')} · {/Android/i.test(x.userAgent ?? '') ? 'Android' : /iPhone|iPad/i.test(x.userAgent ?? '') ? 'iPhone' : /Windows/i.test(x.userAgent ?? '') ? 'Windows' : /Mac OS/i.test(x.userAgent ?? '') ? 'Mac' : t('Browser', 'ব্রাউজার')} · {x.ip}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="xs muted mt">{t('Don’t recognise a sign-in? Change your password and sign out of all devices.', 'অচেনা কোনো লগইন দেখলে পাসওয়ার্ড বদলান এবং সব ডিভাইস থেকে লগআউট করুন।')}</p>
       </Sheet>
 
       <Sheet open={sheet === 'delete'} onClose={() => setSheet(null)} title={t('Delete your account', 'অ্যাকাউন্ট মুছে ফেলুন')} icon="trash">

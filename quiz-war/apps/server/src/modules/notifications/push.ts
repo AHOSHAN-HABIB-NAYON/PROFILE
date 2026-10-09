@@ -51,6 +51,10 @@ export class PushService {
     return this.webEnabled || !!this.fcm;
   }
 
+  get status() {
+    return { web: this.webEnabled, android: !!this.fcm, firebaseProject: this.fcm?.projectId ?? null };
+  }
+
   async register(userId: number, platform: 'android' | 'web', token: string) {
     const hash = sha256(token);
     await exec(

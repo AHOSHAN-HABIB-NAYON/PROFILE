@@ -127,6 +127,12 @@ pre.json { background: var(--surface-2); padding: 10px; border-radius: 10px; fon
 /* App settings */
 .settings-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); align-items: start; }
 .settings-grid .span-all { grid-column: 1 / -1; }
+.int-list { display: grid; gap: 4px; }
+.int-row { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.int-row:last-child { border-bottom: 0; }
+.int-dot { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: color-mix(in srgb, currentColor 12%, transparent); flex: none; }
+.int-row code { font-size: 12px; padding: 1px 5px; border-radius: 5px; background: var(--surface-2, #f1f5f9); word-break: break-all; }
+.int-fix { margin-top: 4px; padding: 8px 10px; border-radius: 8px; background: var(--surface-2, #f1f5f9); line-height: 1.6; }
 .card-head { display: flex; gap: 12px; align-items: flex-start; }
 .card-head .cat-ic { width: 38px; height: 38px; }
 .card-head p { margin: 2px 0 0; }

@@ -96,6 +96,15 @@ export class PresenceService {
     return !!e && e.sockets.size > 0 && e.available && e.manual !== 'dnd' && !this.isInMatch(userId);
   }
 
+  /** Users open to battle invitations right now, most recently active first. */
+  availableUsers(limit: number): number[] {
+    return [...this.users.entries()]
+      .filter(([id]) => this.isAvailable(id))
+      .sort((a, b) => b[1].lastSeen - a[1].lastSeen)
+      .slice(0, limit)
+      .map(([id]) => id);
+  }
+
   localOnline(): number[] {
     return [...this.users.keys()];
   }

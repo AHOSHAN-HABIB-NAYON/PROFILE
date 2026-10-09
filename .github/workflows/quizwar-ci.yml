@@ -87,40 +87,91 @@ jobs:
         if: ${{ env.HAS_FIREBASE == 'true' }}
         working-directory: quiz-war/apps/android
         run: echo "${{ secrets.QW_GOOGLE_SERVICES_JSON_BASE64 }}" | base64 -d > app/google-services.json
-      - name: Debug APK
+      # Signing: with the upload-key secrets every build is signed with the SAME key, so Google
+      # login and passkeys keep working (they are tied to the certificate fingerprint).
+      # The keystore lives ONLY in GitHub encrypted secrets (base64), never in the repo.
+      - name: Prepare signing key (optional)
+        if: ${{ env.HAS_KEYSTORE == 'true' }}
+        run: |
+          echo "${{ secrets.QW_UPLOAD_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          echo "QW_KEYSTORE_FILE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+      - name: Build APK (+ AAB when signed)
         working-directory: quiz-war/apps/android
-        run: ./gradlew --no-daemon assembleDebug
+        env:
+          QW_KEYSTORE_PASSWORD: ${{ secrets.QW_KEYSTORE_PASSWORD }}
+          QW_KEY_ALIAS: ${{ secrets.QW_KEY_ALIAS }}
+          QW_KEY_PASSWORD: ${{ secrets.QW_KEY_PASSWORD }}
+        run: |
+          if [ "$HAS_KEYSTORE" = "true" ]; then
+            ./gradlew --no-daemon assembleRelease bundleRelease
+            cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/QuizWar.apk"
+          else
+            ./gradlew --no-daemon assembleDebug
+            cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/QuizWar.apk"
+          fi
+      - name: Certificate fingerprints (for Google login, passkeys, App Links)
+        id: certs
+        env:
+          QW_KEYSTORE_PASSWORD: ${{ secrets.QW_KEYSTORE_PASSWORD }}
+          QW_KEY_ALIAS: ${{ secrets.QW_KEY_ALIAS }}
+        run: |
+          if [ "$HAS_KEYSTORE" = "true" ]; then
+            out=$(keytool -list -v -keystore "$QW_KEYSTORE_FILE" -alias "$QW_KEY_ALIAS" -storepass:env QW_KEYSTORE_PASSWORD)
+          else
+            out=$(keytool -list -v -keystore "$HOME/.android/debug.keystore" -alias androiddebugkey -storepass android)
+          fi
+          sha1=$(echo "$out" | grep -m1 'SHA1:' | awk '{print $2}')
+          sha256=$(echo "$out" | grep -m1 'SHA256:' | awk '{print $2}')
+          hash=$(echo "$sha256" | tr -d ':' | xxd -r -p | base64 | tr '+/' '-_' | tr -d '=')
+          {
+            echo "sha1=$sha1"
+            echo "sha256=$sha256"
+            echo "apkhash=$hash"
+          } >> "$GITHUB_OUTPUT"
+          echo "SHA-1:   $sha1"
+          echo "SHA-256: $sha256"
+          echo "WebAuthn origin: android:apk-key-hash:$hash"
+      - name: Remove signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/upload.jks"
       - uses: actions/upload-artifact@v4
         with:
-          name: quizwar-debug-apk
-          path: quiz-war/apps/android/app/build/outputs/apk/debug/*.apk
+          name: quizwar-apk
+          path: ${{ runner.temp }}/QuizWar.apk
       # Stable download link for testers: /releases/download/app-latest/QuizWar.apk
       - name: Publish APK release (app-latest)
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
+          SHA1: ${{ steps.certs.outputs.sha1 }}
+          SHA256: ${{ steps.certs.outputs.sha256 }}
+          APKHASH: ${{ steps.certs.outputs.apkhash }}
         working-directory: quiz-war/apps/android
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/QuizWar.apk"
+          if [ "$HAS_KEYSTORE" = "true" ]; then
+            KIND="signed release"; PKG="app.quizwar.bd"
+            NOTE="Signed with your upload key — the fingerprints below stay the same on every build."
+          else
+            KIND="debug test build"; PKG="app.quizwar.bd.debug"
+            NOTE="WARNING: no signing secrets set, so this build uses a temporary debug key that changes every build. Google login and passkeys in the APK need the QW_UPLOAD_KEYSTORE_BASE64 / QW_KEYSTORE_PASSWORD / QW_KEY_ALIAS / QW_KEY_PASSWORD secrets (see docs/hostinger-bn.md)."
+          fi
+          cat > "$RUNNER_TEMP/notes.md" <<NOTES
+          Installable APK ($KIND) for ${VITE_PUBLIC_WEB_URL}. Package: \`$PKG\`. Built from ${GITHUB_SHA::7}.
+
+          $NOTE
+
+          | Use | Value |
+          |---|---|
+          | Google Cloud → Android OAuth client → SHA-1 | \`$SHA1\` |
+          | Hostinger \`ANDROID_SHA256_CERT_FINGERPRINTS\` | \`$SHA256\` |
+          | Add to Hostinger \`WEBAUTHN_ORIGIN\` (comma separated) | \`android:apk-key-hash:$APKHASH\` |
+          NOTES
+          sed -i 's/^          //' "$RUNNER_TEMP/notes.md"
           gh release delete app-latest -y --cleanup-tag || true
           gh release create app-latest "$RUNNER_TEMP/QuizWar.apk" --target "$GITHUB_SHA" --prerelease \
-            --title "QUIZ WAR Android (test build ${QW_VERSION_NAME}-${QW_VERSION_CODE})" \
-            --notes "Installable test APK for ${VITE_PUBLIC_WEB_URL}. Built from ${GITHUB_SHA::7}."
+            --title "QUIZ WAR Android (${QW_VERSION_NAME}-${QW_VERSION_CODE}, $KIND)" \
+            --notes-file "$RUNNER_TEMP/notes.md"
 
-      # Signed release bundle — only when the signing secrets are configured.
-      # The keystore lives ONLY in GitHub encrypted secrets (base64), never in the repo.
-      - name: Signed release AAB
-        if: ${{ env.HAS_KEYSTORE == 'true' }}
-        env:
-          QW_KEYSTORE_PASSWORD: ${{ secrets.QW_KEYSTORE_PASSWORD }}
-          QW_KEY_ALIAS: ${{ secrets.QW_KEY_ALIAS }}
-          QW_KEY_PASSWORD: ${{ secrets.QW_KEY_PASSWORD }}
-        working-directory: quiz-war/apps/android
-        run: |
-          echo "${{ secrets.QW_UPLOAD_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/upload.jks"
-          export QW_KEYSTORE_FILE="$RUNNER_TEMP/upload.jks"
-          ./gradlew --no-daemon bundleRelease
-          rm -f "$RUNNER_TEMP/upload.jks"
       - uses: actions/upload-artifact@v4
         if: ${{ hashFiles('quiz-war/apps/android/app/build/outputs/bundle/release/*.aab') != '' }}
         with:
