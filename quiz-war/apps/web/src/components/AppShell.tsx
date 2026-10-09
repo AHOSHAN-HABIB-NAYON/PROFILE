@@ -113,6 +113,21 @@ function ActiveMatch() {
   );
 }
 
+/** A war room the player left open: a small chip to go back to it from anywhere. */
+function OpenRoom() {
+  const roomId = useAuth((s) => s.openRoomId);
+  const matchId = useAuth((s) => s.activeMatchId);
+  const nav = useNavigate();
+  const loc = useLocation();
+  const t = useT();
+  if (!roomId || matchId || loc.pathname.startsWith('/war-room/') || loc.pathname.startsWith('/match/')) return null;
+  return (
+    <button className="return-chip room" onClick={() => (haptic('tap'), nav(`/war-room/${roomId}`))}>
+      <Icon name="shield" size={16} /> {t('Your war room is open — return', 'আপনার ওয়ার রুম খোলা আছে — ফিরে যান')} <Icon name="chevron" size={16} />
+    </button>
+  );
+}
+
 export function TopBar() {
   const user = useAuth((s) => s.user);
   const online = useConn((s) => s.online);
@@ -181,6 +196,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <ConnectionPill />
         <TopBar />
         <ActiveMatch />
+        <OpenRoom />
         <main id="main">{children}</main>
       </div>
       <nav className="bottom-nav" aria-label={t('Main', 'প্রধান মেনু')}>

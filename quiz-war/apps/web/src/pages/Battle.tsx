@@ -9,11 +9,14 @@ import { Empty, ListSkeleton } from '../components/Feedback';
 import { categoryIcon, Icon, IconTile, type IconName } from '../components/Icon';
 import { CountPicker, DifficultyPicker, MatchSummary, useMatchOptions } from '../components/MatchOptions';
 import { PullToRefresh } from '../components/PullToRefresh';
-import { api, friendlyError } from '../lib/api';
+import { QrScanner } from '../components/QrScanner';
+import { api, ApiError, friendlyError } from '../lib/api';
+import { useAuth } from '../lib/auth';
 import { useGame } from '../lib/game';
 import { num, useLang, useT } from '../lib/i18n';
 import { haptic } from '../lib/platform';
 import { emit } from '../lib/socket';
+import { nativeScan, nativeScanAvailable, roomCodeFrom, scanAvailable } from '../lib/scanner';
 import { sfx } from '../lib/sound';
 import { toast } from '../lib/toast';
 
@@ -37,7 +40,11 @@ function useStart() {
       sfx('start');
       nav(event === 'room:create' ? `/war-room/${r.matchId}` : `/match/${r.matchId}`);
     } catch (e) {
-      toast.error(t('Could not start', 'শুরু করা যায়নি'), friendlyError(e));
+      if ((e as ApiError).code === 'room_open') {
+        const roomId = useAuth.getState().openRoomId;
+        toast.error(t('Your war room is still open', 'আপনার ওয়ার রুম এখনো খোলা'), t('Leave that room first to play something else.', 'অন্য খেলা খেলতে আগে ওই রুম থেকে Leave করুন।'));
+        if (roomId) nav(`/war-room/${roomId}`);
+      } else toast.error(t('Could not start', 'শুরু করা যায়নি'), friendlyError(e));
     } finally {
       setBusy(false);
     }
@@ -129,6 +136,7 @@ export default function Battle({ tab: initialTab }: { tab?: 'play' | 'requests' 
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
   const [roomMode, setRoomMode] = useState<'duel' | 'duo' | 'trio' | 'squad'>('duo');
   const [joinCode, setJoinCode] = useState('');
+  const [scanOpen, setScanOpen] = useState(false);
   const opts = useMatchOptions();
   const [aiCount, setAiCount] = useState(opts.defaultCount);
   const [soloCount, setSoloCount] = useState(10);
@@ -276,8 +284,31 @@ export default function Battle({ tab: initialTab }: { tab?: 'play' | 'requests' 
                   <Icon name="link" size={18} />
                   <input className="input" aria-label={t('Room link or code', 'রুম লিংক বা কোড')} placeholder={t('Room code, e.g. K7P4QX', 'রুম কোড, যেমন K7P4QX')} autoCapitalize="characters" maxLength={80} value={joinCode} onChange={(e) => setJoinCode(e.target.value)} />
                 </div>
+                {scanAvailable() && (
+                  <button
+                    type="button"
+                    className="btn icon soft"
+                    aria-label={t('Scan QR with camera', 'ক্যামেরা দিয়ে QR স্ক্যান')}
+                    title={t('Scan QR', 'QR স্ক্যান')}
+                    onClick={async () => {
+                      haptic('tap');
+                      if (!nativeScanAvailable()) return setScanOpen(true);
+                      try {
+                        const raw = await nativeScan();
+                        const code = raw && roomCodeFrom(raw);
+                        if (code) nav(`/war-room/${code}`);
+                        else if (raw) toast.error(t('Not a room QR', 'এটি রুমের QR নয়'), t('Scan the QR shown inside a war room.', 'ওয়ার রুমের ভিতরে দেখানো QR স্ক্যান করুন।'));
+                      } catch {
+                        toast.error(t('Scanner unavailable', 'স্ক্যানার চালু হয়নি'), t('Please type the room code instead.', 'রুম কোডটি লিখে যোগ দিন।'));
+                      }
+                    }}
+                  >
+                    <Icon name="scan" size={20} />
+                  </button>
+                )}
                 <button className="btn soft" disabled={!joinCode.trim()}>{t('Join', 'যোগ দিন')}</button>
               </form>
+              <QrScanner open={scanOpen} onClose={() => setScanOpen(false)} onCode={(code) => (setScanOpen(false), nav(`/war-room/${code}`))} />
             </section>
           </>
         )}

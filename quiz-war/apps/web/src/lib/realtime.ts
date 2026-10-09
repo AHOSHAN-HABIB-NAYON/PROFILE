@@ -23,6 +23,11 @@ export function registerRealtime() {
       if (g.matchId !== matchId) g.reset(matchId);
       useGame.getState().set({ countdownAt: startsAt, end: null });
       sfx('start');
+      // The host started a war room this player left open in the background: go to the match.
+      if (useAuth.getState().openRoomId === matchId) {
+        useAuth.setState({ openRoomId: null, activeMatchId: matchId });
+        if (!location.pathname.startsWith('/match/')) navigateTo(`/match/${matchId}`);
+      }
     });
     s.on('match:question', ({ matchId, question }) => {
       const g = useGame.getState();

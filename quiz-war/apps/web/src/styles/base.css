@@ -3,6 +3,8 @@
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 html, body { margin: 0; min-height: 100%; }
+/* No sideways page scroll or zoom: wide content scrolls inside its own row instead. */
+html, body { overflow-x: clip; max-width: 100%; touch-action: manipulation; }
 body {
   background: var(--bg);
   color: var(--text);
@@ -415,6 +417,7 @@ dialog.modal[open]:not([data-closing])::backdrop { background: rgba(8, 12, 28, .
   box-shadow: 0 10px 24px rgba(185, 28, 28, .35); animation: pill-in .4s var(--ease-spring);
 }
 @media (min-width: 900px) { .return-chip { bottom: 24px; } }
+.return-chip.room { background: linear-gradient(150deg, #2563eb, #1e3a8a); box-shadow: 0 10px 24px rgba(30, 58, 138, .35); max-width: calc(100vw - 32px); white-space: nowrap; }
 .live-dot { width: 9px; height: 9px; border-radius: 50%; background: #fff; animation: blink 1s infinite; }
 .live-ring { position: relative; display: inline-grid; }
 .live-ring::before, .live-ring::after { content: ''; position: absolute; inset: -6px; border-radius: 34%; border: 2px solid color-mix(in srgb, var(--danger) 55%, transparent); animation: ring-out 1.8s var(--ease) infinite; }

@@ -5,36 +5,20 @@ import { num, useLang, useT } from '../lib/i18n';
 import { haptic } from '../lib/platform';
 import { emit } from '../lib/socket';
 import { toast } from '../lib/toast';
-import { CategoryPicker } from './CategoryPicker';
-import { Icon } from './Icon';
+import { useCategories } from '../hooks/queries';
+import { categoryIcon, Icon } from './Icon';
 import { DIFFICULTY_INFO, useMatchOptions } from './MatchOptions';
 
 const COUNTS = [10, 20, 30, 50, 100, 200, 300];
 const MINUTES = [3, 5, 10, 15, 20, 30];
 const SECONDS = [4, 5, 8, 10, 15, 20, 30];
 
-/** War Room rules. The host edits them inside the room; everyone else sees the summary. */
-export function RoomSettings({ snap, isHost }: { snap: MatchSnapshot; isHost: boolean }) {
+/** Short chips describing the room rules (category, length, time, difficulty). */
+export function RoomSummary({ snap }: { snap: MatchSnapshot }) {
   const t = useT();
   const lang = useLang();
-  const opts = useMatchOptions();
   const timed = !!snap.totalTimeSec;
-  const [customCount, setCustomCount] = useState('');
-  const [customMin, setCustomMin] = useState('');
-  const [catOpen, setCatOpen] = useState(false);
-
-  useEffect(() => setCustomCount(''), [snap.questionCount]);
-
-  const update = async (patch: Record<string, unknown>) => {
-    haptic('tap');
-    try {
-      await emit('room:settings' as any, { matchId: snap.matchId, ...patch });
-    } catch (e) {
-      toast.error(t('Could not change the room', 'রুম বদলানো যায়নি'), friendlyError(e));
-    }
-  };
-
-  const summary = (
+  return (
     <div className="rs-summary">
       <span className="chip on-dark"><Icon name="grid" /> {snap.category ? snap.category.name : t('Mixed', 'মিশ্র')}</span>
       {timed ? (
@@ -49,30 +33,46 @@ export function RoomSettings({ snap, isHost }: { snap: MatchSnapshot; isHost: bo
       </span>
     </div>
   );
+}
 
-  if (!isHost)
-    return (
-      <section className="room-settings view" aria-label={t('Room rules', 'রুমের নিয়ম')}>
-        <div className="rs-title"><Icon name="settings" size={16} /> {t('Room rules (set by host)', 'রুমের নিয়ম (হোস্ট ঠিক করবেন)')}</div>
-        {summary}
-      </section>
-    );
+/** War Room rules editor, shown to the host as the first step inside the room. */
+export function RoomSettings({ snap }: { snap: MatchSnapshot }) {
+  const t = useT();
+  const lang = useLang();
+  const opts = useMatchOptions();
+  const timed = !!snap.totalTimeSec;
+  const [customCount, setCustomCount] = useState('');
+  const [customMin, setCustomMin] = useState('');
+  const cats = useCategories().data ?? [];
+
+  useEffect(() => setCustomCount(''), [snap.questionCount]);
+
+  const update = async (patch: Record<string, unknown>) => {
+    haptic('tap');
+    try {
+      await emit('room:settings' as any, { matchId: snap.matchId, ...patch });
+    } catch (e) {
+      toast.error(t('Could not change the room', 'রুম বদলানো যায়নি'), friendlyError(e));
+    }
+  };
 
   return (
     <section className="room-settings" aria-label={t('Room settings', 'রুম সেটিংস')}>
-      <div className="rs-title"><Icon name="settings" size={16} /> {t('Room settings', 'রুম সেটিংস')} <span className="xs dim">· {t('only you can change these', 'শুধু আপনি বদলাতে পারবেন')}</span></div>
+      <div className="rs-title"><Icon name="settings" size={16} /> {t('Room settings', 'রুম সেটিংস')} <span className="xs dim">· {t('only the host can change these', 'শুধু হোস্ট বদলাতে পারবেন')}</span></div>
 
-      <div className="rs-row">
-        <span className="rs-label">{t('Category', 'ক্যাটাগরি')}</span>
-        <button type="button" className="rs-pick" onClick={() => setCatOpen((o) => !o)} aria-expanded={catOpen}>
-          {snap.category ? snap.category.name : t('Mixed', 'মিশ্র')} <Icon name="chevron-down" size={16} />
+      <div className="rs-label">{t('Category', 'ক্যাটাগরি')}</div>
+      <div className="rs-chips" role="radiogroup" aria-label={t('Category', 'ক্যাটাগরি')}>
+        <button type="button" role="radio" aria-checked={!snap.category} className="select-chip dark" onClick={() => void update({ categoryId: null })}>
+          <Icon name="sparkles" size={15} /> {t('Mixed', 'মিশ্র')}
         </button>
+        {cats
+          .filter((c) => c.questionCount > 0)
+          .map((c) => (
+            <button key={c.id} type="button" role="radio" aria-checked={snap.category?.id === c.id} className="select-chip dark" onClick={() => void update({ categoryId: c.id })}>
+              <Icon name={categoryIcon(c)} size={15} /> {lang === 'bn' ? (c.nameBn ?? c.name) : c.name}
+            </button>
+          ))}
       </div>
-      {catOpen && (
-        <div className="rs-cats">
-          <CategoryPicker value={snap.category?.id ?? null} onChange={(id) => (setCatOpen(false), void update({ categoryId: id }))} />
-        </div>
-      )}
 
       <div className="rs-label">{t('Play by', 'খেলার ধরন')}</div>
       <div className="seg dark" role="radiogroup">
@@ -140,7 +140,6 @@ export function RoomSettings({ snap, isHost }: { snap: MatchSnapshot; isHost: bo
           </button>
         ))}
       </div>
-      {summary}
     </section>
   );
 }

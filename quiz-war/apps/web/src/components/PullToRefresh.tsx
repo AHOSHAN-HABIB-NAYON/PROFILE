@@ -23,6 +23,9 @@ export function PullToRefresh({ children, onRefresh }: { children: ReactNode; on
 
   useEffect(() => {
     let startY: number | null = null;
+    let startX = 0;
+    // Direction lock: a gesture becomes a pull only if it is clearly vertical and downward.
+    let locked: 'pull' | 'none' | null = null;
     let pull = 0;
     let armed = false;
     const paint = (y: number, animate: boolean) => {
@@ -38,20 +41,32 @@ export function PullToRefresh({ children, onRefresh }: { children: ReactNode; on
       if (icon.current) icon.current.style.transform = `rotate(${y * 3}deg)`;
     };
     const onStart = (e: TouchEvent) => {
-      if (busy.current || window.scrollY > 0 || document.querySelector('dialog[open]')) return;
+      startY = null;
+      if (busy.current || e.touches.length > 1 || window.scrollY > 0 || document.querySelector('dialog[open]')) return;
+      // Sideways lists (categories, chips) and inputs never start a refresh.
+      const target = e.target as Element | null;
+      if (target?.closest?.('.chips-scroll, .opt-chips, .rs-chips, .h-scroll, input, textarea, select, [data-no-ptr]')) return;
       startY = e.touches[0].clientY;
+      startX = e.touches[0].clientX;
+      locked = null;
       pull = 0;
       armed = false;
     };
     const onMove = (e: TouchEvent) => {
       if (startY === null) return;
       const dy = e.touches[0].clientY - startY;
+      const dx = e.touches[0].clientX - startX;
+      if (locked === null) {
+        if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+        locked = dy > 0 && dy > Math.abs(dx) * 1.5 ? 'pull' : 'none';
+      }
+      if (locked === 'none') return;
       if (dy <= 0 || window.scrollY > 0) {
         if (pull) paint(0, false);
         pull = 0;
         return;
       }
-      pull = Math.min(MAX, dy * 0.5);
+      pull = Math.min(MAX, Math.max(0, dy - 10) * 0.5);
       if (pull >= THRESHOLD && !armed) {
         armed = true;
         haptic('tap');

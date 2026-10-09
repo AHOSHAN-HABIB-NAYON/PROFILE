@@ -11,10 +11,15 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(QwAppInfoPlugin.class);
         registerPlugin(QwGalleryPlugin.class);
         registerPlugin(QwPasskeyPlugin.class);
+        registerPlugin(QwScannerPlugin.class);
         super.onCreate(savedInstanceState);
         if (bridge == null || bridge.getWebView() == null) return;
         WebSettings settings = bridge.getWebView().getSettings();
         enableWebViewPasskeys(settings);
+        // App screens never zoom (no pinch or double-tap zoom).
+        settings.setSupportZoom(false);
+        settings.setBuiltInZoomControls(false);
+        settings.setDisplayZoomControls(false);
         // Game UI uses fixed type sizes; cap extreme OS font scaling so layouts don't break.
         if (settings.getTextZoom() > 130) settings.setTextZoom(130);
     }

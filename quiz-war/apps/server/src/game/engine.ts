@@ -79,6 +79,8 @@ export interface EngineDeps {
 
 const SOLO_REVEAL_MS = 1200;
 const SPEED_REVEAL_MS = 450;
+/** A disconnected player keeps their war-room seat this long (rooms close only via Leave otherwise). */
+const LOBBY_ABANDON_MS = 6 * 60 * 60 * 1000;
 
 /**
  * Server-authoritative multiplayer game engine.
@@ -126,6 +128,14 @@ export class GameEngine {
     return m;
   }
 
+  /** Why a player can't start something new: a running match, or a war room they haven't left. */
+  private busyError(userId: number, self: boolean) {
+    const m = this.activeMatchOf(userId);
+    if (m?.state === 'lobby' && m.source === 'room' && self)
+      return new GameError('room_open', 'You still have a war room open. Leave that room first to play something else.');
+    return new GameError('already_in_match', self ? 'You are already in a match' : 'Player is already in a match');
+  }
+
   isInMatch(userId: number) {
     const m = this.activeMatchOf(userId);
     return !!m && m.state !== 'lobby';
@@ -143,7 +153,7 @@ export class GameEngine {
     const mode = MODES[o.mode];
     if (!mode) throw new GameError('invalid_mode', 'Unknown game mode');
     for (const p of o.players) {
-      if (this.activeMatchOf(p.userId)) throw new GameError('already_in_match', 'Player is already in a match');
+      if (this.activeMatchOf(p.userId)) throw this.busyError(p.userId, o.players.length === 1 || p.userId === o.hostUserId);
     }
     const s = structuredClone(this.d.settings());
     const bots = o.bots ?? [];
@@ -292,7 +302,7 @@ export class GameEngine {
       return m;
     }
     if (m.state !== 'lobby') throw new GameError('match_started', 'This match has already started');
-    if (this.activeMatchOf(who.userId)) throw new GameError('already_in_match', 'You are already in a match');
+    if (this.activeMatchOf(who.userId)) throw this.busyError(who.userId, true);
     const counts = new Array(m.mode.teams).fill(0);
     for (const p of m.players) counts[p.team]++;
     let t = team ?? counts.indexOf(Math.min(...counts));
@@ -841,7 +851,8 @@ export class GameEngine {
     if (!p || !p.connected) return;
     p.connected = false;
     p.disconnects++;
-    const graceMs = m.settings.disconnect.graceSec * 1000;
+    // A war room stays open until the player taps Leave; only a long-abandoned seat is freed.
+    const graceMs = m.state === 'lobby' ? LOBBY_ABANDON_MS : m.settings.disconnect.graceSec * 1000;
     p.graceUntil = Date.now() + graceMs;
     this.persist(m, () => this.d.persistence.saveEvent(m.id, 'disconnect', userId));
     this.d.emitter.toMatch(m.id, 'match:player', { matchId: m.id, userId, connected: false, graceUntil: p.graceUntil });

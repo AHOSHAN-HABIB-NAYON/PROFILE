@@ -9,6 +9,8 @@ interface AuthState {
   user: MeUser | null;
   squadId: number | null;
   activeMatchId: string | null;
+  /** A war room the player joined and hasn't left (it stays open until they tap Leave). */
+  openRoomId: string | null;
   setUser: (u: MeUser) => void;
   patchUser: (p: Partial<MeUser>) => void;
   bootstrap: () => Promise<void>;
@@ -21,6 +23,7 @@ export const useAuth = create<AuthState>((set, get) => ({
   user: null,
   squadId: null,
   activeMatchId: null,
+  openRoomId: null,
   setUser: (u) => set({ user: u, status: 'authed' }),
   patchUser: (p) => {
     const u = get().user;
@@ -39,8 +42,8 @@ export const useAuth = create<AuthState>((set, get) => ({
       .catch(() => set({ status: 'offline' }));
   },
   loadMe: async () => {
-    const me = await api<{ user: MeUser; squadId: number | null; activeMatchId: string | null }>('/me');
-    set({ user: me.user, squadId: me.squadId, activeMatchId: me.activeMatchId, status: 'authed' });
+    const me = await api<{ user: MeUser; squadId: number | null; activeMatchId: string | null; openRoomId?: string | null }>('/me');
+    set({ user: me.user, squadId: me.squadId, activeMatchId: me.activeMatchId, openRoomId: me.openRoomId ?? null, status: 'authed' });
     try {
       localStorage.setItem('qw-signed-in', '1');
     } catch {
@@ -54,7 +57,7 @@ export const useAuth = create<AuthState>((set, get) => ({
     } catch {
       /* storage blocked */
     }
-    set({ status: 'anon', user: null, squadId: null, activeMatchId: null });
+    set({ status: 'anon', user: null, squadId: null, activeMatchId: null, openRoomId: null });
   },
 }));
 

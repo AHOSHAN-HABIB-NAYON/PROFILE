@@ -398,6 +398,19 @@ d('Features (MySQL)', () => {
       expect(await queryOne('SELECT 1 x FROM media_files WHERE media_key = ?', ['test/redeploy.png'])).toBeFalsy();
     });
   });
+
+  it('"your rank" matches your place in the list, even with tied ratings', async () => {
+    const ps = [await newPlayer('Tie'), await newPlayer('Tie'), await newPlayer('Tie')];
+    for (const [k, p] of ps.entries())
+      await exec('UPDATE user_profiles SET rating = 9000, total_games = 5, wins = ?, xp = 50 WHERE user_id = ?', [k, p.id]);
+    const list = await api('GET', '/leaderboards/global?page=1&pageSize=50');
+    for (const p of ps) {
+      const r = await api('GET', '/leaderboards/global?page=1&pageSize=50', undefined, p.token);
+      const pos = list.body.items.findIndex((e: any) => Number(e.user.id) === p.id) + 1;
+      expect(pos).toBeGreaterThan(0);
+      expect(r.body.me.rank).toBe(pos);
+    }
+  });
 });
 
 describe('smtp config', () => {

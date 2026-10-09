@@ -3,9 +3,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Avatar } from '../components/Avatar';
 import { Empty } from '../components/Feedback';
-import { categoryIcon, Icon } from '../components/Icon';
+import { Icon } from '../components/Icon';
 import { QrCode } from '../components/Qr';
-import { RoomSettings } from '../components/RoomSettings';
+import { RoomSettings, RoomSummary } from '../components/RoomSettings';
 import { Sheet } from '../components/Sheet';
 import { friendlyError } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -28,6 +28,24 @@ export default function WarRoom() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  // The host sets the rules first, then continues to the team lobby. Remembered per room.
+  const stepKey = `qw-wr-step-${id}`;
+  const [setup, setSetupState] = useState(() => {
+    try {
+      return sessionStorage.getItem(stepKey) !== 'teams';
+    } catch {
+      return true;
+    }
+  });
+  const setSetup = (v: boolean) => {
+    setSetupState(v);
+    window.scrollTo({ top: 0 });
+    try {
+      sessionStorage.setItem(stepKey, v ? 'setup' : 'teams');
+    } catch {
+      /* private mode */
+    }
+  };
 
   useEffect(() => {
     if (conn !== 'connected') return;
@@ -58,20 +76,16 @@ export default function WarRoom() {
   }, [conn, id]);
 
   useEffect(() => {
-    if (snap && snap.state !== 'lobby') nav(`/match/${id}`, { replace: true });
+    if (snap && snap.state !== 'lobby') {
+      useAuth.setState({ openRoomId: null });
+      nav(`/match/${id}`, { replace: true });
+    }
   }, [snap, id, nav]);
 
-  // Going back from a room that hasn't started closes your seat, so no ghost "match running" later.
-  useEffect(
-    () => () => {
-      const g = useGame.getState();
-      if (g.matchId === id && g.snapshot?.state === 'lobby') {
-        g.reset();
-        void emit('room:leave', { matchId: id }).catch(() => undefined);
-      }
-    },
-    [id],
-  );
+  // The room stays open until the player taps Leave, even if they go elsewhere or close the app.
+  useEffect(() => {
+    if (snap?.state === 'lobby') useAuth.setState({ openRoomId: snap.matchId });
+  }, [snap?.state, snap?.matchId]);
 
   if (error)
     return (
@@ -118,7 +132,12 @@ export default function WarRoom() {
   const leave = () => {
     haptic('tap');
     useGame.getState().reset();
-    useAuth.setState({ activeMatchId: null });
+    useAuth.setState({ activeMatchId: null, openRoomId: null });
+    try {
+      sessionStorage.removeItem(stepKey);
+    } catch {
+      /* private mode */
+    }
     nav('/battle', { replace: true });
     void emit('room:leave', { matchId: id }).catch(() => undefined);
   };
@@ -155,63 +174,85 @@ export default function WarRoom() {
           </div>
         </header>
 
-        <RoomSettings snap={snap} isHost={isHost} />
+        {isHost && setup ? (
+          <>
+            <RoomSettings snap={snap} />
+            <button className="btn primary lg block" onClick={() => (haptic('tap'), setSetup(false))}>
+              {t('Continue', 'এগিয়ে যান')} <Icon name="arrow-right" />
+            </button>
+            <button className="btn outline-dark block" onClick={leave}><Icon name="door" /> {t('Cancel room', 'রুম বাতিল করুন')}</button>
+          </>
+        ) : (
+          <>
+          <section className="room-settings view" aria-label={t('Room rules', 'রুমের নিয়ম')}>
+            <div className="rs-title rs-row">
+              <span><Icon name="settings" size={16} /> {isHost ? t('Room rules', 'রুমের নিয়ম') : t('Room rules (set by host)', 'রুমের নিয়ম (হোস্ট ঠিক করেছেন)')}</span>
+              {isHost && (
+                <button className="btn sm outline-dark" onClick={() => setSetup(true)}>
+                  <Icon name="edit" size={15} /> {t('Change', 'বদলান')}
+                </button>
+              )}
+            </div>
+            <RoomSummary snap={snap} />
+          </section>
 
-        <div className={`wr-teams ${teams.length > 1 ? 'versus' : ''}`}>
-          {teams.map((players, ti) => (
-            <section key={ti} className={`team-box t${ti}`} aria-label={t(`Team ${ti + 1}`, `দল ${ti + 1}`)}>
-              <div className="tb-head">
-                <b>{teams.length > 1 ? (ti === 0 ? t('Team Blue', 'নীল দল') : t('Team Red', 'লাল দল')) : t('Players', 'প্লেয়াররা')}</b>
-                <span className="xs">{num(players.length, lang)}/{num(MODES[snap.mode].teamSize, lang)}</span>
-              </div>
-              {players.map((p) => (
-                <div key={p.userId} className={`wr-player ${p.ready ? 'ready' : ''}`}>
-                  <Avatar name={p.username} src={p.avatarUrl} size={42} bot={p.isBot} status={p.connected ? 'online' : 'offline'} />
-                  <div className="grow" style={{ minWidth: 0 }}>
-                    <b className="ellipsis" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      {p.username}
-                      {p.userId === snap.hostUserId && <Icon name="crown" size={14} style={{ color: '#fde047' }} />}
-                    </b>
-                    <p className="xs">{t('Lv', 'লেভেল')} {num(p.level, lang)} · {num(p.rating, lang)}</p>
+          <div className={`wr-teams ${teams.length > 1 ? 'versus' : ''}`}>
+            {teams.map((players, ti) => (
+              <section key={ti} className={`team-box t${ti}`} aria-label={t(`Team ${ti + 1}`, `দল ${ti + 1}`)}>
+                <div className="tb-head">
+                  <b>{teams.length > 1 ? (ti === 0 ? t('Team Blue', 'নীল দল') : t('Team Red', 'লাল দল')) : t('Players', 'প্লেয়াররা')}</b>
+                  <span className="xs">{num(players.length, lang)}/{num(MODES[snap.mode].teamSize, lang)}</span>
+                </div>
+                {players.map((p) => (
+                  <div key={p.userId} className={`wr-player ${p.ready ? 'ready' : ''}`}>
+                    <Avatar name={p.username} src={p.avatarUrl} size={42} bot={p.isBot} status={p.connected ? 'online' : 'offline'} />
+                    <div className="grow" style={{ minWidth: 0 }}>
+                      <b className="ellipsis" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        {p.username}
+                        {p.userId === snap.hostUserId && <Icon name="crown" size={14} style={{ color: '#fde047' }} />}
+                      </b>
+                      <p className="xs">{t('Lv', 'লেভেল')} {num(p.level, lang)} · {num(p.rating, lang)}</p>
+                    </div>
+                    <span className={`ready-tag ${p.ready ? 'on' : 'off'}`}>
+                      {p.ready ? <><Icon name="check" size={13} /> {t('Ready', 'প্রস্তুত')}</> : t('Waiting', 'অপেক্ষায়')}
+                    </span>
                   </div>
-                  <span className={`ready-tag ${p.ready ? 'on' : 'off'}`}>
-                    {p.ready ? <><Icon name="check" size={13} /> {t('Ready', 'প্রস্তুত')}</> : t('Waiting', 'অপেক্ষায়')}
-                  </span>
-                </div>
-              ))}
-              {Array.from({ length: Math.max(0, MODES[snap.mode].teamSize - players.length) }, (_, i) => (
-                <div key={`empty-${i}`} className="wr-player empty">
-                  <span className="wr-slot"><Icon name="user-plus" size={18} /></span>
-                  <span className="xs">{t('Waiting for a player…', 'প্লেয়ারের অপেক্ষায়…')}</span>
-                </div>
-              ))}
-            </section>
-          ))}
-          {teams.length > 1 && <span className="wr-vs">VS</span>}
-        </div>
+                ))}
+                {Array.from({ length: Math.max(0, MODES[snap.mode].teamSize - players.length) }, (_, i) => (
+                  <div key={`empty-${i}`} className="wr-player empty">
+                    <span className="wr-slot"><Icon name="user-plus" size={18} /></span>
+                    <span className="xs">{t('Waiting for a player…', 'প্লেয়ারের অপেক্ষায়…')}</span>
+                  </div>
+                ))}
+              </section>
+            ))}
+            {teams.length > 1 && <span className="wr-vs">VS</span>}
+          </div>
 
-        <p className="dim center xs">{t(`${readyCount} of ${snap.players.length} ready`, `${num(snap.players.length, lang)} জনের মধ্যে ${num(readyCount, lang)} জন প্রস্তুত`)}</p>
-        <button className={`btn lg block ${mine?.ready ? 'outline-dark' : 'success'}`} onClick={() => void toggleReady()}>
-          <Icon name={mine?.ready ? 'close' : 'check'} /> {mine?.ready ? t('Not ready', 'এখনো প্রস্তুত নই') : t('I’m ready', 'আমি প্রস্তুত')}
-        </button>
-        {isHost && snap.players.length > 1 && (
-          <button className="btn primary lg block start-war" disabled={!allReady || busy} onClick={() => void startWar()}>
-            {busy ? <span className="spinner" /> : <Icon name="swords" />} {t('Start the war', 'যুদ্ধ শুরু করুন')}
+          <p className="dim center xs">{t(`${readyCount} of ${snap.players.length} ready`, `${num(snap.players.length, lang)} জনের মধ্যে ${num(readyCount, lang)} জন প্রস্তুত`)}</p>
+          <button className={`btn lg block ${mine?.ready ? 'outline-dark' : 'success'}`} onClick={() => void toggleReady()}>
+            <Icon name={mine?.ready ? 'close' : 'check'} /> {mine?.ready ? t('Not ready', 'এখনো প্রস্তুত নই') : t('I’m ready', 'আমি প্রস্তুত')}
           </button>
+          {isHost && snap.players.length > 1 && (
+            <button className="btn primary lg block start-war" disabled={!allReady || busy} onClick={() => void startWar()}>
+              {busy ? <span className="spinner" /> : <Icon name="swords" />} {t('Start the war', 'যুদ্ধ শুরু করুন')}
+            </button>
+          )}
+          <div className="row">
+            <button
+              className="btn white grow"
+              onClick={() =>
+                void share({ title: t('Join my war room', 'আমার ওয়ার রুমে যোগ দাও'), text: t(`Join my QUIZ WAR battle room (${modeLabel(snap.mode)})!`, `আমার QUIZ WAR ব্যাটল রুমে যোগ দাও (${modeLabel(snap.mode)})!`), url: link }).then(
+                  (r) => r === 'copied' && toast.success(t('Link copied', 'লিংক কপি হয়েছে'), undefined, 'copy'),
+                )
+              }
+            >
+              <Icon name="share" /> {t('Invite friends', 'বন্ধুদের ডাকুন')}
+            </button>
+            <button className="btn outline-dark" onClick={leave}><Icon name="door" /> {t('Leave', 'চলে যান')}</button>
+          </div>
+          </>
         )}
-        <div className="row">
-          <button
-            className="btn white grow"
-            onClick={() =>
-              void share({ title: t('Join my war room', 'আমার ওয়ার রুমে যোগ দাও'), text: t(`Join my QUIZ WAR battle room (${modeLabel(snap.mode)})!`, `আমার QUIZ WAR ব্যাটল রুমে যোগ দাও (${modeLabel(snap.mode)})!`), url: link }).then(
-                (r) => r === 'copied' && toast.success(t('Link copied', 'লিংক কপি হয়েছে'), undefined, 'copy'),
-              )
-            }
-          >
-            <Icon name="share" /> {t('Invite friends', 'বন্ধুদের ডাকুন')}
-          </button>
-          <button className="btn outline-dark" onClick={leave}><Icon name="door" /> {t('Leave', 'চলে যান')}</button>
-        </div>
       </div>
       <Sheet open={qrOpen} onClose={() => setQrOpen(false)} title={t('Scan to join', 'স্ক্যান করে যোগ দিন')} icon="qr">
         <div className="col center">
