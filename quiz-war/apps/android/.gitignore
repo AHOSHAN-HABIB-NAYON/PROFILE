@@ -105,3 +105,6 @@ keystore.properties
 *.jks
 *.keystore
 app/google-services.json
+
+# Firebase client config is public (it ships inside every APK) and is committed on purpose.
+!app/google-services.json

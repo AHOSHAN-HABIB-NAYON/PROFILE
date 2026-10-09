@@ -23,3 +23,6 @@ google-services.json
 # Local release bundles (zips for hosting upload)
 /release/
 *.zip
+
+# Firebase Android client config (public, ships in the APK)
+!apps/android/app/google-services.json
