@@ -137,6 +137,32 @@ describe('GameEngine — disconnect handling', () => {
     expect(m.players[1].connected).toBe(true);
   });
 
+  it('an online player who stops answering is warned, then removed as AFK and loses by forfeit', async () => {
+    const { engine, events, last } = makeEngine();
+    const m = await engine.createMatch({ mode: 'duel', source: 'matchmaking', players: [player(1, 0), player(2, 1)], autoStart: true, questionCount: 10 });
+    await toFirstQuestion(engine, m);
+    const limit = m.settings.penalties.afkMissLimit;
+    for (let i = 0; i < limit; i++) {
+      engine.submitAnswer(m.id, 1, i, m.questions[i].correctIndex);
+      await vi.advanceTimersByTimeAsync(m.questionTimeMs + 1000);
+      if (i === limit - 2) expect(events.find((e) => e.event === 'match:afk_warning' && e.to === 'user:2')?.payload).toMatchObject({ missed: limit - 1, limit });
+      if (i < limit - 1) await vi.advanceTimersByTimeAsync(m.settings.match.revealMs + 10);
+    }
+    await vi.advanceTimersByTimeAsync(10);
+    expect(m.players[1].forfeited).toBe(true);
+    expect(m.state).toBe('finished');
+    expect(last('match:end')).toMatchObject({ reason: 'forfeit', winnerTeam: 0 });
+  });
+
+  it('a match where nobody is playing any more is aborted without rewards', async () => {
+    const { engine, rewardsCalls } = makeEngine();
+    const m = await engine.createMatch({ mode: 'duel', source: 'matchmaking', players: [player(1, 0), player(2, 1)], autoStart: true, questionCount: 10 });
+    await toFirstQuestion(engine, m);
+    await vi.advanceTimersByTimeAsync((m.questionTimeMs + m.settings.match.revealMs + 1000) * m.settings.penalties.afkMissLimit);
+    expect(m.state).toBe('aborted');
+    expect(rewardsCalls).toHaveLength(0);
+  });
+
   it('opponent wins by forfeit when the grace period expires', async () => {
     const { engine, last, settings } = makeEngine();
     const m = await engine.createMatch({ mode: 'duel', source: 'matchmaking', players: [player(1, 0), player(2, 1)], autoStart: true, questionCount: 10 });

@@ -61,6 +61,15 @@ export class MysqlMatchPersistence implements MatchPersistence {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [m.id, p.matchPlayerId, p.isBot ? null : p.userId, a.questionIndex, a.questionId, a.optionIndex, a.correct ? 1 : 0, a.responseMs, a.points, a.combo, a.powerUp],
     );
+    // Feeds the no-repeat rotation (see MysqlQuestionSource). Fixed sets (daily) don't count.
+    if (!p.isBot && !m.fixedQuestionIds) {
+      await exec(
+        `INSERT INTO user_seen_questions (user_id, question_id, category_id, seen_at)
+         SELECT ?, id, category_id, UTC_TIMESTAMP() FROM questions WHERE id = ?
+         ON DUPLICATE KEY UPDATE seen_at = VALUES(seen_at)`,
+        [p.userId, a.questionId],
+      );
+    }
   }
 
   async saveEvent(matchId: string, type: string, userId: number | null, data?: unknown) {

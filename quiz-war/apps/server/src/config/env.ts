@@ -41,6 +41,10 @@ const envSchema = z.object({
   /** SHA-256 fingerprints of the Play App Signing + upload certificates (for assetlinks.json). */
   ANDROID_SHA256_CERT_FINGERPRINTS: z.string().optional(),
 
+  /** OpenAI key for the admin AI question generator (never sent to clients). */
+  OPENAI_API_KEY: z.string().optional(),
+  OPENAI_BASE_URL: z.string().url().default('https://api.openai.com/v1'),
+
   SMTP_URL: z.string().optional(),
   MAIL_FROM: z.string().default('QUIZ WAR <no-reply@quizwar.app>'),
 

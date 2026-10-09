@@ -7,6 +7,8 @@ import { MysqlMatchPersistence } from './game/persistence.mysql';
 import type { Emitter, PlayerIdentity } from './game/types';
 import { queryOne } from './db/pool';
 import { AdminAuthService } from './modules/admin/admin.auth';
+import { AiGeneratorService } from './modules/ai/ai-generator.service';
+import { MissionService } from './modules/missions/mission.service';
 import { AuthService } from './modules/auth/auth.service';
 import { GoogleIdTokenVerifier, type GoogleVerifier } from './modules/auth/google';
 import { LogMailer, SmtpMailer, type Mailer } from './modules/auth/mailer';
@@ -135,6 +137,12 @@ export function createContext(env: Env, log: Logger, overrides: { mailer?: Maile
   const reports = new ReportService();
   const categories = new CategoryService();
   const questionsAdmin = new QuestionAdminService();
+  const ai = new AiGeneratorService({ apiKey: env.OPENAI_API_KEY, baseUrl: env.OPENAI_BASE_URL }, questionsAdmin, {
+    info: (o, m) => log.info(o, m),
+    error: (o, m) => log.error(o, m),
+  });
+  const missions = new MissionService(progression, notifications, () => emitter);
+  progression.afterPlayerResult = (m, p, outcome) => missions.recordMatch(m, p, outcome);
 
   const auth = new AuthService(
     { jwtSecret: env.JWT_SECRET, accessTtlSec: env.ACCESS_TOKEN_TTL_SEC, refreshTtlDays: env.REFRESH_TOKEN_TTL_DAYS, webUrl: env.PUBLIC_WEB_URL },
@@ -181,6 +189,8 @@ export function createContext(env: Env, log: Logger, overrides: { mailer?: Maile
     reports,
     categories,
     questionsAdmin,
+    ai,
+    missions,
     auth,
     passkeys,
     adminAuth,

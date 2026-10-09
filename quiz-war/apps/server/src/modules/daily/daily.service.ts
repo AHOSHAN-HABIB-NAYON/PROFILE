@@ -25,7 +25,7 @@ export class DailyChallengeService {
       // Balanced mix of difficulties drawn from all active categories.
       const ids = await query<{ id: number }>(
         `SELECT q.id FROM questions q JOIN categories c ON c.id = q.category_id
-         WHERE q.is_active = 1 AND q.deleted_at IS NULL AND c.is_active = 1 AND c.deleted_at IS NULL
+         WHERE q.is_active = 1 AND q.review_status = 'approved' AND q.deleted_at IS NULL AND c.is_active = 1 AND c.deleted_at IS NULL
          ORDER BY RAND() LIMIT ?`,
         [s.questionCount],
       );

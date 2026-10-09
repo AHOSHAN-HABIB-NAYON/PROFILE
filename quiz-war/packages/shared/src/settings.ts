@@ -92,6 +92,18 @@ export const gameSettingsSchema = z.object({
     /** If a whole team is gone after the grace period the other team wins by forfeit. */
     forfeitOnTimeout: z.boolean(),
   }),
+  /** Leaving a started match (quit, disconnect timeout or AFK) costs coins and XP. */
+  penalties: z.object({
+    enabled: z.boolean(),
+    quitCoins: z.number().int().min(0).max(100000),
+    quitXp: z.number().int().min(0).max(100000),
+    /** The fined coins are split between the opponents who stayed until the end. */
+    giveCoinsToOpponents: z.boolean(),
+    /** Also fine players who leave a match against the AI. */
+    applyToAiMatches: z.boolean(),
+    /** Questions missed in a row (while connected) before a player is removed as AFK. 0 = off. */
+    afkMissLimit: z.number().int().min(0).max(20),
+  }),
   ranked: z.object({
     enabled: z.boolean(),
     startRating: z.number().int().min(0),
@@ -181,6 +193,7 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
     },
   },
   disconnect: { graceSec: 20, forfeitOnTimeout: true },
+  penalties: { enabled: true, quitCoins: 30, quitXp: 20, giveCoinsToOpponents: true, applyToAiMatches: false, afkMissLimit: 3 },
   ranked: {
     enabled: true,
     startRating: 1000,
@@ -246,7 +259,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
 
 /** Public subset of app settings exposed to clients (no admin-only flags). */
 export type PublicConfig = AppSettings & {
-  game: Pick<GameSettings, 'match' | 'powerUps' | 'levels'> & { leagues: GameSettings['ranked']['leagues']; aiEnabled: boolean };
+  game: Pick<GameSettings, 'match' | 'powerUps' | 'levels' | 'penalties'> & { leagues: GameSettings['ranked']['leagues']; aiEnabled: boolean };
   googleClientId: string | null;
   vapidPublicKey: string | null;
 };

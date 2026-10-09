@@ -50,6 +50,7 @@ async function main() {
   await ctx.seasons.tick((m) => app.log.info(m));
   ctx.matchmaking.start();
   const stopJobs = startJobs(ctx);
+  void ctx.ai.recover().catch((err) => app.log.error({ err }, 'ai job recovery failed'));
 
   await app.ready();
   createGateway(ctx, app.server, corsOrigins(env.CORS_ORIGINS));

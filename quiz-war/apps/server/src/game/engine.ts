@@ -244,6 +244,7 @@ export class GameEngine {
       disconnects: 0,
       graceUntil: null,
       forfeited: false,
+      missedInRow: 0,
       score: 0,
       combo: 0,
       bestCombo: 0,
@@ -495,6 +496,7 @@ export class GameEngine {
       powerUp: p.roundPowerUp,
     };
     p.answers.set(questionIndex, rec);
+    p.missedInRow = 0;
     p.score = Math.max(0, p.score + sc.points);
     p.combo = sc.comboAfter;
     p.bestCombo = Math.max(p.bestCombo, p.combo);
@@ -530,6 +532,8 @@ export class GameEngine {
     const idx = m.currentIndex;
     const q = m.questions[idx];
     let someoneWrong = false;
+    const afk: LivePlayer[] = [];
+    const afkLimit = m.type === 'pvp' && m.mode.kind === 'battle' ? m.settings.penalties.afkMissLimit : 0;
     for (const p of m.players) {
       if (p.forfeited) continue;
       if (!p.answers.has(idx)) {
@@ -537,6 +541,12 @@ export class GameEngine {
         p.answers.set(idx, rec);
         p.combo = 0;
         this.persist(m, () => this.d.persistence.saveAnswer(m, p, rec));
+        // Online but not playing: warn once, then remove the player so the others aren't held up.
+        if (!p.isBot && p.connected && afkLimit > 0) {
+          p.missedInRow++;
+          if (p.missedInRow >= afkLimit) afk.push(p);
+          else if (p.missedInRow === afkLimit - 1) this.d.emitter.toUser(p.userId, 'match:afk_warning', { matchId: m.id, missed: p.missedInRow, limit: afkLimit });
+        }
       }
       if (!p.answers.get(idx)!.correct) someoneWrong = true;
     }
@@ -569,6 +579,12 @@ export class GameEngine {
       this.schedule(m, Math.min(revealMs, 1500), () => void this.endMatch(m, reason));
     } else {
       this.schedule(m, revealMs, () => this.startRound(m, idx + 1));
+    }
+    if (afk.length) {
+      const active = m.players.filter((p) => !p.isBot && !p.forfeited);
+      // Nobody is playing any more: close the match without rewarding anyone.
+      if (active.every((p) => afk.includes(p))) this.abort(m, 'aborted', 'all_afk');
+      else for (const p of afk) this.forfeitPlayer(m, p, 'afk');
     }
   }
 

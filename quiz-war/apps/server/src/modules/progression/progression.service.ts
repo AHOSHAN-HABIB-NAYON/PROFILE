@@ -26,7 +26,13 @@ const POWER_UP_ITEM: Record<PowerUp, string> = {
  * and achievements. Every balance change happens inside a DB transaction with row locks and is
  * recorded (coin_transactions / user_rewards) so nothing can be granted twice.
  */
+type Extra = { fineCoins?: number; fineXp?: number; bonusCoins?: number };
+export type MatchOutcome = 'win' | 'loss' | 'draw' | 'abandoned' | 'completed';
+
 export class ProgressionService implements RewardHandler, PowerUpWallet {
+  /** Set by the context: mission progress after every human player's result. */
+  afterPlayerResult: ((m: LiveMatch, p: LivePlayer, outcome: MatchOutcome) => Promise<void>) | null = null;
+
   constructor(
     private readonly settings: SettingsService,
     private readonly seasons: SeasonService,
@@ -273,19 +279,37 @@ export class ProgressionService implements RewardHandler, PowerUpWallet {
       rankedAllowed = await this.passesBoostingCheck(m);
     }
 
-    for (const p of m.players) {
+    // Quit fines: players who left are settled first so the coins actually collected can be
+    // shared between the opponents who stayed.
+    const pen = this.settings.game().penalties;
+    const finesApply = pen.enabled && !!m.startedAt && m.mode.kind === 'battle' && (m.type === 'pvp' || (pen.applyToAiMatches && m.type === 'ai'));
+    let collected = 0;
+    const order = [...m.players].sort((a, b) => Number(b.forfeited) - Number(a.forfeited));
+    const byUser = new Map<number, PlayerResult>();
+    const stayers = humans.filter((p) => !p.forfeited);
+    for (const p of order) {
       if (p.isBot) {
-        results.push(this.botResult(p, m));
+        byUser.set(p.userId, this.botResult(p, m));
         continue;
       }
+      let extra: Extra = {};
+      if (finesApply && p.forfeited) extra = { fineCoins: pen.quitCoins, fineXp: pen.quitXp };
+      else if (finesApply && pen.giveCoinsToOpponents && collected > 0) {
+        const quitterTeams = new Set(m.players.filter((x) => x.forfeited && !x.isBot).map((x) => x.team));
+        const receivers = stayers.filter((x) => !quitterTeams.has(x.team) || m.mode.teams < 2);
+        if (receivers.includes(p)) extra = { bonusCoins: Math.floor(collected / receivers.length) };
+      }
       try {
-        results.push(await this.applyForPlayer(m, p, teamAvg, rankedAllowed));
+        const r = await this.applyForPlayer(m, p, teamAvg, rankedAllowed, extra);
+        collected += r.penaltyCoins ?? 0;
+        byUser.set(p.userId, r);
       } catch (err) {
         // Never let one player's failure block everyone else's result.
         this.log.error({ err, matchId: m.id, userId: p.userId }, 'failed to apply match result');
-        results.push({ ...this.botResult(p, m), isBot: false });
+        byUser.set(p.userId, { ...this.botResult(p, m), isBot: false });
       }
     }
+    for (const p of m.players) results.push(byUser.get(p.userId)!);
     return results;
   }
 
@@ -335,7 +359,7 @@ export class ProgressionService implements RewardHandler, PowerUpWallet {
     return m.winnerTeam === p.team ? 'win' : 'loss';
   }
 
-  private async applyForPlayer(m: LiveMatch, p: LivePlayer, teamAvg: number[], rankedAllowed: boolean): Promise<PlayerResult> {
+  private async applyForPlayer(m: LiveMatch, p: LivePlayer, teamAvg: number[], rankedAllowed: boolean, extra: Extra = {}): Promise<PlayerResult> {
     const s = this.settings.game();
     const r = s.rewards;
     const outcome = this.outcome(m, p);
@@ -357,11 +381,15 @@ export class ProgressionService implements RewardHandler, PowerUpWallet {
     const leagueKeys = s.ranked.leagues;
     const res = await tx(async (conn) => {
       const prof = await queryOne<any>(
-        `SELECT xp, level, rating, peak_rating, league, current_win_streak FROM user_profiles WHERE user_id = ? FOR UPDATE`,
+        `SELECT xp, level, coins, rating, peak_rating, league, current_win_streak FROM user_profiles WHERE user_id = ? FOR UPDATE`,
         [p.userId],
         conn,
       );
       if (!prof) throw new Error(`profile ${p.userId} missing`);
+      // Fines never push a balance below zero and never drop the player a level.
+      const penaltyCoins = Math.min(extra.fineCoins ?? 0, Math.max(0, Number(prof.coins)));
+      const penaltyXp = Math.min(extra.fineXp ?? 0, levelFromXp(Number(prof.xp), s.levels).intoLevel);
+      const bonusCoins = extra.bonusCoins ?? 0;
       const ratingBefore: number = prof.rating;
       let ratingAfter = ratingBefore;
       if (m.ranked && rankedAllowed && (outcome === 'win' || outcome === 'loss' || outcome === 'draw' || outcome === 'abandoned')) {
@@ -373,7 +401,7 @@ export class ProgressionService implements RewardHandler, PowerUpWallet {
       }
       const leagueBefore = prof.league as string;
       const leagueAfter = this.seasons.leagueFor(ratingAfter).key;
-      const totalXp = Number(prof.xp) + xp;
+      const totalXp = Number(prof.xp) + xp - penaltyXp;
       const levelAfter = levelFromXp(totalXp, s.levels).level;
       const win = outcome === 'win';
       const counted = m.mode.kind === 'battle';
@@ -391,7 +419,7 @@ export class ProgressionService implements RewardHandler, PowerUpWallet {
         [
           totalXp,
           levelAfter,
-          coins,
+          coins + bonusCoins - penaltyCoins,
           ratingAfter,
           ratingAfter,
           leagueAfter,
@@ -411,10 +439,15 @@ export class ProgressionService implements RewardHandler, PowerUpWallet {
         ],
         conn,
       );
-      if (coins) {
+      for (const [amount, reason] of [
+        [coins, 'match'],
+        [bonusCoins, 'opponent_quit'],
+        [-penaltyCoins, 'quit_penalty'],
+      ] as const) {
+        if (!amount) continue;
         await exec(
-          `INSERT INTO coin_transactions (user_id, amount, balance_after, reason, ref) SELECT user_id, ?, coins, 'match', ? FROM user_profiles WHERE user_id = ?`,
-          [coins, m.id, p.userId],
+          `INSERT INTO coin_transactions (user_id, amount, balance_after, reason, ref) SELECT user_id, ?, coins, ?, ? FROM user_profiles WHERE user_id = ?`,
+          [amount, reason, m.id, p.userId],
           conn,
         );
       }
@@ -466,8 +499,26 @@ export class ProgressionService implements RewardHandler, PowerUpWallet {
           await exec('UPDATE squad_members SET contributed_xp = contributed_xp + ? WHERE squad_id = ? AND user_id = ?', [xp, squad.squad_id, p.userId], conn);
         }
       }
-      return { ratingBefore, ratingAfter, leagueBefore, leagueAfter, levelBefore: prof.level as number, levelAfter };
+      return { ratingBefore, ratingAfter, leagueBefore, leagueAfter, levelBefore: prof.level as number, levelAfter, penaltyCoins, penaltyXp, bonusCoins };
     });
+
+    if (res.penaltyCoins || res.penaltyXp) {
+      await this.notifications.notify(p.userId, {
+        type: 'penalty',
+        title: '⚠️ ম্যাচ ছেড়ে যাওয়ার জরিমানা',
+        body: `ম্যাচ শেষ না করে বের হয়ে যাওয়ায় ${res.penaltyCoins} কয়েন ও ${res.penaltyXp} XP কাটা হয়েছে।`,
+        url: '/history',
+      });
+    }
+    if (res.bonusCoins) {
+      await this.notifications.notify(p.userId, {
+        type: 'reward',
+        title: `🪙 +${res.bonusCoins} কয়েন বোনাস`,
+        body: 'প্রতিপক্ষ ম্যাচ ছেড়ে যাওয়ায় তার জরিমানার কয়েন আপনি পেয়েছেন।',
+        url: '/history',
+      });
+    }
+    await this.afterPlayerResult?.(m, p, outcome).catch((err) => this.log.error({ err, userId: p.userId }, 'mission progress failed'));
 
     if (outcome !== 'abandoned') await this.touchActivity(p.userId).catch(() => undefined);
     const achievements = await this.checkAchievements(p.userId).catch(() => []);
@@ -502,6 +553,9 @@ export class ProgressionService implements RewardHandler, PowerUpWallet {
       leagueBefore: res.leagueBefore,
       leagueAfter: res.leagueAfter,
       achievements,
+      penaltyCoins: res.penaltyCoins,
+      penaltyXp: res.penaltyXp,
+      bonusCoins: res.bonusCoins,
     };
   }
 

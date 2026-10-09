@@ -9,6 +9,8 @@ import { AppError, badRequest, notFound, unauthorized } from '../lib/errors';
 import { parse } from '../lib/validate';
 import { audit } from '../modules/admin/admin.auth';
 import { categoryInputSchema } from '../modules/questions/category.service';
+import { aiJobInputSchema, aiSettingsSchema } from '../modules/ai/ai-generator.service';
+import { MISSION_METRICS, missionInputSchema } from '../modules/missions/mission.service';
 
 const COOKIE = 'qw_admin_rt';
 const COOKIE_PATH = '/api/v1/admin/auth';
@@ -53,7 +55,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
       one(`SELECT COUNT(*) n FROM matches WHERE created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 DAY) AND status = 'finished'`),
       one(`SELECT COUNT(*) n FROM matches WHERE created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 DAY) AND status = 'finished' AND match_type = 'pvp'`),
       one(`SELECT COUNT(*) n FROM matches WHERE created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 1 DAY) AND status = 'finished' AND match_type = 'ai'`),
-      one(`SELECT COUNT(*) n FROM questions WHERE deleted_at IS NULL AND is_active = 1`),
+      one(`SELECT COUNT(*) n FROM questions WHERE deleted_at IS NULL AND is_active = 1 AND review_status = 'approved'`),
       one(`SELECT COUNT(*) n FROM user_profiles WHERE streak_days >= 2 AND last_active_date >= DATE_SUB(UTC_DATE(), INTERVAL 1 DAY)`),
       one(`SELECT COUNT(*) n FROM reports WHERE status IN ('open','reviewing')`),
       one(`SELECT COUNT(*) n FROM matches WHERE flagged = 1 AND created_at >= DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)`),
@@ -190,6 +192,8 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
         categoryId: z.coerce.number().int().positive().optional(),
         difficulty: z.enum(['easy', 'medium', 'hard', 'expert']).optional(),
         active: z.enum(['true', 'false']).optional(),
+        review: z.enum(['approved', 'pending', 'rejected']).optional(),
+        aiJobId: z.coerce.number().int().positive().optional(),
       }),
       req.query,
     );
@@ -245,6 +249,66 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     ctx.categories.invalidate();
     return res;
   });
+  app.get('/questions/bank-stats', can('questions.view'), async () => ({ items: await ctx.questionsAdmin.bankStats() }));
+  app.post('/questions/review', can('questions.manage'), async (req) => {
+    const b = parse(z.object({ ids: z.array(z.number().int().positive()).min(1).max(500), action: z.enum(['approve', 'reject']) }), req.body);
+    const n = await ctx.questionsAdmin.review(b.ids, b.action, req.admin!.id);
+    await log(req, `question.${b.action}`, { type: 'question', summary: `${b.action === 'approve' ? 'Approved' : 'Rejected'} ${n} AI questions` });
+    ctx.categories.invalidate();
+    return { updated: n };
+  });
+
+  /* ---------------------------- AI generator --------------------------- */
+  app.get('/ai/settings', can('questions.manage'), async () => ({
+    settings: await ctx.ai.settings(),
+    defaults: ctx.ai.defaults(),
+    apiKeyConfigured: ctx.ai.configured,
+  }));
+  app.put('/ai/settings', can('settings.app'), async (req) => {
+    const b = parse(aiSettingsSchema.partial(), req.body);
+    const before = await ctx.ai.settings();
+    const after = await ctx.ai.updateSettings(b, req.admin!.id);
+    await log(req, 'ai.settings', { type: 'settings', before: { ...before, systemPrompt: undefined }, after: { ...after, systemPrompt: undefined }, summary: `AI model ${after.model}` });
+    return after;
+  });
+  app.post('/ai/test', { ...can('questions.manage'), config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, async (req) => {
+    const b = parse(z.object({ model: z.string().trim().max(80).optional() }), req.body ?? {});
+    return ctx.ai.test(b.model);
+  });
+  app.get('/ai/jobs', can('questions.manage'), async () => ({ items: await ctx.ai.listJobs() }));
+  app.post('/ai/jobs', { ...can('questions.manage'), config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (req) => {
+    const b = parse(aiJobInputSchema, req.body);
+    const id = await ctx.ai.createJob(b, req.admin!.id);
+    await log(req, 'ai.job', { type: 'question', id, summary: `AI: ${b.count} questions (category ${b.categoryId}${b.topic ? `, ${b.topic}` : ''})` });
+    return { id };
+  });
+  app.post('/ai/jobs/:id/cancel', can('questions.manage'), async (req) => {
+    await ctx.ai.cancelJob(parse(idParam, req.params).id);
+    return { ok: true };
+  });
+
+  /* ------------------------------ Missions ----------------------------- */
+  app.get('/missions', can('content.manage'), async () => ({ items: await ctx.missions.adminList(), metrics: MISSION_METRICS }));
+  app.post('/missions', can('content.manage'), async (req) => {
+    const b = parse(missionInputSchema, req.body);
+    const id = await ctx.missions.create(b);
+    await log(req, 'mission.create', { type: 'mission', id, after: b, summary: b.title });
+    return { id };
+  });
+  app.put('/missions/:id', can('content.manage'), async (req) => {
+    const { id } = parse(idParam, req.params);
+    const b = parse(missionInputSchema, req.body);
+    await ctx.missions.update(id, b);
+    await log(req, 'mission.update', { type: 'mission', id, after: b, summary: b.title });
+    return { ok: true };
+  });
+  app.delete('/missions/:id', can('content.manage'), async (req) => {
+    const { id } = parse(idParam, req.params);
+    await ctx.missions.remove(id);
+    await log(req, 'mission.delete', { type: 'mission', id });
+    return { ok: true };
+  });
+
   app.post('/questions/image', can('questions.manage'), async (req) => {
     const file = await (req as any).file({ limits: { fileSize: ctx.env.UPLOAD_MAX_BYTES, files: 1 } });
     if (!file) throw badRequest('No file uploaded');

@@ -20,7 +20,7 @@ export class CategoryService {
     if (this.cache && Date.now() - this.cache.at < 60_000) return this.cache.data;
     const rows = await query<any>(
       `SELECT c.id, c.slug, c.name, c.name_bn AS nameBn, c.icon, c.description, c.color,
-              (SELECT COUNT(*) FROM questions q WHERE q.category_id = c.id AND q.is_active = 1 AND q.deleted_at IS NULL) AS questionCount
+              (SELECT COUNT(*) FROM questions q WHERE q.category_id = c.id AND q.is_active = 1 AND q.review_status = 'approved' AND q.deleted_at IS NULL) AS questionCount
        FROM categories c WHERE c.is_active = 1 AND c.deleted_at IS NULL ORDER BY c.sort_order, c.id`,
     );
     const data = rows.map((r) => ({ ...r, questionCount: Number(r.questionCount) }));
@@ -35,7 +35,8 @@ export class CategoryService {
   async listAdmin() {
     const rows = await query<any>(
       `SELECT c.id, c.slug, c.name, c.name_bn AS nameBn, c.icon, c.description, c.color, c.sort_order AS sortOrder, c.is_active AS isActive,
-              (SELECT COUNT(*) FROM questions q WHERE q.category_id = c.id AND q.deleted_at IS NULL) AS questionCount
+              (SELECT COUNT(*) FROM questions q WHERE q.category_id = c.id AND q.review_status = 'approved' AND q.deleted_at IS NULL) AS questionCount,
+              (SELECT COUNT(*) FROM questions q WHERE q.category_id = c.id AND q.review_status = 'pending' AND q.deleted_at IS NULL) AS pendingCount
        FROM categories c WHERE c.deleted_at IS NULL ORDER BY c.sort_order, c.id`,
     );
     return rows.map((r) => ({ ...r, isActive: !!r.isActive, questionCount: Number(r.questionCount) }));

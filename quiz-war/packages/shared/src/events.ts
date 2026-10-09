@@ -85,6 +85,11 @@ export interface PlayerResult {
   leagueBefore: string | null;
   leagueAfter: string | null;
   achievements: { key: string; name: string; icon: string }[];
+  /** Coins/XP taken for leaving the match early. */
+  penaltyCoins?: number;
+  penaltyXp?: number;
+  /** Coins received from opponents who left. */
+  bonusCoins?: number;
 }
 
 export interface MatchEndPayload {
@@ -162,6 +167,9 @@ export interface ServerToClientEvents {
   'match:reveal': (p: RevealPayload) => void;
   'match:player': (p: { matchId: string; userId: number; connected: boolean; graceUntil: number | null }) => void;
   'match:end': (p: MatchEndPayload) => void;
+  /** You missed questions in a row; one more and you are removed (and fined). */
+  'match:afk_warning': (p: { matchId: string; missed: number; limit: number }) => void;
+  'missions:update': (p: { claimable: number }) => void;
   'notification:new': (p: NotificationView) => void;
   'account:update': (p: { coins?: number; xp?: number; level?: number; rating?: number }) => void;
   'server:announcement': (p: { title: string; body: string }) => void;
