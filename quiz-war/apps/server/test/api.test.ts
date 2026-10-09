@@ -156,8 +156,17 @@ d('HTTP API (MySQL)', () => {
       expect((await api('DELETE', `/friends/${b.user.id}`, undefined, a.token)).status).toBe(200);
       expect((await api('GET', '/friends', undefined, b.token)).body.items).toHaveLength(0);
       expect((await api('POST', '/blocks', { userId: b.user.id }, a.token)).status).toBe(200);
-      expect((await api('GET', `/users/${a.user.uid}`, undefined, b.token)).status).toBe(404);
+      // The blocked player only sees a neutral "not available"; the blocker is told and can unblock.
+      const seen = await api('GET', `/users/${a.user.uid}`, undefined, b.token);
+      expect(seen.status).toBe(403);
+      expect(seen.body.error.code).toBe('profile_unavailable');
+      const mine = await api('GET', `/users/${b.user.uid}`, undefined, a.token);
+      expect(mine.body.error.code).toBe('blocked_by_you');
+      expect(mine.body.error.details.user.id).toBe(b.user.id);
+      expect((await api('GET', '/blocks', undefined, a.token)).body.items.map((x: any) => x.id)).toContain(b.user.id);
       expect((await api('POST', '/friends/requests', { uid: a.user.uid }, b.token)).status).toBe(404);
+      expect((await api('DELETE', `/blocks/${b.user.id}`, undefined, a.token)).status).toBe(200);
+      expect((await api('GET', `/users/${b.user.uid}`, undefined, a.token)).status).toBe(200);
     });
 
     it('a reverse pending request auto-accepts', async () => {

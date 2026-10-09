@@ -33,9 +33,59 @@ export default function PublicProfile() {
   const [challenge, setChallenge] = useState(false);
   const [more, setMore] = useState(false);
   const [report, setReport] = useState(false);
-  const { data, isLoading, error } = useQuery({ queryKey: ['profile', uid.toUpperCase()], queryFn: () => api(`/users/${encodeURIComponent(uid)}`) });
+  const { data, isLoading, error } = useQuery({ queryKey: ['profile', uid.toUpperCase()], queryFn: () => api(`/users/${encodeURIComponent(uid)}`), retry: (n, e: any) => n < 1 && !String(e?.code ?? '').match(/blocked_by_you|profile_unavailable|not_found/) });
 
   if (isLoading) return <div className="page"><Skeleton kind="card" lines={2} /></div>;
+  const errCode = (error as any)?.code as string | undefined;
+  if (errCode === 'blocked_by_you') {
+    const bu = (error as any).details?.user as { id: number; username: string; avatarThumbUrl: string | null } | undefined;
+    return (
+      <div className="page">
+        <div className="blocked-state">
+          <span className="bs-icon"><Icon name="ban" size={34} /></span>
+          {bu && <Avatar name={bu.username} src={bu.avatarThumbUrl} size={64} />}
+          <h2>{t(`You blocked ${bu?.username ?? 'this player'}`, `আপনি ${bu?.username ?? 'এই প্লেয়ার'}-কে ব্লক করেছেন`)}</h2>
+          <p className="muted">
+            {t(
+              'You won’t see each other in search, friends, leaderboards or challenges, and they can’t message or invite you. Unblock any time.',
+              'আপনারা একে অপরকে সার্চ, বন্ধু, লিডারবোর্ড বা চ্যালেঞ্জে দেখবেন না, আর তিনি আপনাকে ডাকতে বা ইনভাইট করতে পারবেন না। চাইলে যেকোনো সময় আনব্লক করতে পারবেন।',
+            )}
+          </p>
+          <div className="row" style={{ width: '100%' }}>
+            <button className="btn outline grow" onClick={() => nav(-1)}><Icon name="arrow-left" /> {t('Go back', 'ফিরে যান')}</button>
+            {bu && (
+              <button
+                className="btn primary grow"
+                onClick={() =>
+                  void api(`/blocks/${bu.id}`, { method: 'DELETE' })
+                    .then(() => {
+                      haptic('success');
+                      toast.success(t('Player unblocked', 'আনব্লক করা হয়েছে'), bu.username, 'user-check');
+                      void qc.invalidateQueries({ queryKey: ['profile', uid.toUpperCase()] });
+                      void qc.invalidateQueries({ queryKey: ['blocks'] });
+                    })
+                    .catch((e) => toast.error(t('Something went wrong', 'কিছু একটা সমস্যা হয়েছে'), friendlyError(e)))
+                }
+              >
+                <Icon name="user-check" /> {t('Unblock', 'আনব্লক করুন')}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (errCode === 'profile_unavailable')
+    return (
+      <div className="page">
+        <div className="blocked-state">
+          <span className="bs-icon neutral"><Icon name="lock" size={32} /></span>
+          <h2>{t('This profile isn’t available', 'এই প্রোফাইলটি দেখা যাচ্ছে না')}</h2>
+          <p className="muted">{t('This player has limited who can see their profile. You can’t view, challenge or add them right now.', 'এই প্লেয়ার তাঁর প্রোফাইল দেখার সুযোগ সীমিত করেছেন। এই মুহূর্তে আপনি প্রোফাইল দেখতে, চ্যালেঞ্জ বা বন্ধু হিসেবে যোগ করতে পারবেন না।')}</p>
+          <button className="btn outline block" onClick={() => nav(-1)}><Icon name="arrow-left" /> {t('Go back', 'ফিরে যান')}</button>
+        </div>
+      </div>
+    );
   if (error || !data)
     return (
       <div className="page">

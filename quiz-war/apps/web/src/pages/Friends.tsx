@@ -37,6 +37,19 @@ export default function Friends() {
   const requests = useQuery({ queryKey: ['friend-requests'], queryFn: () => api<{ incoming: any[]; outgoing: any[] }>('/friends/requests') });
   const [challenge, setChallenge] = useState<PublicUser | null>(null);
   const [qrOpen, setQrOpen] = useState(false);
+  const [blockedOpen, setBlockedOpen] = useState(false);
+  const blocks = useQuery({ queryKey: ['blocks'], queryFn: async () => (await api<{ items: PublicUser[] }>('/blocks')).items, enabled: blockedOpen });
+  const unblock = (u: PublicUser) => {
+    haptic('tap');
+    qc.setQueryData<PublicUser[]>(['blocks'], (old) => old?.filter((x) => x.id !== u.id));
+    void api(`/blocks/${u.id}`, { method: 'DELETE' })
+      .then(() => toast.success(t('Player unblocked', 'আনব্লক করা হয়েছে'), u.username, 'user-check'))
+      .catch((e) => {
+        toast.error(t('Could not unblock', 'আনব্লক করা যায়নি'), friendlyError(e));
+        void blocks.refetch();
+      })
+      .finally(() => void qc.invalidateQueries({ queryKey: ['profile'] }));
+  };
   const [scanOpen, setScanOpen] = useState(false);
   const [uid, setUid] = useState('');
   const [found, setFound] = useState<{ user: PublicUser; status: string } | null>(null);
@@ -52,7 +65,10 @@ export default function Friends() {
     try {
       setFound(await api(`/users/search?uid=${encodeURIComponent(n)}`));
     } catch (e) {
-      setSearchErr(friendlyError(e));
+      if ((e as any)?.code === 'blocked_by_you') {
+        setSearchErr(t('You blocked this player. Unblock them from the blocked list to add or challenge them.', 'আপনি এই প্লেয়ারকে ব্লক করেছেন। বন্ধু বা চ্যালেঞ্জ করতে আগে ব্লক লিস্ট থেকে আনব্লক করুন।'));
+        setBlockedOpen(true);
+      } else setSearchErr(friendlyError(e));
     } finally {
       setSearching(false);
     }
@@ -95,6 +111,7 @@ export default function Friends() {
             <div className="row gap-sm">
               <button className="btn icon sm soft" aria-label={t('Show my QR code', 'আমার QR কোড')} onClick={() => setQrOpen(true)}><Icon name="qr" size={20} /></button>
               <button className="btn icon sm soft" aria-label={t('Scan a QR code', 'QR কোড স্ক্যান')} onClick={() => setScanOpen(true)}><Icon name="scan" size={20} /></button>
+              <button className="btn icon sm soft" aria-label={t('Blocked players', 'ব্লক করা প্লেয়ার')} title={t('Blocked players', 'ব্লক করা প্লেয়ার')} onClick={() => setBlockedOpen(true)}><Icon name="ban" size={20} /></button>
             </div>
           }
         />
@@ -255,6 +272,29 @@ export default function Friends() {
         )}
 
         <ChallengeSheet target={challenge} onClose={() => setChallenge(null)} />
+        <Sheet open={blockedOpen} onClose={() => setBlockedOpen(false)} title={t('Blocked players', 'ব্লক করা প্লেয়ার')} icon="ban">
+          <p className="small muted" style={{ marginBottom: 10 }}>
+            {t('Blocked players can’t find, challenge or invite you, and you won’t see them.', 'ব্লক করা প্লেয়াররা আপনাকে খুঁজে পাবে না, চ্যালেঞ্জ বা ইনভাইট করতে পারবে না, আপনিও তাদের দেখবেন না।')}
+          </p>
+          {blocks.isLoading ? (
+            <ListSkeleton rows={3} />
+          ) : !blocks.data?.length ? (
+            <Empty icon="shield-check" tone="success" title={t('No blocked players', 'কেউ ব্লক করা নেই')} body={t('Players you block will appear here.', 'যাদের ব্লক করবেন তারা এখানে দেখাবে।')} />
+          ) : (
+            <div className="list">
+              {blocks.data.map((u) => (
+                <div key={u.id} className="list-row">
+                  <Avatar name={u.username} src={u.avatarThumbUrl} size={44} />
+                  <div className="grow" style={{ minWidth: 0 }}>
+                    <b className="ellipsis" style={{ display: 'block' }}>{u.username}</b>
+                    <span className="xs muted">{u.uid}</span>
+                  </div>
+                  <button className="btn sm soft" onClick={() => unblock(u)}><Icon name="user-check" size={16} /> {t('Unblock', 'আনব্লক')}</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Sheet>
 
         <Sheet open={qrOpen} onClose={() => setQrOpen(false)} title={t('My QR code', 'আমার QR কোড')} icon="qr">
           <div className="col center">

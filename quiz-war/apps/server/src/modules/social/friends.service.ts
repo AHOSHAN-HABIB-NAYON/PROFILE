@@ -13,6 +13,13 @@ export class FriendsService {
     private readonly presence: (userId: number) => PresenceStatus,
   ) {}
 
+  /** Who blocked whom between two players: 'me' (a blocked b), 'them' (b blocked a) or null. */
+  async blockDirection(a: number, b: number): Promise<'me' | 'them' | null> {
+    const rows = await query<{ blocker_id: number }>('SELECT blocker_id FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)', [a, b, b, a]);
+    if (rows.some((r) => Number(r.blocker_id) === a)) return 'me';
+    return rows.length ? 'them' : null;
+  }
+
   async isBlockedEitherWay(a: number, b: number) {
     const r = await queryOne('SELECT 1 x FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?) LIMIT 1', [a, b, b, a]);
     return !!r;

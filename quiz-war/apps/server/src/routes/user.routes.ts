@@ -92,7 +92,13 @@ export async function userRoutes(app: FastifyInstance, ctx: AppContext) {
     const profile = await ctx.profile.publicProfile(u);
     let relation: Record<string, unknown> | null = null;
     if (req.user && req.user.id !== profile.user.id) {
-      if (await ctx.friends.isBlockedEitherWay(req.user.id, profile.user.id)) throw notFound('Player not found');
+      const block = await ctx.friends.blockDirection(req.user.id, profile.user.id);
+      // You blocked them: say so and offer unblock. They blocked you: a neutral "not available".
+      if (block === 'me')
+        throw new AppError(403, 'blocked_by_you', 'You blocked this player', {
+          user: { id: profile.user.id, uid: profile.user.uid, username: profile.user.username, avatarThumbUrl: profile.user.avatarThumbUrl },
+        });
+      if (block === 'them') throw new AppError(403, 'profile_unavailable', 'This profile is not available');
       relation = {
         friend: await ctx.friends.areFriends(req.user.id, profile.user.id),
         status: ctx.presence.status(profile.user.id),
@@ -107,7 +113,10 @@ export async function userRoutes(app: FastifyInstance, ctx: AppContext) {
     const u = normalizeUid(q.uid);
     if (!u) throw badRequest('Enter a valid UID like QW-8F29K7');
     const user = await getUserByUid(u);
-    if (!user || (await ctx.friends.isBlockedEitherWay(uid(req), user.id))) throw notFound('No player with this UID');
+    if (!user) throw notFound('No player with this UID');
+    const block = await ctx.friends.blockDirection(uid(req), user.id);
+    if (block === 'me') throw new AppError(403, 'blocked_by_you', 'You blocked this player', { user: { id: user.id, uid: user.uid, username: user.username, avatarThumbUrl: user.avatarThumbUrl } });
+    if (block === 'them') throw notFound('No player with this UID');
     return { user, status: ctx.presence.status(user.id) };
   });
 
