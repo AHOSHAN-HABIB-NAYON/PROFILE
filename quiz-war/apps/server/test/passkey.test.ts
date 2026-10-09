@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { apkKeyHashOrigin } from '../src/modules/auth/passkey.service';
+import { apkKeyHashOrigin, expandAndroidOrigins } from '../src/modules/auth/passkey.service';
 
 describe('apkKeyHashOrigin', () => {
   it('turns a SHA-256 certificate fingerprint into the Android passkey origin', () => {
@@ -9,5 +9,10 @@ describe('apkKeyHashOrigin', () => {
   });
   it('ignores malformed fingerprints', () => {
     expect(apkKeyHashOrigin('nope')).toBeNull();
+  });
+  it('accepts the standard-base64 spelling Android reports', () => {
+    const all = expandAndroidOrigins(['https://quizwar.webtecit.com', 'android:apk-key-hash:kDq8qoRD3AGf0FGHQow_pTwm1UGTigUOG1xWGJw-5Wg']);
+    expect(all).toContain('android:apk-key-hash:kDq8qoRD3AGf0FGHQow/pTwm1UGTigUOG1xWGJw+5Wg');
+    expect(all).toContain('https://quizwar.webtecit.com');
   });
 });

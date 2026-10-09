@@ -13,7 +13,7 @@ import { MissionService } from './modules/missions/mission.service';
 import { AuthService } from './modules/auth/auth.service';
 import { GoogleIdTokenVerifier, type GoogleVerifier } from './modules/auth/google';
 import { LogMailer, SmtpMailer, smtpConfigFromEnv, type Mailer } from './modules/auth/mailer';
-import { apkKeyHashOrigin, PasskeyService } from './modules/auth/passkey.service';
+import { apkKeyHashOrigin, expandAndroidOrigins, PasskeyService } from './modules/auth/passkey.service';
 import { DailyChallengeService } from './modules/daily/daily.service';
 import { LeaderboardService } from './modules/leaderboard/leaderboard.service';
 import { SeasonService } from './modules/leaderboard/season.service';
@@ -169,12 +169,10 @@ export function createContext(env: Env, log: Logger, overrides: { mailer?: Maile
       rpName: env.WEBAUTHN_RP_NAME,
       // The Android app's origin is derived from its signing fingerprints, so a typo in
       // WEBAUTHN_ORIGIN can't break app passkeys.
-      origins: [
-        ...new Set([
-          ...env.WEBAUTHN_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean),
-          ...(env.ANDROID_SHA256_CERT_FINGERPRINTS ?? '').split(',').map((f) => apkKeyHashOrigin(f)).filter((o): o is string => !!o),
-        ]),
-      ],
+      origins: expandAndroidOrigins([
+        ...env.WEBAUTHN_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean),
+        ...(env.ANDROID_SHA256_CERT_FINGERPRINTS ?? '').split(',').map((f) => apkKeyHashOrigin(f)).filter((o): o is string => !!o),
+      ]),
     },
     auth,
     settings,

@@ -21,6 +21,24 @@ export function apkKeyHashOrigin(sha256Fingerprint: string) {
   return `android:apk-key-hash:${Buffer.from(hex, 'hex').toString('base64url')}`;
 }
 
+/**
+ * Google Password Manager reports the hash in standard base64 ("+", "/") while the docs use
+ * base64url ("-", "_"), with or without padding. Accept every spelling of the same hash.
+ */
+export function expandAndroidOrigins(origins: string[]) {
+  const out = new Set<string>();
+  for (const o of origins) {
+    out.add(o);
+    const m = /^android:apk-key-hash:(.+)$/.exec(o);
+    if (!m) continue;
+    const bytes = Buffer.from(m[1]!.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
+    if (bytes.length !== 32) continue;
+    const std = bytes.toString('base64');
+    for (const v of [bytes.toString('base64url'), std, std.replace(/=+$/, '')]) out.add(`android:apk-key-hash:${v}`);
+  }
+  return [...out];
+}
+
 export interface PasskeyConfig {
   rpId: string;
   rpName: string;
