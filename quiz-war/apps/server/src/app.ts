@@ -97,7 +97,22 @@ export async function buildApp(ctx: AppContext, opts: { logger?: boolean } = {})
     return reply.status(500).send({ error: { code: 'server_error', message: 'Something went wrong. Please try again.' } });
   });
   let spaFallback: ((req: any, reply: any) => unknown) | undefined;
-  app.setNotFoundHandler((req, reply) => {
+  app.setNotFoundHandler(async (req, reply) => {
+    // A media file missing on disk (e.g. right after a redeploy) is restored from the database.
+    if ((req.method === 'GET' || req.method === 'HEAD') && req.url.startsWith('/media/')) {
+      const key = decodeURIComponent(req.url.slice('/media/'.length).split('?')[0]);
+      const file = await ctx.storage.restore(key).catch(() => null);
+      if (file) {
+        return reply
+          .header('Content-Type', file.contentType)
+          .header('Cache-Control', 'public, max-age=2592000, immutable')
+          .header('X-Content-Type-Options', 'nosniff')
+          .header('Content-Security-Policy', "default-src 'none'; img-src 'self'; media-src 'self'")
+          .header('Access-Control-Allow-Origin', '*')
+          .header('Cross-Origin-Resource-Policy', 'cross-origin')
+          .send(file.data);
+      }
+    }
     const r = spaFallback?.(req, reply);
     if (r) return r;
     return reply.status(404).send({ error: { code: 'not_found', message: 'Not found' } });

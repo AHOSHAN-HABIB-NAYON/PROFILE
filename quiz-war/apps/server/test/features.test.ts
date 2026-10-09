@@ -315,6 +315,28 @@ d('Features (MySQL)', () => {
       for (const p of [me, a, b, c]) t.ctx.presence.disconnect(p.id, `s-${p.id}`);
     });
   });
+
+  describe('uploads survive a redeploy', () => {
+    it('keeps a database copy and restores wiped files on sync and on request', async () => {
+      const { rm, readFile } = await import('node:fs/promises');
+      const path = await import('node:path');
+      const png = Buffer.from('89504e470d0a1a0a0000000d4948445200000001000000010806000000', 'hex');
+      const url = await t.ctx.storage.put('test/redeploy.png', png, 'image/png');
+      const row = await queryOne<any>('SELECT size, content_type FROM media_files WHERE media_key = ?', ['test/redeploy.png']);
+      expect(row.size).toBe(png.length);
+      const file = path.resolve(t.ctx.env.STORAGE_LOCAL_DIR, 'test/redeploy.png');
+      await rm(file);
+      const res = await t.app.inject({ method: 'GET', url: '/media/test/redeploy.png' });
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['content-type']).toBe('image/png');
+      expect(Buffer.compare(res.rawPayload, png)).toBe(0);
+      await rm(file);
+      expect((await t.ctx.storage.syncFromBackup()).restored).toBeGreaterThanOrEqual(1);
+      expect(Buffer.compare(await readFile(file), png)).toBe(0);
+      await t.ctx.storage.remove(url);
+      expect(await queryOne('SELECT 1 x FROM media_files WHERE media_key = ?', ['test/redeploy.png'])).toBeFalsy();
+    });
+  });
 });
 
 describe('smtp config', () => {

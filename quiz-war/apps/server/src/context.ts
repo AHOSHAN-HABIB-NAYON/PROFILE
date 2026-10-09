@@ -32,7 +32,7 @@ import { BattleRequestService } from './modules/social/battle.service';
 import { FriendsService } from './modules/social/friends.service';
 import { SquadService } from './modules/squads/squad.service';
 import { ImageService } from './modules/uploads/image.service';
-import { LocalStorage } from './modules/uploads/storage';
+import { LocalStorage, MediaBackup } from './modules/uploads/storage';
 import { ProfileService } from './modules/users/profile.service';
 
 export interface Logger {
@@ -137,7 +137,7 @@ export function createContext(env: Env, log: Logger, overrides: { mailer?: Maile
   const leaderboard = new LeaderboardService(seasons);
   const daily = new DailyChallengeService(engine, () => settings.game(), progression);
   hooks.finished.push((m) => void daily.onMatchFinished(m).catch((err) => log.error({ err }, 'daily challenge result failed')));
-  const storage = new LocalStorage(env.STORAGE_LOCAL_DIR, env.STORAGE_PUBLIC_URL);
+  const storage = new LocalStorage(env.STORAGE_LOCAL_DIR, env.STORAGE_PUBLIC_URL, new MediaBackup({ warn: (o, m) => log.warn(o, m), info: (o, m) => log.info(o, m) }));
   const images = new ImageService(storage, env.UPLOAD_MAX_BYTES);
   const profile = new ProfileService(images, () => settings.game());
   const shop = new ShopService(progression);

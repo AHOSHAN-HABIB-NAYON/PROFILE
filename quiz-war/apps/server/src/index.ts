@@ -51,6 +51,8 @@ async function main() {
   ctx.matchmaking.start();
   const stopJobs = startJobs(ctx);
   void ctx.ai.recover().catch((err) => app.log.error({ err }, 'ai job recovery failed'));
+  // Uploads live in the database too; put back anything a redeploy wiped from the media folder.
+  void ctx.storage.syncFromBackup().catch((err) => app.log.error({ err }, 'media restore failed'));
 
   await app.ready();
   createGateway(ctx, app.server, corsOrigins(env.CORS_ORIGINS));
