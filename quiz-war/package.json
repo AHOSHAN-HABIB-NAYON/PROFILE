@@ -2,7 +2,7 @@
   "name": "quiz-war",
   "private": true,
   "version": "1.0.0",
-  "description": "QUIZ WAR: Bangladesh \u2014 realtime multiplayer quiz game (Web + Android + Admin)",
+  "description": "QUIZ WAR: Bangladesh — realtime multiplayer quiz game (Web + Android + Admin)",
   "workspaces": [
     "packages/*",
     "apps/server",
@@ -23,5 +23,11 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "start": "node apps/server/dist/index.js"
+  },
+  "overrides": {
+    "esbuild": "0.28.2"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
   }
 }

@@ -27,7 +27,7 @@ export class ImageService {
   async validate(buf: Buffer) {
     if (buf.length === 0) throw new AppError(400, 'invalid_image', 'The file is empty');
     if (buf.length > this.maxBytes) throw new AppError(413, 'image_too_large', `Image must be smaller than ${Math.round(this.maxBytes / 1024 / 1024)} MB`);
-    let meta: sharp.Metadata;
+    let meta: Awaited<ReturnType<ReturnType<typeof sharp>["metadata"]>>;
     try {
       meta = await sharp(buf, { limitInputPixels: MAX_INPUT_PIXELS, failOn: 'error' }).metadata();
     } catch {
