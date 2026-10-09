@@ -57,10 +57,6 @@ android {
                 keyAlias signingValue('keyAlias', 'QW_KEY_ALIAS')
                 keyPassword signingValue('keyPassword', 'QW_KEY_PASSWORD')
             }
-            // Sign every way older and OEM installers check (JAR v1 + APK v2/v3).
-            enableV1Signing true
-            enableV2Signing true
-            enableV3Signing true
         }
     }
     buildTypes {
