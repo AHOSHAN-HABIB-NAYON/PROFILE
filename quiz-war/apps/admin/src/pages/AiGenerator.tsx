@@ -1,15 +1,17 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type FormEvent } from 'react';
+import { Icon, categoryIcon } from '../components/Icon';
 import { Loading, Pager, fmtDate } from '../components/ui';
 import { api, errMsg } from '../lib/api';
 import { useAdmin } from '../lib/auth';
 
 const DIFFS = ['mixed', 'easy', 'medium', 'hard', 'expert'];
 type Tab = 'generate' | 'review' | 'settings';
+const TAB_ICON: Record<Tab, string> = { generate: 'sparkles', review: 'check', settings: 'settings' };
 
 function JobStatus({ s }: { s: string }) {
   const cls = { done: 'green', running: 'blue', queued: 'blue', failed: 'red', cancelled: '' }[s] ?? '';
-  return <span className={`badge ${cls}`}>{s === 'running' ? '⏳ running' : s}</span>;
+  return <span className={`badge ${cls}`}>{s === 'running' ? <><Icon name="hourglass" size={12} />running</> : s}</span>;
 }
 
 /* ------------------------------- Generate ------------------------------- */
@@ -62,7 +64,7 @@ function Generate({ categories, onReview }: { categories: any[]; onReview: (jobI
       {s && !s.apiKeyConfigured && (
         <div className="card" style={{ borderColor: 'var(--warning, #d97706)' }}>
           <b>OpenAI API key missing.</b>
-          <p className="small muted">Add <code>OPENAI_API_KEY</code> in Hostinger → Node.js app → Environment variables, then restart the app. The key stays on the server and is never shown to players.</p>
+          <p className="small muted">Add <code>OPENAI_API_KEY</code> in Hostinger › Node.js app › Environment variables, then restart the app. The key stays on the server and is never shown to players.</p>
         </div>
       )}
       <div className="grid2">
@@ -71,7 +73,7 @@ function Generate({ categories, onReview }: { categories: any[]; onReview: (jobI
           <p className="small muted">The AI researches the web, writes exam-style questions with explanations and sources, and skips anything that already exists. New questions wait for your review before players see them.</p>
           <div className="cols">
             <div className="field"><label htmlFor="g-cat">Category</label>
-              <select id="g-cat" name="categoryId" className="input" required>{categories.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}{c.nameBn ? ` · ${c.nameBn}` : ''}</option>)}</select>
+              <select id="g-cat" name="categoryId" className="input" required>{categories.map((c) => <option key={c.id} value={c.id}>{c.name}{c.nameBn ? ` · ${c.nameBn}` : ''}</option>)}</select>
             </div>
             <div className="field"><label htmlFor="g-count">How many</label><input id="g-count" name="count" type="number" min={1} max={200} defaultValue={50} className="input" required /></div>
             <div className="field"><label htmlFor="g-diff">Difficulty</label><select id="g-diff" name="difficulty" className="input" defaultValue="mixed">{DIFFS.map((d) => <option key={d}>{d}</option>)}</select></div>
@@ -82,7 +84,7 @@ function Generate({ categories, onReview }: { categories: any[]; onReview: (jobI
           <label className="row small"><input type="checkbox" name="webSearch" defaultChecked={s?.settings.webSearch ?? true} /> Research on the web (more accurate, slower)</label>
           {msg.ok && <p className="ok">{msg.ok}</p>}
           {msg.err && <p className="err">{msg.err}</p>}
-          <button className="btn primary" disabled={busy || !s?.apiKeyConfigured}>{busy ? 'Starting…' : '✨ Generate'}</button>
+          <button className="btn primary" disabled={busy || !s?.apiKeyConfigured}>{busy ? 'Starting…' : <><Icon name="sparkles" size={16} />Generate questions</>}</button>
           <p className="small faint">Model: <b>{s?.settings.model ?? '…'}</b> · change it in the Settings tab.</p>
         </form>
 
@@ -93,7 +95,7 @@ function Generate({ categories, onReview }: { categories: any[]; onReview: (jobI
             <div className="table-wrap"><table>
               <thead><tr><th>Category</th><th>Live</th><th>Waiting review</th><th>Added (30 days)</th></tr></thead>
               <tbody>{stats.data?.map((c) => (
-                <tr key={c.id}><td>{c.icon} {c.name}</td><td><b>{c.live}</b>{c.live < 300 && <span className="badge amber" style={{ marginLeft: 6 }}>low</span>}</td><td>{c.pending || '—'}</td><td>{c.last30}</td></tr>
+                <tr key={c.id}><td><span className="inline-ic"><Icon name={categoryIcon(c)} size={16} />{c.name}</span></td><td><b>{c.live}</b>{c.live < 300 && <span className="badge amber" style={{ marginLeft: 6 }}>low</span>}</td><td>{c.pending || '—'}</td><td>{c.last30}</td></tr>
               ))}</tbody>
             </table></div>
           )}
@@ -108,7 +110,7 @@ function Generate({ categories, onReview }: { categories: any[]; onReview: (jobI
             <tbody>{jobs.data.map((j) => (
               <tr key={j.id}>
                 <td className="faint">{j.id}</td>
-                <td>{j.category}{j.topic && <div className="small muted">{j.topic}</div>}<div className="small faint">{j.difficulty} · {j.language}{j.webSearch ? ' · 🌐' : ''}</div></td>
+                <td>{j.category}{j.topic && <div className="small muted">{j.topic}</div>}<div className="small faint">{j.difficulty} · {j.language}{j.webSearch && <> · <span className="inline-ic"><Icon name="globe" size={12} />web</span></>}</div></td>
                 <td><b>{j.created}</b> / {j.requested}<div className="bar"><span style={{ width: `${Math.min(100, (j.created / j.requested) * 100)}%` }} /></div></td>
                 <td className="small">{j.duplicates} dup · {j.invalid} invalid</td>
                 <td><JobStatus s={j.status} />{j.error && <div className="small err" style={{ maxWidth: 260 }}>{j.error}</div>}</td>
@@ -158,14 +160,14 @@ function Review({ categories, jobId, setJobId }: { categories: any[]; jobId: num
     <>
       <div className="row" style={{ marginBottom: 12 }}>
         <select className="input" style={{ maxWidth: 220 }} aria-label="Category" value={categoryId} onChange={(e) => (setCategoryId(e.target.value), setPage(1))}>
-          <option value="">All categories</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+          <option value="">All categories</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-        {jobId && <span className="badge blue">Job #{jobId} <button className="btn ghost sm" onClick={() => setJobId(null)} aria-label="Clear job filter">✕</button></span>}
+        {jobId && <span className="badge blue">Job #{jobId} <button className="btn ghost sm icon-btn" onClick={() => setJobId(null)} aria-label="Clear job filter" title="Clear job filter"><Icon name="close" size={14} /></button></span>}
         <span className="small muted">{list.data?.total ?? 0} waiting</span>
         <span style={{ flex: 1 }} />
         <button className="btn sm" onClick={() => setSel(sel.size === items.length ? new Set() : new Set(items.map((q) => q.id)))}>{sel.size === items.length && items.length ? 'Clear selection' : 'Select page'}</button>
-        <button className="btn sm primary" disabled={!sel.size} onClick={() => void decide([...sel], 'approve')}>✓ Approve {sel.size || ''}</button>
-        <button className="btn sm" disabled={!sel.size} style={{ color: 'var(--danger)' }} onClick={() => void decide([...sel], 'reject')}>✕ Reject {sel.size || ''}</button>
+        <button className="btn sm primary" disabled={!sel.size} onClick={() => void decide([...sel], 'approve')}><Icon name="check" size={14} />Approve {sel.size || ''}</button>
+        <button className="btn sm" disabled={!sel.size} style={{ color: 'var(--danger)' }} onClick={() => void decide([...sel], 'reject')}><Icon name="close" size={14} />Reject {sel.size || ''}</button>
       </div>
       {msg && <p className="ok">{msg}</p>}
       {list.isLoading ? <Loading /> : !items.length ? (
@@ -179,9 +181,9 @@ function Review({ categories, jobId, setJobId }: { categories: any[]; jobId: num
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div className="small faint">#{q.id} · {q.category} · <span className="badge">{q.difficulty}</span></div>
                   <p className="q-text">{q.text}</p>
-                  <ol className="opts">{q.options.map((o: string, i: number) => <li key={i} className={i === q.correctIndex ? 'correct' : ''}>{'কখগঘ'[i]}. {o}{i === q.correctIndex && ' ✓'}</li>)}</ol>
-                  {q.explanation && <p className="small muted">💡 {q.explanation}</p>}
-                  {q.sourceRefs?.length > 0 && <p className="small">{q.sourceRefs.map((u: string) => <a key={u} href={u} target="_blank" rel="noreferrer noopener" style={{ marginRight: 8 }}>🔗 {new URL(u).hostname}</a>)}</p>}
+                  <ol className="opts">{q.options.map((o: string, i: number) => <li key={i} className={i === q.correctIndex ? 'correct' : ''}>{'কখগঘ'[i]}. {o}{i === q.correctIndex && <> <Icon name="check" size={14} label="Correct answer" /></>}</li>)}</ol>
+                  {q.explanation && <p className="small muted inline-ic" style={{ alignItems: 'flex-start' }}><Icon name="bulb" size={14} style={{ marginTop: 2 }} />{q.explanation}</p>}
+                  {q.sourceRefs?.length > 0 && <p className="small">{q.sourceRefs.map((u: string) => <a key={u} href={u} target="_blank" rel="noreferrer noopener" className="inline-ic" style={{ marginRight: 8 }}><Icon name="link" size={12} />{new URL(u).hostname}</a>)}</p>}
                 </div>
                 <div className="col-actions">
                   <button className="btn sm primary" onClick={() => void decide([q.id], 'approve')}>Approve</button>
@@ -230,9 +232,9 @@ function Settings({ categories }: { categories: any[] }) {
     setTest('Testing…');
     try {
       const r = await api('/ai/test', { body: { model: draft.model } });
-      setTest(`✓ Connected to ${r.model} in ${(r.ms / 1000).toFixed(1)}s — reply: “${r.reply}”`);
+      setTest(`Connected to ${r.model} in ${(r.ms / 1000).toFixed(1)}s — reply: “${r.reply}”`);
     } catch (e) {
-      setTest(`✕ ${errMsg(e)}`);
+      setTest(`Connection failed: ${errMsg(e)}`);
     }
   };
   const editable = can('settings.app');
@@ -256,7 +258,7 @@ function Settings({ categories }: { categories: any[] }) {
         </div>
         <div className="field">
           <label htmlFor="ai-guide-cat">Syllabus guide per category</label>
-          <select id="ai-guide-cat" className="input" style={{ maxWidth: 260 }} value={slug} onChange={(e) => setGuideCat(e.target.value)}>{categories.map((c) => <option key={c.slug} value={c.slug}>{c.icon} {c.name}</option>)}</select>
+          <select id="ai-guide-cat" className="input" style={{ maxWidth: 260 }} value={slug} onChange={(e) => setGuideCat(e.target.value)}>{categories.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}</select>
           <textarea aria-label="Category guide" className="input" rows={4} value={draft.categoryGuides[slug] ?? ''} placeholder={defaults.categoryGuides[slug] ?? 'Describe the syllabus focus for this category'}
             onChange={(e) => set('categoryGuides', { ...draft.categoryGuides, [slug]: e.target.value })} />
           <p className="small faint">Leave empty to use the built-in guide shown in grey.</p>
@@ -281,7 +283,7 @@ export default function AiGenerator() {
     <>
       <div className="head"><h1>AI question generator</h1><span className="small faint">OpenAI · web research · review before publishing</span></div>
       <div className="tabs" role="tablist" style={{ marginBottom: 12 }}>
-        {(['generate', 'review', 'settings'] as Tab[]).map((t) => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)}>{{ generate: '✨ Generate', review: '✅ Review queue', settings: '⚙️ Settings' }[t]}</button>)}
+        {(['generate', 'review', 'settings'] as Tab[]).map((t) => <button key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} className="inline-ic"><Icon name={TAB_ICON[t]} size={16} />{{ generate: 'Generate', review: 'Review queue', settings: 'Settings' }[t]}</button>)}
       </div>
       {!cats.data ? <Loading /> : tab === 'generate' ? <Generate categories={cats.data} onReview={(id) => (setJobId(id), setTab('review'))} />
         : tab === 'review' ? <Review categories={cats.data} jobId={jobId} setJobId={setJobId} /> : <Settings categories={cats.data} />}

@@ -78,13 +78,17 @@ export class FriendsService {
     if (dup) throw conflict('Friend request already sent', 'already_requested');
     const pending = await queryOne<{ n: number }>(`SELECT COUNT(*) n FROM friend_requests WHERE from_user_id = ? AND status = 'pending'`, [fromId]);
     if (Number(pending?.n) >= MAX_PENDING_OUT) throw conflict('Too many pending friend requests', 'too_many_requests');
-    await exec('INSERT INTO friend_requests (from_user_id, to_user_id) VALUES (?, ?)', [fromId, to.id]);
-    const me = await queryOne<{ username: string }>('SELECT username FROM user_profiles WHERE user_id = ?', [fromId]);
+    const ins = await exec('INSERT INTO friend_requests (from_user_id, to_user_id) VALUES (?, ?)', [fromId, to.id]);
+    const me = await queryOne<{ username: string; uid: string; avatar: string | null; level: number }>(
+      'SELECT p.username, u.uid, COALESCE(p.avatar_thumb_url, p.avatar_url) AS avatar, p.level FROM user_profiles p JOIN users u ON u.id = p.user_id WHERE p.user_id = ?',
+      [fromId],
+    );
     await this.notifications.notify(to.id, {
       type: 'friend_request',
       title: { en: 'New friend request', bn: 'নতুন ফ্রেন্ড রিকোয়েস্ট' },
       body: { en: `${me?.username ?? 'A player'} wants to be your friend.`, bn: `${me?.username ?? 'একজন প্লেয়ার'} আপনার বন্ধু হতে চায়।` },
       url: '/friends?tab=requests',
+      data: { requestId: ins.insertId, from: { id: fromId, username: me?.username, uid: me?.uid, avatar: me?.avatar, level: me?.level } },
     });
     return { status: 'sent' };
   }

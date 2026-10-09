@@ -5,23 +5,28 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router';
 import { PageHeader } from '../components/AppShell';
 import { Avatar } from '../components/Avatar';
 import { CategoryPicker } from '../components/CategoryPicker';
-import { Empty, Skeleton } from '../components/Feedback';
+import { Empty, ListSkeleton } from '../components/Feedback';
+import { categoryIcon, Icon, IconTile, type IconName } from '../components/Icon';
+import { PullToRefresh } from '../components/PullToRefresh';
 import { api, friendlyError } from '../lib/api';
 import { useGame } from '../lib/game';
+import { num, useLang, useT } from '../lib/i18n';
 import { haptic } from '../lib/platform';
 import { emit } from '../lib/socket';
 import { sfx } from '../lib/sound';
 import { toast } from '../lib/toast';
 
-const AI_INFO: Record<AiLevel, { icon: string; label: string }> = {
-  easy: { icon: '🙂', label: 'Easy' },
-  normal: { icon: '😎', label: 'Normal' },
-  hard: { icon: '😤', label: 'Hard' },
-  expert: { icon: '🧠', label: 'Expert' },
+const AI_INFO: Record<AiLevel, { icon: IconName; tone: 'success' | 'primary' | 'warning' | 'danger'; en: string; bn: string }> = {
+  easy: { icon: 'smile', tone: 'success', en: 'Easy', bn: 'সহজ' },
+  normal: { icon: 'gauge', tone: 'primary', en: 'Normal', bn: 'সাধারণ' },
+  hard: { icon: 'bolt', tone: 'warning', en: 'Hard', bn: 'কঠিন' },
+  expert: { icon: 'brain', tone: 'danger', en: 'Expert', bn: 'এক্সপার্ট' },
 };
+const DIFF_LABEL: Record<string, [string, string]> = { any: ['Any', 'যেকোনো'], easy: ['Easy', 'সহজ'], medium: ['Medium', 'মাঝারি'], hard: ['Hard', 'কঠিন'], expert: ['Expert', 'এক্সপার্ট'] };
 
 function useStart() {
   const nav = useNavigate();
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const start = async (event: string, payload: object) => {
     setBusy(true);
@@ -32,7 +37,7 @@ function useStart() {
       sfx('start');
       nav(event === 'room:create' ? `/war-room/${r.matchId}` : `/match/${r.matchId}`);
     } catch (e) {
-      toast.error('Could not start', friendlyError(e));
+      toast.error(t('Could not start', 'শুরু করা যায়নি'), friendlyError(e));
     } finally {
       setBusy(false);
     }
@@ -42,8 +47,11 @@ function useStart() {
 
 function Requests() {
   const nav = useNavigate();
+  const t = useT();
+  const lang = useLang();
   const { data, isLoading, refetch } = useQuery({ queryKey: ['battle-requests'], queryFn: () => api<{ incoming: BattleRequestView[]; outgoing: BattleRequestView[] }>('/battles/requests'), refetchInterval: 15000 });
   const act = async (id: number, action: 'accept' | 'decline' | 'cancel') => {
+    haptic('tap');
     try {
       if (action === 'cancel') await api(`/battles/requests/${id}`, { method: 'DELETE' });
       else {
@@ -55,36 +63,53 @@ function Requests() {
       }
       void refetch();
     } catch (e) {
-      toast.error('Something went wrong', friendlyError(e));
+      toast.error(t('Something went wrong', 'কিছু একটা সমস্যা হয়েছে'), friendlyError(e));
       void refetch();
     }
   };
-  if (isLoading) return <Skeleton lines={3} />;
+  if (isLoading) return <ListSkeleton rows={3} />;
   const none = !data?.incoming.length && !data?.outgoing.length;
-  if (none) return <Empty icon="⚔️" title="No pending challenges" body="Challenge a friend from your friends list or by UID." action={<button className="btn soft" onClick={() => nav('/friends')}>Open friends</button>} />;
+  if (none)
+    return (
+      <Empty
+        icon="swords"
+        tone="danger"
+        title={t('No pending challenges', 'কোনো চ্যালেঞ্জ অপেক্ষায় নেই')}
+        body={t('Challenge a friend from your friends list or by UID.', 'ফ্রেন্ড লিস্ট বা UID দিয়ে বন্ধুকে চ্যালেঞ্জ করুন।')}
+        action={
+          <button className="btn soft" onClick={() => nav('/friends')}>
+            <Icon name="users" /> {t('Open friends', 'বন্ধুদের দেখুন')}
+          </button>
+        }
+      />
+    );
   return (
     <div className="stack">
-      {!!data?.incoming.length && <div className="section-label">Incoming</div>}
+      {!!data?.incoming.length && <div className="section-label"><Icon name="arrow-left" size={14} /> {t('Incoming', 'আপনার কাছে এসেছে')}</div>}
       {data?.incoming.map((r) => (
-        <div key={r.id} className="card row">
-          <Avatar name={r.from.username} src={r.from.avatarThumbUrl} size={44} />
-          <div className="grow">
-            <b>{r.from.username}</b>
-            <p className="xs muted">⚔️ 1 VS 1 · {r.questionCount} Questions · {r.questionTimeSec}s{r.category ? ` · ${r.category.name}` : ''}</p>
+        <div key={r.id} className="card req-card">
+          <div className="row">
+            <Avatar name={r.from.username} src={r.from.avatarThumbUrl} size={46} />
+            <div className="grow">
+              <b>{r.from.username}</b>
+              <p className="xs muted">1 VS 1 · {num(r.questionCount, lang)} {t('questions', 'প্রশ্ন')} · {num(r.questionTimeSec, lang)}{t('s', ' সেকেন্ড')}{r.category ? ` · ${r.category.name}` : ''}</p>
+            </div>
           </div>
-          <button className="btn sm success" onClick={() => void act(r.id, 'accept')}>Accept</button>
-          <button className="btn sm ghost" onClick={() => void act(r.id, 'decline')}>Decline</button>
+          <div className="row mt">
+            <button className="btn sm outline grow" onClick={() => void act(r.id, 'decline')}><Icon name="close" /> {t('Decline', 'ফিরিয়ে দিন')}</button>
+            <button className="btn sm success grow" onClick={() => void act(r.id, 'accept')}><Icon name="check" /> {t('Accept', 'গ্রহণ করুন')}</button>
+          </div>
         </div>
       ))}
-      {!!data?.outgoing.length && <div className="section-label">Sent</div>}
+      {!!data?.outgoing.length && <div className="section-label"><Icon name="arrow-right" size={14} /> {t('Sent', 'পাঠানো')}</div>}
       {data?.outgoing.map((r) => (
         <div key={r.id} className="card row">
-          <Avatar name={r.to.username} src={r.to.avatarThumbUrl} size={40} />
+          <Avatar name={r.to.username} src={r.to.avatarThumbUrl} size={42} />
           <div className="grow">
             <b>{r.to.username}</b>
-            <p className="xs muted">Waiting… expires in {Math.max(0, Math.round((r.expiresAt - Date.now()) / 1000))}s</p>
+            <p className="xs muted row gap-sm"><Icon name="hourglass" size={13} /> {t('Waiting for an answer…', 'উত্তরের অপেক্ষায়…')}</p>
           </div>
-          <button className="btn sm ghost" onClick={() => void act(r.id, 'cancel')}>Cancel</button>
+          <button className="btn sm ghost" onClick={() => void act(r.id, 'cancel')}>{t('Cancel', 'বাতিল')}</button>
         </div>
       ))}
     </div>
@@ -92,6 +117,8 @@ function Requests() {
 }
 
 export default function Battle({ tab: initialTab }: { tab?: 'play' | 'requests' }) {
+  const t = useT();
+  const lang = useLang();
   const [tab, setTab] = useState<'play' | 'requests'>(initialTab ?? 'play');
   const [params] = useSearchParams();
   const loc = useLocation();
@@ -112,99 +139,145 @@ export default function Battle({ tab: initialTab }: { tab?: 'play' | 'requests' 
     if (loc.hash) document.getElementById(loc.hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [params, loc.hash, daily.data, nav]);
 
+  const cat = category ? `&category=${category}` : '';
   return (
-    <div className="page stack">
-      <PageHeader title="Battle" />
-      <div className="tabs" role="tablist">
-        <button role="tab" aria-selected={tab === 'play'} onClick={() => setTab('play')}>Play</button>
-        <button role="tab" aria-selected={tab === 'requests'} onClick={() => setTab('requests')}>Challenges</button>
-      </div>
-      {tab === 'requests' ? (
-        <Requests />
-      ) : (
-        <>
-          <div className="section-label">Category</div>
-          <CategoryPicker value={category} onChange={setCategory} />
+    <PullToRefresh>
+      <div className="page stack battle-page">
+        <PageHeader title={t('Battle', 'ব্যাটল')} />
+        <div className="tabs" role="tablist">
+          <button role="tab" aria-selected={tab === 'play'} onClick={() => setTab('play')}><Icon name="gamepad" /> {t('Play', 'খেলুন')}</button>
+          <button role="tab" aria-selected={tab === 'requests'} onClick={() => setTab('requests')}><Icon name="swords" /> {t('Challenges', 'চ্যালেঞ্জ')}</button>
+        </div>
+        {tab === 'requests' ? (
+          <Requests />
+        ) : (
+          <>
+            <div className="section-label"><Icon name="grid" size={14} /> {t('Category', 'ক্যাটাগরি')}</div>
+            <CategoryPicker value={category} onChange={setCategory} />
 
-          <section className="card" aria-labelledby="qb-h">
-            <div className="card-title">
-              <h2 id="qb-h">⚔️ Quick Battle</h2>
-              <label className="row small bold">
-                Ranked
-                <span className="switch"><input type="checkbox" checked={ranked} onChange={(e) => setRanked(e.target.checked)} aria-label="Ranked" /></span>
-              </label>
-            </div>
-            <div className="row">
-              <button className="btn primary grow" onClick={() => nav(`/matchmaking?mode=duel&ranked=${ranked ? 1 : 0}${category ? `&category=${category}` : ''}`)}>1 VS 1</button>
-              <button className="btn soft grow" onClick={() => nav(`/matchmaking?mode=duo&ranked=0${category ? `&category=${category}` : ''}`)}>Duo 2 VS 2</button>
-            </div>
-          </section>
+            <section className="card" aria-labelledby="qb-h">
+              <div className="card-title">
+                <h2 id="qb-h"><IconTile name="swords" tone="danger" size={34} /> {t('Quick battle', 'কুইক ব্যাটল')}</h2>
+                <label className="row small bold">
+                  {t('Ranked', 'র‍্যাংকড')}
+                  <span className="switch"><input type="checkbox" role="switch" checked={ranked} onChange={(e) => setRanked(e.target.checked)} aria-label={t('Ranked', 'র‍্যাংকড')} /></span>
+                </label>
+              </div>
+              <div className="row">
+                <button className="btn primary grow" onClick={() => (haptic('heavy'), nav(`/matchmaking?mode=duel&ranked=${ranked ? 1 : 0}${cat}`))}><Icon name="user" /> 1 VS 1</button>
+                <button className="btn soft grow" onClick={() => (haptic('heavy'), nav(`/matchmaking?mode=duo&ranked=0${cat}`))}><Icon name="users" /> 2 VS 2</button>
+              </div>
+            </section>
 
-          <section className="card" id="ai" aria-labelledby="ai-h">
-            <div className="card-title"><h2 id="ai-h">🤖 Play vs AI</h2><span className="chip">Unranked</span></div>
-            <div className="tabs" role="radiogroup" aria-label="AI difficulty">
-              {AI_LEVELS.map((l) => (
-                <button key={l} role="radio" aria-checked={level === l} aria-selected={level === l} onClick={() => setLevel(l)}>{AI_INFO[l].icon} {AI_INFO[l].label}</button>
-              ))}
-            </div>
-            <button className="btn accent block mt" disabled={busy} onClick={() => void start('ai:start', { level, categoryId: category })}>Battle {AI_INFO[level].label} AI</button>
-          </section>
+            <section className="card" id="ai" aria-labelledby="ai-h">
+              <div className="card-title"><h2 id="ai-h"><IconTile name="bot" tone="cyan" size={34} /> {t('Play vs AI', 'AI-এর সাথে খেলুন')}</h2><span className="chip">{t('Unranked', 'আনর‍্যাংকড')}</span></div>
+              <div className="ai-levels" role="radiogroup" aria-label={t('AI difficulty', 'AI-এর কঠিনতা')}>
+                {AI_LEVELS.map((l) => (
+                  <button key={l} role="radio" aria-checked={level === l} className="ai-level" onClick={() => (haptic('tap'), setLevel(l))}>
+                    <IconTile name={AI_INFO[l].icon} tone={AI_INFO[l].tone} size={36} />
+                    {t(AI_INFO[l].en, AI_INFO[l].bn)}
+                  </button>
+                ))}
+              </div>
+              <button className="btn accent block mt" disabled={busy} onClick={() => void start('ai:start', { level, categoryId: category })}>
+                {busy ? <span className="spinner" /> : <Icon name="bot" />} {t(`Battle ${AI_INFO[level].en} AI`, `${AI_INFO[level].bn} AI-এর সাথে লড়ুন`)}
+              </button>
+            </section>
 
-          {daily.data?.available && (
-            <section className="card" id="daily" style={{ background: 'linear-gradient(135deg, var(--accent-soft), var(--primary-soft))' }}>
-              <div className="card-title"><h2>📅 Daily Challenge</h2><span className="chip">{daily.data.players} played</span></div>
-              <p className="small muted">{daily.data.questionCount} Questions · {Math.round(daily.data.totalTimeSec / 60)} Minutes · Same questions for everyone today. One attempt.</p>
-              {daily.data.played ? (
-                <button className="btn soft block mt" onClick={() => nav('/rank?tab=daily')}>Your score: {daily.data.result?.score} — View leaderboard</button>
-              ) : (
-                <button className="btn primary block mt" disabled={busy} onClick={() => void start('solo:start', { mode: 'daily' })}>Start Daily Challenge</button>
+            {daily.data?.available && (
+              <section className="card feature-card daily" id="daily" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                <div className="card-title" style={{ marginBottom: 4 }}>
+                  <h2><IconTile name="calendar" tone="accent" size={34} /> {t('Daily challenge', 'ডেইলি চ্যালেঞ্জ')}</h2>
+                  <span className="chip">{num(daily.data.players, lang)} {t('played', 'জন খেলেছে')}</span>
+                </div>
+                <p className="small muted">
+                  {num(daily.data.questionCount, lang)} {t('questions', 'প্রশ্ন')} · {num(Math.round(daily.data.totalTimeSec / 60), lang)} {t('minutes', 'মিনিট')} · {t('Same questions for everyone today. One attempt.', 'আজ সবার জন্য একই প্রশ্ন, একবারই খেলা যাবে।')}
+                </p>
+                {daily.data.played ? (
+                  <button className="btn soft block mt" onClick={() => nav('/rank?tab=daily')}>
+                    <Icon name="trophy" /> {t(`Your score: ${daily.data.result?.score} — leaderboard`, `আপনার স্কোর: ${num(daily.data.result?.score ?? 0, lang)} — লিডারবোর্ড`)}
+                  </button>
+                ) : (
+                  <button className="btn primary block mt" disabled={busy} onClick={() => void start('solo:start', { mode: 'daily' })}>
+                    <Icon name="bolt" /> {t('Start daily challenge', 'ডেইলি চ্যালেঞ্জ শুরু করুন')}
+                  </button>
+                )}
+              </section>
+            )}
+
+            <section className="card" id="solo">
+              <div className="card-title"><h2><IconTile name="brain" tone="success" size={34} /> {t('Solo practice', 'একা অনুশীলন')}</h2></div>
+              <div className="tabs" role="radiogroup" aria-label={t('Difficulty', 'কঠিনতা')}>
+                {([null, 'easy', 'medium', 'hard', 'expert'] as const).map((d) => (
+                  <button key={String(d)} role="radio" aria-checked={difficulty === d} aria-selected={difficulty === d} onClick={() => setDifficulty(d)}>
+                    {t(...(DIFF_LABEL[d ?? 'any'] as [string, string]))}
+                  </button>
+                ))}
+              </div>
+              <button className="btn soft block mt" disabled={busy} onClick={() => void start('solo:start', { mode: 'solo', categoryId: category, difficulty })}>
+                <Icon name="book-check" /> {t('Practice 10 questions', '১০টি প্রশ্ন অনুশীলন করুন')}
+              </button>
+              {!!stats.data?.mistakesAvailable && (
+                <button className="btn outline block mt" disabled={busy} onClick={() => void start('solo:start', { mode: 'solo', practiceMistakes: true, categoryId: category })}>
+                  <Icon name="rotate" /> {t(`Practice mistakes (${stats.data.mistakesAvailable})`, `ভুলগুলো আবার অনুশীলন (${num(stats.data.mistakesAvailable, lang)})`)}
+                </button>
+              )}
+              {!!stats.data?.weakCategories?.length && (
+                <div className="weak-spots mt">
+                  <span className="xs bold faint">{t('Weak spots', 'দুর্বল জায়গা')}</span>
+                  <div className="chips-scroll">
+                    {stats.data.weakCategories.map((c: any) => (
+                      <span key={c.id ?? c.name} className="chip"><Icon name={categoryIcon(c)} /> {c.name} · {num(c.accuracy, lang)}%</span>
+                    ))}
+                  </div>
+                </div>
               )}
             </section>
-          )}
 
-          <section className="card" id="solo">
-            <div className="card-title"><h2>🧠 Solo Practice</h2></div>
-            <div className="tabs" role="radiogroup" aria-label="Difficulty">
-              {([null, 'easy', 'medium', 'hard', 'expert'] as const).map((d) => (
-                <button key={String(d)} role="radio" aria-checked={difficulty === d} aria-selected={difficulty === d} onClick={() => setDifficulty(d)}>{d ? d[0].toUpperCase() + d.slice(1) : 'Any'}</button>
-              ))}
-            </div>
-            <button className="btn soft block mt" disabled={busy} onClick={() => void start('solo:start', { mode: 'solo', categoryId: category, difficulty })}>Practice 10 Questions</button>
-            {!!stats.data?.mistakesAvailable && (
-              <button className="btn outline block mt" disabled={busy} onClick={() => void start('solo:start', { mode: 'solo', practiceMistakes: true, categoryId: category })}>
-                🔁 Practice Mistakes ({stats.data.mistakesAvailable})
+            <div className="mode-grid">
+              <button className="mode-card" id="survival" disabled={busy} onClick={() => void start('solo:start', { mode: 'survival', categoryId: category })}>
+                <IconTile name="heart-pulse" tone="warning" size={44} />
+                <strong>{t('Survival', 'সারভাইভাল')}</strong>
+                <span>{t('Keep going until one mistake', 'একটা ভুল না হওয়া পর্যন্ত চলবে')}</span>
               </button>
-            )}
-            {!!stats.data?.weakCategories?.length && (
-              <p className="xs muted mt">Weak spots: {stats.data.weakCategories.map((c: any) => `${c.icon} ${c.name} (${c.accuracy}%)`).join(' · ')}</p>
-            )}
-          </section>
-
-          <div className="mode-grid">
-            <button className="mode-card" id="survival" disabled={busy} onClick={() => void start('solo:start', { mode: 'survival', categoryId: category })}>
-              <span className="m-icon" style={{ background: 'var(--warning-soft)' }}>❤️‍🔥</span><strong>Survival</strong><span>Keep going until one mistake</span>
-            </button>
-            <button className="mode-card" id="speed" disabled={busy} onClick={() => void start('solo:start', { mode: 'speed', categoryId: category })}>
-              <span className="m-icon" style={{ background: 'var(--accent-soft)' }}>⚡</span><strong>Speed Round</strong><span>As many as you can in 60s</span>
-            </button>
-          </div>
-
-          <section className="card" aria-labelledby="wr-h">
-            <div className="card-title"><h2 id="wr-h">🏰 Custom War Room</h2></div>
-            <p className="small muted">Create a private room, share the link and start when everyone is ready.</p>
-            <div className="tabs mt" role="radiogroup" aria-label="Room size">
-              {(['duel', 'duo', 'trio', 'squad'] as const).map((m) => (
-                <button key={m} role="radio" aria-checked={roomMode === m} aria-selected={roomMode === m} onClick={() => setRoomMode(m)}>{{ duel: '1v1', duo: '2v2', trio: '3v3', squad: '4v4' }[m]}</button>
-              ))}
+              <button className="mode-card" id="speed" disabled={busy} onClick={() => void start('solo:start', { mode: 'speed', categoryId: category })}>
+                <IconTile name="bolt" tone="accent" size={44} />
+                <strong>{t('Speed round', 'স্পিড রাউন্ড')}</strong>
+                <span>{t('As many as you can in 60s', '৬০ সেকেন্ডে যত বেশি পারেন')}</span>
+              </button>
             </div>
-            <button className="btn outline block mt" disabled={busy} onClick={() => void start('room:create', { mode: roomMode, categoryId: category })}>Create War Room</button>
-            <form className="row mt" onSubmit={(e) => { e.preventDefault(); const id = joinCode.trim().split('/').pop()?.toUpperCase(); if (id) nav(`/war-room/${id}`); }}>
-              <input className="input grow" aria-label="Room link or code" placeholder="Paste room link or code" value={joinCode} onChange={(e) => setJoinCode(e.target.value)} />
-              <button className="btn soft" disabled={!joinCode.trim()}>Join</button>
-            </form>
-          </section>
-        </>
-      )}
-    </div>
+
+            <section className="card" aria-labelledby="wr-h">
+              <div className="card-title"><h2 id="wr-h"><IconTile name="shield" tone="primary" size={34} /> {t('Custom war room', 'কাস্টম ওয়ার রুম')}</h2></div>
+              <p className="small muted">{t('Create a private room, share the link and start when everyone is ready.', 'প্রাইভেট রুম বানান, লিংক শেয়ার করুন, সবাই প্রস্তুত হলে শুরু করুন।')}</p>
+              <div className="tabs mt" role="radiogroup" aria-label={t('Room size', 'রুমের আকার')}>
+                {(['duel', 'duo', 'trio', 'squad'] as const).map((m) => (
+                  <button key={m} role="radio" aria-checked={roomMode === m} aria-selected={roomMode === m} onClick={() => setRoomMode(m)}>
+                    {{ duel: '1v1', duo: '2v2', trio: '3v3', squad: '4v4' }[m]}
+                  </button>
+                ))}
+              </div>
+              <button className="btn outline block mt" disabled={busy} onClick={() => void start('room:create', { mode: roomMode, categoryId: category })}>
+                <Icon name="plus" /> {t('Create war room', 'ওয়ার রুম তৈরি করুন')}
+              </button>
+              <form
+                className="row mt"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const id = joinCode.trim().split('/').pop()?.toUpperCase();
+                  if (id) nav(`/war-room/${id}`);
+                }}
+              >
+                <div className="input-wrap grow">
+                  <Icon name="link" size={18} />
+                  <input className="input" aria-label={t('Room link or code', 'রুম লিংক বা কোড')} placeholder={t('Paste room link or code', 'রুম লিংক বা কোড দিন')} value={joinCode} onChange={(e) => setJoinCode(e.target.value)} />
+                </div>
+                <button className="btn soft" disabled={!joinCode.trim()}>{t('Join', 'যোগ দিন')}</button>
+              </form>
+            </section>
+          </>
+        )}
+      </div>
+    </PullToRefresh>
   );
 }

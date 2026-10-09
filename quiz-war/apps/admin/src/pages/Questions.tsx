@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { Loading, Modal, Pager } from '../components/ui';
+import { Icon } from '../components/Icon';
 import { api, errMsg } from '../lib/api';
 import { useAdmin } from '../lib/auth';
 
@@ -40,7 +41,7 @@ function QuestionForm({ id, categories, onDone }: { id: number | null; categorie
     <form className="form" onSubmit={submit}>
       {err && <p className="err">{err}</p>}
       <div className="cols">
-        <div className="field"><label htmlFor="c">Category</label><select id="c" name="categoryId" className="input" defaultValue={q.categoryId}>{categories.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}</select></div>
+        <div className="field"><label htmlFor="c">Category</label><select id="c" name="categoryId" className="input" defaultValue={q.categoryId}>{categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
         <div className="field"><label htmlFor="d">Difficulty</label><select id="d" name="difficulty" className="input" defaultValue={q.difficulty}>{DIFFS.map((d) => <option key={d}>{d}</option>)}</select></div>
         <div className="field"><label htmlFor="l">Language</label><select id="l" name="language" className="input" defaultValue={q.language}><option value="bn">বাংলা</option><option value="en">English</option></select></div>
       </div>
@@ -99,7 +100,7 @@ function ImportForm({ onDone }: { onDone: () => void }) {
       <button className="btn primary" disabled={!content || busy} onClick={async () => {
         setBusy(true); setErr(null);
         try { setRes(await api('/questions/import', { body: { format, content } })); onDone(); } catch (e) { setErr(errMsg(e)); } finally { setBusy(false); }
-      }}>{busy ? 'Importing…' : 'Import'}</button>
+      }}>{busy ? 'Importing…' : 'Import questions'}</button>
     </div>
   );
 }
@@ -133,12 +134,12 @@ export default function Questions() {
           <button className="btn" onClick={() => void exportFile('csv')}>Export CSV</button>
           <button className="btn" onClick={() => void exportFile('json')}>Export JSON</button>
           <button className="btn" onClick={() => setImporting(true)}>Bulk import</button>
-          <button className="btn primary" onClick={() => setEdit('new')}>+ Add question</button>
+          <button className="btn primary" onClick={() => setEdit('new')}><Icon name="plus" size={16} />Add question</button>
         </>}
       </div>
       <div className="row" style={{ marginBottom: 12 }}>
         <input className="input" style={{ maxWidth: 280 }} placeholder="Search text" aria-label="Search" value={f.q} onChange={(e) => set('q', e.target.value)} />
-        <select className="input" style={{ maxWidth: 200 }} aria-label="Category" value={f.categoryId} onChange={(e) => set('categoryId', e.target.value)}><option value="">All categories</option>{cats.data?.map((c) => <option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}</select>
+        <select className="input" style={{ maxWidth: 200 }} aria-label="Category" value={f.categoryId} onChange={(e) => set('categoryId', e.target.value)}><option value="">All categories</option>{cats.data?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
         <select className="input" style={{ maxWidth: 150 }} aria-label="Difficulty" value={f.difficulty} onChange={(e) => set('difficulty', e.target.value)}><option value="">Any difficulty</option>{DIFFS.map((d) => <option key={d}>{d}</option>)}</select>
         <select className="input" style={{ maxWidth: 140 }} aria-label="Status" value={f.active} onChange={(e) => set('active', e.target.value)}><option value="">Any status</option><option value="true">Active</option><option value="false">Inactive</option></select>
       </div>
@@ -150,7 +151,7 @@ export default function Questions() {
               {list.data?.items.map((q: any) => (
                 <tr key={q.id}>
                   <td className="faint">{q.id}</td>
-                  <td style={{ maxWidth: 420, fontFamily: 'var(--font-bn)' }}>{q.text}{q.imageUrl && ' 🖼️'}</td>
+                  <td style={{ maxWidth: 420, fontFamily: 'var(--font-bn)' }}>{q.text}{q.imageUrl && <> <Icon name="image" size={14} label="Has image" /></>}</td>
                   <td className="small">{q.category}</td>
                   <td><span className="badge">{q.difficulty}</span></td>
                   <td>{q.stats.shown}</td>

@@ -1,24 +1,30 @@
 import { App as CapApp } from '@capacitor/app';
 import { SplashScreen } from '@capacitor/splash-screen';
-import { lazy, Suspense, useEffect, type ReactNode } from 'react';
-import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router';
+import { StatusBar, Style } from '@capacitor/status-bar';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { AppShell } from './components/AppShell';
-import { Skeleton } from './components/Feedback';
+import { Empty, Skeleton } from './components/Feedback';
+import { Icon } from './components/Icon';
+import { NativeExtras } from './components/NativeExtras';
+import { Splash } from './components/Splash';
 import { Toasts } from './components/Toasts';
+import { IncomingInvites } from './components/Invites';
+import { useOnline } from './hooks/useOnline';
 import { useAuth } from './lib/auth';
+import { useGame } from './lib/game';
+import { tr, useT } from './lib/i18n';
 import { setNavigator } from './lib/nav';
 import { isNative } from './lib/platform';
 import { initNativePush } from './lib/push';
 import { applyTheme, useSettings } from './lib/settings';
-import { connectSocket, disconnectSocket } from './lib/socket';
+import { connectSocket, disconnectSocket, emit } from './lib/socket';
 import { setMusic } from './lib/sound';
 import { toast } from './lib/toast';
-import { useGame } from './lib/game';
-import { emit } from './lib/socket';
-import Home from './pages/Home';
-import Welcome from './pages/Welcome';
 import { Login, Register } from './pages/Auth';
+import Home from './pages/Home';
 
+const Intro = lazy(() => import('./pages/Intro'));
 const Battle = lazy(() => import('./pages/Battle'));
 const Matchmaking = lazy(() => import('./pages/Matchmaking'));
 const WarRoom = lazy(() => import('./pages/WarRoom'));
@@ -38,15 +44,8 @@ const SquadDetail = lazy(() => import('./pages/SquadDetail'));
 const History = lazy(() => import('./pages/History'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 const Legal = lazy(() => import('./pages/Legal'));
+const About = lazy(() => import('./pages/About'));
 const AccountFlows = lazy(() => import('./pages/AccountFlows'));
-
-function Splash() {
-  return (
-    <div className="splash" role="status" aria-label="Loading QUIZ WAR">
-      <img src="/icons/icon-512.png" alt="" />
-    </div>
-  );
-}
 
 function PageFallback() {
   return (
@@ -57,11 +56,59 @@ function PageFallback() {
   );
 }
 
+function FullFallback() {
+  const t = useT();
+  return (
+    <div className="mm-stage" role="status" aria-label={t('Loading', 'লোড হচ্ছে')}>
+      <span className="spinner" style={{ color: 'var(--primary)', width: 32, height: 32 }} />
+    </div>
+  );
+}
+
+/** Signed in on this device but the server can't be reached: never log the player out. */
+function OfflineScreen() {
+  const t = useT();
+  const online = useOnline();
+  const [busy, setBusy] = useState(false);
+  const retry = useCallback(async () => {
+    setBusy(true);
+    await useAuth.getState().bootstrap();
+    setBusy(false);
+  }, []);
+  useEffect(() => {
+    if (online) void retry();
+  }, [online, retry]);
+  return (
+    <div className="offline-screen">
+      <Empty
+        icon="wifi-off"
+        tone="danger"
+        anim="pulse"
+        title={online ? t('Can’t reach QUIZ WAR', 'সার্ভারে সংযোগ করা যাচ্ছে না') : t('You’re offline', 'আপনি অফলাইনে আছেন')}
+        body={t('You’re still signed in. Check your internet connection — we’ll reconnect automatically.', 'আপনি লগইন অবস্থাতেই আছেন। নেট সংযোগ চালু করুন — আমরা নিজে থেকেই আবার সংযোগ করব।')}
+        action={
+          <button className="btn primary" onClick={() => void retry()} disabled={busy}>
+            {busy ? <span className="spinner" /> : <Icon name="refresh" />} {t('Try again', 'আবার চেষ্টা করুন')}
+          </button>
+        }
+      />
+    </div>
+  );
+}
+
+/** Where a signed-out visitor goes: the intro on first run, then the sign-in screen. */
+function SignedOutRedirect() {
+  const loc = useLocation();
+  const introSeen = useSettings((s) => s.introSeen);
+  const next = loc.pathname === '/' ? '' : `?next=${encodeURIComponent(loc.pathname + loc.search)}`;
+  return <Navigate to={`${introSeen ? '/login' : '/intro'}${next}`} replace />;
+}
+
 function RequireAuth({ children, allowOnboarding = false }: { children: ReactNode; allowOnboarding?: boolean }) {
   const { status, user } = useAuth();
-  const loc = useLocation();
-  if (status === 'loading') return <Splash />;
-  if (status === 'anon') return <Navigate to={`/welcome?next=${encodeURIComponent(loc.pathname + loc.search)}`} replace />;
+  if (status === 'loading') return null;
+  if (status === 'offline') return <OfflineScreen />;
+  if (status === 'anon') return <SignedOutRedirect />;
   if (user?.needsOnboarding && !allowOnboarding) return <Navigate to="/onboarding" replace />;
   return <>{children}</>;
 }
@@ -79,21 +126,40 @@ function Shell({ children }: { children: ReactNode }) {
 function Full({ children }: { children: ReactNode }) {
   return (
     <RequireAuth>
-      <Suspense fallback={<div className="mm-stage" role="status" aria-label="Loading"><span className="spinner" style={{ color: 'var(--primary)' }} /></div>}>{children}</Suspense>
+      <Suspense fallback={<FullFallback />}>{children}</Suspense>
     </RequireAuth>
   );
 }
+
+function Public({ children }: { children: ReactNode }) {
+  return <Suspense fallback={<FullFallback />}>{children}</Suspense>;
+}
+
+function WelcomeRedirect() {
+  const [p] = useSearchParams();
+  const introSeen = useSettings((s) => s.introSeen);
+  const next = p.get('next');
+  return <Navigate to={`${introSeen ? '/login' : '/intro'}${next ? `?next=${encodeURIComponent(next)}` : ''}`} replace />;
+}
+
+const DARK_TOP = /^\/(intro|login|register|forgot-password|reset-password|verify-email|match|war-room|matchmaking)/;
 
 export function App() {
   const nav = useNavigate();
   const status = useAuth((s) => s.status);
   const { theme, reduceMotion, music } = useSettings();
   const loc = useLocation();
+  const [splash, setSplash] = useState(true);
+  const lastBack = useRef(0);
 
   useEffect(() => {
     setNavigator((to) => nav(to));
   }, [nav]);
   useEffect(() => void useAuth.getState().bootstrap(), []);
+  // The animated web splash continues the native one seamlessly.
+  useEffect(() => {
+    if (isNative) void SplashScreen.hide({ fadeOutDuration: 150 }).catch(() => undefined);
+  }, []);
   useEffect(() => {
     applyTheme(theme, reduceMotion);
     if (theme !== 'system') return;
@@ -103,18 +169,27 @@ export function App() {
     return () => mq.removeEventListener('change', on);
   }, [theme, reduceMotion]);
 
-  // Ambient music only on menus, never during a battle.
+  // Status bar matches the screen underneath it.
+  useEffect(() => {
+    if (!isNative) return;
+    const darkTheme = document.documentElement.dataset.theme === 'dark';
+    const darkTop = splash || DARK_TOP.test(loc.pathname);
+    const color = darkTop ? '#172554' : darkTheme ? '#0a0f1e' : '#f4f6fb';
+    void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
+    void StatusBar.setStyle({ style: darkTop || darkTheme ? Style.Dark : Style.Light }).catch(() => undefined);
+  }, [loc.pathname, theme, splash]);
+
+  // Background music: menu track on menus, match track during battles.
   useEffect(() => {
     const inGame = /^\/(match|war-room|matchmaking)/.test(loc.pathname);
-    setMusic(music && !inGame && status === 'authed');
-  }, [music, loc.pathname, status]);
+    setMusic(music && status === 'authed' && !splash, inGame ? 'match' : 'menu');
+  }, [music, loc.pathname, status, splash]);
 
   useEffect(() => {
     if (status === 'authed') {
       connectSocket();
-      initNativePush();
+      void initNativePush();
     } else if (status === 'anon') disconnectSocket();
-    if (status !== 'loading' && isNative) void SplashScreen.hide().catch(() => undefined);
   }, [status]);
 
   // Visibility → presence "away".
@@ -124,7 +199,7 @@ export function App() {
     return () => document.removeEventListener('visibilitychange', on);
   }, []);
 
-  // Native: deep links (https://quizwar.app/u/QW-… or quizwar://…) and the Android back button.
+  // Native: deep links and the Android back button (double-press to exit from the top level).
   useEffect(() => {
     if (!isNative) return;
     const a = CapApp.addListener('appUrlOpen', ({ url }) => {
@@ -138,13 +213,19 @@ export function App() {
     });
     const b = CapApp.addListener('backButton', ({ canGoBack }) => {
       const path = window.location.pathname;
+      const open = document.querySelector('dialog[open]') as HTMLDialogElement | null;
+      if (open) return open.dispatchEvent(new Event('cancel', { cancelable: true }));
       if (path.startsWith('/match/') && useGame.getState().snapshot?.state !== 'finished') {
-        toast.info('Battle in progress', 'Use the flag button to leave the match.', '⚔️');
+        toast.info(tr('Battle in progress', 'ব্যাটল চলছে'), tr('Use the flag button to leave the match.', 'ম্যাচ ছাড়তে উপরের পতাকা বাটন চাপুন।'), 'swords');
         return;
       }
-      if (document.querySelector('dialog[open]')) return (document.querySelector('dialog[open]') as HTMLDialogElement).close();
-      if (canGoBack && path !== '/') history.back();
-      else void CapApp.minimizeApp();
+      const top = ['/', '/intro', '/login', '/onboarding'].includes(path);
+      if (canGoBack && !top) return history.back();
+      if (path !== '/' && !top) return nav('/', { replace: true });
+      const now = Date.now();
+      if (now - lastBack.current < 2000) return void CapApp.exitApp();
+      lastBack.current = now;
+      toast.info(tr('Press back again to exit', 'বের হতে আবার Back চাপুন'), undefined, 'door');
     });
     return () => {
       void a.then((x) => x.remove());
@@ -158,7 +239,13 @@ export function App() {
     void import('virtual:pwa-register').then(({ registerSW }) => {
       const update = registerSW({
         onNeedRefresh() {
-          toast.custom({ kind: 'info', icon: '✨', title: 'Update available', body: 'A new version of QUIZ WAR is ready.', actions: [{ label: 'Reload', primary: true, onClick: () => void update(true) }] });
+          toast.custom({
+            kind: 'info',
+            icon: 'sparkles',
+            title: tr('Update available', 'নতুন আপডেট এসেছে'),
+            body: tr('A new version of QUIZ WAR is ready.', 'QUIZ WAR-এর নতুন ভার্সন প্রস্তুত।'),
+            actions: [{ label: tr('Reload', 'রিলোড করুন'), primary: true, onClick: () => void update(true) }],
+          });
         },
       });
     });
@@ -167,44 +254,56 @@ export function App() {
     return () => navigator.serviceWorker.removeEventListener('message', onMsg);
   }, [nav]);
 
+  const authed = status === 'authed';
   return (
     <>
       <Toasts />
-      <Suspense fallback={<Splash />}>
-        <Routes>
-          <Route path="/welcome" element={status === 'authed' ? <Navigate to="/" replace /> : <Welcome />} />
-          <Route path="/login" element={status === 'authed' ? <Navigate to="/" replace /> : <Login />} />
-          <Route path="/register" element={status === 'authed' ? <Navigate to="/" replace /> : <Register />} />
-          <Route path="/forgot-password" element={<AccountFlows kind="forgot" />} />
-          <Route path="/reset-password" element={<AccountFlows kind="reset" />} />
-          <Route path="/verify-email" element={<AccountFlows kind="verify" />} />
-          <Route path="/legal/:doc" element={<Legal />} />
-          <Route path="/u/:uid" element={status === 'authed' ? <Shell><PublicProfile /></Shell> : <Suspense fallback={<Splash />}><PublicProfile /></Suspense>} />
-          <Route path="/onboarding" element={<RequireAuth allowOnboarding><Onboarding /></RequireAuth>} />
+      {splash && <Splash ready={status !== 'loading'} onDone={() => setSplash(false)} />}
+      {authed && !splash && (
+        <>
+          <IncomingInvites />
+          <NativeExtras />
+        </>
+      )}
+      {status !== 'loading' && (
+        <Suspense fallback={null}>
+          <Routes>
+            <Route path="/intro" element={authed ? <Navigate to="/" replace /> : <Public><Intro /></Public>} />
+            <Route path="/welcome" element={authed ? <Navigate to="/" replace /> : <WelcomeRedirect />} />
+            <Route path="/login" element={authed ? <Navigate to="/" replace /> : <Login />} />
+            <Route path="/register" element={authed ? <Navigate to="/" replace /> : <Register />} />
+            <Route path="/forgot-password" element={<Public><AccountFlows kind="forgot" /></Public>} />
+            <Route path="/reset-password" element={<Public><AccountFlows kind="reset" /></Public>} />
+            <Route path="/verify-email" element={<Public><AccountFlows kind="verify" /></Public>} />
+            <Route path="/legal/:doc" element={<Public><Legal /></Public>} />
+            <Route path="/u/:uid" element={authed ? <Shell><PublicProfile /></Shell> : <Public><PublicProfile /></Public>} />
+            <Route path="/onboarding" element={<RequireAuth allowOnboarding><Suspense fallback={<FullFallback />}><Onboarding /></Suspense></RequireAuth>} />
 
-          <Route path="/" element={<Shell><Home /></Shell>} />
-          <Route path="/battle" element={<Shell><Battle /></Shell>} />
-          <Route path="/battle/requests" element={<Shell><Battle tab="requests" /></Shell>} />
-          <Route path="/friends" element={<Shell><Friends /></Shell>} />
-          <Route path="/rank" element={<Shell><Rank /></Shell>} />
-          <Route path="/profile" element={<Shell><Profile /></Shell>} />
-          <Route path="/profile/achievements" element={<Shell><Profile tab="achievements" /></Shell>} />
-          <Route path="/profile/edit" element={<Shell><EditProfile /></Shell>} />
-          <Route path="/settings" element={<Shell><Settings /></Shell>} />
-          <Route path="/notifications" element={<Shell><Notifications /></Shell>} />
-          <Route path="/shop" element={<Shell><Shop /></Shell>} />
-          <Route path="/squads" element={<Shell><Squads /></Shell>} />
-          <Route path="/squads/:id" element={<Shell><SquadDetail /></Shell>} />
-          <Route path="/history" element={<Shell><History /></Shell>} />
-          <Route path="/review/:id" element={<Shell><Review /></Shell>} />
+            <Route path="/" element={<Shell><Home /></Shell>} />
+            <Route path="/battle" element={<Shell><Battle /></Shell>} />
+            <Route path="/battle/requests" element={<Shell><Battle tab="requests" /></Shell>} />
+            <Route path="/friends" element={<Shell><Friends /></Shell>} />
+            <Route path="/rank" element={<Shell><Rank /></Shell>} />
+            <Route path="/profile" element={<Shell><Profile /></Shell>} />
+            <Route path="/profile/achievements" element={<Shell><Profile tab="achievements" /></Shell>} />
+            <Route path="/profile/edit" element={<Shell><EditProfile /></Shell>} />
+            <Route path="/settings" element={<Shell><Settings /></Shell>} />
+            <Route path="/about" element={<Shell><About /></Shell>} />
+            <Route path="/notifications" element={<Shell><Notifications /></Shell>} />
+            <Route path="/shop" element={<Shell><Shop /></Shell>} />
+            <Route path="/squads" element={<Shell><Squads /></Shell>} />
+            <Route path="/squads/:id" element={<Shell><SquadDetail /></Shell>} />
+            <Route path="/history" element={<Shell><History /></Shell>} />
+            <Route path="/review/:id" element={<Shell><Review /></Shell>} />
 
-          <Route path="/matchmaking" element={<Full><Matchmaking /></Full>} />
-          <Route path="/war-room/:id" element={<Full><WarRoom /></Full>} />
-          <Route path="/match/:id" element={<Full><Match /></Full>} />
-          <Route path="/result/:id" element={<Full><Result /></Full>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Suspense>
+            <Route path="/matchmaking" element={<Full><Matchmaking /></Full>} />
+            <Route path="/war-room/:id" element={<Full><WarRoom /></Full>} />
+            <Route path="/match/:id" element={<Full><Match /></Full>} />
+            <Route path="/result/:id" element={<Full><Result /></Full>} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+      )}
     </>
   );
 }

@@ -1,8 +1,9 @@
 import type { ClientToServerEvents, ServerToClientEvents } from '@quizwar/shared';
 import { io, type Socket } from 'socket.io-client';
 import { create } from 'zustand';
-import { API_URL, ApiError, getAccessToken, refreshSession } from './api';
+import { API_URL, ApiError, getAccessToken, lastRefreshFailure, refreshSession } from './api';
 import { setClockOffset, useGame } from './game';
+import { tr } from './i18n';
 import { appVersionCode, isNative, platform } from './platform';
 
 type QSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -69,8 +70,8 @@ export function connectSocket() {
     if (err.message === 'unauthorized') {
       // Access token expired: refresh, then let socket.io retry with the new token.
       const ok = await refreshSession();
-      if (!ok) disconnectSocket();
-      else if (!s.active) s.connect();
+      if (!ok && lastRefreshFailure === 'auth') disconnectSocket();
+      else if (!s.active) setTimeout(() => s.connect(), ok ? 0 : 3000);
     }
   });
   s.on('presence:count', ({ online }) => useConn.getState().set({ online }));
@@ -88,12 +89,12 @@ export function disconnectSocket() {
 /** Emit with acknowledgement; rejects with ApiError on failure/timeout. */
 export async function emit<E extends keyof ClientToServerEvents>(event: E, payload?: any, timeoutMs = 8000): Promise<any> {
   const s = socket;
-  if (!s || !s.connected) throw new ApiError(0, 'network', 'Not connected. Reconnecting…');
+  if (!s || !s.connected) throw new ApiError(0, 'network', tr('Not connected. Reconnecting…', 'সার্ভারের সাথে সংযোগ নেই। আবার সংযোগ হচ্ছে…'));
   let res: any;
   try {
     res = payload === undefined ? await (s.timeout(timeoutMs) as any).emitWithAck(event) : await (s.timeout(timeoutMs) as any).emitWithAck(event, payload);
   } catch {
-    throw new ApiError(0, 'timeout', 'The server did not respond. Check your connection.');
+    throw new ApiError(0, 'timeout', tr('The server did not respond. Check your connection.', 'সার্ভার সাড়া দিচ্ছে না। নেট সংযোগ দেখুন।'));
   }
   if (!res?.ok) throw new ApiError(400, res?.code ?? 'error', res?.message ?? 'Something went wrong');
   return res;

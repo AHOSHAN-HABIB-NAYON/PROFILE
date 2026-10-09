@@ -49,36 +49,120 @@ export function sfx(name: Sfx) {
   }
 }
 
-/** Soft ambient loop for menus (Music toggle). */
-let musicNodes: { stop: () => void } | null = null;
-export function setMusic(on: boolean) {
-  if (!on) {
-    musicNodes?.stop();
-    musicNodes = null;
-    return;
+/* ───────────────────────────── Music ─────────────────────────────
+ * Admin-uploaded tracks (menu / match) streamed with <audio>, cross-faded; falls back to a
+ * soft synthesized pad on menus when no track is uploaded. Autoplay-safe: if the browser
+ * blocks playback, it starts on the next tap.
+ */
+type Slot = 'menu' | 'match';
+let sources: { menu: string | null; match: string | null; volume: number } = { menu: null, match: null, volume: 0.5 };
+let current: { slot: Slot; audio: HTMLAudioElement | null; synth: { stop: () => void } | null } | null = null;
+let wanted: { on: boolean; slot: Slot } = { on: false, slot: 'menu' };
+
+export function setMusicSources(s: { menuUrl: string | null; matchUrl: string | null; volume: number }) {
+  const changed = s.menuUrl !== sources.menu || s.matchUrl !== sources.match;
+  sources = { menu: s.menuUrl, match: s.matchUrl, volume: s.volume };
+  if (current?.audio) current.audio.volume = sources.volume * 0.6;
+  if (changed && wanted.on) {
+    stopCurrent();
+    setMusic(true, wanted.slot);
   }
-  if (musicNodes) return;
+}
+
+function fade(a: HTMLAudioElement, to: number, ms: number, done?: () => void) {
+  const from = a.volume;
+  const start = performance.now();
+  const step = (t: number) => {
+    const p = Math.min(1, (t - start) / ms);
+    a.volume = Math.max(0, Math.min(1, from + (to - from) * p));
+    if (p < 1) requestAnimationFrame(step);
+    else done?.();
+  };
+  requestAnimationFrame(step);
+}
+
+function stopCurrent() {
+  if (!current) return;
+  const c = current;
+  current = null;
+  if (c.audio) fade(c.audio, 0, 500, () => c.audio!.pause());
+  c.synth?.stop();
+}
+
+function synthPad() {
+  const c = ac();
+  const g = c.createGain();
+  g.gain.value = 0.0001;
+  g.gain.exponentialRampToValueAtTime(0.016, c.currentTime + 1.5);
+  g.connect(c.destination);
+  const oscs = [196, 247, 294].map((f) => {
+    const o = c.createOscillator();
+    o.type = 'sine';
+    o.frequency.value = f;
+    const lfo = c.createOscillator();
+    const lg = c.createGain();
+    lfo.frequency.value = 0.08 + Math.random() * 0.05;
+    lg.gain.value = 3;
+    lfo.connect(lg).connect(o.frequency);
+    o.connect(g);
+    o.start();
+    lfo.start();
+    return [o, lfo];
+  });
+  return {
+    stop: () => {
+      g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + 0.5);
+      setTimeout(() => oscs.flat().forEach((o) => o.stop()), 600);
+    },
+  };
+}
+
+let unlockArmed = false;
+function playWhenAllowed(a: HTMLAudioElement) {
+  a.play().catch(() => {
+    if (unlockArmed) return;
+    unlockArmed = true;
+    const go = () => {
+      unlockArmed = false;
+      removeEventListener('pointerdown', go);
+      if (current?.audio === a && wanted.on) void a.play().catch(() => undefined);
+    };
+    addEventListener('pointerdown', go, { once: true });
+  });
+}
+
+export function setMusic(on: boolean, slot: Slot = 'menu') {
+  wanted = { on, slot };
+  if (!on) return stopCurrent();
+  if (current?.slot === slot) return;
+  stopCurrent();
+  const url = slot === 'menu' ? sources.menu : sources.match;
   try {
-    const c = ac();
-    const g = c.createGain();
-    g.gain.value = 0.018;
-    g.connect(c.destination);
-    const oscs = [196, 247, 294].map((f) => {
-      const o = c.createOscillator();
-      o.type = 'sine';
-      o.frequency.value = f;
-      const lfo = c.createOscillator();
-      const lg = c.createGain();
-      lfo.frequency.value = 0.08 + Math.random() * 0.05;
-      lg.gain.value = 3;
-      lfo.connect(lg).connect(o.frequency);
-      o.connect(g);
-      o.start();
-      lfo.start();
-      return [o, lfo];
-    });
-    musicNodes = { stop: () => oscs.flat().forEach((o) => o.stop()) };
+    if (url) {
+      const a = new Audio(url);
+      a.loop = true;
+      a.preload = 'auto';
+      a.volume = 0;
+      current = { slot, audio: a, synth: null };
+      playWhenAllowed(a);
+      fade(a, sources.volume * 0.6, 1200);
+    } else if (slot === 'menu') {
+      current = { slot, audio: null, synth: synthPad() };
+    } else current = { slot, audio: null, synth: null };
   } catch {
-    /* ignore */
+    current = null;
   }
+}
+
+/** Pause everything while the app is in the background. */
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      current?.audio?.pause();
+      if (ctx?.state === 'running') void ctx.suspend();
+    } else if (wanted.on) {
+      if (current?.audio) void current.audio.play().catch(() => undefined);
+      if (ctx?.state === 'suspended') void ctx.resume();
+    }
+  });
 }

@@ -32,7 +32,7 @@ export default function Dashboard() {
         <section className="card"><h2>New users</h2><p className="small faint">Last 14 days</p><LineChart label="New users" data={days.map((d: any) => ({ x: d.day, y: d.users }))} /></section>
         <section className="card"><h2>Active players</h2><p className="small faint">Players with at least one match per day</p><LineChart label="Active players" data={days.map((d: any) => ({ x: d.day, y: d.active }))} /></section>
         <section className="card"><h2>Matches per day</h2><p className="small faint">Finished matches by type</p><StackedBars series={['Player vs player', 'AI']} data={days.map((d: any) => ({ x: d.day, a: d.pvp, b: d.ai }))} /></section>
-        <section className="card"><h2>Top categories</h2><p className="small faint">Matches, last 30 days</p>{data.categories.length ? <HBars data={data.categories.map((c: any) => ({ label: `${c.icon} ${c.name}`, value: c.games }))} /> : <p className="muted small">No category matches yet.</p>}</section>
+        <section className="card"><h2>Top categories</h2><p className="small faint">Matches, last 30 days</p>{data.categories.length ? <HBars data={data.categories.map((c: any) => ({ label: c.name, value: c.games }))} /> : <p className="muted small">No category matches yet.</p>}</section>
       </div>
       <section className="card mt">
         <h2>Server health</h2>

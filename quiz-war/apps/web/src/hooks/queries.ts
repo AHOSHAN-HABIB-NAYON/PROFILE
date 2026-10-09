@@ -11,6 +11,7 @@ export interface Category {
   name: string;
   nameBn: string | null;
   icon: string;
+  color: string | null;
   description: string | null;
   questionCount: number;
 }

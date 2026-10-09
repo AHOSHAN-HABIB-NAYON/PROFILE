@@ -7,6 +7,11 @@ import { queryClient } from './lib/query';
 import { registerRealtime } from './lib/realtime';
 import { applyTheme, useSettings } from './lib/settings';
 import { initPlatformInfo } from './lib/platform';
+import '@fontsource/hind-siliguri/bengali-400.css';
+import '@fontsource/hind-siliguri/bengali-500.css';
+import '@fontsource/hind-siliguri/bengali-600.css';
+import '@fontsource/hind-siliguri/bengali-700.css';
+import '@fontsource-variable/plus-jakarta-sans/wght.css';
 import './styles/app.css';
 
 const s = useSettings.getState();

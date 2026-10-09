@@ -12,14 +12,14 @@
     <meta property="og:type" content="website" />
     <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
     <script>
       // Apply the saved theme before first paint (no flash). Light is the default.
       try {
-        var t = JSON.parse(localStorage.getItem('qw-settings') || '{}').state?.theme || 'light';
+        var st = JSON.parse(localStorage.getItem('qw-settings') || '{}').state || {};
+        var t = st.theme || 'light';
+        if (t === 'system') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         document.documentElement.dataset.theme = t;
+        document.documentElement.lang = st.lang || 'bn';
       } catch (e) {}
     </script>
   </head>

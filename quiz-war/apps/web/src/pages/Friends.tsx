@@ -5,20 +5,24 @@ import { Link, useNavigate, useSearchParams } from 'react-router';
 import { PageHeader } from '../components/AppShell';
 import { Avatar, statusLabel } from '../components/Avatar';
 import { ChallengeSheet } from '../components/ChallengeSheet';
-import { Empty, ErrorBox, Skeleton } from '../components/Feedback';
+import { Empty, ErrorBox, ListSkeleton } from '../components/Feedback';
 import { Icon } from '../components/Icon';
+import { PullToRefresh } from '../components/PullToRefresh';
 import { QrCode, QrScanner } from '../components/Qr';
 import { Sheet } from '../components/Sheet';
 import { api, friendlyError } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { share } from '../lib/platform';
+import { num, useLang, useT } from '../lib/i18n';
+import { haptic, share } from '../lib/platform';
 import { profileLink } from '../lib/qr';
 import { toast } from '../lib/toast';
 
 export default function Friends() {
+  const t = useT();
+  const lang = useLang();
   const [params, setParams] = useSearchParams();
   const tab = (params.get('tab') as 'friends' | 'requests' | 'add') ?? 'friends';
-  const setTab = (t: string) => setParams({ tab: t }, { replace: true });
+  const setTab = (x: string) => setParams({ tab: x }, { replace: true });
   const me = useAuth((s) => s.user)!;
   const qc = useQueryClient();
   const nav = useNavigate();
@@ -30,150 +34,196 @@ export default function Friends() {
   const [uid, setUid] = useState('');
   const [found, setFound] = useState<{ user: PublicUser; status: string } | null>(null);
   const [searchErr, setSearchErr] = useState<string | null>(null);
+  const [searching, setSearching] = useState(false);
 
   const search = async (raw: string) => {
     setSearchErr(null);
     setFound(null);
     const n = normalizeUid(raw);
-    if (!n) return setSearchErr('Enter a valid UID like QW-8F29K7');
+    if (!n) return setSearchErr(t('Enter a valid UID like QW-8F29K7', 'সঠিক UID দিন, যেমন QW-8F29K7'));
+    setSearching(true);
     try {
       setFound(await api(`/users/search?uid=${encodeURIComponent(n)}`));
     } catch (e) {
       setSearchErr(friendlyError(e));
+    } finally {
+      setSearching(false);
     }
   };
 
   const addFriend = async (u: PublicUser) => {
     try {
       const r = await api<{ status: string }>('/friends/requests', { body: { userId: u.id } });
-      toast.success(r.status === 'accepted' ? 'You are now friends!' : 'Friend request sent', u.username, '👥');
+      haptic('success');
+      toast.success(r.status === 'accepted' ? t('You are now friends!', 'আপনারা এখন বন্ধু!') : t('Friend request sent', 'ফ্রেন্ড রিকোয়েস্ট পাঠানো হয়েছে'), u.username, 'user-check');
       void qc.invalidateQueries({ queryKey: ['friends'] });
       void qc.invalidateQueries({ queryKey: ['friend-requests'] });
     } catch (e) {
-      toast.error('Could not add friend', friendlyError(e));
+      toast.error(t('Could not add friend', 'বন্ধু যোগ করা যায়নি'), friendlyError(e));
     }
   };
 
   const respond = async (id: number, accept: boolean) => {
+    haptic('tap');
     try {
       await api(`/friends/requests/${id}/${accept ? 'accept' : 'reject'}`, { method: 'POST' });
+      if (accept) toast.success(t('Friend added', 'বন্ধু যোগ হয়েছে'), undefined, 'user-check');
       void qc.invalidateQueries({ queryKey: ['friends'] });
       void qc.invalidateQueries({ queryKey: ['friend-requests'] });
     } catch (e) {
-      toast.error('Something went wrong', friendlyError(e));
+      toast.error(t('Something went wrong', 'কিছু একটা সমস্যা হয়েছে'), friendlyError(e));
     }
   };
 
   const incoming = requests.data?.incoming.length ?? 0;
   const onlineCount = friends.data?.filter((f) => f.status !== 'offline').length ?? 0;
+  const sorted = [...(friends.data ?? [])].sort((a, b) => Number(a.status === 'offline') - Number(b.status === 'offline'));
 
   return (
-    <div className="page stack">
-      <PageHeader
-        title="Friends"
-        action={
-          <div className="row gap-sm">
-            <button className="btn icon sm soft" aria-label="Show my QR code" onClick={() => setQrOpen(true)}><Icon name="qr" size={18} /></button>
-            <button className="btn icon sm soft" aria-label="Scan a QR code" onClick={() => setScanOpen(true)}><Icon name="scan" size={18} /></button>
-          </div>
-        }
-      />
-      <div className="tabs" role="tablist">
-        <button role="tab" aria-selected={tab === 'friends'} onClick={() => setTab('friends')}>Friends {friends.data ? `(${onlineCount}/${friends.data.length})` : ''}</button>
-        <button role="tab" aria-selected={tab === 'requests'} onClick={() => setTab('requests')}>Requests {incoming ? `(${incoming})` : ''}</button>
-        <button role="tab" aria-selected={tab === 'add'} onClick={() => setTab('add')}>Add</button>
-      </div>
-
-      {tab === 'friends' && (
-        friends.isLoading ? <Skeleton lines={5} /> : friends.error ? <ErrorBox error={friends.error} retry={friends.refetch} /> : !friends.data?.length ? (
-          <Empty icon="👥" title="No friends yet" body="Add friends with their UID or by scanning their QR code." action={<button className="btn primary" onClick={() => setTab('add')}>Add friends</button>} />
-        ) : (
-          <div className="card list">
-            {friends.data.map((f) => (
-              <div key={f.user.id} className="list-row">
-                <Link to={`/u/${f.user.uid}`}><Avatar name={f.user.username} src={f.user.avatarThumbUrl} status={f.status} size={46} frame={f.user.frame} /></Link>
-                <Link to={`/u/${f.user.uid}`} className="grow" style={{ color: 'var(--text)', minWidth: 0 }}>
-                  <b className="ellipsis" style={{ display: 'block' }}>{f.user.username}</b>
-                  <span className="xs muted">{statusLabel(f.status)} · Lv {f.user.level} · {f.user.rating}</span>
-                </Link>
-                <button className="btn sm primary" disabled={f.status === 'offline' || f.status === 'in_match' || f.status === 'dnd'} onClick={() => setChallenge(f.user)}>⚔️ Challenge</button>
-              </div>
-            ))}
-          </div>
-        )
-      )}
-
-      {tab === 'requests' && (
-        requests.isLoading ? <Skeleton lines={3} /> : !requests.data?.incoming.length && !requests.data?.outgoing.length ? (
-          <Empty icon="📭" title="No friend requests" />
-        ) : (
-          <>
-            {requests.data!.incoming.map((r) => (
-              <div key={r.id} className="card row">
-                <Avatar name={r.user.username} src={r.user.avatarThumbUrl} size={44} />
-                <div className="grow"><b>{r.user.username}</b><p className="xs muted">{r.user.uid}</p></div>
-                <button className="btn sm success" onClick={() => void respond(r.id, true)}>Accept</button>
-                <button className="btn sm ghost" onClick={() => void respond(r.id, false)}>Reject</button>
-              </div>
-            ))}
-            {!!requests.data!.outgoing.length && <div className="section-label">Sent</div>}
-            {requests.data!.outgoing.map((r) => (
-              <div key={r.id} className="card row">
-                <Avatar name={r.user.username} src={r.user.avatarThumbUrl} size={40} />
-                <div className="grow"><b>{r.user.username}</b><p className="xs muted">Pending</p></div>
-                <button className="btn sm ghost" onClick={() => void api(`/friends/requests/${r.id}`, { method: 'DELETE' }).then(() => requests.refetch())}>Cancel</button>
-              </div>
-            ))}
-          </>
-        )
-      )}
-
-      {tab === 'add' && (
-        <>
-          <form className="card col" onSubmit={(e: FormEvent) => { e.preventDefault(); void search(uid); }}>
-            <label htmlFor="uid" className="bold">Search by UID</label>
-            <div className="row">
-              <input id="uid" className="input grow" placeholder="QW-8F29K7" autoCapitalize="characters" value={uid} onChange={(e) => (setUid(e.target.value), setSearchErr(null))} aria-invalid={!!searchErr} />
-              <button className="btn primary" disabled={!uid.trim()}><Icon name="search" /></button>
+    <PullToRefresh>
+      <div className="page stack">
+        <PageHeader
+          title={t('Friends', 'বন্ধুরা')}
+          action={
+            <div className="row gap-sm">
+              <button className="btn icon sm soft" aria-label={t('Show my QR code', 'আমার QR কোড')} onClick={() => setQrOpen(true)}><Icon name="qr" size={20} /></button>
+              <button className="btn icon sm soft" aria-label={t('Scan a QR code', 'QR কোড স্ক্যান')} onClick={() => setScanOpen(true)}><Icon name="scan" size={20} /></button>
             </div>
-            {searchErr && <span className="field-error">{searchErr}</span>}
-          </form>
-          {found && (
-            <div className="card row" style={{ animation: 'pop-in .25s' }}>
-              <Avatar name={found.user.username} src={found.user.avatarThumbUrl} size={50} status={found.status as any} />
-              <div className="grow"><b>{found.user.username}</b><p className="xs muted">{found.user.uid} · Lv {found.user.level}</p></div>
-              {found.user.id !== me.id && (
-                <>
-                  <button className="btn sm soft" onClick={() => void addFriend(found.user)}>Add</button>
-                  <button className="btn sm primary" onClick={() => setChallenge(found.user)}>⚔️</button>
-                </>
-              )}
-            </div>
-          )}
-          <div className="row">
-            <button className="btn outline grow" onClick={() => setQrOpen(true)}><Icon name="qr" /> My QR</button>
-            <button className="btn outline grow" onClick={() => setScanOpen(true)}><Icon name="scan" /> Scan QR</button>
-          </div>
-        </>
-      )}
-
-      <ChallengeSheet target={challenge} onClose={() => setChallenge(null)} />
-
-      <Sheet open={qrOpen} onClose={() => setQrOpen(false)} title="My QR code">
-        <div className="col center">
-          <QrCode value={profileLink(me.uid)} />
-          <span className="uid-badge" style={{ margin: '8px auto 0' }}>{me.uid}</span>
-          <p className="xs muted">Friends can scan this to add or challenge you. It only contains your public profile link.</p>
-          <div className="row">
-            <button className="btn soft grow" onClick={() => void navigator.clipboard?.writeText(me.uid).then(() => toast.success('UID copied'))}><Icon name="copy" /> Copy UID</button>
-            <button className="btn primary grow" onClick={() => void share({ title: 'Add me on QUIZ WAR', text: `⚔️ Challenge me on QUIZ WAR! My UID: ${me.uid}`, url: profileLink(me.uid) })}><Icon name="share" /> Share</button>
-          </div>
+          }
+        />
+        <div className="tabs" role="tablist">
+          <button role="tab" aria-selected={tab === 'friends'} onClick={() => setTab('friends')}>
+            <Icon name="users" /> {t('Friends', 'বন্ধু')} {friends.data ? <span className="tab-count">{num(onlineCount, lang)}/{num(friends.data.length, lang)}</span> : null}
+          </button>
+          <button role="tab" aria-selected={tab === 'requests'} onClick={() => setTab('requests')}>
+            <Icon name="user-add" /> {t('Requests', 'রিকোয়েস্ট')} {incoming ? <span className="tab-badge">{num(incoming, lang)}</span> : null}
+          </button>
+          <button role="tab" aria-selected={tab === 'add'} onClick={() => setTab('add')}>
+            <Icon name="plus" /> {t('Add', 'যোগ করুন')}
+          </button>
         </div>
-      </Sheet>
 
-      <Sheet open={scanOpen} onClose={() => setScanOpen(false)} title="Scan QR code">
-        <QrScanner onUid={(u) => { setScanOpen(false); nav(`/u/${u}`); }} />
-      </Sheet>
-    </div>
+        {tab === 'friends' &&
+          (friends.isLoading ? (
+            <ListSkeleton rows={5} />
+          ) : friends.error ? (
+            <ErrorBox error={friends.error} retry={friends.refetch} />
+          ) : !friends.data?.length ? (
+            <Empty
+              icon="users"
+              title={t('No friends yet', 'এখনো কোনো বন্ধু নেই')}
+              body={t('Add friends with their UID or by scanning their QR code.', 'UID দিয়ে বা QR কোড স্ক্যান করে বন্ধু যোগ করুন।')}
+              action={<button className="btn primary" onClick={() => setTab('add')}><Icon name="user-plus" /> {t('Add friends', 'বন্ধু যোগ করুন')}</button>}
+            />
+          ) : (
+            <div className="card list stagger">
+              {sorted.map((f) => {
+                const canChallenge = !(f.status === 'offline' || f.status === 'in_match' || f.status === 'dnd');
+                return (
+                  <div key={f.user.id} className="list-row">
+                    <Link to={`/u/${f.user.uid}`}><Avatar name={f.user.username} src={f.user.avatarThumbUrl} status={f.status} size={48} frame={f.user.frame} /></Link>
+                    <Link to={`/u/${f.user.uid}`} className="grow" style={{ color: 'var(--text)', minWidth: 0 }}>
+                      <b className="ellipsis" style={{ display: 'block' }}>{f.user.username}</b>
+                      <span className={`xs status-text s-${f.status}`}>{statusLabel(f.status)}</span>
+                      <span className="xs muted"> · {t('Lv', 'লেভেল')} {num(f.user.level, lang)}</span>
+                    </Link>
+                    <button className="btn sm primary" disabled={!canChallenge} onClick={() => (haptic('tap'), setChallenge(f.user))} aria-label={t(`Challenge ${f.user.username}`, `${f.user.username}-কে চ্যালেঞ্জ`)}>
+                      <Icon name="swords" /> {t('Challenge', 'চ্যালেঞ্জ')}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+
+        {tab === 'requests' &&
+          (requests.isLoading ? (
+            <ListSkeleton rows={3} />
+          ) : !requests.data?.incoming.length && !requests.data?.outgoing.length ? (
+            <Empty icon="user-add" title={t('No friend requests', 'কোনো ফ্রেন্ড রিকোয়েস্ট নেই')} body={t('Requests you receive will appear here.', 'নতুন রিকোয়েস্ট এলে এখানে দেখাবে।')} />
+          ) : (
+            <>
+              {requests.data!.incoming.map((r) => (
+                <div key={r.id} className="card req-card">
+                  <div className="row">
+                    <Avatar name={r.user.username} src={r.user.avatarThumbUrl} size={46} />
+                    <div className="grow"><b>{r.user.username}</b><p className="xs muted">{r.user.uid} · {t('wants to be your friend', 'আপনার বন্ধু হতে চায়')}</p></div>
+                  </div>
+                  <div className="row mt">
+                    <button className="btn sm outline grow" onClick={() => void respond(r.id, false)}><Icon name="close" /> {t('Decline', 'বাতিল')}</button>
+                    <button className="btn sm primary grow" onClick={() => void respond(r.id, true)}><Icon name="check" /> {t('Accept', 'গ্রহণ করুন')}</button>
+                  </div>
+                </div>
+              ))}
+              {!!requests.data!.outgoing.length && <div className="section-label">{t('Sent', 'পাঠানো')}</div>}
+              {requests.data!.outgoing.map((r) => (
+                <div key={r.id} className="card row">
+                  <Avatar name={r.user.username} src={r.user.avatarThumbUrl} size={42} />
+                  <div className="grow"><b>{r.user.username}</b><p className="xs muted row gap-sm"><Icon name="hourglass" size={13} /> {t('Pending', 'অপেক্ষায়')}</p></div>
+                  <button className="btn sm ghost" onClick={() => void api(`/friends/requests/${r.id}`, { method: 'DELETE' }).then(() => requests.refetch())}>{t('Cancel', 'বাতিল')}</button>
+                </div>
+              ))}
+            </>
+          ))}
+
+        {tab === 'add' && (
+          <>
+            <form className="card col" onSubmit={(e: FormEvent) => (e.preventDefault(), void search(uid))}>
+              <label htmlFor="uid" className="bold">{t('Find a player by UID', 'UID দিয়ে প্লেয়ার খুঁজুন')}</label>
+              <div className="row">
+                <div className="input-wrap grow">
+                  <Icon name="search" size={20} />
+                  <input id="uid" className="input" placeholder="QW-8F29K7" autoCapitalize="characters" spellCheck={false} enterKeyHint="search" value={uid} onChange={(e) => (setUid(e.target.value), setSearchErr(null))} aria-invalid={!!searchErr} />
+                </div>
+                <button className="btn primary" disabled={!uid.trim() || searching}>{searching ? <span className="spinner" /> : t('Search', 'খুঁজুন')}</button>
+              </div>
+              {searchErr && <span className="field-error"><Icon name="alert-circle" size={15} /> {searchErr}</span>}
+            </form>
+            {found && (
+              <div className="card found-card">
+                <Avatar name={found.user.username} src={found.user.avatarThumbUrl} size={56} status={found.status as any} frame={found.user.frame} />
+                <div className="grow"><b>{found.user.username}</b><p className="xs muted">{found.user.uid} · {t('Lv', 'লেভেল')} {num(found.user.level, lang)}</p></div>
+                {found.user.id !== me.id && (
+                  <div className="row gap-sm">
+                    <button className="btn sm soft" onClick={() => void addFriend(found.user)}><Icon name="user-plus" /> {t('Add', 'যোগ')}</button>
+                    <button className="btn icon sm primary" aria-label={t('Challenge', 'চ্যালেঞ্জ')} onClick={() => setChallenge(found.user)}><Icon name="swords" /></button>
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="qr-actions">
+              <button className="card tap qr-action" onClick={() => setQrOpen(true)}>
+                <Icon name="qr" size={30} />
+                <b>{t('My QR code', 'আমার QR কোড')}</b>
+                <span className="xs muted">{t('Let friends scan you', 'বন্ধুরা স্ক্যান করবে')}</span>
+              </button>
+              <button className="card tap qr-action" onClick={() => setScanOpen(true)}>
+                <Icon name="scan" size={30} />
+                <b>{t('Scan QR', 'QR স্ক্যান')}</b>
+                <span className="xs muted">{t('Add a friend instantly', 'সাথে সাথে বন্ধু যোগ')}</span>
+              </button>
+            </div>
+          </>
+        )}
+
+        <ChallengeSheet target={challenge} onClose={() => setChallenge(null)} />
+
+        <Sheet open={qrOpen} onClose={() => setQrOpen(false)} title={t('My QR code', 'আমার QR কোড')} icon="qr">
+          <div className="col center">
+            <QrCode value={profileLink(me.uid)} />
+            <span className="uid-badge" style={{ margin: '8px auto 0' }}>{me.uid}</span>
+            <p className="xs muted">{t('Friends can scan this to add or challenge you. It only contains your public profile link.', 'বন্ধুরা এটি স্ক্যান করে আপনাকে অ্যাড বা চ্যালেঞ্জ করতে পারবে। এতে শুধু আপনার পাবলিক প্রোফাইল লিংক আছে।')}</p>
+            <div className="row" style={{ width: '100%' }}>
+              <button className="btn soft grow" onClick={() => void navigator.clipboard?.writeText(me.uid).then(() => toast.success(t('UID copied', 'UID কপি হয়েছে'), me.uid, 'copy'))}><Icon name="copy" /> {t('Copy UID', 'UID কপি')}</button>
+              <button className="btn primary grow" onClick={() => void share({ title: 'QUIZ WAR', text: t(`Challenge me on QUIZ WAR! My UID: ${me.uid}`, `QUIZ WAR-এ আমাকে চ্যালেঞ্জ করো! আমার UID: ${me.uid}`), url: profileLink(me.uid) })}><Icon name="share" /> {t('Share', 'শেয়ার')}</button>
+            </div>
+          </div>
+        </Sheet>
+
+        <Sheet open={scanOpen} onClose={() => setScanOpen(false)} title={t('Scan QR code', 'QR কোড স্ক্যান')} icon="scan">
+          <QrScanner onUid={(u) => (setScanOpen(false), nav(`/u/${u}`))} />
+        </Sheet>
+      </div>
+    </PullToRefresh>
   );
 }

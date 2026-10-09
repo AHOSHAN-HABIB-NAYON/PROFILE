@@ -1,10 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
+import { Icon, IconPicker, MISSION_ICONS } from '../components/Icon';
 import { Loading, Modal } from '../components/ui';
 import { api, errMsg } from '../lib/api';
 
 const PERIODS: Record<string, string> = { daily: 'Daily (resets at midnight BD time)', weekly: 'Weekly (resets Monday)', once: 'One-time' };
-const ICONS = ['target', 'swords', 'trophy', 'brain', 'calendar', 'bolt', 'crown', 'globe', 'users', 'star', 'medal', 'flame', 'gift'];
 
 function MissionForm({ m, metrics, onDone }: { m: any | null; metrics: Record<string, string>; onDone: () => void }) {
   const [err, setErr] = useState<string | null>(null);
@@ -42,9 +42,9 @@ function MissionForm({ m, metrics, onDone }: { m: any | null; metrics: Record<st
       <div className="cols">
         <div className="field"><label htmlFor="m-coins">Reward coins</label><input id="m-coins" name="rewardCoins" type="number" min={0} className="input" defaultValue={m?.rewardCoins ?? 50} /></div>
         <div className="field"><label htmlFor="m-xp">Reward XP</label><input id="m-xp" name="rewardXp" type="number" min={0} className="input" defaultValue={m?.rewardXp ?? 50} /></div>
-        <div className="field"><label htmlFor="m-icon">Icon</label><select id="m-icon" name="icon" className="input" defaultValue={m?.icon ?? 'target'}>{ICONS.map((i) => <option key={i}>{i}</option>)}</select></div>
         <div className="field"><label htmlFor="m-sort">Order</label><input id="m-sort" name="sortOrder" type="number" className="input" defaultValue={m?.sortOrder ?? 0} /></div>
       </div>
+      <IconPicker name="icon" label="Icon" options={MISSION_ICONS} defaultValue={m?.icon ?? 'target'} />
       <label className="row small"><input type="checkbox" name="isActive" defaultChecked={m?.isActive ?? true} /> Active</label>
       {err && <p className="err">{err}</p>}
       <button className="btn primary">{m ? 'Save mission' : 'Create mission'}</button>
@@ -59,18 +59,18 @@ export default function Missions() {
   const refresh = () => void qc.invalidateQueries({ queryKey: ['missions'] });
   return (
     <>
-      <div className="head"><h1>Missions & quests</h1><button className="btn primary" onClick={() => setEdit('new')}>+ New mission</button></div>
-      <p className="small muted" style={{ marginTop: -6, marginBottom: 12 }}>Players see these in Shop → Missions. When a condition is met they get a notification and claim the reward themselves. Rewards are coins and XP earned by playing — they can never be bought.</p>
+      <div className="head"><h1>Missions & quests</h1><button className="btn primary" onClick={() => setEdit('new')}><Icon name="plus" size={16} />New mission</button></div>
+      <p className="small muted" style={{ marginTop: -6, marginBottom: 12 }}>Players see these in Shop › Missions. When a condition is met they get a notification and claim the reward themselves. Rewards are coins and XP earned by playing — they can never be bought.</p>
       <div className="card table-wrap">
         {q.isLoading ? <Loading /> : (
           <table>
             <thead><tr><th>Mission</th><th>Repeats</th><th>Condition</th><th>Reward</th><th>Completed</th><th>Claimed</th><th>Status</th><th /></tr></thead>
             <tbody>{q.data.items.map((m: any) => (
               <tr key={m.id}>
-                <td><b style={{ fontFamily: 'var(--font-bn)' }}>{m.title}</b><div className="small muted" style={{ fontFamily: 'var(--font-bn)' }}>{m.description}</div></td>
+                <td><div className="row" style={{ flexWrap: 'nowrap', alignItems: 'flex-start' }}><span className="cat-ic"><Icon name={m.icon} size={18} /></span><div style={{ minWidth: 0 }}><b style={{ fontFamily: 'var(--font-bn)' }}>{m.title}</b><div className="small muted" style={{ fontFamily: 'var(--font-bn)' }}>{m.description}</div></div></div></td>
                 <td><span className="badge">{m.period}</span></td>
                 <td className="small">{q.data.metrics[m.metric] ?? m.metric} ≥ <b>{m.target}</b></td>
-                <td className="small">🪙 {m.rewardCoins} · ⭐ {m.rewardXp} XP</td>
+                <td className="small"><span className="inline-ic"><Icon name="coins" size={14} label="Coins" />{m.rewardCoins}</span> · <span className="inline-ic"><Icon name="star" size={14} label="XP" />{m.rewardXp} XP</span></td>
                 <td>{m.completions}</td>
                 <td>{m.claims}</td>
                 <td>{m.isActive ? <span className="badge green">active</span> : <span className="badge">off</span>}</td>

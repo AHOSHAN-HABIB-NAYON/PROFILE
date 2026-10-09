@@ -2,35 +2,60 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { PageHeader } from '../components/AppShell';
-import { Empty, Skeleton } from '../components/Feedback';
+import { Empty, ListSkeleton } from '../components/Feedback';
+import { Icon, IconTile, notificationIcon } from '../components/Icon';
+import { PullToRefresh } from '../components/PullToRefresh';
 import { useNotifications } from '../hooks/queries';
 import { api } from '../lib/api';
+import { useLang, useT } from '../lib/i18n';
 
-const ICONS: Record<string, string> = { battle_request: '⚔️', friend_request: '👥', friend_accepted: '🤝', achievement: '🏅', rank: '🏆', streak: '🔥', streak_warning: '🔥', squad_invite: '🛡️', announcement: '📢', moderation: '⚠️' };
+function ago(iso: string, lang: 'bn' | 'en') {
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  const rtf = new Intl.RelativeTimeFormat(lang === 'bn' ? 'bn-BD' : 'en', { numeric: 'auto' });
+  if (diff < 60) return rtf.format(-Math.round(diff), 'second');
+  if (diff < 3600) return rtf.format(-Math.round(diff / 60), 'minute');
+  if (diff < 86400) return rtf.format(-Math.round(diff / 3600), 'hour');
+  return rtf.format(-Math.round(diff / 86400), 'day');
+}
 
 export default function Notifications() {
-  const { data, isLoading } = useNotifications();
+  const t = useT();
+  const lang = useLang();
+  const { data, isLoading, refetch } = useNotifications();
   const qc = useQueryClient();
   const nav = useNavigate();
   useEffect(() => {
-    if (data?.unread) {
-      const t = setTimeout(() => void api('/notifications/read', { body: { ids: 'all' } }).then(() => qc.invalidateQueries({ queryKey: ['notifications'] })), 1500);
-      return () => clearTimeout(t);
-    }
+    if (!data?.unread) return;
+    const id = setTimeout(() => void api('/notifications/read', { body: { ids: 'all' } }).then(() => qc.invalidateQueries({ queryKey: ['notifications'] })), 1500);
+    return () => clearTimeout(id);
   }, [data?.unread, qc]);
   return (
-    <div className="page stack">
-      <PageHeader title="Notifications" back />
-      {isLoading ? <Skeleton lines={6} /> : !data?.items.length ? <Empty icon="🔔" title="You're all caught up" body="Battle requests, friend activity and rewards show up here." /> : (
-        <div className="card list">
-          {data.items.map((n) => (
-            <button key={n.id} className="list-row link" style={{ background: n.readAt ? undefined : 'var(--primary-soft)', border: 0, width: '100%', textAlign: 'left' }} onClick={() => n.data?.url && nav(String(n.data.url))}>
-              <span style={{ fontSize: 24 }} aria-hidden>{ICONS[n.type] ?? '🔔'}</span>
-              <div className="grow"><b className="small">{n.title}</b><p className="xs muted">{n.body}</p><p className="xs faint">{new Date(n.createdAt).toLocaleString()}</p></div>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
+    <PullToRefresh onRefresh={() => refetch()}>
+      <div className="page stack">
+        <PageHeader title={t('Notifications', 'নোটিফিকেশন')} back />
+        {isLoading ? (
+          <ListSkeleton rows={6} />
+        ) : !data?.items.length ? (
+          <Empty icon="bell" anim="ring" title={t('You’re all caught up', 'নতুন কিছু নেই')} body={t('Battle requests, friend activity and rewards show up here.', 'ব্যাটল চ্যালেঞ্জ, বন্ধুদের খবর আর রিওয়ার্ড এখানে দেখাবে।')} />
+        ) : (
+          <div className="notif-list stagger">
+            {data.items.map((n) => {
+              const ic = notificationIcon(n.type);
+              return (
+                <button key={n.id} className={`notif ${n.readAt ? '' : 'unread'}`} onClick={() => n.data?.url && nav(String(n.data.url))}>
+                  <IconTile name={ic.icon} tone={ic.tone} size={44} />
+                  <div className="grow">
+                    <b>{n.title}</b>
+                    <p>{n.body}</p>
+                    <small>{ago(n.createdAt, lang)}</small>
+                  </div>
+                  {!!n.data?.url && <Icon name="chevron" size={18} className="faint" />}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </PullToRefresh>
   );
 }

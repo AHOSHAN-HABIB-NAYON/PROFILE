@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { Loading, Modal, Pager, StatusBadge, fmtDate } from '../components/ui';
+import { Icon } from '../components/Icon';
 import { api, errMsg } from '../lib/api';
 import { useAdmin } from '../lib/auth';
 
@@ -14,14 +15,14 @@ function MatchDetail({ id }: { id: string }) {
       <div className="row"><StatusBadge status={data.match.status} /><span className="badge">{data.match.mode}</span><span className="badge">{data.match.match_type}</span>{data.match.flagged ? <span className="badge red">flagged: {data.match.flag_reason}</span> : null}</div>
       <table><thead><tr><th>Player</th><th>Team</th><th>Score</th><th>Correct</th><th>Avg ms</th><th>Result</th><th>Rating</th><th>Disconnects</th></tr></thead>
         <tbody>{data.players.map((p: any) => (
-          <tr key={p.id}><td>{p.user_id ? <Link to={`/users/${p.user_id}`}>{p.username ?? p.uid}</Link> : `🤖 ${p.bot_name}`}</td><td>{p.team}</td><td>{p.score}</td><td>{p.correct_count}/{p.answered_count}</td><td>{p.avg_response_ms ?? '—'}</td><td>{p.result ?? '—'}</td><td>{p.rating_before ?? '—'} → {p.rating_after ?? '—'}</td><td>{p.disconnects}</td></tr>
+          <tr key={p.id}><td>{p.user_id ? <Link to={`/users/${p.user_id}`}>{p.username ?? p.uid}</Link> : <span className="inline-ic"><Icon name="bot" size={14} label="AI" />{p.bot_name}</span>}</td><td>{p.team}</td><td>{p.score}</td><td>{p.correct_count}/{p.answered_count}</td><td>{p.avg_response_ms ?? '—'}</td><td>{p.result ?? '—'}</td><td><span className="inline-ic">{p.rating_before ?? '—'}<Icon name="arrow-right" size={12} label="to" />{p.rating_after ?? '—'}</span></td><td>{p.disconnects}</td></tr>
         ))}</tbody></table>
       {data.answers.length > 0 && (
         <details><summary className="small"><b>Answer timeline</b> (response times help investigate cheating)</summary>
-          <table className="mt"><thead><tr><th>Player</th>{Array.from(new Set(data.answers.map((a: any) => a.q))).map((q: any) => <th key={q}>Q{q + 1}</th>)}</tr></thead>
+          <div className="table-wrap"><table className="mt keep"><thead><tr><th>Player</th>{Array.from(new Set(data.answers.map((a: any) => a.q))).map((q: any) => <th key={q}>Q{q + 1}</th>)}</tr></thead>
             <tbody>{data.players.map((p: any) => (
-              <tr key={p.id}><td className="small">{p.username ?? p.bot_name}</td>{byPlayer(p.id).map((a: any) => <td key={a.q} className="small" style={{ color: a.correct ? 'var(--success)' : 'var(--danger)' }}>{a.optionIndex == null ? '⌛' : `${a.correct ? '✓' : '✗'} ${a.ms}ms`}</td>)}</tr>
-            ))}</tbody></table>
+              <tr key={p.id}><td className="small">{p.username ?? p.bot_name}</td>{byPlayer(p.id).map((a: any) => <td key={a.q} className="small" style={{ color: a.correct ? 'var(--success)' : 'var(--danger)' }}>{a.optionIndex == null ? <Icon name="hourglass" size={14} label="No answer" /> : <span className="inline-ic"><Icon name={a.correct ? 'check' : 'close'} size={14} label={a.correct ? 'Correct' : 'Wrong'} />{a.ms}ms</span>}</td>)}</tr>
+            ))}</tbody></table></div>
         </details>
       )}
       <details><summary className="small"><b>Events</b> ({data.events.length})</summary><pre className="json">{data.events.map((e: any) => `${fmtDate(e.createdAt)}  ${e.type}${e.userId ? ` user:${e.userId}` : ''} ${e.data ? JSON.stringify(e.data) : ''}`).join('\n')}</pre></details>
@@ -51,7 +52,7 @@ export default function Matches() {
                 <td><span className="badge blue">{m.state}</span></td>
                 <td>{m.currentQuestion}/{m.questionCount ?? '∞'}</td>
                 <td>{Math.floor(m.durationSec / 60)}m {m.durationSec % 60}s</td>
-                <td className="small">{m.players.map((p: any) => <div key={p.userId}><span className={`dot ${p.connected ? 'on' : 'off'}`} /> T{p.team} {p.isBot ? '🤖 ' : ''}{p.username}{p.forfeited ? ' (left)' : ''} · {p.score}</div>)}</td>
+                <td className="small">{m.players.map((p: any) => <div key={p.userId}><span className={`dot ${p.connected ? 'on' : 'off'}`} /> T{p.team} {p.isBot && <Icon name="bot" size={14} label="AI" />}{p.username}{p.forfeited ? ' (left)' : ''} · {p.score}</div>)}</td>
                 <td>{m.flags.map((f: string) => <span key={f} className="badge red">{f}</span>)}</td>
                 <td>{can('matches.manage') && <button className="btn sm" style={{ color: 'var(--danger)' }} onClick={() => confirm('Abort this match? No rewards will be given.') && void api(`/matches/${m.id}/abort`, { method: 'POST' }).then(() => live.refetch()).catch((e) => alert(errMsg(e)))}>Abort</button>}</td>
               </tr>

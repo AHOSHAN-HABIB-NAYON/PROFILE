@@ -1,6 +1,16 @@
 import type { PresenceStatus } from '@quizwar/shared';
+import { tr } from '../lib/i18n';
+import { Icon } from './Icon';
 
-const STATUS_LABEL: Record<PresenceStatus, string> = { online: 'Online', away: 'Away', in_match: 'In Match', offline: 'Offline', dnd: 'Do Not Disturb' };
+const STATUS: Record<PresenceStatus, [string, string]> = {
+  online: ['Online', 'অনলাইন'],
+  away: ['Away', 'দূরে'],
+  in_match: ['In a match', 'খেলছে'],
+  offline: ['Offline', 'অফলাইন'],
+  dnd: ['Do not disturb', 'বিরক্ত করবেন না'],
+};
+
+export const statusLabel = (s: PresenceStatus) => tr(...STATUS[s]);
 
 export function Avatar({
   name,
@@ -17,14 +27,11 @@ export function Avatar({
   frame?: string | null;
   bot?: boolean;
 }) {
-  const initial = bot ? '🤖' : (name.replace(/^🤖\s*/, '').trim()[0] ?? '?').toUpperCase();
+  const initial = (name.trim()[0] ?? '?').toUpperCase();
   return (
     <span className={`avatar ${bot ? 'bot' : ''} ${frame ? `frame-${frame}` : ''}`} style={{ width: size, height: size, fontSize: size }}>
-      {src && !bot ? <img src={src} alt="" loading="lazy" width={size} height={size} /> : <span className="initial">{initial}</span>}
-      {status && <span className={`status ${status}`} role="img" aria-label={STATUS_LABEL[status]} title={STATUS_LABEL[status]} />}
+      {bot ? <Icon name="bot" size={Math.round(size * 0.55)} /> : src ? <img src={src} alt="" loading="lazy" width={size} height={size} /> : <span className="initial">{initial}</span>}
+      {status && <span className={`status ${status}`} role="img" aria-label={statusLabel(status)} title={statusLabel(status)} />}
     </span>
   );
 }
-
-export const statusLabel = (s: PresenceStatus) => STATUS_LABEL[s];
-export const statusEmoji: Record<PresenceStatus, string> = { online: '🟢', away: '🟡', in_match: '⚔️', offline: '🔴', dnd: '🚫' };

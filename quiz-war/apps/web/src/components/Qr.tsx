@@ -1,6 +1,8 @@
 import QRCode from 'qrcode';
 import { useEffect, useRef, useState } from 'react';
+import { tr } from '../lib/i18n';
 import { isNative } from '../lib/platform';
+import { Icon, IconTile } from './Icon';
 import { uidFromScan } from '../lib/qr';
 
 export function QrCode({ value, size = 220 }: { value: string; size?: number }) {
@@ -33,7 +35,7 @@ export function QrScanner({ onUid }: { onUid: (uid: string) => void }) {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 720 } }, audio: false });
       } catch {
-        setError('Camera permission is needed to scan. You can also type the UID instead.');
+        setError(tr('Camera permission is needed to scan. You can also type the UID instead.', 'স্ক্যান করতে ক্যামেরার অনুমতি লাগবে। চাইলে UID লিখেও খুঁজতে পারেন।'));
         return;
       }
       const v = video.current!;
@@ -79,8 +81,9 @@ export function QrScanner({ onUid }: { onUid: (uid: string) => void }) {
   if (isNative) {
     return (
       <div className="col center">
-        <p className="muted small">Point your camera at a QUIZ WAR QR code.</p>
-        {error && <p className="form-error">{error}</p>}
+        <IconTile name="scan" tone="primary" size={72} anim="pulse" />
+        <p className="muted small">{tr('Point your camera at a QUIZ WAR QR code. Google’s secure scanner opens — the app never sees your camera.', 'QUIZ WAR-এর QR কোডের দিকে ক্যামেরা ধরুন। Google-এর নিরাপদ স্ক্যানার খুলবে — অ্যাপ আপনার ক্যামেরা দেখতে পায় না।')}</p>
+        {error && <p className="form-error"><Icon name="alert-circle" size={18} /> {error}</p>}
         <button
           className="btn primary lg block"
           disabled={nativeBusy}
@@ -89,29 +92,34 @@ export function QrScanner({ onUid }: { onUid: (uid: string) => void }) {
             setError(null);
             try {
               const { BarcodeScanner, BarcodeFormat } = await import('@capacitor-mlkit/barcode-scanning');
-              const perm = await BarcodeScanner.requestPermissions();
-              if (perm.camera !== 'granted' && perm.camera !== 'limited') throw new Error('Camera permission denied');
+              const { available } = await BarcodeScanner.isGoogleBarcodeScannerModuleAvailable();
+              if (!available) {
+                setError(tr('Preparing the scanner… try again in a moment.', 'স্ক্যানার প্রস্তুত হচ্ছে… একটু পরে আবার চেষ্টা করুন।'));
+                await BarcodeScanner.installGoogleBarcodeScannerModule();
+                return;
+              }
               const { barcodes } = await BarcodeScanner.scan({ formats: [BarcodeFormat.QrCode] });
               const uid = barcodes[0]?.rawValue ? uidFromScan(barcodes[0].rawValue) : null;
               if (uid) onUid(uid);
-              else if (barcodes.length) setError('That QR code is not a QUIZ WAR player code.');
+              else if (barcodes.length) setError(tr('That QR code is not a QUIZ WAR player code.', 'এটি QUIZ WAR-এর প্লেয়ার QR কোড নয়।'));
             } catch (e) {
-              setError((e as Error).message || 'Scanner unavailable');
+              const msg = (e as Error).message || '';
+              if (!/cancel/i.test(msg)) setError(msg || tr('Scanner unavailable', 'স্ক্যানার পাওয়া যাচ্ছে না'));
             } finally {
               setNativeBusy(false);
             }
           }}
         >
-          📷 Open scanner
+          {nativeBusy ? <span className="spinner" /> : <Icon name="camera" />} {tr('Open scanner', 'স্ক্যানার খুলুন')}
         </button>
       </div>
     );
   }
   return (
     <div className="col">
-      {error ? <p className="form-error">{error}</p> : (
+      {error ? <p className="form-error"><Icon name="alert-circle" size={18} /> {error}</p> : (
         <div className="scanner-frame">
-          <video ref={video} className="scanner-video" playsInline muted aria-label="Camera preview for QR scanning" />
+          <video ref={video} className="scanner-video" playsInline muted aria-label={tr('Camera preview for QR scanning', 'QR স্ক্যানের জন্য ক্যামেরা')} />
         </div>
       )}
     </div>

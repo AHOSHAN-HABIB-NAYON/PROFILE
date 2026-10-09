@@ -7,7 +7,9 @@ import { haptic } from './platform';
 import { emit, onSocket } from './socket';
 import { sfx } from './sound';
 import { toast } from './toast';
-import { api, friendlyError } from './api';
+import { notificationIcon } from '../components/Icon';
+import { tr } from './i18n';
+import { useInvites } from './invites';
 
 /** Wires server push events into client state. Registered once at startup. */
 export function registerRealtime() {
@@ -71,66 +73,58 @@ export function registerRealtime() {
     s.on('battle:request', (req) => {
       sfx('notify');
       haptic('heavy');
-      const id = toast.custom({
-        kind: 'info',
-        icon: '⚔️',
-        title: 'Battle Request',
-        body: `${req.from.username} challenged you! 1 VS 1 · ${req.questionCount} Questions · ${req.questionTimeSec}s/Question`,
-        ttl: Math.max(3000, req.expiresAt - Date.now()),
-        actions: [
-          {
-            label: 'Accept',
-            primary: true,
-            onClick: async () => {
-              toast.dismiss(id);
-              try {
-                const r = await api<{ matchId: string }>(`/battles/requests/${req.id}/accept`, { method: 'POST' });
-                useGame.getState().reset(r.matchId);
-                navigateTo(`/war-room/${r.matchId}`);
-              } catch (e) {
-                toast.error('Could not accept', friendlyError(e));
-              }
-            },
-          },
-          {
-            label: 'Decline',
-            onClick: () => {
-              toast.dismiss(id);
-              void api(`/battles/requests/${req.id}/decline`, { method: 'POST' }).catch(() => undefined);
-            },
-          },
-        ],
-      });
+      useInvites.getState().addBattle(req);
       void queryClient.invalidateQueries({ queryKey: ['battle-requests'] });
     });
     s.on('battle:update', (req) => {
       void queryClient.invalidateQueries({ queryKey: ['battle-requests'] });
+      if (req.status !== 'pending') useInvites.getState().removeBattle(req.id);
       const me = useAuth.getState().user?.id;
       if (req.from.id === me) {
         if (req.status === 'accepted' && req.matchId) {
           useGame.getState().reset(req.matchId);
-          toast.success(`${req.to.username} accepted!`, 'Entering the War Room…', '⚔️');
+          toast.success(tr(`${req.to.username} accepted!`, `${req.to.username} চ্যালেঞ্জ গ্রহণ করেছে!`), tr('Entering the War Room…', 'ওয়ার রুমে যাচ্ছেন…'), 'swords');
           navigateTo(`/war-room/${req.matchId}`);
-        } else if (req.status === 'declined') toast.info(`${req.to.username} declined your challenge`, undefined, '🛡️');
-        else if (req.status === 'expired') toast.info('Challenge expired', `${req.to.username} didn't respond in time`, '⌛');
+        } else if (req.status === 'declined') toast.info(tr(`${req.to.username} declined your challenge`, `${req.to.username} চ্যালেঞ্জ ফিরিয়ে দিয়েছে`), undefined, 'shield');
+        else if (req.status === 'expired') toast.info(tr('Challenge expired', 'চ্যালেঞ্জের সময় শেষ'), tr(`${req.to.username} didn't respond in time`, `${req.to.username} সময়মতো সাড়া দেয়নি`), 'hourglass');
       }
     });
 
     s.on('notification:new', (n) => {
       void queryClient.invalidateQueries({ queryKey: ['notifications'] });
       if (n.type === 'battle_request') return;
-      if (n.type === 'achievement' || n.type === 'mission') sfx('reward');
+      if (n.type === 'friend_request' && (n.data as any)?.requestId && (n.data as any)?.from) {
+        sfx('notify');
+        haptic('tap');
+        useInvites.getState().addFriend({ requestId: Number((n.data as any).requestId), from: (n.data as any).from });
+        void queryClient.invalidateQueries({ queryKey: ['friend-requests'] });
+        return;
+      }
+      if (n.type === 'achievement' || n.type === 'mission' || n.type === 'reward') sfx('reward');
+      else sfx('notify');
       if (n.type === 'mission') void queryClient.invalidateQueries({ queryKey: ['missions'] });
-      toast.info(n.title, n.body, n.type === 'achievement' ? '🏅' : '🔔');
+      if (n.type === 'friend_accepted') void queryClient.invalidateQueries({ queryKey: ['friends'] });
+      toast.info(n.title, n.body, notificationIcon(n.type).icon);
     });
     s.on('account:update', (p) => useAuth.getState().patchUser(p));
     s.on('missions:update', () => void queryClient.invalidateQueries({ queryKey: ['missions'] }));
     s.on('match:afk_warning', ({ limit }) => {
       haptic('error');
       sfx('tick');
-      toast.error('আপনি কি আছেন? 👀', `পরপর ${limit}টি প্রশ্নের উত্তর না দিলে ম্যাচ থেকে বের করে দেওয়া হবে এবং জরিমানা কাটা হবে।`);
+      toast.custom({
+        kind: 'error',
+        icon: 'hourglass',
+        title: tr('Are you still there?', 'আপনি কি আছেন?'),
+        body: tr(`Miss ${limit} questions in a row and you’ll be removed from the match with a penalty.`, `পরপর ${limit}টি প্রশ্নের উত্তর না দিলে ম্যাচ থেকে বের করে দেওয়া হবে এবং জরিমানা কাটা হবে।`),
+        ttl: 6000,
+      });
     });
-    s.on('server:announcement', (a) => toast.info(a.title, a.body, '📢'));
+    s.on('match:reaction', (r) => {
+      const g = useGame.getState();
+      if (g.matchId !== r.matchId) return;
+      g.addReaction(r);
+    });
+    s.on('server:announcement', (a) => toast.info(a.title, a.body, 'bell-ring'));
     s.on('presence:update', () => void queryClient.invalidateQueries({ queryKey: ['friends'] }));
   });
 }

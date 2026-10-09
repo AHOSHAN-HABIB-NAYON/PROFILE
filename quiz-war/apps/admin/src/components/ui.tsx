@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { Icon } from './Icon';
 
 export function Modal({ open, onClose, title, children, wide }: { open: boolean; onClose: () => void; title: string; children: ReactNode; wide?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -14,8 +15,8 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
     return () => d.removeEventListener('close', h);
   }, [onClose]);
   return (
-    <dialog ref={ref} className="modal" style={wide ? { width: 'min(980px, calc(100% - 24px))' } : undefined} aria-label={title}>
-      <div className="m-head"><h2>{title}</h2><button className="btn ghost sm" onClick={() => ref.current?.close()} aria-label="Close">✕</button></div>
+    <dialog ref={ref} className={`modal${wide ? ' wide' : ''}`} aria-label={title}>
+      <div className="m-head"><h2>{title}</h2><button className="btn ghost icon-btn" onClick={() => ref.current?.close()} aria-label="Close" title="Close"><Icon name="close" /></button></div>
       <div className="m-body">{open && children}</div>
     </dialog>
   );
@@ -25,8 +26,8 @@ export function Pager({ page, setPage, hasMore, total, pageSize }: { page: numbe
   return (
     <div className="pager">
       {total !== undefined && <span className="small muted">{total.toLocaleString()} total{pageSize ? ` · page ${page} of ${Math.max(1, Math.ceil(total / pageSize))}` : ''}</span>}
-      <button className="btn sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>← Prev</button>
-      <button className="btn sm" disabled={!hasMore} onClick={() => setPage(page + 1)}>Next →</button>
+      <button className="btn sm" disabled={page <= 1} onClick={() => setPage(page - 1)} aria-label="Previous page"><Icon name="chevron-left" size={16} />Previous</button>
+      <button className="btn sm" disabled={!hasMore} onClick={() => setPage(page + 1)} aria-label="Next page">Next<Icon name="chevron-right" size={16} /></button>
     </div>
   );
 }

@@ -1,13 +1,15 @@
 import { emailSchema, passwordSchema } from '@quizwar/shared';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { PageHeader } from '../components/AppShell';
 import { Icon } from '../components/Icon';
+import { BrandMark } from '../components/Splash';
 import { useConfig } from '../hooks/queries';
 import { acceptAuthResponse, api, ApiError, friendlyError } from '../lib/api';
+import { offerToSavePassword, pickSavedPassword } from '../lib/credentials';
 import { googleIdToken } from '../lib/google';
+import { setLang, useLang, useT } from '../lib/i18n';
 import { conditionalPasskeyAvailable, passkeyLogin, passkeysSupported } from '../lib/passkey';
-import { haptic } from '../lib/platform';
+import { haptic, isNative } from '../lib/platform';
 
 function useFinish() {
   const nav = useNavigate();
@@ -21,13 +23,15 @@ function useFinish() {
 export function GoogleButton({ next }: { next: string }) {
   const { data: cfg } = useConfig();
   const finish = useFinish();
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   if (cfg && (!cfg.googleLoginEnabled || !cfg.googleClientId)) return null;
   return (
     <>
       <button
-        className="btn lg block outline google-btn"
+        type="button"
+        className="btn lg block outline social-btn"
         disabled={busy || !cfg}
         onClick={async () => {
           setErr(null);
@@ -36,17 +40,22 @@ export function GoogleButton({ next }: { next: string }) {
             const idToken = await googleIdToken(cfg!.googleClientId!);
             await finish(await api('/auth/google', { body: { idToken }, auth: false }), next);
           } catch (e) {
-            setErr(e instanceof ApiError ? friendlyError(e) : (e as Error).message);
+            const msg = e instanceof ApiError ? friendlyError(e) : (e as Error).message;
+            if (!/cancel/i.test(msg)) setErr(msg);
           } finally {
             setBusy(false);
           }
         }}
       >
-        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
-        {busy ? 'Connecting…' : 'Continue with Google'}
+        {busy ? <span className="spinner" /> : <Icon name="google" size={20} />}
+        {t('Continue with Google', 'Google দিয়ে চালিয়ে যান')}
       </button>
       <div id="gsi-fallback" style={{ display: 'flex', justifyContent: 'center' }} />
-      {err && <p className="form-error" role="alert">{err}</p>}
+      {err && (
+        <p className="form-error" role="alert">
+          <Icon name="alert-circle" size={18} /> {err}
+        </p>
+      )}
     </>
   );
 }
@@ -54,13 +63,15 @@ export function GoogleButton({ next }: { next: string }) {
 export function PasskeyButton({ next }: { next: string }) {
   const { data: cfg } = useConfig();
   const finish = useFinish();
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   if (!passkeysSupported() || (cfg && !cfg.passkeyEnabled)) return null;
   return (
     <>
       <button
-        className="btn lg block outline"
+        type="button"
+        className="btn lg block outline social-btn"
         disabled={busy}
         onClick={async () => {
           setErr(null);
@@ -74,22 +85,117 @@ export function PasskeyButton({ next }: { next: string }) {
           }
         }}
       >
-        <Icon name="key" size={18} /> {busy ? 'Waiting for your device…' : 'Continue with Passkey'}
+        {busy ? <span className="spinner" /> : <Icon name="fingerprint" size={20} />}
+        {busy ? t('Waiting for your device…', 'আপনার ডিভাইসের অপেক্ষায়…') : t('Sign in with passkey', 'পাসকি দিয়ে লগইন')}
       </button>
-      {err && <p className="form-error" role="alert">{err}</p>}
+      {err && (
+        <p className="form-error" role="alert">
+          <Icon name="alert-circle" size={18} /> {err}
+        </p>
+      )}
     </>
   );
+}
+
+/** Branded top area shared by the sign-in screens. */
+export function AuthLayout({ title, subtitle, children, back }: { title: string; subtitle: string; children: ReactNode; back?: boolean }) {
+  const nav = useNavigate();
+  const t = useT();
+  const lang = useLang();
+  return (
+    <div className="auth">
+      <div className="auth-hero">
+        <div className="auth-hero-top">
+          {back ? (
+            <button className="btn icon sm ghost on-dark" aria-label={t('Back', 'ফিরে যান')} onClick={() => (history.length > 1 ? nav(-1) : nav('/login'))}>
+              <Icon name="back" size={24} />
+            </button>
+          ) : (
+            <span />
+          )}
+          <div className="lang-toggle on-dark" role="group" aria-label={t('Language', 'ভাষা')}>
+            <button aria-pressed={lang === 'bn'} onClick={() => setLang('bn', false)}>বাংলা</button>
+            <button aria-pressed={lang === 'en'} onClick={() => setLang('en', false)}>EN</button>
+          </div>
+        </div>
+        <div className="auth-brand">
+          <BrandMark size={64} animate={false} />
+          <div>
+            <b>QUIZ WAR</b>
+            <small>BANGLADESH</small>
+          </div>
+        </div>
+      </div>
+      <main className="auth-card">
+        <h1>{title}</h1>
+        <p className="muted auth-sub">{subtitle}</p>
+        {children}
+      </main>
+    </div>
+  );
+}
+
+function PasswordField({ id, value, onChange, onBlur, autoComplete, error, hint, label }: { id: string; value: string; onChange: (v: string) => void; onBlur?: () => void; autoComplete: string; error?: string; hint?: ReactNode; label: string }) {
+  const [show, setShow] = useState(false);
+  const t = useT();
+  return (
+    <div className="field">
+      <label htmlFor={id}>{label}</label>
+      <div className="input-wrap">
+        <Icon name="lock" size={20} />
+        <input
+          id={id}
+          name={id}
+          className="input has-action"
+          type={show ? 'text' : 'password'}
+          autoComplete={autoComplete}
+          required
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onBlur={onBlur}
+          enterKeyHint="done"
+          aria-invalid={!!error}
+          aria-describedby={error ? `${id}-err` : hint ? `${id}-hint` : undefined}
+        />
+        <button type="button" className="btn icon sm ghost input-action" aria-label={show ? t('Hide password', 'পাসওয়ার্ড লুকান') : t('Show password', 'পাসওয়ার্ড দেখুন')} aria-pressed={show} onClick={() => setShow((s) => !s)}>
+          <Icon name={show ? 'eye-off' : 'eye'} size={20} />
+        </button>
+      </div>
+      {error ? (
+        <span id={`${id}-err`} className="field-error">
+          <Icon name="alert-circle" size={15} /> {error}
+        </span>
+      ) : (
+        hint && (
+          <span id={`${id}-hint`} className="field-hint">
+            {hint}
+          </span>
+        )
+      )}
+    </div>
+  );
+}
+
+function strength(pw: string) {
+  let s = 0;
+  if (pw.length >= 8) s++;
+  if (/[a-z]/i.test(pw) && /\d/.test(pw)) s++;
+  if (pw.length >= 12) s++;
+  if (/[^a-z0-9]/i.test(pw)) s++;
+  return s;
 }
 
 function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const [params] = useSearchParams();
   const next = params.get('next') ?? '/';
   const finish = useFinish();
+  const t = useT();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string; form?: string }>({});
   const [busy, setBusy] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   // Passkey autofill (Conditional UI) on the sign-in form when the browser supports it.
   useEffect(() => {
@@ -111,28 +217,46 @@ function AuthForm({ mode }: { mode: 'login' | 'register' }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode]);
 
+  const useSaved = async (auto = false) => {
+    const c = await pickSavedPassword();
+    if (!c) return;
+    setEmail(c.email);
+    setPassword(c.password);
+    if (auto) setTimeout(() => formRef.current?.requestSubmit(), 60);
+  };
+
+  // Android: offer the Google Password Manager account picker once when the screen opens.
+  useEffect(() => {
+    if (mode !== 'login' || !isNative || sessionStorage.getItem('qw-saved-offered')) return;
+    sessionStorage.setItem('qw-saved-offered', '1');
+    void useSaved(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
+
+  const emailMsg = t('Enter a valid email address', 'সঠিক ইমেইল ঠিকানা দিন');
   const validate = (field: 'email' | 'password') => {
     if (field === 'email') {
       const r = emailSchema.safeParse(email);
-      setErrors((e) => ({ ...e, email: email && !r.success ? 'Enter a valid email address' : undefined }));
+      setErrors((e) => ({ ...e, email: email && !r.success ? emailMsg : undefined }));
     } else if (mode === 'register') {
       const r = passwordSchema.safeParse(password);
-      setErrors((e) => ({ ...e, password: password && !r.success ? r.error.issues[0].message : undefined }));
+      setErrors((e) => ({ ...e, password: password && !r.success ? t('At least 8 characters with letters and numbers', 'কমপক্ষে ৮ অক্ষর, অক্ষর ও সংখ্যা দুটোই থাকতে হবে') : undefined }));
     }
   };
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    const em = emailSchema.safeParse(email);
+    const em = emailSchema.safeParse(email.trim());
     const pw = mode === 'register' ? passwordSchema.safeParse(password) : { success: password.length > 0 };
-    const next_: typeof errors = {};
-    if (!em.success) next_.email = 'Enter a valid email address';
-    if (!pw.success) next_.password = mode === 'register' ? 'At least 8 characters with letters and numbers' : 'Enter your password';
-    setErrors(next_);
-    if (next_.email || next_.password) return;
+    const errs: typeof errors = {};
+    if (!em.success) errs.email = emailMsg;
+    if (!pw.success) errs.password = mode === 'register' ? t('At least 8 characters with letters and numbers', 'কমপক্ষে ৮ অক্ষর, অক্ষর ও সংখ্যা দুটোই থাকতে হবে') : t('Enter your password', 'পাসওয়ার্ড দিন');
+    setErrors(errs);
+    if (errs.email || errs.password) return haptic('error');
     setBusy(true);
     try {
-      const data = await api(`/auth/${mode}`, { body: { email, password }, auth: false });
+      const data = await api(`/auth/${mode}`, { body: { email: email.trim(), password }, auth: false });
+      void offerToSavePassword(email.trim(), password);
       await finish(data, next);
     } catch (e2) {
       setErrors({ form: friendlyError(e2) });
@@ -142,23 +266,35 @@ function AuthForm({ mode }: { mode: 'login' | 'register' }) {
     }
   }
 
+  const s = strength(password);
   return (
-    <div className="welcome" style={{ justifyContent: 'flex-start' }}>
-      <PageHeader title={mode === 'login' ? 'Welcome back' : 'Create your account'} back />
-      <div className="col gap-lg">
-        <GoogleButton next={next} />
-        <PasskeyButton next={next} />
-        <div className="divider">or with email</div>
-        <form className="col" onSubmit={submit} noValidate>
-          {errors.form && <p className="form-error" role="alert">{errors.form}</p>}
-          <div className="field">
-            <label htmlFor="email">Email</label>
+    <AuthLayout
+      back={mode === 'register'}
+      title={mode === 'login' ? t('Welcome back', 'আবার স্বাগতম') : t('Create your account', 'নতুন অ্যাকাউন্ট খুলুন')}
+      subtitle={mode === 'login' ? t('Sign in to continue your battles.', 'আপনার ব্যাটল চালিয়ে যেতে লগইন করুন।') : t('It takes less than a minute — and it’s free.', 'এক মিনিটও লাগবে না — সম্পূর্ণ ফ্রি।')}
+    >
+      <form ref={formRef} className="col auth-form" onSubmit={submit} noValidate>
+        {errors.form && (
+          <p className="form-error" role="alert">
+            <Icon name="alert-circle" size={18} /> {errors.form}
+          </p>
+        )}
+        <div className="field">
+          <label htmlFor="email">{t('Email', 'ইমেইল')}</label>
+          <div className="input-wrap">
+            <Icon name="mail" size={20} />
             <input
               id="email"
+              name="email"
               className="input"
               type="email"
               inputMode="email"
-              autoComplete={mode === 'login' ? 'username webauthn' : 'email'}
+              spellCheck={false}
+              autoCapitalize="none"
+              enterKeyHint="next"
+              required
+              placeholder="name@example.com"
+              autoComplete={mode === 'login' ? 'username webauthn' : 'username'}
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
@@ -168,42 +304,82 @@ function AuthForm({ mode }: { mode: 'login' | 'register' }) {
               aria-invalid={!!errors.email}
               aria-describedby={errors.email ? 'email-err' : undefined}
             />
-            {errors.email && <span id="email-err" className="field-error">{errors.email}</span>}
           </div>
-          <div className="field">
-            <label htmlFor="password">Password</label>
-            <input
-              id="password"
-              className="input"
-              type="password"
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (errors.password) setErrors((x) => ({ ...x, password: undefined }));
-              }}
-              onBlur={() => validate('password')}
-              aria-invalid={!!errors.password}
-              aria-describedby={errors.password ? 'pw-err' : mode === 'register' ? 'pw-hint' : undefined}
-            />
-            {errors.password ? <span id="pw-err" className="field-error">{errors.password}</span> : mode === 'register' && <span id="pw-hint" className="field-hint">At least 8 characters, letters and numbers.</span>}
+          {errors.email && (
+            <span id="email-err" className="field-error">
+              <Icon name="alert-circle" size={15} /> {errors.email}
+            </span>
+          )}
+        </div>
+        <PasswordField
+          id={mode === 'login' ? 'current-password' : 'new-password'}
+          label={t('Password', 'পাসওয়ার্ড')}
+          autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+          value={password}
+          onChange={(v) => {
+            setPassword(v);
+            if (errors.password) setErrors((x) => ({ ...x, password: undefined }));
+          }}
+          onBlur={() => validate('password')}
+          error={errors.password}
+          hint={
+            mode === 'register' ? (
+              <span className="pw-meter" data-s={password ? s : 0}>
+                <i /><i /><i /><i />
+                <span>{t('At least 8 characters, letters and numbers', 'কমপক্ষে ৮ অক্ষর, অক্ষর ও সংখ্যা')}</span>
+              </span>
+            ) : undefined
+          }
+        />
+        {mode === 'login' && (
+          <div className="row between">
+            {isNative ? (
+              <button type="button" className="link-btn" onClick={() => void useSaved(false)}>
+                <Icon name="key" size={16} /> {t('Use saved password', 'সেভ করা পাসওয়ার্ড')}
+              </button>
+            ) : (
+              <span />
+            )}
+            <Link to="/forgot-password" className="small bold">
+              {t('Forgot password?', 'পাসওয়ার্ড ভুলে গেছেন?')}
+            </Link>
           </div>
-          <button className="btn primary lg block" type="submit" disabled={busy}>
-            {busy ? <span className="spinner" /> : mode === 'login' ? 'Sign in' : 'Create account'}
-          </button>
-        </form>
-        {mode === 'login' ? (
-          <div className="row between small">
-            <Link to="/forgot-password">Forgot password?</Link>
-            <Link to={`/register?next=${encodeURIComponent(next)}`} className="bold">Create account</Link>
-          </div>
-        ) : (
-          <p className="center small muted">
-            Have an account? <Link to={`/login?next=${encodeURIComponent(next)}`} className="bold">Sign in</Link>
-          </p>
         )}
+        <button className="btn primary lg block" type="submit" disabled={busy}>
+          {busy ? <span className="spinner" /> : <Icon name={mode === 'login' ? 'login' : 'user-plus'} />}
+          {mode === 'login' ? t('Sign in', 'লগইন করুন') : t('Create account', 'অ্যাকাউন্ট খুলুন')}
+        </button>
+      </form>
+
+      <div className="divider">{t('or', 'অথবা')}</div>
+      <div className="col">
+        <GoogleButton next={next} />
+        {mode === 'login' && <PasskeyButton next={next} />}
       </div>
-    </div>
+
+      <p className="center auth-switch">
+        {mode === 'login' ? (
+          <>
+            {t('New to QUIZ WAR?', 'QUIZ WAR-এ নতুন?')}{' '}
+            <Link to={`/register?next=${encodeURIComponent(next)}`} className="bold">
+              {t('Create an account', 'অ্যাকাউন্ট খুলুন')}
+            </Link>
+          </>
+        ) : (
+          <>
+            {t('Already have an account?', 'আগে থেকেই অ্যাকাউন্ট আছে?')}{' '}
+            <Link to={`/login?next=${encodeURIComponent(next)}`} className="bold">
+              {t('Sign in', 'লগইন করুন')}
+            </Link>
+          </>
+        )}
+      </p>
+      <p className="center xs faint">
+        {t('By continuing you agree to the', 'চালিয়ে গেলে আপনি আমাদের')} <Link to="/legal/terms">{t('Terms', 'শর্তাবলি')}</Link> {t('and', 'ও')}{' '}
+        <Link to="/legal/privacy">{t('Privacy Policy', 'প্রাইভেসি পলিসি')}</Link>
+        {t('.', ' মেনে নিচ্ছেন।')}
+      </p>
+    </AuthLayout>
   );
 }
 

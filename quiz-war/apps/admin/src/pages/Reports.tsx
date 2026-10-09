@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router';
 import { Loading, Modal, Pager, StatusBadge, fmtDate } from '../components/ui';
+import { Icon } from '../components/Icon';
 import { api, errMsg } from '../lib/api';
 import { useAdmin } from '../lib/auth';
 
@@ -30,7 +31,7 @@ function ReportDetail({ id, onDone }: { id: number; onDone: () => void }) {
       {ev.profile && (
         <div className="card row">
           {ev.profile.avatar_url && <img src={ev.profile.avatar_url} alt="Reported avatar" style={{ width: 64, height: 64, borderRadius: 12, objectFit: 'cover' }} />}
-          <div><b>{ev.profile.username}</b> <code>{ev.profile.uid}</code><p className="small muted">{ev.profile.bio}</p>{data.target_user_id && <Link to={`/users/${data.target_user_id}`}>Open player →</Link>}</div>
+          <div><b>{ev.profile.username}</b> <code>{ev.profile.uid}</code><p className="small muted">{ev.profile.bio}</p>{data.target_user_id && <Link to={`/users/${data.target_user_id}`}>Open player <Icon name="arrow-right" size={14} /></Link>}</div>
         </div>
       )}
       {ev.match && <p className="small">Match <code>{ev.match.id}</code> · {ev.match.mode} · {ev.match.match_type} {ev.match.flagged ? <span className="badge red">auto-flagged: {ev.match.flag_reason}</span> : null}</p>}
@@ -58,7 +59,7 @@ export default function Reports() {
     <>
       <div className="head"><h1>Reports</h1><div className="tabs">{['open', 'reviewing', 'actioned', 'dismissed', 'all'].map((s) => <button key={s} aria-selected={status === s} onClick={() => (setStatus(s), setPage(1))}>{s}</button>)}</div></div>
       <div className="card table-wrap">
-        {isLoading ? <Loading /> : !data.items.length ? <p className="muted">No reports here. 🎉</p> : (
+        {isLoading ? <Loading /> : !data.items.length ? <p className="muted">No reports here.</p> : (
           <table><thead><tr><th>Date</th><th>Reason</th><th>Reported player</th><th>Reports on player</th><th>Reporter</th><th>Match</th><th>Status</th></tr></thead>
             <tbody>{data.items.map((r: any) => (
               <tr key={r.id} className="click" onClick={() => setOpen(r.id)}>

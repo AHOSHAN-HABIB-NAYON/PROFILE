@@ -71,6 +71,8 @@ async function parse<T>(res: Response): Promise<T> {
 
 /* Single-flight refresh: concurrent 401s share one refresh request. */
 let refreshing: Promise<boolean> | null = null;
+/** Why the last refresh failed: 'network' keeps the player signed in (retry later). */
+export let lastRefreshFailure: 'network' | 'auth' | null = null;
 export function refreshSession(): Promise<boolean> {
   refreshing ??= (async () => {
     try {
@@ -80,9 +82,13 @@ export function refreshSession(): Promise<boolean> {
         const res = await raw('/auth/refresh', { method: 'POST', json: isNative ? { refreshToken: stored } : {} });
         if (res.status === 409) continue; // another tab rotated the cookie first — retry once
         if (!res.ok) {
-          if (res.status === 401 || res.status === 403) await tokenStore.clear();
+          if (res.status === 401 || res.status === 403) {
+            await tokenStore.clear();
+            lastRefreshFailure = 'auth';
+          } else lastRefreshFailure = 'network';
           return false;
         }
+        lastRefreshFailure = null;
         const data = await res.json();
         accessToken = data.accessToken;
         await tokenStore.set(data.refreshToken);
@@ -91,6 +97,7 @@ export function refreshSession(): Promise<boolean> {
       }
       return false;
     } catch {
+      lastRefreshFailure = 'network';
       return false;
     } finally {
       setTimeout(() => (refreshing = null), 0);
@@ -108,9 +115,8 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
   let res = await doFetch();
   if (res.status === 401 && opts.auth !== false && !path.startsWith('/auth/login') && !path.startsWith('/auth/register')) {
     if (await refreshSession()) res = await doFetch();
-    else {
-      onAuthLost();
-    }
+    else if (lastRefreshFailure === 'network') throw new ApiError(0, 'network', FRIENDLY.network);
+    else onAuthLost();
   }
   return parse<T>(res);
 }

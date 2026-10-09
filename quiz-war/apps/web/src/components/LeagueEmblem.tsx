@@ -50,3 +50,29 @@ export function LeagueEmblem({ league, size = 28, title }: { league: string; siz
     </svg>
   );
 }
+
+const MEDAL: Record<number, [string, string, string]> = {
+  1: ['#fde68a', '#d39a06', '#8a6100'],
+  2: ['#f1f5f9', '#94a3b8', '#475569'],
+  3: ['#fcd9b6', '#c2773a', '#7c4316'],
+};
+
+/** Gold / silver / bronze medal with the rank number (podiums, results, share cards). */
+export function RankMedal({ rank, size = 30 }: { rank: number; size?: number }) {
+  const id = useId().replace(/:/g, '');
+  const [from, to, rim] = MEDAL[rank] ?? ['#e2e8f0', '#cbd5e1', '#64748b'];
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40" aria-label={`#${rank}`} role="img" className="rank-medal">
+      <defs>
+        <linearGradient id={`${id}m`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor={from} />
+          <stop offset="1" stopColor={to} />
+        </linearGradient>
+      </defs>
+      {rank <= 3 && <path d="M12 2h6l3 8h-6zM28 2h-6l-3 8h6z" fill={rank === 1 ? '#dc2626' : rank === 2 ? '#2563eb' : '#16a34a'} />}
+      <circle cx="20" cy="24" r="13" fill={`url(#${id}m)`} stroke={rim} strokeWidth="2" />
+      <circle cx="20" cy="24" r="9.5" fill="none" stroke="#fff" strokeOpacity=".55" strokeWidth="1.2" />
+      <text x="20" y="28.5" textAnchor="middle" fontSize="12" fontWeight="800" fill={rim} fontFamily="Plus Jakarta Sans Variable, sans-serif">{rank}</text>
+    </svg>
+  );
+}
