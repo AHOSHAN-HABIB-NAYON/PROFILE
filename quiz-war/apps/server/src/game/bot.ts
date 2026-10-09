@@ -4,7 +4,8 @@ const BOT_NAMES = ['বট রাহাত', 'বট নীলা', 'বট স�
 
 export function botName(i: number, level: AiLevel): string {
   // Bots are always clearly labelled as AI — never disguised as real players.
-  return `${BOT_NAMES[i % BOT_NAMES.length]} (${level.toUpperCase()})`;
+  const label: Record<AiLevel, string> = { easy: 'সহজ', normal: 'সাধারণ', hard: 'কঠিন', expert: 'এক্সপার্ট' };
+  return `${BOT_NAMES[i % BOT_NAMES.length]} · ${label[level] ?? level}`;
 }
 
 export function botAccuracy(level: AiLevel, s: GameSettings['ai'], rnd = Math.random): number {

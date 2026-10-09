@@ -1,4 +1,4 @@
-import { normalizeUid, paginationSchema, SQUAD_ROLES } from '@quizwar/shared';
+import { DIFFICULTIES, normalizeUid, paginationSchema, SQUAD_ROLES } from '@quizwar/shared';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
@@ -65,8 +65,11 @@ export async function socialRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/battles/requests', auth, async (req) => ctx.battles.pending(uid(req)));
   app.post('/battles/requests', { ...auth, config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (req) => {
     const target = await resolveTarget(req.body);
-    const b = parse(z.object({ categoryId: z.number().int().positive().nullish(), questionCount: z.number().int().min(3).max(50).nullish() }).passthrough(), req.body);
-    return ctx.battles.send(uid(req), target.id, { categoryId: b.categoryId ?? null, questionCount: b.questionCount ?? null });
+    const b = parse(
+      z.object({ categoryId: z.number().int().positive().nullish(), questionCount: z.number().int().min(3).max(50).nullish(), difficulty: z.enum(DIFFICULTIES).nullish() }).passthrough(),
+      req.body,
+    );
+    return ctx.battles.send(uid(req), target.id, { categoryId: b.categoryId ?? null, questionCount: b.questionCount ?? null, difficulty: b.difficulty ?? null });
   });
   app.post('/battles/requests/:id/accept', auth, async (req) => ctx.battles.respond(uid(req), parse(idParam, req.params).id, true));
   app.post('/battles/requests/:id/decline', auth, async (req) => ctx.battles.respond(uid(req), parse(idParam, req.params).id, false));

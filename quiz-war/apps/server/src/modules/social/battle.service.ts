@@ -1,4 +1,4 @@
-import { MODES, type BattleRequestView, type GameSettings, type ModeKey } from '@quizwar/shared';
+import { MODES, type BattleRequestView, type Difficulty, type GameSettings, type ModeKey } from '@quizwar/shared';
 import { exec, query, queryOne, tx } from '../../db/pool';
 import { AppError, badRequest, conflict, notFound } from '../../lib/errors';
 import type { GameEngine } from '../../game/engine';
@@ -16,6 +16,7 @@ interface Row {
   category_id: number | null;
   category_name: string | null;
   question_count: number;
+  difficulty: Difficulty | null;
   question_time_sec: number;
   status: BattleRequestView['status'];
   match_id: string | null;
@@ -49,6 +50,7 @@ export class BattleRequestService {
       mode: r.mode as ModeKey,
       questionCount: r.question_count,
       questionTimeSec: r.question_time_sec,
+      difficulty: (r.difficulty as Difficulty | null) ?? null,
       category: r.category_id ? { id: r.category_id, name: r.category_name ?? '' } : null,
       status: r.status,
       expiresAt: r.expires_at.getTime(),
@@ -61,7 +63,7 @@ export class BattleRequestService {
     this.emitter()?.toUser(v.to.id, 'battle:update', v);
   }
 
-  async send(fromId: number, toId: number, o: { categoryId?: number | null; questionCount?: number | null }) {
+  async send(fromId: number, toId: number, o: { categoryId?: number | null; questionCount?: number | null; difficulty?: Difficulty | null }) {
     const s = this.settings();
     if (toId === fromId) throw badRequest("You can't challenge yourself");
     const target = await getPublicUser(toId);
@@ -82,9 +84,9 @@ export class BattleRequestService {
     if (Number(counts?.pending ?? 0) >= s.battleRequests.maxPendingOutgoing) throw conflict('Too many pending challenges', 'too_many_pending');
     const questionCount = Math.min(50, Math.max(3, o.questionCount ?? s.battleRequests.defaultQuestionCount));
     const res = await exec(
-      `INSERT INTO battle_requests (from_user_id, to_user_id, mode, category_id, question_count, question_time_sec, expires_at)
-       VALUES (?, ?, 'duel', ?, ?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL ? SECOND))`,
-      [fromId, toId, o.categoryId ?? null, questionCount, s.match.questionTimeSec, s.battleRequests.expirySec],
+      `INSERT INTO battle_requests (from_user_id, to_user_id, mode, category_id, question_count, question_time_sec, difficulty, expires_at)
+       VALUES (?, ?, 'duel', ?, ?, ?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL ? SECOND))`,
+      [fromId, toId, o.categoryId ?? null, questionCount, o.difficulty ? s.match.difficultyTimeSec[o.difficulty] : s.match.questionTimeSec, o.difficulty ?? null, s.battleRequests.expirySec],
     );
     const v = (await this.view(res.insertId))!;
     this.emitter()?.toUser(toId, 'battle:request', v);
@@ -150,6 +152,7 @@ export class BattleRequestService {
         category: cat,
         questionCount: row.question_count,
         questionTimeSec: row.question_time_sec,
+        difficulties: row.difficulty ? [row.difficulty] : null,
         hostUserId: a.id,
         players: [
           { userId: a.id, username: a.username, uid: a.uid, avatarUrl: a.avatarThumbUrl ?? a.avatarUrl, level: a.level, rating: a.rating, team: 0 },

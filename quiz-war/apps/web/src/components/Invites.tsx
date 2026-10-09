@@ -11,6 +11,7 @@ import { serverNow } from '../lib/game';
 import { sfx } from '../lib/sound';
 import { toast } from '../lib/toast';
 import { Avatar } from './Avatar';
+import { DIFFICULTY_INFO } from './MatchOptions';
 import { Icon, IconTile } from './Icon';
 import { Modal } from './Sheet';
 
@@ -74,16 +75,17 @@ function BattleInvite({ req }: { req: BattleRequestView }) {
       void qc.invalidateQueries({ queryKey: ['battle-requests'] });
     }
   };
-  const decline = async () => {
-    setBusy('decline');
-    await api(`/battles/requests/${req.id}/decline`, { method: 'POST' }).catch(() => undefined);
+  // Close straight away; the server is told in the background.
+  const decline = () => {
+    haptic('tap');
     remove(req.id);
-    setBusy(null);
-    void qc.invalidateQueries({ queryKey: ['battle-requests'] });
+    void api(`/battles/requests/${req.id}/decline`, { method: 'POST' })
+      .catch(() => undefined)
+      .finally(() => void qc.invalidateQueries({ queryKey: ['battle-requests'] }));
   };
 
   return (
-    <Modal open onClose={() => void decline()} label={t('Battle challenge', 'ব্যাটল চ্যালেঞ্জ')} dismissible={false}>
+    <Modal open onClose={decline} label={t('Battle challenge', 'ব্যাটল চ্যালেঞ্জ')} dismissible={false}>
       <div className="invite-head danger">
         <Icon name="swords" size={18} /> {t('Battle challenge!', 'ব্যাটল চ্যালেঞ্জ!')}
       </div>
@@ -99,6 +101,7 @@ function BattleInvite({ req }: { req: BattleRequestView }) {
         <span className="chip primary"><Icon name="swords" /> 1 VS 1</span>
         <span className="chip"><Icon name="list" /> {num(req.questionCount, lang)} {t('questions', 'প্রশ্ন')}</span>
         <span className="chip"><Icon name="timer" /> {num(req.questionTimeSec, lang)}{t('s each', ' সেকেন্ড')}</span>
+        {req.difficulty && <span className="chip"><Icon name={DIFFICULTY_INFO[req.difficulty].icon} /> {t(DIFFICULTY_INFO[req.difficulty].en, DIFFICULTY_INFO[req.difficulty].bn)}</span>}
         {req.category && <span className="chip accent"><Icon name="book" /> {req.category.name}</span>}
       </div>
       <div className="modal-actions">
@@ -121,7 +124,15 @@ function FriendInviteModal({ inv }: { inv: FriendInvite }) {
   const remove = useInvites((s) => s.removeFriend);
   const [busy, setBusy] = useState<'accept' | 'decline' | null>(null);
   const respond = async (accept: boolean) => {
-    setBusy(accept ? 'accept' : 'decline');
+    if (!accept) {
+      haptic('tap');
+      remove(inv.requestId);
+      void api(`/friends/requests/${inv.requestId}/reject`, { method: 'POST' })
+        .catch(() => undefined)
+        .finally(() => void qc.invalidateQueries({ queryKey: ['friend-requests'] }));
+      return;
+    }
+    setBusy('accept');
     try {
       await api(`/friends/requests/${inv.requestId}/${accept ? 'accept' : 'reject'}`, { method: 'POST' });
       if (accept) {

@@ -148,6 +148,26 @@ function ReactionBar({ matchId }: { matchId: string }) {
   );
 }
 
+/** Opponent dropped: live countdown until they are forfeited, so nobody waits blindly. */
+function OpponentLeft({ name, until }: { name: string; until: number | null }) {
+  const t = useT();
+  const lang = useLang();
+  const [now, setNow] = useState(() => serverNow());
+  useEffect(() => {
+    const id = setInterval(() => setNow(serverNow()), 250);
+    return () => clearInterval(id);
+  }, []);
+  const left = until ? Math.max(0, Math.ceil((until - now) / 1000)) : null;
+  return (
+    <p className="opponent-left" role="status">
+      <Icon name="wifi-off" size={14} />{' '}
+      {left !== null
+        ? t(`${name} left — you win in ${left}s if they don't return`, `${name} চলে গেছে — ${num(left, lang)} সেকেন্ডে না ফিরলে আপনি জিতবেন`)
+        : t(`${name} disconnected — waiting for them to reconnect…`, `${name}-এর সংযোগ বিচ্ছিন্ন — ফিরে আসার অপেক্ষা…`)}
+    </p>
+  );
+}
+
 export default function Match() {
   const t = useT();
   const lang = useLang();
@@ -223,7 +243,7 @@ export default function Match() {
   const low = !!q && !revealed && secLeft <= 3;
   const me_ = snap.players.find((p) => p.userId === me.id);
   const keys = lang === 'bn' ? KEYS_BN : KEYS_EN;
-  const canReact = !solo && snap.players.some((p) => !p.isBot && p.userId !== me.id);
+  const canReact = !solo;
 
   async function answer(i: number) {
     if (!q || g.myPick !== null || revealed || sending.current || remaining <= 0) return;
@@ -310,9 +330,7 @@ export default function Match() {
           <SideScore players={oppPlayers} score={snap.teamScores.find((_, ti) => ti !== myTeam) ?? 0} answered={g.answered} label={oppPlayers.length > 1 ? t('Opponents', 'প্রতিপক্ষ') : ''} right />
         </div>
       )}
-      {disconnectedOpp && (
-        <p className="opponent-left"><Icon name="wifi-off" size={14} /> {t(`${disconnectedOpp.username} disconnected — waiting for them to reconnect…`, `${disconnectedOpp.username}-এর সংযোগ বিচ্ছিন্ন — ফিরে আসার অপেক্ষা…`)}</p>
-      )}
+      {disconnectedOpp && <OpponentLeft name={disconnectedOpp.username} until={disconnectedOpp.graceUntil ?? null} />}
 
       {snap.state === 'countdown' && g.countdownAt ? (
         <div className="countdown-stage">

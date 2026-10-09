@@ -15,6 +15,8 @@ export interface MatchPlayerView {
   botLevel: AiLevel | null;
   ready: boolean;
   connected: boolean;
+  /** When a disconnected player is forfeited (server clock), if they don't return. */
+  graceUntil?: number | null;
   score: number;
   combo: number;
   correct: number;
@@ -31,6 +33,8 @@ export interface MatchSnapshot {
   category: { id: number; name: string; icon: string } | null;
   questionCount: number | null;
   questionTimeSec: number;
+  /** Chosen question difficulty (null = mixed). */
+  difficulty?: Difficulty | null;
   players: MatchPlayerView[];
   teamScores: number[];
   currentQuestion: QuestionPublic | null;
@@ -112,6 +116,7 @@ export interface BattleRequestView {
   mode: ModeKey;
   questionCount: number;
   questionTimeSec: number;
+  difficulty: Difficulty | null;
   category: { id: number; name: string } | null;
   status: 'pending' | 'accepted' | 'declined' | 'expired' | 'cancelled';
   expiresAt: number;
@@ -137,9 +142,9 @@ export interface ClientToServerEvents {
   'mm:join': (p: { mode: ModeKey; ranked: boolean; categoryId?: number | null }, ack: Ack<{ ticketId: string }>) => void;
   'mm:leave': (ack?: Ack) => void;
   'mm:accept_ai': (p: { level?: AiLevel }, ack: Ack<{ matchId: string }>) => void;
-  'ai:start': (p: { mode?: ModeKey; level: AiLevel; categoryId?: number | null; tutorial?: boolean }, ack: Ack<{ matchId: string }>) => void;
-  'solo:start': (p: { mode: 'solo' | 'survival' | 'speed' | 'daily'; categoryId?: number | null; difficulty?: Difficulty | null; practiceMistakes?: boolean }, ack: Ack<{ matchId: string }>) => void;
-  'room:create': (p: { mode: ModeKey; categoryId?: number | null; questionCount?: number; squadId?: number | null }, ack: Ack<{ matchId: string }>) => void;
+  'ai:start': (p: { mode?: ModeKey; level: AiLevel; categoryId?: number | null; tutorial?: boolean; questionCount?: number | null }, ack: Ack<{ matchId: string }>) => void;
+  'solo:start': (p: { mode: 'solo' | 'survival' | 'speed' | 'daily'; categoryId?: number | null; difficulty?: Difficulty | null; practiceMistakes?: boolean; questionCount?: number | null }, ack: Ack<{ matchId: string }>) => void;
+  'room:create': (p: { mode: ModeKey; categoryId?: number | null; questionCount?: number; difficulty?: Difficulty | null; questionTimeSec?: number | null; squadId?: number | null }, ack: Ack<{ matchId: string }>) => void;
   'room:join': (p: { matchId: string; team?: number }, ack: Ack<{ snapshot: MatchSnapshot }>) => void;
   'room:ready': (p: { matchId: string; ready: boolean }, ack?: Ack) => void;
   'room:start': (p: { matchId: string }, ack?: Ack) => void;

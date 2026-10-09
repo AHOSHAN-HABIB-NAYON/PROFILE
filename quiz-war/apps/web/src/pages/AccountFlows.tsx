@@ -2,11 +2,13 @@ import { passwordSchema } from '@quizwar/shared';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { Icon, IconTile } from '../components/Icon';
+import { useConfig } from '../hooks/queries';
 import { api, friendlyError } from '../lib/api';
 import { useT } from '../lib/i18n';
 import { AuthLayout } from './Auth';
 
 export default function AccountFlows({ kind }: { kind: 'forgot' | 'reset' | 'verify' }) {
+  const cfg = useConfig().data;
   const t = useT();
   const [params] = useSearchParams();
   const token = params.get('token') ?? '';
@@ -103,6 +105,15 @@ export default function AccountFlows({ kind }: { kind: 'forgot' | 'reset' | 'ver
           <p className="form-error" role="alert">
             <Icon name="alert-circle" size={18} /> {msg}
           </p>
+        )}
+        {kind === 'forgot' && cfg && cfg.emailEnabled === false && (
+          <div className="notice warn" role="status">
+            <Icon name="info" size={18} />
+            <span>
+              {t('Password reset emails are temporarily unavailable. Contact support and we will help you get back in:', 'এই মুহূর্তে রিসেট ইমেইল পাঠানো যাচ্ছে না। সাপোর্টে যোগাযোগ করুন, আমরা অ্যাকাউন্ট ফিরে পেতে সাহায্য করব:')}{' '}
+              <a href={`mailto:${cfg.supportEmail}?subject=${encodeURIComponent('Password reset — QUIZ WAR')}`}>{cfg.supportEmail}</a>
+            </span>
+          </div>
         )}
         {kind === 'forgot' ? (
           <div className="field">

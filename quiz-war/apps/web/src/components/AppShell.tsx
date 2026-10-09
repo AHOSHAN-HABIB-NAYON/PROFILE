@@ -52,7 +52,24 @@ function ActiveMatch() {
   const cfg = useConfig().data;
   const [dismissed, setDismissed] = useState<string | null>(null);
   const [leaving, setLeaving] = useState(false);
-  if (!matchId || loc.pathname.startsWith('/match/') || loc.pathname.startsWith('/war-room/')) return null;
+  const [checked, setChecked] = useState<string | null>(null);
+  // The id can be stale (match ended while the app was closed): confirm with the server first.
+  useEffect(() => {
+    if (!matchId || checked === matchId) return;
+    let alive = true;
+    emit('match:resume', { matchId })
+      .then((r: any) => {
+        if (!alive) return;
+        const st = r?.snapshot?.state;
+        if (!r?.snapshot || st === 'finished' || st === 'aborted' || st === 'lobby') useAuth.setState({ activeMatchId: null });
+        else setChecked(matchId);
+      })
+      .catch(() => alive && useAuth.setState({ activeMatchId: null }));
+    return () => {
+      alive = false;
+    };
+  }, [matchId, checked]);
+  if (!matchId || checked !== matchId || loc.pathname.startsWith('/match/') || loc.pathname.startsWith('/war-room/')) return null;
   const pen = cfg?.game.penalties;
   const open = dismissed !== matchId;
   return (
@@ -72,12 +89,12 @@ function ActiveMatch() {
           <button
             className="btn outline"
             disabled={leaving}
-            onClick={async () => {
+            onClick={() => {
+              // Close at once; the forfeit is sent in the background.
               setLeaving(true);
-              await emit('match:forfeit', { matchId }).catch(() => undefined);
               useAuth.setState({ activeMatchId: null });
               useGame.getState().reset();
-              setLeaving(false);
+              void emit('match:forfeit', { matchId }).catch(() => undefined).finally(() => setLeaving(false));
             }}
           >
             {t('Leave match', 'ম্যাচ ছেড়ে দিন')}

@@ -7,6 +7,7 @@ import { AppShell } from './components/AppShell';
 import { Empty, Skeleton } from './components/Feedback';
 import { Icon } from './components/Icon';
 import { NativeExtras } from './components/NativeExtras';
+import { OpenInApp } from './components/OpenInApp';
 import { Splash } from './components/Splash';
 import { Toasts } from './components/Toasts';
 import { IncomingInvites } from './components/Invites';
@@ -266,6 +267,7 @@ export function App() {
   return (
     <>
       <Toasts />
+      {!splash && <OpenInApp />}
       {splash && <Splash ready={status !== 'loading'} onDone={() => {
             try {
               sessionStorage.setItem('qw-splash', '1');

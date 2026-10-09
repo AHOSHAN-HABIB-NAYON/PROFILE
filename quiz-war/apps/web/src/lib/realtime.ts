@@ -52,10 +52,10 @@ export function registerRealtime() {
         haptic(mine.correct ? 'success' : 'error');
       }
     });
-    s.on('match:player', ({ matchId, userId, connected }) => {
+    s.on('match:player', ({ matchId, userId, connected, graceUntil }) => {
       const g = useGame.getState();
       if (g.matchId !== matchId || !g.snapshot) return;
-      g.set({ snapshot: { ...g.snapshot, players: g.snapshot.players.map((p) => (p.userId === userId ? { ...p, connected } : p)) } });
+      g.set({ snapshot: { ...g.snapshot, players: g.snapshot.players.map((p) => (p.userId === userId ? { ...p, connected, graceUntil: connected ? null : graceUntil } : p)) } });
     });
     s.on('match:end', (end) => {
       const g = useGame.getState();

@@ -10,6 +10,7 @@ import { CountUp, Empty } from '../components/Feedback';
 import { useLeagues } from '../components/Game';
 import { Icon, IconTile, achievementIcon, type IconName } from '../components/Icon';
 import { LeagueEmblem, RankMedal } from '../components/LeagueEmblem';
+import { DIFFICULTY_INFO } from '../components/MatchOptions';
 import { useConfig } from '../hooks/queries';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -142,6 +143,20 @@ export default function Result() {
   const view = (uid: number) => players.find((p) => p.userId === uid);
   const nameOf = (uid: number, isBot: boolean) => view(uid)?.username ?? (isBot ? t('AI player', 'এআই প্লেয়ার') : t('Player', 'প্লেয়ার'));
 
+  const snapInfo: any = snap ?? remote.data?.snapshot ?? null;
+  /** Facts for the share card and share text: category, questions, accuracy, difficulty. */
+  const cardDetails = () => {
+    if (!end) return [];
+    const out: { label: string; value: string }[] = [];
+    out.push({ label: t('Category', 'ক্যাটাগরি'), value: snapInfo?.category?.name ?? t('Mixed', 'মিশ্র') });
+    const total = mine?.answered ?? 0;
+    out.push({ label: t('Questions', 'প্রশ্ন'), value: num(snapInfo?.questionCount ?? total, lang) });
+    if (total > 0) out.push({ label: t('Accuracy', 'সঠিকতা'), value: `${num(Math.round(((mine?.correct ?? 0) / total) * 100), lang)}%` });
+    const diff = snapInfo?.difficulty as keyof typeof DIFFICULTY_INFO | null | undefined;
+    if (diff) out.push({ label: t('Difficulty', 'কঠিনতা'), value: t(DIFFICULTY_INFO[diff].en, DIFFICULTY_INFO[diff].bn) });
+    else if (mine?.avgResponseMs) out.push({ label: t('Avg. time', 'গড় সময়'), value: `${num((mine.avgResponseMs / 1000).toFixed(1), lang)}${t('s', ' সে')}` });
+    return out;
+  };
   // Build the branded share card in the background as soon as the result is known.
   useEffect(() => {
     if (!end) return;
@@ -167,6 +182,7 @@ export default function Result() {
       outcome,
       headline: title,
       subline: `${modeLabel(end.mode)}${end.type === 'ai' ? ` · ${t('vs AI', 'এআই-এর সাথে')}` : end.ranked ? ` · ${t('Ranked', 'র‍্যাংকড')}` : ''}`,
+      details: cardDetails(),
       date,
       teamScores: end.teamScores,
       teams: MODES[end.mode].teams,
@@ -200,10 +216,20 @@ export default function Result() {
 
   const ratingDelta = mine?.ratingAfter != null && mine.ratingBefore != null ? mine.ratingAfter - mine.ratingBefore : null;
   const fileName = `quizwar-result-${id.slice(0, 8)}.png`;
-  const shareText =
+  const factsLine = cardDetails().map((f) => `${f.label}: ${f.value}`).join(' · ');
+  const headline =
     outcome === 'win'
-      ? t(`I won a ${modeLabel(end.mode)} battle on QUIZ WAR Bangladesh with ${mine?.score ?? 0} points! Can you beat me? UID: ${me.uid}`, `QUIZ WAR Bangladesh-এ ${modeLabel(end.mode)} ব্যাটলে ${num(mine?.score ?? 0)} পয়েন্ট নিয়ে জিতেছি! পারলে আমাকে হারাও। UID: ${me.uid}`)
-      : t(`I scored ${mine?.score ?? 0} points in ${modeLabel(end.mode)} on QUIZ WAR Bangladesh. Play with me! UID: ${me.uid}`, `QUIZ WAR Bangladesh-এ ${modeLabel(end.mode)}-এ ${num(mine?.score ?? 0)} পয়েন্ট পেয়েছি। আমার সাথে খেলো! UID: ${me.uid}`);
+      ? t(`I won a ${modeLabel(end.mode)} battle on QUIZ WAR Bangladesh with ${mine?.score ?? 0} points!`, `QUIZ WAR Bangladesh-এ ${modeLabel(end.mode)} ব্যাটলে ${num(mine?.score ?? 0)} পয়েন্ট নিয়ে জিতেছি!`)
+      : t(`I scored ${mine?.score ?? 0} points in ${modeLabel(end.mode)} on QUIZ WAR Bangladesh.`, `QUIZ WAR Bangladesh-এ ${modeLabel(end.mode)}-এ ${num(mine?.score ?? 0)} পয়েন্ট পেয়েছি।`);
+  const shareText = [
+    headline,
+    factsLine,
+    outcome === 'win' ? t('Can you beat me?', 'পারলে আমাকে হারাও!') : t('Play with me!', 'আমার সাথে খেলো!'),
+    `UID: ${me.uid}`,
+    '#QuizWarBangladesh #QUIZWAR',
+  ]
+    .filter(Boolean)
+    .join('\n');
 
   const doShare = async () => {
     haptic('tap');
@@ -244,13 +270,33 @@ export default function Result() {
         <HeroEmblem outcome={outcome} />
         <h1>{title}</h1>
         <p>{sub}</p>
-        {teams > 1 && (
-          <div className="rh-score num" aria-label={t('Team score', 'দলের স্কোর')}>
-            <span>{num(end.teamScores[mine?.team ?? 0] ?? 0, lang)}</span>
-            <i>:</i>
-            <span>{num(end.teamScores.find((_, i) => i !== (mine?.team ?? 0)) ?? 0, lang)}</span>
-          </div>
-        )}
+        {teams > 1 && (() => {
+          const myTeam = mine?.team ?? 0;
+          const best = (team: number) => [...end.players].filter((p) => p.team === team).sort((a, b) => b.score - a.score)[0];
+          const meP = mine ?? best(myTeam);
+          const opp = best(myTeam === 0 ? 1 : 0);
+          const side = (p: typeof meP | undefined, team: number, mineSide: boolean) => {
+            const v = p ? view(p.userId) : undefined;
+            const won = end.winnerTeam === team;
+            return (
+              <div className={`vs-side ${won ? 'won' : ''} ${mineSide ? 'me' : 'opp'}`}>
+                <span className="vs-ava">
+                  {won && <Icon name="crown" size={26} className="vs-crown" />}
+                  <Avatar name={p ? nameOf(p.userId, p.isBot) : '?'} src={p && p.userId === me.id ? me.avatarUrl : v?.avatarUrl} size={64} bot={p?.isBot} />
+                </span>
+                <b className="ellipsis">{mineSide ? t('You', 'আপনি') : p ? nameOf(p.userId, p.isBot) : t('Opponent', 'প্রতিপক্ষ')}{MODES[end.mode].teamSize > 1 ? ` +${num(MODES[end.mode].teamSize - 1, lang)}` : ''}</b>
+                <span className="vs-pts num"><CountUp value={end.teamScores[team] ?? 0} /></span>
+              </div>
+            );
+          };
+          return (
+            <div className="rh-versus" aria-label={t('Team score', 'দলের স্কোর')}>
+              {side(meP, myTeam, true)}
+              <span className="vs-mid">VS</span>
+              {side(opp, myTeam === 0 ? 1 : 0, false)}
+            </div>
+          );
+        })()}
         <div className="gain-row">
           <div className="gain"><Icon name="xp" size={22} /><b>+<CountUp value={mine?.xpGained ?? 0} /></b><span>XP</span></div>
           <div className="gain"><Icon name="coin" size={22} /><b>+<CountUp value={mine?.coinsGained ?? 0} /></b><span>{t('Coins', 'কয়েন')}</span></div>
@@ -316,7 +362,7 @@ export default function Result() {
                 <p className="xs muted">
                   {!p.isBot && (p.userId === me.id ? me.uid : v?.uid) ? `${p.userId === me.id ? me.uid : v?.uid} · ` : ''}
                   {t(`${p.correct}/${p.answered} correct`, `${num(p.correct, lang)}/${num(p.answered, lang)} সঠিক`)}
-                  {p.avgResponseMs ? ` · ${num((p.avgResponseMs / 1000).toFixed(1), lang)}s` : ''}
+                  {p.avgResponseMs ? ` · ${num((p.avgResponseMs / 1000).toFixed(1), lang)}${t('s', ' সে')}` : ''}
                 </p>
               </div>
               <b className="num lb-score">{num(p.score, lang)}</b>

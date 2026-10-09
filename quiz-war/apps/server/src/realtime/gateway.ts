@@ -1,8 +1,10 @@
 import type { Server as HttpServer } from 'node:http';
 import { createAdapter } from '@socket.io/redis-adapter';
 import {
+  AI_LEVEL_DIFFICULTY,
   AI_LEVELS,
   DIFFICULTIES,
+  type Difficulty,
   MODES,
   POWER_UPS,
   type ClientToServerEvents,
@@ -32,14 +34,28 @@ const schemas = {
   presence: z.object({ status: z.enum(['online', 'away', 'dnd']).optional(), available: z.boolean().optional() }),
   mmJoin: z.object({ mode: modeKey, ranked: z.boolean(), categoryId: z.number().int().positive().nullish() }),
   aiLevel: z.object({ level: z.enum(AI_LEVELS).optional() }),
-  aiStart: z.object({ mode: modeKey.optional(), level: z.enum(AI_LEVELS), categoryId: z.number().int().positive().nullish(), tutorial: z.boolean().optional() }),
+  aiStart: z.object({
+    mode: modeKey.optional(),
+    level: z.enum(AI_LEVELS),
+    categoryId: z.number().int().positive().nullish(),
+    tutorial: z.boolean().optional(),
+    questionCount: z.number().int().min(3).max(50).nullish(),
+  }),
   soloStart: z.object({
     mode: z.enum(['solo', 'survival', 'speed', 'daily']),
     categoryId: z.number().int().positive().nullish(),
     difficulty: z.enum(DIFFICULTIES).nullish(),
     practiceMistakes: z.boolean().optional(),
+    questionCount: z.number().int().min(3).max(50).nullish(),
   }),
-  roomCreate: z.object({ mode: modeKey, categoryId: z.number().int().positive().nullish(), questionCount: z.number().int().min(3).max(50).optional(), squadId: z.number().int().positive().nullish() }),
+  roomCreate: z.object({
+    mode: modeKey,
+    categoryId: z.number().int().positive().nullish(),
+    questionCount: z.number().int().min(3).max(50).optional(),
+    difficulty: z.enum(DIFFICULTIES).nullish(),
+    questionTimeSec: z.number().int().min(3).max(60).nullish(),
+    squadId: z.number().int().positive().nullish(),
+  }),
   roomJoin: z.object({ matchId, team: z.number().int().min(0).max(7).optional() }),
   ready: z.object({ matchId, ready: z.boolean() }),
   matchOnly: z.object({ matchId }),
@@ -164,6 +180,15 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
     };
 
     const category = async (id: number | null | undefined) => (id ? await ctx.categories.get(id) : null);
+    /** Chosen difficulty → only those questions and the admin-set time per question (hard = less time). */
+    const difficultyOptions = (difficulty: Difficulty | null, questionCount?: number | null, questionTimeSec?: number | null) => {
+      const m = ctx.settings.game().match;
+      return {
+        difficulties: difficulty ? [difficulty] : null,
+        questionCount: questionCount ?? undefined,
+        questionTimeSec: questionTimeSec ?? (difficulty ? m.difficultyTimeSec[difficulty] : undefined),
+      };
+    };
 
     socket.on('presence:set', async (p) => {
       if (!allow(socket)) return;
@@ -229,7 +254,7 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
           category: await category(p.categoryId),
           players: [{ ...id, team: 0 }],
           bots,
-          questionCount: p.tutorial ? 5 : undefined,
+          ...(p.tutorial ? { questionCount: 5 } : difficultyOptions(AI_LEVEL_DIFFICULTY[p.level], p.questionCount)),
           autoStart: true,
         });
         return { matchId: m.id };
@@ -251,7 +276,7 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
           source: 'solo',
           categoryId: p.categoryId ?? null,
           category: await category(p.categoryId),
-          difficulties: difficulty ? [difficulty] : null,
+          ...(p.mode === 'solo' ? difficultyOptions(difficulty, p.questionCount) : { difficulties: difficulty ? [difficulty] : null }),
           practiceMistakesOf: p.practiceMistakes ? userId : null,
           players: [{ ...id, team: 0 }],
           autoStart: true,
@@ -275,7 +300,7 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
           source: 'room',
           categoryId: p.categoryId ?? null,
           category: await category(p.categoryId),
-          questionCount: p.questionCount,
+          ...difficultyOptions(p.difficulty ?? null, p.questionCount ?? null, p.questionTimeSec ?? null),
           squadId: p.squadId ?? null,
           hostUserId: userId,
           players: [{ ...id, team: 0 }],

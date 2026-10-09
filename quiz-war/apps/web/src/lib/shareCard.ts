@@ -23,6 +23,8 @@ export interface ResultCardData {
   outcome: 'win' | 'loss' | 'draw' | 'solo';
   headline: string;
   subline: string;
+  /** Short facts shown as pills under the headline (category, questions, accuracy…). */
+  details?: { label: string; value: string }[];
   date: string;
   teamScores: number[];
   teams: number;
@@ -194,6 +196,37 @@ export async function renderResultCard(d: ResultCardData): Promise<Blob | null> 
 
   // Team score line for battles.
   let y = 470;
+  if (d.details?.length) {
+    // Fact pills: what was played, so the image stands on its own on social media.
+    let px = 64;
+    const py = 430;
+    for (const f of d.details.slice(0, 4)) {
+      x.font = F(700, 24);
+      const v = fitText(x, f.value, 260);
+      x.font = F(600, 20);
+      const l = fitText(x, f.label, 200);
+      x.font = F(700, 24);
+      const vw = x.measureText(v).width;
+      x.font = F(600, 20);
+      const lw = x.measureText(l).width;
+      const w = Math.max(vw, lw) + 32;
+      if (px + w > W - 64) break;
+      roundRect(x, px, py, w, 62, 16);
+      x.fillStyle = 'rgba(255,255,255,.1)';
+      x.fill();
+      x.strokeStyle = 'rgba(255,255,255,.16)';
+      x.lineWidth = 1.5;
+      x.stroke();
+      x.fillStyle = 'rgba(255,255,255,.65)';
+      x.font = F(600, 20);
+      x.fillText(l, px + 16, py + 24);
+      x.fillStyle = '#fff';
+      x.font = F(700, 24);
+      x.fillText(v, px + 16, py + 52);
+      px += w + 12;
+    }
+    y = 512;
+  }
   if (d.teams > 1) {
     const [a, b] = [d.teamScores[d.myTeam] ?? 0, d.teamScores.find((_, i) => i !== d.myTeam) ?? 0];
     roundRect(x, 64, y, W - 128, 120, 28);

@@ -867,6 +867,16 @@ export class GameEngine {
     p.lastReactionAt = now;
     p.reactions++;
     this.d.emitter.toMatch(m.id, 'match:reaction', { matchId: m.id, userId, team: p.team, reaction });
+    // AI opponents sometimes answer back, so reactions feel alive in AI battles too.
+    const bots = m.players.filter((b) => b.isBot && b.team !== p.team);
+    if (bots.length && this.rnd() < 0.4) {
+      const bot = bots[Math.floor(this.rnd() * bots.length)];
+      const replies = ['😎', '😂', '🤔', '😤', '👍', '🔥', '😅'];
+      this.schedule(m, 700 + this.rnd() * 900, () => {
+        if (m.state === 'finished' || m.state === 'aborted') return;
+        this.d.emitter.toMatch(m.id, 'match:reaction', { matchId: m.id, userId: bot.userId, team: bot.team, reaction: replies[Math.floor(this.rnd() * replies.length)] });
+      });
+    }
   }
 
   /** Admin action. */
@@ -908,6 +918,7 @@ export class GameEngine {
       botLevel: p.botLevel,
       ready: p.ready,
       connected: p.connected,
+        graceUntil: p.connected ? null : p.graceUntil,
       score: p.score,
       combo: p.combo,
       correct: p.correct,
@@ -934,6 +945,7 @@ export class GameEngine {
       category: m.category,
       questionCount: m.questionCount,
       questionTimeSec: m.questionTimeMs / 1000,
+      difficulty: m.difficulties?.length === 1 ? m.difficulties[0] : null,
       players,
       teamScores: this.teamScores(m),
       currentQuestion: inQuestion ? { ...this.publicQuestion(m, m.currentIndex), deadline: me?.roundDeadline ?? m.roundDeadline } : null,

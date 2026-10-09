@@ -23,7 +23,9 @@ export async function userRoutes(app: FastifyInstance, ctx: AppContext) {
     if (!me) throw notFound('Account not found');
     const squad = await ctx.squads.membership(me.id);
     const live = ctx.engine.activeMatchOf(me.id);
-    return { user: me, squadId: squad?.squad_id ?? null, activeMatchId: live?.id ?? null };
+    // A War Room still in its lobby is not a running match — the app shows it as an open room instead.
+    const inLobby = live?.state === 'lobby';
+    return { user: me, squadId: squad?.squad_id ?? null, activeMatchId: live && !inLobby ? live.id : null, openRoomId: inLobby ? live!.id : null };
   });
 
   app.post('/me/onboarding', auth, async (req) => {

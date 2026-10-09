@@ -2,7 +2,7 @@ import { App as CapApp } from '@capacitor/app';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
 import { useConfig } from '../hooks/queries';
-import { api } from '../lib/api';
+import { api, friendlyError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useT } from '../lib/i18n';
 import { appVersionCode, isNative } from '../lib/platform';
@@ -125,6 +125,91 @@ function PushExplainer() {
   );
 }
 
+/** Unverified email: a friendly popup (at most once a day) with "resend"; closes itself once verified. */
+export function VerifyEmailPrompt() {
+  const t = useT();
+  const cfg = useConfig().data;
+  const user = useAuth((s) => s.user);
+  const loc = useLocation();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [cool, setCool] = useState(0);
+  const need = !!(cfg?.emailEnabled && user?.email && !user.emailVerified);
+  const inGame = /^\/(match|war-room|matchmaking|result)\//.test(loc.pathname) || loc.pathname === '/matchmaking';
+
+  useEffect(() => {
+    if (!need || inGame) return;
+    const key = 'qw-verify-asked';
+    const today = new Date().toDateString();
+    let asked: string | null = null;
+    try {
+      asked = localStorage.getItem(key);
+    } catch {
+      /* ignore */
+    }
+    if (asked === today) return;
+    const id = setTimeout(() => {
+      setOpen(true);
+      try {
+        localStorage.setItem(key, today);
+      } catch {
+        /* ignore */
+      }
+    }, 3500);
+    return () => clearTimeout(id);
+  }, [need, inGame]);
+
+  // While open, notice when the link was clicked (in the mail app / browser).
+  useEffect(() => {
+    if (!open) return;
+    const id = setInterval(() => void useAuth.getState().loadMe().catch(() => undefined), 8000);
+    return () => clearInterval(id);
+  }, [open]);
+  useEffect(() => {
+    if (open && user?.emailVerified) {
+      setOpen(false);
+      toast.success(t('Email verified', 'ইমেইল নিশ্চিত হয়েছে'), t('Thanks! Your account is secured.', 'ধন্যবাদ! আপনার অ্যাকাউন্ট সুরক্ষিত।'), 'verified');
+    }
+  }, [open, user?.emailVerified, t]);
+  useEffect(() => {
+    if (cool <= 0) return;
+    const id = setTimeout(() => setCool((c) => c - 1), 1000);
+    return () => clearTimeout(id);
+  }, [cool]);
+
+  const resend = async () => {
+    setBusy(true);
+    try {
+      await api('/auth/resend-verification', { method: 'POST' });
+      setCool(60);
+      toast.success(t('Email sent', 'ইমেইল পাঠানো হয়েছে'), user?.email ?? undefined, 'mail');
+    } catch (e) {
+      toast.error(t('Could not send', 'পাঠানো যায়নি'), friendlyError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!need) return null;
+  return (
+    <Modal open={open} onClose={() => setOpen(false)} label={t('Verify your email', 'ইমেইল নিশ্চিত করুন')}>
+      <div className="m-art"><IconTile name="mail" tone="primary" size={72} anim="float" /></div>
+      <h2>{t('Verify your email', 'ইমেইল নিশ্চিত করুন')}</h2>
+      <p>
+        {t('We sent a link to', 'আমরা একটি লিংক পাঠিয়েছি')} <b>{user?.email}</b>
+        {t('. Tap it to secure your account and recover it if you forget your password.', '-এ। লিংকে চাপ দিলে অ্যাকাউন্ট সুরক্ষিত হবে আর পাসওয়ার্ড ভুলে গেলেও ফিরে পাবেন।')}
+      </p>
+      <p className="xs faint" style={{ marginTop: 8 }}>{t('Not in your inbox? Check Spam or Promotions.', 'ইনবক্সে না পেলে Spam বা Promotions ফোল্ডার দেখুন।')}</p>
+      <div className="modal-actions">
+        <button className="btn outline" onClick={() => setOpen(false)}>{t('Later', 'পরে')}</button>
+        <button className="btn primary" disabled={busy || cool > 0} onClick={() => void resend()}>
+          {busy ? <span className="spinner" /> : <Icon name="mail" />} {cool > 0 ? t(`Resend in ${cool}s`, `${cool} সেকেন্ড পর আবার`) : t('Resend email', 'আবার পাঠান')}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
 /** App-wide extras for signed-in players: music sources, language sync, update + permission prompts. */
 export function NativeExtras() {
   const cfg = useConfig().data;
@@ -154,6 +239,7 @@ export function NativeExtras() {
     <>
       <UpdatePrompt />
       <PushExplainer />
+      <VerifyEmailPrompt />
     </>
   );
 }

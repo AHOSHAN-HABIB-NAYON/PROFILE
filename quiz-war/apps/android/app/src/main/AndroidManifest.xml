@@ -35,10 +35,27 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="${appLinkHost}" />
+                <!-- Every player-facing page opens in the app when it is installed (admin stays in the browser). -->
+                <data android:path="/" />
                 <data android:pathPrefix="/u/" />
                 <data android:pathPrefix="/war-room/" />
-                <data android:pathPrefix="/squads/" />
+                <data android:pathPrefix="/squads" />
                 <data android:pathPrefix="/battle" />
+                <data android:pathPrefix="/match/" />
+                <data android:pathPrefix="/result/" />
+                <data android:pathPrefix="/review/" />
+                <data android:pathPrefix="/rank" />
+                <data android:pathPrefix="/friends" />
+                <data android:pathPrefix="/profile" />
+                <data android:pathPrefix="/shop" />
+                <data android:pathPrefix="/notifications" />
+                <data android:pathPrefix="/history" />
+                <data android:pathPrefix="/settings" />
+                <data android:pathPrefix="/about" />
+                <data android:pathPrefix="/login" />
+                <data android:pathPrefix="/register" />
+                <data android:pathPrefix="/reset-password" />
+                <data android:pathPrefix="/verify-email" />
             </intent-filter>
 
             <!-- Custom scheme fallback, e.g. quizwar://u/QW-8F29K7 -->

@@ -2,6 +2,8 @@ export const DIFFICULTIES = ['easy', 'medium', 'hard', 'expert'] as const;
 export type Difficulty = (typeof DIFFICULTIES)[number];
 
 export const AI_LEVELS = ['easy', 'normal', 'hard', 'expert'] as const;
+/** AI strength also sets how hard the questions are (and so how much time each one gets). */
+export const AI_LEVEL_DIFFICULTY = { easy: 'easy', normal: 'medium', hard: 'hard', expert: 'expert' } as const;
 export type AiLevel = (typeof AI_LEVELS)[number];
 
 export const PRESENCE_STATUSES = ['online', 'away', 'in_match', 'offline', 'dnd'] as const;
@@ -81,5 +83,6 @@ export interface ApiErrorBody {
 }
 
 /** In-match reactions players can send (rendered as animated stickers). */
-export const MATCH_REACTIONS = ['👍', '🔥', '😂', '😮', '👏', '💪', '😅', '🤝'] as const;
+/** In-match mood reactions (the only place emoji are used in the UI). */
+export const MATCH_REACTIONS = ['😀', '😂', '😍', '😎', '🤔', '😮', '😱', '😅', '😢', '😭', '😡', '😤', '👍', '👏', '🔥', '💪', '🤝', '🙏', '❤️', '🎉'] as const;
 export type MatchReaction = (typeof MATCH_REACTIONS)[number];

@@ -1,4 +1,4 @@
-import type { PublicUser } from '@quizwar/shared';
+import type { Difficulty, PublicUser } from '@quizwar/shared';
 import { useState } from 'react';
 import { api, friendlyError } from '../lib/api';
 import { num, useLang, useT } from '../lib/i18n';
@@ -8,13 +8,16 @@ import { toast } from '../lib/toast';
 import { Avatar } from './Avatar';
 import { CategoryPicker } from './CategoryPicker';
 import { Icon } from './Icon';
+import { CountPicker, DifficultyPicker, MatchSummary, useMatchOptions } from './MatchOptions';
 import { Sheet } from './Sheet';
 
 export function ChallengeSheet({ target, onClose }: { target: PublicUser | null; onClose: () => void }) {
   const t = useT();
   const lang = useLang();
   const [category, setCategory] = useState<number | null>(null);
+  const opts = useMatchOptions();
   const [count, setCount] = useState(15);
+  const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
   const [busy, setBusy] = useState(false);
   return (
     <Sheet open={!!target} onClose={onClose} title={t('Send a challenge', 'চ্যালেঞ্জ পাঠান')} icon="swords">
@@ -30,20 +33,16 @@ export function ChallengeSheet({ target, onClose }: { target: PublicUser | null;
           </div>
           <div className="section-label" style={{ marginTop: 8 }}>{t('Category', 'ক্যাটাগরি')}</div>
           <CategoryPicker value={category} onChange={setCategory} />
-          <div className="section-label">{t('Questions', 'প্রশ্নের সংখ্যা')}</div>
-          <div className="tabs" role="radiogroup" aria-label={t('Questions', 'প্রশ্নের সংখ্যা')}>
-            {[5, 10, 15, 20].map((n) => (
-              <button key={n} role="radio" aria-checked={count === n} aria-selected={count === n} onClick={() => setCount(n)}>{num(n, lang)}</button>
-            ))}
-          </div>
-          <p className="xs muted">{t(`Friendly unranked battle · ${count} questions`, `বন্ধুত্বপূর্ণ আনর‍্যাংকড ব্যাটল · ${num(count, lang)}টি প্রশ্ন`)}</p>
+          <CountPicker value={count} onChange={setCount} />
+          <DifficultyPicker value={difficulty} onChange={setDifficulty} />
+          <MatchSummary count={count} difficulty={difficulty} seconds={opts.timeFor(difficulty)} />
           <button
             className="btn primary lg block"
             disabled={busy}
             onClick={async () => {
               setBusy(true);
               try {
-                await api('/battles/requests', { body: { userId: target.id, categoryId: category, questionCount: count } });
+                await api('/battles/requests', { body: { userId: target.id, categoryId: category, questionCount: count, difficulty } });
                 sfx('start');
                 haptic('success');
                 toast.success(t('Challenge sent!', 'চ্যালেঞ্জ পাঠানো হয়েছে!'), t(`Waiting for ${target.username} to accept…`, `${target.username}-এর উত্তরের অপেক্ষায়…`), 'swords');

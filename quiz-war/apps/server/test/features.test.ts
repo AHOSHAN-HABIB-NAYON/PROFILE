@@ -316,6 +316,27 @@ d('Features (MySQL)', () => {
     });
   });
 
+  describe('question count and difficulty', () => {
+    it('fills a hard match from neighbouring levels when the bank is short, hardest first', async () => {
+      const all = await queryOne<{ n: number }>(`SELECT COUNT(*) n FROM questions q JOIN categories c ON c.id = q.category_id WHERE q.is_active = 1 AND q.review_status = 'approved' AND q.deleted_at IS NULL AND c.is_active = 1`);
+      const want = Math.min(12, Number(all!.n));
+      const picked = await t.ctx.questionSource.pick({ categoryId: null, count: want, userIds: [], difficulties: ['expert'] });
+      expect(picked).toHaveLength(want);
+      const experts = Number((await queryOne<{ n: number }>(`SELECT COUNT(*) n FROM questions WHERE difficulty = 'expert' AND is_active = 1 AND review_status = 'approved' AND deleted_at IS NULL`))!.n);
+      expect(picked.filter((q) => q.difficulty === 'expert').length).toBe(Math.min(experts, want));
+      expect(new Set(picked.map((q) => q.id)).size).toBe(picked.length);
+    });
+
+    it('/me reports an open War Room separately from a running match', async () => {
+      const p = await newPlayer('roomie');
+      const m = await t.ctx.engine.createMatch({ mode: 'duo', source: 'room', players: [{ userId: p.id, username: 'roomie', uid: null, avatarUrl: null, level: 1, rating: 1000, team: 0 }] });
+      const me = await api('GET', '/me', undefined, p.token);
+      expect(me.body.activeMatchId).toBeNull();
+      expect(me.body.openRoomId).toBe(m.id);
+      await t.ctx.engine.leaveLobby(m.id, p.id);
+    });
+  });
+
   describe('uploads survive a redeploy', () => {
     it('keeps a database copy and restores wiped files on sync and on request', async () => {
       const { rm, readFile } = await import('node:fs/promises');

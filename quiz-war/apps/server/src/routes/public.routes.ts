@@ -1,3 +1,4 @@
+import { SmtpMailer } from '../modules/auth/mailer';
 import { normalizeUid, type PublicConfig } from '@quizwar/shared';
 import type { FastifyInstance } from 'fastify';
 import type { AppContext } from '../context';
@@ -15,6 +16,7 @@ export async function publicRoutes(app: FastifyInstance, ctx: AppContext, static
       game: { match: g.match, powerUps: g.powerUps, levels: g.levels, penalties: g.penalties, leagues: g.ranked.leagues, aiEnabled: g.ai.enabled },
       googleClientId: ctx.env.GOOGLE_CLIENT_ID ?? null,
       vapidPublicKey: ctx.env.VAPID_PUBLIC_KEY ?? null,
+      emailEnabled: ctx.mailer instanceof SmtpMailer,
     };
   });
 

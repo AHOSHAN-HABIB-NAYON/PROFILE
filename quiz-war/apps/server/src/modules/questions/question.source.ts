@@ -26,7 +26,23 @@ function shuffle<T>(arr: T[], rnd = Math.random): T[] {
  * memorised or shared.
  */
 export class MysqlQuestionSource implements QuestionSource {
+  /** Picks at the requested difficulty; if the bank is too small there, fills up from the closest levels. */
   async pick(o: PickOptions): Promise<EngineQuestion[]> {
+    const first = await this.pickExact(o);
+    if (!o.difficulties?.length || o.mistakesOfUserId || first.length >= o.count) return first;
+    const order: Difficulty[] = ['easy', 'medium', 'hard', 'expert'];
+    const wanted = Math.max(...o.difficulties.map((d) => order.indexOf(d)));
+    const rest = order.filter((d) => !o.difficulties!.includes(d)).sort((a, b) => Math.abs(order.indexOf(a) - wanted) - Math.abs(order.indexOf(b) - wanted));
+    let out = first;
+    for (const d of rest) {
+      if (out.length >= o.count) break;
+      const more = await this.pickExact({ ...o, difficulties: [d], count: o.count - out.length, excludeIds: [...(o.excludeIds ?? []), ...out.map((q) => q.id)] });
+      out = out.concat(more);
+    }
+    return out;
+  }
+
+  private async pickExact(o: PickOptions): Promise<EngineQuestion[]> {
     let ids: number[];
     if (o.mistakesOfUserId) {
       const rows = await query<{ question_id: number }>(

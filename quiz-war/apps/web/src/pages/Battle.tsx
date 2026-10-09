@@ -1,4 +1,4 @@
-import { AI_LEVELS, type AiLevel, type BattleRequestView, type Difficulty } from '@quizwar/shared';
+import { AI_LEVEL_DIFFICULTY, AI_LEVELS, type AiLevel, type BattleRequestView, type Difficulty } from '@quizwar/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router';
@@ -7,6 +7,7 @@ import { Avatar } from '../components/Avatar';
 import { CategoryPicker } from '../components/CategoryPicker';
 import { Empty, ListSkeleton } from '../components/Feedback';
 import { categoryIcon, Icon, IconTile, type IconName } from '../components/Icon';
+import { CountPicker, DifficultyPicker, MatchSummary, useMatchOptions } from '../components/MatchOptions';
 import { PullToRefresh } from '../components/PullToRefresh';
 import { api, friendlyError } from '../lib/api';
 import { useGame } from '../lib/game';
@@ -22,7 +23,6 @@ const AI_INFO: Record<AiLevel, { icon: IconName; tone: 'success' | 'primary' | '
   hard: { icon: 'bolt', tone: 'warning', en: 'Hard', bn: 'কঠিন' },
   expert: { icon: 'brain', tone: 'danger', en: 'Expert', bn: 'এক্সপার্ট' },
 };
-const DIFF_LABEL: Record<string, [string, string]> = { any: ['Any', 'যেকোনো'], easy: ['Easy', 'সহজ'], medium: ['Medium', 'মাঝারি'], hard: ['Hard', 'কঠিন'], expert: ['Expert', 'এক্সপার্ট'] };
 
 function useStart() {
   const nav = useNavigate();
@@ -129,6 +129,12 @@ export default function Battle({ tab: initialTab }: { tab?: 'play' | 'requests' 
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
   const [roomMode, setRoomMode] = useState<'duel' | 'duo' | 'trio' | 'squad'>('duo');
   const [joinCode, setJoinCode] = useState('');
+  const opts = useMatchOptions();
+  const [aiCount, setAiCount] = useState(opts.defaultCount);
+  const [soloCount, setSoloCount] = useState(10);
+  const [roomCount, setRoomCount] = useState(opts.defaultCount);
+  const [roomDiff, setRoomDiff] = useState<Difficulty | null>(null);
+  const [roomTime, setRoomTime] = useState<number | null>(null);
   const { busy, start } = useStart();
   const daily = useQuery({ queryKey: ['daily'], queryFn: () => api('/daily') });
   const stats = useQuery({ queryKey: ['my-stats'], queryFn: () => api('/me/stats'), staleTime: 120_000 });
@@ -179,7 +185,9 @@ export default function Battle({ tab: initialTab }: { tab?: 'play' | 'requests' 
                   </button>
                 ))}
               </div>
-              <button className="btn accent block mt" disabled={busy} onClick={() => void start('ai:start', { level, categoryId: category })}>
+              <CountPicker value={aiCount} onChange={setAiCount} />
+              <MatchSummary count={aiCount} difficulty={AI_LEVEL_DIFFICULTY[level]} seconds={opts.timeFor(AI_LEVEL_DIFFICULTY[level])} />
+              <button className="btn accent block mt" disabled={busy} onClick={() => void start('ai:start', { level, categoryId: category, questionCount: aiCount })}>
                 {busy ? <span className="spinner" /> : <Icon name="bot" />} {t(`Battle ${AI_INFO[level].en} AI`, `${AI_INFO[level].bn} AI-এর সাথে লড়ুন`)}
               </button>
             </section>
@@ -207,15 +215,10 @@ export default function Battle({ tab: initialTab }: { tab?: 'play' | 'requests' 
 
             <section className="card" id="solo">
               <div className="card-title"><h2><IconTile name="brain" tone="success" size={34} /> {t('Solo practice', 'একা অনুশীলন')}</h2></div>
-              <div className="tabs" role="radiogroup" aria-label={t('Difficulty', 'কঠিনতা')}>
-                {([null, 'easy', 'medium', 'hard', 'expert'] as const).map((d) => (
-                  <button key={String(d)} role="radio" aria-checked={difficulty === d} aria-selected={difficulty === d} onClick={() => setDifficulty(d)}>
-                    {t(...(DIFF_LABEL[d ?? 'any'] as [string, string]))}
-                  </button>
-                ))}
-              </div>
-              <button className="btn soft block mt" disabled={busy} onClick={() => void start('solo:start', { mode: 'solo', categoryId: category, difficulty })}>
-                <Icon name="book-check" /> {t('Practice 10 questions', '১০টি প্রশ্ন অনুশীলন করুন')}
+              <DifficultyPicker value={difficulty} onChange={setDifficulty} />
+              <CountPicker value={soloCount} onChange={setSoloCount} />
+              <button className="btn soft block mt" disabled={busy} onClick={() => void start('solo:start', { mode: 'solo', categoryId: category, difficulty, questionCount: soloCount })}>
+                <Icon name="book-check" /> {t(`Practice ${soloCount} questions`, `${num(soloCount, lang)}টি প্রশ্ন অনুশীলন করুন`)}
               </button>
               {!!stats.data?.mistakesAvailable && (
                 <button className="btn outline block mt" disabled={busy} onClick={() => void start('solo:start', { mode: 'solo', practiceMistakes: true, categoryId: category })}>
@@ -257,7 +260,24 @@ export default function Battle({ tab: initialTab }: { tab?: 'play' | 'requests' 
                   </button>
                 ))}
               </div>
-              <button className="btn outline block mt" disabled={busy} onClick={() => void start('room:create', { mode: roomMode, categoryId: category })}>
+              <CountPicker value={roomCount} onChange={setRoomCount} />
+              <DifficultyPicker value={roomDiff} onChange={(d) => (setRoomDiff(d), setRoomTime(null))} />
+              <div className="opt-block">
+                <span className="opt-label"><Icon name="timer" size={14} /> {t('Time per question', 'প্রতি প্রশ্নে সময়')}</span>
+                <div className="opt-chips" role="radiogroup" aria-label={t('Time per question', 'প্রতি প্রশ্নে সময়')}>
+                  {[null, 4, 5, 8, 10, 15, 20, 30].map((sec) => (
+                    <button key={String(sec)} type="button" role="radio" aria-checked={roomTime === sec} className="select-chip" onClick={() => (haptic('tap'), setRoomTime(sec))}>
+                      {sec === null ? t('Auto', 'অটো') : `${num(sec, lang)}${t('s', 'সে')}`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <MatchSummary count={roomCount} difficulty={roomDiff} seconds={roomTime ?? opts.timeFor(roomDiff)} />
+              <button
+                className="btn outline block mt"
+                disabled={busy}
+                onClick={() => void start('room:create', { mode: roomMode, categoryId: category, questionCount: roomCount, difficulty: roomDiff, questionTimeSec: roomTime })}
+              >
                 <Icon name="plus" /> {t('Create war room', 'ওয়ার রুম তৈরি করুন')}
               </button>
               <form

@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router';
 import { Avatar } from '../components/Avatar';
 import { Empty } from '../components/Feedback';
 import { categoryIcon, Icon } from '../components/Icon';
+import { DIFFICULTY_INFO } from '../components/MatchOptions';
 import { friendlyError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useGame } from '../lib/game';
@@ -36,6 +37,18 @@ export default function WarRoom() {
   useEffect(() => {
     if (snap && snap.state !== 'lobby') nav(`/match/${id}`, { replace: true });
   }, [snap, id, nav]);
+
+  // Going back from a room that hasn't started closes your seat, so no ghost "match running" later.
+  useEffect(
+    () => () => {
+      const g = useGame.getState();
+      if (g.matchId === id && g.snapshot?.state === 'lobby') {
+        g.reset();
+        void emit('room:leave', { matchId: id }).catch(() => undefined);
+      }
+    },
+    [id],
+  );
 
   if (error)
     return (
@@ -77,10 +90,13 @@ export default function WarRoom() {
       setBusy(false);
     }
   };
-  const leave = async () => {
-    await emit('room:leave', { matchId: id }).catch(() => undefined);
+  // Leave instantly; the server is told in the background.
+  const leave = () => {
+    haptic('tap');
     useGame.getState().reset();
+    useAuth.setState({ activeMatchId: null });
     nav('/battle', { replace: true });
+    void emit('room:leave', { matchId: id }).catch(() => undefined);
   };
 
   return (
@@ -94,6 +110,7 @@ export default function WarRoom() {
             <span className="chip on-dark"><Icon name={snap.category ? categoryIcon(snap.category as any) : 'sparkles'} /> {snap.category ? snap.category.name : t('Mixed', 'মিশ্র')}</span>
             <span className="chip on-dark"><Icon name="list" /> {snap.questionCount ? num(snap.questionCount, lang) : '∞'}</span>
             <span className="chip on-dark"><Icon name="timer" /> {num(snap.questionTimeSec, lang)}{t('s', ' সে.')}</span>
+            {snap.difficulty && <span className="chip on-dark"><Icon name={DIFFICULTY_INFO[snap.difficulty].icon} /> {t(DIFFICULTY_INFO[snap.difficulty].en, DIFFICULTY_INFO[snap.difficulty].bn)}</span>}
           </div>
         </header>
 
@@ -150,7 +167,7 @@ export default function WarRoom() {
           >
             <Icon name="share" /> {t('Invite friends', 'বন্ধুদের ডাকুন')}
           </button>
-          <button className="btn outline-dark" onClick={() => void leave()}><Icon name="door" /> {t('Leave', 'চলে যান')}</button>
+          <button className="btn outline-dark" onClick={leave}><Icon name="door" /> {t('Leave', 'চলে যান')}</button>
         </div>
       </div>
     </div>

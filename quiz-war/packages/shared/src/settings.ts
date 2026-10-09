@@ -21,6 +21,12 @@ export const gameSettingsSchema = z.object({
     revealMs: z.number().int().min(500).max(10000),
     /** Minimum plausible human response time; faster correct answers are flagged. */
     minHumanResponseMs: z.number().int().min(50).max(2000),
+    /** Seconds per question when a player picks a difficulty (hard questions get less time). */
+    difficultyTimeSec: z
+      .object({ easy: z.number().int().min(3).max(60), medium: z.number().int().min(3).max(60), hard: z.number().int().min(3).max(60), expert: z.number().int().min(3).max(60) })
+      .default({ easy: 12, medium: 10, hard: 5, expert: 4 }),
+    /** Question counts players can choose from (AI, solo, challenges, custom rooms). */
+    questionCountOptions: z.array(z.number().int().min(3).max(50)).min(1).max(8).default([5, 10, 15, 20, 25, 30]),
   }),
   scoring: z.object({
     basePoints: z.number().int().min(0),
@@ -130,7 +136,7 @@ export const gameSettingsSchema = z.object({
 export type GameSettings = z.infer<typeof gameSettingsSchema>;
 
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
-  match: { questionCount: 15, questionTimeSec: 10, countdownSec: 3, revealMs: 2200, minHumanResponseMs: 250 },
+  match: { questionCount: 15, questionTimeSec: 10, countdownSec: 3, revealMs: 2200, minHumanResponseMs: 250, difficultyTimeSec: { easy: 12, medium: 10, hard: 5, expert: 4 }, questionCountOptions: [5, 10, 15, 20, 25, 30] },
   scoring: { basePoints: 100, speedBonusMax: 50, fastAnswerFraction: 0.3, comboStep: 0.1, comboMaxMultiplier: 2, wrongPenalty: 0 },
   rewards: {
     xpPerCorrect: 5,
@@ -192,7 +198,7 @@ export const DEFAULT_GAME_SETTINGS: GameSettings = {
       expert: { accuracyMin: 0.86, accuracyMax: 0.95, responseMinMs: 1200, responseMaxMs: 4000 },
     },
   },
-  disconnect: { graceSec: 20, forfeitOnTimeout: true },
+  disconnect: { graceSec: 15, forfeitOnTimeout: true },
   penalties: { enabled: true, quitCoins: 30, quitXp: 20, giveCoinsToOpponents: true, applyToAiMatches: false, afkMissLimit: 3 },
   ranked: {
     enabled: true,
@@ -292,5 +298,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
 export type PublicConfig = AppSettings & {
   game: Pick<GameSettings, 'match' | 'powerUps' | 'levels' | 'penalties'> & { leagues: GameSettings['ranked']['leagues']; aiEnabled: boolean };
   googleClientId: string | null;
+  /** SMTP is configured, so verification / reset emails are really sent. */
+  emailEnabled?: boolean;
   vapidPublicKey: string | null;
 };
