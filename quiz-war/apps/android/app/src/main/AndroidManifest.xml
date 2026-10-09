@@ -77,8 +77,6 @@
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
 
-        <!-- Download the QR scanner module with the app so the first scan opens instantly. -->
-        <meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="barcode_ui" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="quizwar_default" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat_notify" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/ic_launcher_background" />
@@ -89,10 +87,11 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- QR codes are read with Google's code scanner (Play services UI) and photos are picked with
-         the system photo picker, so the app itself never needs camera, storage or media access.
+    <!-- Camera: only to scan a war-room QR code (asked the first time the scan button is used).
+         Photos come from the system photo picker, so no storage or media access is needed.
          Saving the result card uses MediaStore (no permission on Android 10+). -->
-    <uses-permission android:name="android.permission.CAMERA" tools:node="remove" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove" />

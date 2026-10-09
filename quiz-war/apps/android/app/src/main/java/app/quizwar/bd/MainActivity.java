@@ -11,7 +11,6 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(QwAppInfoPlugin.class);
         registerPlugin(QwGalleryPlugin.class);
         registerPlugin(QwPasskeyPlugin.class);
-        registerPlugin(QwScannerPlugin.class);
         super.onCreate(savedInstanceState);
         if (bridge == null || bridge.getWebView() == null) return;
         WebSettings settings = bridge.getWebView().getSettings();

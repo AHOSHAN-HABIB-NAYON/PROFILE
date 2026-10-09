@@ -16,7 +16,7 @@ import { useGame } from '../lib/game';
 import { num, useLang, useT } from '../lib/i18n';
 import { haptic } from '../lib/platform';
 import { emit } from '../lib/socket';
-import { nativeScan, nativeScanAvailable, roomCodeFrom, scanAvailable } from '../lib/scanner';
+import { scanAvailable } from '../lib/scanner';
 import { sfx } from '../lib/sound';
 import { toast } from '../lib/toast';
 
@@ -290,18 +290,7 @@ export default function Battle({ tab: initialTab }: { tab?: 'play' | 'requests' 
                     className="btn icon soft"
                     aria-label={t('Scan QR with camera', 'ক্যামেরা দিয়ে QR স্ক্যান')}
                     title={t('Scan QR', 'QR স্ক্যান')}
-                    onClick={async () => {
-                      haptic('tap');
-                      if (!nativeScanAvailable()) return setScanOpen(true);
-                      try {
-                        const raw = await nativeScan();
-                        const code = raw && roomCodeFrom(raw);
-                        if (code) nav(`/war-room/${code}`);
-                        else if (raw) toast.error(t('Not a room QR', 'এটি রুমের QR নয়'), t('Scan the QR shown inside a war room.', 'ওয়ার রুমের ভিতরে দেখানো QR স্ক্যান করুন।'));
-                      } catch {
-                        toast.error(t('Scanner unavailable', 'স্ক্যানার চালু হয়নি'), t('Please type the room code instead.', 'রুম কোডটি লিখে যোগ দিন।'));
-                      }
-                    }}
+                    onClick={() => (haptic('tap'), setScanOpen(true))}
                   >
                     <Icon name="scan" size={20} />
                   </button>
