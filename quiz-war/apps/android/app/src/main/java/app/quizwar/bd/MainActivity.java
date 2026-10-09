@@ -8,6 +8,8 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        registerPlugin(QwAppInfoPlugin.class);
+        registerPlugin(QwGalleryPlugin.class);
         super.onCreate(savedInstanceState);
         if (bridge == null || bridge.getWebView() == null) return;
         WebSettings settings = bridge.getWebView().getSettings();

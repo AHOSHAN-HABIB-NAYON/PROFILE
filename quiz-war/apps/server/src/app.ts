@@ -70,7 +70,11 @@ export async function buildApp(ctx: AppContext, opts: { logger?: boolean } = {})
       maxAge: '30d',
       setHeaders: (res) => {
         res.header('X-Content-Type-Options', 'nosniff');
-        res.header('Content-Security-Policy', "default-src 'none'; img-src 'self'");
+        res.header('Content-Security-Policy', "default-src 'none'; img-src 'self'; media-src 'self'");
+        // Public media (avatars, logos, music) is used by the Android app (another origin) and
+        // drawn into share-card canvases, which needs CORS.
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Cross-Origin-Resource-Policy', 'cross-origin');
       },
     });
   }

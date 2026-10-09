@@ -1,26 +1,29 @@
-import { comboTier, MODES, type MatchPlayerView, type PowerUp } from '@quizwar/shared';
+import { comboTier, MATCH_REACTIONS, MODES, type MatchPlayerView, type PowerUp } from '@quizwar/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Avatar } from '../components/Avatar';
 import { Empty } from '../components/Feedback';
-import { Icon } from '../components/Icon';
+import { Icon, type IconName } from '../components/Icon';
 import { Sheet } from '../components/Sheet';
 import { useConfig } from '../hooks/queries';
 import { api, friendlyError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { serverNow, useGame } from '../lib/game';
+import { num, useLang, useT } from '../lib/i18n';
+import { modeIcon, modeLabel } from '../lib/labels';
 import { haptic } from '../lib/platform';
 import { emit, useConn } from '../lib/socket';
 import { sfx } from '../lib/sound';
 import { toast } from '../lib/toast';
 
-const KEYS = ['A', 'B', 'C', 'D'];
-const PU: Record<PowerUp, { icon: string; label: string }> = {
-  fifty_fifty: { icon: '½', label: '50/50' },
-  time_boost: { icon: '⏱️', label: 'Time' },
-  double_score: { icon: '×2', label: 'Double' },
-  hint: { icon: '💡', label: 'Hint' },
+const KEYS_EN = ['A', 'B', 'C', 'D'];
+const KEYS_BN = ['ক', 'খ', 'গ', 'ঘ'];
+const PU: Record<PowerUp, { icon: IconName; en: string; bn: string }> = {
+  fifty_fifty: { icon: 'divide', en: '50/50', bn: '৫০/৫০' },
+  time_boost: { icon: 'timer', en: 'More time', bn: 'বাড়তি সময়' },
+  double_score: { icon: 'crosshair', en: 'Double score', bn: 'দ্বিগুণ স্কোর' },
+  hint: { icon: 'bulb', en: 'Hint', bn: 'ইঙ্গিত' },
 };
 
 /** rAF-driven countdown against the server clock (the server decides the real deadline). */
@@ -45,46 +48,109 @@ function useRemaining(deadline: number | null) {
 }
 
 function Countdown({ startsAt }: { startsAt: number }) {
+  const t = useT();
+  const lang = useLang();
   const left = useRemaining(startsAt);
   const n = Math.ceil(left / 1000);
-  return <div className="countdown-big num" key={n} aria-live="assertive">{n > 0 ? n : 'GO!'}</div>;
+  return (
+    <div className="countdown-big num" key={n} aria-live="assertive">
+      {n > 0 ? num(n, lang) : t('GO!', 'শুরু!')}
+    </div>
+  );
 }
 
 function ComboBurst({ combo }: { combo: number }) {
+  const t = useT();
   const tier = comboTier(combo);
   if (tier < 1 || combo < 2) return null;
-  const flames = tier === 4 ? '💥' : '🔥'.repeat(Math.min(3, tier));
   return (
     <div className={`combo ${tier === 4 ? 'super' : ''}`} key={combo} aria-live="polite">
-      <div className="c-flames">{flames}</div>
-      <div className="c-text">{tier === 4 ? 'SUPER COMBO!' : `${combo}× COMBO`}</div>
+      <div className="c-flames">
+        {Array.from({ length: tier === 4 ? 4 : Math.min(3, tier) }, (_, i) => (
+          <Icon key={i} name={tier === 4 ? 'bolt' : 'fire'} size={tier === 4 ? 40 : 38} />
+        ))}
+      </div>
+      <div className="c-text">{tier === 4 ? t('SUPER COMBO!', 'সুপার কম্বো!') : t(`${combo}× COMBO`, `${combo}× কম্বো`)}</div>
     </div>
   );
 }
 
 function SideScore({ players, score, right, answered, label }: { players: MatchPlayerView[]; score: number; right?: boolean; answered: number[]; label: string }) {
+  const lang = useLang();
   const lead = players[0];
+  const done = players.some((p) => answered.includes(p.userId));
   return (
     <div className={`score-side ${right ? 'right' : ''}`}>
       <div className="row" style={{ gap: 0 }}>
         {players.slice(0, 2).map((p, i) => (
-          <span key={p.userId} style={{ marginLeft: i ? -12 : 0 }}>
+          <span key={p.userId} style={{ marginLeft: i ? -12 : 0 }} className={done ? 'answered' : ''}>
             <Avatar name={p.username} src={p.avatarUrl} size={40} bot={p.isBot} status={p.connected ? null : 'offline'} />
           </span>
         ))}
       </div>
       <div className="grow" style={{ minWidth: 0 }}>
         <div className="s-name ellipsis">
-          {label || lead?.username}{' '}
-          {players.some((p) => answered.includes(p.userId)) && <span className="answered-dot" title="Answered" aria-label="answered" />}
+          {label || lead?.username}
+          {done && <Icon name="check-circle" size={13} className="answered-check" />}
         </div>
-        <div className="s-score num">{score}</div>
+        <div className="s-score num" key={score}>{num(score, lang)}</div>
       </div>
     </div>
   );
 }
 
+/** Floating reaction stickers rising from the sender's side. */
+function ReactionLayer({ myTeam }: { myTeam: number }) {
+  const reactions = useGame((s) => s.reactions);
+  const players = useGame((s) => s.snapshot?.players ?? []);
+  return (
+    <div className="reaction-layer" aria-live="polite">
+      {reactions.map((r) => {
+        const p = players.find((x) => x.userId === r.userId);
+        return (
+          <div key={r.id} className={`reaction ${r.team === myTeam ? 'mine' : 'theirs'}`} style={{ ['--x' as any]: `${(r.id * 37) % 40}px` }}>
+            <span className="r-emoji">{r.reaction}</span>
+            {p && <span className="r-name">{p.username}</span>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function ReactionBar({ matchId }: { matchId: string }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const [cool, setCool] = useState(false);
+  const send = async (reaction: string) => {
+    if (cool) return;
+    setCool(true);
+    setTimeout(() => setCool(false), 1600);
+    haptic('tap');
+    setOpen(false);
+    await emit('match:react' as any, { matchId, reaction }).catch(() => undefined);
+  };
+  return (
+    <div className="reaction-bar">
+      {open && (
+        <div className="reaction-tray" role="menu" aria-label={t('Send a reaction', 'রিঅ্যাকশন পাঠান')}>
+          {MATCH_REACTIONS.map((r) => (
+            <button key={r} role="menuitem" onClick={() => void send(r)} disabled={cool} aria-label={r}>
+              {r}
+            </button>
+          ))}
+        </div>
+      )}
+      <button className={`btn icon sm soft ${open ? 'on' : ''}`} aria-label={t('Reactions', 'রিঅ্যাকশন')} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <Icon name="smile" size={20} />
+      </button>
+    </div>
+  );
+}
+
 export default function Match() {
+  const t = useT();
+  const lang = useLang();
   const config = useConfig();
   const { id = '' } = useParams();
   const nav = useNavigate();
@@ -111,8 +177,8 @@ export default function Match() {
 
   useEffect(() => {
     if (g.end && g.matchId === id) {
-      const t = setTimeout(() => nav(`/result/${id}`, { replace: true }), 700);
-      return () => clearTimeout(t);
+      const tm = setTimeout(() => nav(`/result/${id}`, { replace: true }), 700);
+      return () => clearTimeout(tm);
     }
   }, [g.end, g.matchId, id, nav]);
 
@@ -124,10 +190,24 @@ export default function Match() {
   const overall = useRemaining(g.snapshot?.endsAt ?? null);
 
   if (missing && !g.end) {
-    return <div className="page full"><Empty icon="⌛" title="This match has ended" body="It may have finished while you were away." action={<button className="btn primary" onClick={() => nav('/', { replace: true })}>Back to Home</button>} /></div>;
+    return (
+      <div className="page full">
+        <Empty
+          icon="hourglass"
+          title={t('This match has ended', 'এই ম্যাচ শেষ হয়ে গেছে')}
+          body={t('It may have finished while you were away.', 'আপনি দূরে থাকার সময় হয়তো শেষ হয়ে গেছে।')}
+          action={<button className="btn primary" onClick={() => nav('/', { replace: true })}><Icon name="home" /> {t('Back to home', 'হোমে ফিরুন')}</button>}
+        />
+      </div>
+    );
   }
   const snap = g.snapshot;
-  if (!snap) return <div className="page full"><div className="mm-stage"><span className="spinner" /><p className="muted">Joining battle…</p></div></div>;
+  if (!snap)
+    return (
+      <div className="stage-dark">
+        <div className="mm-stage"><span className="spinner" style={{ width: 34, height: 34 }} /><p className="dim">{t('Joining battle…', 'ব্যাটলে যোগ দিচ্ছেন…')}</p></div>
+      </div>
+    );
 
   const mode = MODES[snap.mode];
   const solo = mode.kind === 'solo';
@@ -142,6 +222,8 @@ export default function Match() {
   const secLeft = Math.ceil(remaining / 1000);
   const low = !!q && !revealed && secLeft <= 3;
   const me_ = snap.players.find((p) => p.userId === me.id);
+  const keys = lang === 'bn' ? KEYS_BN : KEYS_EN;
+  const canReact = !solo && snap.players.some((p) => !p.isBot && p.userId !== me.id);
 
   async function answer(i: number) {
     if (!q || g.myPick !== null || revealed || sending.current || remaining <= 0) return;
@@ -158,7 +240,7 @@ export default function Match() {
       }
     } catch (e: any) {
       if (e?.code !== 'duplicate_answer') {
-        toast.error(e?.code === 'too_late' ? "Time's up!" : 'Answer not sent', friendlyError(e));
+        toast.error(e?.code === 'too_late' ? t('Time’s up!', 'সময় শেষ!') : t('Answer not sent', 'উত্তর পাঠানো যায়নি'), friendlyError(e));
         if (e?.code !== 'round_closed' && e?.code !== 'too_late') useGame.getState().set({ myPick: null });
       }
     } finally {
@@ -174,13 +256,13 @@ export default function Match() {
       if (r.removedOptions) useGame.getState().set({ removed: r.removedOptions });
       if (r.hint) useGame.getState().set({ hint: r.hint });
       if (r.deadline) useGame.getState().set({ deadline: r.deadline });
-      if (p === 'double_score') toast.success('Double Score active!', 'This question is worth ×2', '×2');
+      if (p === 'double_score') toast.success(t('Double score active!', 'দ্বিগুণ স্কোর চালু!'), t('This question is worth ×2', 'এই প্রশ্নে ×২ পয়েন্ট'), 'crosshair');
       const left = { ...(snap!.you?.powerUpsLeft ?? {}) };
       left[p] = Math.max(0, (left[p] ?? 1) - 1);
       useGame.getState().set({ snapshot: { ...snap!, you: snap!.you ? { ...snap!.you, powerUpsLeft: left } : null } });
       void inv.refetch();
     } catch (e) {
-      toast.error('Power-up unavailable', friendlyError(e));
+      toast.error(t('Power-up unavailable', 'পাওয়ার-আপ ব্যবহার করা যাচ্ছে না'), friendlyError(e));
     }
   }
 
@@ -189,7 +271,7 @@ export default function Match() {
     if (revealed) {
       if (i === revealed.correctIndex) return 'option correct';
       if (i === g.myPick) return 'option wrong';
-      return 'option';
+      return 'option dim';
     }
     return g.myPick === i ? 'option picked' : 'option';
   };
@@ -198,65 +280,75 @@ export default function Match() {
   const powerUpsLeft = snap.you?.powerUpsLeft ?? {};
   const puEnabled = Object.keys(powerUpsLeft).length > 0;
   const disconnectedOpp = oppPlayers.find((p) => !p.connected && !p.isBot);
+  const qTotal = snap.questionCount;
 
   return (
     <div className="game">
       {comboShow > 0 && <ComboBurst combo={comboShow} key={comboShow} />}
-      <div className="row between" style={{ marginBottom: 8 }}>
-        <span className={`conn-chip ${conn !== 'connected' ? 'bad' : ''}`}><i />{conn === 'connected' ? 'Live' : 'Reconnecting…'}</span>
-        <span className="chip">{snap.type === 'ai' ? '🤖 AI Battle' : solo ? mode.label : `${mode.label}${snap.ranked ? ' · Ranked' : ''}`}</span>
-        <button className="btn icon sm ghost" aria-label="Leave match" onClick={() => setQuitOpen(true)}><Icon name="flag" size={18} /></button>
+      <ReactionLayer myTeam={myTeam} />
+      <div className="game-top">
+        <span className={`conn-chip ${conn !== 'connected' ? 'bad' : ''}`}><i />{conn === 'connected' ? t('Live', 'লাইভ') : t('Reconnecting…', 'সংযোগ হচ্ছে…')}</span>
+        <span className="chip"><Icon name={modeIcon(snap.mode, snap.type)} /> {snap.type === 'ai' ? t('AI battle', 'AI ব্যাটল') : modeLabel(snap.mode)}{snap.ranked ? t(' · Ranked', ' · র‍্যাংকড') : ''}</span>
+        <button className="btn icon sm ghost" aria-label={t('Leave match', 'ম্যাচ ছাড়ুন')} onClick={() => setQuitOpen(true)}><Icon name="flag" size={20} /></button>
       </div>
 
       {solo ? (
         <div className="score-head">
-          <div className="score-side"><div><div className="s-name">Score</div><div className="s-score num">{me_?.score ?? 0}</div></div></div>
-          <div className="q-counter">{q ? <>QUESTION<b className="num">{q.index + 1}{snap.questionCount ? `/${snap.questionCount}` : ''}</b></> : null}</div>
-          <div className="score-side right"><div><div className="s-name">{snap.endsAt ? 'Time left' : 'Correct'}</div><div className="s-score num">{snap.endsAt ? `${Math.ceil(overall / 1000)}s` : me_?.correct ?? 0}</div></div></div>
+          <div className="score-side"><div><div className="s-name">{t('Score', 'স্কোর')}</div><div className="s-score num">{num(me_?.score ?? 0, lang)}</div></div></div>
+          <div className="q-counter">{q ? <>{t('QUESTION', 'প্রশ্ন')}<b className="num">{num(q.index + 1, lang)}{qTotal ? `/${num(qTotal, lang)}` : ''}</b></> : null}</div>
+          <div className="score-side right">
+            <div>
+              <div className="s-name">{snap.endsAt ? t('Time left', 'সময় বাকি') : t('Correct', 'সঠিক')}</div>
+              <div className="s-score num">{snap.endsAt ? `${num(Math.ceil(overall / 1000), lang)}${t('s', 'সে')}` : num(me_?.correct ?? 0, lang)}</div>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="score-head">
-          <SideScore players={myPlayers} score={snap.teamScores[myTeam] ?? 0} answered={g.answered} label={myPlayers.length > 1 ? 'Your team' : 'You'} />
-          <div className="q-counter">{q ? <>Q<b className="num">{String(q.index + 1).padStart(2, '0')}/{snap.questionCount ?? '∞'}</b></> : 'VS'}</div>
-          <SideScore players={oppPlayers} score={snap.teamScores.find((_, t) => t !== myTeam) ?? 0} answered={g.answered} label={oppPlayers.length > 1 ? 'Opponents' : ''} right />
+          <SideScore players={myPlayers} score={snap.teamScores[myTeam] ?? 0} answered={g.answered} label={myPlayers.length > 1 ? t('Your team', 'আপনার দল') : t('You', 'আপনি')} />
+          <div className="q-counter">{q ? <>{t('Q', 'প্রশ্ন')}<b className="num">{num(String(q.index + 1).padStart(2, '0'), lang)}/{qTotal ? num(qTotal, lang) : '∞'}</b></> : 'VS'}</div>
+          <SideScore players={oppPlayers} score={snap.teamScores.find((_, ti) => ti !== myTeam) ?? 0} answered={g.answered} label={oppPlayers.length > 1 ? t('Opponents', 'প্রতিপক্ষ') : ''} right />
         </div>
       )}
-      {disconnectedOpp && <p className="opponent-left">⚠️ {disconnectedOpp.username} disconnected — waiting for them to reconnect…</p>}
+      {disconnectedOpp && (
+        <p className="opponent-left"><Icon name="wifi-off" size={14} /> {t(`${disconnectedOpp.username} disconnected — waiting for them to reconnect…`, `${disconnectedOpp.username}-এর সংযোগ বিচ্ছিন্ন — ফিরে আসার অপেক্ষা…`)}</p>
+      )}
 
       {snap.state === 'countdown' && g.countdownAt ? (
-        <div className="mm-stage" style={{ minHeight: '60dvh' }}>
+        <div className="countdown-stage">
           {!solo && (
             <div className="vs-row">
-              <div className="vs-player"><Avatar name={myPlayers[0]?.username ?? ''} src={myPlayers[0]?.avatarUrl} size={72} /><b>{myPlayers.map((p) => p.username).join(' & ')}</b></div>
+              <div className="vs-player"><Avatar name={myPlayers[0]?.username ?? ''} src={myPlayers[0]?.avatarUrl} size={76} /><b>{myPlayers.map((p) => p.username).join(' & ')}</b></div>
               <div className="vs-badge">VS</div>
-              <div className="vs-player right"><Avatar name={oppPlayers[0]?.username ?? ''} src={oppPlayers[0]?.avatarUrl} size={72} bot={oppPlayers[0]?.isBot} /><b>{oppPlayers.map((p) => p.username).join(' & ')}</b></div>
+              <div className="vs-player right"><Avatar name={oppPlayers[0]?.username ?? ''} src={oppPlayers[0]?.avatarUrl} size={76} bot={oppPlayers[0]?.isBot} /><b>{oppPlayers.map((p) => p.username).join(' & ')}</b></div>
             </div>
           )}
-          <p className="bold muted">{solo ? `${mode.label} starting` : 'Opponent Found!'}</p>
+          <p className="bold muted">{solo ? t(`${mode.label} starting`, `${modeLabel(snap.mode)} শুরু হচ্ছে`) : t('Opponent found!', 'প্রতিপক্ষ পাওয়া গেছে!')}</p>
           <Countdown startsAt={g.countdownAt} />
         </div>
       ) : q ? (
         <>
-          <div className={`timer-bar ${low ? 'low' : ''}`} role="timer" aria-label={`${secLeft} seconds left`}>
-            <span style={{ transform: `scaleX(${revealed ? 0 : Math.max(0, remaining / timeTotal)})` }} />
+          <div className="timer-wrap">
+            <div className={`timer-bar ${low ? 'low' : ''}`} role="timer" aria-label={t(`${secLeft} seconds left`, `${secLeft} সেকেন্ড বাকি`)}>
+              <span style={{ transform: `scaleX(${revealed ? 0 : Math.max(0, remaining / timeTotal)})` }} />
+            </div>
+            <span className={`timer-num num ${low ? 'low' : ''}`}>{revealed ? '' : num(secLeft, lang)}</span>
           </div>
-          <div className="row between xs bold">
-            <span className="faint">{q.category}</span>
-            <span className={low ? '' : 'faint'} style={low ? { color: 'var(--danger)' } : undefined}>{revealed ? '' : `${secLeft}s`}</span>
-          </div>
-          <div className="question-card" key={q.index} style={{ position: 'relative', marginTop: 8 }}>
-            {float && <span className="points-float" key={float.key}>+{float.pts}</span>}
-            <div className="q-meta"><span className="chip">{q.difficulty}</span>{me_ && me_.combo >= 2 && <span className="chip warning">🔥 {me_.combo}</span>}</div>
+          <div className="question-card" key={q.index}>
+            {float && <span className="points-float" key={float.key}>+{num(float.pts, lang)}</span>}
+            <div className="q-meta">
+              <span className="chip"><Icon name="book" /> {q.category}</span>
+              {me_ && me_.combo >= 2 && <span className="chip warning"><Icon name="fire" /> {num(me_.combo, lang)}</span>}
+            </div>
             <p className="q-text">{q.text}</p>
-            {q.imageUrl && <img src={q.imageUrl} alt="Question illustration" loading="eager" />}
+            {q.imageUrl && <img src={q.imageUrl} alt={t('Question illustration', 'প্রশ্নের ছবি')} loading="eager" />}
           </div>
-          {g.hint && !revealed && <div className="hint-box">💡 {g.hint}</div>}
-          <div className="options" role="group" aria-label="Answers">
+          {g.hint && !revealed && <div className="hint-box"><Icon name="bulb" size={18} /> {g.hint}</div>}
+          <div className="options" role="group" aria-label={t('Answers', 'উত্তর')}>
             {q.options.map((o, i) => (
               <button key={`${q.index}-${i}`} className={optionClass(i)} disabled={g.myPick !== null || !!revealed || g.removed.includes(i)} onClick={() => void answer(i)} aria-pressed={g.myPick === i}>
-                <span className="o-key">{KEYS[i]}</span>
+                <span className="o-key">{revealed && i === revealed.correctIndex ? <Icon name="check" size={16} strokeWidth={3} /> : revealed && i === g.myPick ? <Icon name="close" size={16} strokeWidth={3} /> : keys[i]}</span>
                 <span className="grow">{o}</span>
-                {revealed && i === revealed.correctIndex && <span aria-label="correct answer">✓</span>}
                 {pickersOf(i).length > 0 && (
                   <span className="o-who">
                     {pickersOf(i).map((r) => {
@@ -268,60 +360,71 @@ export default function Match() {
               </button>
             ))}
           </div>
-          {revealed && solo && revealed.explanation && <div className="reveal-explain">📘 {revealed.explanation}</div>}
-          {g.myPick !== null && !revealed && <p className="center xs faint mt">Answer locked · waiting for the round to end…</p>}
+          {revealed && solo && revealed.explanation && <div className="reveal-explain"><Icon name="book-check" size={18} /> {revealed.explanation}</div>}
+          {g.myPick !== null && !revealed && <p className="center xs faint mt row gap-sm" style={{ justifyContent: 'center' }}><Icon name="lock" size={13} /> {t('Answer locked · waiting for the round to end…', 'উত্তর লক হয়েছে · রাউন্ড শেষের অপেক্ষা…')}</p>}
           <div className="game-foot">
             {puEnabled ? (
-              <div className="powerups" aria-label="Power-ups">
-                {(Object.keys(PU) as PowerUp[]).filter((p) => p in powerUpsLeft).map((p) => {
-                  const owned = inv.data?.[p] ?? 0;
-                  const left = powerUpsLeft[p] ?? 0;
-                  return (
-                    <button key={p} className="pu-btn" disabled={!left || !owned || g.myPick !== null || !!revealed} onClick={() => void powerUp(p)} aria-label={`${PU[p].label} (${owned} owned)`} title={PU[p].label}>
-                      {PU[p].icon}
-                      <span className="badge">{owned}</span>
-                    </button>
-                  );
-                })}
+              <div className="powerups" aria-label={t('Power-ups', 'পাওয়ার-আপ')}>
+                {(Object.keys(PU) as PowerUp[])
+                  .filter((p) => p in powerUpsLeft)
+                  .map((p) => {
+                    const owned = inv.data?.[p] ?? 0;
+                    const left = powerUpsLeft[p] ?? 0;
+                    return (
+                      <button key={p} className="pu-btn" disabled={!left || !owned || g.myPick !== null || !!revealed} onClick={() => void powerUp(p)} aria-label={t(`${PU[p].en} (${owned} owned)`, `${PU[p].bn} (${owned}টি আছে)`)} title={t(PU[p].en, PU[p].bn)}>
+                        <Icon name={PU[p].icon} size={20} />
+                        <span className="badge">{num(owned, lang)}</span>
+                      </button>
+                    );
+                  })}
               </div>
             ) : (
-              <span className="xs faint grow">{snap.ranked ? 'Ranked: power-ups disabled for fairness' : ''}</span>
+              <span className="xs faint grow">{snap.ranked ? t('Ranked: power-ups are off for fairness', 'র‍্যাংকড: ন্যায্যতার জন্য পাওয়ার-আপ বন্ধ') : ''}</span>
             )}
+            {canReact && <ReactionBar matchId={id} />}
           </div>
         </>
       ) : (
-        <div className="mm-stage" style={{ minHeight: '50dvh' }}><span className="spinner" /><p className="muted">Get ready…</p></div>
+        <div className="countdown-stage"><span className="spinner" style={{ width: 30, height: 30, color: 'var(--primary)' }} /><p className="muted">{t('Get ready…', 'প্রস্তুত হোন…')}</p></div>
       )}
 
-      <Sheet open={quitOpen} onClose={() => setQuitOpen(false)} title="Leave this match?">
-        <p className="muted">{solo ? 'Your run ends now and counts with your current score.' : 'ম্যাচ ছেড়ে গেলে এটা হার (forfeit) হিসেবে গণ্য হবে — প্রতিপক্ষ জিতবে।'}</p>
+      <Sheet open={quitOpen} onClose={() => setQuitOpen(false)} title={t('Leave this match?', 'ম্যাচ ছেড়ে যাবেন?')} icon="flag">
+        <p className="muted">
+          {solo
+            ? t('Your run ends now and counts with your current score.', 'এখনই খেলা শেষ হবে এবং বর্তমান স্কোর গণ্য হবে।')
+            : t('Leaving counts as a forfeit — your opponent wins.', 'ম্যাচ ছেড়ে গেলে এটা হার (forfeit) হিসেবে গণ্য হবে — প্রতিপক্ষ জিতবে।')}
+        </p>
         {fined && pen && (pen.quitCoins > 0 || pen.quitXp > 0) && (
           <div className="penalty-box" role="alert">
-            <span className="pb-icon" aria-hidden>⚠️</span>
+            <Icon name="alert" size={24} className="pb-icon" />
             <div>
-              <strong>জরিমানা কাটা হবে</strong>
+              <strong>{t('You will be fined', 'জরিমানা কাটা হবে')}</strong>
               <div className="pb-amounts">
-                {pen.quitCoins > 0 && <span>🪙 −{pen.quitCoins} কয়েন</span>}
-                {pen.quitXp > 0 && <span>⭐ −{pen.quitXp} XP</span>}
+                {pen.quitCoins > 0 && <span><Icon name="coin" size={20} /> −{num(pen.quitCoins, lang)}</span>}
+                {pen.quitXp > 0 && <span><Icon name="xp" size={20} /> −{num(pen.quitXp, lang)} XP</span>}
               </div>
-              <span className="small muted">{pen.giveCoinsToOpponents ? 'কাটা কয়েন প্রতিপক্ষ পাবে। ' : ''}অ্যাপ বন্ধ করলে বা নেট কেটে গিয়ে ফিরে না এলেও একই জরিমানা হবে।</span>
+              <span className="small muted">
+                {pen.giveCoinsToOpponents ? t('The coins go to your opponent. ', 'কাটা কয়েন প্রতিপক্ষ পাবে। ') : ''}
+                {t('Closing the app or losing connection without returning counts the same.', 'অ্যাপ বন্ধ করলে বা নেট কেটে গিয়ে ফিরে না এলেও একই জরিমানা হবে।')}
+              </span>
             </div>
           </div>
         )}
         <div className="row mt-lg">
-          <button className="btn outline grow" onClick={() => setQuitOpen(false)}>Keep playing</button>
+          <button className="btn primary grow" onClick={() => setQuitOpen(false)}><Icon name="gamepad" /> {t('Keep playing', 'খেলা চালিয়ে যান')}</button>
           <button
-            className="btn danger grow"
+            className="btn soft-danger grow"
             onClick={async () => {
               setQuitOpen(false);
               await emit('match:forfeit', { matchId: id }).catch(() => undefined);
+              useAuth.setState({ activeMatchId: null });
               if (!solo) {
                 useGame.getState().reset();
                 nav('/', { replace: true });
               }
             }}
           >
-            Leave match
+            <Icon name="door" /> {t('Leave', 'ছেড়ে দিন')}
           </button>
         </div>
       </Sheet>

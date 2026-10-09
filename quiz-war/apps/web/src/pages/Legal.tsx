@@ -1,9 +1,11 @@
 import type { JSX } from 'react';
 import { useParams } from 'react-router';
 import { PageHeader } from '../components/AppShell';
+import { Icon } from '../components/Icon';
+import { useLang } from '../lib/i18n';
 
 const UPDATED = 'October 2026';
-const CONTACT = 'support@quizwar.app';
+const CONTACT = 'support.quizwarbd@gmail.com';
 
 const DOCS: Record<string, { title: string; body: JSX.Element }> = {
   privacy: {
@@ -22,7 +24,7 @@ const DOCS: Record<string, { title: string; body: JSX.Element }> = {
         <h2>What is public</h2>
         <p>Your username, UID, photo, level, league, rating, game statistics, achievements and squad are visible to other players and on public profile/leaderboard pages. Your email address is never shown to other players.</p>
         <h2>How we use data</h2>
-        <ul><li>To run matches, matchmaking, leaderboards and rewards.</li><li>To keep the game fair (anti-cheat, moderation of reports).</li><li>To secure accounts (rate limiting, suspicious login detection).</li><li>To send emails you request (verification, password reset) and notifications you enable.</li></ul>
+        <ul><li>To run matches, matchmaking, leaderboards and rewards.</li><li>To keep the game fair (anti-cheat, moderation of reports).</li><li>To secure accounts (rate limiting, suspicious login detection).</li><li>To send account emails (welcome, verification, password reset) and, if you keep the setting on, occasional activity emails (achievements, promotions, streaks). You can turn activity emails off in Settings → Email notifications.</li></ul>
         <p>We do not sell personal data and do not show personalised ads.</p>
         <h2>Retention & deletion</h2>
         <p>You can delete your account anytime in Settings → Delete account. We then delete your email, login methods, passkeys, photo, friends, notifications and squad membership. Match records are kept in anonymised form so other players’ history stays correct. Security logs are kept for up to 90 days. Backups roll over within 30 days.</p>
@@ -79,12 +81,27 @@ const DOCS: Record<string, { title: string; body: JSX.Element }> = {
   },
 };
 
+const BN_SUMMARY: Record<string, string> = {
+  privacy:
+    'সংক্ষেপে: আমরা শুধু খেলা চালানোর জন্য দরকারি তথ্য রাখি — ইমেইল, ইউজারনেম, ছবি (ঐচ্ছিক), ম্যাচের ফলাফল আর নিরাপত্তার জন্য লগইন তথ্য। আপনার ইমেইল কাউকে দেখানো হয় না, তথ্য বিক্রি করা হয় না, কোনো বিজ্ঞাপন নেই। সেটিংস থেকে যেকোনো সময় অ্যাকাউন্ট মুছে ফেলতে পারবেন।',
+  terms:
+    'সংক্ষেপে: ন্যায্যভাবে খেলুন, চিটিং বা অন্যকে হয়রানি করবেন না। কয়েন শুধু খেলে অর্জন করা যায় — কেনা বা টাকায় রূপান্তর করা যায় না। নিয়ম ভাঙলে অ্যাকাউন্ট স্থগিত হতে পারে।',
+  guidelines: 'সংক্ষেপে: সবার প্রতি সম্মান দেখান, আপত্তিকর নাম বা ছবি ব্যবহার করবেন না, ভুল প্রশ্ন দেখলে রিপোর্ট করুন।',
+};
+
 export default function Legal() {
   const { doc = 'privacy' } = useParams();
   const d = DOCS[doc] ?? DOCS.privacy;
+  const lang = useLang();
   return (
     <div className="page full legal">
       <PageHeader title={d.title} back />
+      {lang === 'bn' && BN_SUMMARY[doc] && (
+        <div className="card legal-summary">
+          <Icon name="info" size={20} />
+          <p>{BN_SUMMARY[doc]}</p>
+        </div>
+      )}
       <article className="card pad-lg">{d.body}</article>
     </div>
   );

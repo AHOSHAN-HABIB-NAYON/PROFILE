@@ -149,7 +149,15 @@ export function App() {
   const status = useAuth((s) => s.status);
   const { theme, reduceMotion, music } = useSettings();
   const loc = useLocation();
-  const [splash, setSplash] = useState(true);
+  // Native: every cold start. Web: once per tab session, so reloads and deep links open instantly.
+  const [splash, setSplash] = useState(() => {
+    if (isNative) return true;
+    try {
+      return !sessionStorage.getItem('qw-splash');
+    } catch {
+      return true;
+    }
+  });
   const lastBack = useRef(0);
 
   useEffect(() => {
@@ -258,7 +266,14 @@ export function App() {
   return (
     <>
       <Toasts />
-      {splash && <Splash ready={status !== 'loading'} onDone={() => setSplash(false)} />}
+      {splash && <Splash ready={status !== 'loading'} onDone={() => {
+            try {
+              sessionStorage.setItem('qw-splash', '1');
+            } catch {
+              /* private mode */
+            }
+            setSplash(false);
+          }} />}
       {authed && !splash && (
         <>
           <IncomingInvites />

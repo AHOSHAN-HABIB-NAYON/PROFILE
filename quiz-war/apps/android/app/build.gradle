@@ -30,12 +30,17 @@ android {
         versionCode qwVersionCode
         versionName qwVersionName
         manifestPlaceholders = [appLinkHost: qwAppLinkHost]
+        // Push only works when Firebase's google-services.json is bundled (see docs/android-release.md).
+        buildConfigField "boolean", "PUSH_ENABLED", file('google-services.json').exists() ? "true" : "false"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
+    }
+    buildFeatures {
+        buildConfig true
     }
     signingConfigs {
         release {

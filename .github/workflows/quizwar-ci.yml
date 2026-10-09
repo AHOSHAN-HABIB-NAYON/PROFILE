@@ -65,6 +65,7 @@ jobs:
       VITE_PUBLIC_WEB_URL: ${{ inputs.site_url || vars.QW_WEB_URL || 'https://quizwar.webtecit.com' }}
       QW_APP_LINK_HOST: ${{ vars.QW_APP_LINK_HOST || 'quizwar.webtecit.com' }}
       HAS_KEYSTORE: ${{ secrets.QW_UPLOAD_KEYSTORE_BASE64 != '' }}
+      HAS_FIREBASE: ${{ secrets.QW_GOOGLE_SERVICES_JSON_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -80,6 +81,12 @@ jobs:
       - name: Build web bundle and sync into the Android project
         working-directory: quiz-war/apps/web
         run: npm run build && npx cap sync android
+      # Push notifications: Firebase config is optional. Without it the app builds and simply hides push.
+      # Register BOTH app.quizwar.bd and app.quizwar.bd.debug in the Firebase project.
+      - name: Firebase config (optional)
+        if: ${{ env.HAS_FIREBASE == 'true' }}
+        working-directory: quiz-war/apps/android
+        run: echo "${{ secrets.QW_GOOGLE_SERVICES_JSON_BASE64 }}" | base64 -d > app/google-services.json
       - name: Debug APK
         working-directory: quiz-war/apps/android
         run: ./gradlew --no-daemon assembleDebug

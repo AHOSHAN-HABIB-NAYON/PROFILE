@@ -32,6 +32,7 @@ import {
   Coins,
   Copy,
   Cpu,
+  Divide,
   Crosshair,
   Crown,
   DoorOpen,
@@ -245,6 +246,7 @@ const LINE = {
   chart: ChartColumn,
   grid: LayoutGrid,
   gamepad: Gamepad2,
+  divide: Divide,
 } satisfies Record<string, LucideIcon>;
 
 type CustomProps = { size: number; className?: string; style?: CSSProperties };
@@ -262,7 +264,7 @@ const CUSTOM: Record<string, (p: CustomProps) => ReactElement> = {
       </defs>
       <circle cx="12" cy="12" r="10.5" fill="url(#qw-coin-g)" stroke="#b07200" strokeWidth="1" />
       <circle cx="12" cy="12" r="7.6" fill="none" stroke="#fff3c4" strokeOpacity=".75" strokeWidth="1.2" />
-      <path d="M9.2 8.2h5.1M9.2 10.6h5.1M11.1 8.2c1.7 0 2.7.9 2.7 2.3s-1 2.4-2.8 2.4H9.6l4.4 4.3" fill="none" stroke="#7a4b00" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 7.3l1.38 2.8 3.09.45-2.24 2.18.53 3.08L12 14.36l-2.76 1.45.53-3.08-2.24-2.18 3.09-.45z" fill="#fff6d6" stroke="#9a6200" strokeWidth=".9" strokeLinejoin="round" />
     </svg>
   ),
   xp: ({ size, className, style }) => (

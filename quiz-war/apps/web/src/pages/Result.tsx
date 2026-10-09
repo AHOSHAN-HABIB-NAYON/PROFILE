@@ -1,35 +1,86 @@
-import { MODES, type MatchEndPayload } from '@quizwar/shared';
+import { InAppReview } from '@capacitor-community/in-app-review';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { MODES, type MatchEndPayload, type MatchPlayerView } from '@quizwar/shared';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { Avatar } from '../components/Avatar';
 import { Confetti } from '../components/Confetti';
 import { CountUp, Empty } from '../components/Feedback';
 import { useLeagues } from '../components/Game';
-import { Icon } from '../components/Icon';
+import { Icon, IconTile, achievementIcon, type IconName } from '../components/Icon';
+import { LeagueEmblem, RankMedal } from '../components/LeagueEmblem';
+import { useConfig } from '../hooks/queries';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useGame } from '../lib/game';
-import { haptic, isNative, PUBLIC_WEB_URL, share } from '../lib/platform';
+import { num, useLang, useT } from '../lib/i18n';
+import { modeIcon, modeLabel } from '../lib/labels';
+import { haptic, isNative, PUBLIC_WEB_URL } from '../lib/platform';
 import { profileLink } from '../lib/qr';
-import { shareWithCard } from '../lib/shareCard';
+import { useSettings } from '../lib/settings';
+import { renderResultCard, type CardPlayer } from '../lib/shareCard';
+import { saveImage, shareImage } from '../lib/shareImage';
 import { sfx } from '../lib/sound';
 import { toast } from '../lib/toast';
+
+type Outcome = 'win' | 'loss' | 'draw' | 'solo';
+
+/** Distinct vibration "signatures": a rising triple pulse for a win, one long soft buzz for a loss. */
+function resultVibration(outcome: Outcome) {
+  if (!useSettings.getState().haptics) return;
+  const pattern = outcome === 'win' ? [40, 60, 40, 60, 120] : outcome === 'loss' ? [220] : [30, 70, 60];
+  if (isNative) {
+    const styles = outcome === 'win' ? [ImpactStyle.Light, ImpactStyle.Medium, ImpactStyle.Heavy] : outcome === 'loss' ? [ImpactStyle.Heavy] : [ImpactStyle.Light, ImpactStyle.Medium];
+    styles.forEach((style, i) => setTimeout(() => void Haptics.impact({ style }).catch(() => undefined), i * 110));
+    if (outcome === 'loss') void Haptics.vibrate({ duration: 220 }).catch(() => undefined);
+  } else if ('vibrate' in navigator) navigator.vibrate(pattern);
+}
+
+const HERO_ICON: Record<Outcome, IconName> = { win: 'trophy', loss: 'shield', draw: 'handshake', solo: 'target' };
+
+function HeroEmblem({ outcome }: { outcome: Outcome }) {
+  return (
+    <div className={`rh-emblem ${outcome}`} aria-hidden>
+      <svg className="rh-rays" viewBox="0 0 200 200">
+        {Array.from({ length: 16 }, (_, i) => (
+          <path key={i} d="M100 100 L94 0 L106 0 Z" transform={`rotate(${i * 22.5} 100 100)`} />
+        ))}
+      </svg>
+      <svg className="rh-ring" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="54" pathLength={100} />
+      </svg>
+      <span className="rh-core">
+        <Icon name={HERO_ICON[outcome]} size={64} strokeWidth={1.7} />
+      </span>
+      {outcome === 'win' && (
+        <>
+          <Icon name="sparkles" size={22} className="rh-spark s1" />
+          <Icon name="star" size={16} className="rh-spark s2" />
+          <Icon name="sparkles" size={18} className="rh-spark s3" />
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function Result() {
   const { id = '' } = useParams();
   const nav = useNavigate();
+  const t = useT();
+  const lang = useLang();
   const me = useAuth((s) => s.user)!;
   const leagues = useLeagues();
+  const config = useConfig();
   const local = useGame((s) => (s.end?.matchId === id ? s.end : null));
   const snap = useGame((s) => (s.snapshot?.matchId === id ? s.snapshot : null));
   const remote = useQuery({ queryKey: ['result', id], queryFn: () => api<{ result: MatchEndPayload; snapshot: any }>(`/matches/${id}/result`), enabled: !local, retry: false });
   const end = local ?? remote.data?.result ?? null;
-  const players = snap?.players ?? remote.data?.snapshot?.players ?? [];
+  const players: MatchPlayerView[] = snap?.players ?? remote.data?.snapshot?.players ?? [];
 
   const mine = end?.players.find((p) => p.userId === me.id);
   const solo = end ? MODES[end.mode].kind === 'solo' : false;
-  const outcome = !end || !mine ? 'draw' : solo ? 'solo' : end.winnerTeam === null ? 'draw' : end.winnerTeam === mine.team ? 'win' : 'loss';
+  const outcome: Outcome = !end || !mine ? 'draw' : solo ? 'solo' : end.winnerTeam === null ? 'draw' : end.winnerTeam === mine.team ? 'win' : 'loss';
   const leagueUp = useMemo(() => {
     if (!mine?.leagueAfter || !mine.leagueBefore || mine.leagueAfter === mine.leagueBefore) return null;
     const a = leagues.findIndex((l) => l.key === mine.leagueAfter);
@@ -37,36 +88,142 @@ export default function Result() {
     return a > b ? leagues[a] : null;
   }, [mine, leagues]);
 
+  const [card, setCard] = useState<{ blob: Blob; url: string } | null>(null);
+  const [busy, setBusy] = useState<'share' | 'save' | null>(null);
+  const announced = useRef(false);
+
+  // Sound + vibration + rate prompt, once per result.
   useEffect(() => {
-    if (!end) return;
-    if (outcome === 'win' || leagueUp) {
-      sfx(leagueUp ? 'rankup' : 'victory');
-      haptic('success');
-    } else if (outcome === 'loss') sfx('defeat');
+    if (!end || announced.current) return;
+    announced.current = true;
+    if (outcome === 'win' || leagueUp) sfx(leagueUp ? 'rankup' : 'victory');
+    else if (outcome === 'loss') sfx('defeat');
     else sfx('reward');
-  }, [end, outcome, leagueUp]);
+    resultVibration(outcome);
+    if (outcome === 'win' && isNative) {
+      const s = useSettings.getState();
+      if (s.rateCounter >= 0) {
+        const n = s.rateCounter + 1;
+        const after = config.data?.ratePromptAfterWins ?? 5;
+        if (after > 0 && n >= after) {
+          s.set({ rateCounter: -1 });
+          setTimeout(() => void InAppReview.requestReview().catch(() => undefined), 2600);
+        } else s.set({ rateCounter: n });
+      }
+    }
+  }, [end, outcome, leagueUp, config.data]);
 
   useEffect(() => () => useGame.getState().reset(), []);
 
+  const title = !end
+    ? ''
+    : {
+        win: t('VICTORY!', 'বিজয়!'),
+        loss: t('DEFEAT', 'পরাজয়'),
+        draw: t('DRAW', 'ড্র'),
+        solo: end.reason === 'wrong_answer' ? t('RUN OVER', 'খেলা শেষ') : end.reason === 'time_up' ? t("TIME'S UP", 'সময় শেষ') : t('COMPLETE', 'সম্পন্ন'),
+      }[outcome];
+  const sub = !end
+    ? ''
+    : end.reason === 'forfeit'
+      ? outcome === 'win'
+        ? t('Your opponent left the match', 'প্রতিপক্ষ ম্যাচ ছেড়ে চলে গেছে')
+        : t('You left the match', 'আপনি ম্যাচ ছেড়ে দিয়েছেন')
+      : end.reason === 'aborted'
+        ? t('Match ended early', 'ম্যাচ আগেই শেষ হয়েছে')
+        : outcome === 'win'
+          ? t('Brilliant! You beat them all.', 'দারুণ! আপনি সবাইকে হারিয়েছেন।')
+          : outcome === 'loss'
+            ? t('So close — learn and come back stronger.', 'অল্পের জন্য — রিভিউ করে আবার চেষ্টা করুন।')
+            : outcome === 'draw'
+              ? t('An even fight!', 'সমানে সমান লড়াই!')
+              : t(`${mine?.correct ?? 0} correct · best combo ${mine?.bestCombo ?? 0}`, `${num(mine?.correct ?? 0, lang)}টি সঠিক · সেরা কম্বো ${num(mine?.bestCombo ?? 0, lang)}`);
+
+  const view = (uid: number) => players.find((p) => p.userId === uid);
+  const nameOf = (uid: number, isBot: boolean) => view(uid)?.username ?? (isBot ? t('AI player', 'এআই প্লেয়ার') : t('Player', 'প্লেয়ার'));
+
+  // Build the branded share card in the background as soon as the result is known.
+  useEffect(() => {
+    if (!end) return;
+    let alive = true;
+    let url = '';
+    const cardPlayers: CardPlayer[] = end.players.map((p) => {
+      const v = view(p.userId);
+      return {
+        name: nameOf(p.userId, p.isBot),
+        uid: p.userId === me.id ? me.uid : (v?.uid ?? null),
+        avatarUrl: p.userId === me.id ? me.avatarUrl : (v?.avatarUrl ?? null),
+        score: p.score,
+        correct: p.correct,
+        answered: p.answered,
+        team: p.team,
+        isBot: p.isBot,
+        isMe: p.userId === me.id,
+      };
+    });
+    const date = new Intl.DateTimeFormat(lang === 'bn' ? 'bn-BD' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date());
+    void renderResultCard({
+      lang,
+      outcome,
+      headline: title,
+      subline: `${modeLabel(end.mode)}${end.type === 'ai' ? ` · ${t('vs AI', 'এআই-এর সাথে')}` : end.ranked ? ` · ${t('Ranked', 'র‍্যাংকড')}` : ''}`,
+      date,
+      teamScores: end.teamScores,
+      teams: MODES[end.mode].teams,
+      myTeam: mine?.team ?? 0,
+      winnerTeam: end.winnerTeam,
+      players: cardPlayers,
+      appUrl: PUBLIC_WEB_URL,
+      profileUrl: profileLink(me.uid),
+      ctaText: t(`Challenge me! UID ${me.uid}`, `আমাকে চ্যালেঞ্জ করুন! UID ${me.uid}`),
+      labels: { correct: t('correct', 'সঠিক'), points: t('points', 'পয়েন্ট'), teamBlue: t('Blue team', 'নীল দল'), teamRed: t('Opponent', 'প্রতিপক্ষ'), you: t('You', 'আপনি'), ai: t('AI player', 'এআই প্লেয়ার') },
+    }).then((blob) => {
+      if (!alive || !blob) return;
+      url = URL.createObjectURL(blob);
+      setCard({ blob, url });
+    });
+    return () => {
+      alive = false;
+      if (url) URL.revokeObjectURL(url);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [end, lang, players.length]);
+
   if (!end) {
     if (remote.isLoading) return <div className="page full"><div className="mm-stage"><span className="spinner" /></div></div>;
-    return <div className="page full"><Empty icon="📊" title="Result not available" action={<Link className="btn primary" to="/">Home</Link>} /></div>;
+    return (
+      <div className="page full">
+        <Empty icon="chart" title={t('Result not available', 'ফলাফল পাওয়া যায়নি')} action={<Link className="btn primary" to="/"><Icon name="home" /> {t('Home', 'হোম')}</Link>} />
+      </div>
+    );
   }
 
-  const title = { win: 'VICTORY!', loss: 'DEFEAT', draw: 'DRAW', solo: end.reason === 'wrong_answer' ? 'RUN OVER' : end.reason === 'time_up' ? "TIME'S UP" : 'COMPLETE' }[outcome];
-  const emoji = { win: '🏆', loss: '🛡️', draw: '🤝', solo: '🎯' }[outcome];
   const ratingDelta = mine?.ratingAfter != null && mine.ratingBefore != null ? mine.ratingAfter - mine.ratingBefore : null;
-  const nameOf = (uid: number) => players.find((p: any) => p.userId === uid)?.username ?? (uid < 0 ? '🤖 AI' : 'Player');
+  const fileName = `quizwar-result-${id.slice(0, 8)}.png`;
+  const shareText =
+    outcome === 'win'
+      ? t(`I won a ${modeLabel(end.mode)} battle on QUIZ WAR Bangladesh with ${mine?.score ?? 0} points! Can you beat me? UID: ${me.uid}`, `QUIZ WAR Bangladesh-এ ${modeLabel(end.mode)} ব্যাটলে ${num(mine?.score ?? 0)} পয়েন্ট নিয়ে জিতেছি! পারলে আমাকে হারাও। UID: ${me.uid}`)
+      : t(`I scored ${mine?.score ?? 0} points in ${modeLabel(end.mode)} on QUIZ WAR Bangladesh. Play with me! UID: ${me.uid}`, `QUIZ WAR Bangladesh-এ ${modeLabel(end.mode)}-এ ${num(mine?.score ?? 0)} পয়েন্ট পেয়েছি। আমার সাথে খেলো! UID: ${me.uid}`);
 
   const doShare = async () => {
-    const text =
-      outcome === 'win'
-        ? `🏆 I won a ${MODES[end.mode].label} battle on QUIZ WAR with ${mine?.score} points! Can you beat me? My UID: ${me.uid}`
-        : `🎯 I scored ${mine?.score} points (${mine?.correct} correct) in ${MODES[end.mode].label} on QUIZ WAR! My UID: ${me.uid}`;
-    const url = profileLink(me.uid);
-    if (isNative) return void share({ title: 'QUIZ WAR', text, url });
-    const r = await shareWithCard({ title: title!, subtitle: `${me.username} · ${MODES[end.mode].label}`, big: `${mine?.score ?? 0} pts`, footer: `${PUBLIC_WEB_URL.replace(/^https?:\/\//, '')}/u/${me.uid}`, accent: outcome === 'win' ? '#16a34a' : undefined }, text, url);
-    if (r === 'copied') toast.success('Copied to clipboard', 'Paste it anywhere to share.');
+    haptic('tap');
+    setBusy('share');
+    const r = await shareImage(card?.blob ?? null, { title: 'QUIZ WAR Bangladesh', text: shareText, url: profileLink(me.uid), fileName });
+    setBusy(null);
+    if (r === 'copied') toast.success(t('Copied to clipboard', 'ক্লিপবোর্ডে কপি হয়েছে'), t('Paste it anywhere to share.', 'যেকোনো জায়গায় পেস্ট করে শেয়ার করুন।'), 'copy');
+    else if (r === 'failed') toast.error(t('Could not share', 'শেয়ার করা যায়নি'));
+  };
+  const doSave = async () => {
+    if (!card) return;
+    haptic('tap');
+    setBusy('save');
+    const r = await saveImage(card.blob, fileName);
+    setBusy(null);
+    if (r === 'failed') toast.error(t('Could not save', 'সেভ করা যায়নি'));
+    else {
+      haptic('success');
+      toast.success(r === 'saved' ? t('Saved to gallery', 'গ্যালারিতে সেভ হয়েছে') : t('Image downloaded', 'ছবি ডাউনলোড হয়েছে'), r === 'saved' ? t('Find it in Pictures › QUIZ WAR', 'Pictures › QUIZ WAR ফোল্ডারে পাবেন') : undefined, 'image');
+    }
   };
 
   const again = () => {
@@ -76,61 +233,125 @@ export default function Result() {
     nav(`/matchmaking?mode=${end.mode}&ranked=${end.ranked ? 1 : 0}`, { replace: true });
   };
 
+  const ranked = [...end.players].sort((a, b) => b.score - a.score);
+  const teams = MODES[end.mode].teams;
+
   return (
-    <div className="page full stack">
-      {(outcome === 'win' || leagueUp) && <Confetti />}
+    <div className="page full stack result-page">
+      {(outcome === 'win' || leagueUp) && <Confetti colors={['#facc15', '#f59e0b', '#22d3ee', '#16a34a', '#f42a41', '#ffffff']} />}
       <section className={`result-hero ${outcome}`}>
-        <div className="r-emoji" aria-hidden>{emoji}</div>
+        <span className="rh-mode chip"><Icon name={modeIcon(end.mode, end.type)} size={14} /> {modeLabel(end.mode)}{end.ranked ? ` · ${t('Ranked', 'র‍্যাংকড')}` : ''}</span>
+        <HeroEmblem outcome={outcome} />
         <h1>{title}</h1>
-        <p>{end.reason === 'forfeit' ? (outcome === 'win' ? 'Your opponent left the match' : 'You left the match') : solo ? `${mine?.correct ?? 0} correct · best combo ${mine?.bestCombo ?? 0}` : `${end.teamScores.join(' — ')}`}</p>
+        <p>{sub}</p>
+        {teams > 1 && (
+          <div className="rh-score num" aria-label={t('Team score', 'দলের স্কোর')}>
+            <span>{num(end.teamScores[mine?.team ?? 0] ?? 0, lang)}</span>
+            <i>:</i>
+            <span>{num(end.teamScores.find((_, i) => i !== (mine?.team ?? 0)) ?? 0, lang)}</span>
+          </div>
+        )}
         <div className="gain-row">
-          <div className="gain"><b>+<CountUp value={mine?.xpGained ?? 0} /></b><span>XP</span></div>
-          <div className="gain"><b>🪙 +<CountUp value={mine?.coinsGained ?? 0} /></b><span>Coins</span></div>
-          <div className="gain"><b>{ratingDelta == null ? <CountUp value={mine?.score ?? 0} /> : `${ratingDelta >= 0 ? '+' : ''}${ratingDelta}`}</b><span>{ratingDelta == null ? 'Score' : 'Rating'}</span></div>
+          <div className="gain"><Icon name="xp" size={22} /><b>+<CountUp value={mine?.xpGained ?? 0} /></b><span>XP</span></div>
+          <div className="gain"><Icon name="coin" size={22} /><b>+<CountUp value={mine?.coinsGained ?? 0} /></b><span>{t('Coins', 'কয়েন')}</span></div>
+          <div className="gain">
+            <Icon name={ratingDelta == null ? 'target' : 'chart'} size={22} />
+            <b>{ratingDelta == null ? <CountUp value={mine?.score ?? 0} /> : `${ratingDelta >= 0 ? '+' : '−'}${num(Math.abs(ratingDelta), lang)}`}</b>
+            <span>{ratingDelta == null ? t('Score', 'স্কোর') : t('Rating', 'রেটিং')}</span>
+          </div>
         </div>
       </section>
 
       {!!mine?.penaltyCoins || !!mine?.penaltyXp ? (
         <div className="penalty-box" role="status">
-          <span className="pb-icon" aria-hidden>⚠️</span>
-          <div><strong>ম্যাচ ছেড়ে যাওয়ার জরিমানা</strong><div className="pb-amounts">{!!mine.penaltyCoins && <span>🪙 −{mine.penaltyCoins}</span>}{!!mine.penaltyXp && <span>⭐ −{mine.penaltyXp} XP</span>}</div></div>
+          <IconTile name="alert" tone="danger" size={40} />
+          <div>
+            <strong>{t('Penalty for leaving the match', 'ম্যাচ ছেড়ে যাওয়ার জরিমানা')}</strong>
+            <div className="pb-amounts">
+              {!!mine.penaltyCoins && <span><Icon name="coin" size={16} /> −{num(mine.penaltyCoins, lang)}</span>}
+              {!!mine.penaltyXp && <span><Icon name="xp" size={16} /> −{num(mine.penaltyXp, lang)} XP</span>}
+            </div>
+          </div>
         </div>
       ) : null}
       {!!mine?.bonusCoins && (
-        <div className="bonus-box" role="status"><span aria-hidden>🎁</span> প্রতিপক্ষ ম্যাচ ছেড়ে যাওয়ায় তার জরিমানার <b>🪙 {mine.bonusCoins}</b> কয়েন আপনি পেয়েছেন!</div>
+        <div className="bonus-box" role="status">
+          <IconTile name="gift" tone="success" size={40} />
+          <span>{t('Your opponent left, so their penalty is yours:', 'প্রতিপক্ষ ম্যাচ ছেড়ে যাওয়ায় তার জরিমানা আপনি পেয়েছেন:')} <b className="coin-text"><Icon name="coin" size={16} /> {num(mine.bonusCoins, lang)}</b></span>
+        </div>
       )}
       {leagueUp && (
         <div className="rank-up" role="status">
-          <span className="ru-icon">{leagueUp.icon}</span>
-          RANK UP! Welcome to {leagueUp.name} League
+          <span className="ru-icon"><LeagueEmblem league={leagueUp.key} size={72} /></span>
+          <b>{t('RANK UP!', 'র‍্যাংক আপ!')}</b> {t(`Welcome to ${leagueUp.name} league`, `${leagueUp.name} লীগে স্বাগতম`)}
         </div>
       )}
-      {mine && mine.levelAfter > mine.levelBefore && <div className="card center bold" style={{ animation: 'pop-in .4s' }}>⭐ Level Up! You reached Level {mine.levelAfter}</div>}
+      {mine && mine.levelAfter > mine.levelBefore && (
+        <div className="card row unlock-card">
+          <IconTile name="star" tone="coin" size={44} anim="pop" />
+          <div><b>{t('Level up!', 'লেভেল আপ!')}</b><p className="small muted">{t(`You reached level ${mine.levelAfter}`, `আপনি লেভেল ${num(mine.levelAfter, lang)}-এ পৌঁছেছেন`)}</p></div>
+        </div>
+      )}
       {mine?.achievements.map((a) => (
-        <div key={a.key} className="card row" style={{ animation: 'pop-in .4s' }}><span style={{ fontSize: 30 }}>{a.icon}</span><div><b>Achievement unlocked</b><p className="small muted">{a.name}</p></div></div>
+        <div key={a.key} className="card row unlock-card">
+          <IconTile name={achievementIcon(a)} tone="primary" size={44} anim="pop" />
+          <div><b>{t('Achievement unlocked', 'অ্যাচিভমেন্ট আনলক')}</b><p className="small muted">{a.name}</p></div>
+        </div>
       ))}
 
       <section className="card">
-        <h3 className="mb">Scoreboard</h3>
-        {[...end.players].sort((a, b) => b.score - a.score).map((p) => (
-          <div key={p.userId} className={`lb-row ${p.userId === me.id ? 'me' : ''}`}>
-            <Avatar name={nameOf(p.userId)} src={players.find((x: any) => x.userId === p.userId)?.avatarUrl} size={36} bot={p.isBot} />
-            <div className="grow">
-              <b className="ellipsis">{nameOf(p.userId)}{p.isBot && <span className="chip" style={{ marginLeft: 6 }}>AI</span>}</b>
-              <p className="xs muted">{p.correct}/{p.answered} correct · combo {p.bestCombo}{p.avgResponseMs ? ` · ${(p.avgResponseMs / 1000).toFixed(1)}s avg` : ''}</p>
+        <h3 className="mb row gap-sm"><Icon name="list" size={18} /> {t('Scoreboard', 'স্কোরবোর্ড')}</h3>
+        {ranked.map((p, i) => {
+          const v = view(p.userId);
+          return (
+            <div key={p.userId} className={`lb-row ${p.userId === me.id ? 'me' : ''} ${teams > 1 ? `team-${p.team}` : ''}`}>
+              <span className="lb-rank">{i < 3 ? <RankMedal rank={i + 1} size={30} /> : <b className="num">{num(i + 1, lang)}</b>}</span>
+              <Avatar name={nameOf(p.userId, p.isBot)} src={p.userId === me.id ? me.avatarUrl : v?.avatarUrl} size={40} bot={p.isBot} />
+              <div className="grow">
+                <b className="ellipsis">
+                  {nameOf(p.userId, p.isBot)}
+                  {p.userId === me.id && <span className="chip primary xs-chip">{t('You', 'আপনি')}</span>}
+                  {p.isBot && <span className="chip xs-chip"><Icon name="bot" size={12} /> AI</span>}
+                </b>
+                <p className="xs muted">
+                  {!p.isBot && (p.userId === me.id ? me.uid : v?.uid) ? `${p.userId === me.id ? me.uid : v?.uid} · ` : ''}
+                  {t(`${p.correct}/${p.answered} correct`, `${num(p.correct, lang)}/${num(p.answered, lang)} সঠিক`)}
+                  {p.avgResponseMs ? ` · ${num((p.avgResponseMs / 1000).toFixed(1), lang)}s` : ''}
+                </p>
+              </div>
+              <b className="num lb-score">{num(p.score, lang)}</b>
             </div>
-            <b className="num">{p.score}</b>
+          );
+        })}
+      </section>
+
+      <section className="card share-panel">
+        <div className="sp-head">
+          <IconTile name="image" tone="primary" size={40} />
+          <div>
+            <b>{t('Your result card', 'আপনার রেজাল্ট কার্ড')}</b>
+            <p className="xs muted">{t('Share it with friends or keep it in your gallery.', 'বন্ধুদের সাথে শেয়ার করুন বা গ্যালারিতে রেখে দিন।')}</p>
           </div>
-        ))}
+        </div>
+        <div className="sp-preview">{card ? <img src={card.url} alt={t('Result card preview', 'রেজাল্ট কার্ডের প্রিভিউ')} /> : <span className="spinner" />}</div>
+        <div className="row">
+          <button className="btn primary grow share-btn" disabled={busy !== null} onClick={() => void doShare()}>
+            {busy === 'share' ? <span className="spinner" /> : <Icon name="share" />} {t('Share', 'শেয়ার করুন')}
+          </button>
+          <button className="btn soft grow" disabled={!card || busy !== null} onClick={() => void doSave()}>
+            {busy === 'save' ? <span className="spinner" /> : <Icon name="download" />} {isNative ? t('Save to gallery', 'গ্যালারিতে সেভ') : t('Download', 'ডাউনলোড')}
+          </button>
+        </div>
       </section>
 
       <div className="row">
-        <button className="btn primary lg grow" onClick={again}>{solo || end.type === 'ai' ? 'Play again' : 'Rematch'}</button>
-        <button className="btn soft lg" onClick={() => void doShare()} aria-label="Share result"><Icon name="share" /></button>
+        <button className="btn primary lg grow" onClick={again}>
+          <Icon name="refresh" /> {solo || end.type === 'ai' ? t('Play again', 'আবার খেলুন') : t('Rematch', 'আবার লড়াই')}
+        </button>
       </div>
       <div className="row">
-        <Link to={`/review/${id}`} className="btn outline grow">📘 Review answers</Link>
-        <button className="btn ghost grow" onClick={() => nav('/', { replace: true })}>Home</button>
+        <Link to={`/review/${id}`} className="btn outline grow"><Icon name="book-check" /> {t('Review answers', 'উত্তর দেখুন')}</Link>
+        <button className="btn ghost grow" onClick={() => nav('/', { replace: true })}><Icon name="home" /> {t('Home', 'হোম')}</button>
       </div>
     </div>
   );
