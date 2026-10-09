@@ -111,6 +111,8 @@ jobs:
           if [ "$HAS_KEYSTORE" = "true" ]; then
             ./gradlew --no-daemon assembleRelease bundleRelease
             cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/QuizWar.apk"
+            # The .aab is what Google Play wants (upload it in Play Console → Release).
+            cp app/build/outputs/bundle/release/app-release.aab "$RUNNER_TEMP/QuizWar-play.aab"
           else
             ./gradlew --no-daemon assembleDebug
             cp app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/QuizWar.apk"
@@ -174,7 +176,9 @@ jobs:
           # The server reads this to offer in-app updates automatically.
           printf '{"versionCode":%s,"versionName":"%s"}\n' "$QW_VERSION_CODE" "$QW_VERSION_NAME" > "$RUNNER_TEMP/version.json"
           gh release delete app-latest -y --cleanup-tag || true
-          gh release create app-latest "$RUNNER_TEMP/QuizWar.apk" "$RUNNER_TEMP/version.json" --target "$GITHUB_SHA" --prerelease \
+          ASSETS=("$RUNNER_TEMP/QuizWar.apk" "$RUNNER_TEMP/version.json")
+          [ -f "$RUNNER_TEMP/QuizWar-play.aab" ] && ASSETS+=("$RUNNER_TEMP/QuizWar-play.aab")
+          gh release create app-latest "${ASSETS[@]}" --target "$GITHUB_SHA" --prerelease \
             --title "QUIZ WAR Android (${QW_VERSION_NAME}-${QW_VERSION_CODE}, $KIND)" \
             --notes-file "$RUNNER_TEMP/notes.md"
 

@@ -20,6 +20,7 @@ const DOCS: Record<string, { title: string; body: JSX.Element }> = {
           <li><b>Gameplay:</b> matches, answers, response times, scores, XP, coins, rating, achievements, friends, squads, reports you send.</li>
           <li><b>Security:</b> device/session information (platform, browser/app version), IP address and login history, used to protect your account and prevent cheating.</li>
           <li><b>Notifications:</b> push tokens if you enable notifications.</li>
+          <li><b>Camera:</b> only while you scan a war-room QR code. The picture is read on your device and is never uploaded or stored.</li>
         </ul>
         <h2>What is public</h2>
         <p>Your username, UID, photo, level, league, rating, game statistics, achievements and squad are visible to other players and on public profile/leaderboard pages. Your email address is never shown to other players.</p>
@@ -32,6 +33,26 @@ const DOCS: Record<string, { title: string; body: JSX.Element }> = {
         <p>QUIZ WAR is intended for players aged 13 and above.</p>
         <h2>Contact</h2>
         <p>Questions or data requests: {CONTACT}</p>
+      </>
+    ),
+  },
+  'delete-account': {
+    title: 'Delete your QUIZ WAR account',
+    body: (
+      <>
+        <p>QUIZ WAR: Bangladesh (Android app and quizwar.webtecit.com). You can delete your account and its data at any time.</p>
+        <h2>Delete it yourself (instant)</h2>
+        <ol>
+          <li>Open the QUIZ WAR app or quizwar.webtecit.com and sign in.</li>
+          <li>Go to <b>Profile → Settings → Delete account</b>.</li>
+          <li>Confirm. Your account is deleted immediately.</li>
+        </ol>
+        <h2>Can't sign in? Ask us</h2>
+        <p>Email <b>{CONTACT}</b> from the address you used to sign up, with the subject “Delete my account” and your Player ID (UID) if you know it. We delete the account within 7 days and reply to confirm.</p>
+        <h2>What is deleted</h2>
+        <p>Your email, password and login methods (Google, passkeys), profile photo and bio, friends, notifications, push tokens and squad membership.</p>
+        <h2>What is kept</h2>
+        <p>Match records stay in anonymised form (no name or email) so other players' history and leaderboards stay correct. Security logs are kept for up to 90 days; backups roll over within 30 days.</p>
       </>
     ),
   },
@@ -86,6 +107,7 @@ const BN_SUMMARY: Record<string, string> = {
     'সংক্ষেপে: আমরা শুধু খেলা চালানোর জন্য দরকারি তথ্য রাখি — ইমেইল, ইউজারনেম, ছবি (ঐচ্ছিক), ম্যাচের ফলাফল আর নিরাপত্তার জন্য লগইন তথ্য। আপনার ইমেইল কাউকে দেখানো হয় না, তথ্য বিক্রি করা হয় না, কোনো বিজ্ঞাপন নেই। সেটিংস থেকে যেকোনো সময় অ্যাকাউন্ট মুছে ফেলতে পারবেন।',
   terms:
     'সংক্ষেপে: ন্যায্যভাবে খেলুন, চিটিং বা অন্যকে হয়রানি করবেন না। কয়েন শুধু খেলে অর্জন করা যায় — কেনা বা টাকায় রূপান্তর করা যায় না। নিয়ম ভাঙলে অ্যাকাউন্ট স্থগিত হতে পারে।',
+  'delete-account': 'সংক্ষেপে: অ্যাপ বা ওয়েবসাইটে লগইন করে প্রোফাইল → সেটিংস → অ্যাকাউন্ট মুছে ফেলুন চাপলেই সাথে সাথে অ্যাকাউন্ট মুছে যাবে। লগইন করতে না পারলে আপনার ইমেইল থেকে support.quizwarbd@gmail.com-এ "Delete my account" লিখে পাঠান, ৭ দিনের মধ্যে মুছে দেওয়া হবে।',
   guidelines: 'সংক্ষেপে: সবার প্রতি সম্মান দেখান, আপত্তিকর নাম বা ছবি ব্যবহার করবেন না, ভুল প্রশ্ন দেখলে রিপোর্ট করুন।',
 };
 
