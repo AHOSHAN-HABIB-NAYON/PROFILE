@@ -50,6 +50,8 @@ async function main() {
   await ctx.seasons.tick((m) => app.log.info(m));
   ctx.matchmaking.start();
   const stopJobs = startJobs(ctx);
+  // Website push works without setup: VAPID keys are generated once and kept in the database.
+  await ctx.push.ensureWebKeys();
   void ctx.ai.recover().catch((err) => app.log.error({ err }, 'ai job recovery failed'));
   // Uploads live in the database too; put back anything a redeploy wiped from the media folder.
   void ctx.storage.syncFromBackup().catch((err) => app.log.error({ err }, 'media restore failed'));

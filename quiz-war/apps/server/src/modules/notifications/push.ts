@@ -25,18 +25,24 @@ interface Logger {
 export class PushService {
   private fcm: { auth: GoogleAuth; projectId: string } | null = null;
   private webEnabled = false;
+  private vapidPublic: string | null = null;
+  private vapidSubject: string;
 
   constructor(
     cfg: { vapidPublicKey?: string; vapidPrivateKey?: string; vapidSubject: string; fcmServiceAccountJson?: string },
     private readonly log: Logger,
   ) {
+    this.vapidSubject = cfg.vapidSubject;
     if (cfg.vapidPublicKey && cfg.vapidPrivateKey) {
       webpush.setVapidDetails(cfg.vapidSubject, cfg.vapidPublicKey, cfg.vapidPrivateKey);
+      this.vapidPublic = cfg.vapidPublicKey;
       this.webEnabled = true;
     }
     if (cfg.fcmServiceAccountJson) {
       try {
-        const credentials = JSON.parse(cfg.fcmServiceAccountJson);
+        // Accept the JSON as-is or base64-encoded (easier to paste as one line on some hosts).
+        const raw = cfg.fcmServiceAccountJson.trim();
+        const credentials = JSON.parse(raw.startsWith('{') ? raw : Buffer.from(raw, 'base64').toString('utf8'));
         this.fcm = {
           auth: new GoogleAuth({ credentials, scopes: ['https://www.googleapis.com/auth/firebase.messaging'] }),
           projectId: credentials.project_id,
@@ -44,6 +50,31 @@ export class PushService {
       } catch {
         log.error({}, 'FCM_SERVICE_ACCOUNT_JSON is not valid JSON — Android push disabled');
       }
+    }
+  }
+
+  /** Public VAPID key for browsers (from env, or generated once and kept in the database). */
+  get vapidPublicKey() {
+    return this.vapidPublic;
+  }
+
+  /** Without VAPID env vars, create a key pair once and store it, so website push works with no setup. */
+  async ensureWebKeys() {
+    if (this.webEnabled) return;
+    try {
+      const row = await query<{ value: unknown }>(`SELECT value FROM settings WHERE setting_key = 'vapid'`);
+      let keys = row[0]?.value ? (typeof row[0].value === 'string' ? JSON.parse(row[0].value) : row[0].value) : null;
+      if (!keys?.publicKey || !keys?.privateKey) {
+        keys = webpush.generateVAPIDKeys();
+        await exec(`INSERT INTO settings (setting_key, value) VALUES ('vapid', ?) ON DUPLICATE KEY UPDATE value = value`, [JSON.stringify(keys)]);
+        const again = await query<{ value: unknown }>(`SELECT value FROM settings WHERE setting_key = 'vapid'`);
+        keys = typeof again[0].value === 'string' ? JSON.parse(again[0].value as string) : again[0].value;
+      }
+      webpush.setVapidDetails(this.vapidSubject, keys.publicKey, keys.privateKey);
+      this.vapidPublic = keys.publicKey;
+      this.webEnabled = true;
+    } catch (err) {
+      this.log.warn({ err: (err as Error).message }, 'could not prepare web push keys');
     }
   }
 

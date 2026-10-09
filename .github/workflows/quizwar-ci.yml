@@ -65,7 +65,7 @@ jobs:
       VITE_PUBLIC_WEB_URL: ${{ inputs.site_url || vars.QW_WEB_URL || 'https://quizwar.webtecit.com' }}
       QW_APP_LINK_HOST: ${{ vars.QW_APP_LINK_HOST || 'quizwar.webtecit.com' }}
       HAS_KEYSTORE: ${{ secrets.QW_UPLOAD_KEYSTORE_BASE64 != '' }}
-      HAS_FIREBASE: ${{ secrets.QW_GOOGLE_SERVICES_JSON_BASE64 != '' }}
+      HAS_FIREBASE: ${{ secrets.QW_GOOGLE_SERVICES_JSON_BASE64 != '' || secrets.QW_GOOGLE_SERVICES_JSON != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -86,7 +86,13 @@ jobs:
       - name: Firebase config (optional)
         if: ${{ env.HAS_FIREBASE == 'true' }}
         working-directory: quiz-war/apps/android
-        run: echo "${{ secrets.QW_GOOGLE_SERVICES_JSON_BASE64 }}" | base64 -d > app/google-services.json
+        env:
+          GS_JSON: ${{ secrets.QW_GOOGLE_SERVICES_JSON }}
+          GS_B64: ${{ secrets.QW_GOOGLE_SERVICES_JSON_BASE64 }}
+        # Either paste the google-services.json content as-is (QW_GOOGLE_SERVICES_JSON) or base64.
+        run: |
+          if [ -n "$GS_JSON" ]; then printf '%s' "$GS_JSON" > app/google-services.json; else echo "$GS_B64" | base64 -d > app/google-services.json; fi
+          python3 -c "import json; d=json.load(open('app/google-services.json')); print('Firebase project:', d['project_info']['project_id'])"
       # Signing: with the upload-key secrets every build is signed with the SAME key, so Google
       # login and passkeys keep working (they are tied to the certificate fingerprint).
       # The keystore lives ONLY in GitHub encrypted secrets (base64), never in the repo.
