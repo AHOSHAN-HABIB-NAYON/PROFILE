@@ -93,14 +93,8 @@ export default function Result() {
   const [card, setCard] = useState<{ blob: Blob; url: string } | null>(null);
   const [busy, setBusy] = useState<'share' | 'save' | null>(null);
   const announced = useRef(false);
-  // After a win, a small "share with friends" popup; tapping it opens the card + share options.
-  const [sharePrompt, setSharePrompt] = useState(false);
+  // The share card + Share/Save open in a sheet from the button right under the result.
   const [shareOpen, setShareOpen] = useState(false);
-  useEffect(() => {
-    if (outcome !== 'win') return;
-    const id = setTimeout(() => setSharePrompt(true), 2600);
-    return () => clearTimeout(id);
-  }, [outcome]);
 
   // Sound + vibration + rate prompt, once per result.
   useEffect(() => {
@@ -331,6 +325,22 @@ export default function Result() {
         </div>
       </section>
 
+      {/* Right under the result: the share card (most players miss it further down) + next steps. */}
+      <button className="share-cta" onClick={() => (haptic('tap'), setShareOpen(true))}>
+        <span className="sc-thumb">{card ? <img src={card.url} alt="" /> : <span className="spinner" />}</span>
+        <span className="sc-text">
+          <b>{outcome === 'win' ? t('Share your victory!', 'আপনার জয় শেয়ার করুন!') : t('Share your result card', 'রেজাল্ট কার্ড শেয়ার করুন')}</b>
+          <span className="xs">{t('Send it to friends or save it to your gallery', 'বন্ধুদের পাঠান বা গ্যালারিতে সেভ করুন')}</span>
+        </span>
+        <span className="sc-go"><Icon name="share" size={20} /></span>
+      </button>
+      <div className="row result-actions">
+        <button className="btn primary lg grow" onClick={again}>
+          <Icon name="refresh" /> {solo || end.type === 'ai' ? t('Play again', 'আবার খেলুন') : t('Rematch', 'আবার লড়াই')}
+        </button>
+        <button className="btn outline lg" onClick={() => nav('/', { replace: true })} aria-label={t('Home', 'হোম')}><Icon name="home" /></button>
+      </div>
+
       {!!mine?.penaltyCoins || !!mine?.penaltyXp ? (
         <div className="penalty-box" role="status">
           <IconTile name="alert" tone="danger" size={40} />
@@ -394,42 +404,10 @@ export default function Result() {
         })}
       </section>
 
-      <section className="card share-panel">
-        <div className="sp-head">
-          <IconTile name="image" tone="primary" size={40} />
-          <div>
-            <b>{t('Your result card', 'আপনার রেজাল্ট কার্ড')}</b>
-            <p className="xs muted">{t('Share it with friends or keep it in your gallery.', 'বন্ধুদের সাথে শেয়ার করুন বা গ্যালারিতে রেখে দিন।')}</p>
-          </div>
-        </div>
-        {shareBody}
-      </section>
-
-      <div className="row">
-        <button className="btn primary lg grow" onClick={again}>
-          <Icon name="refresh" /> {solo || end.type === 'ai' ? t('Play again', 'আবার খেলুন') : t('Rematch', 'আবার লড়াই')}
-        </button>
-      </div>
       <div className="row">
         <Link to={`/review/${id}`} className="btn outline grow"><Icon name="book-check" /> {t('Review answers', 'উত্তর দেখুন')}</Link>
-        <button className="btn ghost grow" onClick={() => nav('/', { replace: true })}><Icon name="home" /> {t('Home', 'হোম')}</button>
       </div>
 
-      {sharePrompt && !shareOpen && (
-        <div className="share-pop" role="dialog" aria-label={t('Share your win', 'আপনার জয় শেয়ার করুন')}>
-          <button className="share-pop-main" onClick={() => (haptic('tap'), setShareOpen(true), setSharePrompt(false))}>
-            <IconTile name="share" tone="primary" size={42} anim="pop" />
-            <span className="grow">
-              <b>{t('Tell your friends you won!', 'বন্ধুদের জানিয়ে দিন আপনি জিতেছেন!')}</b>
-              <span className="xs muted">{t('Tap to see your card and share it', 'চাপ দিয়ে কার্ড দেখুন ও শেয়ার করুন')}</span>
-            </span>
-            <Icon name="chevron" size={18} />
-          </button>
-          <button className="btn icon sm ghost" aria-label={t('Close', 'বন্ধ করুন')} onClick={() => setSharePrompt(false)}>
-            <Icon name="close" size={18} />
-          </button>
-        </div>
-      )}
       <Sheet open={shareOpen} onClose={() => setShareOpen(false)} title={t('Share your result', 'রেজাল্ট শেয়ার করুন')} icon="share">
         <div className="share-panel in-sheet">{shareBody}</div>
       </Sheet>
