@@ -26,7 +26,7 @@ export async function googleIdToken(clientId: string): Promise<string> {
       await SocialLogin.initialize({ google: { webClientId: clientId } });
       nativeInit = true;
     }
-    const res: any = await SocialLogin.login({ provider: 'google', options: { scopes: ['email', 'profile'] } });
+    const res: any = await SocialLogin.login({ provider: 'google', options: {} });
     const token = res?.result?.idToken;
     if (!token) throw new Error('Google sign-in was cancelled');
     return token;
