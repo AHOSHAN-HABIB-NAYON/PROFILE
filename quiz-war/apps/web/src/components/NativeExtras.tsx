@@ -190,23 +190,24 @@ export function VerifyEmailPrompt() {
     }
   };
 
-  if (!need) return null;
+  if (!need || !open || inGame) return null;
+  // A small card above the bottom bar — easy to act on, easy to dismiss.
   return (
-    <Modal open={open} onClose={() => setOpen(false)} label={t('Verify your email', 'ইমেইল নিশ্চিত করুন')}>
-      <div className="m-art"><IconTile name="mail" tone="primary" size={72} anim="float" /></div>
-      <h2>{t('Verify your email', 'ইমেইল নিশ্চিত করুন')}</h2>
-      <p>
-        {t('We sent a link to', 'আমরা একটি লিংক পাঠিয়েছি')} <b>{user?.email}</b>
-        {t('. Tap it to secure your account and recover it if you forget your password.', '-এ। লিংকে চাপ দিলে অ্যাকাউন্ট সুরক্ষিত হবে আর পাসওয়ার্ড ভুলে গেলেও ফিরে পাবেন।')}
-      </p>
-      <p className="xs faint" style={{ marginTop: 8 }}>{t('Not in your inbox? Check Spam or Promotions.', 'ইনবক্সে না পেলে Spam বা Promotions ফোল্ডার দেখুন।')}</p>
-      <div className="modal-actions">
-        <button className="btn outline" onClick={() => setOpen(false)}>{t('Later', 'পরে')}</button>
-        <button className="btn primary" disabled={busy || cool > 0} onClick={() => void resend()}>
-          {busy ? <span className="spinner" /> : <Icon name="mail" />} {cool > 0 ? t(`Resend in ${cool}s`, `${cool} সেকেন্ড পর আবার`) : t('Resend email', 'আবার পাঠান')}
-        </button>
+    <div className="verify-pop" role="dialog" aria-label={t('Verify your email', 'ইমেইল নিশ্চিত করুন')}>
+      <IconTile name="mail" tone="warning" size={38} anim="float" />
+      <div className="grow">
+        <b>{t('Verify your email', 'ইমেইল নিশ্চিত করুন')}</b>
+        <p className="xs muted">
+          {cool > 0 ? t('Sent! Check Inbox or Spam.', 'পাঠানো হয়েছে! Inbox বা Spam দেখুন।') : t('Tap the link we sent to secure your account.', 'পাঠানো লিংকে চাপ দিয়ে অ্যাকাউন্ট সুরক্ষিত করুন।')}
+        </p>
       </div>
-    </Modal>
+      <button className="btn sm primary" disabled={busy || cool > 0} onClick={() => void resend()}>
+        {busy ? <span className="spinner" /> : cool > 0 ? `${cool}s` : t('Resend', 'আবার পাঠান')}
+      </button>
+      <button className="btn icon sm ghost" aria-label={t('Close', 'বন্ধ করুন')} onClick={() => setOpen(false)}>
+        <Icon name="close" size={18} />
+      </button>
+    </div>
   );
 }
 

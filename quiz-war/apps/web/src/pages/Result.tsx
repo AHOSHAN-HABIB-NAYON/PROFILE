@@ -11,6 +11,7 @@ import { useLeagues } from '../components/Game';
 import { Icon, IconTile, achievementIcon, type IconName } from '../components/Icon';
 import { LeagueEmblem, RankMedal } from '../components/LeagueEmblem';
 import { DIFFICULTY_INFO } from '../components/MatchOptions';
+import { Sheet } from '../components/Sheet';
 import { useConfig } from '../hooks/queries';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -92,6 +93,14 @@ export default function Result() {
   const [card, setCard] = useState<{ blob: Blob; url: string } | null>(null);
   const [busy, setBusy] = useState<'share' | 'save' | null>(null);
   const announced = useRef(false);
+  // After a win, a small "share with friends" popup; tapping it opens the card + share options.
+  const [sharePrompt, setSharePrompt] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  useEffect(() => {
+    if (outcome !== 'win') return;
+    const id = setTimeout(() => setSharePrompt(true), 2600);
+    return () => clearTimeout(id);
+  }, [outcome]);
 
   // Sound + vibration + rate prompt, once per result.
   useEffect(() => {
@@ -259,6 +268,20 @@ export default function Result() {
     nav(`/matchmaking?mode=${end.mode}&ranked=${end.ranked ? 1 : 0}`, { replace: true });
   };
 
+  const shareBody = (
+    <>
+      <div className="sp-preview">{card ? <img src={card.url} alt={t('Result card preview', 'রেজাল্ট কার্ডের প্রিভিউ')} /> : <span className="spinner" />}</div>
+      <div className="row">
+        <button className="btn primary grow share-btn" disabled={busy !== null} onClick={() => void doShare()}>
+          {busy === 'share' ? <span className="spinner" /> : <Icon name="share" />} {t('Share', 'শেয়ার করুন')}
+        </button>
+        <button className="btn soft grow" disabled={!card || busy !== null} onClick={() => void doSave()}>
+          {busy === 'save' ? <span className="spinner" /> : <Icon name="download" />} {isNative ? t('Save to gallery', 'গ্যালারিতে সেভ') : t('Download', 'ডাউনলোড')}
+        </button>
+      </div>
+    </>
+  );
+
   const ranked = [...end.players].sort((a, b) => b.score - a.score);
   const teams = MODES[end.mode].teams;
 
@@ -379,15 +402,7 @@ export default function Result() {
             <p className="xs muted">{t('Share it with friends or keep it in your gallery.', 'বন্ধুদের সাথে শেয়ার করুন বা গ্যালারিতে রেখে দিন।')}</p>
           </div>
         </div>
-        <div className="sp-preview">{card ? <img src={card.url} alt={t('Result card preview', 'রেজাল্ট কার্ডের প্রিভিউ')} /> : <span className="spinner" />}</div>
-        <div className="row">
-          <button className="btn primary grow share-btn" disabled={busy !== null} onClick={() => void doShare()}>
-            {busy === 'share' ? <span className="spinner" /> : <Icon name="share" />} {t('Share', 'শেয়ার করুন')}
-          </button>
-          <button className="btn soft grow" disabled={!card || busy !== null} onClick={() => void doSave()}>
-            {busy === 'save' ? <span className="spinner" /> : <Icon name="download" />} {isNative ? t('Save to gallery', 'গ্যালারিতে সেভ') : t('Download', 'ডাউনলোড')}
-          </button>
-        </div>
+        {shareBody}
       </section>
 
       <div className="row">
@@ -399,6 +414,25 @@ export default function Result() {
         <Link to={`/review/${id}`} className="btn outline grow"><Icon name="book-check" /> {t('Review answers', 'উত্তর দেখুন')}</Link>
         <button className="btn ghost grow" onClick={() => nav('/', { replace: true })}><Icon name="home" /> {t('Home', 'হোম')}</button>
       </div>
+
+      {sharePrompt && !shareOpen && (
+        <div className="share-pop" role="dialog" aria-label={t('Share your win', 'আপনার জয় শেয়ার করুন')}>
+          <button className="share-pop-main" onClick={() => (haptic('tap'), setShareOpen(true), setSharePrompt(false))}>
+            <IconTile name="share" tone="primary" size={42} anim="pop" />
+            <span className="grow">
+              <b>{t('Tell your friends you won!', 'বন্ধুদের জানিয়ে দিন আপনি জিতেছেন!')}</b>
+              <span className="xs muted">{t('Tap to see your card and share it', 'চাপ দিয়ে কার্ড দেখুন ও শেয়ার করুন')}</span>
+            </span>
+            <Icon name="chevron" size={18} />
+          </button>
+          <button className="btn icon sm ghost" aria-label={t('Close', 'বন্ধ করুন')} onClick={() => setSharePrompt(false)}>
+            <Icon name="close" size={18} />
+          </button>
+        </div>
+      )}
+      <Sheet open={shareOpen} onClose={() => setShareOpen(false)} title={t('Share your result', 'রেজাল্ট শেয়ার করুন')} icon="share">
+        <div className="share-panel in-sheet">{shareBody}</div>
+      </Sheet>
     </div>
   );
 }

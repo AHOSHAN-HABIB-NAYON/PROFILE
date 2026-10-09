@@ -8,6 +8,7 @@ import { Empty, N, Skeleton } from '../components/Feedback';
 import { LevelBar, useLeagues } from '../components/Game';
 import { achievementIcon, categoryIcon, Icon, IconTile, type IconName } from '../components/Icon';
 import { LeagueEmblem } from '../components/LeagueEmblem';
+import { ProfileCover } from '../components/ProfileCover';
 import { PullToRefresh } from '../components/PullToRefresh';
 import { QrCode } from '../components/Qr';
 import { Sheet } from '../components/Sheet';
@@ -72,7 +73,7 @@ export default function Profile({ tab: initial }: { tab?: 'stats' | 'achievement
           }
         />
         <section className="profile-card">
-          <div className="pc-band" />
+          <div className="pc-band"><ProfileCover /></div>
           <div className="pc-body">
             <div className="pc-avatar">
               <Avatar name={me.username} src={me.avatarUrl} size={100} frame={me.frame} />

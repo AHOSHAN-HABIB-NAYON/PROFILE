@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { PageHeader } from '../components/AppShell';
+import { ProfileCover } from '../components/ProfileCover';
 import { Avatar, statusLabel } from '../components/Avatar';
 import { ChallengeSheet } from '../components/ChallengeSheet';
 import { Empty, Skeleton } from '../components/Feedback';
@@ -128,7 +129,7 @@ export default function PublicProfile() {
         </header>
       )}
       <section className="profile-card">
-        <div className="pc-band" />
+        <div className="pc-band"><ProfileCover /></div>
         <div className="pc-body">
           <div className="pc-avatar"><Avatar name={data.user.username} src={data.user.avatarUrl} size={100} frame={data.user.frame} status={rel?.status} /></div>
           <h1 className="name-with-badge">{data.user.username}{data.user.verified && <VerifiedBadge size={22} />}</h1>
