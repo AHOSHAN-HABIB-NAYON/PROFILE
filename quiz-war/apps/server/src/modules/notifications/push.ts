@@ -10,6 +10,10 @@ export interface PushMessage {
   url?: string;
   tag?: string;
   data?: Record<string, string>;
+  /** Android notification channel (messages use their own loud, heads-up channel). */
+  channel?: string;
+  /** Small picture shown in the notification (e.g. the sender's avatar). */
+  image?: string;
 }
 
 interface Logger {
@@ -122,7 +126,17 @@ export class PushService {
               token: t.token,
               notification: { title: msg.title, body: msg.body },
               data: { url: msg.url ?? '/', ...(msg.data ?? {}) },
-              android: { priority: 'high', notification: { channel_id: 'quizwar_default', tag: msg.tag } },
+              android: {
+                priority: 'high',
+                notification: {
+                  channel_id: msg.channel ?? 'quizwar_default',
+                  tag: msg.tag,
+                  default_sound: true,
+                  default_vibrate_timings: true,
+                  notification_priority: 'PRIORITY_MAX',
+                  ...(msg.image && /^https:\/\//.test(msg.image) ? { image: msg.image } : {}),
+                },
+              },
             },
           },
           validateStatus: () => true,

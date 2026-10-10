@@ -17,6 +17,8 @@ interface SettingsState {
   music: boolean;
   haptics: boolean;
   reduceMotion: boolean;
+  /** Floating round chat heads for new messages (Messenger style). */
+  chatHeads: boolean;
   set: (patch: Partial<Omit<SettingsState, 'set'>>) => void;
 }
 
@@ -32,6 +34,7 @@ export const useSettings = create<SettingsState>()(
       music: true,
       haptics: true,
       reduceMotion: false,
+      chatHeads: true,
       set: (patch) => set(patch),
     }),
     { name: 'qw-settings' },

@@ -193,8 +193,8 @@ export interface ServerToClientEvents {
   'notification:new': (p: NotificationView) => void;
   'account:update': (p: { coins?: number; xp?: number; level?: number; rating?: number }) => void;
   'server:announcement': (p: { title: string; body: string }) => void;
-  'chat:message': (p: { message: ChatMessage; peer: PublicUser }) => void;
+  'chat:message': (p: { message: ChatMessage; peer: PublicUser; request?: boolean }) => void;
   'chat:read': (p: { peerId: number; upTo: number }) => void;
   'chat:typing': (p: { from: number }) => void;
-  'chat:deleted': (p: { ids: number[] }) => void;
+  'chat:deleted': (p: { ids: number[]; unsent?: boolean }) => void;
 }

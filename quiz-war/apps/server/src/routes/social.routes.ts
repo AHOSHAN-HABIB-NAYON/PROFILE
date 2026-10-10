@@ -55,6 +55,18 @@ export async function socialRoutes(app: FastifyInstance, ctx: AppContext) {
     const b = parse(z.object({ forEveryone: z.boolean().default(false) }), req.body ?? {});
     return ctx.chat.deleteMessage(uid(req), id, b.forEveryone);
   });
+  app.post('/chats/:uid/accept', auth, async (req) => {
+    const p = parse(z.object({ uid: z.string().max(20) }), req.params);
+    return ctx.chat.accept(uid(req), (await chatPeer(p.uid)).id);
+  });
+  app.post('/chats/:uid/block', auth, async (req) => {
+    const p = parse(z.object({ uid: z.string().max(20) }), req.params);
+    return ctx.chat.chatBlock(uid(req), (await chatPeer(p.uid)).id, true);
+  });
+  app.delete('/chats/:uid/block', auth, async (req) => {
+    const p = parse(z.object({ uid: z.string().max(20) }), req.params);
+    return ctx.chat.chatBlock(uid(req), (await chatPeer(p.uid)).id, false);
+  });
   app.post('/chats/:uid/clear', auth, async (req) => {
     const p = parse(z.object({ uid: z.string().max(20) }), req.params);
     return ctx.chat.clearChat(uid(req), (await chatPeer(p.uid)).id);

@@ -9,10 +9,11 @@ import { Sheet } from '../components/Sheet';
 import { PlayerName } from '../components/Verified';
 import { useConfig } from '../hooks/queries';
 import { api, friendlyError } from '../lib/api';
-import { addToThread, chatTime, markRead, threadKey, useChat, type LiveMessage, type ThreadData, type ThreadsData } from '../lib/chat';
+import { addToThread, chatTime, clock, markRead, threadKey, useChat, type LiveMessage, type ThreadData, type ThreadsData } from '../lib/chat';
 import { useLang, useT } from '../lib/i18n';
 import { reasonLabel } from '../lib/labels';
 import { haptic } from '../lib/platform';
+import { useSettings } from '../lib/settings';
 import { emit } from '../lib/socket';
 import { toast } from '../lib/toast';
 
@@ -58,6 +59,7 @@ export default function Chat() {
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [picked, setPicked] = useState<LiveMessage | null>(null);
   const [clearAsk, setClearAsk] = useState(false);
+  const chatHeads = useSettings((st) => st.chatHeads);
   const press = useRef<ReturnType<typeof setTimeout> | null>(null);
   const list = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
@@ -162,7 +164,8 @@ export default function Chat() {
     setPicked(null);
     haptic('tap');
     if (m.id < 0) return removeLocal(m.id);
-    removeLocal(m.id);
+    if (forEveryone) qc.setQueryData<ThreadData>(key, (d) => (d ? { ...d, items: d.items.map((x) => (x.id === m.id ? { ...x, body: '', deleted: true } : x)) } : d));
+    else removeLocal(m.id);
     try {
       await api(`/chats/messages/${m.id}/delete`, { body: { forEveryone } });
       void qc.invalidateQueries({ queryKey: ['chats'] });
@@ -222,6 +225,7 @@ export default function Chat() {
           <span className="grow" />
         )}
         <button className="btn icon ghost" aria-label={t('Voice call', 'কল')} onClick={() => upcoming(t('Voice calls', 'ভয়েস কল'))}><Icon name="phone" size={21} /></button>
+        <button className="btn icon ghost" aria-label={t('Video call', 'ভিডিও কল')} onClick={() => upcoming(t('Video calls', 'ভিডিও কল'))}><Icon name="video" size={23} /></button>
         <button className="btn icon ghost" aria-label={t('More', 'আরও')} onClick={() => setMenu(true)} disabled={!peer}><Icon name="more" size={22} /></button>
       </header>
 
@@ -235,7 +239,6 @@ export default function Chat() {
             ) : (
               <>
                 <p className="chat-note"><Icon name="clock" size={14} /> {t('Messages are deleted automatically after 7 days.', 'মেসেজগুলো ৭ দিন পর নিজে থেকে মুছে যায়।')}</p>
-                {items.length > 0 && <p className="chat-hint">{t('Press and hold a message to copy or delete it', 'কপি বা মুছতে মেসেজ চেপে ধরুন')}</p>}
               </>
             )}
             {!items.length && peer && (
@@ -255,11 +258,11 @@ export default function Chat() {
               const newDay = !prev || new Date(prev.createdAt).toDateString() !== new Date(m.createdAt).toDateString();
               const groupTop = newDay || !prev || (prev.to === peer?.id) !== mine || new Date(m.createdAt).getTime() - new Date(prev.createdAt).getTime() > 5 * 60_000;
               const groupEnd = !next || (next.to === peer?.id) !== mine || new Date(next.createdAt).getTime() - new Date(m.createdAt).getTime() > 5 * 60_000;
-              const big = isEmojiOnly(m.body);
+              const big = !m.deleted && isEmojiOnly(m.body);
               return (
                 <Fragment key={m.id}>
                   {newDay && <div className="chat-day"><span>{dayLabel(m.createdAt, lang, t)}</span></div>}
-                  <div className={`msg ${mine ? 'mine' : 'theirs'}${groupTop ? ' top' : ''}${groupEnd ? ' end' : ''}${big ? ' big' : ''}${m.failed ? ' failed' : ''}`}>
+                  <div className={`msg ${mine ? 'mine' : 'theirs'}${groupTop ? ' top' : ''}${groupEnd ? ' end' : ''}${big ? ' big' : ''}${m.failed ? ' failed' : ''}${m.deleted ? ' deleted' : ''}`}>
                     <div
                       className={`bubble${picked?.id === m.id ? ' picked' : ''}`}
                       onPointerDown={() => holdStart(m)}
@@ -268,10 +271,14 @@ export default function Chat() {
                       onPointerCancel={holdEnd}
                       onContextMenu={(e) => (e.preventDefault(), holdEnd(), setPicked(m))}
                     >
-                      <span className="msg-text">{m.body}</span>
+                      {m.deleted ? (
+                        <span className="msg-text msg-gone"><Icon name="ban" size={15} /> {mine ? t('You deleted this message', 'আপনি মেসেজটি মুছে ফেলেছেন') : t('This message was deleted', 'মেসেজটি মুছে ফেলা হয়েছে')}</span>
+                      ) : (
+                        <span className="msg-text">{m.body}</span>
+                      )}
                       <span className="msg-meta">
-                        {new Date(m.createdAt).toLocaleTimeString(lang === 'bn' ? 'bn-BD' : 'en-GB', { hour: 'numeric', minute: '2-digit' })}
-                        {mine && (m.pending ? <Icon name="clock" size={13} /> : m.failed ? null : <Icon name={m.readAt ? 'check-check' : 'check'} size={15} className={m.readAt ? 'seen' : undefined} />)}
+                        {clock(m.createdAt, lang)}
+                        {mine && !m.deleted && (m.pending ? <Icon name="clock" size={13} /> : m.failed ? null : <Icon name={m.readAt ? 'check-check' : 'check'} size={15} className={m.readAt ? 'seen' : undefined} />)}
                       </span>
                     </div>
                     {m.failed && (
@@ -297,6 +304,24 @@ export default function Chat() {
         <div className="chat-blocked">
           <span>{t('You blocked this player.', 'আপনি এই প্লেয়ারকে ব্লক করেছেন।')}</span>
           <button className="btn sm primary" onClick={() => void act(() => api(`/blocks/${peer!.id}`, { method: 'DELETE' }), t('Player unblocked', 'আনব্লক করা হয়েছে'))}>{t('Unblock', 'আনব্লক')}</button>
+        </div>
+      ) : data?.chatBlocked === 'me' && peer ? (
+        <div className="chat-blocked">
+          <span>{t('You blocked messages from this player.', 'আপনি এই প্লেয়ারের মেসেজ ব্লক করেছেন।')}</span>
+          <button className="btn sm primary" onClick={() => void act(() => api(`/chats/${peer.uid}/block`, { method: 'DELETE' }), t('Chat unblocked', 'চ্যাট আনব্লক করা হয়েছে'))}>{t('Unblock chat', 'চ্যাট আনব্লক')}</button>
+        </div>
+      ) : data?.chatBlocked === 'them' ? (
+        <div className="chat-blocked"><Icon name="ban" size={18} /> {t('This player isn’t accepting your messages.', 'এই প্লেয়ার এখন আপনার মেসেজ নিচ্ছে না।')}</div>
+      ) : data?.request && peer ? (
+        <div className="chat-request">
+          <Avatar name={peer.username} src={peer.avatarThumbUrl} size={46} />
+          <b>{t(`${peer.username} wants to message you`, `${peer.username} আপনাকে মেসেজ পাঠাতে চায়`)}</b>
+          <span className="small muted">{t('You are not friends. Accept to reply — they won’t see that you read it until you do.', 'আপনারা বন্ধু নন। উত্তর দিতে Accept করুন — Accept না করা পর্যন্ত সে জানবে না যে আপনি দেখেছেন।')}</span>
+          <div className="row">
+            <button className="btn danger grow" onClick={() => void act(() => api(`/chats/${peer.uid}/block`, { method: 'POST' }), t('Chat blocked', 'চ্যাট ব্লক করা হয়েছে'))}><Icon name="ban" /> {t('Block', 'ব্লক')}</button>
+            <button className="btn soft grow" onClick={() => void act(() => api(`/chats/${peer.uid}/clear`, { method: 'POST' }), t('Request deleted', 'রিকোয়েস্ট মুছে ফেলা হয়েছে')).then(() => nav('/friends'))}><Icon name="trash" /> {t('Delete', 'মুছুন')}</button>
+            <button className="btn primary grow" onClick={() => void act(() => api(`/chats/${peer.uid}/accept`, { method: 'POST' }), t('Accepted — you can reply now', 'গ্রহণ করা হয়েছে — এখন উত্তর দিতে পারবেন'))}><Icon name="check" /> {t('Accept', 'Accept')}</button>
+          </div>
         </div>
       ) : data?.blocked === 'them' ? (
         <div className="chat-blocked"><Icon name="ban" size={18} /> {t('You can’t message this player.', 'এই প্লেয়ারকে মেসেজ পাঠানো যাবে না।')}</div>
@@ -341,6 +366,10 @@ export default function Chat() {
             <Link className="menu-row" to={`/u/${peer.uid}`} onClick={() => setMenu(false)}>
               <IconTile name="user" tone="primary" size={40} /><span className="m-text"><b>{t('View profile', 'প্রোফাইল দেখুন')}</b><small>{peer.uid}</small></span>
             </Link>
+            <button className="menu-row" onClick={() => { const on = !useSettings.getState().chatHeads; useSettings.getState().set({ chatHeads: on }); haptic('tap'); toast.success(on ? t('Chat heads turned on', 'চ্যাট হেড চালু হয়েছে') : t('Chat heads turned off', 'চ্যাট হেড বন্ধ হয়েছে'), undefined, 'message'); }}>
+              <IconTile name="message" tone="accent" size={40} /><span className="m-text"><b>{chatHeads ? t('Turn off chat heads', 'চ্যাট হেড বন্ধ করুন') : t('Turn on chat heads', 'চ্যাট হেড চালু করুন')}</b><small>{t('Round bubbles that pop up for new messages', 'নতুন মেসেজে গোল বাবল ভেসে উঠবে')}</small></span>
+              <span className={`switch-dot${chatHeads ? ' on' : ''}`} aria-hidden />
+            </button>
             <button className="menu-row" onClick={() => (setMenu(false), setClearAsk(true))}>
               <IconTile name="trash" tone="cyan" size={40} /><span className="m-text"><b>{t('Clear chat', 'চ্যাট মুছুন')}</b><small>{t('Removes the messages only for you', 'শুধু আপনার কাছ থেকে মেসেজগুলো মুছে যাবে')}</small></span>
             </button>
@@ -349,11 +378,15 @@ export default function Chat() {
             </button>
             {data?.blocked === 'me' ? (
               <button className="menu-row" onClick={() => (setMenu(false), void act(() => api(`/blocks/${peer.id}`, { method: 'DELETE' }), t('Player unblocked', 'আনব্লক করা হয়েছে')))}>
-                <IconTile name="user-check" tone="success" size={40} /><span className="m-text"><b>{t('Unblock', 'আনব্লক করুন')}</b></span>
+                <IconTile name="user-check" tone="success" size={40} /><span className="m-text"><b>{t('Unblock player', 'প্লেয়ার আনব্লক করুন')}</b></span>
+              </button>
+            ) : data?.chatBlocked === 'me' ? (
+              <button className="menu-row" onClick={() => (setMenu(false), void act(() => api(`/chats/${peer.uid}/block`, { method: 'DELETE' }), t('Chat unblocked', 'চ্যাট আনব্লক করা হয়েছে')))}>
+                <IconTile name="user-check" tone="success" size={40} /><span className="m-text"><b>{t('Unblock chat', 'চ্যাট আনব্লক করুন')}</b><small>{t('They can message you again', 'সে আবার আপনাকে মেসেজ দিতে পারবে')}</small></span>
               </button>
             ) : (
-              <button className="menu-row danger" onClick={() => (setMenu(false), void act(() => api('/blocks', { body: { userId: peer.id } }), t('Player blocked', 'প্লেয়ার ব্লক করা হয়েছে')))}>
-                <IconTile name="ban" tone="danger" size={40} /><span className="m-text"><b>{t('Block', 'ব্লক করুন')}</b><small>{t('They can’t message, find or challenge you', 'সে আর মেসেজ, খোঁজা বা চ্যালেঞ্জ করতে পারবে না')}</small></span>
+              <button className="menu-row danger" onClick={() => (setMenu(false), void act(() => api(`/chats/${peer.uid}/block`, { method: 'POST' }), t('Chat blocked', 'চ্যাট ব্লক করা হয়েছে')))}>
+                <IconTile name="ban" tone="danger" size={40} /><span className="m-text"><b>{t('Block chat', 'চ্যাট ব্লক করুন')}</b><small>{t('Only stops messages — you stay friends and can still play', 'শুধু মেসেজ বন্ধ হবে — বন্ধুত্ব আর খেলা আগের মতোই থাকবে')}</small></span>
               </button>
             )}
           </section>
@@ -362,11 +395,13 @@ export default function Chat() {
       <Sheet open={!!picked} onClose={() => setPicked(null)} title={t('Message', 'মেসেজ')} icon="message">
         {picked && (
           <section className="menu-list">
-            <p className="msg-preview">{picked.body}</p>
-            <button className="menu-row" onClick={() => void copyMsg(picked)}>
-              <IconTile name="copy" tone="primary" size={40} /><span className="m-text"><b>{t('Copy text', 'লেখা কপি করুন')}</b></span>
-            </button>
-            {picked.to === peer?.id && picked.id > 0 && (
+            {!picked.deleted && <p className="msg-preview">{picked.body}</p>}
+            {!picked.deleted && (
+              <button className="menu-row" onClick={() => void copyMsg(picked)}>
+                <IconTile name="copy" tone="primary" size={40} /><span className="m-text"><b>{t('Copy text', 'লেখা কপি করুন')}</b></span>
+              </button>
+            )}
+            {picked.to === peer?.id && picked.id > 0 && !picked.deleted && (
               <button className="menu-row danger" onClick={() => void deleteMsg(picked, true)}>
                 <IconTile name="trash" tone="danger" size={40} /><span className="m-text"><b>{t('Delete for everyone', 'সবার জন্য মুছুন')}</b><small>{t('It disappears from both phones', 'দুজনের ফোন থেকেই মুছে যাবে')}</small></span>
               </button>
@@ -422,48 +457,78 @@ export default function Chat() {
   );
 }
 
-/** "Chats" tab: every conversation, newest first, with unread counts. */
+/** "Chats" tab: every conversation, newest first, with unread counts; requests kept apart. */
 export function ChatList({ onFind }: { onFind: () => void }) {
   const t = useT();
   const lang = useLang();
+  const [showRequests, setShowRequests] = useState(false);
   const q = useQuery({ queryKey: ['chats'], queryFn: () => api<ThreadsData>('/chats'), refetchInterval: 60_000 });
   const typing = useChat((s) => s.typing);
   if (q.isLoading) return <Spinner />;
   if (q.error) return <ErrorBox error={q.error} retry={q.refetch} />;
-  if (!q.data?.items.length) {
-    return (
-      <Empty
-        icon="message"
-        title={t('No chats yet', 'এখনো কোনো চ্যাট নেই')}
-        body={t('Open a friend or any player’s profile and tap Message to start chatting.', 'বন্ধু বা যেকোনো প্লেয়ারের প্রোফাইলে গিয়ে "মেসেজ" চাপলেই চ্যাট শুরু হবে।')}
-        action={<button className="btn primary" onClick={onFind}><Icon name="users" /> {t('See friends', 'বন্ধুদের দেখুন')}</button>}
-      />
-    );
-  }
+  const all = q.data?.items ?? [];
+  const requests = all.filter((c) => c.request);
+  const list = showRequests ? requests : all.filter((c) => !c.request);
+  const reqUnread = requests.reduce((s, c) => s + c.unread, 0);
   return (
-    <div className="card list stagger chat-threads">
-      {q.data.items.map((c) => {
-        const isTyping = Date.now() - (typing[c.peer.id] ?? 0) < 4000;
-        const mine = c.last.to === c.peer.id;
-        return (
-          <Link key={c.peer.id} to={`/chat/${c.peer.uid}`} className={`list-row chat-row${c.unread ? ' unread' : ''}`}>
-            <Avatar name={c.peer.username} src={c.peer.avatarThumbUrl} status={c.status} size={52} frame={c.peer.frame} />
-            <span className="grow" style={{ minWidth: 0 }}>
-              <span className="chat-row-top">
-                <b><PlayerName name={c.peer.username} verified={c.peer.verified} /></b>
-                <small>{chatTime(c.last.createdAt, lang)}</small>
-              </span>
-              <span className="chat-row-bottom">
-                <span className={`chat-preview${isTyping ? ' typing-text' : ''}`}>
-                  {isTyping ? t('typing…', 'টাইপ করছে…') : <>{mine && <Icon name={c.last.readAt ? 'check-check' : 'check'} size={14} className={c.last.readAt ? 'seen' : undefined} />}{mine ? `${t('You', 'আপনি')}: ` : ''}{c.last.body}</>}
+    <>
+      {showRequests ? (
+        <button className="chat-req-bar back" onClick={() => setShowRequests(false)}>
+          <Icon name="back" size={20} /> <b className="grow">{t('Message requests', 'মেসেজ রিকোয়েস্ট')}</b>
+        </button>
+      ) : requests.length > 0 ? (
+        <button className="chat-req-bar" onClick={() => (haptic('tap'), setShowRequests(true))}>
+          <span className="crb-ic"><Icon name="user-plus" size={20} /></span>
+          <span className="grow">
+            <b>{t('Message requests', 'মেসেজ রিকোয়েস্ট')}</b>
+            <small>{t('From players who aren’t your friends', 'যারা আপনার বন্ধু নন তাদের মেসেজ')}</small>
+          </span>
+          <span className="chat-badge">{(reqUnread || requests.length).toLocaleString(lang === 'bn' ? 'bn-BD' : 'en')}</span>
+          <Icon name="chevron" size={18} />
+        </button>
+      ) : null}
+      {!list.length ? (
+        showRequests ? (
+          <Empty icon="user-plus" title={t('No requests', 'কোনো রিকোয়েস্ট নেই')} />
+        ) : (
+          <Empty
+            icon="message"
+            title={t('No chats yet', 'এখনো কোনো চ্যাট নেই')}
+            body={t('Open a friend or any player’s profile and tap Message to start chatting.', 'বন্ধু বা যেকোনো প্লেয়ারের প্রোফাইলে গিয়ে "মেসেজ" চাপলেই চ্যাট শুরু হবে।')}
+            action={<button className="btn primary" onClick={onFind}><Icon name="users" /> {t('See friends', 'বন্ধুদের দেখুন')}</button>}
+          />
+        )
+      ) : (
+        <div className="card list stagger chat-threads">
+          {list.map((c) => {
+            const isTyping = Date.now() - (typing[c.peer.id] ?? 0) < 4000;
+            const mine = c.last.to === c.peer.id;
+            return (
+              <Link key={c.peer.id} to={`/chat/${c.peer.uid}`} className={`list-row chat-row${c.unread ? ' unread' : ''}`}>
+                <Avatar name={c.peer.username} src={c.peer.avatarThumbUrl} status={c.status} size={52} frame={c.peer.frame} />
+                <span className="grow" style={{ minWidth: 0 }}>
+                  <span className="chat-row-top">
+                    <b><PlayerName name={c.peer.username} verified={c.peer.verified} /></b>
+                    <small>{chatTime(c.last.createdAt, lang)}</small>
+                  </span>
+                  <span className="chat-row-bottom">
+                    <span className={`chat-preview${isTyping ? ' typing-text' : ''}${c.last.deleted ? ' gone' : ''}`}>
+                      {isTyping ? (
+                        t('typing…', 'টাইপ করছে…')
+                      ) : c.last.deleted ? (
+                        <><Icon name="ban" size={13} /> {t('Message deleted', 'মেসেজ মুছে ফেলা হয়েছে')}</>
+                      ) : (
+                        <>{mine && <Icon name={c.last.readAt ? 'check-check' : 'check'} size={14} className={c.last.readAt ? 'seen' : undefined} />}{mine ? `${t('You', 'আপনি')}: ` : ''}{c.last.body}</>
+                      )}
+                    </span>
+                    {c.unread > 0 && <span className="chat-badge">{c.unread > 99 ? '99+' : c.unread.toLocaleString(lang === 'bn' ? 'bn-BD' : 'en')}</span>}
+                  </span>
                 </span>
-                {c.unread > 0 && <span className="chat-badge">{c.unread > 99 ? '99+' : c.unread.toLocaleString(lang === 'bn' ? 'bn-BD' : 'en')}</span>}
-              </span>
-            </span>
-          </Link>
-        );
-      })}
-    </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </>
   );
 }
-

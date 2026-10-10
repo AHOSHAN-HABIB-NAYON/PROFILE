@@ -4,7 +4,7 @@ import { useSettings } from './settings';
  * Tiny synthesized sound effects (WebAudio) — no audio files to download, works offline,
  * respects the Sound / Music toggles.
  */
-type Sfx = 'tap' | 'correct' | 'wrong' | 'tick' | 'start' | 'victory' | 'defeat' | 'rankup' | 'reward' | 'notify';
+type Sfx = 'tap' | 'correct' | 'wrong' | 'tick' | 'start' | 'victory' | 'defeat' | 'rankup' | 'reward' | 'notify' | 'message';
 
 let ctx: AudioContext | null = null;
 function ac() {
@@ -38,6 +38,8 @@ const PATTERNS: Record<Sfx, () => void> = {
   rankup: () => [523, 659, 784, 1046, 1318].forEach((f, i) => tone(f, i * 0.09, 0.22, 'square', 0.05)),
   reward: () => [880, 1175, 1568].forEach((f, i) => tone(f, i * 0.06, 0.12, 'sine', 0.08)),
   notify: () => (tone(880, 0, 0.08), tone(1320, 0.09, 0.1)),
+  /** Soft two-note "pop" for a new chat message. */
+  message: () => (tone(740, 0, 0.07, 'sine', 0.11), tone(1180, 0.075, 0.12, 'sine', 0.1)),
 };
 
 export function sfx(name: Sfx) {

@@ -900,3 +900,41 @@
 .rc-row small { color: var(--text-3); font-size: 12px; }
 .rc-btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 14px; border-radius: 99px; background: var(--grad-brand); color: #fff; font-weight: 800; font-size: 14px; box-shadow: 0 6px 14px rgba(29, 78, 216, .28); }
 .rc-row:active .rc-btn { transform: scale(.95); }
+
+/* Chat heads (Messenger style) */
+.chat-heads { position: fixed; z-index: 60; display: flex; flex-direction: column; gap: 10px; transition: top .35s var(--ease-spring, var(--ease)), left .35s var(--ease-spring, var(--ease)), right .35s var(--ease-spring, var(--ease)); touch-action: none; }
+.chat-heads.dragging .chead:not(:first-child) { display: none; }
+.chead { position: relative; width: 62px; height: 62px; padding: 0; border: 0; border-radius: 50%; background: none; touch-action: none; animation: ch-in .45s var(--ease-spring, var(--ease)) both; }
+.chead .avatar { box-shadow: 0 0 0 2px #fff, 0 8px 22px rgba(15, 23, 42, .32); border-radius: 50%; }
+.chat-heads.dragging .chead { transform: scale(1.08); }
+.ch-badge { position: absolute; top: -2px; right: -2px; min-width: 22px; height: 22px; padding: 0 6px; display: grid; place-items: center; border-radius: 99px; background: #e11d48; color: #fff; font-size: 12px; font-weight: 800; box-shadow: 0 0 0 2px #fff; }
+.ch-preview { position: absolute; top: 50%; transform: translateY(-50%); width: max-content; max-width: min(240px, 62vw); display: grid; gap: 1px; padding: 9px 13px; border-radius: 18px; background: var(--surface); color: var(--text); text-align: left; box-shadow: 0 10px 28px rgba(15, 23, 42, .22); border: 1px solid var(--border); animation: ch-pop .3s var(--ease) both; pointer-events: none; }
+.ch-preview b { font-size: 13px; }
+.ch-preview span { font-size: 14px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.side-right .ch-preview { right: calc(100% + 10px); }
+.side-left .ch-preview { left: calc(100% + 10px); }
+.ch-close { position: fixed; z-index: 59; left: 50%; bottom: calc(60px + env(safe-area-inset-bottom)); width: 60px; height: 60px; margin-left: -30px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: rgba(15, 23, 42, .55); border: 2px solid rgba(255, 255, 255, .7); backdrop-filter: blur(6px); animation: ch-pop .25s var(--ease) both; transition: transform .2s var(--ease), background .2s; }
+.ch-close.over { transform: scale(1.25); background: #e11d48; }
+@keyframes ch-in { from { transform: scale(.3); opacity: 0; } }
+@keyframes ch-pop { from { opacity: 0; transform: translateY(-50%) scale(.9); } }
+.ch-close { animation-name: ch-close-in; }
+@keyframes ch-close-in { from { opacity: 0; transform: translateY(20px); } }
+@media (prefers-reduced-motion: reduce) { .chead, .ch-preview, .ch-close { animation: none; } }
+.msg-gone { display: inline-flex; align-items: center; gap: 6px; font-style: italic; opacity: .75; }
+.msg.deleted .bubble { background: transparent !important; color: var(--text-3) !important; border: 1px dashed var(--border-strong, var(--border)); box-shadow: none; }
+.chat-preview.gone { font-style: italic; }
+.chat-request { display: grid; justify-items: center; gap: 6px; padding: 14px 16px calc(14px + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--border); text-align: center; }
+.chat-request .row { width: 100%; margin-top: 6px; }
+.chat-req-bar { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border-radius: 18px; border: 1px solid var(--border); background: var(--surface); color: var(--text); text-align: left; font: inherit; }
+.chat-req-bar .grow { display: grid; min-width: 0; }
+.chat-req-bar small { color: var(--text-3); font-size: 12.5px; }
+.chat-req-bar.back { border: 0; background: none; padding: 4px 2px; }
+.crb-ic { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); }
+.switch-dot { flex: 0 0 auto; width: 40px; height: 24px; border-radius: 99px; background: var(--border); position: relative; transition: background var(--dur-fast); }
+.switch-dot::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform var(--dur-fast) var(--ease); }
+.switch-dot.on { background: var(--primary); }
+.switch-dot.on::after { transform: translateX(16px); }
+/* Thinner rings in chat */
+.chat-threads .avatar .status, .chat-head-peer .avatar .status, .chat-peer .avatar .status, .rc-row .avatar .status { width: 24%; height: 24%; border-width: 1.5px; }
+.chat-threads.card { border-color: color-mix(in srgb, var(--border) 70%, transparent); }
+.msg.theirs .bubble { border-color: color-mix(in srgb, var(--border) 65%, transparent); border-width: .5px; }

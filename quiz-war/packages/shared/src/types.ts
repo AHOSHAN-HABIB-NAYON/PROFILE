@@ -97,6 +97,8 @@ export interface ChatMessage {
   body: string;
   createdAt: string;
   readAt: string | null;
+  /** Unsent by its author: shown as "This message was deleted". */
+  deleted?: boolean;
 }
 export interface ChatThread {
   peer: PublicUser;

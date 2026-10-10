@@ -425,16 +425,22 @@ d('Features (MySQL)', () => {
       expect((await api('POST', `/chats/${ua}/messages`, { body: '   ' }, a.token)).status).toBe(400);
 
       const unread = await api('GET', '/chats/unread', undefined, b.token);
-      expect(unread.body.count).toBe(1);
+      expect(unread.body.count).toBe(0); // a message request, not the inbox
       const list = await api('GET', '/chats', undefined, b.token);
       expect(list.body.items[0].peer.uid).toBe(ua);
       expect(list.body.items[0].unread).toBe(1);
+      expect(list.body.requests).toBe(1);
 
       const hist = await api('GET', `/chats/${ua}/messages`, undefined, b.token);
       expect(hist.body.items.map((m: any) => m.body)).toEqual(['হাই 👋']);
       await api('POST', `/chats/${ua}/read`, {}, b.token);
-      expect((await api('GET', '/chats/unread', undefined, b.token)).body.count).toBe(0);
+      expect((await api('GET', `/chats/${ub}/messages`, undefined, a.token)).body.items[0].readAt).toBeNull(); // no "seen" on requests
 
+      // Chat-only block: messages stop, the chat stays for the blocker, and it can be undone.
+      await api('POST', `/chats/${ua}/block`, {}, b.token);
+      expect((await api('POST', `/chats/${ub}/messages`, { body: 'hey' }, a.token)).body.error.code).toBe('chat_blocked');
+      expect((await api('GET', `/chats/${ua}/messages`, undefined, b.token)).body).toMatchObject({ chatBlocked: 'me', blocked: null });
+      await api('DELETE', `/chats/${ua}/block`, undefined, b.token);
       // Blocked either way: no more messages.
       await api('POST', '/blocks', { userId: a.id }, b.token);
       expect((await api('POST', `/chats/${ub}/messages`, { body: 'hello?' }, a.token)).status).toBe(403);
@@ -448,10 +454,16 @@ d('Features (MySQL)', () => {
       expect((await api('GET', `/chats/${ua}/messages`, undefined, b.token)).body.items.map((m: any) => m.body)).toEqual(['হাই 👋']);
       expect((await api('GET', `/chats/${ub}/messages`, undefined, a.token)).body.items.map((m: any) => m.body)).toEqual(['হাই 👋', 'oops']);
       await api('POST', `/chats/messages/${m2.id}/delete`, { forEveryone: true }, a.token);
-      expect((await api('GET', `/chats/${ub}/messages`, undefined, a.token)).body.items).toHaveLength(1);
+      const after = (await api('GET', `/chats/${ub}/messages`, undefined, a.token)).body.items;
+      expect(after).toHaveLength(2);
+      expect(after[1]).toMatchObject({ deleted: true, body: '' });
+      // Not friends: the chat is a message request for B until B accepts or replies.
+      expect((await api('GET', '/chats', undefined, b.token)).body.items[0].request).toBe(true);
+      await api('POST', `/chats/${ua}/accept`, {}, b.token);
+      expect((await api('GET', '/chats', undefined, b.token)).body.items[0].request).toBe(false);
       await api('POST', `/chats/${ua}/clear`, {}, b.token);
       expect((await api('GET', `/chats/${ua}/messages`, undefined, b.token)).body.items).toHaveLength(0);
-      expect((await api('GET', `/chats/${ub}/messages`, undefined, a.token)).body.items).toHaveLength(1);
+      expect((await api('GET', `/chats/${ub}/messages`, undefined, a.token)).body.items).toHaveLength(2);
 
       await exec('UPDATE chat_messages SET created_at = NOW() - INTERVAL 8 DAY WHERE sender_id = ?', [a.id]);
       expect(await t.ctx.chat.purgeOld()).toBeGreaterThanOrEqual(1);

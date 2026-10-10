@@ -16,7 +16,8 @@ const toMsg = (r: any): ChatMessage => ({
   id: Number(r.id),
   from: Number(r.sender_id),
   to: Number(r.recipient_id),
-  body: r.body,
+  body: r.deleted_at ? '' : r.body,
+  ...(r.deleted_at ? { deleted: true } : {}),
   createdAt: new Date(r.created_at).toISOString(),
   readAt: r.read_at ? new Date(r.read_at).toISOString() : null,
 });
@@ -57,6 +58,42 @@ export class ChatService {
     return false;
   }
 
+  /** Peers whose messages go straight to the inbox: friends and people you accepted or wrote to. */
+  private async trusted(userId: number): Promise<Set<number>> {
+    const rows = await query<{ id: number }>(
+      'SELECT friend_id id FROM friends WHERE user_id = ? UNION SELECT peer_id id FROM chat_accepts WHERE user_id = ?',
+      [userId, userId],
+    );
+    return new Set(rows.map((r) => Number(r.id)));
+  }
+
+  private async isTrusted(userId: number, peerId: number) {
+    return !!(await queryOne(
+      'SELECT 1 x FROM friends WHERE user_id = ? AND friend_id = ? UNION SELECT 1 FROM chat_accepts WHERE user_id = ? AND peer_id = ? LIMIT 1',
+      [userId, peerId, userId, peerId],
+    ));
+  }
+
+  /** Chat-only block between two players: 'me' (I blocked their messages), 'them' or null. */
+  async chatBlockDirection(a: number, b: number): Promise<'me' | 'them' | null> {
+    const rows = await query<{ blocker_id: number }>('SELECT blocker_id FROM chat_blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)', [a, b, b, a]);
+    if (rows.some((r) => Number(r.blocker_id) === a)) return 'me';
+    return rows.length ? 'them' : null;
+  }
+
+  async chatBlock(userId: number, peerId: number, on: boolean) {
+    if (peerId === userId) throw badRequest('Invalid player');
+    if (on) await exec('INSERT IGNORE INTO chat_blocks (blocker_id, blocked_id) VALUES (?, ?)', [userId, peerId]);
+    else await exec('DELETE FROM chat_blocks WHERE blocker_id = ? AND blocked_id = ?', [userId, peerId]);
+    return { ok: true, chatBlocked: on };
+  }
+
+  /** Accept a message request (also happens automatically when you reply). */
+  async accept(userId: number, peerId: number) {
+    await exec('INSERT IGNORE INTO chat_accepts (user_id, peer_id) VALUES (?, ?)', [userId, peerId]);
+    return this.markRead(userId, peerId);
+  }
+
   private assertOn() {
     if (!this.enabled().chat) throw new AppError(403, 'chat_disabled', 'Chat is turned off right now');
   }
@@ -67,7 +104,7 @@ export class ChatService {
     return u;
   }
 
-  async threads(userId: number): Promise<{ items: (ChatThread & { status: PresenceStatus })[]; unread: number }> {
+  async threads(userId: number): Promise<{ items: (ChatThread & { status: PresenceStatus; request: boolean })[]; unread: number; requests: number }> {
     const rows = await query<any>(
       `SELECT m.* FROM chat_messages m JOIN (
          SELECT peer, MAX(id) id FROM (
@@ -83,22 +120,29 @@ export class ChatService {
     );
     const unread = new Map(unreadRows.map((r) => [Number(r.sender_id), Number(r.n)]));
     const blocked = await this.friends.blockedSet(userId);
+    const trusted = await this.trusted(userId);
     const msgs = rows.map(toMsg);
     const peers = await getPublicUsers(msgs.map((m) => (m.from === userId ? m.to : m.from)));
     const items = msgs
       .map((m) => {
         const peerId = m.from === userId ? m.to : m.from;
         const peer = peers.get(peerId);
-        return peer && !blocked.has(peerId) ? { peer, last: m, unread: unread.get(peerId) ?? 0, status: this.presence(peerId) } : null;
+        return peer && !blocked.has(peerId) ? { peer, last: m, unread: unread.get(peerId) ?? 0, status: this.presence(peerId), request: !trusted.has(peerId) } : null;
       })
       .filter((x): x is NonNullable<typeof x> => !!x);
-    return { items, unread: items.reduce((s, x) => s + x.unread, 0) };
+    return {
+      items,
+      unread: items.filter((x) => !x.request).reduce((s, x) => s + x.unread, 0),
+      requests: items.filter((x) => x.request).length,
+    };
   }
 
   async unreadCount(userId: number) {
     const r = await queryOne<{ n: number }>(
       `SELECT COUNT(*) n FROM chat_messages m WHERE m.recipient_id = ? AND m.read_at IS NULL AND m.hidden_for_recipient = 0
-         AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id = m.recipient_id AND b.blocked_id = m.sender_id) OR (b.blocker_id = m.sender_id AND b.blocked_id = m.recipient_id))`,
+         AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id = m.recipient_id AND b.blocked_id = m.sender_id) OR (b.blocker_id = m.sender_id AND b.blocked_id = m.recipient_id))
+         AND (EXISTS (SELECT 1 FROM friends f WHERE f.user_id = m.recipient_id AND f.friend_id = m.sender_id)
+           OR EXISTS (SELECT 1 FROM chat_accepts a WHERE a.user_id = m.recipient_id AND a.peer_id = m.sender_id))`,
       [userId],
     );
     return Number(r?.n ?? 0);
@@ -115,6 +159,8 @@ export class ChatService {
       peer,
       status: this.presence(peer.id),
       blocked: await this.friends.blockDirection(userId, peer.id),
+      chatBlocked: await this.chatBlockDirection(userId, peer.id),
+      request: rows.some((r) => Number(r.sender_id) === peer.id) && !(await this.isTrusted(userId, peer.id)),
       items: rows.map(toMsg).reverse(),
       hasMore: rows.length === 50,
     };
@@ -128,13 +174,18 @@ export class ChatService {
     const dir = await this.friends.blockDirection(userId, peerId);
     if (dir === 'me') throw new AppError(403, 'blocked_by_you', 'You blocked this player. Unblock them to chat.');
     if (dir === 'them') throw new AppError(403, 'blocked', 'You can’t message this player.');
+    const cdir = await this.chatBlockDirection(userId, peerId);
+    if (cdir === 'me') throw new AppError(403, 'chat_blocked_by_you', 'You blocked messages from this player. Unblock to chat.');
+    if (cdir === 'them') throw new AppError(403, 'chat_blocked', 'This player isn’t accepting your messages.');
     const ok = await queryOne<{ id: number }>(`SELECT id FROM users WHERE id = ? AND status = 'active'`, [peerId]);
     if (!ok) throw notFound('Player not found');
 
     const res = await exec('INSERT INTO chat_messages (sender_id, recipient_id, body) VALUES (?, ?, ?)', [userId, peerId, body]);
+    await exec('INSERT IGNORE INTO chat_accepts (user_id, peer_id) VALUES (?, ?)', [userId, peerId]);
+    const isRequest = !(await this.isTrusted(peerId, userId));
     const message: ChatMessage = { id: res.insertId, from: userId, to: peerId, body, createdAt: new Date().toISOString(), readAt: null };
     const [me, them] = await Promise.all([getPublicUser(userId), getPublicUser(peerId)]);
-    if (me) this.emitter()?.toUser(peerId, 'chat:message', { message, peer: me });
+    if (me) this.emitter()?.toUser(peerId, 'chat:message', { message, peer: me, request: isRequest });
     if (them) this.emitter()?.toUser(userId, 'chat:message', { message, peer: them });
 
     // Phone notification unless they are looking at this chat right now (one per 20s per chat).
@@ -144,13 +195,17 @@ export class ChatService {
       if (now - (this.lastPush.get(key) ?? 0) > 20_000) {
         this.lastPush.set(key, now);
         if (this.lastPush.size > 20_000) this.lastPush.clear();
-        void this.push.sendToUser(peerId, { title: me.username, body: body.length > 140 ? `${body.slice(0, 137)}…` : body, url: `/chat/${me.uid}`, tag: `chat-${userId}` }).catch(() => undefined);
+        const text = body.length > 140 ? `${body.slice(0, 137)}…` : body;
+        void this.push
+          .sendToUser(peerId, { title: isRequest ? `${me.username} · মেসেজ রিকোয়েস্ট` : me.username, body: text, url: `/chat/${me.uid}`, tag: `chat-${userId}`, channel: 'quizwar_messages', image: me.avatarThumbUrl ?? undefined })
+          .catch(() => undefined);
       }
     }
     return message;
   }
 
   async markRead(userId: number, peerId: number) {
+    if (!(await this.isTrusted(userId, peerId))) return { upTo: 0 };
     const last = await queryOne<{ id: number }>('SELECT MAX(id) id FROM chat_messages WHERE sender_id = ? AND recipient_id = ? AND read_at IS NULL', [peerId, userId]);
     if (!last?.id) return { upTo: 0 };
     await exec('UPDATE chat_messages SET read_at = NOW() WHERE sender_id = ? AND recipient_id = ? AND read_at IS NULL AND id <= ?', [peerId, userId, last.id]);
@@ -161,7 +216,7 @@ export class ChatService {
 
   async typing(userId: number, peerId: number) {
     if (!this.enabled().chat || peerId === userId) return;
-    if (await this.friends.isBlockedEitherWay(userId, peerId)) return;
+    if ((await this.friends.isBlockedEitherWay(userId, peerId)) || (await this.chatBlockDirection(userId, peerId))) return;
     this.emitter()?.toUser(peerId, 'chat:typing', { from: userId });
   }
 
@@ -175,9 +230,10 @@ export class ChatService {
     const mine = Number(m.sender_id) === userId;
     if (forEveryone) {
       if (!mine) throw new AppError(403, 'not_yours', 'You can only delete your own messages for everyone');
-      await exec('DELETE FROM chat_messages WHERE id = ?', [id]);
-      this.emitter()?.toUser(Number(m.sender_id), 'chat:deleted', { ids: [id] });
-      this.emitter()?.toUser(Number(m.recipient_id), 'chat:deleted', { ids: [id] });
+      // The text is wiped for good; both phones show "This message was deleted".
+      await exec(`UPDATE chat_messages SET body = '', deleted_at = NOW() WHERE id = ?`, [id]);
+      this.emitter()?.toUser(Number(m.sender_id), 'chat:deleted', { ids: [id], unsent: true });
+      this.emitter()?.toUser(Number(m.recipient_id), 'chat:deleted', { ids: [id], unsent: true });
     } else {
       await exec(`UPDATE chat_messages SET ${mine ? 'hidden_for_sender' : 'hidden_for_recipient'} = 1, read_at = COALESCE(read_at, ${mine ? 'read_at' : 'NOW()'}) WHERE id = ?`, [id]);
       this.emitter()?.toUser(userId, 'chat:deleted', { ids: [id] });
