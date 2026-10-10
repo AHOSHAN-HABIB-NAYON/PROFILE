@@ -1,5 +1,5 @@
 import type { ModeKey } from './modes';
-import type { AiLevel, Difficulty, MatchState, MatchType, PowerUp, PresenceStatus, PublicUser, QuestionPublic } from './types';
+import type { AiLevel, ChatMessage, Difficulty, MatchState, MatchType, PowerUp, PresenceStatus, PublicUser, QuestionPublic } from './types';
 
 /* ----------------------------- Match snapshots ----------------------------- */
 
@@ -164,6 +164,10 @@ export interface ClientToServerEvents {
   /** Quick emoji reaction during a match (rate-limited, from a fixed set). */
   'match:react': (p: { matchId: string; reaction: string }, ack?: Ack) => void;
   'time:sync': (p: { clientTime: number }, ack: Ack<{ serverTime: number; clientTime: number }>) => void;
+  /** "is typing…" to a chat partner (throttled by the client). */
+  'chat:typing': (p: { to: number }) => void;
+  /** Which chat is open and visible on this device (null = none); no push for that chat. */
+  'chat:focus': (p: { peerId: number | null }) => void;
 }
 
 export interface ServerToClientEvents {
@@ -189,4 +193,8 @@ export interface ServerToClientEvents {
   'notification:new': (p: NotificationView) => void;
   'account:update': (p: { coins?: number; xp?: number; level?: number; rating?: number }) => void;
   'server:announcement': (p: { title: string; body: string }) => void;
+  'chat:message': (p: { message: ChatMessage; peer: PublicUser }) => void;
+  'chat:read': (p: { peerId: number; upTo: number }) => void;
+  'chat:typing': (p: { from: number }) => void;
+  'chat:deleted': (p: { ids: number[] }) => void;
 }

@@ -411,6 +411,41 @@ d('Features (MySQL)', () => {
       expect(r.body.me.rank).toBe(pos);
     }
   });
+
+  describe('player chat', () => {
+    it('sends, lists, marks read, respects blocks, and purges after 7 days', async () => {
+      const a = await newPlayer('chatA');
+      const b = await newPlayer('chatB');
+      const uidOf = async (id: number) => (await queryOne<any>('SELECT uid FROM users WHERE id = ?', [id])).uid as string;
+      const [ua, ub] = [await uidOf(a.id), await uidOf(b.id)];
+
+      const s = await api('POST', `/chats/${ub}/messages`, { body: '  হাই 👋\u0000  ' }, a.token);
+      expect(s.status).toBe(200);
+      expect(s.body.message.body).toBe('হাই 👋');
+      expect((await api('POST', `/chats/${ua}/messages`, { body: '   ' }, a.token)).status).toBe(400);
+
+      const unread = await api('GET', '/chats/unread', undefined, b.token);
+      expect(unread.body.count).toBe(1);
+      const list = await api('GET', '/chats', undefined, b.token);
+      expect(list.body.items[0].peer.uid).toBe(ua);
+      expect(list.body.items[0].unread).toBe(1);
+
+      const hist = await api('GET', `/chats/${ua}/messages`, undefined, b.token);
+      expect(hist.body.items.map((m: any) => m.body)).toEqual(['হাই 👋']);
+      await api('POST', `/chats/${ua}/read`, {}, b.token);
+      expect((await api('GET', '/chats/unread', undefined, b.token)).body.count).toBe(0);
+
+      // Blocked either way: no more messages.
+      await api('POST', '/blocks', { userId: a.id }, b.token);
+      expect((await api('POST', `/chats/${ub}/messages`, { body: 'hello?' }, a.token)).status).toBe(403);
+      expect((await api('POST', `/chats/${ua}/messages`, { body: 'hello?' }, b.token)).body.error.code).toBe('blocked_by_you');
+      await api('DELETE', `/blocks/${a.id}`, undefined, b.token);
+
+      await exec('UPDATE chat_messages SET created_at = NOW() - INTERVAL 8 DAY WHERE sender_id = ?', [a.id]);
+      expect(await t.ctx.chat.purgeOld()).toBeGreaterThanOrEqual(1);
+      expect((await api('GET', `/chats/${ua}/messages`, undefined, b.token)).body.items).toHaveLength(0);
+    });
+  });
 });
 
 describe('smtp config', () => {

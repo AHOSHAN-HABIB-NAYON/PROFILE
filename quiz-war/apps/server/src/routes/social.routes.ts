@@ -27,6 +27,29 @@ export async function socialRoutes(app: FastifyInstance, ctx: AppContext) {
     return u;
   }
 
+  /* --------------------------------- Chat --------------------------------- */
+  const chatPeer = async (raw: string) => {
+    const n = normalizeUid(raw);
+    if (!n) throw badRequest('Enter a valid UID');
+    return ctx.chat.peerByUid(n);
+  };
+  app.get('/chats', auth, async (req) => ctx.chat.threads(uid(req)));
+  app.get('/chats/unread', auth, async (req) => ({ count: await ctx.chat.unreadCount(uid(req)) }));
+  app.get('/chats/:uid/messages', auth, async (req) => {
+    const p = parse(z.object({ uid: z.string().max(20) }), req.params);
+    const q = parse(z.object({ before: z.coerce.number().int().positive().optional() }), req.query);
+    return ctx.chat.history(uid(req), await chatPeer(p.uid), q.before);
+  });
+  app.post('/chats/:uid/messages', { ...auth, config: { rateLimit: { max: 40, timeWindow: '1 minute' } } }, async (req) => {
+    const p = parse(z.object({ uid: z.string().max(20) }), req.params);
+    const b = parse(z.object({ body: z.string().min(1).max(2000) }), req.body);
+    return { message: await ctx.chat.send(uid(req), (await chatPeer(p.uid)).id, b.body) };
+  });
+  app.post('/chats/:uid/read', auth, async (req) => {
+    const p = parse(z.object({ uid: z.string().max(20) }), req.params);
+    return ctx.chat.markRead(uid(req), (await chatPeer(p.uid)).id);
+  });
+
   /* -------------------------------- Friends ------------------------------- */
   app.get('/friends', auth, async (req) => ({ items: await ctx.friends.list(uid(req)) }));
   app.get('/friends/requests', auth, async (req) => ctx.friends.requests(uid(req)));

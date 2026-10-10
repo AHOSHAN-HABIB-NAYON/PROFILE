@@ -88,3 +88,18 @@ export interface ApiErrorBody {
 /** In-match mood reactions (the only place emoji are used in the UI). */
 export const MATCH_REACTIONS = ['😀', '😂', '😍', '😎', '🤔', '😮', '😱', '😅', '😢', '😭', '😡', '😤', '👍', '👏', '🔥', '💪', '🤝', '🙏', '❤️', '🎉'] as const;
 export type MatchReaction = (typeof MATCH_REACTIONS)[number];
+
+/** One chat message between two players (text and emoji only). */
+export interface ChatMessage {
+  id: number;
+  from: number;
+  to: number;
+  body: string;
+  createdAt: string;
+  readAt: string | null;
+}
+export interface ChatThread {
+  peer: PublicUser;
+  last: ChatMessage;
+  unread: number;
+}

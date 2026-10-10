@@ -15,6 +15,8 @@ import GameSettings from './pages/GameSettings';
 import AppSettings from './pages/AppSettings';
 import Announcements from './pages/Announcements';
 import Promos from './pages/Promos';
+import OurApps from './pages/OurApps';
+import Messages from './pages/Messages';
 import Content from './pages/Content';
 import Admins from './pages/Admins';
 import Audit from './pages/Audit';
@@ -27,6 +29,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
   { group: 'Players', items: [
     { to: '/users', label: 'Players', icon: 'users', perm: 'users.view' },
     { to: '/reports', label: 'Reports', icon: 'flag', perm: 'reports.view' },
+    { to: '/messages', label: 'Player chat', icon: 'message', perm: 'reports.view' },
     { to: '/matches', label: 'Matches', icon: 'swords', perm: 'matches.view' },
   ] },
   { group: 'Content', items: [
@@ -37,6 +40,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
     { to: '/missions', label: 'Missions', icon: 'target', perm: 'content.manage' },
     { to: '/announcements', label: 'Announcements', icon: 'megaphone', perm: 'announcements.send' },
     { to: '/promos', label: 'Promotions (ads)', icon: 'sparkles', perm: 'announcements.send' },
+    { to: '/our-apps', label: 'Our apps', icon: 'smartphone', perm: 'announcements.send' },
   ] },
   { group: 'Configuration', items: [
     { to: '/game-settings', label: 'Game settings', icon: 'gamepad', perm: 'settings.game' },
@@ -203,6 +207,8 @@ export function App() {
           <Route path="/app-settings" element={<Guard perm="settings.app"><AppSettings /></Guard>} />
           <Route path="/announcements" element={<Guard perm="announcements.send"><Announcements /></Guard>} />
           <Route path="/promos" element={<Guard perm="announcements.send"><Promos /></Guard>} />
+          <Route path="/our-apps" element={<Guard perm="announcements.send"><OurApps /></Guard>} />
+          <Route path="/messages" element={<Guard perm="reports.view"><Messages /></Guard>} />
           <Route path="/content" element={<Guard perm="content.manage"><Content /></Guard>} />
           <Route path="/admins" element={<Guard perm="admins.manage"><Admins /></Guard>} />
           <Route path="/audit" element={<Guard perm="audit.view"><Audit /></Guard>} />

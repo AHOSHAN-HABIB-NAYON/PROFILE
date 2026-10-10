@@ -11,6 +11,15 @@ export async function gameRoutes(app: FastifyInstance, ctx: AppContext) {
     return { items: await ctx.categories.listPublic() };
   });
 
+  app.get('/our-apps', async (_req, reply) => {
+    reply.header('cache-control', 'public, max-age=60');
+    return { items: ctx.settings.app().ourAppsEnabled ? await ctx.ourApps.listPublic() : [] };
+  });
+  app.post('/our-apps/:id/click', { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, async (req) => {
+    await ctx.ourApps.click(parse(z.object({ id: z.coerce.number().int().positive() }), req.params).id);
+    return { ok: true };
+  });
+
   app.get('/promos', async (_req, reply) => {
     reply.header('cache-control', 'public, max-age=60');
     return { items: await ctx.promos.listPublic() };

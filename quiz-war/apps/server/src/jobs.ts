@@ -21,6 +21,8 @@ export function startJobs(ctx: AppContext) {
   void every(20 * 60_000, 'app-release-check', () => ctx.appRelease.refresh())();
   every(10 * 60_000, 'season-tick', () => ctx.seasons.tick((m) => ctx.log.info(m)));
   every(6 * 60 * 60_000, 'verified-auto', () => ctx.verified.autoGrant());
+  // Chat messages are kept for 7 days only.
+  void every(60 * 60_000, 'chat-purge', () => ctx.chat.purgeOld())();
   every(60 * 60_000, 'cleanup', async () => {
     await exec('DELETE FROM webauthn_challenges WHERE expires_at < UTC_TIMESTAMP()');
     await exec('DELETE FROM email_tokens WHERE expires_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)');

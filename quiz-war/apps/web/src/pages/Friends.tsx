@@ -1,3 +1,5 @@
+import { useChatUnread } from '../lib/chat';
+import { ChatList } from './Chat';
 import { normalizeUid, type PublicUser } from '@quizwar/shared';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
@@ -22,11 +24,12 @@ export default function Friends() {
   const t = useT();
   const lang = useLang();
   const [params, setParams] = useSearchParams();
-  const tab = (params.get('tab') as 'friends' | 'online' | 'requests' | 'add') ?? 'friends';
+  const tab = (params.get('tab') as 'chats' | 'friends' | 'online' | 'requests' | 'add') ?? 'chats';
   const setTab = (x: string) => setParams({ tab: x }, { replace: true });
   const me = useAuth((s) => s.user)!;
   const qc = useQueryClient();
   const nav = useNavigate();
+  const chatUnread = useChatUnread();
   const friends = useQuery({ queryKey: ['friends'], queryFn: async () => (await api<{ items: any[] }>('/friends')).items });
   const online = useQuery({
     queryKey: ['players-online'],
@@ -106,7 +109,7 @@ export default function Friends() {
     <PullToRefresh>
       <div className="page stack">
         <PageHeader
-          title={t('Friends', 'বন্ধুরা')}
+          title={t('Chat & friends', 'চ্যাট ও বন্ধু')}
           action={
             <div className="row gap-sm">
               <button className="btn icon sm soft" aria-label={t('Show my QR code', 'আমার QR কোড')} onClick={() => setQrOpen(true)}><Icon name="qr" size={20} /></button>
@@ -116,6 +119,9 @@ export default function Friends() {
           }
         />
         <div className="tabs" role="tablist">
+          <button role="tab" aria-selected={tab === 'chats'} onClick={() => setTab('chats')}>
+            <Icon name="message" /> {t('Chats', 'চ্যাট')} {chatUnread ? <span className="tab-badge">{num(chatUnread, lang)}</span> : null}
+          </button>
           <button role="tab" aria-selected={tab === 'friends'} onClick={() => setTab('friends')}>
             <Icon name="users" /> {t('Friends', 'বন্ধু')} {friends.data ? <span className="tab-count">{num(onlineCount, lang)}/{num(friends.data.length, lang)}</span> : null}
           </button>
@@ -129,6 +135,8 @@ export default function Friends() {
             <Icon name="plus" /> {t('Add', 'যোগ করুন')}
           </button>
         </div>
+
+        {tab === 'chats' && <ChatList onFind={() => setTab('friends')} />}
 
         {tab === 'friends' &&
           (friends.isLoading ? (
@@ -154,6 +162,7 @@ export default function Friends() {
                       <span className={`xs status-text s-${f.status}`}>{statusLabel(f.status)}</span>
                       <span className="xs muted"> · {t('Lv', 'লেভেল')} {num(f.user.level, lang)}</span>
                     </Link>
+                    <Link className="btn icon sm soft" to={`/chat/${f.user.uid}`} aria-label={t(`Message ${f.user.username}`, `${f.user.username}-কে মেসেজ`)}><Icon name="message" size={19} /></Link>
                     <button className="btn sm primary" disabled={!canChallenge} onClick={() => (haptic('tap'), setChallenge(f.user))} aria-label={t(`Challenge ${f.user.username}`, `${f.user.username}-কে চ্যালেঞ্জ`)}>
                       <Icon name="swords" /> {t('Challenge', 'চ্যালেঞ্জ')}
                     </button>

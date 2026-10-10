@@ -276,6 +276,10 @@ export const appSettingsSchema = z.object({
   /** Ask happy players to rate the app after this many wins (0 = never). */
   ratePromptAfterWins: z.number().int().min(0).max(1000),
   emails: z.object({ welcome: z.boolean(), activity: z.boolean() }),
+  /** "Our apps" list on Home (managed under Admin › Our apps). */
+  ourAppsEnabled: z.boolean(),
+  /** One-to-one player chat. */
+  chatEnabled: z.boolean(),
 });
 export type AppSettings = z.infer<typeof appSettingsSchema>;
 
@@ -303,6 +307,8 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   music: { menuUrl: null, matchUrl: null, volume: 0.5 },
   ratePromptAfterWins: 5,
   emails: { welcome: true, activity: true },
+  ourAppsEnabled: true,
+  chatEnabled: true,
 };
 
 /** Public subset of app settings exposed to clients (no admin-only flags). */

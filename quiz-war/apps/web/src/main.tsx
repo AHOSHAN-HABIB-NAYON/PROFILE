@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router';
 import { App } from './App';
 import { queryClient } from './lib/query';
 import { registerRealtime } from './lib/realtime';
+import { registerChat } from './lib/chat';
 import { applyTheme, useSettings } from './lib/settings';
 import { initPlatformInfo } from './lib/platform';
 import '@fontsource/hind-siliguri/bengali-400.css';
@@ -17,6 +18,7 @@ import './styles/app.css';
 const s = useSettings.getState();
 applyTheme(s.theme, s.reduceMotion);
 registerRealtime();
+registerChat();
 void initPlatformInfo();
 
 createRoot(document.getElementById('root')!).render(

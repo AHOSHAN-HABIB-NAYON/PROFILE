@@ -1,3 +1,4 @@
+import { useChatUnread } from '../lib/chat';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router';
 import { useConfig, useNotifications } from '../hooks/queries';
@@ -13,7 +14,7 @@ import { Modal } from './Sheet';
 
 const NAV: { to: string; en: string; bn: string; icon: IconName; end?: boolean }[] = [
   { to: '/', en: 'Home', bn: 'হোম', icon: 'home', end: true },
-  { to: '/friends', en: 'Friends', bn: 'বন্ধু', icon: 'users' },
+  { to: '/friends', en: 'Chat', bn: 'চ্যাট', icon: 'message' },
   { to: '/battle', en: 'Battle', bn: 'ব্যাটল', icon: 'swords' },
   { to: '/rank', en: 'Rank', bn: 'র‍্যাংক', icon: 'trophy' },
   { to: '/profile', en: 'Profile', bn: 'প্রোফাইল', icon: 'user' },
@@ -171,6 +172,12 @@ export function TopBar() {
   );
 }
 
+/** Unread chat messages on the Chat tab. */
+function ChatBadge() {
+  const n = useChatUnread();
+  return n > 0 ? <span className="nav-badge" aria-label={`${n}`}>{n > 99 ? '99+' : n}</span> : null;
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   const t = useT();
   return (
@@ -184,6 +191,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <NavLink key={n.to} to={n.to} end={n.end} viewTransition>
             <Icon name={n.icon} />
             {t(n.en, n.bn)}
+            {n.to === '/friends' && <ChatBadge />}
           </NavLink>
         ))}
         <NavLink to="/squads" viewTransition><Icon name="shield" />{t('Squads', 'স্কোয়াড')}</NavLink>
@@ -210,6 +218,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <Icon name={n.icon} />
             )}
             {t(n.en, n.bn)}
+            {n.to === '/friends' && <ChatBadge />}
           </NavLink>
         ))}
       </nav>

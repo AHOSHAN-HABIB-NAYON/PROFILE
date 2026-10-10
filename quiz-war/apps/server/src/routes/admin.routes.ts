@@ -1,4 +1,4 @@
-import { gameSettingsSchema, paginationSchema, questionInputSchema, type GameSettings } from '@quizwar/shared';
+import { gameSettingsSchema, normalizeUid, paginationSchema, questionInputSchema, type GameSettings } from '@quizwar/shared';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { AppContext } from '../context';
@@ -10,6 +10,7 @@ import { parse } from '../lib/validate';
 import { audit } from '../modules/admin/admin.auth';
 import { categoryInputSchema } from '../modules/questions/category.service';
 import { promoInputSchema } from '../modules/promos/promo.service';
+import { ourAppInputSchema } from '../modules/our-apps/our-apps.service';
 import { aiJobInputSchema, aiSettingsSchema } from '../modules/ai/ai-generator.service';
 import { MISSION_METRICS, missionInputSchema } from '../modules/missions/mission.service';
 import { SmtpMailer } from '../modules/auth/mailer';
@@ -600,6 +601,59 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     await ctx.promos.remove(id);
     await log(req, 'promo.delete', { type: 'promo', id });
     return { ok: true };
+  });
+
+  /* ------------------------------ Our apps ----------------------------- */
+  app.get('/our-apps', can('announcements.send'), async () => ({ items: await ctx.ourApps.listAdmin(), enabled: ctx.settings.app().ourAppsEnabled }));
+  app.put('/our-apps/enabled', can('announcements.send'), async (req) => {
+    const b = parse(z.object({ enabled: z.boolean() }), req.body);
+    await ctx.settings.updateApp({ ourAppsEnabled: b.enabled }, req.admin!.id);
+    await log(req, 'settings.app', { type: 'settings', summary: `Our apps section ${b.enabled ? 'on' : 'off'}` });
+    return { enabled: b.enabled };
+  });
+  app.post('/our-apps', can('announcements.send'), async (req) => {
+    const b = parse(ourAppInputSchema, req.body);
+    const id = await ctx.ourApps.create(b);
+    await log(req, 'our_app.create', { type: 'our_app', id, after: b });
+    return { id };
+  });
+  app.put('/our-apps/:id', can('announcements.send'), async (req) => {
+    const { id } = parse(idParam, req.params);
+    const b = parse(ourAppInputSchema, req.body);
+    await ctx.ourApps.update(id, b);
+    await log(req, 'our_app.update', { type: 'our_app', id, after: b });
+    return { ok: true };
+  });
+  app.delete('/our-apps/:id', can('announcements.send'), async (req) => {
+    const { id } = parse(idParam, req.params);
+    await ctx.ourApps.remove(id);
+    await log(req, 'our_app.delete', { type: 'our_app', id });
+    return { ok: true };
+  });
+
+  /* ------------------------------- Chat -------------------------------- */
+  app.get('/messages', can('reports.view'), async (req) => {
+    const q = parse(z.object({ user: z.string().trim().max(20).default(''), q: z.string().trim().max(100).default('') }), req.query);
+    let userId: number | undefined;
+    if (q.user) {
+      const n = normalizeUid(q.user);
+      const row = n ? await queryOne<{ id: number }>('SELECT id FROM users WHERE uid = ?', [n]) : /^\d+$/.test(q.user) ? { id: Number(q.user) } : null;
+      if (!row) return { items: [], retentionDays: 7, enabled: ctx.settings.app().chatEnabled };
+      userId = Number(row.id);
+    }
+    return { items: await ctx.chat.adminList({ userId, q: q.q || undefined }), retentionDays: 7, enabled: ctx.settings.app().chatEnabled };
+  });
+  app.put('/messages/enabled', can('reports.handle'), async (req) => {
+    const b = parse(z.object({ enabled: z.boolean() }), req.body);
+    await ctx.settings.updateApp({ chatEnabled: b.enabled }, req.admin!.id);
+    await log(req, 'settings.app', { type: 'settings', summary: `Player chat ${b.enabled ? 'on' : 'off'}` });
+    return { enabled: b.enabled };
+  });
+  app.post('/messages/delete', can('reports.handle'), async (req) => {
+    const b = parse(z.object({ ids: z.array(z.number().int().positive()).max(500).default([]), fromUserId: z.number().int().positive().optional() }), req.body);
+    const n = b.fromUserId ? await ctx.chat.adminDeleteAllFrom(b.fromUserId) : await ctx.chat.adminDelete(b.ids);
+    await log(req, 'chat.delete', { type: 'chat', id: b.fromUserId ?? b.ids[0] ?? 0, after: b });
+    return { deleted: n };
   });
 
   /* --------------------------- Announcements -------------------------- */

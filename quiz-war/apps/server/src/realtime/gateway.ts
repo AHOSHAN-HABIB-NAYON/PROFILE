@@ -357,9 +357,12 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
     socket.on('match:powerup', guard(schemas.powerUp, (p) => ctx.engine.usePowerUp(p.matchId, userId, p.questionIndex, p.powerUp)));
     socket.on('match:forfeit', guard(schemas.matchOnly, (p) => ctx.engine.forfeit(p.matchId, userId)));
     socket.on('match:react', guard(schemas.react, (p) => ctx.engine.react(p.matchId, userId, p.reaction)));
+    socket.on('chat:typing', guard(z.object({ to: z.number().int().positive() }), (p) => ctx.chat.typing(userId, p.to)));
+    socket.on('chat:focus', guard(z.object({ peerId: z.number().int().positive().nullable() }), (p) => ctx.chat.setFocus(userId, socket.id, p.peerId)));
     socket.on('time:sync', guard(schemas.timeSync, (p) => ({ serverTime: Date.now(), clientTime: p.clientTime })));
 
     socket.on('disconnect', () => {
+      ctx.chat.setFocus(userId, socket.id, null);
       const wentOffline = ctx.presence.disconnect(userId, socket.id);
       if (wentOffline) {
         ctx.matchmaking.leave(userId);

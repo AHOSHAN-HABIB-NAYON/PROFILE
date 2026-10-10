@@ -35,6 +35,7 @@ const Match = lazy(() => import('./pages/Match'));
 const Result = lazy(() => import('./pages/Result'));
 const Review = lazy(() => import('./pages/Review'));
 const Friends = lazy(() => import('./pages/Friends'));
+const Chat = lazy(() => import('./pages/Chat'));
 const Rank = lazy(() => import('./pages/Rank'));
 const Profile = lazy(() => import('./pages/Profile'));
 const PublicProfile = lazy(() => import('./pages/PublicProfile'));
@@ -342,6 +343,7 @@ export function App() {
             <Route path="/matchmaking" element={<Full><Matchmaking /></Full>} />
             <Route path="/war-room/:id" element={<Full><WarRoom /></Full>} />
             <Route path="/match/:id" element={<Full><Match /></Full>} />
+            <Route path="/chat/:uid" element={<Full><Chat /></Full>} />
             <Route path="/result/:id" element={<Full><Result /></Full>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

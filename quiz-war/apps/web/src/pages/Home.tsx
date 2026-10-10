@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router';
 import { Avatar } from '../components/Avatar';
 import { HomeCategories } from '../components/CategoryPlay';
+import { HomeOurApps } from '../components/OurApps';
 import { CountUp, N, Skeleton } from '../components/Feedback';
 import { LeagueBadge, LevelBar } from '../components/Game';
 import { Icon, IconTile, type IconName } from '../components/Icon';
@@ -209,6 +210,7 @@ export default function Home() {
         </section>
 
         <HomeCategories />
+        <HomeOurApps />
 
         <div className="mode-grid stagger">
           {modes.map((m) => (

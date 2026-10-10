@@ -25,6 +25,8 @@ import { PresenceService } from './modules/presence/presence.service';
 import { ProgressionService } from './modules/progression/progression.service';
 import { CategoryService } from './modules/questions/category.service';
 import { PromoService } from './modules/promos/promo.service';
+import { OurAppsService } from './modules/our-apps/our-apps.service';
+import { ChatService } from './modules/chat/chat.service';
 import { QuestionAdminService } from './modules/questions/question.admin.service';
 import { MysqlQuestionSource } from './modules/questions/question.source';
 import { ReportService } from './modules/reports/report.service';
@@ -135,6 +137,8 @@ export function createContext(env: Env, log: Logger, overrides: { mailer?: Maile
   engineRef = engine;
 
   const friends = new FriendsService(notifications, (uid) => presence.status(uid));
+  const chat = new ChatService(friends, push, () => emitter, (uid) => presence.status(uid), () => ({ chat: settings.app().chatEnabled, push: settings.app().notificationsEnabled }));
+  const ourApps = new OurAppsService();
   const matchmaking = new MatchmakingService(engine, () => settings.game(), emitter, { error: (o, m) => log.error(o, m) });
   const battles = new BattleRequestService(engine, () => settings.game(), presence, friends, notifications, () => emitter);
   const squads = new SquadService(notifications);
@@ -212,6 +216,8 @@ export function createContext(env: Env, log: Logger, overrides: { mailer?: Maile
     reports,
     categories,
     promos,
+    ourApps,
+    chat,
     questionsAdmin,
     ai,
     missions,
