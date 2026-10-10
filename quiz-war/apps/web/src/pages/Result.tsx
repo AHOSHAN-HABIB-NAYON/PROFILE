@@ -341,6 +341,32 @@ export default function Result() {
         <button className="btn outline lg" onClick={() => nav('/', { replace: true })} aria-label={t('Home', 'হোম')}><Icon name="home" /></button>
       </div>
 
+      {(() => {
+        const others = end.players.filter((p) => !p.isBot && p.userId !== me.id && view(p.userId)?.uid);
+        if (!others.length) return null;
+        return (
+          <section className="card result-chat">
+            <div className="rc-head">
+              <Icon name="message" size={18} />
+              <b>{outcome === 'win' ? t('Say “good game” to your opponent', 'প্রতিপক্ষকে "ভালো খেলেছেন" বলুন') : t('Message your opponent', 'প্রতিপক্ষকে মেসেজ দিন')}</b>
+            </div>
+            {others.slice(0, 6).map((p) => {
+              const v = view(p.userId)!;
+              return (
+                <Link key={p.userId} to={`/chat/${v.uid}`} className="rc-row" onClick={() => haptic('tap')}>
+                  <Avatar name={v.username} src={v.avatarUrl} size={42} />
+                  <span className="grow">
+                    <b className="ellipsis">{v.username}</b>
+                    <small>{num(p.score, lang)} {t('points', 'পয়েন্ট')}</small>
+                  </span>
+                  <span className="rc-btn"><Icon name="message" size={18} /> {t('Message', 'মেসেজ')}</span>
+                </Link>
+              );
+            })}
+          </section>
+        );
+      })()}
+
       {!!mine?.penaltyCoins || !!mine?.penaltyXp ? (
         <div className="penalty-box" role="status">
           <IconTile name="alert" tone="danger" size={40} />
@@ -399,6 +425,9 @@ export default function Result() {
                 </p>
               </div>
               <b className="num lb-score">{num(p.score, lang)}</b>
+              {!p.isBot && p.userId !== me.id && v?.uid && (
+                <Link className="btn icon sm soft" to={`/chat/${v.uid}`} aria-label={t(`Message ${v.username}`, `${v.username}-কে মেসেজ`)}><Icon name="message" size={17} /></Link>
+              )}
             </div>
           );
         })}

@@ -71,14 +71,14 @@ export class ChatService {
     const rows = await query<any>(
       `SELECT m.* FROM chat_messages m JOIN (
          SELECT peer, MAX(id) id FROM (
-           SELECT recipient_id peer, id FROM chat_messages WHERE sender_id = ?
-           UNION ALL SELECT sender_id peer, id FROM chat_messages WHERE recipient_id = ?
+           SELECT recipient_id peer, id FROM chat_messages WHERE sender_id = ? AND hidden_for_sender = 0
+           UNION ALL SELECT sender_id peer, id FROM chat_messages WHERE recipient_id = ? AND hidden_for_recipient = 0
          ) x GROUP BY peer ORDER BY id DESC LIMIT 100
        ) last ON last.id = m.id ORDER BY m.id DESC`,
       [userId, userId],
     );
     const unreadRows = await query<{ sender_id: number; n: number }>(
-      'SELECT sender_id, COUNT(*) n FROM chat_messages WHERE recipient_id = ? AND read_at IS NULL GROUP BY sender_id',
+      'SELECT sender_id, COUNT(*) n FROM chat_messages WHERE recipient_id = ? AND read_at IS NULL AND hidden_for_recipient = 0 GROUP BY sender_id',
       [userId],
     );
     const unread = new Map(unreadRows.map((r) => [Number(r.sender_id), Number(r.n)]));
@@ -97,7 +97,7 @@ export class ChatService {
 
   async unreadCount(userId: number) {
     const r = await queryOne<{ n: number }>(
-      `SELECT COUNT(*) n FROM chat_messages m WHERE m.recipient_id = ? AND m.read_at IS NULL
+      `SELECT COUNT(*) n FROM chat_messages m WHERE m.recipient_id = ? AND m.read_at IS NULL AND m.hidden_for_recipient = 0
          AND NOT EXISTS (SELECT 1 FROM blocks b WHERE (b.blocker_id = m.recipient_id AND b.blocked_id = m.sender_id) OR (b.blocker_id = m.sender_id AND b.blocked_id = m.recipient_id))`,
       [userId],
     );
@@ -107,7 +107,7 @@ export class ChatService {
   async history(userId: number, peer: PublicUser, before?: number) {
     const rows = await query<any>(
       `SELECT * FROM chat_messages
-       WHERE ((sender_id = ? AND recipient_id = ?) OR (sender_id = ? AND recipient_id = ?)) ${before ? 'AND id < ?' : ''}
+       WHERE ((sender_id = ? AND recipient_id = ? AND hidden_for_sender = 0) OR (sender_id = ? AND recipient_id = ? AND hidden_for_recipient = 0)) ${before ? 'AND id < ?' : ''}
        ORDER BY id DESC LIMIT 50`,
       before ? [userId, peer.id, peer.id, userId, before] : [userId, peer.id, peer.id, userId],
     );
@@ -163,6 +163,33 @@ export class ChatService {
     if (!this.enabled().chat || peerId === userId) return;
     if (await this.friends.isBlockedEitherWay(userId, peerId)) return;
     this.emitter()?.toUser(peerId, 'chat:typing', { from: userId });
+  }
+
+  /**
+   * Delete one message. Your own message can be removed for everyone (it disappears on both
+   * phones); any message can be removed just for you.
+   */
+  async deleteMessage(userId: number, id: number, forEveryone: boolean) {
+    const m = await queryOne<{ sender_id: number; recipient_id: number }>('SELECT sender_id, recipient_id FROM chat_messages WHERE id = ?', [id]);
+    if (!m || (Number(m.sender_id) !== userId && Number(m.recipient_id) !== userId)) throw notFound('Message not found');
+    const mine = Number(m.sender_id) === userId;
+    if (forEveryone) {
+      if (!mine) throw new AppError(403, 'not_yours', 'You can only delete your own messages for everyone');
+      await exec('DELETE FROM chat_messages WHERE id = ?', [id]);
+      this.emitter()?.toUser(Number(m.sender_id), 'chat:deleted', { ids: [id] });
+      this.emitter()?.toUser(Number(m.recipient_id), 'chat:deleted', { ids: [id] });
+    } else {
+      await exec(`UPDATE chat_messages SET ${mine ? 'hidden_for_sender' : 'hidden_for_recipient'} = 1, read_at = COALESCE(read_at, ${mine ? 'read_at' : 'NOW()'}) WHERE id = ?`, [id]);
+      this.emitter()?.toUser(userId, 'chat:deleted', { ids: [id] });
+    }
+    return { ok: true };
+  }
+
+  /** "Clear chat": hides the whole conversation for you only. */
+  async clearChat(userId: number, peerId: number) {
+    await exec('UPDATE chat_messages SET hidden_for_sender = 1 WHERE sender_id = ? AND recipient_id = ?', [userId, peerId]);
+    await exec('UPDATE chat_messages SET hidden_for_recipient = 1, read_at = COALESCE(read_at, NOW()) WHERE sender_id = ? AND recipient_id = ?', [peerId, userId]);
+    return { ok: true };
   }
 
   /* ------------------------------ Admin ------------------------------ */

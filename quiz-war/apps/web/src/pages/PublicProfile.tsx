@@ -131,6 +131,11 @@ export default function PublicProfile() {
       <section className="profile-card">
         <div className="pc-band"><ProfileCover /></div>
         <div className="pc-body">
+          {authed && !self && (
+            <Link className="pc-msg" to={`/chat/${data.user.uid}`} onClick={() => haptic('tap')} aria-label={t(`Message ${data.user.username}`, `${data.user.username}-কে মেসেজ`)}>
+              <Icon name="message" size={24} />
+            </Link>
+          )}
           <div className="pc-avatar"><Avatar name={data.user.username} src={data.user.avatarUrl} size={100} frame={data.user.frame} status={rel?.status} /></div>
           <h1 className="name-with-badge">{data.user.username}{data.user.verified && <VerifiedBadge size={22} />}</h1>
           {data.user.title && <span className="chip accent">{data.user.title}</span>}

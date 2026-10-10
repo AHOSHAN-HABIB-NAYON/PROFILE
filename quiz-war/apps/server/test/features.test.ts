@@ -441,9 +441,21 @@ d('Features (MySQL)', () => {
       expect((await api('POST', `/chats/${ua}/messages`, { body: 'hello?' }, b.token)).body.error.code).toBe('blocked_by_you');
       await api('DELETE', `/blocks/${a.id}`, undefined, b.token);
 
+      // Delete for me / for everyone.
+      const m2 = (await api('POST', `/chats/${ub}/messages`, { body: 'oops' }, a.token)).body.message;
+      expect((await api('POST', `/chats/messages/${m2.id}/delete`, { forEveryone: true }, b.token)).status).toBe(403);
+      await api('POST', `/chats/messages/${m2.id}/delete`, { forEveryone: false }, b.token);
+      expect((await api('GET', `/chats/${ua}/messages`, undefined, b.token)).body.items.map((m: any) => m.body)).toEqual(['হাই 👋']);
+      expect((await api('GET', `/chats/${ub}/messages`, undefined, a.token)).body.items.map((m: any) => m.body)).toEqual(['হাই 👋', 'oops']);
+      await api('POST', `/chats/messages/${m2.id}/delete`, { forEveryone: true }, a.token);
+      expect((await api('GET', `/chats/${ub}/messages`, undefined, a.token)).body.items).toHaveLength(1);
+      await api('POST', `/chats/${ua}/clear`, {}, b.token);
+      expect((await api('GET', `/chats/${ua}/messages`, undefined, b.token)).body.items).toHaveLength(0);
+      expect((await api('GET', `/chats/${ub}/messages`, undefined, a.token)).body.items).toHaveLength(1);
+
       await exec('UPDATE chat_messages SET created_at = NOW() - INTERVAL 8 DAY WHERE sender_id = ?', [a.id]);
       expect(await t.ctx.chat.purgeOld()).toBeGreaterThanOrEqual(1);
-      expect((await api('GET', `/chats/${ua}/messages`, undefined, b.token)).body.items).toHaveLength(0);
+      expect((await api('GET', `/chats/${ub}/messages`, undefined, a.token)).body.items).toHaveLength(0);
     });
   });
 });

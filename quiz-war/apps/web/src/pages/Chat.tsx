@@ -56,6 +56,9 @@ export default function Chat() {
   const [menu, setMenu] = useState(false);
   const [report, setReport] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const [picked, setPicked] = useState<LiveMessage | null>(null);
+  const [clearAsk, setClearAsk] = useState(false);
+  const press = useRef<ReturnType<typeof setTimeout> | null>(null);
   const list = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const stick = useRef(true);
@@ -154,6 +157,40 @@ export default function Chat() {
     }
   };
 
+  const removeLocal = (id: number) => qc.setQueryData<ThreadData>(key, (d) => (d ? { ...d, items: d.items.filter((m) => m.id !== id) } : d));
+  const deleteMsg = async (m: LiveMessage, forEveryone: boolean) => {
+    setPicked(null);
+    haptic('tap');
+    if (m.id < 0) return removeLocal(m.id);
+    removeLocal(m.id);
+    try {
+      await api(`/chats/messages/${m.id}/delete`, { body: { forEveryone } });
+      void qc.invalidateQueries({ queryKey: ['chats'] });
+      toast.success(forEveryone ? t('Deleted for everyone', 'সবার জন্য মুছে ফেলা হয়েছে') : t('Deleted for you', 'আপনার জন্য মুছে ফেলা হয়েছে'), undefined, 'trash');
+    } catch (e) {
+      toast.error(t('Could not delete', 'মুছে ফেলা যায়নি'), friendlyError(e));
+      void thread.refetch();
+    }
+  };
+  const copyMsg = async (m: LiveMessage) => {
+    setPicked(null);
+    try {
+      await navigator.clipboard.writeText(m.body);
+      toast.success(t('Copied', 'কপি হয়েছে'), undefined, 'copy');
+    } catch {
+      toast.error(t('Could not copy', 'কপি করা যায়নি'));
+    }
+  };
+  // Long-press (or right-click) a message for Copy / Delete.
+  const holdStart = (m: LiveMessage) => {
+    if (press.current) clearTimeout(press.current);
+    press.current = setTimeout(() => (haptic('tap'), setPicked(m)), 420);
+  };
+  const holdEnd = () => {
+    if (press.current) clearTimeout(press.current);
+    press.current = null;
+  };
+
   if (thread.error && !data) {
     return (
       <div className="page stack">
@@ -196,7 +233,10 @@ export default function Chat() {
             {data.hasMore ? (
               <button className="btn sm soft chat-older" onClick={() => void loadOlder()} disabled={loadingOlder}>{loadingOlder ? t('Loading…', 'লোড হচ্ছে…') : t('Older messages', 'পুরনো মেসেজ')}</button>
             ) : (
-              <p className="chat-note"><Icon name="clock" size={14} /> {t('Messages are deleted automatically after 7 days.', 'মেসেজগুলো ৭ দিন পর নিজে থেকে মুছে যায়।')}</p>
+              <>
+                <p className="chat-note"><Icon name="clock" size={14} /> {t('Messages are deleted automatically after 7 days.', 'মেসেজগুলো ৭ দিন পর নিজে থেকে মুছে যায়।')}</p>
+                {items.length > 0 && <p className="chat-hint">{t('Press and hold a message to copy or delete it', 'কপি বা মুছতে মেসেজ চেপে ধরুন')}</p>}
+              </>
             )}
             {!items.length && peer && (
               <div className="chat-hello">
@@ -220,7 +260,14 @@ export default function Chat() {
                 <Fragment key={m.id}>
                   {newDay && <div className="chat-day"><span>{dayLabel(m.createdAt, lang, t)}</span></div>}
                   <div className={`msg ${mine ? 'mine' : 'theirs'}${groupTop ? ' top' : ''}${groupEnd ? ' end' : ''}${big ? ' big' : ''}${m.failed ? ' failed' : ''}`}>
-                    <div className="bubble">
+                    <div
+                      className={`bubble${picked?.id === m.id ? ' picked' : ''}`}
+                      onPointerDown={() => holdStart(m)}
+                      onPointerUp={holdEnd}
+                      onPointerLeave={holdEnd}
+                      onPointerCancel={holdEnd}
+                      onContextMenu={(e) => (e.preventDefault(), holdEnd(), setPicked(m))}
+                    >
                       <span className="msg-text">{m.body}</span>
                       <span className="msg-meta">
                         {new Date(m.createdAt).toLocaleTimeString(lang === 'bn' ? 'bn-BD' : 'en-GB', { hour: 'numeric', minute: '2-digit' })}
@@ -294,6 +341,9 @@ export default function Chat() {
             <Link className="menu-row" to={`/u/${peer.uid}`} onClick={() => setMenu(false)}>
               <IconTile name="user" tone="primary" size={40} /><span className="m-text"><b>{t('View profile', 'প্রোফাইল দেখুন')}</b><small>{peer.uid}</small></span>
             </Link>
+            <button className="menu-row" onClick={() => (setMenu(false), setClearAsk(true))}>
+              <IconTile name="trash" tone="cyan" size={40} /><span className="m-text"><b>{t('Clear chat', 'চ্যাট মুছুন')}</b><small>{t('Removes the messages only for you', 'শুধু আপনার কাছ থেকে মেসেজগুলো মুছে যাবে')}</small></span>
+            </button>
             <button className="menu-row" onClick={() => (setMenu(false), setReport(true))}>
               <IconTile name="flag" tone="warning" size={40} /><span className="m-text"><b>{t('Report', 'রিপোর্ট করুন')}</b><small>{t('Abuse, spam or bad messages', 'গালাগালি, স্প্যাম বা খারাপ মেসেজ')}</small></span>
             </button>
@@ -308,6 +358,40 @@ export default function Chat() {
             )}
           </section>
         )}
+      </Sheet>
+      <Sheet open={!!picked} onClose={() => setPicked(null)} title={t('Message', 'মেসেজ')} icon="message">
+        {picked && (
+          <section className="menu-list">
+            <p className="msg-preview">{picked.body}</p>
+            <button className="menu-row" onClick={() => void copyMsg(picked)}>
+              <IconTile name="copy" tone="primary" size={40} /><span className="m-text"><b>{t('Copy text', 'লেখা কপি করুন')}</b></span>
+            </button>
+            {picked.to === peer?.id && picked.id > 0 && (
+              <button className="menu-row danger" onClick={() => void deleteMsg(picked, true)}>
+                <IconTile name="trash" tone="danger" size={40} /><span className="m-text"><b>{t('Delete for everyone', 'সবার জন্য মুছুন')}</b><small>{t('It disappears from both phones', 'দুজনের ফোন থেকেই মুছে যাবে')}</small></span>
+              </button>
+            )}
+            <button className="menu-row" onClick={() => void deleteMsg(picked, false)}>
+              <IconTile name="trash" tone="warning" size={40} /><span className="m-text"><b>{t('Delete for me', 'শুধু আমার জন্য মুছুন')}</b><small>{t('The other person still sees it', 'অন্যজন এখনো দেখতে পাবে')}</small></span>
+            </button>
+          </section>
+        )}
+      </Sheet>
+      <Sheet open={clearAsk} onClose={() => setClearAsk(false)} title={t('Clear this chat?', 'চ্যাট মুছে ফেলবেন?')} icon="trash">
+        <p className="muted">{t('All messages in this chat will be removed for you. The other person keeps their copy.', 'এই চ্যাটের সব মেসেজ শুধু আপনার কাছ থেকে মুছে যাবে। অন্যজনের কাছে থেকে যাবে।')}</p>
+        <div className="row mt">
+          <button className="btn grow" onClick={() => setClearAsk(false)}>{t('Cancel', 'বাতিল')}</button>
+          <button
+            className="btn danger grow"
+            onClick={() => {
+              setClearAsk(false);
+              qc.setQueryData<ThreadData>(key, (d) => (d ? { ...d, items: [], hasMore: false } : d));
+              void act(() => api(`/chats/${peer!.uid}/clear`, { method: 'POST' }), t('Chat cleared', 'চ্যাট মুছে ফেলা হয়েছে'));
+            }}
+          >
+            <Icon name="trash" /> {t('Clear', 'মুছুন')}
+          </button>
+        </div>
       </Sheet>
       <Sheet open={report} onClose={() => setReport(false)} title={t('Report player', 'রিপোর্ট করুন')} icon="flag">
         <form
