@@ -20,6 +20,12 @@ import { socialRoutes } from './routes/social.routes';
 import { userRoutes } from './routes/user.routes';
 
 /** Configured origins plus the Android app's WebView origins (https://localhost, capacitor://localhost). */
+/** Media never runs script; SVG icons may still use their own inline styles and embedded images. */
+export const mediaCsp = (file: string) =>
+  file.toLowerCase().endsWith('.svg')
+    ? "default-src 'none'; style-src 'unsafe-inline'; img-src data:; font-src data:"
+    : "default-src 'none'; img-src 'self'; media-src 'self'";
+
 export function corsOrigins(list: string) {
   return [...new Set([...list.split(',').map((s) => s.trim()).filter(Boolean), 'https://localhost', 'capacitor://localhost'])];
 }
@@ -68,9 +74,9 @@ export async function buildApp(ctx: AppContext, opts: { logger?: boolean } = {})
       decorateReply: false,
       immutable: true,
       maxAge: '30d',
-      setHeaders: (res) => {
+      setHeaders: (res, filePath) => {
         res.header('X-Content-Type-Options', 'nosniff');
-        res.header('Content-Security-Policy', "default-src 'none'; img-src 'self'; media-src 'self'");
+        res.header('Content-Security-Policy', mediaCsp(filePath));
         // Public media (avatars, logos, music) is used by the Android app (another origin) and
         // drawn into share-card canvases, which needs CORS.
         res.header('Access-Control-Allow-Origin', '*');
@@ -107,7 +113,7 @@ export async function buildApp(ctx: AppContext, opts: { logger?: boolean } = {})
           .header('Content-Type', file.contentType)
           .header('Cache-Control', 'public, max-age=2592000, immutable')
           .header('X-Content-Type-Options', 'nosniff')
-          .header('Content-Security-Policy', "default-src 'none'; img-src 'self'; media-src 'self'")
+          .header('Content-Security-Policy', mediaCsp(key))
           .header('Access-Control-Allow-Origin', '*')
           .header('Cross-Origin-Resource-Policy', 'cross-origin')
           .send(file.data);

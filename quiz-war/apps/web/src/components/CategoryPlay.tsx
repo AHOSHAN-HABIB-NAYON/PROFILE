@@ -32,7 +32,7 @@ export const categoryColor = (c: Pick<Category, 'slug' | 'color'>) => c.color ||
 export function CategoryArt({ c, size = 52 }: { c: Category; size?: number }) {
   const color = categoryColor(c);
   return (
-    <span className="cat-art" style={{ width: size, height: size, ['--cat' as string]: color }} aria-hidden>
+    <span className={`cat-art${c.iconUrl ? ' has-img' : ''}`} style={{ width: size, height: size, ['--cat' as string]: color }} aria-hidden>
       {c.iconUrl ? <img src={c.iconUrl} alt="" loading="lazy" decoding="async" /> : <Icon name={categoryIcon(c)} size={Math.round(size * 0.52)} />}
     </span>
   );
