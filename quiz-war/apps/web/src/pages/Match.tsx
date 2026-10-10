@@ -185,6 +185,24 @@ export default function Match() {
     window.addEventListener('qw:leave-match', on);
     return () => window.removeEventListener('qw:leave-match', on);
   }, []);
+  // Browser/phone Back while the match runs: stay on the page and ask first (an extra history
+  // entry with the same URL absorbs the Back press; it is re-armed after each press).
+  const matchState = g.snapshot?.matchId === id ? g.snapshot.state : undefined;
+  const running = !!matchState && matchState !== 'finished' && matchState !== 'aborted' && matchState !== 'lobby';
+  useEffect(() => {
+    if (!running) return;
+    const marker = { ...(history.state ?? {}), qwMatchGuard: id };
+    history.pushState(marker, '');
+    const onPop = () => {
+      history.pushState(marker, '');
+      setQuitOpen(true);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      if (history.state?.qwMatchGuard === id) history.back();
+    };
+  }, [running, id]);
   const [float, setFloat] = useState<{ pts: number; key: number } | null>(null);
   const [comboShow, setComboShow] = useState<number>(0);
   const sending = useRef(false);
