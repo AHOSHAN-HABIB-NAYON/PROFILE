@@ -74,7 +74,7 @@ export class ImageService {
    * scripts, event handlers and outside links; /media also serves them under a no-script CSP.
    * Bitmaps are fitted whole into a transparent 256px WebP.
    */
-  async categoryIcon(buf: Buffer) {
+  async categoryIcon(buf: Buffer, folder: 'categories' | 'promos' = 'categories') {
     if (buf.length === 0) throw new AppError(400, 'invalid_image', 'The file is empty');
     if (buf.length > this.maxBytes) throw new AppError(413, 'image_too_large', 'Image is too large');
     const isSvg = /^\s*(<\?xml[^>]*>\s*)?(<!--[\s\S]*?-->\s*)*(<!DOCTYPE[^>]*>\s*)?<svg[\s>]/i.test(buf.subarray(0, 4096).toString('utf8'));
@@ -86,7 +86,7 @@ export class ImageService {
       } catch {
         throw new AppError(400, 'invalid_image', 'This file is not a valid SVG or image');
       }
-      return { url: await this.storage.put(`categories/${randomToken(10)}.svg`, clean, 'image/svg+xml') };
+      return { url: await this.storage.put(`${folder}/${randomToken(10)}.svg`, clean, 'image/svg+xml') };
     }
     let meta;
     try {
@@ -100,7 +100,7 @@ export class ImageService {
       .resize(256, 256, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
       .webp({ quality: 90, alphaQuality: 100 })
       .toBuffer({ resolveWithObject: true });
-    return { url: await this.storage.put(`categories/${randomToken(10)}.webp`, data, 'image/webp') };
+    return { url: await this.storage.put(`${folder}/${randomToken(10)}.webp`, data, 'image/webp') };
   }
 
   async squadLogo(squadId: number, buf: Buffer) {

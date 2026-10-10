@@ -153,7 +153,7 @@ export default function PublicProfile() {
       </section>
 
       {!authed ? (
-        <Link to={`/intro?next=${encodeURIComponent(`/u/${data.user.uid}`)}`} className="btn primary lg block">
+        <Link to={`/intro?next=${encodeURIComponent(`/u/${data.user.uid}`)}`} className="btn primary lg block wrap">
           <Icon name="swords" /> {t(`Join QUIZ WAR to challenge ${data.user.username}`, `${data.user.username}-কে চ্যালেঞ্জ করতে QUIZ WAR-এ যোগ দিন`)}
         </Link>
       ) : (

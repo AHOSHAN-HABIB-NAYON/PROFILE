@@ -24,6 +24,7 @@ import { PushService } from './modules/notifications/push';
 import { PresenceService } from './modules/presence/presence.service';
 import { ProgressionService } from './modules/progression/progression.service';
 import { CategoryService } from './modules/questions/category.service';
+import { PromoService } from './modules/promos/promo.service';
 import { QuestionAdminService } from './modules/questions/question.admin.service';
 import { MysqlQuestionSource } from './modules/questions/question.source';
 import { ReportService } from './modules/reports/report.service';
@@ -146,6 +147,7 @@ export function createContext(env: Env, log: Logger, overrides: { mailer?: Maile
   const shop = new ShopService(progression);
   const reports = new ReportService();
   const categories = new CategoryService();
+  const promos = new PromoService();
   const questionsAdmin = new QuestionAdminService();
   const ai = new AiGeneratorService({ apiKey: env.OPENAI_API_KEY, baseUrl: env.OPENAI_BASE_URL }, questionsAdmin, {
     info: (o, m) => log.info(o, m),
@@ -209,6 +211,7 @@ export function createContext(env: Env, log: Logger, overrides: { mailer?: Maile
     shop,
     reports,
     categories,
+    promos,
     questionsAdmin,
     ai,
     missions,

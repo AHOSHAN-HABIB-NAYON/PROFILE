@@ -9,6 +9,7 @@ import { AppError, badRequest, notFound, unauthorized } from '../lib/errors';
 import { parse } from '../lib/validate';
 import { audit } from '../modules/admin/admin.auth';
 import { categoryInputSchema } from '../modules/questions/category.service';
+import { promoInputSchema } from '../modules/promos/promo.service';
 import { aiJobInputSchema, aiSettingsSchema } from '../modules/ai/ai-generator.service';
 import { MISSION_METRICS, missionInputSchema } from '../modules/missions/mission.service';
 import { SmtpMailer } from '../modules/auth/mailer';
@@ -572,6 +573,33 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     await log(req, 'settings.app', { type: 'settings', id: 'app', before, after });
     return { app: after };
+  });
+
+  /* ---------------------------- Promotions ---------------------------- */
+  app.get('/promos', can('announcements.send'), async () => ({ items: await ctx.promos.listAdmin() }));
+  app.post('/promos/logo', can('announcements.send'), async (req) => {
+    const file = await (req as any).file({ limits: { fileSize: Math.min(ctx.env.UPLOAD_MAX_BYTES, 2 * 1024 * 1024), files: 1 } });
+    if (!file) throw badRequest('No file uploaded');
+    return ctx.images.categoryIcon(await file.toBuffer(), 'promos');
+  });
+  app.post('/promos', can('announcements.send'), async (req) => {
+    const b = parse(promoInputSchema, req.body);
+    const id = await ctx.promos.create(b);
+    await log(req, 'promo.create', { type: 'promo', id, after: b });
+    return { id };
+  });
+  app.put('/promos/:id', can('announcements.send'), async (req) => {
+    const { id } = parse(idParam, req.params);
+    const b = parse(promoInputSchema, req.body);
+    await ctx.promos.update(id, b);
+    await log(req, 'promo.update', { type: 'promo', id, after: b });
+    return { ok: true };
+  });
+  app.delete('/promos/:id', can('announcements.send'), async (req) => {
+    const { id } = parse(idParam, req.params);
+    await ctx.promos.remove(id);
+    await log(req, 'promo.delete', { type: 'promo', id });
+    return { ok: true };
   });
 
   /* --------------------------- Announcements -------------------------- */

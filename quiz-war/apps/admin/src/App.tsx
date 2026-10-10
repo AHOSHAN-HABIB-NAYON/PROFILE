@@ -14,6 +14,7 @@ import Reports from './pages/Reports';
 import GameSettings from './pages/GameSettings';
 import AppSettings from './pages/AppSettings';
 import Announcements from './pages/Announcements';
+import Promos from './pages/Promos';
 import Content from './pages/Content';
 import Admins from './pages/Admins';
 import Audit from './pages/Audit';
@@ -35,6 +36,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
     { to: '/content', label: 'Achievements & Shop', icon: 'award', perm: 'content.manage' },
     { to: '/missions', label: 'Missions', icon: 'target', perm: 'content.manage' },
     { to: '/announcements', label: 'Announcements', icon: 'megaphone', perm: 'announcements.send' },
+    { to: '/promos', label: 'Promotions (ads)', icon: 'sparkles', perm: 'announcements.send' },
   ] },
   { group: 'Configuration', items: [
     { to: '/game-settings', label: 'Game settings', icon: 'gamepad', perm: 'settings.game' },
@@ -200,6 +202,7 @@ export function App() {
           <Route path="/game-settings" element={<Guard perm="settings.game"><GameSettings /></Guard>} />
           <Route path="/app-settings" element={<Guard perm="settings.app"><AppSettings /></Guard>} />
           <Route path="/announcements" element={<Guard perm="announcements.send"><Announcements /></Guard>} />
+          <Route path="/promos" element={<Guard perm="announcements.send"><Promos /></Guard>} />
           <Route path="/content" element={<Guard perm="content.manage"><Content /></Guard>} />
           <Route path="/admins" element={<Guard perm="admins.manage"><Admins /></Guard>} />
           <Route path="/audit" element={<Guard perm="audit.view"><Audit /></Guard>} />

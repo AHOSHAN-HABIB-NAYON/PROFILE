@@ -9,6 +9,7 @@ import { Icon, IconTile } from './components/Icon';
 import { Modal } from './components/Sheet';
 import { NativeExtras } from './components/NativeExtras';
 import { OpenInApp } from './components/OpenInApp';
+import { PromoHost } from './components/Promo';
 import { Splash } from './components/Splash';
 import { Toasts } from './components/Toasts';
 import { IncomingInvites } from './components/Invites';
@@ -304,6 +305,7 @@ export function App() {
         <>
           <IncomingInvites />
           <NativeExtras />
+          <PromoHost />
         </>
       )}
       {status !== 'loading' && (
