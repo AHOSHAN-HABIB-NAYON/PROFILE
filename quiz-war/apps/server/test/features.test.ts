@@ -436,6 +436,19 @@ d('Features (MySQL)', () => {
       await api('POST', `/chats/${ua}/read`, {}, b.token);
       expect((await api('GET', `/chats/${ub}/messages`, undefined, a.token)).body.items[0].readAt).toBeNull(); // no "seen" on requests
 
+      // Reply + reactions.
+      const first = hist.body.items[0];
+      const rep = (await api('POST', `/chats/${ub}/messages`, { body: 'ok', replyTo: first.id }, a.token)).body.message;
+      expect(rep.replyTo).toMatchObject({ id: first.id, body: 'হাই 👋' });
+      expect((await api('POST', `/chats/messages/${first.id}/react`, { reaction: '❤️' }, b.token)).body.reaction).toBe('❤️');
+      expect((await api('POST', `/chats/messages/${first.id}/react`, { reaction: '🍕' }, b.token)).status).toBe(400);
+      const withR = (await api('GET', `/chats/${ub}/messages`, undefined, a.token)).body.items;
+      expect(withR[0].reactions).toEqual([{ u: b.id, r: '❤️' }]);
+      expect(withR[1].replyTo.id).toBe(first.id);
+      expect((await api('POST', `/chats/messages/${first.id}/react`, { reaction: '❤️' }, b.token)).body.reaction).toBeNull();
+      await api('POST', `/chats/messages/${rep.id}/delete`, { forEveryone: true }, a.token);
+      await exec('DELETE FROM chat_messages WHERE id = ?', [rep.id]);
+
       // Chat-only block: messages stop, the chat stays for the blocker, and it can be undone.
       await api('POST', `/chats/${ua}/block`, {}, b.token);
       expect((await api('POST', `/chats/${ub}/messages`, { body: 'hey' }, a.token)).body.error.code).toBe('chat_blocked');

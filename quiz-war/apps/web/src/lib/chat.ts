@@ -125,6 +125,15 @@ export function registerChat() {
       }
       void queryClient.invalidateQueries({ queryKey: ['chats'] });
     });
+    s.on('chat:reaction', ({ id, userId, reaction }) => {
+      for (const [key, d] of queryClient.getQueriesData<ThreadData>({ queryKey: ['chat-thread'] })) {
+        if (!d?.items.some((m) => m.id === id)) continue;
+        queryClient.setQueryData<ThreadData>(key, {
+          ...d,
+          items: d.items.map((m) => (m.id === id ? { ...m, reactions: [...(m.reactions ?? []).filter((x) => x.u !== userId), ...(reaction ? [{ u: userId, r: reaction }] : [])] } : m)),
+        });
+      }
+    });
     s.on('chat:typing', ({ from }) => useChat.setState((st) => ({ typing: { ...st.typing, [from]: Date.now() } })));
     s.on('chat:deleted', ({ ids, unsent }) => {
       const gone = new Set(ids);

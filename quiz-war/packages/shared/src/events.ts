@@ -197,4 +197,5 @@ export interface ServerToClientEvents {
   'chat:read': (p: { peerId: number; upTo: number }) => void;
   'chat:typing': (p: { from: number }) => void;
   'chat:deleted': (p: { ids: number[]; unsent?: boolean }) => void;
+  'chat:reaction': (p: { id: number; userId: number; reaction: string | null }) => void;
 }

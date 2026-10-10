@@ -6,6 +6,8 @@ import type { FriendsService } from '../social/friends.service';
 import { getPublicUser, getPublicUsers, getUserByUid } from '../users/users.repo';
 
 export const CHAT_RETENTION_DAYS = 7;
+/** Messenger-style reactions: like, haha, love, angry, sad, wow. */
+export const CHAT_REACTIONS = ['👍', '😆', '❤️', '😡', '😢', '😮'] as const;
 const MAX_LEN = 1000;
 
 interface Emitter {
@@ -161,12 +163,52 @@ export class ChatService {
       blocked: await this.friends.blockDirection(userId, peer.id),
       chatBlocked: await this.chatBlockDirection(userId, peer.id),
       request: rows.some((r) => Number(r.sender_id) === peer.id) && !(await this.isTrusted(userId, peer.id)),
-      items: rows.map(toMsg).reverse(),
+      items: await this.decorate(rows.map(toMsg).reverse(), rows),
       hasMore: rows.length === 50,
     };
   }
 
-  async send(userId: number, peerId: number, raw: string): Promise<ChatMessage> {
+  /** Adds the quoted message (for replies) and the reactions to a page of messages. */
+  private async decorate(msgs: ChatMessage[], rows: any[]): Promise<ChatMessage[]> {
+    if (!msgs.length) return msgs;
+    const replyIds = [...new Set(rows.map((r) => Number(r.reply_to_id)).filter(Boolean))];
+    const quotes = new Map<number, any>();
+    if (replyIds.length) {
+      for (const q of await query<any>(`SELECT id, sender_id, body, deleted_at FROM chat_messages WHERE id IN (${replyIds.map(() => '?').join(',')})`, replyIds)) quotes.set(Number(q.id), q);
+    }
+    const reacts = new Map<number, { u: number; r: string }[]>();
+    const ids = msgs.map((m) => m.id);
+    for (const r of await query<any>(`SELECT message_id, user_id, reaction FROM chat_reactions WHERE message_id IN (${ids.map(() => '?').join(',')}) ORDER BY created_at`, ids)) {
+      const list = reacts.get(Number(r.message_id)) ?? [];
+      list.push({ u: Number(r.user_id), r: r.reaction });
+      reacts.set(Number(r.message_id), list);
+    }
+    const replyOf = new Map(rows.map((r) => [Number(r.id), Number(r.reply_to_id) || 0]));
+    return msgs.map((m) => {
+      const qid = replyOf.get(m.id);
+      const q = qid ? quotes.get(qid) : null;
+      return {
+        ...m,
+        ...(qid ? { replyTo: q ? { id: qid, from: Number(q.sender_id), body: q.deleted_at ? '' : String(q.body).slice(0, 160), deleted: !!q.deleted_at } : { id: qid, from: 0, body: '', deleted: true } } : {}),
+        ...(reacts.has(m.id) ? { reactions: reacts.get(m.id) } : {}),
+      };
+    });
+  }
+
+  /** React to a message (one reaction per person; null or the same emoji removes it). */
+  async react(userId: number, id: number, reaction: string | null) {
+    const m = await queryOne<{ sender_id: number; recipient_id: number; deleted_at: unknown }>('SELECT sender_id, recipient_id, deleted_at FROM chat_messages WHERE id = ?', [id]);
+    if (!m || (Number(m.sender_id) !== userId && Number(m.recipient_id) !== userId) || m.deleted_at) throw notFound('Message not found');
+    if (reaction && !(CHAT_REACTIONS as readonly string[]).includes(reaction)) throw badRequest('Unknown reaction');
+    const cur = await queryOne<{ reaction: string }>('SELECT reaction FROM chat_reactions WHERE message_id = ? AND user_id = ?', [id, userId]);
+    const next = reaction && cur?.reaction !== reaction ? reaction : null;
+    if (next) await exec('INSERT INTO chat_reactions (message_id, user_id, reaction) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE reaction = VALUES(reaction), created_at = NOW()', [id, userId, next]);
+    else await exec('DELETE FROM chat_reactions WHERE message_id = ? AND user_id = ?', [id, userId]);
+    for (const u of [Number(m.sender_id), Number(m.recipient_id)]) this.emitter()?.toUser(u, 'chat:reaction', { id, userId, reaction: next });
+    return { reaction: next };
+  }
+
+  async send(userId: number, peerId: number, raw: string, replyToId?: number): Promise<ChatMessage> {
     this.assertOn();
     if (peerId === userId) throw badRequest('You cannot message yourself');
     const body = cleanChatText(raw);
@@ -180,10 +222,21 @@ export class ChatService {
     const ok = await queryOne<{ id: number }>(`SELECT id FROM users WHERE id = ? AND status = 'active'`, [peerId]);
     if (!ok) throw notFound('Player not found');
 
-    const res = await exec('INSERT INTO chat_messages (sender_id, recipient_id, body) VALUES (?, ?, ?)', [userId, peerId, body]);
+    // A reply must quote a message from this same conversation.
+    let quote: any = null;
+    if (replyToId) {
+      quote = await queryOne<any>(
+        'SELECT id, sender_id, body, deleted_at FROM chat_messages WHERE id = ? AND ((sender_id = ? AND recipient_id = ?) OR (sender_id = ? AND recipient_id = ?))',
+        [replyToId, userId, peerId, peerId, userId],
+      );
+    }
+    const res = await exec('INSERT INTO chat_messages (sender_id, recipient_id, body, reply_to_id) VALUES (?, ?, ?, ?)', [userId, peerId, body, quote ? quote.id : null]);
     await exec('INSERT IGNORE INTO chat_accepts (user_id, peer_id) VALUES (?, ?)', [userId, peerId]);
     const isRequest = !(await this.isTrusted(peerId, userId));
-    const message: ChatMessage = { id: res.insertId, from: userId, to: peerId, body, createdAt: new Date().toISOString(), readAt: null };
+    const message: ChatMessage = {
+      id: res.insertId, from: userId, to: peerId, body, createdAt: new Date().toISOString(), readAt: null,
+      ...(quote ? { replyTo: { id: Number(quote.id), from: Number(quote.sender_id), body: quote.deleted_at ? '' : String(quote.body).slice(0, 160), deleted: !!quote.deleted_at } } : {}),
+    };
     const [me, them] = await Promise.all([getPublicUser(userId), getPublicUser(peerId)]);
     if (me) this.emitter()?.toUser(peerId, 'chat:message', { message, peer: me, request: isRequest });
     if (them) this.emitter()?.toUser(userId, 'chat:message', { message, peer: them });

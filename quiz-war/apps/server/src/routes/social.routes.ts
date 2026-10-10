@@ -42,8 +42,8 @@ export async function socialRoutes(app: FastifyInstance, ctx: AppContext) {
   });
   app.post('/chats/:uid/messages', { ...auth, config: { rateLimit: { max: 40, timeWindow: '1 minute' } } }, async (req) => {
     const p = parse(z.object({ uid: z.string().max(20) }), req.params);
-    const b = parse(z.object({ body: z.string().min(1).max(2000) }), req.body);
-    return { message: await ctx.chat.send(uid(req), (await chatPeer(p.uid)).id, b.body) };
+    const b = parse(z.object({ body: z.string().min(1).max(2000), replyTo: z.number().int().positive().optional() }), req.body);
+    return { message: await ctx.chat.send(uid(req), (await chatPeer(p.uid)).id, b.body, b.replyTo) };
   });
   app.post('/chats/:uid/read', auth, async (req) => {
     const p = parse(z.object({ uid: z.string().max(20) }), req.params);
@@ -54,6 +54,11 @@ export async function socialRoutes(app: FastifyInstance, ctx: AppContext) {
     const { id } = parse(idParam, req.params);
     const b = parse(z.object({ forEveryone: z.boolean().default(false) }), req.body ?? {});
     return ctx.chat.deleteMessage(uid(req), id, b.forEveryone);
+  });
+  app.post('/chats/messages/:id/react', { ...auth, config: { rateLimit: { max: 60, timeWindow: '1 minute' } } }, async (req) => {
+    const { id } = parse(idParam, req.params);
+    const b = parse(z.object({ reaction: z.string().max(16).nullable() }), req.body ?? {});
+    return ctx.chat.react(uid(req), id, b.reaction);
   });
   app.post('/chats/:uid/accept', auth, async (req) => {
     const p = parse(z.object({ uid: z.string().max(20) }), req.params);

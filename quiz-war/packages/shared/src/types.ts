@@ -99,6 +99,10 @@ export interface ChatMessage {
   readAt: string | null;
   /** Unsent by its author: shown as "This message was deleted". */
   deleted?: boolean;
+  /** The message this one replies to (a short quote). */
+  replyTo?: { id: number; from: number; body: string; deleted?: boolean };
+  /** Emoji reactions: one per person. */
+  reactions?: { u: number; r: string }[];
 }
 export interface ChatThread {
   peer: PublicUser;

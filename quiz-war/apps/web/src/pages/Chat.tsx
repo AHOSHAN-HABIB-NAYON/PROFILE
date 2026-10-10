@@ -14,6 +14,7 @@ import { useLang, useT } from '../lib/i18n';
 import { reasonLabel } from '../lib/labels';
 import { haptic } from '../lib/platform';
 import { useSettings } from '../lib/settings';
+import { useAuth } from '../lib/auth';
 import { emit } from '../lib/socket';
 import { toast } from '../lib/toast';
 
@@ -39,6 +40,9 @@ function dayLabel(iso: string, lang: 'bn' | 'en', t: (en: string, bn: string) =>
 
 let tempSeq = -1;
 
+/** Messenger-style reactions: like, haha, love, angry, sad, wow. */
+const REACTIONS = ['👍', '😆', '❤️', '😡', '😢', '😮'];
+
 export default function Chat() {
   const { uid = '' } = useParams();
   const t = useT();
@@ -61,6 +65,11 @@ export default function Chat() {
   const [clearAsk, setClearAsk] = useState(false);
   const chatHeads = useSettings((st) => st.chatHeads);
   const press = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [replying, setReplying] = useState<LiveMessage | null>(null);
+  const [swipe, setSwipe] = useState<{ id: number; dx: number } | null>(null);
+  const swipeStart = useRef<{ id: number; x: number; y: number; dir: 'h' | 'v' | null } | null>(null);
+  const [flash, setFlash] = useState<number | null>(null);
+  const myId = useAuth((st) => st.user?.id ?? 0);
   const list = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const stick = useRef(true);
@@ -109,15 +118,17 @@ export default function Chat() {
     }
   };
 
-  const send = async (body: string, retryId?: number) => {
+  const send = async (body: string, retryId?: number, quote?: LiveMessage | null) => {
     if (!peer || !body.trim()) return;
     haptic('tap');
     const tempId = retryId ?? tempSeq--;
-    const temp: LiveMessage = { id: tempId, from: -1, to: peer.id, body: body.trim(), createdAt: new Date().toISOString(), readAt: null, pending: true };
+    const prevTemp = retryId ? data?.items.find((m) => m.id === retryId) : undefined;
+    const replyTo = quote && quote.id > 0 ? { id: quote.id, from: quote.from, body: quote.body, deleted: quote.deleted } : prevTemp?.replyTo;
+    const temp: LiveMessage = { id: tempId, from: -1, to: peer.id, body: body.trim(), createdAt: new Date().toISOString(), readAt: null, pending: true, ...(replyTo ? { replyTo } : {}) };
     stick.current = true;
     qc.setQueryData<ThreadData>(key, (d) => (d ? { ...d, items: [...d.items.filter((m) => m.id !== tempId), temp] } : d));
     try {
-      const r = await api<{ message: LiveMessage }>(`/chats/${peer.uid}/messages`, { body: { body: temp.body } });
+      const r = await api<{ message: LiveMessage }>(`/chats/${peer.uid}/messages`, { body: { body: temp.body, ...(replyTo ? { replyTo: replyTo.id } : {}) } });
       addToThread(peer.uid, r.message, tempId);
       void qc.invalidateQueries({ queryKey: ['chats'] });
     } catch (e) {
@@ -133,7 +144,8 @@ export default function Chat() {
     const body = text;
     if (!body.trim()) return;
     setText('');
-    void send(body);
+    void send(body, undefined, replying);
+    setReplying(null);
     input.current?.focus();
   };
 
@@ -192,6 +204,64 @@ export default function Chat() {
   const holdEnd = () => {
     if (press.current) clearTimeout(press.current);
     press.current = null;
+  };
+
+  const react = async (m: LiveMessage, r: string) => {
+    setPicked(null);
+    if (m.id < 0 || m.deleted) return;
+    haptic('success');
+    const mineNow = m.reactions?.find((x) => x.u === myId)?.r;
+    const next = mineNow === r ? null : r;
+    // Show it at once; the server echo (chat:reaction) confirms it.
+    qc.setQueryData<ThreadData>(key, (d) => (d ? { ...d, items: d.items.map((x) => (x.id === m.id ? { ...x, reactions: [...(x.reactions ?? []).filter((y) => y.u !== myId), ...(next ? [{ u: myId, r: next }] : [])] } : x)) } : d));
+    try {
+      await api(`/chats/messages/${m.id}/react`, { body: { reaction: next } });
+    } catch (e) {
+      toast.error(t('Could not react', 'রিঅ্যাকশন দেওয়া যায়নি'), friendlyError(e));
+      void thread.refetch();
+    }
+  };
+  const startReply = (m: LiveMessage) => {
+    if (m.id < 0 || m.deleted) return;
+    haptic('tap');
+    setPicked(null);
+    setReplying(m);
+    setEmojiOpen(false);
+    requestAnimationFrame(() => input.current?.focus());
+  };
+  const jumpTo = (id: number) => {
+    const el = list.current?.querySelector(`[data-mid="${id}"]`);
+    if (!el) return;
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    setFlash(id);
+    setTimeout(() => setFlash(null), 1300);
+  };
+  // Swipe a message sideways (towards the middle) to reply, like Messenger.
+  const swipeDown = (e: React.PointerEvent, m: LiveMessage) => {
+    swipeStart.current = { id: m.id, x: e.clientX, y: e.clientY, dir: null };
+    holdStart(m);
+  };
+  const swipeMove = (e: React.PointerEvent, mine: boolean) => {
+    const s0 = swipeStart.current;
+    if (!s0) return;
+    const dx = e.clientX - s0.x;
+    const dy = e.clientY - s0.y;
+    if (!s0.dir && Math.hypot(dx, dy) > 8) {
+      s0.dir = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+      holdEnd();
+    }
+    if (s0.dir !== 'h') return;
+    const pull = mine ? Math.min(0, dx) : Math.max(0, dx);
+    const d = Math.max(-90, Math.min(90, pull));
+    if (Math.abs(d) >= 64 && Math.abs(swipe?.dx ?? 0) < 64) haptic('tap');
+    setSwipe({ id: s0.id, dx: d });
+  };
+  const swipeUp = (m: LiveMessage) => {
+    holdEnd();
+    const done = swipe && swipe.id === m.id && Math.abs(swipe.dx) >= 64;
+    swipeStart.current = null;
+    setSwipe(null);
+    if (done) startReply(m);
   };
 
   if (thread.error && !data) {
@@ -262,13 +332,26 @@ export default function Chat() {
               return (
                 <Fragment key={m.id}>
                   {newDay && <div className="chat-day"><span>{dayLabel(m.createdAt, lang, t)}</span></div>}
-                  <div className={`msg ${mine ? 'mine' : 'theirs'}${groupTop ? ' top' : ''}${groupEnd ? ' end' : ''}${big ? ' big' : ''}${m.failed ? ' failed' : ''}${m.deleted ? ' deleted' : ''}`}>
+                  <div
+                    data-mid={m.id}
+                    className={`msg ${mine ? 'mine' : 'theirs'}${groupTop || m.replyTo ? ' top' : ''}${groupEnd ? ' end' : ''}${big ? ' big' : ''}${m.failed ? ' failed' : ''}${m.deleted ? ' deleted' : ''}${m.reactions?.length ? ' has-react' : ''}${flash === m.id ? ' flash' : ''}`}
+                  >
+                    {m.replyTo && (
+                      <button type="button" className="msg-quote" onClick={() => jumpTo(m.replyTo!.id)}>
+                        <span className="mq-label"><Icon name="reply" size={13} /> {mine ? t(`You replied to ${m.replyTo.from === peer?.id ? peer?.username : 'yourself'}`, m.replyTo.from === peer?.id ? `আপনি ${peer?.username}-কে উত্তর দিয়েছেন` : 'আপনি নিজের মেসেজে উত্তর দিয়েছেন') : t(`${peer?.username} replied to ${m.replyTo.from === peer?.id ? 'themselves' : 'you'}`, m.replyTo.from === peer?.id ? `${peer?.username} নিজের মেসেজে উত্তর দিয়েছে` : `${peer?.username} আপনাকে উত্তর দিয়েছে`)}</span>
+                        <span className="mq-body">{m.replyTo.deleted ? t('Message deleted', 'মেসেজ মুছে ফেলা হয়েছে') : m.replyTo.body}</span>
+                      </button>
+                    )}
+                    {swipe?.id === m.id && <span className={`swipe-hint${Math.abs(swipe.dx) >= 64 ? ' ready' : ''}`} style={{ opacity: Math.min(1, Math.abs(swipe.dx) / 64) }} aria-hidden><Icon name="reply" size={18} /></span>}
                     <div
                       className={`bubble${picked?.id === m.id ? ' picked' : ''}`}
-                      onPointerDown={() => holdStart(m)}
-                      onPointerUp={holdEnd}
-                      onPointerLeave={holdEnd}
-                      onPointerCancel={holdEnd}
+                      style={swipe?.id === m.id ? { transform: `translateX(${swipe.dx}px)`, transition: 'none' } : undefined}
+                      onPointerDown={(e) => swipeDown(e, m)}
+                      onPointerMove={(e) => swipeMove(e, mine)}
+                      onPointerUp={() => swipeUp(m)}
+                      onPointerCancel={() => swipeUp(m)}
+                      onPointerLeave={() => swipeUp(m)}
+                      onDoubleClick={() => void react(m, '❤️')}
                       onContextMenu={(e) => (e.preventDefault(), holdEnd(), setPicked(m))}
                     >
                       {m.deleted ? (
@@ -281,6 +364,12 @@ export default function Chat() {
                         {mine && !m.deleted && (m.pending ? <Icon name="clock" size={13} /> : m.failed ? null : <Icon name={m.readAt ? 'check-check' : 'check'} size={15} className={m.readAt ? 'seen' : undefined} />)}
                       </span>
                     </div>
+                    {!!m.reactions?.length && (
+                      <button type="button" className="msg-reacts" onClick={() => setPicked(m)} aria-label={t('Reactions', 'রিঅ্যাকশন')}>
+                        {[...new Set(m.reactions.map((x) => x.r))].slice(0, 3).map((r) => <span key={r}>{r}</span>)}
+                        {m.reactions.length > 1 && <b>{m.reactions.length}</b>}
+                      </button>
+                    )}
                     {m.failed && (
                       <button className="msg-retry" onClick={() => void send(m.body, m.id)}><Icon name="refresh" size={14} /> {t('Not sent · tap to retry', 'যায়নি · আবার চেষ্টা করুন')}</button>
                     )}
@@ -332,6 +421,16 @@ export default function Chat() {
               {EMOJIS.map((e) => (
                 <button key={e} type="button" onClick={() => (haptic('tap'), setText((v) => v + e))} aria-label={e}>{e}</button>
               ))}
+            </div>
+          )}
+          {replying && (
+            <div className="reply-bar">
+              <Icon name="reply" size={18} />
+              <span className="grow">
+                <b>{replying.from === peer?.id ? t(`Replying to ${peer?.username}`, `${peer?.username}-কে উত্তর দিচ্ছেন`) : t('Replying to yourself', 'নিজের মেসেজে উত্তর দিচ্ছেন')}</b>
+                <small>{replying.body}</small>
+              </span>
+              <button type="button" className="btn icon sm ghost" aria-label={t('Cancel reply', 'উত্তর বাতিল')} onClick={() => setReplying(null)}><Icon name="close" size={18} /></button>
             </div>
           )}
           <form className="chat-compose" onSubmit={submit}>
@@ -395,7 +494,24 @@ export default function Chat() {
       <Sheet open={!!picked} onClose={() => setPicked(null)} title={t('Message', 'মেসেজ')} icon="message">
         {picked && (
           <section className="menu-list">
+            {!picked.deleted && picked.id > 0 && (
+              <div className="react-bar" role="group" aria-label={t('React', 'রিঅ্যাকশন দিন')}>
+                {REACTIONS.map((r) => (
+                  <button key={r} type="button" className={picked.reactions?.some((x) => x.u === myId && x.r === r) ? 'on' : undefined} onClick={() => void react(picked, r)} aria-label={r}>{r}</button>
+                ))}
+              </div>
+            )}
             {!picked.deleted && <p className="msg-preview">{picked.body}</p>}
+            {!!picked.reactions?.length && (
+              <p className="xs muted react-who">
+                {picked.reactions.map((x) => `${x.r} ${x.u === myId ? t('You', 'আপনি') : peer?.username}`).join(' · ')}
+              </p>
+            )}
+            {!picked.deleted && picked.id > 0 && !data?.request && !data?.chatBlocked && !data?.blocked && (
+              <button className="menu-row" onClick={() => startReply(picked)}>
+                <IconTile name="reply" tone="cyan" size={40} /><span className="m-text"><b>{t('Reply', 'উত্তর দিন')}</b></span>
+              </button>
+            )}
             {!picked.deleted && (
               <button className="menu-row" onClick={() => void copyMsg(picked)}>
                 <IconTile name="copy" tone="primary" size={40} /><span className="m-text"><b>{t('Copy text', 'লেখা কপি করুন')}</b></span>
