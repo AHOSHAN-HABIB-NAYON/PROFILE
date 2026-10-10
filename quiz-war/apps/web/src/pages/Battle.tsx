@@ -27,7 +27,7 @@ const AI_INFO: Record<AiLevel, { icon: IconName; tone: 'success' | 'primary' | '
   expert: { icon: 'brain', tone: 'danger', en: 'Expert', bn: 'এক্সপার্ট' },
 };
 
-function useStart() {
+export function useStart() {
   const nav = useNavigate();
   const t = useT();
   const [busy, setBusy] = useState(false);

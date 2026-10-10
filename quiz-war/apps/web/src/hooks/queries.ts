@@ -11,6 +11,8 @@ export interface Category {
   name: string;
   nameBn: string | null;
   icon: string;
+  /** Custom uploaded icon (admin); the built-in SVG icon is used when empty. */
+  iconUrl?: string | null;
   color: string | null;
   description: string | null;
   questionCount: number;

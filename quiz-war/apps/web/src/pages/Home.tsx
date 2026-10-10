@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router';
 import { Avatar } from '../components/Avatar';
+import { HomeCategories } from '../components/CategoryPlay';
 import { CountUp, N, Skeleton } from '../components/Feedback';
 import { LeagueBadge, LevelBar } from '../components/Game';
 import { Icon, IconTile, type IconName } from '../components/Icon';
@@ -206,6 +207,8 @@ export default function Home() {
             <Icon name="search" /> {t('Find opponent', 'প্রতিপক্ষ খুঁজুন')}
           </button>
         </section>
+
+        <HomeCategories />
 
         <div className="mode-grid stagger">
           {modes.map((m) => (

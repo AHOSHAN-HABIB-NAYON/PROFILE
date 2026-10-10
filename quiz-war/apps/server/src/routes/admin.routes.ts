@@ -325,6 +325,11 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /* ----------------------------- Categories --------------------------- */
+  app.post('/categories/icon', can('categories.manage'), async (req) => {
+    const file = await (req as any).file({ limits: { fileSize: Math.min(ctx.env.UPLOAD_MAX_BYTES, 2 * 1024 * 1024), files: 1 } });
+    if (!file) throw badRequest('No file uploaded');
+    return ctx.images.categoryIcon(await file.toBuffer());
+  });
   app.get('/categories', can('questions.view'), async () => ({ items: await ctx.categories.listAdmin() }));
   app.post('/categories', can('categories.manage'), async (req) => {
     const b = parse(categoryInputSchema, req.body);

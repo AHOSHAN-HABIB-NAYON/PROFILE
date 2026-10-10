@@ -14,7 +14,22 @@ export default function Categories() {
   const [edit, setEdit] = useState<any | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [color, setColor] = useState<string | null>(null);
-  const open = (c: any) => (setErr(null), setColor(c.color ?? null), setEdit(c));
+  const [iconUrl, setIconUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const open = (c: any) => (setErr(null), setColor(c.color ?? null), setIconUrl(c.iconUrl ?? null), setEdit(c));
+  const uploadIcon = async (file: File) => {
+    setUploading(true);
+    setErr(null);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      setIconUrl((await api('/categories/icon', { form })).url);
+    } catch (e2) {
+      setErr(errMsg(e2));
+    } finally {
+      setUploading(false);
+    }
+  };
   const refresh = () => void qc.invalidateQueries({ queryKey: ['categories'] });
   const move = async (i: number, dir: -1 | 1) => {
     const ids = data!.map((c) => c.id);
@@ -27,7 +42,7 @@ export default function Categories() {
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
-    const body = { slug: f.get('slug'), name: f.get('name'), nameBn: f.get('nameBn') || null, icon: f.get('icon'), description: f.get('description') || null, color, isActive: f.get('isActive') === 'on' };
+    const body = { slug: f.get('slug'), name: f.get('name'), nameBn: f.get('nameBn') || null, icon: f.get('icon'), iconUrl, description: f.get('description') || null, color, isActive: f.get('isActive') === 'on' };
     try {
       if (edit.id) await api(`/categories/${edit.id}`, { method: 'PUT', body });
       else await api('/categories', { body });
@@ -49,7 +64,7 @@ export default function Categories() {
               {data!.map((c, i) => (
                 <tr key={c.id}>
                   <td>{manage && <><div className="row" style={{ gap: 2, flexWrap: 'nowrap' }}><button className="btn sm ghost icon-btn" aria-label={`Move ${c.name} up`} title="Move up" disabled={i === 0} onClick={() => void move(i, -1)}><Icon name="arrow-up" size={16} /></button><button className="btn sm ghost icon-btn" aria-label={`Move ${c.name} down`} title="Move down" disabled={i === data!.length - 1} onClick={() => void move(i, 1)}><Icon name="arrow-down" size={16} /></button></div></>}</td>
-                  <td><span className="cat-ic" style={c.color ? { color: c.color, background: `color-mix(in srgb, ${c.color} 14%, transparent)` } : undefined} title={hasKey(c.icon) ? c.icon : `Legacy icon “${c.icon}” — pick a new one`}><Icon name={categoryIcon(c)} size={20} /></span></td><td><b>{c.name}</b><div className="small faint">{c.description}</div></td><td>{c.nameBn}</td><td><code>{c.slug}</code></td><td>{c.questionCount}</td>
+                  <td><span className="cat-ic" style={c.color ? { color: c.color, background: `color-mix(in srgb, ${c.color} 14%, transparent)` } : undefined} title={c.iconUrl ? 'Custom icon' : hasKey(c.icon) ? c.icon : `Legacy icon “${c.icon}” — pick a new one`}>{c.iconUrl ? <img src={c.iconUrl} alt="" width={22} height={22} style={{ objectFit: 'contain' }} /> : <Icon name={categoryIcon(c)} size={20} />}</span></td><td><b>{c.name}</b><div className="small faint">{c.description}</div></td><td>{c.nameBn}</td><td><code>{c.slug}</code></td><td>{c.questionCount}</td>
                   <td>{c.isActive ? <span className="badge green">enabled</span> : <span className="badge">disabled</span>}</td>
                   <td>{manage && <div className="row" style={{ flexWrap: 'nowrap' }}>
                     <button className="btn sm" onClick={() => open(c)}>Edit</button>
@@ -70,7 +85,19 @@ export default function Categories() {
               <div className="field"><label htmlFor="nb">Name (বাংলা)</label><input id="nb" name="nameBn" className="input" defaultValue={edit.nameBn ?? ''} /></div>
               <div className="field"><label htmlFor="s">Slug</label><input id="s" name="slug" className="input" required pattern="[a-z0-9-]{2,60}" defaultValue={edit.slug} /></div>
             </div>
-            <IconPicker name="icon" label="Icon (shown in the player app)" options={CATEGORY_ICONS} defaultValue={categoryIcon(edit)} color={color} />
+            <div className="field">
+              <label>Custom icon (optional) — SVG, PNG, JPG or WebP</label>
+              <div className="color-row">
+                {iconUrl ? <img src={iconUrl} alt="Custom icon preview" width={44} height={44} style={{ objectFit: 'contain', borderRadius: 10, background: 'var(--surface-2)' }} /> : <span className="small muted">No custom icon — the built-in icon below is used.</span>}
+                <label className="btn sm" style={{ cursor: 'pointer' }}>
+                  {uploading ? 'Uploading…' : iconUrl ? 'Replace' : 'Upload icon'}
+                  <input type="file" accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp" hidden disabled={uploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadIcon(f); e.target.value = ''; }} />
+                </label>
+                {iconUrl && <button type="button" className="btn sm" onClick={() => setIconUrl(null)}>Use built-in icon</button>}
+              </div>
+              <p className="small faint">Square artwork works best. SVGs are rendered to a sharp image on upload.</p>
+            </div>
+            <IconPicker name="icon" label={iconUrl ? 'Built-in icon (used if the custom icon is removed)' : 'Icon (shown in the player app)'} options={CATEGORY_ICONS} defaultValue={categoryIcon(edit)} color={color} />
             <div className="field">
               <label htmlFor="cc">Colour</label>
               <div className="color-row">

@@ -18,7 +18,7 @@ export function CategoryPicker({ value, onChange, allowAll = true }: { value: nu
         .filter((c) => c.questionCount > 0)
         .map((c) => (
           <button type="button" key={c.id} role="option" aria-selected={value === c.id} className="select-chip" onClick={() => onChange(c.id)}>
-            <IconTile name={categoryIcon(c)} color={c.color} size={26} />
+            {c.iconUrl ? <img className="cp-img" src={c.iconUrl} alt="" width={26} height={26} /> : <IconTile name={categoryIcon(c)} color={c.color} size={26} />}
             {lang === 'bn' ? (c.nameBn ?? c.name) : c.name}
           </button>
         ))}

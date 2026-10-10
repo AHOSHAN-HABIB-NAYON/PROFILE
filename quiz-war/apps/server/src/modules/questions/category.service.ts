@@ -7,6 +7,8 @@ export const categoryInputSchema = z.object({
   name: z.string().trim().min(2).max(80),
   nameBn: z.string().trim().max(80).nullable().optional(),
   icon: z.string().trim().min(1).max(16),
+  /** Custom uploaded icon; falls back to the built-in SVG `icon` when empty. */
+  iconUrl: z.string().trim().max(500).regex(/^(\/|https:\/\/)/, 'must be an uploaded image URL').nullable().optional(),
   description: z.string().trim().max(300).nullable().optional(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional(),
   isActive: z.boolean().default(true),
@@ -19,7 +21,7 @@ export class CategoryService {
   async listPublic() {
     if (this.cache && Date.now() - this.cache.at < 60_000) return this.cache.data;
     const rows = await query<any>(
-      `SELECT c.id, c.slug, c.name, c.name_bn AS nameBn, c.icon, c.description, c.color,
+      `SELECT c.id, c.slug, c.name, c.name_bn AS nameBn, c.icon, c.icon_url AS iconUrl, c.description, c.color,
               (SELECT COUNT(*) FROM questions q WHERE q.category_id = c.id AND q.is_active = 1 AND q.review_status = 'approved' AND q.deleted_at IS NULL) AS questionCount
        FROM categories c WHERE c.is_active = 1 AND c.deleted_at IS NULL ORDER BY c.sort_order, c.id`,
     );
@@ -34,7 +36,7 @@ export class CategoryService {
 
   async listAdmin() {
     const rows = await query<any>(
-      `SELECT c.id, c.slug, c.name, c.name_bn AS nameBn, c.icon, c.description, c.color, c.sort_order AS sortOrder, c.is_active AS isActive,
+      `SELECT c.id, c.slug, c.name, c.name_bn AS nameBn, c.icon, c.icon_url AS iconUrl, c.description, c.color, c.sort_order AS sortOrder, c.is_active AS isActive,
               (SELECT COUNT(*) FROM questions q WHERE q.category_id = c.id AND q.review_status = 'approved' AND q.deleted_at IS NULL) AS questionCount,
               (SELECT COUNT(*) FROM questions q WHERE q.category_id = c.id AND q.review_status = 'pending' AND q.deleted_at IS NULL) AS pendingCount
        FROM categories c WHERE c.deleted_at IS NULL ORDER BY c.sort_order, c.id`,
@@ -51,11 +53,12 @@ export class CategoryService {
   async create(input: z.infer<typeof categoryInputSchema>) {
     const max = await queryOne<{ m: number }>('SELECT COALESCE(MAX(sort_order), 0) m FROM categories');
     try {
-      const r = await exec('INSERT INTO categories (slug, name, name_bn, icon, description, color, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [
+      const r = await exec('INSERT INTO categories (slug, name, name_bn, icon, icon_url, description, color, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [
         input.slug,
         input.name,
         input.nameBn ?? null,
         input.icon,
+        input.iconUrl ?? null,
         input.description ?? null,
         input.color ?? null,
         input.isActive ? 1 : 0,
@@ -70,11 +73,12 @@ export class CategoryService {
   }
 
   async update(id: number, input: z.infer<typeof categoryInputSchema>) {
-    await exec('UPDATE categories SET slug = ?, name = ?, name_bn = ?, icon = ?, description = ?, color = ?, is_active = ? WHERE id = ? AND deleted_at IS NULL', [
+    await exec('UPDATE categories SET slug = ?, name = ?, name_bn = ?, icon = ?, icon_url = ?, description = ?, color = ?, is_active = ? WHERE id = ? AND deleted_at IS NULL', [
       input.slug,
       input.name,
       input.nameBn ?? null,
       input.icon,
+      input.iconUrl ?? null,
       input.description ?? null,
       input.color ?? null,
       input.isActive ? 1 : 0,
