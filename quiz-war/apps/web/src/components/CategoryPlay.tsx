@@ -87,6 +87,14 @@ function CategorySheet({ c, onClose }: { c: Category | null; onClose: () => void
       sub: t('Live 1 VS 1 with a real player', 'আসল প্লেয়ারের সাথে লাইভ ১ বনাম ১'),
       run: () => nav(`/matchmaking?mode=duel&ranked=0&category=${c.id}`),
     },
+    {
+      key: 'study',
+      icon: 'book',
+      tone: 'accent',
+      title: t('Read questions & answers', 'প্রশ্ন + উত্তর পড়ুন'),
+      sub: t('Every question with its answer, 30 per page', 'সব প্রশ্ন আর সঠিক উত্তর, প্রতি পেজে ৩০টি'),
+      run: () => nav(`/study/${c.id}`),
+    },
   ];
 
   return (

@@ -219,6 +219,20 @@ export default function Match() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conn, id]);
 
+  // Watchdog: stuck on "Get ready…" (a missed countdown/question event) → fetch the live state again.
+  const stuck = conn === 'connected' && !g.end && !g.question && !!g.snapshot && g.snapshot.matchId === id && ['question', 'reveal', 'countdown'].includes(g.snapshot.state);
+  useEffect(() => {
+    if (!stuck) return;
+    const tick = setInterval(() => {
+      const st = useGame.getState();
+      if (st.question || st.end || (st.countdownAt && st.countdownAt > Date.now() + 500)) return;
+      void emit('match:resume', { matchId: id })
+        .then((r) => r.snapshot && useGame.getState().applySnapshot(r.snapshot))
+        .catch(() => undefined);
+    }, 2500);
+    return () => clearInterval(tick);
+  }, [stuck, id]);
+
   useEffect(() => {
     if (g.end && g.matchId === id) {
       const tm = setTimeout(() => nav(`/result/${id}`, { replace: true }), 700);

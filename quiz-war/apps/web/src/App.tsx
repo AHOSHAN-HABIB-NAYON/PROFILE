@@ -37,6 +37,7 @@ const Result = lazy(() => import('./pages/Result'));
 const Review = lazy(() => import('./pages/Review'));
 const Friends = lazy(() => import('./pages/Friends'));
 const Chat = lazy(() => import('./pages/Chat'));
+const Study = lazy(() => import('./pages/Study'));
 const Rank = lazy(() => import('./pages/Rank'));
 const Profile = lazy(() => import('./pages/Profile'));
 const PublicProfile = lazy(() => import('./pages/PublicProfile'));
@@ -340,6 +341,7 @@ export function App() {
             <Route path="/squads" element={<Shell><Squads /></Shell>} />
             <Route path="/squads/:id" element={<Shell><SquadDetail /></Shell>} />
             <Route path="/history" element={<Shell><History /></Shell>} />
+            <Route path="/study/:id" element={<Shell><Study /></Shell>} />
             <Route path="/review/:id" element={<Shell><Review /></Shell>} />
 
             <Route path="/matchmaking" element={<Full><Matchmaking /></Full>} />

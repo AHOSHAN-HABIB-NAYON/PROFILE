@@ -13,7 +13,7 @@ import { LeagueEmblem, RankMedal } from '../components/LeagueEmblem';
 import { DIFFICULTY_INFO } from '../components/MatchOptions';
 import { Sheet } from '../components/Sheet';
 import { useConfig } from '../hooks/queries';
-import { api } from '../lib/api';
+import { api, friendlyError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useGame } from '../lib/game';
 import { num, useLang, useT } from '../lib/i18n';
@@ -95,6 +95,7 @@ export default function Result() {
   const announced = useRef(false);
   // The share card + Share/Save open in a sheet from the button right under the result.
   const [shareOpen, setShareOpen] = useState(false);
+  const [rematch, setRematch] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
 
   // Sound + vibration + rate prompt, once per result.
   useEffect(() => {
@@ -255,7 +256,32 @@ export default function Result() {
     }
   };
 
-  const again = () => {
+  // 1 VS 1 with a real player: Rematch asks the same opponent again (they Accept, then you play).
+  const humanOpps = end.players.filter((p) => !p.isBot && p.userId !== me.id);
+  const rematchPeer = end.type !== 'ai' && !solo && end.mode === 'duel' && humanOpps.length === 1 ? humanOpps[0] : null;
+  const again = async () => {
+    if (rematchPeer && rematch !== 'failed') {
+      if (rematch === 'sending' || rematch === 'sent') return;
+      setRematch('sending');
+      const s0: any = snap ?? remote.data?.snapshot ?? {};
+      try {
+        await api('/battles/requests', {
+          body: {
+            userId: rematchPeer.userId,
+            categoryId: s0.category?.id ?? null,
+            questionCount: s0.questionCount ? Math.min(50, Math.max(3, s0.questionCount)) : null,
+            difficulty: s0.difficulty ?? null,
+          },
+        });
+        haptic('success');
+        setRematch('sent');
+        toast.success(t('Rematch request sent', 'রিম্যাচের রিকোয়েস্ট পাঠানো হয়েছে'), t(`Waiting for ${nameOf(rematchPeer.userId, false)} to accept…`, `${nameOf(rematchPeer.userId, false)} Accept করলেই খেলা শুরু হবে`), 'swords');
+      } catch (e) {
+        setRematch('failed');
+        toast.error(t('Could not send rematch', 'রিম্যাচ পাঠানো যায়নি'), `${friendlyError(e)} ${t('Tap again to find a new opponent.', 'নতুন প্রতিপক্ষ খুঁজতে আবার চাপুন।')}`);
+      }
+      return;
+    }
     if (end.type === 'ai') return nav('/battle#ai');
     if (end.mode === 'daily') return nav('/rank?tab=daily');
     if (solo) return nav(`/battle#${end.mode}`);
@@ -335,8 +361,15 @@ export default function Result() {
         <span className="sc-go"><Icon name="share" size={20} /></span>
       </button>
       <div className="row result-actions">
-        <button className="btn primary lg grow" onClick={again}>
-          <Icon name="refresh" /> {solo || end.type === 'ai' ? t('Play again', 'আবার খেলুন') : t('Rematch', 'আবার লড়াই')}
+        <button className="btn primary lg grow" onClick={() => void again()} disabled={rematch === 'sending' || rematch === 'sent'}>
+          {rematch === 'sending' ? <span className="spinner" /> : <Icon name={rematch === 'sent' ? 'hourglass' : rematch === 'failed' ? 'search' : 'refresh'} />}{' '}
+          {rematch === 'sent'
+            ? t('Waiting for accept…', 'Accept-এর অপেক্ষায়…')
+            : rematch === 'failed'
+              ? t('Find a new opponent', 'নতুন প্রতিপক্ষ খুঁজুন')
+              : solo || end.type === 'ai'
+                ? t('Play again', 'আবার খেলুন')
+                : t('Rematch', 'আবার লড়াই')}
         </button>
         <button className="btn outline lg" onClick={() => nav('/', { replace: true })} aria-label={t('Home', 'হোম')}><Icon name="home" /></button>
       </div>

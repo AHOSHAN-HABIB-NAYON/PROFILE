@@ -31,7 +31,9 @@ export function registerRealtime() {
     });
     s.on('match:question', ({ matchId, question }) => {
       const g = useGame.getState();
-      if (g.matchId !== matchId) return;
+      // A question for a match we haven't attached to yet (missed countdown): adopt it if it's ours.
+      if (!g.matchId && location.pathname === `/match/${matchId}`) g.reset(matchId);
+      else if (g.matchId !== matchId) return;
       g.set({ question, deadline: question.deadline, reveal: null, myPick: null, myResult: null, answered: [], removed: [], hint: null, countdownAt: null });
     });
     s.on('match:answered', ({ matchId, userId }) => {
