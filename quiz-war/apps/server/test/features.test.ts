@@ -272,11 +272,12 @@ d('Features (MySQL)', () => {
 
       await exec('UPDATE users SET email_verified_at = UTC_TIMESTAMP() WHERE id = ?', [p.id]);
       await t.ctx.notifications.notify(p.id, { type: 'achievement', title: { en: 'Achievement unlocked!', bn: 'x' }, body: { en: 'Ten Wins', bn: 'x' } });
-      await new Promise((r) => setTimeout(r, 50));
+      // The activity email is sent in the background: wait for it (up to 2s) instead of a fixed pause.
+      for (let i = 0; i < 40 && !t.mailer.sent.some((m) => m.to === email && m.subject.includes('Achievement')); i++) await new Promise((r) => setTimeout(r, 50));
       expect(t.mailer.sent.filter((m) => m.to === email && m.subject.includes('Achievement'))).toHaveLength(1);
       // At most one activity email per 12 hours.
       await t.ctx.notifications.notify(p.id, { type: 'achievement', title: { en: 'Achievement unlocked!', bn: 'x' }, body: { en: 'More', bn: 'x' } });
-      await new Promise((r) => setTimeout(r, 50));
+      await new Promise((r) => setTimeout(r, 300));
       expect(t.mailer.sent.filter((m) => m.to === email && m.subject.includes('Achievement'))).toHaveLength(1);
     });
 
