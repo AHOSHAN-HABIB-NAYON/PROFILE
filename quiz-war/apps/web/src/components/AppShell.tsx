@@ -4,7 +4,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router';
 import { useConfig, useNotifications } from '../hooks/queries';
 import { useOnline } from '../hooks/useOnline';
 import { useAuth } from '../lib/auth';
-import { num, useLang, useT } from '../lib/i18n';
+import { compact, num, useLang, useT } from '../lib/i18n';
 import { haptic } from '../lib/platform';
 import { emit, useConn } from '../lib/socket';
 import { useGame } from '../lib/game';
@@ -142,7 +142,7 @@ export function TopBar() {
     return () => removeEventListener('scroll', on);
   }, []);
   return (
-    <header className={`topbar ${scrolled ? 'scrolled' : ''}`}>
+    <header className={`topbar ${scrolled ? 'scrolled' : ''} ${user ? 'has-stats' : ''}`}>
       <Link to="/" className="brand" aria-label={t('QUIZ WAR home', 'QUIZ WAR হোম')}>
         <img src="/icons/icon-192.png" alt="" width={32} height={32} />
         <span className="hide-narrow">QUIZ WAR<small>BANGLADESH</small></span>
@@ -150,18 +150,18 @@ export function TopBar() {
       <span className="grow" />
       <span className="pill online" title={t('Players online', 'অনলাইনে প্লেয়ার')}>
         <i className="dot" />
-        {online > 0 ? num(online, lang) : '—'}
+        {online > 0 ? compact(online, lang) : '—'}
       </span>
       {user && (
         <Link to="/profile" className="pill streak" aria-label={t(`${user.streakDays} day streak`, `টানা ${user.streakDays} দিন`)}>
           <Icon name="fire" size={20} />
-          {num(user.streakDays, lang)}
+          {compact(user.streakDays, lang)}
         </Link>
       )}
       {user && (
-        <Link to="/shop" className="pill coin" aria-label={t(`${user.coins} coins`, `${user.coins} কয়েন`)}>
+        <Link to="/shop" className="pill coin" title={num(user.coins, lang)} aria-label={t(`${user.coins} coins`, `${user.coins} কয়েন`)}>
           <Icon name="coin" size={20} />
-          <CountUp value={user.coins} />
+          <CountUp value={user.coins} short />
         </Link>
       )}
       <Link to="/notifications" className="btn icon sm ghost" aria-label={t(`Notifications${data?.unread ? `, ${data.unread} unread` : ''}`, `নোটিফিকেশন${data?.unread ? `, ${data.unread}টি নতুন` : ''}`)} style={{ position: 'relative' }}>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { friendlyError } from '../lib/api';
-import { num, useLang, useT } from '../lib/i18n';
+import { compact, num, useLang, useT } from '../lib/i18n';
 import { Icon, IconTile, type IconAnim, type IconName } from './Icon';
 
 export function Skeleton({ lines = 3, kind = 'row' }: { lines?: number; kind?: 'row' | 'line' | 'card' }) {
@@ -72,7 +72,7 @@ export function ErrorBox({ error, retry }: { error: unknown; retry?: () => void 
 }
 
 /** Animated number counter (coins, XP, scores) in the active language's digits. */
-export function CountUp({ value, duration = 700 }: { value: number; duration?: number }) {
+export function CountUp({ value, duration = 700, short = false }: { value: number; duration?: number; short?: boolean }) {
   const lang = useLang();
   const [shown, setShown] = useState(value);
   const from = useRef(value);
@@ -95,7 +95,7 @@ export function CountUp({ value, duration = 700 }: { value: number; duration?: n
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
   }, [value, duration]);
-  return <span className="num">{num(shown, lang)}</span>;
+  return <span className="num">{short && shown >= 10_000 ? compact(shown, lang) : num(shown, lang)}</span>;
 }
 
 /** Number in the active language (Bangla digits in Bangla). */

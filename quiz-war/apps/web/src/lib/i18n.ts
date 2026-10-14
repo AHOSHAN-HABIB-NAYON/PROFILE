@@ -27,6 +27,14 @@ export function setLang(lang: Lang, signedIn: boolean) {
 
 const BN_DIGITS = '০১২৩৪৫৬৭৮৯';
 /** Numbers in the active language (Bangla digits in Bangla). */
+/** Short numbers for tight spots: 999 · 1.2K · 15K · 1.5M (Bangla digits in Bangla). */
+export function compact(n: number, lang: Lang = useSettings.getState().lang) {
+  const a = Math.abs(n);
+  const fmt = (v: number, unit: string) => `${v >= 100 ? Math.floor(v) : Math.floor(v * 10) / 10}${unit}`;
+  const s = a < 1000 ? String(n) : a < 1e6 ? fmt(n / 1e3, 'K') : a < 1e9 ? fmt(n / 1e6, 'M') : fmt(n / 1e9, 'B');
+  return num(s, lang);
+}
+
 export function num(n: number | string, lang: Lang = useSettings.getState().lang) {
   const s = typeof n === 'number' ? n.toLocaleString('en-US') : n;
   return lang === 'bn' ? s.replace(/[0-9]/g, (d) => BN_DIGITS[Number(d)]) : s;

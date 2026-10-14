@@ -117,6 +117,9 @@ p { margin: 0; }
 .pill.coin { color: var(--coin); }
 .pill.streak { color: #ea580c; }
 .pill.online { padding-left: 10px; }
+.topbar .pill { flex-shrink: 0; }
+.topbar .brand { min-width: 0; flex-shrink: 1; overflow: hidden; }
+@media (max-width: 380px) { .topbar { gap: 6px; } .topbar .pill { padding: 0 8px 0 5px; gap: 4px; } }
 .pill.online .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 3px var(--success-soft); animation: dot-pulse 2s ease-in-out infinite; }
 .icon-btn-badge { position: absolute; top: -3px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; background: var(--danger); color: #fff; font-size: 10px; font-weight: 800; display: grid; place-items: center; border: 2px solid var(--bg); animation: ic-pop .4s var(--ease-spring); }
 
@@ -424,4 +427,5 @@ dialog.modal[open]:not([data-closing])::backdrop { background: rgba(8, 12, 28, .
 .live-ring::after { animation-delay: .9s; }
 @keyframes ring-out { from { transform: scale(.9); opacity: 1; } to { transform: scale(1.35); opacity: 0; } }
 @media (max-width: 380px) { .topbar .brand .hide-narrow { display: none; } }
+@media (max-width: 440px) { .topbar.has-stats .brand .hide-narrow { display: none; } }
 .league-chip { background: var(--surface-2); color: var(--text); gap: 6px; padding-left: 5px; }
