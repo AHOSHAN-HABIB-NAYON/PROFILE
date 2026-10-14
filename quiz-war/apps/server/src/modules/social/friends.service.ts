@@ -44,14 +44,14 @@ export class FriendsService {
 
   async list(userId: number) {
     const rows = await query<any>(
-      `SELECT ${PUBLIC_USER_COLUMNS}, f.created_at AS since FROM friends f
+      `SELECT ${PUBLIC_USER_COLUMNS}, f.created_at AS since, u.last_seen_at AS lastSeenAt FROM friends f
        JOIN users u ON u.id = f.friend_id JOIN user_profiles p ON p.user_id = u.id
        WHERE f.user_id = ? AND u.status IN ('active','suspended') ORDER BY p.username LIMIT ?`,
       [userId, MAX_FRIENDS],
     );
     const order: Record<PresenceStatus, number> = { online: 0, in_match: 1, away: 2, dnd: 3, offline: 4 };
     return rows
-      .map((r) => ({ user: toPublicUser(r), status: this.presence(Number(r.id)), since: r.since }))
+      .map((r) => ({ user: toPublicUser(r), status: this.presence(Number(r.id)), since: r.since, lastSeenAt: r.lastSeenAt ? new Date(r.lastSeenAt).toISOString() : null }))
       .sort((a, b) => order[a.status] - order[b.status]);
   }
 

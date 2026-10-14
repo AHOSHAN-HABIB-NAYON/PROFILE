@@ -60,7 +60,7 @@ jobs:
       contents: write   # publish the installable APK as a GitHub Release
     env:
       QW_VERSION_CODE: ${{ inputs.version_code || github.run_number }}
-      QW_VERSION_NAME: ${{ inputs.version_name || '1.0.0' }}
+      QW_VERSION_NAME: ${{ inputs.version_name || format('1.0.{0}', inputs.version_code || github.run_number) }}
       VITE_API_URL: ${{ inputs.site_url || vars.QW_API_URL || 'https://quizwar.webtecit.com' }}
       VITE_PUBLIC_WEB_URL: ${{ inputs.site_url || vars.QW_WEB_URL || 'https://quizwar.webtecit.com' }}
       QW_APP_LINK_HOST: ${{ vars.QW_APP_LINK_HOST || 'quizwar.webtecit.com' }}
@@ -80,7 +80,12 @@ jobs:
       - run: npm ci
       - name: Build web bundle and sync into the Android project
         working-directory: quiz-war/apps/web
-        run: npm run build && npx cap sync android
+        # Source maps and the old .woff font copies are not needed inside the app (smaller APK).
+        run: |
+          npm run build
+          find dist -name '*.map' -delete
+          find dist -name '*.woff' -delete
+          npx cap sync android
       # Push notifications: Firebase config is optional. Without it the app builds and simply hides push.
       # Register BOTH app.quizwar.bd and app.quizwar.bd.debug in the Firebase project.
       - name: Firebase config (optional)

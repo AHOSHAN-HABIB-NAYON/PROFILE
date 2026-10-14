@@ -39,7 +39,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
     { to: '/content', label: 'Achievements & Shop', icon: 'award', perm: 'content.manage' },
     { to: '/missions', label: 'Missions', icon: 'target', perm: 'content.manage' },
     { to: '/announcements', label: 'Announcements', icon: 'megaphone', perm: 'announcements.send' },
-    { to: '/promos', label: 'Promotions (ads)', icon: 'sparkles', perm: 'announcements.send' },
+    { to: '/promos', label: 'My app promos', icon: 'sparkles', perm: 'announcements.send' },
     { to: '/our-apps', label: 'Our apps', icon: 'smartphone', perm: 'announcements.send' },
   ] },
   { group: 'Configuration', items: [

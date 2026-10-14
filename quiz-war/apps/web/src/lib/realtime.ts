@@ -131,6 +131,30 @@ export function registerRealtime() {
       if (g.matchId !== r.matchId) return;
       g.addReaction(r);
     });
+    s.on('room:kicked', ({ matchId }) => {
+      if (useAuth.getState().openRoomId === matchId) useAuth.setState({ openRoomId: null });
+      if (useGame.getState().matchId === matchId) useGame.getState().reset();
+      sfx('notify');
+      haptic('heavy');
+      toast.info(tr('Removed from the room', 'রুম থেকে বের করে দেওয়া হয়েছে'), tr('The host removed you from the war room.', 'হোস্ট আপনাকে ওয়ার রুম থেকে বের করে দিয়েছেন।'), 'user-x');
+      if (location.pathname === `/war-room/${matchId}`) navigateTo('/battle');
+    });
+    s.on('room:invite', (inv) => {
+      if (location.pathname.startsWith('/match/')) return;
+      sfx('notify');
+      haptic('heavy');
+      toast.custom({
+        kind: 'info',
+        icon: 'swords',
+        title: tr(`${inv.from.username} invited you`, `${inv.from.username} আপনাকে ডেকেছে`),
+        body: tr('Join the War Room battle now', 'এখনই ওয়ার রুমের ব্যাটলে যোগ দিন'),
+        ttl: 30_000,
+        actions: [
+          { label: tr('Join', 'যোগ দিন'), primary: true, onClick: () => navigateTo(`/war-room/${inv.matchId}`) },
+          { label: tr('Later', 'পরে'), onClick: () => undefined },
+        ],
+      });
+    });
     s.on('server:announcement', (a) => toast.info(a.title, a.body, 'bell-ring'));
     s.on('presence:update', () => void queryClient.invalidateQueries({ queryKey: ['friends'] }));
   });

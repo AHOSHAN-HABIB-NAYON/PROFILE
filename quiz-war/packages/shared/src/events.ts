@@ -157,6 +157,10 @@ export interface ClientToServerEvents {
   'room:ready': (p: { matchId: string; ready: boolean }, ack?: Ack) => void;
   'room:start': (p: { matchId: string }, ack?: Ack) => void;
   'room:leave': (p: { matchId: string }, ack?: Ack) => void;
+  /** Host removes a player from the lobby. */
+  'room:kick': (p: { matchId: string; userId: number }, ack?: Ack) => void;
+  /** Invite a friend to the War Room you are in (live popup + phone notification). */
+  'room:invite': (p: { matchId: string; userId: number }, ack?: Ack) => void;
   'match:resume': (p: { matchId?: string }, ack: Ack<{ snapshot: MatchSnapshot | null }>) => void;
   'match:answer': (p: { matchId: string; questionIndex: number; optionIndex: number }, ack: Ack<{ correct: boolean; points: number; combo: number }>) => void;
   'match:powerup': (p: { matchId: string; questionIndex: number; powerUp: PowerUp }, ack: Ack<{ removedOptions?: number[]; hint?: string; deadline?: number }>) => void;
@@ -193,6 +197,8 @@ export interface ServerToClientEvents {
   'notification:new': (p: NotificationView) => void;
   'account:update': (p: { coins?: number; xp?: number; level?: number; rating?: number }) => void;
   'server:announcement': (p: { title: string; body: string }) => void;
+  'room:kicked': (p: { matchId: string }) => void;
+  'room:invite': (p: { matchId: string; roomCode: string | null; mode: ModeKey; from: PublicUser }) => void;
   'chat:message': (p: { message: ChatMessage; peer: PublicUser; request?: boolean }) => void;
   'chat:read': (p: { peerId: number; upTo: number }) => void;
   'chat:typing': (p: { from: number }) => void;

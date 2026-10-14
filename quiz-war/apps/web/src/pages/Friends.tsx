@@ -20,6 +20,18 @@ import { profileLink } from '../lib/qr';
 import { toast } from '../lib/toast';
 import { PlayerName } from '../components/Verified';
 
+/** "Active 5 min ago" / "Active 3 h ago" / "Active 2 days ago" for offline friends. */
+function lastSeen(iso: string, lang: 'bn' | 'en') {
+  const mins = Math.max(1, Math.round((Date.now() - new Date(iso).getTime()) / 60_000));
+  const n = (v: number) => num(v, lang);
+  if (mins < 60) return lang === 'bn' ? `${n(mins)} মিনিট আগে অনলাইনে ছিল` : `Active ${mins} min ago`;
+  const h = Math.round(mins / 60);
+  if (h < 24) return lang === 'bn' ? `${n(h)} ঘণ্টা আগে অনলাইনে ছিল` : `Active ${h} h ago`;
+  const d = Math.round(h / 24);
+  if (d < 30) return lang === 'bn' ? `${n(d)} দিন আগে অনলাইনে ছিল` : `Active ${d} day${d > 1 ? 's' : ''} ago`;
+  return lang === 'bn' ? 'অনেক দিন আগে অনলাইনে ছিল' : 'Active a long time ago';
+}
+
 export default function Friends() {
   const t = useT();
   const lang = useLang();
@@ -159,7 +171,7 @@ export default function Friends() {
                     <Link to={`/u/${f.user.uid}`}><Avatar name={f.user.username} src={f.user.avatarThumbUrl} status={f.status} size={48} frame={f.user.frame} /></Link>
                     <Link to={`/u/${f.user.uid}`} className="grow" style={{ color: 'var(--text)', minWidth: 0 }}>
                       <b style={{ display: 'block' }}><PlayerName name={f.user.username} verified={f.user.verified} /></b>
-                      <span className={`xs status-text s-${f.status}`}>{statusLabel(f.status)}</span>
+                      <span className={`xs status-text s-${f.status}`}>{f.status === 'offline' && f.lastSeenAt ? lastSeen(f.lastSeenAt, lang) : statusLabel(f.status)}</span>
                       <span className="xs muted"> · {t('Lv', 'লেভেল')} {num(f.user.level, lang)}</span>
                     </Link>
                     <Link className="btn icon sm soft" to={`/chat/${f.user.uid}`} aria-label={t(`Message ${f.user.username}`, `${f.user.username}-কে মেসেজ`)}><Icon name="message" size={19} /></Link>

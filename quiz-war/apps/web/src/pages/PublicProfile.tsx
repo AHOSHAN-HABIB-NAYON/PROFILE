@@ -163,20 +163,22 @@ export default function PublicProfile() {
         </Link>
       ) : (
         !self && (
-          <div className="row">
-            <button className="btn primary grow" disabled={!rel?.available} onClick={() => (haptic('tap'), setChallenge(true))}>
+          <div className="pp-actions">
+            <button className="btn primary lg block" disabled={!rel?.available} onClick={() => (haptic('tap'), setChallenge(true))}>
               <Icon name="swords" /> {t('Challenge', 'চ্যালেঞ্জ')}
             </button>
-            <Link className="btn soft grow" to={`/chat/${data.user.uid}`} onClick={() => haptic('tap')}>
-              <Icon name="message" /> {t('Message', 'মেসেজ')}
-            </Link>
-            {rel?.friend ? (
-              <button className="btn outline icon" disabled aria-label={t('Friends', 'বন্ধু')} title={t('Friends', 'বন্ধু')}><Icon name="user-check" /></button>
-            ) : (
-              <button className="btn soft icon" aria-label={t('Add friend', 'বন্ধু যোগ করুন')} title={t('Add friend', 'বন্ধু যোগ করুন')} onClick={() => void act(() => api('/friends/requests', { body: { userId: data.user.id } }), t('Friend request sent', 'ফ্রেন্ড রিকোয়েস্ট পাঠানো হয়েছে'))}>
-                <Icon name="user-plus" />
-              </button>
-            )}
+            <div className="pp-actions-row">
+              <Link className="btn pp-msg" to={`/chat/${data.user.uid}`} onClick={() => haptic('tap')}>
+                <Icon name="message" /> {t('Message', 'মেসেজ')}
+              </Link>
+              {rel?.friend ? (
+                <span className="btn pp-friend is-friend" aria-label={t('Friends', 'বন্ধু')}><Icon name="user-check" /> {t('Friends', 'বন্ধু')}</span>
+              ) : (
+                <button className="btn pp-friend" onClick={() => void act(() => api('/friends/requests', { body: { userId: data.user.id } }), t('Friend request sent', 'ফ্রেন্ড রিকোয়েস্ট পাঠানো হয়েছে'))}>
+                  <Icon name="user-plus" /> {t('Add friend', 'বন্ধু যোগ করুন')}
+                </button>
+              )}
+            </div>
           </div>
         )
       )}

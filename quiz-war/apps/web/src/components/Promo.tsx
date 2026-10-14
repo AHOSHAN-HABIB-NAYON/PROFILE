@@ -68,7 +68,7 @@ export function PromoCard({ p, onClose }: { p: Promo; onClose: () => void }) {
   const isStore = host === 'Google Play';
   return (
     <div className="promo" style={{ ['--promo' as string]: p.color || '#2563eb' }}>
-      <span className="promo-tag">{t('Sponsored', 'বিজ্ঞাপন')}</span>
+      <span className="promo-tag">{t('From QUIZ WAR', 'আমাদের অ্যাপ')}</span>
       <div className="promo-hero" aria-hidden>
         <span className="promo-ring" />
         <span className="promo-logo">{p.logoUrl ? <img src={p.logoUrl} alt="" /> : <Icon name={isStore ? 'download' : 'globe'} size={40} />}</span>

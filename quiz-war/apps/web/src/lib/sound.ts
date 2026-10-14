@@ -63,8 +63,13 @@ let sources: { menu: string | null; match: string | null; volume: number } = { m
 let current: { slot: Slot; audio: HTMLAudioElement | null; synth: { stop: () => void } | null } | null = null;
 let wanted: { on: boolean; slot: Slot } = { on: false, slot: 'menu' };
 
-export function setMusicSources(s: { menuUrl: string | null; matchUrl: string | null; volume: number }) {
-  const changed = (s.menuUrl || DEFAULT_MUSIC.menu) !== sources.menu || (s.matchUrl || DEFAULT_MUSIC.match) !== sources.match;
+/** Tracks the admin switched off. */
+let musicOff: Record<Slot, boolean> = { menu: false, match: false };
+
+export function setMusicSources(s: { menuUrl: string | null; matchUrl: string | null; volume: number; menuEnabled?: boolean; matchEnabled?: boolean }) {
+  const prevOff = { ...musicOff };
+  musicOff = { menu: s.menuEnabled === false, match: s.matchEnabled === false };
+  const changed = (s.menuUrl || DEFAULT_MUSIC.menu) !== sources.menu || (s.matchUrl || DEFAULT_MUSIC.match) !== sources.match || prevOff.menu !== musicOff.menu || prevOff.match !== musicOff.match;
   sources = { menu: s.menuUrl || DEFAULT_MUSIC.menu, match: s.matchUrl || DEFAULT_MUSIC.match, volume: s.volume };
   if (current?.audio) current.audio.volume = sources.volume * 0.6;
   if (changed && wanted.on) {
@@ -137,7 +142,7 @@ function playWhenAllowed(a: HTMLAudioElement) {
 
 export function setMusic(on: boolean, slot: Slot = 'menu') {
   wanted = { on, slot };
-  if (!on) return stopCurrent();
+  if (!on || musicOff[slot]) return stopCurrent();
   if (current?.slot === slot) return;
   stopCurrent();
   const url = slot === 'menu' ? sources.menu : sources.match;

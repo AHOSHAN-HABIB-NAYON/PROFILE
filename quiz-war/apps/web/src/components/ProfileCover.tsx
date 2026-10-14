@@ -1,16 +1,16 @@
 /**
  * Branded, softly animated profile cover: night-blue sky, a Bangladesh-red sun, drifting
- * quiz marks and two rolling waves. Pure SVG + CSS transforms (compositor-only), and still
+ * winner's cups and stars, and two rolling waves. Pure SVG + CSS transforms (compositor-only), and still
  * under reduced motion.
  */
 export function ProfileCover() {
   const marks = [
-    { x: 34, y: 70, s: 15, d: 0, c: '?' },
-    { x: 92, y: 40, s: 11, d: 1.6, c: '+' },
-    { x: 150, y: 78, s: 13, d: 3.1, c: '?' },
-    { x: 262, y: 34, s: 10, d: 2.2, c: '+' },
-    { x: 318, y: 80, s: 14, d: 0.8, c: '?' },
-    { x: 372, y: 46, s: 11, d: 3.8, c: '+' },
+    { x: 30, y: 58, s: 16, d: 0, c: 'cup' },
+    { x: 92, y: 32, s: 9, d: 1.6, c: 'star' },
+    { x: 148, y: 66, s: 14, d: 3.1, c: 'cup' },
+    { x: 262, y: 26, s: 8, d: 2.2, c: 'star' },
+    { x: 312, y: 70, s: 15, d: 0.8, c: 'cup' },
+    { x: 370, y: 36, s: 9, d: 3.8, c: 'star' },
   ];
   return (
     <svg className="pc-cover" viewBox="0 0 400 120" preserveAspectRatio="xMidYMid slice" aria-hidden focusable="false">
@@ -51,11 +51,22 @@ export function ProfileCover() {
       <text x="100" y="40" className="pcc-word">QUIZ WAR</text>
       <text x="101" y="56" className="pcc-sub">BANGLADESH</text>
 
-      {/* Drifting quiz marks */}
+      {/* Drifting winner's cups and stars */}
       {marks.map((m, i) => (
-        <text key={i} x={m.x} y={m.y} className="pcc-mark" style={{ fontSize: m.s, animationDelay: `${m.d}s` }}>
-          {m.c}
-        </text>
+        <g key={i} transform={`translate(${m.x} ${m.y}) scale(${m.s / 16})`}>
+        <g className="pcc-mark" style={{ animationDelay: `${m.d}s` }}>
+          {m.c === 'cup' ? (
+            <>
+              <path d="M3 0h10v4a5 5 0 0 1-10 0z" fill="#facc15" />
+              <path d="M3 1H0.5a2.6 2.6 0 0 0 2.9 3.4M13 1h2.5a2.6 2.6 0 0 1-2.9 3.4" fill="none" stroke="#facc15" strokeWidth="1.2" strokeLinecap="round" />
+              <path d="M7 9h2v3H7zM4.5 12h7v2h-7z" fill="#f59e0b" />
+              <path d="M6 2.2l.6 1.2 1.3.2-1 .9.3 1.3L6 5.2l-1.2.6.3-1.3-1-.9 1.3-.2z" fill="#fff7cc" opacity=".9" />
+            </>
+          ) : (
+            <path d="M8 0l2.2 5 5.3.5-4 3.6 1.2 5.3L8 11.6 3.3 14.4l1.2-5.3-4-3.6L5.8 5z" fill="#fde68a" />
+          )}
+        </g>
+        </g>
       ))}
 
       {/* Rolling waves (green fields + river), drawn twice as wide and slid sideways */}

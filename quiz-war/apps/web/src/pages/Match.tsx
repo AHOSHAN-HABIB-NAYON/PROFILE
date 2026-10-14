@@ -178,6 +178,7 @@ export default function Match() {
   const conn = useConn((s) => s.status);
   const g = useGame();
   const [missing, setMissing] = useState(false);
+  const [slow, setSlow] = useState(false);
   const [quitOpen, setQuitOpen] = useState(false);
   // Android Back during a match opens this same "Leave match?" sheet.
   useEffect(() => {
@@ -233,6 +234,20 @@ export default function Match() {
     return () => clearInterval(tick);
   }, [stuck, id]);
 
+  // Came back to a finished match (e.g. Back from the result screen) or the socket never
+  // attached: after a short wait, leave instead of spinning on "Joining battle…" forever.
+  useEffect(() => {
+    if (g.snapshot?.matchId === id) return;
+    const tm = setTimeout(() => {
+      if (useGame.getState().snapshot?.matchId === id) return;
+      setSlow(true);
+      api(`/matches/${id}/result`)
+        .then(() => nav('/', { replace: true }))
+        .catch(() => undefined);
+    }, 4000);
+    return () => clearTimeout(tm);
+  }, [id, g.snapshot?.matchId, nav]);
+
   useEffect(() => {
     if (g.end && g.matchId === id) {
       const tm = setTimeout(() => nav(`/result/${id}`, { replace: true }), 700);
@@ -263,7 +278,11 @@ export default function Match() {
   if (!snap)
     return (
       <div className="stage-dark">
-        <div className="mm-stage"><span className="spinner" style={{ width: 34, height: 34 }} /><p className="dim">{t('Joining battle…', 'ব্যাটলে যোগ দিচ্ছেন…')}</p></div>
+        <div className="mm-stage">
+          <span className="spinner" style={{ width: 34, height: 34 }} />
+          <p className="dim">{t('Joining battle…', 'ব্যাটলে যোগ দিচ্ছেন…')}</p>
+          {slow && <button className="btn outline-dark" onClick={() => nav('/', { replace: true })}><Icon name="home" /> {t('Back to home', 'হোমে ফিরুন')}</button>}
+        </div>
       </div>
     );
 

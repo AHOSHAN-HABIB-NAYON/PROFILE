@@ -272,6 +272,9 @@ export const appSettingsSchema = z.object({
     menuUrl: z.string().max(500).nullable(),
     matchUrl: z.string().max(500).nullable(),
     volume: z.number().min(0).max(1),
+    /** Admin switches for each track (off = silent there). */
+    menuEnabled: z.boolean().default(true),
+    matchEnabled: z.boolean().default(true),
   }),
   /** Ask happy players to rate the app after this many wins (0 = never). */
   ratePromptAfterWins: z.number().int().min(0).max(1000),
@@ -304,7 +307,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   updateMessage: 'নতুন ফিচার আর উন্নতি সহ QUIZ WAR-এর নতুন ভার্সন এসেছে।',
   supportEmail: 'support.quizwarbd@gmail.com',
   contacts: [],
-  music: { menuUrl: null, matchUrl: null, volume: 0.5 },
+  music: { menuUrl: null, matchUrl: null, volume: 0.5, menuEnabled: true, matchEnabled: true },
   ratePromptAfterWins: 5,
   emails: { welcome: true, activity: true },
   ourAppsEnabled: true,

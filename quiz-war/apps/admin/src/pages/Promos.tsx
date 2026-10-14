@@ -65,7 +65,7 @@ export default function Promos() {
   return (
     <>
       <div className="head">
-        <h1>Promotions</h1>
+        <h1>My app promos</h1>
         <button className="btn primary" onClick={() => open(BLANK)}><Icon name="plus" size={18} /> New promotion</button>
       </div>
       <p className="small muted">A card with your logo, text and link pops up in the player app: on Home now and then (at most every 3 hours per player) and after every second finished match. Play Store links open the Play Store app; other links open the browser.</p>

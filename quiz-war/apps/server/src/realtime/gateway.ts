@@ -13,7 +13,8 @@ import {
 } from '@quizwar/shared';
 import { Server, type Socket } from 'socket.io';
 import { z } from 'zod';
-import { queryOne } from '../db/pool';
+import { getPublicUser } from '../modules/users/users.repo';
+import { exec, queryOne } from '../db/pool';
 import { GameError } from '../game/engine';
 import { AppError } from '../lib/errors';
 import type { AppContext } from '../context';
@@ -351,6 +352,28 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
 
     socket.on('room:ready', guard(schemas.ready, (p) => ctx.engine.setReady(p.matchId, userId, p.ready)));
     socket.on('room:start', guard(schemas.matchOnly, (p) => ctx.engine.hostStart(p.matchId, userId)));
+    socket.on('room:kick', guard(z.object({ matchId: z.string().max(40), userId: z.number().int().positive() }), (p) => ctx.engine.kickFromLobby(p.matchId, userId, p.userId)));
+    socket.on(
+      'room:invite',
+      guard(z.object({ matchId: z.string().max(40), userId: z.number().int().positive() }), async (p) => {
+        const m = ctx.engine.get(p.matchId);
+        if (!m || m.state !== 'lobby' || !m.players.some((x: any) => x.userId === userId)) throw new AppError(404, 'match_not_found', 'This room is closed');
+        if (m.players.some((x: any) => x.userId === p.userId)) throw new AppError(409, 'already_in_room', 'Already in this room');
+        if (await ctx.friends.isBlockedEitherWay(userId, p.userId)) throw new AppError(404, 'not_found', 'Player not found');
+        if (!(await ctx.friends.areFriends(userId, p.userId))) throw new AppError(403, 'not_friends', 'You can only invite friends');
+        const from = await getPublicUser(userId);
+        if (!from) throw new AppError(404, 'not_found', 'Player not found');
+        ctx.emitter.toUser(p.userId, 'room:invite', { matchId: m.id, roomCode: m.roomCode ?? null, mode: m.mode.key, from });
+        void ctx.notifications
+          .notify(
+            p.userId,
+            { type: 'room_invite', title: { en: `${from.username} invited you to a War Room`, bn: `${from.username} আপনাকে ওয়ার রুমে ডেকেছে` }, body: { en: 'Tap to join the battle', bn: 'ব্যাটলে যোগ দিতে চাপুন' }, url: `/war-room/${m.id}` },
+            { store: false, forcePush: !ctx.presence.isOnline(p.userId) },
+          )
+          .catch(() => undefined);
+        return { ok: true };
+      }),
+    );
     socket.on('room:leave', guard(schemas.matchOnly, (p) => ctx.engine.leaveLobby(p.matchId, userId)));
     socket.on('match:resume', guard(schemas.resume, (p) => ({ snapshot: ctx.engine.resume(userId, p.matchId) })));
     socket.on('match:answer', guard(schemas.answer, (p) => ctx.engine.submitAnswer(p.matchId, userId, p.questionIndex, p.optionIndex)));
@@ -365,6 +388,8 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
       ctx.chat.setFocus(userId, socket.id, null);
       const wentOffline = ctx.presence.disconnect(userId, socket.id);
       if (wentOffline) {
+        // Remember when they were last online ("active 5 min ago" in friends lists).
+        void exec('UPDATE users SET last_seen_at = UTC_TIMESTAMP() WHERE id = ?', [userId]).catch(() => undefined);
         ctx.matchmaking.leave(userId);
         ctx.engine.playerDisconnected(userId);
       }

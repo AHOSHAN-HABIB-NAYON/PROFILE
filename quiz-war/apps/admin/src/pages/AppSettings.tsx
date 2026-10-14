@@ -180,14 +180,20 @@ function MusicCard({ a }: { a: App }) {
     void run(slot, () => api(`/music/${slot}`, { form }), 'Uploaded. Players hear it the next time the app loads.');
   };
   return (
-    <Card icon="music" title="Music" desc="Background music for the player app. It plays by default when the app opens; players can turn it off in Settings. Upload your own to replace the built-in theme." saving={s.busy} msg={s.msg} saveLabel="Save volume"
-      onSubmit={() => void s.save({ music }, 'Volume saved.')}>
+    <Card icon="music" title="Music" desc="Background music for the player app. It plays by default when the app opens; players can turn it off in Settings. Upload your own to replace the built-in theme." saving={s.busy} msg={s.msg} saveLabel="Save music settings"
+      onSubmit={() => void s.save({ music }, 'Music settings saved. Players get them the next time the app loads.')}>
       {SLOTS.map(({ slot, key, title, hint }) => {
         const url = music[key];
         const m = slotMsg[slot] ?? {};
         return (
           <div key={slot} className="music-slot">
-            <div><h3>{title}</h3><p className="small muted" style={{ margin: 0 }}>{hint}</p></div>
+            <div className="row" style={{ justifyContent: 'space-between', gap: 12 }}>
+              <div><h3>{title}</h3><p className="small muted" style={{ margin: 0 }}>{hint}</p></div>
+              <label className="row" style={{ gap: 6, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                <input type="checkbox" checked={music[slot === 'menu' ? 'menuEnabled' : 'matchEnabled'] !== false} onChange={(e) => setMusic({ ...music, [slot === 'menu' ? 'menuEnabled' : 'matchEnabled']: e.target.checked })} />
+                {music[slot === 'menu' ? 'menuEnabled' : 'matchEnabled'] !== false ? 'On' : 'Off'}
+              </label>
+            </div>
             {url ? (
               <audio controls preload="none" src={url} aria-label={`${title} preview`} />
             ) : (

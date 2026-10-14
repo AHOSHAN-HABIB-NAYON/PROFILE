@@ -302,6 +302,7 @@ export class GameEngine {
       return m;
     }
     if (m.state !== 'lobby') throw new GameError('match_started', 'This match has already started');
+    if (((m as any).kicked as Set<number> | undefined)?.has(who.userId)) throw new GameError('kicked', 'The host removed you from this room');
     if (this.activeMatchOf(who.userId)) throw this.busyError(who.userId, true);
     const counts = new Array(m.mode.teams).fill(0);
     for (const p of m.players) counts[p.team]++;
@@ -337,6 +338,18 @@ export class GameEngine {
     }
     if (m.hostUserId === userId) m.hostUserId = m.players.find((x) => !x.isBot)?.userId ?? null;
     this.broadcastState(m);
+  }
+
+  /** Host removes a player from the War Room lobby (they can't rejoin this room). */
+  async kickFromLobby(matchId: string, hostId: number, targetId: number): Promise<void> {
+    const m = this.mustGet(matchId);
+    if (m.state !== 'lobby') throw new GameError('match_started', 'This match has already started');
+    if (m.hostUserId !== hostId) throw new GameError('not_host', 'Only the host can remove players');
+    if (targetId === hostId) throw new GameError('invalid', 'You cannot remove yourself');
+    if (!m.players.some((p) => p.userId === targetId)) return;
+    (m as any).kicked = new Set([...(((m as any).kicked as Set<number>) ?? []), targetId]);
+    this.d.emitter.toUser(targetId, 'room:kicked', { matchId: m.id });
+    await this.leaveLobby(matchId, targetId);
   }
 
   setReady(matchId: string, userId: number, ready: boolean) {
