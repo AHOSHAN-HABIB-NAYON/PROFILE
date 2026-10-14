@@ -9,7 +9,7 @@ import { Sheet } from '../components/Sheet';
 import { useConfig } from '../hooks/queries';
 import { api, friendlyError } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { isMatchDone, markMatchDone, serverNow, useGame } from '../lib/game';
+import { isMatchDone, serverNow, useGame } from '../lib/game';
 import { num, useLang, useT } from '../lib/i18n';
 import { modeIcon, modeLabel } from '../lib/labels';
 import { haptic } from '../lib/platform';
@@ -241,7 +241,8 @@ export default function Match() {
 
   // Came back to a finished match (e.g. Back from the result screen): go straight home.
   // Otherwise, if the match never attaches, give it a few seconds and then go home too.
-  const done = isMatchDone(id);
+  // Read once when the page opens: only a match finished *before* we got here counts.
+  const [done] = useState(() => isMatchDone(id));
   useEffect(() => {
     if (done) {
       nav('/', { replace: true });
@@ -262,7 +263,6 @@ export default function Match() {
 
   useEffect(() => {
     if (g.end && g.matchId === id) {
-      markMatchDone(id);
       const tm = setTimeout(() => nav(`/result/${id}`, { replace: true }), 700);
       return () => clearTimeout(tm);
     }

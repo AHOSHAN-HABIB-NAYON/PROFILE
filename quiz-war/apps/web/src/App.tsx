@@ -253,10 +253,14 @@ export function App() {
       const open = document.querySelector('dialog[open]') as HTMLDialogElement | null;
       if (open) return open.dispatchEvent(new Event('cancel', { cancelable: true }));
       // In a running match Back opens the same "Leave match?" popup as the flag button.
-      if (path.startsWith('/match/') && useGame.getState().snapshot?.state !== 'finished') {
+      const snap = useGame.getState().snapshot;
+      const running = !!snap && path === `/match/${snap.matchId}` && !['finished', 'aborted', 'lobby'].includes(snap.state);
+      if (running) {
         window.dispatchEvent(new Event('qw:leave-match'));
         return;
       }
+      // After a match (result screen, or a match page that is not running) Back always goes home.
+      if (path.startsWith('/result/') || path.startsWith('/match/')) return nav('/', { replace: true });
       const top = ['/', '/intro', '/login', '/onboarding'].includes(path);
       if (canGoBack && !top) return history.back();
       if (path !== '/' && !top) return nav('/', { replace: true });
