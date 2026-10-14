@@ -15,7 +15,7 @@ import { Sheet } from '../components/Sheet';
 import { useConfig } from '../hooks/queries';
 import { api, friendlyError } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { useGame } from '../lib/game';
+import { markMatchDone, useGame } from '../lib/game';
 import { num, useLang, useT } from '../lib/i18n';
 import { modeIcon, modeLabel } from '../lib/labels';
 import { haptic, isNative, PUBLIC_WEB_URL } from '../lib/platform';
@@ -119,6 +119,10 @@ export default function Result() {
   }, [end, outcome, leagueUp, config.data]);
 
   useEffect(() => () => useGame.getState().reset(), []);
+  // Remember finished matches so Back from here never lands on a stuck "Joining battle…" page.
+  useEffect(() => {
+    if (id) markMatchDone(id);
+  }, [id]);
 
   const title = !end
     ? ''

@@ -70,3 +70,21 @@ export const useGame = create<GameState>((set, get) => ({
 let clockOffset = 0;
 export const setClockOffset = (o: number) => (clockOffset = o);
 export const serverNow = () => Date.now() + clockOffset;
+
+/** Matches this tab already finished (Back from the result screen goes home, not to a dead match). */
+const DONE_KEY = 'qw-done-matches';
+const readDone = (): string[] => {
+  try {
+    return JSON.parse(sessionStorage.getItem(DONE_KEY) ?? '[]');
+  } catch {
+    return [];
+  }
+};
+export const isMatchDone = (id: string) => !!id && readDone().includes(id);
+export const markMatchDone = (id: string) => {
+  try {
+    sessionStorage.setItem(DONE_KEY, JSON.stringify([...readDone().filter((x) => x !== id), id].slice(-20)));
+  } catch {
+    /* storage unavailable */
+  }
+};

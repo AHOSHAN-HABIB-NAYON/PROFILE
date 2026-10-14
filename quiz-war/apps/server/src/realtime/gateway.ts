@@ -368,7 +368,7 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
           .notify(
             p.userId,
             { type: 'room_invite', title: { en: `${from.username} invited you to a War Room`, bn: `${from.username} আপনাকে ওয়ার রুমে ডেকেছে` }, body: { en: 'Tap to join the battle', bn: 'ব্যাটলে যোগ দিতে চাপুন' }, url: `/war-room/${m.id}` },
-            { store: false, forcePush: !ctx.presence.isOnline(p.userId) },
+            { store: false, forcePush: true },
           )
           .catch(() => undefined);
         return { ok: true };

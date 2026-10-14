@@ -9,7 +9,7 @@ import { Sheet } from '../components/Sheet';
 import { useConfig } from '../hooks/queries';
 import { api, friendlyError } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { serverNow, useGame } from '../lib/game';
+import { isMatchDone, markMatchDone, serverNow, useGame } from '../lib/game';
 import { num, useLang, useT } from '../lib/i18n';
 import { modeIcon, modeLabel } from '../lib/labels';
 import { haptic } from '../lib/platform';
@@ -234,22 +234,35 @@ export default function Match() {
     return () => clearInterval(tick);
   }, [stuck, id]);
 
-  // Came back to a finished match (e.g. Back from the result screen) or the socket never
-  // attached: after a short wait, leave instead of spinning on "Joining battle…" forever.
+  // The server no longer has this match (it ended while away): go home instead of a dead end.
   useEffect(() => {
+    if (missing && !useGame.getState().end) nav('/', { replace: true });
+  }, [missing, nav]);
+
+  // Came back to a finished match (e.g. Back from the result screen): go straight home.
+  // Otherwise, if the match never attaches, give it a few seconds and then go home too.
+  const done = isMatchDone(id);
+  useEffect(() => {
+    if (done) {
+      nav('/', { replace: true });
+      return;
+    }
     if (g.snapshot?.matchId === id) return;
-    const tm = setTimeout(() => {
-      if (useGame.getState().snapshot?.matchId === id) return;
-      setSlow(true);
-      api(`/matches/${id}/result`)
-        .then(() => nav('/', { replace: true }))
-        .catch(() => undefined);
-    }, 4000);
-    return () => clearTimeout(tm);
-  }, [id, g.snapshot?.matchId, nav]);
+    const t1 = setTimeout(() => {
+      if (useGame.getState().snapshot?.matchId !== id) setSlow(true);
+    }, 3000);
+    const t2 = setTimeout(() => {
+      if (useGame.getState().snapshot?.matchId !== id) nav('/', { replace: true });
+    }, 8000);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [id, done, g.snapshot?.matchId, nav]);
 
   useEffect(() => {
     if (g.end && g.matchId === id) {
+      markMatchDone(id);
       const tm = setTimeout(() => nav(`/result/${id}`, { replace: true }), 700);
       return () => clearTimeout(tm);
     }
@@ -263,6 +276,7 @@ export default function Match() {
   const overall = useRemaining(g.snapshot?.endsAt ?? null);
 
   if (missing && !g.end) {
+    if (done) return null;
     return (
       <div className="page full">
         <Empty
