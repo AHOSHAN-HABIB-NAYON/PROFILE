@@ -162,6 +162,14 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
   });
   app.get('/users/:id/logins', can('users.view'), async (req) => ({ items: await ctx.auth.loginHistory(parse(idParam, req.params).id, 100) }));
 
+  app.post('/users/:id/premium', can('users.moderate'), async (req) => {
+    const id = Number((req.params as any).id);
+    const b = parse(z.object({ premium: z.boolean() }), req.body);
+    await exec(b.premium ? 'UPDATE user_profiles SET premium_at = COALESCE(premium_at, UTC_TIMESTAMP()) WHERE user_id = ?' : 'UPDATE user_profiles SET premium_at = NULL WHERE user_id = ?', [id]);
+    await log(req, b.premium ? 'user.premium' : 'user.unpremium', { type: 'user', id });
+    await ctx.progression.pushAccount(id);
+    return { ok: true };
+  });
   app.post('/users/:id/verified', can('users.moderate'), async (req) => {
     const id = Number((req.params as any).id);
     const b = parse(z.object({ verified: z.boolean() }), req.body);

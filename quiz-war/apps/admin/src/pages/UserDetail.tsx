@@ -94,6 +94,23 @@ export default function UserDetail() {
               <Icon name="shield-check" size={16} />
               {u.verified_at ? 'Remove verified' : 'Give verified badge'}
             </button>
+            <button
+              className="btn"
+              style={u.premium_at ? undefined : { background: 'linear-gradient(135deg,#fbbf24,#d97706)', color: '#fff', borderColor: '#d97706' }}
+              onClick={async () => {
+                setMsg({});
+                try {
+                  await api(`/users/${id}/premium`, { body: { premium: !u.premium_at } });
+                  setMsg({ ok: u.premium_at ? 'Premium badge removed.' : 'Premium badge given.' });
+                  void qc.invalidateQueries({ queryKey: ['user', id] });
+                } catch (e2) {
+                  setMsg({ err: errMsg(e2) });
+                }
+              }}
+            >
+              <Icon name="crown" size={16} />
+              {u.premium_at ? 'Remove premium' : 'Give premium badge'}
+            </button>
             {can('users.reset') && <>
               <span className="faint" aria-hidden>|</span>
               <button className="btn sm" onClick={() => setAction('reset_username')}>Reset username</button>

@@ -287,7 +287,7 @@ export default function Chat() {
           <Link to={`/u/${peer.uid}`} className="chat-peer">
             <Avatar name={peer.username} src={peer.avatarThumbUrl} status={data?.status} size={42} frame={peer.frame} />
             <span className="grow">
-              <b><PlayerName name={peer.username} verified={peer.verified} /></b>
+              <b><PlayerName name={peer.username} verified={peer.verified} premium={peer.premium} /></b>
               <small className={typing ? 'typing-text' : `status-text s-${data?.status}`}>{typing ? t('typing…', 'টাইপ করছে…') : statusLabel(data!.status)}</small>
             </span>
           </Link>
@@ -624,7 +624,7 @@ export function ChatList({ onFind }: { onFind: () => void }) {
                 <Avatar name={c.peer.username} src={c.peer.avatarThumbUrl} status={c.status} size={52} frame={c.peer.frame} />
                 <span className="grow" style={{ minWidth: 0 }}>
                   <span className="chat-row-top">
-                    <b><PlayerName name={c.peer.username} verified={c.peer.verified} /></b>
+                    <b><PlayerName name={c.peer.username} verified={c.peer.verified} premium={c.peer.premium} /></b>
                     <small>{chatTime(c.last.createdAt, lang)}</small>
                   </span>
                   <span className="chat-row-bottom">

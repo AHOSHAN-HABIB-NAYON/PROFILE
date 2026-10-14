@@ -15,7 +15,7 @@ import { haptic } from '../lib/platform';
 import { useConn } from '../lib/socket';
 import { sfx } from '../lib/sound';
 import { toast } from '../lib/toast';
-import { PlayerName, VerifiedBadge } from '../components/Verified';
+import { PlayerName, NameBadges, VerifiedBadge } from '../components/Verified';
 import { VerifyEmailBanner } from '../components/NativeExtras';
 
 const REWARD_ICON: Record<string, IconName> = { coins: 'coin', xp: 'xp', power_up: 'bolt', mystery: 'gift' };
@@ -128,21 +128,21 @@ function FriendsOnline() {
     <section className="card">
       <div className="card-title">
         <h3><IconTile name="users" tone="primary" size={30} /> {t('Friends online', 'অনলাইনে বন্ধুরা')}</h3>
-        <Link to="/friends" className="small bold">{t('See all', 'সব দেখুন')}</Link>
+        <Link to="/friends?tab=friends" className="small bold">{t('See all', 'সব দেখুন')}</Link>
       </div>
       {!data ? (
         <Skeleton lines={1} kind="line" />
       ) : online.length === 0 ? (
         <div className="row small muted">
           <span className="grow">{t('No friends online right now.', 'এই মুহূর্তে কোনো বন্ধু অনলাইনে নেই।')}</span>
-          <Link to="/friends" className="btn sm soft"><Icon name="user-plus" /> {t('Add friends', 'বন্ধু যোগ করুন')}</Link>
+          <Link to="/friends?tab=add" className="btn sm soft"><Icon name="user-plus" /> {t('Add friends', 'বন্ধু যোগ করুন')}</Link>
         </div>
       ) : (
         <div className="friends-strip">
           {online.map((f) => (
             <Link key={f.user.id} to={`/u/${f.user.uid}`} className="fs-item">
               <Avatar name={f.user.username} src={f.user.avatarThumbUrl} status={f.status} size={54} frame={f.user.frame} />
-              <span className="xs bold"><PlayerName name={f.user.username} verified={f.user.verified} size={12} /></span>
+              <span className="fs-name xs bold"><PlayerName name={f.user.username} verified={f.user.verified} premium={f.user.premium} size={12} /></span>
             </Link>
           ))}
         </div>
@@ -189,7 +189,7 @@ export default function Home() {
           <Link to="/profile"><Avatar name={user.username} src={user.avatarThumbUrl ?? user.avatarUrl} size={54} frame={user.frame} status="online" /></Link>
           <div className="grow">
             <p className="xs faint bold">{greeting(t)}</p>
-            <div className="row gap-sm"><h2 className="name-with-badge"><span className="ellipsis">{user.username}</span>{user.verified && <VerifiedBadge size={18} />}</h2><LeagueBadge rating={user.rating} compact /></div>
+            <div className="row gap-sm"><h2 className="name-with-badge"><span className="ellipsis">{user.username}</span><NameBadges user={user} size={18} /></h2><LeagueBadge rating={user.rating} compact /></div>
             <LevelBar xp={user.xp} />
           </div>
         </section>

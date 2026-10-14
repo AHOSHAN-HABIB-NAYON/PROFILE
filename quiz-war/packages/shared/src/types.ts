@@ -48,6 +48,8 @@ export interface PublicUser {
   title?: string | null;
   /** Verified badge (top players). */
   verified?: boolean;
+  /** Gold premium badge, given only by an admin. */
+  premium?: boolean;
 }
 
 export interface MeUser extends PublicUser {

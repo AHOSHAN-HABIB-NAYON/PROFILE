@@ -10,6 +10,7 @@ import { QrCode } from '../components/Qr';
 import { RoomSettings } from '../components/RoomSettings';
 import { DIFFICULTY_INFO } from '../components/MatchOptions';
 import { Sheet } from '../components/Sheet';
+import { PlayerName } from '../components/Verified';
 import { api, friendlyError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useGame } from '../lib/game';
@@ -352,7 +353,7 @@ export default function WarRoom() {
                   <div key={f.user.id} className="list-row">
                     <Avatar name={f.user.username} src={f.user.avatarThumbUrl} status={f.status} size={44} />
                     <span className="grow" style={{ minWidth: 0 }}>
-                      <b className="ellipsis" style={{ display: 'block' }}>{f.user.username}</b>
+                      <b style={{ display: 'block' }}><PlayerName name={f.user.username} verified={f.user.verified} premium={f.user.premium} /></b>
                       <small className={`status-text s-${f.status}`}>{statusLabel(f.status)}</small>
                     </span>
                     <button className={`btn sm ${sent || here ? 'soft' : 'primary'}`} disabled={here || sent || f.status === 'in_match'} onClick={() => void inviteFriend(f.user)}>

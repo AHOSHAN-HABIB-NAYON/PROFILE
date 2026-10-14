@@ -18,7 +18,7 @@ import { num, useLang, useT } from '../lib/i18n';
 import { haptic, share } from '../lib/platform';
 import { profileLink } from '../lib/qr';
 import { toast } from '../lib/toast';
-import { VerifiedBadge } from '../components/Verified';
+import { NameBadges, VerifiedBadge } from '../components/Verified';
 
 export function StatsGrid({ stats }: { stats: any }) {
   const t = useT();
@@ -81,7 +81,7 @@ export default function Profile({ tab: initial }: { tab?: 'stats' | 'achievement
                 <Icon name="camera" size={16} />
               </Link>
             </div>
-            <h1 className="name-with-badge">{me.username}{me.verified && <VerifiedBadge size={22} />}</h1>
+            <h1 className="name-with-badge">{me.username}<NameBadges user={me} size={22} /></h1>
             {me.title && <span className="chip accent">{me.title}</span>}
             <button
               className="uid-badge"

@@ -22,12 +22,47 @@ export function VerifiedBadge({ size = 16, className = '' }: { size?: number; cl
   );
 }
 
-/** Username followed by the badge when the player is verified. */
-export function PlayerName({ name, verified, size = 15 }: { name: string; verified?: boolean; size?: number }) {
+/** Premium badge (gold seal + crown): given only by the QUIZ WAR team (admin). */
+export function PremiumBadge({ size = 16, className = '' }: { size?: number; className?: string }) {
+  const t = useT();
+  const label = t('Premium member', 'প্রিমিয়াম মেম্বার');
+  return (
+    <svg className={`premium-badge ${className}`} width={size} height={size} viewBox="0 0 24 24" role="img" aria-label={label}>
+      <title>{label}</title>
+      <defs>
+        <linearGradient id="qw-pb" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#fde68a" />
+          <stop offset=".45" stopColor="#f59e0b" />
+          <stop offset="1" stopColor="#b45309" />
+        </linearGradient>
+      </defs>
+      <path
+        fill="url(#qw-pb)"
+        d="M12 1.6l2.3 1.7 2.8-.3 1.1 2.6 2.6 1.1-.3 2.8 1.7 2.3-1.7 2.3.3 2.8-2.6 1.1-1.1 2.6-2.8-.3L12 22.4l-2.3-1.7-2.8.3-1.1-2.6-2.6-1.1.3-2.8L1.8 12l1.7-2.3-.3-2.8 2.6-1.1 1.1-2.6 2.8.3z"
+      />
+      <path d="M6.6 15.6l-.9-6.3 3.6 2.7L12 7.4l2.7 4.6 3.6-2.7-.9 6.3z" fill="#fff" stroke="#fff" strokeWidth=".8" strokeLinejoin="round" />
+      <rect x="6.8" y="16.4" width="10.4" height="1.6" rx=".8" fill="#fff" />
+    </svg>
+  );
+}
+
+/** Username followed by the premium and/or verified badge. */
+export function PlayerName({ name, verified, premium, size = 15 }: { name: string; verified?: boolean; premium?: boolean; size?: number }) {
   return (
     <span className="player-name">
       <span className="ellipsis">{name}</span>
+      {premium && <PremiumBadge size={size} />}
       {verified && <VerifiedBadge size={size} />}
     </span>
+  );
+}
+
+/** Both badges after a big name (profile headers). */
+export function NameBadges({ user, size = 22 }: { user: { verified?: boolean; premium?: boolean }; size?: number }) {
+  return (
+    <>
+      {user.premium && <PremiumBadge size={size} />}
+      {user.verified && <VerifiedBadge size={size} />}
+    </>
   );
 }

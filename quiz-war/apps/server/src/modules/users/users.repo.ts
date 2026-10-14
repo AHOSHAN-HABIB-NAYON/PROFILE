@@ -1,7 +1,7 @@
 import type { MeUser, PublicUser } from '@quizwar/shared';
 import { query, queryOne, type Conn } from '../../db/pool';
 
-export const PUBLIC_USER_COLUMNS = `u.id, u.uid, p.username, p.avatar_url, p.avatar_thumb_url, p.level, p.rating, p.league, p.frame, p.title, p.verified_at`;
+export const PUBLIC_USER_COLUMNS = `u.id, u.uid, p.username, p.avatar_url, p.avatar_thumb_url, p.level, p.rating, p.league, p.frame, p.title, p.verified_at, p.premium_at`;
 
 export interface PublicUserRow {
   id: number;
@@ -15,6 +15,7 @@ export interface PublicUserRow {
   frame: string | null;
   title: string | null;
   verified_at?: Date | null;
+  premium_at?: Date | null;
 }
 
 export function toPublicUser(r: PublicUserRow): PublicUser {
@@ -30,6 +31,7 @@ export function toPublicUser(r: PublicUserRow): PublicUser {
     frame: r.frame,
     title: r.title,
     verified: !!r.verified_at,
+    premium: !!r.premium_at,
   };
 }
 

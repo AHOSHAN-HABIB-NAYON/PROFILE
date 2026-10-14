@@ -132,7 +132,7 @@ export default function Rank() {
                         <span className="p-ring"><Avatar name={e.user.username} src={e.user.avatarThumbUrl} size={place === 1 ? 72 : 58} frame={e.user.frame} /></span>
                         <span className="p-medal"><RankMedal rank={place} size={26} /></span>
                       </span>
-                      <b className="p-name"><PlayerName name={e.user.username} verified={e.user.verified} size={14} /></b>
+                      <b className="p-name"><PlayerName name={e.user.username} verified={e.user.verified} premium={e.user.premium} size={14} /></b>
                       <span className="p-score num">{num(e.score, lang)}</span>
                       <span className="p-base"><b>{num(place, lang)}</b></span>
                     </Link>
@@ -154,7 +154,7 @@ export default function Rank() {
                     <span className="rank">{num(e.rank, lang)}</span>
                     <Avatar name={e.user.username} src={e.user.avatarThumbUrl} size={42} frame={e.user.frame} />
                     <div className="grow" style={{ minWidth: 0 }}>
-                      <b style={{ display: 'block' }}><PlayerName name={e.user.username} verified={e.user.verified} /></b>
+                      <b style={{ display: 'block' }}><PlayerName name={e.user.username} verified={e.user.verified} premium={e.user.premium} /></b>
                       <p className="xs muted">{t('Lv', 'লেভেল')} {num(e.user.level, lang)}{e.wins ? t(` · ${e.wins} wins`, ` · ${num(e.wins, lang)} জয়`) : ''}</p>
                     </div>
                     <b className="num">{num(e.score, lang)}</b>

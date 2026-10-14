@@ -170,7 +170,7 @@ export default function Friends() {
                   <div key={f.user.id} className="list-row">
                     <Link to={`/u/${f.user.uid}`}><Avatar name={f.user.username} src={f.user.avatarThumbUrl} status={f.status} size={48} frame={f.user.frame} /></Link>
                     <Link to={`/u/${f.user.uid}`} className="grow" style={{ color: 'var(--text)', minWidth: 0 }}>
-                      <b style={{ display: 'block' }}><PlayerName name={f.user.username} verified={f.user.verified} /></b>
+                      <b style={{ display: 'block' }}><PlayerName name={f.user.username} verified={f.user.verified} premium={f.user.premium} /></b>
                       <span className={`xs status-text s-${f.status}`}>{f.status === 'offline' && f.lastSeenAt ? lastSeen(f.lastSeenAt, lang) : statusLabel(f.status)}</span>
                       <span className="xs muted"> · {t('Lv', 'লেভেল')} {num(f.user.level, lang)}</span>
                     </Link>
@@ -204,7 +204,7 @@ export default function Friends() {
                   <div key={f.user.id} className="list-row">
                     <Link to={`/u/${f.user.uid}`}><Avatar name={f.user.username} src={f.user.avatarThumbUrl} status={f.status as any} size={48} frame={f.user.frame} /></Link>
                     <Link to={`/u/${f.user.uid}`} className="grow" style={{ color: 'var(--text)', minWidth: 0 }}>
-                      <b style={{ display: 'block' }}><PlayerName name={f.user.username} verified={f.user.verified} />{f.isFriend && <span className="chip success xs-chip">{t('Friend', 'বন্ধু')}</span>}</b>
+                      <b style={{ display: 'block' }}><PlayerName name={f.user.username} verified={f.user.verified} premium={f.user.premium} />{f.isFriend && <span className="chip success xs-chip">{t('Friend', 'বন্ধু')}</span>}</b>
                       <span className="xs muted">{t('Lv', 'লেভেল')} {num(f.user.level, lang)} · {t('Rating', 'রেটিং')} {num(f.user.rating, lang)}</span>
                     </Link>
                     {!f.isFriend && (
@@ -268,7 +268,7 @@ export default function Friends() {
             {found && (
               <div className="card found-card">
                 <Avatar name={found.user.username} src={found.user.avatarThumbUrl} size={56} status={found.status as any} frame={found.user.frame} />
-                <div className="grow"><b><PlayerName name={found.user.username} verified={found.user.verified} /></b><p className="xs muted">{found.user.uid} · {t('Lv', 'লেভেল')} {num(found.user.level, lang)}</p></div>
+                <div className="grow"><b><PlayerName name={found.user.username} verified={found.user.verified} premium={found.user.premium} /></b><p className="xs muted">{found.user.uid} · {t('Lv', 'লেভেল')} {num(found.user.level, lang)}</p></div>
                 {found.user.id !== me.id && (
                   <div className="row gap-sm">
                     <button className="btn sm soft" onClick={() => void addFriend(found.user)}><Icon name="user-plus" /> {t('Add', 'যোগ')}</button>
