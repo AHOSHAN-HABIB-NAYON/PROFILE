@@ -131,7 +131,6 @@ function OpenRoom() {
 
 export function TopBar() {
   const user = useAuth((s) => s.user);
-  const online = useConn((s) => s.online);
   const lang = useLang();
   const t = useT();
   const { data } = useNotifications();
@@ -142,16 +141,12 @@ export function TopBar() {
     return () => removeEventListener('scroll', on);
   }, []);
   return (
-    <header className={`topbar ${scrolled ? 'scrolled' : ''} ${user ? 'has-stats' : ''}`}>
+    <header className={`topbar ${scrolled ? 'scrolled' : ''}`}>
       <Link to="/" className="brand" aria-label={t('QUIZ WAR home', 'QUIZ WAR হোম')}>
         <img src="/icons/icon-192.png" alt="" width={32} height={32} />
         <span className="hide-narrow">QUIZ WAR<small>BANGLADESH</small></span>
       </Link>
       <span className="grow" />
-      <span className="pill online" title={t('Players online', 'অনলাইনে প্লেয়ার')}>
-        <i className="dot" />
-        {online > 0 ? compact(online, lang) : '—'}
-      </span>
       {user && (
         <Link to="/profile" className="pill streak" aria-label={t(`${user.streakDays} day streak`, `টানা ${user.streakDays} দিন`)}>
           <Icon name="fire" size={20} />
