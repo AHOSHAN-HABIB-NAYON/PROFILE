@@ -37,6 +37,15 @@ export function openExternal(href: string) {
   else window.open(href, '_blank', 'noopener');
 }
 
+const SOURCES = [
+  { en: 'Bangladesh National Portal', bn: 'বাংলাদেশ জাতীয় তথ্য বাতায়ন', url: 'https://bangladesh.gov.bd' },
+  { en: 'Bangladesh Public Service Commission (BCS)', bn: 'বাংলাদেশ সরকারি কর্ম কমিশন (বিসিএস)', url: 'https://bpsc.gov.bd' },
+  { en: 'Ministry of Public Administration', bn: 'জনপ্রশাসন মন্ত্রণালয়', url: 'https://mopa.gov.bd' },
+  { en: 'Bangladesh Bank', bn: 'বাংলাদেশ ব্যাংক', url: 'https://www.bb.org.bd' },
+  { en: 'Bangladesh Bureau of Statistics', bn: 'বাংলাদেশ পরিসংখ্যান ব্যুরো', url: 'https://bbs.gov.bd' },
+  { en: 'National Curriculum and Textbook Board', bn: 'জাতীয় শিক্ষাক্রম ও পাঠ্যপুস্তক বোর্ড', url: 'https://nctb.gov.bd' },
+];
+
 export default function About() {
   const t = useT();
   const cfg = useConfig().data;
@@ -112,6 +121,25 @@ export default function About() {
           </section>
         </>
       )}
+
+      {/* Required by Google Play's Misleading Claims policy for apps with government-related content. */}
+      <section className="card disclaimer-card">
+        <h3>{t('Disclaimer & sources', 'সতর্কতা ও তথ্যের উৎস')}</h3>
+        <p className="small">
+          {t(
+            'QUIZ WAR is an independent educational quiz game. It is not affiliated with, endorsed by, or representing the Government of Bangladesh, the Bangladesh Public Service Commission (BPSC) or any government body. Questions are for practice only; always check official notices on the sources below.',
+            'QUIZ WAR একটি স্বাধীন শিক্ষামূলক কুইজ গেম। এটি বাংলাদেশ সরকার, বাংলাদেশ সরকারি কর্ম কমিশন (BPSC) বা কোনো সরকারি প্রতিষ্ঠানের অংশ নয়, তাদের প্রতিনিধিত্বও করে না। প্রশ্নগুলো শুধু অনুশীলনের জন্য; সরকারি নোটিশ ও তথ্যের জন্য সবসময় নিচের অফিসিয়াল উৎস দেখুন।',
+          )}
+        </p>
+        <ul className="source-list">
+          {SOURCES.map((s) => (
+            <li key={s.url}>
+              <button className="link-btn" onClick={() => openExternal(s.url)}>{t(s.en, s.bn)}</button>
+              <small className="faint"> {s.url.replace('https://', '')}</small>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <div className="section-label">{t('More', 'আরও')}</div>
       <section className="menu">
