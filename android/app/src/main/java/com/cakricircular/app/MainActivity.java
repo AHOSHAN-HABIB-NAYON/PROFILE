@@ -221,6 +221,7 @@ public class MainActivity extends Activity {
                 return handleLink(url);
             }
             @Override public void onPageFinished(WebView v, String url) {
+                if ("অফলাইন".equals(v.getTitle()) && !online()) showError(false);
                 if (offline.getVisibility() != View.VISIBLE) autoRetry = 0;
                 pull.done();
                 pageReady = true;
@@ -354,6 +355,7 @@ public class MainActivity extends Activity {
         offline.setVisibility(View.VISIBLE);
         pageReady = true;
         maybeHideSplash();
+        if (!server) watchNet();
         if (server && autoRetry < 3) {
             autoRetry++;
             ui.postDelayed(new Runnable() { public void run() {
@@ -362,7 +364,30 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** অফলাইন পাতা খোলা থাকলে ২ সেকেন্ড পরপর দেখি — নেট ফিরলেই পাতা লোড */
+    private boolean watching;
+
+    private void watchNet() {
+        if (watching) return;
+        watching = true;
+        ui.postDelayed(new Runnable() {
+            public void run() {
+                if (isFinishing() || offline.getVisibility() != View.VISIBLE) { watching = false; return; }
+                if (online()) { watching = false; autoRetry = 0; retry(); return; }
+                ui.postDelayed(this, 2000);
+            }
+        }, 2000);
+    }
+
     private void retry() {
+        if (!online()) {
+            // এখনও নেট নেই — সাইটের অফলাইন পাতায় না গিয়ে এখানেই জানাই, বোতামটা একটু নড়ে
+            showError(false);
+            ((TextView) offline.findViewWithTag("es")).setText("এখনও সংযোগ পাওয়া যায়নি — সংযোগ ফিরলেই নিজে থেকে খুলে যাবে");
+            View b = offline.findViewWithTag("retry");
+            ObjectAnimator.ofFloat(b, "translationX", 0, dp(10), -dp(10), dp(7), -dp(7), dp(3), 0).setDuration(450).start();
+            return;
+        }
         web.getSettings().setCacheMode(online() ? WebSettings.LOAD_DEFAULT : WebSettings.LOAD_CACHE_ELSE_NETWORK);
         offline.setVisibility(View.GONE);
         String u = web.getUrl();
@@ -649,7 +674,6 @@ public class MainActivity extends Activity {
         GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{TEAL, 0xFF22B49C});
         bg.setCornerRadius(dp(28));
         b.setBackground(bg);
-        b.setElevation(dp(4));
         b.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(final View x) {
                 x.animate().scaleX(0.94f).scaleY(0.94f).setDuration(90).withEndAction(new Runnable() {
@@ -807,8 +831,6 @@ public class MainActivity extends Activity {
         GradientDrawable yb = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{TEAL, 0xFF16A34A});
         yb.setCornerRadius(dp(27));
         yes.setBackground(yb);
-        yes.setElevation(dp(6));
-        if (Build.VERSION.SDK_INT >= 28) { yes.setOutlineSpotShadowColor(0xFF16A34A); yes.setOutlineAmbientShadowColor(0xFF16A34A); }
         LinearLayout.LayoutParams yp = new LinearLayout.LayoutParams(-1, dp(54));
         yp.topMargin = dp(20);
         card.addView(yes, yp);
@@ -832,25 +854,23 @@ public class MainActivity extends Activity {
             items[i].setTranslationY(dp(14));
             items[i].animate().alpha(1f).translationY(0).setStartDelay(320 + i * 110L).setDuration(360).start();
         }
-        final ObjectAnimator ring = ObjectAnimator.ofFloat(bell, "rotation", 0, -18, 16, -12, 8, -4, 0);
-        ring.setDuration(900);
-        ring.setStartDelay(700);
-        ring.setRepeatCount(ValueAnimator.INFINITE);
-        ring.setRepeatMode(ValueAnimator.RESTART);
-        ring.start();
-        // বোতামে হালকা "শ্বাস" — চোখে পড়ে
-        final ObjectAnimator breathe = ObjectAnimator.ofPropertyValuesHolder(yes,
-                PropertyValuesHolder.ofFloat("scaleX", 1f, 1.03f), PropertyValuesHolder.ofFloat("scaleY", 1f, 1.03f));
-        breathe.setDuration(900);
-        breathe.setStartDelay(900);
-        breathe.setRepeatMode(ValueAnimator.REVERSE);
-        breathe.setRepeatCount(ValueAnimator.INFINITE);
-        breathe.start();
+        // ঘণ্টা ধীরে একবার দোলে, তারপর ৩ সেকেন্ড বিরতি
+        final ObjectAnimator ring = ObjectAnimator.ofFloat(bell, "rotation", 0, -12, 10, -6, 3, 0);
+        ring.setDuration(1400);
+        ring.setInterpolator(new DecelerateInterpolator());
+        final Runnable ringLoop = new Runnable() {
+            public void run() {
+                if (dim.getParent() == null) return;
+                ring.start();
+                ui.postDelayed(this, 4400);
+            }
+        };
+        ui.postDelayed(ringLoop, 900);
 
         final Runnable close = new Runnable() {
             public void run() {
+                ui.removeCallbacks(ringLoop);
                 ring.cancel();
-                breathe.cancel();
                 card.animate().translationY(card.getHeight() + dp(40)).setDuration(260).start();
                 dim.animate().alpha(0f).setDuration(280).withEndAction(new Runnable() {
                     public void run() { rootView.removeView(dim); }
