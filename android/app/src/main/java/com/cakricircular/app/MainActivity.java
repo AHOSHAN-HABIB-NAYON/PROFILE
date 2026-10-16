@@ -406,7 +406,7 @@ public class MainActivity extends Activity {
         s.addView(col, new FrameLayout.LayoutParams(-2, -2, Gravity.CENTER));
 
         FrameLayout logoBox = new FrameLayout(this);
-        col.addView(logoBox, new LinearLayout.LayoutParams(dp(250), dp(250)));
+        col.addView(logoBox, new LinearLayout.LayoutParams(dp(200), dp(200)));
 
         View ring = new View(this);
         GradientDrawable rg = new GradientDrawable();
@@ -415,7 +415,7 @@ public class MainActivity extends Activity {
         ring.setBackground(rg);
         ring.setTag("ring");
         ring.setAlpha(0f);
-        logoBox.addView(ring, new FrameLayout.LayoutParams(dp(180), dp(180), Gravity.CENTER));
+        logoBox.addView(ring, new FrameLayout.LayoutParams(dp(140), dp(140), Gravity.CENTER));
 
         ImageView logo = new ImageView(this);
         logo.setImageResource(R.drawable.splash_logo);
@@ -425,7 +425,27 @@ public class MainActivity extends Activity {
         logo.setBackground(lb);
         logo.setElevation(dp(14));
         logo.setTag("logo");
-        logoBox.addView(logo, new FrameLayout.LayoutParams(dp(180), dp(180), Gravity.CENTER));
+        logoBox.addView(logo, new FrameLayout.LayoutParams(dp(140), dp(140), Gravity.CENTER));
+
+        TextView title = new TextView(this);
+        title.setText("চাকরি সার্কুলার");
+        title.setTextColor(Color.WHITE);
+        title.setTextSize(31);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setShadowLayer(dp(6), 0, dp(2), 0x40000000);
+        title.setTag("title");
+        LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(-2, -2);
+        tp.topMargin = dp(4);
+        col.addView(title, tp);
+
+        TextView tag = new TextView(this);
+        tag.setText("— সঠিক তথ্য, আপনার সফলতা —");
+        tag.setTextColor(0xFFDCFCE7);
+        tag.setTextSize(15);
+        tag.setTag("tag");
+        LinearLayout.LayoutParams gp = new LinearLayout.LayoutParams(-2, -2);
+        gp.topMargin = dp(6);
+        col.addView(tag, gp);
 
         LinearLayout dots = new LinearLayout(this);
         dots.setTag("dots");
@@ -458,6 +478,7 @@ public class MainActivity extends Activity {
     private void playSplash() {
         splashStart = System.currentTimeMillis();
         View logo = splash.findViewWithTag("logo"), ring = splash.findViewWithTag("ring");
+        View title = splash.findViewWithTag("title"), tag = splash.findViewWithTag("tag");
         LinearLayout dots = (LinearLayout) splash.findViewWithTag("dots");
 
         logo.setScaleX(0.3f); logo.setScaleY(0.3f); logo.setAlpha(0f); logo.setRotation(-25f);
@@ -473,6 +494,10 @@ public class MainActivity extends Activity {
         pulse.setRepeatCount(ValueAnimator.INFINITE);
         pulse.start();
 
+        // লেখা দুটো নিচ থেকে ভেসে ওঠে
+        rise(title, 380);
+        rise(tag, 600);
+
         for (int i = 0; i < dots.getChildCount(); i++) {
             ObjectAnimator a = ObjectAnimator.ofPropertyValuesHolder(dots.getChildAt(i),
                     PropertyValuesHolder.ofFloat("alpha", 0.35f, 1f),
@@ -486,6 +511,13 @@ public class MainActivity extends Activity {
         }
         // ধীর নেটে সর্বোচ্চ ৬ সেকেন্ড
         ui.postDelayed(new Runnable() { public void run() { pageReady = true; maybeHideSplash(); } }, 6000);
+    }
+
+    private void rise(View v, long delay) {
+        v.setAlpha(0f);
+        v.setTranslationY(dp(26));
+        v.animate().alpha(1f).translationY(0f).setStartDelay(delay).setDuration(560)
+                .setInterpolator(new DecelerateInterpolator(1.8f)).start();
     }
 
     private void maybeHideSplash() {
