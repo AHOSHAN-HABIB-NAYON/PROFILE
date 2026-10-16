@@ -1,0 +1,7 @@
+total 976
+drwxr-xr-x 2 runner runner   4096 Oct 16 11:27 .
+drwxr-xr-x 6 runner runner   4096 Oct 16 11:27 ..
+-rw-r--r-- 1 runner runner 614837 Oct 16 11:27 app-release-unsigned.aab
+-rw-r--r-- 1 runner runner 369063 Oct 16 11:27 app-release-unsigned.apk
+-rw-r--r-- 1 runner runner      0 Oct 16 11:27 info.txt
+source: bb1fad3b1dbb73ebf21582198921fdca6a7ce48a
