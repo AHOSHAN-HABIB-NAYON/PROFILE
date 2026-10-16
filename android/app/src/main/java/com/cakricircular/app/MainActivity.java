@@ -161,6 +161,8 @@ public class MainActivity extends Activity {
     /** নোটিফিকেশন বা শেয়ার করা লিংক থেকে খোলা হলে সেই পেজ */
     private static String linkFrom(Intent i) {
         Uri d = i == null ? null : i.getData();
+        // Firebase নিজে দেখানো নোটিফিকেশনে চাপলে লিংক আসে extra হিসেবে
+        if (d == null && i != null && i.getStringExtra("url") != null) d = Uri.parse(i.getStringExtra("url"));
         if (d == null || d.getHost() == null) return null;
         String h = d.getHost();
         return (h.equals(HOST) || h.endsWith("." + HOST)) ? d.toString() : null;

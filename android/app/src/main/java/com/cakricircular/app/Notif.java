@@ -16,12 +16,12 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-/** নোটিফিকেশন: সাইটের লোগো, পোস্টের বড় ছবি, কয়েকটা একসাথে এলে এক গ্রুপে */
+/** নোটিফিকেশন: সাইটের লোগো, পোস্টের বড় ছবি — প্রতিটা আলাদা করে ভেসে ওঠে */
 final class Notif {
 
     private Notif() { }
 
-    static final String CH_JOBS = "jobs", GROUP = "cc_jobs";
+    static final String CH_JOBS = "jobs";
     static final int GREEN = 0xFF0E6E34;
 
     static String sub(String kind) {
@@ -32,15 +32,14 @@ final class Notif {
     static void show(Context c, int id, String sub, String title, String body, String url, Bitmap image) {
         NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm == null) return;
-        channel(nm);
+        channel(c);
         if (url == null || url.isEmpty()) url = MainActivity.HOME;
 
         Notification.Builder b = base(c)
                 .setContentTitle(title)
                 .setContentText(body)
                 .setSubText(sub)
-                .setContentIntent(open(c, id, url))
-                .setGroup(GROUP);
+                .setContentIntent(open(c, id, url));
         if (image != null) {
             b.setLargeIcon(square(image))
              .setStyle(new Notification.BigPictureStyle().bigPicture(image)
@@ -49,28 +48,6 @@ final class Notif {
             b.setLargeIcon(logo(c)).setStyle(new Notification.BigTextStyle().bigText(body));
         }
         post(nm, id, b);
-        summary(c, nm);
-    }
-
-    /** ২টার বেশি খবর জমলে উপরে একটা সারাংশ — সব এক গ্রুপে গোছানো থাকে */
-    private static void summary(Context c, NotificationManager nm) {
-        if (Build.VERSION.SDK_INT < 24) return;
-        int n = 0;
-        try {
-            for (android.service.notification.StatusBarNotification s : nm.getActiveNotifications())
-                if (s.getId() != 1 && GROUP.equals(s.getNotification().getGroup())) n++;
-        } catch (Exception ignored) { }
-        if (n < 2) return;
-        String t = "নতুন " + bn(n) + "টি চাকরির খবর";
-        Notification.Builder b = base(c)
-                .setContentTitle(t)
-                .setContentText("সবগুলো দেখতে চাপুন")
-                .setStyle(new Notification.InboxStyle().setBigContentTitle(t))
-                .setContentIntent(open(c, 1, MainActivity.HOME))
-                .setGroup(GROUP)
-                .setGroupSummary(true)
-                .setOnlyAlertOnce(true);
-        post(nm, 1, b);
     }
 
     @SuppressWarnings("deprecation")
@@ -98,8 +75,11 @@ final class Notif {
         return PendingIntent.getActivity(c, id, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
-    private static void channel(NotificationManager nm) {
-        if (Build.VERSION.SDK_INT < 26 || nm.getNotificationChannel(CH_JOBS) != null) return;
+    /** অ্যাপ চালু হলেই চ্যানেল তৈরি — Firebase নিজে নোটিফিকেশন দেখালেও এই চ্যানেলেই (শব্দ, ভেসে ওঠা) */
+    static void channel(Context c) {
+        if (Build.VERSION.SDK_INT < 26) return;
+        NotificationManager nm = (NotificationManager) c.getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm == null || nm.getNotificationChannel(CH_JOBS) != null) return;
         NotificationChannel ch = new NotificationChannel(CH_JOBS, "নতুন চাকরির খবর", NotificationManager.IMPORTANCE_HIGH);
         ch.setDescription("নতুন সার্কুলার, নোটিশ ও বার্তা এলে জানাবে");
         nm.createNotificationChannel(ch);

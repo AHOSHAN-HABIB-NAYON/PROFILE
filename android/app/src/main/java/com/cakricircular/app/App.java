@@ -18,6 +18,7 @@ public class App extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        Notif.channel(this);
         initFirebase(this);
     }
 
