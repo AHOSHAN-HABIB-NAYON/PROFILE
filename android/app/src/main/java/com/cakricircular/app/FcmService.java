@@ -18,12 +18,15 @@ public class FcmService extends FirebaseMessagingService {
         int id = 0;
         try { id = Integer.parseInt(d.get("id")); } catch (Exception ignored) { }
 
-        // একই খবর দুবার নয় (বিকল্প চেকও একই হিসাব রাখে)
+        // একই খবর দুবার নয় — শেষ ৬০টার তালিকা দেখে (পরপর কয়েকটা আগে-পরে এলেও কোনোটা বাদ পড়ে না)
         SharedPreferences sp = getSharedPreferences("cc", MODE_PRIVATE);
         if (id > 0) {
             synchronized (FcmService.class) {
-                if (id <= sp.getInt("after", 0)) return;
-                sp.edit().putInt("after", id).apply();
+                String seen = sp.getString("seen", ",");
+                if (seen.contains("," + id + ",")) return;
+                seen = seen + id + ",";
+                if (seen.length() > 600) seen = "," + seen.substring(seen.indexOf(',', seen.length() - 500) + 1);
+                sp.edit().putString("seen", seen).putInt("after", Math.max(id, sp.getInt("after", 0))).apply();
             }
         }
         String kind = d.get("kind") == null ? "post" : d.get("kind");

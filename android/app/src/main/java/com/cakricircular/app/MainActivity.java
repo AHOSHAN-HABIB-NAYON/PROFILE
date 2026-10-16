@@ -83,6 +83,9 @@ public class MainActivity extends Activity {
     private ValueCallback<Uri[]> fileCb;
     private Object backCb;          // Android 13+ OnBackInvokedCallback
     private boolean backOn;
+    private FrameLayout rootView;
+    private int navInset;
+    private long askedAt;
 
     // ------------------------------------------------------------------ lifecycle
 
@@ -91,6 +94,7 @@ public class MainActivity extends Activity {
         super.onCreate(state);
 
         FrameLayout root = new FrameLayout(this);
+        rootView = root;
         root.setBackgroundColor(Color.WHITE);
 
         topBar = new View(this);
@@ -177,6 +181,7 @@ public class MainActivity extends Activity {
         root.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
             @Override public WindowInsets onApplyWindowInsets(View v, WindowInsets in) {
                 int t = in.getSystemWindowInsetTop(), b = in.getSystemWindowInsetBottom();
+                navInset = b;
                 topBar.getLayoutParams().height = t;
                 topBar.requestLayout();
                 FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) frame.getLayoutParams();
@@ -696,18 +701,213 @@ public class MainActivity extends Activity {
         if (isFinishing()) return;
         String perm = "android.permission.POST_NOTIFICATIONS";
         if (Build.VERSION.SDK_INT < 33 || checkSelfPermission(perm) == PackageManager.PERMISSION_GRANTED) { showDisclaimer(); return; }
+        // প্রথমবার, "এখন না" চাপলে ৩ দিন পর আবার — সর্বোচ্চ ৩ বার, এর বেশি বিরক্ত নয়
         SharedPreferences p = getSharedPreferences("cc", MODE_PRIVATE);
         int n = p.getInt("ask_n", 0);
         long last = p.getLong("ask_t", 0);
-        if (n >= 2 || (n == 1 && System.currentTimeMillis() - last < 3L * 86400000L)) { showDisclaimer(); return; }
+        if (n >= 3 || (n > 0 && System.currentTimeMillis() - last < 3L * 86400000L)) { showDisclaimer(); return; }
         p.edit().putInt("ask_n", n + 1).putLong("ask_t", System.currentTimeMillis()).apply();
-        requestPermissions(new String[]{perm}, REQ_NOTIFY);
+        showNotifyIntro();
+    }
+
+    /** সিস্টেমের Allow আসার আগে — কেন চালু করবেন, সুন্দর করে বুঝিয়ে বলা পাতা */
+    private void showNotifyIntro() {
+        final FrameLayout dim = new FrameLayout(this);
+        dim.setBackgroundColor(0x99081512);
+        dim.setClickable(true);
+        dim.setAlpha(0f);
+
+        final LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setGravity(Gravity.CENTER_HORIZONTAL);
+        card.setPadding(dp(24), dp(14), dp(24), dp(20) + navInset);
+        GradientDrawable cbg = new GradientDrawable();
+        cbg.setColor(Color.WHITE);
+        float r = dp(28);
+        cbg.setCornerRadii(new float[]{r, r, r, r, 0, 0, 0, 0});
+        card.setBackground(cbg);
+        card.setElevation(dp(16));
+        card.setClickable(true);
+        dim.addView(card, new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM));
+
+        View grip = new View(this);
+        GradientDrawable gg = new GradientDrawable();
+        gg.setColor(0xFFDDE5E2);
+        gg.setCornerRadius(dp(3));
+        grip.setBackground(gg);
+        LinearLayout.LayoutParams gp = new LinearLayout.LayoutParams(dp(40), dp(5));
+        gp.bottomMargin = dp(18);
+        card.addView(grip, gp);
+
+        // লোগো + কোণে ঘণ্টার ব্যাজ (দোলে)
+        FrameLayout head = new FrameLayout(this);
+        card.addView(head, new LinearLayout.LayoutParams(dp(92), dp(92)));
+        ImageView logo = new ImageView(this);
+        logo.setImageResource(R.drawable.splash_logo);
+        logo.setElevation(dp(6));
+        GradientDrawable lb = new GradientDrawable();
+        lb.setShape(GradientDrawable.OVAL);
+        lb.setColor(Color.WHITE);
+        logo.setBackground(lb);
+        head.addView(logo, new FrameLayout.LayoutParams(dp(84), dp(84), Gravity.CENTER));
+        final ImageView bell = new ImageView(this);
+        bell.setImageResource(R.drawable.ic_bell);
+        bell.setColorFilter(Color.WHITE);
+        bell.setPadding(dp(7), dp(7), dp(7), dp(7));
+        GradientDrawable bb = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[]{0xFFF59E0B, 0xFFF97316});
+        bb.setShape(GradientDrawable.OVAL);
+        bb.setStroke(dp(3), Color.WHITE);
+        bell.setBackground(bb);
+        bell.setElevation(dp(8));
+        head.addView(bell, new FrameLayout.LayoutParams(dp(36), dp(36), Gravity.BOTTOM | Gravity.END));
+
+        TextView title = new TextView(this);
+        title.setText("নতুন চাকরির খবর মিস করবেন না");
+        title.setTextColor(0xFF0F172A);
+        title.setTextSize(21);
+        title.setTypeface(Typeface.DEFAULT_BOLD);
+        title.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(-2, -2);
+        tp.topMargin = dp(16);
+        card.addView(title, tp);
+
+        TextView sub = new TextView(this);
+        sub.setText("নোটিফিকেশন চালু রাখলে নতুন সার্কুলার প্রকাশ হওয়ার সাথে সাথেই ফোনে জানিয়ে দেব।");
+        sub.setTextColor(0xFF64748B);
+        sub.setTextSize(14.5f);
+        sub.setGravity(Gravity.CENTER);
+        sub.setLineSpacing(0, 1.2f);
+        LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-2, -2);
+        sp.topMargin = dp(6);
+        card.addView(sub, sp);
+
+        LinearLayout rows = new LinearLayout(this);
+        rows.setOrientation(LinearLayout.VERTICAL);
+        GradientDrawable rb = new GradientDrawable();
+        rb.setColor(0xFFF4FAF7);
+        rb.setCornerRadius(dp(18));
+        rb.setStroke(dp(1), 0xFFE3F0EA);
+        rows.setBackground(rb);
+        rows.setPadding(dp(14), dp(6), dp(14), dp(6));
+        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2);
+        rp.topMargin = dp(18);
+        card.addView(rows, rp);
+        final View[] items = {
+                introRow(R.drawable.ic_bolt, "পোস্ট হওয়ার সাথে সাথেই নোটিফিকেশন"),
+                introRow(R.drawable.ic_work, "সরকারি-বেসরকারি চাকরি, ভর্তি, রেজাল্ট ও নোটিশ"),
+                introRow(R.drawable.ic_verified, "কোনো স্প্যাম নয় — যেকোনো সময় বন্ধ করা যায়")};
+        for (View v : items) rows.addView(v);
+
+        final TextView yes = new TextView(this);
+        yes.setText("নোটিফিকেশন চালু করুন");
+        yes.setTextColor(Color.WHITE);
+        yes.setTextSize(16.5f);
+        yes.setTypeface(Typeface.DEFAULT_BOLD);
+        yes.setGravity(Gravity.CENTER);
+        GradientDrawable yb = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{TEAL, 0xFF16A34A});
+        yb.setCornerRadius(dp(27));
+        yes.setBackground(yb);
+        yes.setElevation(dp(6));
+        if (Build.VERSION.SDK_INT >= 28) { yes.setOutlineSpotShadowColor(0xFF16A34A); yes.setOutlineAmbientShadowColor(0xFF16A34A); }
+        LinearLayout.LayoutParams yp = new LinearLayout.LayoutParams(-1, dp(54));
+        yp.topMargin = dp(20);
+        card.addView(yes, yp);
+
+        TextView no = new TextView(this);
+        no.setText("এখন না");
+        no.setTextColor(0xFF64748B);
+        no.setTextSize(15);
+        no.setGravity(Gravity.CENTER);
+        no.setPadding(dp(20), dp(12), dp(20), dp(4));
+        card.addView(no, new LinearLayout.LayoutParams(-2, -2));
+
+        rootView.addView(dim, new FrameLayout.LayoutParams(-1, -1));
+
+        // ঢোকার অ্যানিমেশন: পেছনটা ঝাপসা হয়, কার্ড নিচ থেকে ওঠে, সারিগুলো একে একে, ঘণ্টা দোলে
+        dim.animate().alpha(1f).setDuration(220).start();
+        card.setTranslationY(dp(420));
+        card.animate().translationY(0).setDuration(420).setInterpolator(new DecelerateInterpolator(2f)).start();
+        for (int i = 0; i < items.length; i++) {
+            items[i].setAlpha(0f);
+            items[i].setTranslationY(dp(14));
+            items[i].animate().alpha(1f).translationY(0).setStartDelay(320 + i * 110L).setDuration(360).start();
+        }
+        final ObjectAnimator ring = ObjectAnimator.ofFloat(bell, "rotation", 0, -18, 16, -12, 8, -4, 0);
+        ring.setDuration(900);
+        ring.setStartDelay(700);
+        ring.setRepeatCount(ValueAnimator.INFINITE);
+        ring.setRepeatMode(ValueAnimator.RESTART);
+        ring.start();
+        // বোতামে হালকা "শ্বাস" — চোখে পড়ে
+        final ObjectAnimator breathe = ObjectAnimator.ofPropertyValuesHolder(yes,
+                PropertyValuesHolder.ofFloat("scaleX", 1f, 1.03f), PropertyValuesHolder.ofFloat("scaleY", 1f, 1.03f));
+        breathe.setDuration(900);
+        breathe.setStartDelay(900);
+        breathe.setRepeatMode(ValueAnimator.REVERSE);
+        breathe.setRepeatCount(ValueAnimator.INFINITE);
+        breathe.start();
+
+        final Runnable close = new Runnable() {
+            public void run() {
+                ring.cancel();
+                breathe.cancel();
+                card.animate().translationY(card.getHeight() + dp(40)).setDuration(260).start();
+                dim.animate().alpha(0f).setDuration(280).withEndAction(new Runnable() {
+                    public void run() { rootView.removeView(dim); }
+                }).start();
+            }
+        };
+        yes.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                close.run();
+                askedAt = System.currentTimeMillis();
+                requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, REQ_NOTIFY);
+            }
+        });
+        no.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                close.run();
+                ui.postDelayed(new Runnable() { public void run() { showDisclaimer(); } }, 400);
+            }
+        });
+    }
+
+    private View introRow(int icon, String text) {
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(0, dp(9), 0, dp(9));
+        ImageView ic = new ImageView(this);
+        ic.setImageResource(icon);
+        ic.setPadding(dp(8), dp(8), dp(8), dp(8));
+        GradientDrawable ib = new GradientDrawable();
+        ib.setShape(GradientDrawable.OVAL);
+        ib.setColor(0xFFDDF3E7);
+        ic.setBackground(ib);
+        row.addView(ic, new LinearLayout.LayoutParams(dp(36), dp(36)));
+        TextView t = new TextView(this);
+        t.setText(text);
+        t.setTextColor(0xFF1E293B);
+        t.setTextSize(14.5f);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, -2, 1f);
+        lp.leftMargin = dp(12);
+        row.addView(t, lp);
+        return row;
     }
 
     @Override
     public void onRequestPermissionsResult(int req, String[] perms, int[] res) {
         super.onRequestPermissionsResult(req, perms, res);
-        if (req == REQ_NOTIFY) ui.postDelayed(new Runnable() { public void run() { showDisclaimer(); } }, 500);
+        if (req != REQ_NOTIFY) return;
+        boolean denied = res.length == 0 || res[0] != PackageManager.PERMISSION_GRANTED;
+        // ইউজার চালু করতে চাইলেন, কিন্তু আগে দুবার "Don't allow" দেওয়ায় সিস্টেম আর জিজ্ঞেস করেনি → সেটিংস খুলে দিই
+        if (denied && System.currentTimeMillis() - askedAt < 500) {
+            try {
+                startActivity(new Intent("android.settings.APP_NOTIFICATION_SETTINGS")
+                        .putExtra("android.provider.extra.APP_PACKAGE", getPackageName()));
+                return;
+            } catch (Exception ignored) { }
+        }
+        ui.postDelayed(new Runnable() { public void run() { showDisclaimer(); } }, 500);
     }
 
     // ------------------------------------------------------------------ Firebase
