@@ -395,15 +395,20 @@ public class MainActivity extends Activity {
 
     private FrameLayout buildSplash() {
         FrameLayout s = new FrameLayout(this);
-        GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                new int[]{0xFF0A5C30, 0xFF0E7A3A, 0xFF1FA64A});
-        s.setBackground(bg);
+        // সাদা থেকে খুব হালকা সবুজ — লোগোর সাদা বৃত্তের সাথে মানানসই
+        s.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{0xFFFFFFFF, 0xFFECF7F0}));
         s.setClickable(true);
+
+        // কোণে দুটো নরম সবুজ আভা (ধীরে নড়ে)
+        s.addView(glow(0x2E16A34A, "glowA"), glowLp(380, Gravity.TOP | Gravity.END, -120, -140));
+        s.addView(glow(0x260F766E, "glowB"), glowLp(360, Gravity.BOTTOM | Gravity.START, -130, -120));
 
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
         col.setGravity(Gravity.CENTER_HORIZONTAL);
-        s.addView(col, new FrameLayout.LayoutParams(-2, -2, Gravity.CENTER));
+        FrameLayout.LayoutParams cp = new FrameLayout.LayoutParams(-2, -2, Gravity.CENTER);
+        cp.bottomMargin = dp(40);
+        s.addView(col, cp);
 
         FrameLayout logoBox = new FrameLayout(this);
         col.addView(logoBox, new LinearLayout.LayoutParams(dp(200), dp(200)));
@@ -411,7 +416,7 @@ public class MainActivity extends Activity {
         View ring = new View(this);
         GradientDrawable rg = new GradientDrawable();
         rg.setShape(GradientDrawable.OVAL);
-        rg.setStroke(dp(3), Color.WHITE);
+        rg.setStroke(dp(2), 0x6616A34A);
         ring.setBackground(rg);
         ring.setTag("ring");
         ring.setAlpha(0f);
@@ -423,94 +428,145 @@ public class MainActivity extends Activity {
         lb.setShape(GradientDrawable.OVAL);
         lb.setColor(Color.WHITE);
         logo.setBackground(lb);
-        logo.setElevation(dp(14));
+        logo.setElevation(dp(12));
+        if (Build.VERSION.SDK_INT >= 28) { logo.setOutlineAmbientShadowColor(0xFF0E6E34); logo.setOutlineSpotShadowColor(0xFF0E6E34); }
         logo.setTag("logo");
         logoBox.addView(logo, new FrameLayout.LayoutParams(dp(140), dp(140), Gravity.CENTER));
 
         TextView title = new TextView(this);
         title.setText("চাকরি সার্কুলার");
-        title.setTextColor(Color.WHITE);
-        title.setTextSize(31);
+        title.setTextColor(0xFF0B5D2E);
+        title.setTextSize(30);
         title.setTypeface(Typeface.DEFAULT_BOLD);
-        title.setShadowLayer(dp(6), 0, dp(2), 0x40000000);
         title.setTag("title");
         LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(-2, -2);
         tp.topMargin = dp(4);
         col.addView(title, tp);
 
-        TextView tag = new TextView(this);
-        tag.setText("— সঠিক তথ্য, আপনার সফলতা —");
-        tag.setTextColor(0xFFDCFCE7);
-        tag.setTextSize(15);
+        // ট্যাগলাইন — দুপাশে ছোট সবুজ দাগ
+        LinearLayout tag = new LinearLayout(this);
+        tag.setGravity(Gravity.CENTER_VERTICAL);
         tag.setTag("tag");
+        tag.addView(dash(), new LinearLayout.LayoutParams(dp(18), dp(2)));
+        TextView tx = new TextView(this);
+        tx.setText("সঠিক তথ্য, আপনার সফলতা");
+        tx.setTextColor(0xFF5B7065);
+        tx.setTextSize(14.5f);
+        LinearLayout.LayoutParams xp = new LinearLayout.LayoutParams(-2, -2);
+        xp.setMargins(dp(10), 0, dp(10), 0);
+        tag.addView(tx, xp);
+        tag.addView(dash(), new LinearLayout.LayoutParams(dp(18), dp(2)));
         LinearLayout.LayoutParams gp = new LinearLayout.LayoutParams(-2, -2);
-        gp.topMargin = dp(6);
+        gp.topMargin = dp(8);
         col.addView(tag, gp);
 
-        LinearLayout dots = new LinearLayout(this);
-        dots.setTag("dots");
-        for (int i = 0; i < 3; i++) {
-            View d = new View(this);
-            GradientDrawable dg = new GradientDrawable();
-            dg.setShape(GradientDrawable.OVAL);
-            dg.setColor(Color.WHITE);
-            d.setBackground(dg);
-            d.setAlpha(0.35f);
-            LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(dp(9), dp(9));
-            dlp.setMargins(dp(5), 0, dp(5), 0);
-            dots.addView(d, dlp);
-        }
-        FrameLayout.LayoutParams dlp2 = new FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
-        dlp2.bottomMargin = dp(72);
-        s.addView(dots, dlp2);
+        // নিচে সরু লোডিং বার
+        FrameLayout bar = new FrameLayout(this);
+        GradientDrawable track = new GradientDrawable();
+        track.setColor(0xFFDCEEE3);
+        track.setCornerRadius(dp(2));
+        bar.setBackground(track);
+        bar.setClipToOutline(true);
+        View fill = new View(this);
+        GradientDrawable fg = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{0xFF0F766E, 0xFF16A34A});
+        fg.setCornerRadius(dp(2));
+        fill.setBackground(fg);
+        fill.setTag("fill");
+        bar.addView(fill, new FrameLayout.LayoutParams(dp(48), -1));
+        FrameLayout.LayoutParams bp = new FrameLayout.LayoutParams(dp(120), dp(3), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+        bp.bottomMargin = dp(84);
+        s.addView(bar, bp);
 
         TextView site = new TextView(this);
         site.setText(HOST);
-        site.setTextColor(0x99FFFFFF);
+        site.setTextColor(0xFF7A8C83);
         site.setTextSize(12);
-        site.setLetterSpacing(0.08f);
+        site.setLetterSpacing(0.06f);
         FrameLayout.LayoutParams sp = new FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
-        sp.bottomMargin = dp(40);
+        sp.bottomMargin = dp(52);
         s.addView(site, sp);
         return s;
     }
 
+    private View glow(int color, String tag) {
+        View v = new View(this);
+        GradientDrawable g = new GradientDrawable();
+        g.setGradientType(GradientDrawable.RADIAL_GRADIENT);
+        g.setColors(new int[]{color, color & 0x00FFFFFF});
+        g.setGradientRadius(dp(190));
+        v.setBackground(g);
+        v.setTag(tag);
+        return v;
+    }
+
+    private FrameLayout.LayoutParams glowLp(int size, int gravity, int dx, int dy) {
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(dp(size), dp(size), gravity);
+        if ((gravity & Gravity.END) == Gravity.END) lp.rightMargin = dp(dx); else lp.leftMargin = dp(dx);
+        if ((gravity & Gravity.BOTTOM) == Gravity.BOTTOM) lp.bottomMargin = dp(dy); else lp.topMargin = dp(dy);
+        return lp;
+    }
+
+    private View dash() {
+        View d = new View(this);
+        GradientDrawable g = new GradientDrawable();
+        g.setColor(0xFF16A34A);
+        g.setCornerRadius(dp(1));
+        d.setBackground(g);
+        return d;
+    }
+
     private void playSplash() {
         splashStart = System.currentTimeMillis();
+        // সাদা পটভূমিতে স্ট্যাটাস/নেভিগেশন বারের আইকন গাঢ়
+        View dv = getWindow().getDecorView();
+        dv.setSystemUiVisibility(dv.getSystemUiVisibility() | 0x2000 /* LIGHT_STATUS_BAR */ | (Build.VERSION.SDK_INT >= 26 ? 0x10 : 0));
+
         View logo = splash.findViewWithTag("logo"), ring = splash.findViewWithTag("ring");
         View title = splash.findViewWithTag("title"), tag = splash.findViewWithTag("tag");
-        LinearLayout dots = (LinearLayout) splash.findViewWithTag("dots");
 
-        logo.setScaleX(0.3f); logo.setScaleY(0.3f); logo.setAlpha(0f); logo.setRotation(-25f);
-        logo.animate().scaleX(1f).scaleY(1f).alpha(1f).rotation(0f).setDuration(750)
-                .setInterpolator(new OvershootInterpolator(1.7f)).start();
+        logo.setScaleX(0.5f); logo.setScaleY(0.5f); logo.setAlpha(0f);
+        logo.animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(700)
+                .setInterpolator(new OvershootInterpolator(1.4f)).start();
 
         ObjectAnimator pulse = ObjectAnimator.ofPropertyValuesHolder(ring,
-                PropertyValuesHolder.ofFloat("scaleX", 1f, 1.55f),
-                PropertyValuesHolder.ofFloat("scaleY", 1f, 1.55f),
-                PropertyValuesHolder.ofFloat("alpha", 0.55f, 0f));
-        pulse.setDuration(1300);
-        pulse.setStartDelay(600);
+                PropertyValuesHolder.ofFloat("scaleX", 1f, 1.45f),
+                PropertyValuesHolder.ofFloat("scaleY", 1f, 1.45f),
+                PropertyValuesHolder.ofFloat("alpha", 1f, 0f));
+        pulse.setDuration(1500);
+        pulse.setStartDelay(550);
         pulse.setRepeatCount(ValueAnimator.INFINITE);
         pulse.start();
 
         // লেখা দুটো নিচ থেকে ভেসে ওঠে
-        rise(title, 380);
-        rise(tag, 600);
+        rise(title, 350);
+        rise(tag, 560);
 
-        for (int i = 0; i < dots.getChildCount(); i++) {
-            ObjectAnimator a = ObjectAnimator.ofPropertyValuesHolder(dots.getChildAt(i),
-                    PropertyValuesHolder.ofFloat("alpha", 0.35f, 1f),
-                    PropertyValuesHolder.ofFloat("scaleX", 1f, 1.35f),
-                    PropertyValuesHolder.ofFloat("scaleY", 1f, 1.35f));
-            a.setDuration(420);
-            a.setStartDelay(800 + i * 160);
-            a.setRepeatMode(ValueAnimator.REVERSE);
-            a.setRepeatCount(ValueAnimator.INFINITE);
-            a.start();
-        }
+        // কোণের আভা ধীরে নড়ে
+        drift(splash.findViewWithTag("glowA"), -18, 22);
+        drift(splash.findViewWithTag("glowB"), 20, -18);
+
+        // লোডিং বার বাঁ থেকে ডানে
+        final View fill = splash.findViewWithTag("fill");
+        ObjectAnimator run = ObjectAnimator.ofFloat(fill, "translationX", -dp(48), dp(120));
+        run.setDuration(1100);
+        run.setStartDelay(400);
+        run.setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator());
+        run.setRepeatCount(ValueAnimator.INFINITE);
+        run.start();
+
         // ধীর নেটে সর্বোচ্চ ৬ সেকেন্ড
         ui.postDelayed(new Runnable() { public void run() { pageReady = true; maybeHideSplash(); } }, 6000);
+    }
+
+    private void drift(View v, float dx, float dy) {
+        ObjectAnimator a = ObjectAnimator.ofPropertyValuesHolder(v,
+                PropertyValuesHolder.ofFloat("translationX", 0, dp(dx)),
+                PropertyValuesHolder.ofFloat("translationY", 0, dp(dy)));
+        a.setDuration(2600);
+        a.setRepeatMode(ValueAnimator.REVERSE);
+        a.setRepeatCount(ValueAnimator.INFINITE);
+        a.setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator());
+        a.start();
     }
 
     private void rise(View v, long delay) {
@@ -532,6 +588,8 @@ public class MainActivity extends Activity {
                 .setListener(new AnimatorListenerAdapter() {
                     @Override public void onAnimationEnd(Animator a) {
                         ((ViewGroup) splash.getParent()).removeView(splash);
+                        View dv = getWindow().getDecorView();
+                        dv.setSystemUiVisibility(dv.getSystemUiVisibility() & ~0x2000);   // টিল বারে সাদা আইকন
                         lightNav();
                         ui.postDelayed(new Runnable() { public void run() { askNotify(); } }, 400);
                     }

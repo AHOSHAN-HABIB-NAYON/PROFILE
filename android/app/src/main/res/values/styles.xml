@@ -2,7 +2,7 @@
 <resources>
     <!-- অ্যাপ খোলার মুহূর্তেই টিল রং — সাদা ঝলক দেখা যায় না -->
     <style name="AppTheme" parent="@android:style/Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@color/brand</item>
+        <item name="android:windowBackground">@color/splash_bg</item>
         <item name="android:colorPrimary">@color/brand</item>
         <item name="android:colorPrimaryDark">@color/brand_dark</item>
         <item name="android:colorAccent">@color/brand</item>

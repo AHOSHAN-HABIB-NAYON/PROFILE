@@ -2,13 +2,13 @@
 <resources>
     <!-- Android 12+ এর সিস্টেম স্প্ল্যাশেও সবুজ পটভূমিতে সাইটের লোগো — তারপর অ্যাপের অ্যানিমেশন -->
     <style name="AppTheme" parent="@android:style/Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@color/brand</item>
+        <item name="android:windowBackground">@color/splash_bg</item>
         <item name="android:colorPrimary">@color/brand</item>
         <item name="android:colorPrimaryDark">@color/brand_dark</item>
         <item name="android:colorAccent">@color/brand</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowSplashScreenBackground">@color/brand</item>
+        <item name="android:windowSplashScreenBackground">@color/splash_bg</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
     </style>
 </resources>
