@@ -1,0 +1,48 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.cakricircular.app'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'com.cakricircular.app'
+        minSdk 23
+        targetSdk 36
+        versionCode 5
+        versionName '2.0'
+        // শুধু বাংলা আর ইংরেজি — লাইব্রেরির অন্য ভাষার লেখা বাদ (সাইজ কমে)
+        resourceConfigurations += ['bn', 'en']
+    }
+
+    buildTypes {
+        release {
+            // ছোট সাইজ: অপ্রয়োজনীয় কোড ও রিসোর্স বাদ
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    dependenciesInfo {
+        includeInApk false
+        includeInBundle false
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}
+
+dependencies {
+    // শুধু Firebase Cloud Messaging — আর কিছু নয়
+    implementation platform('com.google.firebase:firebase-bom:33.7.0')
+    implementation 'com.google.firebase:firebase-messaging'
+}

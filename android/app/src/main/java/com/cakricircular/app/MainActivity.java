@@ -1,0 +1,673 @@
+package com.cakricircular.app;
+
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ObjectAnimator;
+import android.animation.PropertyValuesHolder;
+import android.animation.ValueAnimator;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.ActivityNotFoundException;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowInsets;
+import android.view.animation.DecelerateInterpolator;
+import android.view.animation.OvershootInterpolator;
+import android.webkit.CookieManager;
+import android.webkit.JavascriptInterface;
+import android.webkit.DownloadListener;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import com.google.firebase.messaging.FirebaseMessaging;
+
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+
+/**
+ * চাকরি সার্কুলার — এক অ্যাক্টিভিটির হালকা নেটিভ অ্যাপ।
+ * বাইরের লাইব্রেরি শুধু একটা: Firebase Cloud Messaging (নোটিফিকেশনের জন্য)।
+ */
+public class MainActivity extends Activity {
+
+    static final String HOST = "cakricircular.com";
+    static final String HOME = "https://" + HOST + "/?src=app";
+    static final String UA_TAG = "CakriApp/2.0";
+    static final String UA = UA_TAG + " (Android " + Build.VERSION.RELEASE + ")";
+    static final String PKG = "com.cakricircular.app";
+
+    private static final int TEAL = 0xFF0F766E;
+    private static final int REQ_FILE = 7, REQ_NOTIFY = 8;
+
+    private final Handler ui = new Handler(Looper.getMainLooper());
+    private FrameLayout frame;
+    private View topBar, progress, offline;
+    private WebView web;
+    private PullRefresh pull;
+    private FrameLayout splash;
+    private long splashStart;
+    private boolean splashGone, pageReady;
+    private ValueCallback<Uri[]> fileCb;
+    private Object backCb;          // Android 13+ OnBackInvokedCallback
+    private boolean backOn;
+
+    // ------------------------------------------------------------------ lifecycle
+
+    @Override
+    protected void onCreate(Bundle state) {
+        super.onCreate(state);
+
+        FrameLayout root = new FrameLayout(this);
+        root.setBackgroundColor(Color.WHITE);
+
+        topBar = new View(this);
+        topBar.setBackgroundColor(TEAL);
+        root.addView(topBar, new FrameLayout.LayoutParams(-1, 0, Gravity.TOP));
+
+        frame = new FrameLayout(this);
+        root.addView(frame, new FrameLayout.LayoutParams(-1, -1));
+
+        web = new WebView(this);
+        web.setBackgroundColor(Color.WHITE);
+        pull = new PullRefresh(this, web);
+        pull.setListener(new PullRefresh.Listener() {
+            @Override public void onRefresh() { autoRetry = 0; retry(); }
+        });
+        frame.addView(pull, new FrameLayout.LayoutParams(-1, -1));
+
+        offline = buildOffline();
+        offline.setVisibility(View.GONE);
+        frame.addView(offline, new FrameLayout.LayoutParams(-1, -1));
+
+        progress = new View(this);
+        progress.setBackgroundColor(0xFF22B49C);
+        progress.setPivotX(0);
+        progress.setScaleX(0);
+        frame.addView(progress, new FrameLayout.LayoutParams(-1, dp(3), Gravity.TOP));
+
+        splash = buildSplash();
+        root.addView(splash, new FrameLayout.LayoutParams(-1, -1));
+
+        setContentView(root);
+        edgeToEdge(root);
+        setupWeb();
+
+        String start = linkFrom(getIntent());
+        if (state != null) web.restoreState(state);
+        else web.loadUrl(start != null ? start : HOME);
+
+        playSplash();
+        // সাইট থেকে Firebase-এর তথ্য এনে নোটিফিকেশন চালু (প্রতিবার খোলায় হালনাগাদ)
+        new Thread(new Runnable() { public void run() { loadConfig(getApplicationContext()); } }).start();
+    }
+
+    @Override
+    protected void onNewIntent(Intent i) {
+        super.onNewIntent(i);
+        setIntent(i);
+        String u = linkFrom(i);
+        if (u != null) web.loadUrl(u);
+    }
+
+    @Override protected void onSaveInstanceState(Bundle out) { super.onSaveInstanceState(out); web.saveState(out); }
+    @Override protected void onResume() { super.onResume(); web.onResume(); }
+    @Override protected void onPause() { CookieManager.getInstance().flush(); web.onPause(); super.onPause(); }
+
+    @Override
+    protected void onDestroy() {
+        ui.removeCallbacksAndMessages(null);
+        if (web != null) { ((ViewGroup) web.getParent()).removeView(web); web.destroy(); }
+        super.onDestroy();
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (web.canGoBack()) web.goBack(); else super.onBackPressed();
+    }
+
+    /** নোটিফিকেশন বা শেয়ার করা লিংক থেকে খোলা হলে সেই পেজ */
+    private static String linkFrom(Intent i) {
+        Uri d = i == null ? null : i.getData();
+        if (d == null || d.getHost() == null) return null;
+        String h = d.getHost();
+        return (h.equals(HOST) || h.endsWith("." + HOST)) ? d.toString() : null;
+    }
+
+    // ------------------------------------------------------------------ window
+
+    private void edgeToEdge(final FrameLayout root) {
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+        root.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
+            @Override public WindowInsets onApplyWindowInsets(View v, WindowInsets in) {
+                int t = in.getSystemWindowInsetTop(), b = in.getSystemWindowInsetBottom();
+                topBar.getLayoutParams().height = t;
+                topBar.requestLayout();
+                FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) frame.getLayoutParams();
+                lp.setMargins(in.getSystemWindowInsetLeft(), t, in.getSystemWindowInsetRight(), b);
+                frame.setLayoutParams(lp);
+                return in.consumeSystemWindowInsets();
+            }
+        });
+    }
+
+    /** স্প্ল্যাশ শেষে নিচের নেভিগেশন বারে গাঢ় আইকন (সাদা পটভূমিতে) */
+    private void lightNav() {
+        if (Build.VERSION.SDK_INT >= 26) {
+            View d = getWindow().getDecorView();
+            d.setSystemUiVisibility(d.getSystemUiVisibility() | 0x10 /* LIGHT_NAVIGATION_BAR */);
+        }
+    }
+
+    // ------------------------------------------------------------------ webview
+
+    private void setupWeb() {
+        WebSettings s = web.getSettings();
+        s.setJavaScriptEnabled(true);
+        s.setDomStorageEnabled(true);
+        s.setDatabaseEnabled(true);
+        s.setSupportMultipleWindows(false);
+        s.setLoadWithOverviewMode(true);
+        s.setUseWideViewPort(true);
+        s.setUserAgentString(s.getUserAgentString() + " " + UA_TAG);
+        s.setCacheMode(online() ? WebSettings.LOAD_DEFAULT : WebSettings.LOAD_CACHE_ELSE_NETWORK);
+        CookieManager.getInstance().setAcceptCookie(true);
+        web.addJavascriptInterface(new Bridge(), "CakriApp");
+        web.setOverScrollMode(View.OVER_SCROLL_NEVER);
+
+        web.setWebViewClient(new WebViewClient() {
+            @Override public boolean shouldOverrideUrlLoading(WebView v, String url) {
+                return handleLink(url);
+            }
+            @Override public void onPageFinished(WebView v, String url) {
+                if (offline.getVisibility() != View.VISIBLE) autoRetry = 0;
+                pull.done();
+                pageReady = true;
+                maybeHideSplash();
+                updateBack();
+            }
+            @Override public void doUpdateVisitedHistory(WebView v, String url, boolean reload) {
+                updateBack();
+            }
+            @SuppressWarnings("deprecation")
+            @Override public void onReceivedError(WebView v, int code, String desc, String url) {
+                // শুধু মূল পেজের ত্রুটিতে আসে
+                showError(false);
+            }
+            @Override public void onReceivedHttpError(WebView v, WebResourceRequest r, WebResourceResponse res) {
+                // সার্ভার ব্যস্ত (502/503/504) — কাঁচা nginx পেজের বদলে নিজের পেজ, নিজে থেকে আবার চেষ্টা
+                if (r.isForMainFrame() && res.getStatusCode() >= 500) showError(true);
+            }
+        });
+
+        web.setWebChromeClient(new WebChromeClient() {
+            @Override public void onProgressChanged(WebView v, int p) {
+                progress.animate().cancel();
+                if (p >= 100) {
+                    progress.animate().scaleX(1f).alpha(0f).setDuration(220).start();
+                } else {
+                    progress.setAlpha(1f);
+                    progress.animate().scaleX(p / 100f).setDuration(160).start();
+                }
+                if (p >= 80) { pageReady = true; maybeHideSplash(); }
+            }
+            @Override public boolean onShowFileChooser(WebView v, ValueCallback<Uri[]> cb, FileChooserParams fp) {
+                if (fileCb != null) fileCb.onReceiveValue(null);
+                fileCb = cb;
+                try { startActivityForResult(fp.createIntent(), REQ_FILE); }
+                catch (ActivityNotFoundException e) { fileCb = null; return false; }
+                return true;
+            }
+        });
+
+        web.setDownloadListener(new DownloadListener() {
+            @Override public void onDownloadStart(String url, String ua, String cd, String mime, long len) {
+                openOutside(url);
+            }
+        });
+    }
+
+    /** সাইটের পেজ অ্যাপে, বাকি সব (PDF, অন্য সাইট, ফোন, হোয়াটসঅ্যাপ) বাইরের অ্যাপে */
+    private boolean handleLink(String url) {
+        Uri u = Uri.parse(url);
+        String sc = u.getScheme() == null ? "" : u.getScheme().toLowerCase();
+        String h = u.getHost() == null ? "" : u.getHost().toLowerCase();
+        String path = u.getPath() == null ? "" : u.getPath().toLowerCase();
+        if ((sc.equals("https") || sc.equals("http")) && (h.equals(HOST) || h.endsWith("." + HOST))
+                && !path.endsWith(".pdf") && !path.startsWith("/v2admin")) {
+            offline.setVisibility(View.GONE);
+            return false;
+        }
+        if (sc.equals("intent")) {
+            try {
+                Intent i = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+                i.addCategory(Intent.CATEGORY_BROWSABLE);
+                i.setComponent(null);
+                i.setSelector(null);
+                startActivity(i);
+            } catch (Exception e) {
+                String fb = null;
+                try { fb = Intent.parseUri(url, Intent.URI_INTENT_SCHEME).getStringExtra("browser_fallback_url"); }
+                catch (Exception ignored) { }
+                if (fb != null) openOutside(fb);
+            }
+            return true;
+        }
+        openOutside(url);
+        return true;
+    }
+
+    private void openOutside(String url) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        } catch (Exception ignored) { }
+    }
+
+    @Override
+    protected void onActivityResult(int req, int res, Intent data) {
+        if (req == REQ_FILE && fileCb != null) {
+            fileCb.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(res, data));
+            fileCb = null;
+            return;
+        }
+        super.onActivityResult(req, res, data);
+    }
+
+    /** Android 13+ এ নতুন ব্যাক সিস্টেম: পেছনে পেজ থাকলে ব্যাক = আগের পেজ */
+    private void updateBack() {
+        if (Build.VERSION.SDK_INT < 33) return;
+        boolean want = web.canGoBack();
+        if (want == backOn) return;
+        try {
+            Object disp = getClass().getMethod("getOnBackInvokedDispatcher").invoke(this);
+            Class<?> cbCls = Class.forName("android.window.OnBackInvokedCallback");
+            if (backCb == null) {
+                backCb = Proxy.newProxyInstance(cbCls.getClassLoader(), new Class<?>[]{cbCls}, new InvocationHandler() {
+                    @Override public Object invoke(Object p, Method m, Object[] a) {
+                        if ("onBackInvoked".equals(m.getName())) {
+                            if (web.canGoBack()) web.goBack();
+                            updateBack();
+                            return null;
+                        }
+                        if ("hashCode".equals(m.getName())) return System.identityHashCode(p);
+                        if ("equals".equals(m.getName())) return p == a[0];
+                        if ("toString".equals(m.getName())) return "CakriBack";
+                        return null;
+                    }
+                });
+            }
+            if (want) disp.getClass().getMethod("registerOnBackInvokedCallback", int.class, cbCls).invoke(disp, 0, backCb);
+            else disp.getClass().getMethod("unregisterOnBackInvokedCallback", cbCls).invoke(disp, backCb);
+            backOn = want;
+        } catch (Throwable ignored) { }
+    }
+
+    private int autoRetry;
+
+    private void showError(boolean server) {
+        if (pull != null) pull.done();
+        ((TextView) offline.findViewWithTag("et")).setText(server ? "সার্ভার একটু ব্যস্ত" : "ইন্টারনেট সংযোগ নেই");
+        ((TextView) offline.findViewWithTag("es")).setText(server
+                ? "কয়েক সেকেন্ড পর নিজে থেকেই আবার চেষ্টা করছি…"
+                : "মোবাইল ডেটা বা ওয়াই-ফাই চালু করে আবার চেষ্টা করুন");
+        offline.setVisibility(View.VISIBLE);
+        pageReady = true;
+        maybeHideSplash();
+        if (server && autoRetry < 3) {
+            autoRetry++;
+            ui.postDelayed(new Runnable() { public void run() {
+                if (offline.getVisibility() == View.VISIBLE) retry();
+            } }, 3000L * autoRetry);
+        }
+    }
+
+    private void retry() {
+        web.getSettings().setCacheMode(online() ? WebSettings.LOAD_DEFAULT : WebSettings.LOAD_CACHE_ELSE_NETWORK);
+        offline.setVisibility(View.GONE);
+        String u = web.getUrl();
+        if (u == null || u.startsWith("data:") || u.startsWith("about:")) web.loadUrl(HOME); else web.reload();
+    }
+
+    // ------------------------------------------------------------------ সাইট থেকে ডাকা দুটো কাজ
+
+    /** ফুটারের "অ্যাপ শেয়ার করুন" আর "রেটিং দিন" (সাইটের app.js ডাকে) */
+    private class Bridge {
+        @JavascriptInterface public void shareApp(final String text, final String url) {
+            ui.post(new Runnable() { public void run() {
+                Intent s = new Intent(Intent.ACTION_SEND).setType("text/plain")
+                        .putExtra(Intent.EXTRA_TEXT, (text == null ? "" : text + "\n") + url);
+                try { startActivity(Intent.createChooser(s, "অ্যাপ শেয়ার করুন")); } catch (Exception ignored) { }
+            } });
+        }
+        @JavascriptInterface public void rate() {
+            ui.post(new Runnable() { public void run() {
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + PKG))
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                } catch (Exception e) {
+                    openOutside("https://play.google.com/store/apps/details?id=" + PKG);
+                }
+            } });
+        }
+    }
+
+    private boolean online() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo n = cm == null ? null : cm.getActiveNetworkInfo();
+        return n != null && n.isConnected();
+    }
+
+    // ------------------------------------------------------------------ splash
+
+    private FrameLayout buildSplash() {
+        FrameLayout s = new FrameLayout(this);
+        GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[]{0xFF0A5C30, 0xFF0E7A3A, 0xFF1FA64A});
+        s.setBackground(bg);
+        s.setClickable(true);
+
+        LinearLayout col = new LinearLayout(this);
+        col.setOrientation(LinearLayout.VERTICAL);
+        col.setGravity(Gravity.CENTER_HORIZONTAL);
+        s.addView(col, new FrameLayout.LayoutParams(-2, -2, Gravity.CENTER));
+
+        FrameLayout logoBox = new FrameLayout(this);
+        col.addView(logoBox, new LinearLayout.LayoutParams(dp(250), dp(250)));
+
+        View ring = new View(this);
+        GradientDrawable rg = new GradientDrawable();
+        rg.setShape(GradientDrawable.OVAL);
+        rg.setStroke(dp(3), Color.WHITE);
+        ring.setBackground(rg);
+        ring.setTag("ring");
+        ring.setAlpha(0f);
+        logoBox.addView(ring, new FrameLayout.LayoutParams(dp(180), dp(180), Gravity.CENTER));
+
+        ImageView logo = new ImageView(this);
+        logo.setImageResource(R.drawable.splash_logo);
+        GradientDrawable lb = new GradientDrawable();
+        lb.setShape(GradientDrawable.OVAL);
+        lb.setColor(Color.WHITE);
+        logo.setBackground(lb);
+        logo.setElevation(dp(14));
+        logo.setTag("logo");
+        logoBox.addView(logo, new FrameLayout.LayoutParams(dp(180), dp(180), Gravity.CENTER));
+
+        LinearLayout dots = new LinearLayout(this);
+        dots.setTag("dots");
+        for (int i = 0; i < 3; i++) {
+            View d = new View(this);
+            GradientDrawable dg = new GradientDrawable();
+            dg.setShape(GradientDrawable.OVAL);
+            dg.setColor(Color.WHITE);
+            d.setBackground(dg);
+            d.setAlpha(0.35f);
+            LinearLayout.LayoutParams dlp = new LinearLayout.LayoutParams(dp(9), dp(9));
+            dlp.setMargins(dp(5), 0, dp(5), 0);
+            dots.addView(d, dlp);
+        }
+        FrameLayout.LayoutParams dlp2 = new FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+        dlp2.bottomMargin = dp(72);
+        s.addView(dots, dlp2);
+
+        TextView site = new TextView(this);
+        site.setText(HOST);
+        site.setTextColor(0x99FFFFFF);
+        site.setTextSize(12);
+        site.setLetterSpacing(0.08f);
+        FrameLayout.LayoutParams sp = new FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+        sp.bottomMargin = dp(40);
+        s.addView(site, sp);
+        return s;
+    }
+
+    private void playSplash() {
+        splashStart = System.currentTimeMillis();
+        View logo = splash.findViewWithTag("logo"), ring = splash.findViewWithTag("ring");
+        LinearLayout dots = (LinearLayout) splash.findViewWithTag("dots");
+
+        logo.setScaleX(0.3f); logo.setScaleY(0.3f); logo.setAlpha(0f); logo.setRotation(-25f);
+        logo.animate().scaleX(1f).scaleY(1f).alpha(1f).rotation(0f).setDuration(750)
+                .setInterpolator(new OvershootInterpolator(1.7f)).start();
+
+        ObjectAnimator pulse = ObjectAnimator.ofPropertyValuesHolder(ring,
+                PropertyValuesHolder.ofFloat("scaleX", 1f, 1.55f),
+                PropertyValuesHolder.ofFloat("scaleY", 1f, 1.55f),
+                PropertyValuesHolder.ofFloat("alpha", 0.55f, 0f));
+        pulse.setDuration(1300);
+        pulse.setStartDelay(600);
+        pulse.setRepeatCount(ValueAnimator.INFINITE);
+        pulse.start();
+
+        for (int i = 0; i < dots.getChildCount(); i++) {
+            ObjectAnimator a = ObjectAnimator.ofPropertyValuesHolder(dots.getChildAt(i),
+                    PropertyValuesHolder.ofFloat("alpha", 0.35f, 1f),
+                    PropertyValuesHolder.ofFloat("scaleX", 1f, 1.35f),
+                    PropertyValuesHolder.ofFloat("scaleY", 1f, 1.35f));
+            a.setDuration(420);
+            a.setStartDelay(800 + i * 160);
+            a.setRepeatMode(ValueAnimator.REVERSE);
+            a.setRepeatCount(ValueAnimator.INFINITE);
+            a.start();
+        }
+        // ধীর নেটে সর্বোচ্চ ৬ সেকেন্ড
+        ui.postDelayed(new Runnable() { public void run() { pageReady = true; maybeHideSplash(); } }, 6000);
+    }
+
+    private void maybeHideSplash() {
+        if (splashGone || !pageReady) return;
+        long left = 1700 - (System.currentTimeMillis() - splashStart);
+        if (left > 0) {
+            ui.postDelayed(new Runnable() { public void run() { maybeHideSplash(); } }, left);
+            return;
+        }
+        splashGone = true;
+        splash.animate().alpha(0f).scaleX(1.06f).scaleY(1.06f).setDuration(320)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override public void onAnimationEnd(Animator a) {
+                        ((ViewGroup) splash.getParent()).removeView(splash);
+                        lightNav();
+                        ui.postDelayed(new Runnable() { public void run() { askNotify(); } }, 400);
+                    }
+                }).start();
+    }
+
+    // ------------------------------------------------------------------ offline
+
+    private View buildOffline() {
+        LinearLayout v = new LinearLayout(this);
+        v.setOrientation(LinearLayout.VERTICAL);
+        v.setGravity(Gravity.CENTER);
+        v.setBackgroundColor(Color.WHITE);
+        v.setPadding(dp(32), 0, dp(32), 0);
+        v.setClickable(true);
+
+        ImageView img = new ImageView(this);
+        img.setImageResource(R.drawable.splash_logo);
+        img.setAlpha(0.9f);
+        v.addView(img, new LinearLayout.LayoutParams(dp(96), dp(96)));
+
+        TextView t = new TextView(this);
+        t.setText("ইন্টারনেট সংযোগ নেই");
+        t.setTag("et");
+        t.setTextColor(0xFF0F172A);
+        t.setTextSize(20);
+        t.setTypeface(Typeface.DEFAULT_BOLD);
+        t.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(-2, -2);
+        tp.topMargin = dp(18);
+        v.addView(t, tp);
+
+        TextView s = new TextView(this);
+        s.setText("মোবাইল ডেটা বা ওয়াই-ফাই চালু করে আবার চেষ্টা করুন");
+        s.setTag("es");
+        s.setTextColor(0xFF64748B);
+        s.setTextSize(14);
+        s.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-2, -2);
+        sp.topMargin = dp(6);
+        v.addView(s, sp);
+
+        TextView b = new TextView(this);
+        b.setText("আবার চেষ্টা করুন");
+        b.setTextColor(Color.WHITE);
+        b.setTextSize(16);
+        b.setTypeface(Typeface.DEFAULT_BOLD);
+        b.setGravity(Gravity.CENTER);
+        b.setPadding(dp(28), dp(13), dp(28), dp(13));
+        GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{TEAL, 0xFF22B49C});
+        bg.setCornerRadius(dp(28));
+        b.setBackground(bg);
+        b.setElevation(dp(4));
+        b.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(final View x) {
+                x.animate().scaleX(0.94f).scaleY(0.94f).setDuration(90).withEndAction(new Runnable() {
+                    public void run() {
+                        x.animate().scaleX(1f).scaleY(1f).setDuration(120).start();
+                        autoRetry = 0;
+                        retry();
+                    }
+                }).start();
+            }
+        });
+        b.setTag("retry");
+        LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(-2, -2);
+        bp.topMargin = dp(26);
+        v.addView(b, bp);
+        return v;
+    }
+
+    // ------------------------------------------------------------------ notifications
+
+    /** প্রথমবার খুললে একবার: আমরা সরকারি প্রতিষ্ঠান নই, তথ্যের উৎস কী (Google Play নীতি) */
+    private void showDisclaimer() {
+        if (isFinishing()) return;
+        final SharedPreferences p = getSharedPreferences("cc", MODE_PRIVATE);
+        if (p.getBoolean("disc_ok", false)) return;
+        new AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog_Alert)
+                .setTitle("গুরুত্বপূর্ণ তথ্য")
+                .setMessage("চাকরি সার্কুলার কোনো সরকারি প্রতিষ্ঠান নয় এবং কোনো সরকারি সংস্থার সাথে যুক্ত নয়।\n\n"
+                        + "সব বিজ্ঞপ্তি সংশ্লিষ্ট প্রতিষ্ঠানের অফিসিয়াল ওয়েবসাইট, সরকারি গেজেট ও জাতীয় পত্রিকায় "
+                        + "প্রকাশিত বিজ্ঞপ্তি থেকে নেওয়া। প্রতিটি পোস্টে মূল উৎসের লিংক আছে।\n\n"
+                        + "আবেদনের আগে অবশ্যই মূল বিজ্ঞপ্তি মিলিয়ে নিন।")
+                .setCancelable(false)
+                .setPositiveButton("বুঝেছি", new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int w) {
+                        p.edit().putBoolean("disc_ok", true).apply();
+                    }
+                })
+                .setNeutralButton("বিস্তারিত", new DialogInterface.OnClickListener() {
+                    @Override public void onClick(DialogInterface d, int w) {
+                        p.edit().putBoolean("disc_ok", true).apply();
+                        web.loadUrl("https://" + HOST + "/disclaimer");
+                    }
+                })
+                .show();
+    }
+
+    /** অ্যাপে ঢুকেই প্রথমে নোটিফিকেশনের অনুমতি (Android 13+) — একবার, না দিলে ৩ দিন পর আরেকবার; তারপর disclaimer */
+    private void askNotify() {
+        if (isFinishing()) return;
+        String perm = "android.permission.POST_NOTIFICATIONS";
+        if (Build.VERSION.SDK_INT < 33 || checkSelfPermission(perm) == PackageManager.PERMISSION_GRANTED) { showDisclaimer(); return; }
+        SharedPreferences p = getSharedPreferences("cc", MODE_PRIVATE);
+        int n = p.getInt("ask_n", 0);
+        long last = p.getLong("ask_t", 0);
+        if (n >= 2 || (n == 1 && System.currentTimeMillis() - last < 3L * 86400000L)) { showDisclaimer(); return; }
+        p.edit().putInt("ask_n", n + 1).putLong("ask_t", System.currentTimeMillis()).apply();
+        requestPermissions(new String[]{perm}, REQ_NOTIFY);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int req, String[] perms, int[] res) {
+        super.onRequestPermissionsResult(req, perms, res);
+        if (req == REQ_NOTIFY) ui.postDelayed(new Runnable() { public void run() { showDisclaimer(); } }, 500);
+    }
+
+    // ------------------------------------------------------------------ Firebase
+
+    /** সাইট থেকে Firebase-এর তথ্য এনে জমা রাখা ও চালু করা (পেছনের থ্রেডে) */
+    static void loadConfig(Context c) {
+        SharedPreferences sp = c.getSharedPreferences("cc", MODE_PRIVATE);
+        HttpURLConnection h = null;
+        try {
+            h = (HttpURLConnection) new URL("https://" + HOST + "/api/app-config").openConnection();
+            h.setConnectTimeout(12000);
+            h.setReadTimeout(12000);
+            h.setUseCaches(false);
+            h.setRequestProperty("User-Agent", UA);
+            if (h.getResponseCode() == 200) {
+                InputStream in = h.getInputStream();
+                ByteArrayOutputStream buf = new ByteArrayOutputStream();
+                byte[] b = new byte[4096];
+                for (int n; (n = in.read(b)) > 0; ) buf.write(b, 0, n);
+                in.close();
+                JSONObject o = new JSONObject(buf.toString("UTF-8"));
+                JSONObject f = o.optJSONObject("fcm");
+                sp.edit().putString("fcm", f == null ? "" : f.toString())
+                        .putString("topic", f == null ? "jobs" : f.optString("topic", "jobs")).apply();
+            }
+        } catch (Exception ignored) {
+        } finally {
+            if (h != null) h.disconnect();
+        }
+        if (App.initFirebase(c)) subscribe(c);
+        else fallback(c);
+    }
+
+    /** "jobs" টপিকে যুক্ত — নতুন খবর এলে সার্ভার একবারেই সবার কাছে পাঠায় */
+    static void subscribe(final Context c) {
+        try {
+            if (!App.initFirebase(c)) return;
+            String topic = c.getSharedPreferences("cc", MODE_PRIVATE).getString("topic", "jobs");
+            FirebaseMessaging.getInstance().subscribeToTopic(topic).addOnCompleteListener(t -> {
+                if (t.isSuccessful()) FeedJob.cancel(c);     // Firebase চলছে — বিকল্প চেক লাগবে না
+                else fallback(c);
+            });
+        } catch (Exception e) {
+            fallback(c);
+        }
+    }
+
+    /** Google Play services নেই বা Firebase চালু হয়নি — বিকল্প ১৫ মিনিটের চেক */
+    private static void fallback(final Context c) {
+        FeedJob.schedule(c);
+        new Thread(new Runnable() { public void run() { FeedJob.poll(c); } }).start();
+    }
+
+    private int dp(float v) { return Math.round(v * getResources().getDisplayMetrics().density); }
+}

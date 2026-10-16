@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- নতুন চাকরির খবরের নোটিফিকেশন (Android 13+ এ অনুমতি চাওয়া হয়) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Google Play services না থাকা ফোনে বিকল্প চেক রিস্টার্টের পরেও চালু থাকে -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <application
+        android:name=".App"
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:theme="@style/AppTheme"
+        android:allowBackup="true"
+        android:supportsRtl="false"
+        android:usesCleartextTraffic="false">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- ফেসবুক/মেসেঞ্জারে শেয়ার করা সাইটের লিংক অ্যাপেই খুলবে -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="cakricircular.com" />
+                <data android:scheme="https" android:host="www.cakricircular.com" />
+            </intent-filter>
+        </activity>
+
+        <!-- Firebase: অ্যাপ বন্ধ থাকলেও নোটিফিকেশন -->
+        <service
+            android:name=".FcmService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- বিকল্প: Google Play services না থাকলে ১৫ মিনিট পরপর নতুন খবর দেখা -->
+        <service
+            android:name=".FeedJob"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false" />
+
+        <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/brand" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="jobs" />
+    </application>
+</manifest>
