@@ -1,7 +1,7 @@
-total 976
-drwxr-xr-x 2 runner runner   4096 Oct 16 18:17 .
-drwxr-xr-x 6 runner runner   4096 Oct 16 18:17 ..
--rw-r--r-- 1 runner runner 616144 Oct 16 18:19 app-release-unsigned.aab
--rw-r--r-- 1 runner runner 369499 Oct 16 18:19 app-release-unsigned.apk
--rw-r--r-- 1 runner runner      0 Oct 16 18:19 info.txt
-source: a8f5cbbe8b125c2742541b08ddc1bbc0aab69dfa
+total 984
+drwxr-xr-x 2 runner runner   4096 Oct 16 18:43 .
+drwxr-xr-x 6 runner runner   4096 Oct 16 18:43 ..
+-rw-r--r-- 1 runner runner 622149 Oct 16 18:44 app-release-unsigned.aab
+-rw-r--r-- 1 runner runner 374727 Oct 16 18:44 app-release-unsigned.apk
+-rw-r--r-- 1 runner runner      0 Oct 16 18:44 info.txt
+source: 8975f99e0d9325f85c3f100a55c367a1b87bacb8
