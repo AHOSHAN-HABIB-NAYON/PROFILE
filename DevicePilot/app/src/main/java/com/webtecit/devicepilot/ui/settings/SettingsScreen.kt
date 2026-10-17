@@ -85,6 +85,8 @@ fun SettingsScreen(navigate: (String) -> Unit) {
 
     ScreenList {
         item { com.webtecit.devicepilot.brand.DeveloperCard() }
+        item { SectionTitle(stringResource(R.string.settings_security)) }
+        item { AppLockCard(s.appLockEnabled, onChange = { scope.launch { c.settings.setAppLock(it) } }) }
         item { SectionTitle(stringResource(R.string.settings_appearance)) }
         item {
             DpCard {
@@ -208,4 +210,37 @@ fun LicensesDialog(onDismiss: () -> Unit) {
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
     )
+}
+
+
+@Composable
+private fun AppLockCard(enabled: Boolean, onChange: (Boolean) -> Unit) {
+    val context = LocalContext.current
+    val activity = context as? androidx.fragment.app.FragmentActivity
+    val availability = remember { com.webtecit.devicepilot.security.AppLock.availability(context) }
+    val ready = availability == com.webtecit.devicepilot.security.LockAvailability.READY
+    val title = stringResource(R.string.lock_prompt_title)
+    val subtitle = stringResource(R.string.lock_confirm_subtitle)
+    DpCard {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.lock_setting_title), style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(R.string.lock_setting_sub), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(checked = enabled && ready, enabled = ready, onCheckedChange = { on ->
+                // Turning the lock on or off always requires a successful unlock first.
+                if (activity != null) com.webtecit.devicepilot.security.AppLock.authenticate(activity, title, subtitle,
+                    onSuccess = { onChange(on) })
+            })
+        }
+        if (!ready) {
+            Text(stringResource(R.string.lock_unavailable), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error)
+            TextButton(onClick = {
+                SystemSettings.open(context, com.webtecit.devicepilot.security.AppLock.enrollIntent(),
+                    android.content.Intent(android.provider.Settings.ACTION_SECURITY_SETTINGS))
+            }) { Text(stringResource(R.string.lock_set_up_screen_lock)) }
+        }
+    }
 }

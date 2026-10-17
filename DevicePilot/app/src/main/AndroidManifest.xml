@@ -59,6 +59,22 @@
             </intent-filter>
         </service>
 
+        <!-- Device admin: only becomes active if the user makes DevicePilot the device owner
+             (one-time adb command) to enable real hide/unhide in App Hider. -->
+        <receiver
+            android:name=".hider.DevicePilotAdminReceiver"
+            android:description="@string/admin_description"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name=".data.install.InstallResultReceiver"
             android:exported="false" />

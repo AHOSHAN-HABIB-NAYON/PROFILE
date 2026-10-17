@@ -102,11 +102,12 @@ object Routes {
     const val PERMISSIONS = "permissions"
     const val DISCLAIMER = "disclaimer"
     const val DEVICE_INFO = "device"
+    const val HIDER = "hider"
 
     fun appDetails(pkg: String) = "app/$pkg"
 
     val all = setOf(HOME, APPS, NETWORK, TEMPERATURE, OPTIMIZE, INSTALL, UNINSTALL, APKS, FIREWALL, BATTERY,
-        STORAGE, MEMORY, GUIDE, SETTINGS, ABOUT, PRIVACY, RUNNING, PERMISSIONS, DISCLAIMER, DEVICE_INFO)
+        STORAGE, MEMORY, GUIDE, SETTINGS, ABOUT, PRIVACY, RUNNING, PERMISSIONS, DISCLAIMER, DEVICE_INFO, HIDER)
 }
 
 private data class Tab(val route: String, val label: Int, val icon: ImageVector, val selectedIcon: ImageVector)
@@ -122,7 +123,7 @@ private val tabs = listOf(
 private fun tabFor(route: String?): String? = when (route) {
     null -> null
     Routes.HOME, Routes.BATTERY, Routes.STORAGE, Routes.MEMORY, Routes.RUNNING, Routes.DEVICE_INFO -> Routes.HOME
-    Routes.APPS, Routes.APP_DETAILS, Routes.INSTALL, Routes.UNINSTALL, Routes.APKS -> Routes.APPS
+    Routes.APPS, Routes.APP_DETAILS, Routes.INSTALL, Routes.UNINSTALL, Routes.APKS, Routes.HIDER -> Routes.APPS
     Routes.NETWORK, Routes.FIREWALL -> Routes.NETWORK
     Routes.TEMPERATURE -> Routes.TEMPERATURE
     Routes.OPTIMIZE, Routes.GUIDE -> Routes.OPTIMIZE
@@ -150,6 +151,7 @@ private fun titleFor(route: String?): Int = when (route) {
     Routes.PERMISSIONS -> R.string.title_permissions
     Routes.DISCLAIMER -> R.string.title_disclaimer
     Routes.DEVICE_INFO -> R.string.title_device_info
+    Routes.HIDER -> R.string.title_hider
     else -> R.string.app_name
 }
 
@@ -171,6 +173,8 @@ fun DevicePilotRoot(
     container: AppContainer,
     initialRoute: String?,
     onRouteConsumed: () -> Unit,
+    locked: Boolean = false,
+    onUnlocked: () -> Unit = {},
 ) {
     val settings by container.settings.settings.collectAsStateWithLifecycle(initialValue = null)
     val s = settings
@@ -184,7 +188,10 @@ fun DevicePilotRoot(
                         val scope = rememberCoroutineScope()
                         OnboardingScreen(onFinish = { scope.launch { container.settings.setOnboardingDone() } })
                     }
-                    else -> MainScaffold(initialRoute, onRouteConsumed, s, container)
+                    else -> androidx.compose.foundation.layout.Box {
+                        MainScaffold(initialRoute, onRouteConsumed, s, container)
+                        if (locked) com.webtecit.devicepilot.security.LockScreen(onUnlocked)
+                    }
                 }
             }
         }
@@ -317,6 +324,7 @@ private fun MainScaffold(
                     if (!nav.popBackStack()) nav.navigate(Routes.HOME)
                 })
             }
+            composable(Routes.HIDER) { com.webtecit.devicepilot.ui.hider.AppHiderScreen() }
             composable(Routes.DEVICE_INFO) { com.webtecit.devicepilot.ui.device.DeviceInfoScreen() }
             composable(Routes.DISCLAIMER) { com.webtecit.devicepilot.ui.settings.DisclaimerScreen(go) }
         }

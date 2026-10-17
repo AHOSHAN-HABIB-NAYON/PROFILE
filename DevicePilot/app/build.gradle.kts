@@ -91,6 +91,7 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.profileinstaller)
+    implementation(libs.androidx.biometric)
     implementation(libs.kotlinx.coroutines.android)
 
     testImplementation(libs.junit)

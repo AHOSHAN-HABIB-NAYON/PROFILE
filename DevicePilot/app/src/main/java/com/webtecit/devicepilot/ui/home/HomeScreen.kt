@@ -29,6 +29,7 @@ import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Radar
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.SdStorage
 import androidx.compose.material.icons.outlined.Speed
@@ -256,7 +257,7 @@ fun HomeScreen(navigate: (String) -> Unit) {
                     QuickAction(Icons.Outlined.Security, R.string.qa_firewall) { navigate(Routes.FIREWALL) },
                     QuickAction(Icons.Outlined.CleaningServices, R.string.qa_cleanup) { navigate(Routes.MEMORY) },
                     QuickAction(Icons.Outlined.MenuBook, R.string.qa_guide) { navigate(Routes.GUIDE) },
-                    QuickAction(Icons.Outlined.DeveloperMode, R.string.qa_developer) { SystemSettings.developerOptions(context) },
+                    QuickAction(Icons.Outlined.VisibilityOff, R.string.qa_hider) { navigate(Routes.HIDER) },
                 )
                 actions.chunked(4).forEach { row ->
                     Row(Modifier.fillMaxWidth()) {

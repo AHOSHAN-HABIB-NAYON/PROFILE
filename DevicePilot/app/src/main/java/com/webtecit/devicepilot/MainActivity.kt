@@ -18,6 +18,8 @@ import com.webtecit.devicepilot.firewall.FirewallPhase
 import com.webtecit.devicepilot.firewall.FirewallState
 import android.os.Build
 import com.webtecit.devicepilot.brand.Attribution
+import com.webtecit.devicepilot.security.AppLock
+import com.webtecit.devicepilot.security.LockAvailability
 import com.webtecit.devicepilot.brand.TamperedScreen
 import com.webtecit.devicepilot.ui.DevicePilotRoot
 import com.webtecit.devicepilot.ui.theme.DevicePilotTheme
@@ -27,6 +29,9 @@ class MainActivity : AppCompatActivity() {
 
     private var pendingRoute by mutableStateOf<String?>(null)
     private var ready = false
+    private var locked by mutableStateOf(false)
+    private var lockEnabled = false
+    private var stoppedAt = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splash = installSplashScreen()
@@ -68,7 +73,9 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             val s = container.settings.current()
-            // Settings (theme, onboarding) are loaded: the first frame can be drawn.
+            lockEnabled = s.appLockEnabled
+            locked = shouldLock()
+            // Settings (theme, onboarding, lock) are loaded: the first frame can be drawn.
             ready = true
             // Resume the firewall if the user left it on and consent is still valid.
             if (s.firewallWanted && s.firewallRules.isNotEmpty() &&
@@ -79,11 +86,17 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        lifecycleScope.launch {
+            container.settings.settings.collect { lockEnabled = it.appLockEnabled }
+        }
+
         setContent {
             DevicePilotRoot(
                 container = container,
                 initialRoute = pendingRoute,
                 onRouteConsumed = { pendingRoute = null },
+                locked = locked,
+                onUnlocked = { locked = false },
             )
         }
     }
@@ -107,6 +120,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun shouldLock(): Boolean =
+        lockEnabled && AppLock.availability(this) == LockAvailability.READY
+
+    override fun onStart() {
+        super.onStart()
+        // Re-lock after the app has been in the background for more than 30 seconds.
+        if (stoppedAt > 0 && System.currentTimeMillis() - stoppedAt > RELOCK_AFTER_MS && shouldLock()) locked = true
+    }
+
+    override fun onStop() {
+        super.onStop()
+        stoppedAt = System.currentTimeMillis()
+    }
+
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         intent.getStringExtra(EXTRA_ROUTE)?.let { pendingRoute = it }
@@ -114,5 +141,6 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_ROUTE = "com.webtecit.devicepilot.ROUTE"
+        private const val RELOCK_AFTER_MS = 30_000L
     }
 }

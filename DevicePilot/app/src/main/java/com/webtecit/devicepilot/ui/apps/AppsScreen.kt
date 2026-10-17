@@ -17,6 +17,8 @@ import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.FolderZip
 import androidx.compose.material.icons.outlined.InstallMobile
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.VisibilityOff
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
@@ -75,6 +77,8 @@ fun AppsScreen(navigate: (String) -> Unit) {
                 ShortcutButton(stringResource(R.string.apps_uninstall), Icons.Outlined.DeleteSweep, Modifier.weight(1f)) { navigate(Routes.UNINSTALL) }
                 ShortcutButton(stringResource(R.string.apps_apk_files), Icons.Outlined.FolderZip, Modifier.weight(1f)) { navigate(Routes.APKS) }
             }
+            Spacer(Modifier.height(8.dp))
+            ShortcutButton(stringResource(R.string.title_hider), Icons.Outlined.VisibilityOff, Modifier.fillMaxWidth()) { navigate(Routes.HIDER) }
         }
         if (!ui.usageAccess) item {
             PermissionCard(

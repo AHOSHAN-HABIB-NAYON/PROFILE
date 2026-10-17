@@ -16,6 +16,7 @@ class AppContainer(context: Context) {
     val monitor = DeviceMonitor(context)
     val apps = AppsRepository(context)
     val usage = UsageRepository(context, apps)
+    val hider = com.webtecit.devicepilot.hider.AppHider(context)
     val details = com.webtecit.devicepilot.data.DeviceDetailsReader(context)
     val running = com.webtecit.devicepilot.data.RunningAppsRepository(context, apps)
     val apkInspector = ApkInspector(context)

@@ -37,7 +37,7 @@ class NavigationTest {
         scenario = androidx.test.core.app.ActivityScenario.launch(MainActivity::class.java)
         rule.waitUntil(10_000) {
             rule.onAllNodesWithText("Skip").fetchSemanticsNodes().isNotEmpty() ||
-                rule.onAllNodesWithText("Performance").fetchSemanticsNodes().isNotEmpty()
+                rule.onAllNodesWithText("Your device").fetchSemanticsNodes().isNotEmpty()
         }
         if (rule.onAllNodesWithText("Skip").fetchSemanticsNodes().isNotEmpty()) {
             rule.onNodeWithText("Skip").performClick()
@@ -49,12 +49,12 @@ class NavigationTest {
         // First start: the permission setup screen opens; it can be skipped.
         rule.waitUntil(10_000) {
             rule.onAllNodesWithText("Skip for now").fetchSemanticsNodes().isNotEmpty() ||
-                rule.onAllNodesWithText("Performance").fetchSemanticsNodes().isNotEmpty()
+                rule.onAllNodesWithText("Your device").fetchSemanticsNodes().isNotEmpty()
         }
         if (rule.onAllNodesWithText("Skip for now").fetchSemanticsNodes().isNotEmpty()) {
             rule.onNodeWithText("Skip for now").performScrollTo().performClick()
         }
-        rule.waitUntil(10_000) { rule.onAllNodesWithText("Performance").fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(10_000) { rule.onAllNodesWithText("Your device").fetchSemanticsNodes().isNotEmpty() }
     }
 
     private fun openTab(label: String, expectTitle: String) {
@@ -67,12 +67,12 @@ class NavigationTest {
         openTab("Network", "Network Usage")
         openTab("Temperature", "Android thermal status")
         openTab("Optimize", "Scan & optimize")
-        openTab("Home", "Performance")
+        openTab("Home", "Your device")
     }
 
     @Test fun opensSettingsAndAbout() {
         rule.onNodeWithContentDescriptionSafe("Settings")
-        rule.waitUntil(5_000) { rule.onAllNodesWithText("Appearance").fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(5_000) { rule.onAllNodesWithText("Designed & developed by").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithContentDescriptionSafe("About")
         rule.waitUntil(5_000) { rule.onAllNodesWithText("MD. AHOSHAN HABIB NAYON").fetchSemanticsNodes().isNotEmpty() }
     }
