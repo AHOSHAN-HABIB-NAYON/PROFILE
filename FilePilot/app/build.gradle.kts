@@ -65,7 +65,7 @@ android {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
     lint {
-        abortOnError = false
+        abortOnError = true
         textReport = true
         textOutput = file("build/reports/lint-results.txt")
         checkDependencies = false
