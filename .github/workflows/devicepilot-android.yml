@@ -23,6 +23,8 @@ jobs:
     name: Build debug APK + unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -46,6 +48,20 @@ jobs:
         with:
           name: DevicePilot-release-apk
           path: DevicePilot/app/build/outputs/apk/release/*.apk
+      - name: Prepare direct-download APK
+        run: cp app/build/outputs/apk/release/app-release.apk DevicePilot.apk
+      - name: Publish test build (direct download link)
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: devicepilot-test
+          name: DevicePilot test build
+          prerelease: true
+          files: DevicePilot/DevicePilot.apk
+          body: |
+            Latest DevicePilot test build (optimized release APK, signed with a test key — not for Play Store upload).
+            Direct download: https://github.com/${{ github.repository }}/releases/download/devicepilot-test/DevicePilot.apk
+            Built from commit ${{ github.sha }}.
       - name: Upload unit test reports
         if: always()
         uses: actions/upload-artifact@v4
