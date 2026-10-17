@@ -104,6 +104,7 @@ fun PermissionsScreen() {
                     if (access.audio) add("audio")
                 }
                 val status = when {
+                    access.limitedMedia -> "Selected items only"
                     access.allMedia -> "Allowed"
                     parts.isNotEmpty() -> "Partly allowed"
                     else -> "Not allowed"
@@ -112,17 +113,19 @@ fun PermissionsScreen() {
                     icon = Icons.Rounded.PermMedia,
                     title = "Photos, videos & audio",
                     status = status,
-                    ok = access.allMedia,
+                    ok = access.allMedia && !access.limitedMedia,
                     detail = if (access.fullAccess) {
                         "Included with full file management."
+                    } else if (access.limitedMedia) {
+                        "You allowed only selected photos and videos. Tap Allow to choose more or to allow all."
                     } else if (parts.isNotEmpty()) {
                         "Read-only access to ${parts.joinToString(", ")}."
                     } else {
                         "Read-only access to your media library for the Images, Videos and Audio categories."
                     },
-                    primaryLabel = if (access.allMedia) "Manage in Settings" else "Allow",
+                    primaryLabel = if (access.allMedia && !access.limitedMedia) "Manage in Settings" else "Allow",
                     onPrimary = {
-                        if (access.allMedia) StorageAccess.openAppSettings(context) else requester.requestMediaAccess()
+                        if (access.allMedia && !access.limitedMedia) StorageAccess.openAppSettings(context) else requester.requestMediaAccess()
                     },
                 )
             }

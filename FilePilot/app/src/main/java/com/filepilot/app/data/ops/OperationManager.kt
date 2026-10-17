@@ -224,7 +224,7 @@ class OperationManager(
             }
             item.source == SourceKind.SAF && dest is Location.Saf && item.isDirectory && item.treeUri == dest.treeUri -> {
                 if (item.documentId == dest.documentId) throw FileAccessException("Can't place a folder inside itself")
-                val inside = runCatching {
+                val inside = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q && runCatching {
                     DocumentsContract.isChildDocument(
                         repo.resolver, item.uri, repo.saf.documentUri(dest.treeUri, dest.documentId),
                     )

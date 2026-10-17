@@ -84,7 +84,7 @@ fun TextViewerScreen(item: FileItem) {
                     val decoder = Charsets.UTF_8.newDecoder()
                         .onMalformedInput(CodingErrorAction.REPLACE)
                         .onUnmappableCharacter(CodingErrorAction.REPLACE)
-                    val text = decoder.decode(ByteBuffer.wrap(bytes)).toString().removePrefix("﻿")
+                    val text = decoder.decode(ByteBuffer.wrap(bytes)).toString().removePrefix(BYTE_ORDER_MARK)
                     val lines = text.replace("\r\n", "\n").split('\n')
                     TextLoad.Ready(lines, lines.maxOfOrNull { it.length } ?: 0)
                 }
@@ -179,3 +179,6 @@ private fun TextBody(text: TextLoad.Ready, wrap: Boolean, numbers: Boolean) {
         }
     }
 }
+
+/** UTF-8 files sometimes start with a byte-order mark; it is not part of the text. */
+private const val BYTE_ORDER_MARK = "\uFEFF"

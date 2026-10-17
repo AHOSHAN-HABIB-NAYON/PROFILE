@@ -104,7 +104,9 @@ fun rememberAccessRequester(onOutcome: (AccessOutcome) -> Unit = {}): AccessRequ
             },
             requestMediaImpl = {
                 val activity = context.findActivity()
-                if (activity != null && StorageAccess.isPermanentlyDenied(activity, StorageAccess.mediaPermissions, memory.mediaRequested)) {
+                // With "selected photos only", asking again reopens the system photo picker.
+                val limited = container.access.value.limitedMedia
+                if (!limited && activity != null && StorageAccess.isPermanentlyDenied(activity, StorageAccess.mediaPermissions, memory.mediaRequested)) {
                     StorageAccess.openAppSettings(context)
                     callback(AccessOutcome.SENT_TO_SETTINGS)
                 } else {

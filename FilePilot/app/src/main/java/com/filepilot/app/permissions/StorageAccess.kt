@@ -29,6 +29,8 @@ data class AccessState(
     val audio: Boolean = false,
     /** Number of folders granted through the system folder picker. */
     val pickedFolderCount: Int = 0,
+    /** Android 14+: only photos and videos the user selected are visible. */
+    val limitedMedia: Boolean = false,
 ) {
     val anyMedia: Boolean get() = images || video || audio
     val allMedia: Boolean get() = images && video && audio
@@ -46,7 +48,7 @@ object StorageAccess {
         val sdk = Build.VERSION.SDK_INT
         fun granted(p: String) = ContextCompat.checkSelfPermission(context, p) == PackageManager.PERMISSION_GRANTED
 
-        val allFiles = sdk >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()
+        val allFiles = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()
         val legacyRead = sdk < Build.VERSION_CODES.TIRAMISU && granted(Manifest.permission.READ_EXTERNAL_STORAGE)
         val legacyWrite = sdk < Build.VERSION_CODES.R && granted(Manifest.permission.WRITE_EXTERNAL_STORAGE)
         val legacyFull = sdk < Build.VERSION_CODES.R && legacyRead && legacyWrite
@@ -55,10 +57,17 @@ object StorageAccess {
         val images: Boolean
         val video: Boolean
         val audio: Boolean
-        if (sdk >= Build.VERSION_CODES.TIRAMISU) {
-            images = full || granted(Manifest.permission.READ_MEDIA_IMAGES)
-            video = full || granted(Manifest.permission.READ_MEDIA_VIDEO)
+        var limited = false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Android 14+: the user may allow only selected photos and videos.
+            val selectedOnly = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE &&
+                granted(Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED)
+            val fullImages = granted(Manifest.permission.READ_MEDIA_IMAGES)
+            val fullVideo = granted(Manifest.permission.READ_MEDIA_VIDEO)
+            images = full || fullImages || selectedOnly
+            video = full || fullVideo || selectedOnly
             audio = full || granted(Manifest.permission.READ_MEDIA_AUDIO)
+            limited = !full && selectedOnly && !(fullImages && fullVideo)
         } else {
             images = full || legacyRead
             video = images
@@ -72,6 +81,7 @@ object StorageAccess {
             video = video,
             audio = audio,
             pickedFolderCount = pickedFolderCount,
+            limitedMedia = limited,
         )
     }
 
@@ -83,7 +93,14 @@ object StorageAccess {
 
     /** Runtime permissions that give read-only access to photos, videos and audio. */
     val mediaPermissions: Array<String>
-        get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            arrayOf(
+                Manifest.permission.READ_MEDIA_IMAGES,
+                Manifest.permission.READ_MEDIA_VIDEO,
+                Manifest.permission.READ_MEDIA_AUDIO,
+                Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED,
+            )
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             arrayOf(
                 Manifest.permission.READ_MEDIA_IMAGES,
                 Manifest.permission.READ_MEDIA_VIDEO,
