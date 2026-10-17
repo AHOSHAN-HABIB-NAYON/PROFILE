@@ -15,7 +15,9 @@ import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material.icons.outlined.NetworkCheck
 import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material.icons.outlined.Settings
@@ -96,11 +98,15 @@ object Routes {
     const val SETTINGS = "settings"
     const val ABOUT = "about"
     const val PRIVACY = "privacy"
+    const val RUNNING = "running"
+    const val PERMISSIONS = "permissions"
+    const val DISCLAIMER = "disclaimer"
+    const val DEVICE_INFO = "device"
 
     fun appDetails(pkg: String) = "app/$pkg"
 
     val all = setOf(HOME, APPS, NETWORK, TEMPERATURE, OPTIMIZE, INSTALL, UNINSTALL, APKS, FIREWALL, BATTERY,
-        STORAGE, MEMORY, GUIDE, SETTINGS, ABOUT, PRIVACY)
+        STORAGE, MEMORY, GUIDE, SETTINGS, ABOUT, PRIVACY, RUNNING, PERMISSIONS, DISCLAIMER, DEVICE_INFO)
 }
 
 private data class Tab(val route: String, val label: Int, val icon: ImageVector, val selectedIcon: ImageVector)
@@ -115,7 +121,7 @@ private val tabs = listOf(
 
 private fun tabFor(route: String?): String? = when (route) {
     null -> null
-    Routes.HOME, Routes.BATTERY, Routes.STORAGE, Routes.MEMORY -> Routes.HOME
+    Routes.HOME, Routes.BATTERY, Routes.STORAGE, Routes.MEMORY, Routes.RUNNING, Routes.DEVICE_INFO -> Routes.HOME
     Routes.APPS, Routes.APP_DETAILS, Routes.INSTALL, Routes.UNINSTALL, Routes.APKS -> Routes.APPS
     Routes.NETWORK, Routes.FIREWALL -> Routes.NETWORK
     Routes.TEMPERATURE -> Routes.TEMPERATURE
@@ -140,10 +146,19 @@ private fun titleFor(route: String?): Int = when (route) {
     Routes.SETTINGS -> R.string.title_settings
     Routes.ABOUT -> R.string.title_about
     Routes.PRIVACY -> R.string.title_privacy
+    Routes.RUNNING -> R.string.title_running
+    Routes.PERMISSIONS -> R.string.title_permissions
+    Routes.DISCLAIMER -> R.string.title_disclaimer
+    Routes.DEVICE_INFO -> R.string.title_device_info
     else -> R.string.app_name
 }
 
 fun NavHostController.navigateTab(route: String) {
+    if (route == Routes.HOME) {
+        // Pop everything above Home (e.g. Settings, About) so Home is always reachable.
+        if (!popBackStack(Routes.HOME, inclusive = false)) navigate(Routes.HOME) { launchSingleTop = true }
+        return
+    }
     navigate(route) {
         popUpTo(graph.startDestinationId) { saveState = true }
         launchSingleTop = true
@@ -169,7 +184,7 @@ fun DevicePilotRoot(
                         val scope = rememberCoroutineScope()
                         OnboardingScreen(onFinish = { scope.launch { container.settings.setOnboardingDone() } })
                     }
-                    else -> MainScaffold(initialRoute, onRouteConsumed)
+                    else -> MainScaffold(initialRoute, onRouteConsumed, s, container)
                 }
             }
         }
@@ -178,12 +193,24 @@ fun DevicePilotRoot(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MainScaffold(initialRoute: String?, onRouteConsumed: () -> Unit) {
+private fun MainScaffold(
+    initialRoute: String?,
+    onRouteConsumed: () -> Unit,
+    settings: com.webtecit.devicepilot.data.AppSettings,
+    container: AppContainer,
+) {
     val nav = rememberNavController()
+    val scope = rememberCoroutineScope()
+    val dark = isDarkTheme(settings.theme)
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route
     val haptics = LocalHapticFeedback.current
     val isTopLevel = tabs.any { it.route == route }
+
+    // First start after onboarding: ask for every permission the app uses.
+    LaunchedEffect(Unit) {
+        if (!settings.permissionsSetupDone) nav.navigate(Routes.PERMISSIONS) { launchSingleTop = true }
+    }
 
     LaunchedEffect(initialRoute) {
         if (initialRoute != null && initialRoute in Routes.all) {
@@ -208,6 +235,16 @@ private fun MainScaffold(initialRoute: String?, onRouteConsumed: () -> Unit) {
                     }
                 },
                 actions = {
+                    IconButton(onClick = {
+                        scope.launch {
+                            container.settings.setTheme(
+                                if (dark) com.webtecit.devicepilot.data.ThemeMode.LIGHT else com.webtecit.devicepilot.data.ThemeMode.DARK
+                            )
+                        }
+                    }) {
+                        Icon(if (dark) Icons.Outlined.LightMode else Icons.Outlined.DarkMode,
+                            stringResource(if (dark) R.string.action_light_mode else R.string.action_dark_mode))
+                    }
                     if (route != Routes.SETTINGS) IconButton(onClick = { nav.navigate(Routes.SETTINGS) { launchSingleTop = true } }) {
                         Icon(Icons.Outlined.Settings, stringResource(R.string.title_settings))
                     }
@@ -272,7 +309,16 @@ private fun MainScaffold(initialRoute: String?, onRouteConsumed: () -> Unit) {
             composable(Routes.GUIDE) { GuideScreen() }
             composable(Routes.SETTINGS) { SettingsScreen(go) }
             composable(Routes.ABOUT) { AboutScreen(go) }
-            composable(Routes.PRIVACY) { PrivacyScreen() }
+            composable(Routes.PRIVACY) { PrivacyScreen(go) }
+            composable(Routes.RUNNING) { com.webtecit.devicepilot.ui.running.RunningAppsScreen(go) }
+            composable(Routes.PERMISSIONS) {
+                com.webtecit.devicepilot.ui.permissions.PermissionsScreen(onDone = {
+                    scope.launch { container.settings.setPermissionsSetupDone() }
+                    if (!nav.popBackStack()) nav.navigate(Routes.HOME)
+                })
+            }
+            composable(Routes.DEVICE_INFO) { com.webtecit.devicepilot.ui.device.DeviceInfoScreen() }
+            composable(Routes.DISCLAIMER) { com.webtecit.devicepilot.ui.settings.DisclaimerScreen(go) }
         }
     }
 }

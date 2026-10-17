@@ -17,6 +17,8 @@ DevicePilot ("the app") is developed by **MD. AHOSHAN HABIB NAYON** (https://web
 | Device model, Android version, memory, storage, battery and thermal status | Display monitoring information and the health score | none / normal |
 | Installed app list and app details | Apps manager, uninstall and firewall rule screens | `QUERY_ALL_PACKAGES` |
 | App usage time, network usage per app, app storage sizes | Network, Apps and Optimize screens | Usage Access (you enable it) |
+| SIM state, carrier name, IMEI (Android 9 and older only) | Device details page | `READ_PHONE_STATE` (optional) |
+| Recent app activity events | Running apps page | Usage Access (you enable it) |
 | Files you pick with the system file picker | Inspect, install, share or delete APK files; review large files | granted per file by you |
 
 ## Information the app stores

@@ -34,13 +34,18 @@ jobs:
         run: ./gradlew --stacktrace testDebugUnitTest
       - name: Build debug APK
         run: ./gradlew --stacktrace assembleDebug
-      - name: Build release bundle (unsigned check)
-        run: ./gradlew --stacktrace bundleRelease
+      - name: Build optimized release APK and bundle
+        run: ./gradlew --stacktrace assembleRelease bundleRelease
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: DevicePilot-debug-apk
           path: DevicePilot/app/build/outputs/apk/debug/*.apk
+      - name: Upload optimized release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DevicePilot-release-apk
+          path: DevicePilot/app/build/outputs/apk/release/*.apk
       - name: Upload unit test reports
         if: always()
         uses: actions/upload-artifact@v4

@@ -37,6 +37,7 @@ data class AppSettings(
     val firewallRules: Map<String, AppRule> = emptyMap(),
     val firewallWanted: Boolean = false,
     val apkUris: Set<String> = emptySet(),
+    val permissionsSetupDone: Boolean = false,
 ) {
     val anyNotification: Boolean get() = notifyTemperature || notifyThermal || notifyStorage || notifyData
 }
@@ -63,6 +64,7 @@ class SettingsRepository(private val context: Context) {
         val firewallWanted = booleanPreferencesKey("firewall_wanted")
         val apkUris = stringSetPreferencesKey("apk_uris")
         val lastDataAlert = stringPreferencesKey("last_data_alert")
+        val permissionsDone = booleanPreferencesKey("permissions_setup_done")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data
@@ -85,6 +87,7 @@ class SettingsRepository(private val context: Context) {
                 firewallRules = FirewallRules.decodeAll(p[Keys.firewallRules] ?: emptySet()),
                 firewallWanted = p[Keys.firewallWanted] ?: false,
                 apkUris = p[Keys.apkUris] ?: emptySet(),
+                permissionsSetupDone = p[Keys.permissionsDone] ?: false,
             )
         }
 
@@ -102,6 +105,7 @@ class SettingsRepository(private val context: Context) {
     suspend fun setDataThresholdMb(v: Int) = context.dataStore.edit { it[Keys.dataThreshold] = v }
     suspend fun setNotifyFirewall(v: Boolean) = context.dataStore.edit { it[Keys.notifyFirewall] = v }
     suspend fun setBillingDay(v: Int) = context.dataStore.edit { it[Keys.billingDay] = v.coerceIn(1, 28) }
+    suspend fun setPermissionsSetupDone() = context.dataStore.edit { it[Keys.permissionsDone] = true }
     suspend fun setFirewallWanted(v: Boolean) = context.dataStore.edit { it[Keys.firewallWanted] = v }
 
     suspend fun setRule(rule: AppRule) = context.dataStore.edit { p ->

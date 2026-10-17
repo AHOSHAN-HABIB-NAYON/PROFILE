@@ -7,6 +7,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BatterySaver
 import androidx.compose.material.icons.outlined.Settings
@@ -49,6 +53,8 @@ import kotlinx.coroutines.flow.stateIn
 class BatteryViewModel(c: AppContainer) : ViewModel() {
     val state = combine(polling(3_000) { c.monitor.battery() }, c.settings.settings) { b, s -> b to s.temperatureUnit }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    val extras = polling(5_000) { c.details.batteryExtras(c.monitor.battery()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -58,12 +64,14 @@ fun BatteryScreen() {
     val context = LocalContext.current
     val vm: BatteryViewModel = viewModel { BatteryViewModel(c) }
     val state by vm.state.collectAsStateWithLifecycle()
+    val extras by vm.extras.collectAsStateWithLifecycle()
     val (b, unit) = state ?: return
     val na = stringResource(R.string.unavailable)
     val pct = b.percent
     val level = when { pct == null -> Level.NEUTRAL; pct <= 15 -> Level.BAD; pct <= 30 -> Level.WARN; else -> Level.GOOD }
 
     ScreenList {
+        item { extras?.let { HealthHero(b, it) } }
         item {
             DpCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -110,5 +118,59 @@ fun BatteryScreen() {
             }
         }
         item { HeroCard(R.drawable.ill_battery, stringResource(R.string.battery_lifespan_title), stringResource(R.string.battery_lifespan_text)) }
+    }
+}
+
+
+@Composable
+private fun HealthHero(b: com.webtecit.devicepilot.data.BatterySnapshot, x: com.webtecit.devicepilot.data.BatteryExtras) {
+    val na = stringResource(R.string.unavailable)
+    androidx.compose.foundation.layout.Box(
+        Modifier.fillMaxWidth().clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+            .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(androidx.compose.ui.graphics.Color(0xFF16A34A), androidx.compose.ui.graphics.Color(0xFF0B1B3F))))
+            .padding(18.dp)
+    ) {
+        androidx.compose.foundation.layout.Column {
+            Text(stringResource(R.string.bh_title), style = MaterialTheme.typography.labelLarge, color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.85f))
+            Text(stringResource(batteryHealthRes(b.health)), style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold, color = androidx.compose.ui.graphics.Color.White)
+            Spacer(Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                HeroBox(stringResource(R.string.bh_cycles), x.cycleCount?.toString() ?: "—", Modifier.weight(1f))
+                HeroBox(stringResource(R.string.bh_capacity), x.healthPercent?.let { "$it%" } ?: "—", Modifier.weight(1f))
+                HeroBox(stringResource(R.string.bh_charging_power),
+                    x.chargingPowerW?.let { String.format(java.util.Locale.US, "%.1f W", it) } ?: "—", Modifier.weight(1f))
+            }
+            Spacer(Modifier.height(10.dp))
+            HeroLine(stringResource(R.string.dd_design_capacity), x.designCapacityMah?.let { "$it mAh" } ?: na)
+            HeroLine(stringResource(R.string.dd_estimated_capacity), (x.fullCapacityMah ?: x.estimatedFullMah)?.let { "$it mAh" } ?: na)
+            HeroLine(stringResource(R.string.dd_charger_max), x.chargerMaxW?.let { String.format(java.util.Locale.US, "%.1f W", it) }
+                ?: stringResource(R.string.dd_charger_not_reported))
+            Spacer(Modifier.height(6.dp))
+            Text(
+                listOfNotNull(x.cycleSource?.let { "Cycles: $it" }, x.healthSource?.let { "Capacity: $it" })
+                    .joinToString(" · ").ifBlank { stringResource(R.string.bh_source_none) },
+                style = MaterialTheme.typography.bodySmall, color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.7f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun HeroBox(label: String, value: String, modifier: Modifier) {
+    androidx.compose.foundation.layout.Column(
+        modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp)).background(androidx.compose.ui.graphics.Color.White.copy(alpha = 0.15f)).padding(10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = androidx.compose.ui.graphics.Color.White)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.8f))
+    }
+}
+
+@Composable
+private fun HeroLine(label: String, value: String) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+        Text(label, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.8f))
+        Text(value, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.SemiBold, color = androidx.compose.ui.graphics.Color.White)
     }
 }

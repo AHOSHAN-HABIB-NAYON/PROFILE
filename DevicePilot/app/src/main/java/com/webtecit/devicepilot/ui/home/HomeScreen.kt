@@ -26,6 +26,8 @@ import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.MenuBook
+import androidx.compose.material.icons.outlined.PhoneAndroid
+import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Radar
 import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.SdStorage
@@ -166,11 +168,12 @@ fun HomeScreen(navigate: (String) -> Unit) {
     val context = LocalContext.current
 
     ScreenList {
-        item { DeviceCard(s, Modifier.entrance(0)) }
+        item { DeviceCard(s, Modifier.entrance(0).clickable { navigate(Routes.DEVICE_INFO) }) }
         item { HealthCard(s.health, Modifier.entrance(1)) }
+        item { BatteryHealthCard(navigate, Modifier.entrance(2)) }
         item { SectionTitle(stringResource(R.string.home_performance)) }
         item {
-            Row(Modifier.entrance(2), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(Modifier.entrance(3), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 MetricTile(
                     Icons.Outlined.Memory, stringResource(R.string.metric_ram),
                     "${s.memory.usedPercent}%",
@@ -247,10 +250,10 @@ fun HomeScreen(navigate: (String) -> Unit) {
             DpCard(Modifier.entrance(5), contentPadding = 8.dp) {
                 val actions = listOf(
                     QuickAction(Icons.Outlined.Radar, R.string.qa_scan) { navigate(Routes.OPTIMIZE) },
+                    QuickAction(Icons.Outlined.PhoneAndroid, R.string.qa_device_info) { navigate(Routes.DEVICE_INFO) },
+                    QuickAction(Icons.Outlined.PlayCircle, R.string.qa_running) { navigate(Routes.RUNNING) },
                     QuickAction(Icons.Outlined.Apps, R.string.qa_apps) { navigate(Routes.APPS) },
                     QuickAction(Icons.Outlined.Security, R.string.qa_firewall) { navigate(Routes.FIREWALL) },
-                    QuickAction(Icons.Outlined.DataUsage, R.string.qa_network) { navigate(Routes.NETWORK) },
-                    QuickAction(Icons.Outlined.Thermostat, R.string.qa_temperature) { navigate(Routes.TEMPERATURE) },
                     QuickAction(Icons.Outlined.CleaningServices, R.string.qa_cleanup) { navigate(Routes.MEMORY) },
                     QuickAction(Icons.Outlined.MenuBook, R.string.qa_guide) { navigate(Routes.GUIDE) },
                     QuickAction(Icons.Outlined.DeveloperMode, R.string.qa_developer) { SystemSettings.developerOptions(context) },
@@ -266,6 +269,7 @@ fun HomeScreen(navigate: (String) -> Unit) {
             NavigationShortcuts(navigate, s)
         }
         item { SourceNote(stringResource(R.string.home_sources_note)) }
+        item { com.webtecit.devicepilot.brand.DeveloperCard() }
     }
 }
 
@@ -290,7 +294,7 @@ private fun QuickActionItem(a: QuickAction, modifier: Modifier) {
 @Composable
 private fun DeviceCard(s: HomeState, modifier: Modifier) {
     val gradient = Brush.linearGradient(listOf(Color(0xFF1E6BFF), Color(0xFF0B1B3F)))
-    Box(modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(gradient).padding(16.dp)) {
+    Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).then(modifier).background(gradient).padding(16.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.home_your_device), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.75f))
@@ -393,5 +397,42 @@ private fun NavigationShortcuts(navigate: (String) -> Unit, s: HomeState) {
             s.storage?.let { stringResource(pressureRes(it.pressure)) }) { navigate(Routes.STORAGE) }
         com.webtecit.devicepilot.ui.common.NavRow(Icons.Outlined.Memory, stringResource(R.string.title_memory),
             stringResource(pressureRes(s.memory.pressure))) { navigate(Routes.MEMORY) }
+    }
+}
+
+
+/** Battery health and cycle count, shown prominently near the top of Home. */
+@Composable
+private fun BatteryHealthCard(navigate: (String) -> Unit, modifier: Modifier) {
+    val c = LocalContainer.current
+    val info by androidx.compose.runtime.produceState<Pair<com.webtecit.devicepilot.data.BatterySnapshot, com.webtecit.devicepilot.data.BatteryExtras>?>(null) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val b = c.monitor.battery(); b to c.details.batteryExtras(b)
+        }
+    }
+    val (b, x) = info ?: return
+    DpCard(modifier, onClick = { navigate(Routes.BATTERY) }) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            com.webtecit.devicepilot.ui.common.IconBadge(Icons.Outlined.BatteryChargingFull, size = 36.dp)
+            Spacer(Modifier.width(10.dp))
+            Text(stringResource(R.string.bh_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            StatusPill(stringResource(com.webtecit.devicepilot.ui.common.batteryHealthRes(b.health)),
+                if (b.health == android.os.BatteryManager.BATTERY_HEALTH_GOOD) Level.GOOD else if (b.health == null) Level.NEUTRAL else Level.WARN)
+        }
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            BigStat(stringResource(R.string.bh_cycles), x.cycleCount?.toString() ?: "—", Modifier.weight(1f))
+            BigStat(stringResource(R.string.bh_capacity), x.healthPercent?.let { "$it%" } ?: "—", Modifier.weight(1f))
+            BigStat(stringResource(R.string.bh_level), b.percent?.let { "$it%" } ?: "—", Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun BigStat(label: String, value: String, modifier: Modifier) {
+    Column(modifier.clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)).padding(10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
     }
 }

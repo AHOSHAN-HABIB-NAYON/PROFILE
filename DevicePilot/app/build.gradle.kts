@@ -16,6 +16,9 @@ android {
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
+        // Optional anti-tamper pin of the release signing certificate (SHA-256, hex, no colons).
+        val signer = (project.findProperty("expectedSignerSha256") as String?) ?: ""
+        buildConfigField("String", "EXPECTED_SIGNER_SHA256", "\"$signer\"")
     }
 
     // Release signing is read from environment variables so no secret is stored in the repo.
@@ -37,9 +40,10 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            if (System.getenv("DP_KEYSTORE_PATH") != null) {
-                signingConfig = signingConfigs.getByName("release")
-            }
+            // Without a release keystore the optimized build is signed with the debug key so it
+            // can be installed for testing. Store uploads must use the real release key.
+            signingConfig = if (System.getenv("DP_KEYSTORE_PATH") != null) signingConfigs.getByName("release")
+            else signingConfigs.getByName("debug")
         }
         debug {
             applicationIdSuffix = ".debug"
@@ -86,6 +90,7 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.profileinstaller)
     implementation(libs.kotlinx.coroutines.android)
 
     testImplementation(libs.junit)

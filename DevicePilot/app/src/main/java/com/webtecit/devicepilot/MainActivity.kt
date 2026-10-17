@@ -16,7 +16,11 @@ import androidx.lifecycle.lifecycleScope
 import com.webtecit.devicepilot.firewall.FirewallController
 import com.webtecit.devicepilot.firewall.FirewallPhase
 import com.webtecit.devicepilot.firewall.FirewallState
+import android.os.Build
+import com.webtecit.devicepilot.brand.Attribution
+import com.webtecit.devicepilot.brand.TamperedScreen
 import com.webtecit.devicepilot.ui.DevicePilotRoot
+import com.webtecit.devicepilot.ui.theme.DevicePilotTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
@@ -50,6 +54,15 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        requestHighestRefreshRate()
+
+        // Refuse to run if the developer attribution or photo was modified.
+        if (!Attribution.verify(this)) {
+            ready = true
+            setContent { DevicePilotTheme(dark = true) { TamperedScreen() } }
+            return
+        }
+
         pendingRoute = intent?.getStringExtra(EXTRA_ROUTE)
         val container = DevicePilotApp.container(this)
 
@@ -72,6 +85,25 @@ class MainActivity : AppCompatActivity() {
                 initialRoute = pendingRoute,
                 onRouteConsumed = { pendingRoute = null },
             )
+        }
+    }
+
+    /**
+     * Asks for the display's highest refresh rate (90/120/144 Hz) at the current resolution.
+     * Android may still lower it, e.g. in battery saver.
+     */
+    private fun requestHighestRefreshRate() {
+        runCatching {
+            @Suppress("DEPRECATION")
+            val d = (if (Build.VERSION.SDK_INT >= 30) this.display else windowManager.defaultDisplay) ?: return
+            val current = d.mode
+            val best = d.supportedModes
+                .filter { it.physicalWidth == current.physicalWidth && it.physicalHeight == current.physicalHeight }
+                .maxByOrNull { it.refreshRate } ?: return
+            window.attributes = window.attributes.apply {
+                preferredDisplayModeId = best.modeId
+                if (Build.VERSION.SDK_INT >= 30) preferredRefreshRate = best.refreshRate
+            }
         }
     }
 

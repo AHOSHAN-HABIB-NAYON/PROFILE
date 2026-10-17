@@ -16,6 +16,9 @@ Native Android app (Kotlin, Jetpack Compose, Material 3) for monitoring and mana
 
 | Area | What it does | Source of data |
 |---|---|---|
+| Device details | Device name, model, chipset, RAM, storage, display (resolution, Hz, size), battery (health, cycles, capacity, charging watts), SIM slots and carriers, IMEI (Android 9 and older; `*#06#` shortcut on newer), last boot time and uptime, kernel, build info, sensors | `Build`, `Settings.Global`, `TelephonyManager`/`SubscriptionManager`, `SystemClock`, `Display`, battery broadcast, sysfs where readable |
+| Running apps | Apps with active foreground services and recently active apps; close background process, internet on/off, Force stop and background restriction shortcuts | `UsageStatsManager.queryEvents`, `ActivityManager.killBackgroundProcesses` |
+| Permission setup | Shown after onboarding: asks for notifications, Usage Access, install permission and VPN one after another ("Grant all") | system dialogs / settings screens |
 | Home | Device identity, RAM, storage, battery temperature, thermal status, CPU, today's data, transparent health score, quick actions | `ActivityManager`, `StatFs`, battery broadcast, `PowerManager`, `NetworkStatsManager` |
 | Apps | Search / filter / sort installed apps, details, open, App info, notification / battery / background-data shortcuts, share store link | `PackageManager`, `UsageStatsManager`, `StorageStatsManager` |
 | Install | Pick an APK (Storage Access Framework), inspect package, version, SDK, signer SHA-256, permissions, conflicts; install through `PackageInstaller` with Android's confirmation; result verified with `PackageManager` | `PackageInstaller` |
@@ -47,6 +50,19 @@ Native Android app (Kotlin, Jetpack Compose, Material 3) for monitoring and mana
 * Regular apps cannot force-stop other apps, change their permissions, or enable Developer options / animation scales. DevicePilot opens the right settings screens instead.
 * Battery health percentage and lifespan are not shown because Android does not provide a reliable value to apps.
 
+## Developer attribution protection
+
+The developer name, website and photo (`res/raw/developer_photo.webp`) are verified at start-up against fixed SHA-256 digests (`brand/Attribution.kt`); if they are changed in a modified APK the app shows a "Modified copy" screen instead of running. Release builds are also obfuscated by R8.
+
+For stronger protection, pin your release signing certificate so copies re-signed by someone else refuse to run:
+
+```bash
+keytool -list -v -keystore devicepilot-release.jks -alias devicepilot   # copy the SHA-256 value
+./gradlew assembleRelease -PexpectedSignerSha256=AB12...   # hex, colons removed
+```
+
+No client-side check can stop every determined attacker, but together these make silent re-branding much harder.
+
 ## Build
 
 Requirements: JDK 17, Android SDK with platform 36 (Android Studio Narwhal or newer works).
@@ -59,6 +75,8 @@ cd DevicePilot
 ```
 
 The GitHub Actions workflow `.github/workflows/devicepilot-android.yml` runs unit tests, builds the debug APK and release bundle, then runs the instrumented tests on an API 34 emulator. The debug APK is uploaded as the `DevicePilot-debug-apk` artifact of each run.
+
+CI also uploads `DevicePilot-release-apk`: the R8-optimized build with baseline profiles. It is much smoother than the debug APK (debug Compose builds are not optimized). Without a release keystore it is signed with the debug key, so it installs for testing but must not be uploaded to Play.
 
 The debug build uses the application id `com.webtecit.devicepilot.debug`, so it can be installed next to a release build.
 
@@ -93,10 +111,12 @@ The debug build uses the application id `com.webtecit.devicepilot.debug`, so it 
 | `QUERY_ALL_PACKAGES` | the Apps manager lists every installed app so the user can review and uninstall it | install time; needs a Play declaration |
 | `REQUEST_INSTALL_PACKAGES` | APK installer (Android always shows its confirmation) | user enables "Install unknown apps" for DevicePilot when installing |
 | `REQUEST_DELETE_PACKAGES` | opening Android's uninstall confirmation | install time (normal) |
+| `READ_PHONE_STATE` | SIM state / carrier names on Device details (and IMEI on Android 9 and older) | permission setup or the Device details page; optional |
+| `KILL_BACKGROUND_PROCESSES` | "Close" on Running apps (Android's official request to close cached processes) | install time (normal) |
 | `POST_NOTIFICATIONS` | optional alerts (Android 13+) | only when the user turns an alert on |
 | VPN consent | firewall | Android's VPN dialog when the firewall is turned on |
 
-No location, contacts, phone, camera, microphone or broad storage permission is requested. Files are only opened through the system document picker.
+No location, contacts, camera, microphone or broad storage permission is requested. Files are only opened through the system document picker.
 
 ## Google Play readiness notes
 

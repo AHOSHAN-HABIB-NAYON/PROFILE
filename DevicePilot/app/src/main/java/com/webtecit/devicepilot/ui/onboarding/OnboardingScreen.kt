@@ -4,6 +4,11 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,13 +56,18 @@ fun OnboardingScreen(onFinish: () -> Unit) {
     val pager = rememberPagerState { pages.size }
     val scope = rememberCoroutineScope()
     val last = pager.currentPage == pages.lastIndex
+    var agreed by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    var reading by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<Int?>(null) }
     Column(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).safeDrawingPadding().padding(20.dp),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
-            if (!last) TextButton(onClick = onFinish) { Text(stringResource(R.string.action_skip)) }
+            // Skip jumps to the last page, where the Privacy Policy and Disclaimer must be accepted.
+            if (!last) TextButton(onClick = { scope.launch { pager.animateScrollToPage(pages.lastIndex) } }) {
+                Text(stringResource(R.string.action_skip))
+            }
         }
         HorizontalPager(pager, Modifier.weight(1f).fillMaxWidth()) { i ->
             val p = pages[i]
@@ -70,6 +80,21 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 8.dp))
             }
         }
+        if (last) {
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                    .clickable { agreed = !agreed }.testTag("agree").padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                androidx.compose.material3.Checkbox(agreed, { agreed = it })
+                Text(stringResource(R.string.onb_agree), style = MaterialTheme.typography.bodySmall)
+            }
+            Row {
+                TextButton(onClick = { reading = 0 }) { Text(stringResource(R.string.title_privacy)) }
+                TextButton(onClick = { reading = 1 }) { Text(stringResource(R.string.title_disclaimer)) }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 pages.indices.forEach { i ->
@@ -80,9 +105,38 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                     Box(Modifier.height(8.dp).width(w).clip(RoundedCornerShape(50)).background(color))
                 }
             }
-            Button(onClick = { if (last) onFinish() else scope.launch { pager.animateScrollToPage(pager.currentPage + 1) } }) {
+            Button(
+                enabled = !last || agreed,
+                onClick = { if (last) onFinish() else scope.launch { pager.animateScrollToPage(pager.currentPage + 1) } },
+            ) {
                 Text(stringResource(if (last) R.string.action_get_started else R.string.action_next))
             }
         }
+    }
+    reading?.let { which ->
+        val sections = if (which == 0) listOf(
+            R.string.privacy_s1_title to R.string.privacy_s1_text, R.string.privacy_s2_title to R.string.privacy_s2_text,
+            R.string.privacy_s3_title to R.string.privacy_s3_text, R.string.privacy_s4_title to R.string.privacy_s4_text,
+            R.string.privacy_s5_title to R.string.privacy_s5_text, R.string.privacy_s6_title to R.string.privacy_s6_text,
+            R.string.privacy_s7_title to R.string.privacy_s7_text, R.string.privacy_s8_title to R.string.privacy_s8_text,
+        ) else listOf(
+            R.string.disc_s1_title to R.string.disc_s1_text, R.string.disc_s2_title to R.string.disc_s2_text,
+            R.string.disc_s3_title to R.string.disc_s3_text, R.string.disc_s4_title to R.string.disc_s4_text,
+            R.string.disc_s5_title to R.string.disc_s5_text, R.string.disc_s6_title to R.string.disc_s6_text,
+        )
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { reading = null },
+            title = { Text(stringResource(if (which == 0) R.string.title_privacy else R.string.title_disclaimer)) },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    sections.forEach { (t, b) ->
+                        Text(stringResource(t), style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(b), style = MaterialTheme.typography.bodySmall)
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { reading = null }) { Text(stringResource(R.string.action_close)) } },
+        )
     }
 }

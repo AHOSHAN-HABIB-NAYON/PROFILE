@@ -13,7 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Gavel
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.VerifiedUser
 import androidx.compose.material.icons.outlined.PrivacyTip
 import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material3.AlertDialog
@@ -83,6 +84,7 @@ fun SettingsScreen(navigate: (String) -> Unit) {
     }
 
     ScreenList {
+        item { com.webtecit.devicepilot.brand.DeveloperCard() }
         item { SectionTitle(stringResource(R.string.settings_appearance)) }
         item {
             DpCard {
@@ -152,18 +154,14 @@ fun SettingsScreen(navigate: (String) -> Unit) {
             DpCard(contentPadding = 8.dp) {
                 NavRow(Icons.Outlined.Security, stringResource(R.string.settings_firewall_rules),
                     stringResource(R.string.firewall_rules_count, s.firewallRules.size)) { navigate(Routes.FIREWALL) }
-                NavRow(Icons.Outlined.PrivacyTip, stringResource(R.string.title_privacy), null) { navigate(Routes.PRIVACY) }
-                NavRow(Icons.Outlined.Gavel, stringResource(R.string.settings_licenses), null) { showLicenses = true }
-                NavRow(Icons.Outlined.Language, stringResource(R.string.about_website), "https://webtecit.com/") {
-                    SystemSettings.url(context, "https://webtecit.com/")
-                }
+                NavRow(Icons.Outlined.VerifiedUser, stringResource(R.string.title_permissions),
+                    stringResource(R.string.settings_permissions_sub)) { navigate(Routes.PERMISSIONS) }
+                NavRow(Icons.Outlined.PrivacyTip, stringResource(R.string.title_privacy), stringResource(R.string.settings_privacy_sub)) { navigate(Routes.PRIVACY) }
+                NavRow(Icons.Outlined.Gavel, stringResource(R.string.title_disclaimer), stringResource(R.string.settings_disclaimer_sub)) { navigate(Routes.DISCLAIMER) }
+                NavRow(Icons.Outlined.Description, stringResource(R.string.settings_licenses), null) { showLicenses = true }
                 NavRow(Icons.Outlined.Info, stringResource(R.string.title_about),
                     stringResource(R.string.settings_version, BuildConfig.VERSION_NAME)) { navigate(Routes.ABOUT) }
             }
-        }
-        item {
-            Text(stringResource(R.string.developer_line), style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp))
         }
     }
 

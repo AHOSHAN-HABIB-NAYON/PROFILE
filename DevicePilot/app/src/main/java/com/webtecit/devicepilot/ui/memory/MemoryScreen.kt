@@ -199,6 +199,7 @@ fun MemoryScreen(navigate: (String) -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(10.dp))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ShortcutButton(stringResource(R.string.title_running), Icons.Outlined.Apps) { navigate(Routes.RUNNING) }
                     ShortcutButton(stringResource(R.string.action_manage_apps), Icons.Outlined.Apps) { SystemSettings.appList(context) }
                     ShortcutButton(stringResource(R.string.action_running_services), Icons.Outlined.Settings) { SystemSettings.developerOptions(context) }
                 }
