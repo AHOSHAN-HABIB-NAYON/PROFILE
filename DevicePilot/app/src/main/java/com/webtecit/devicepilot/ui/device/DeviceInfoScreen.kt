@@ -108,7 +108,7 @@ private data class Details(
     val chipCode: String?,
     val gpu: String?,
     val gpuVendor: String?,
-    val cameras: List<com.webtecit.devicepilot.data.CameraSpec>,
+    val cameraSpecs: List<com.webtecit.devicepilot.data.CameraSpec>,
 )
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -134,7 +134,7 @@ fun DeviceInfoScreen() {
                 clusters = c.hardware.clusterSummary(),
                 chipName = c.hardware.chipset().first, chipCode = c.hardware.chipset().second,
                 gpu = c.hardware.gpu().first, gpuVendor = c.hardware.gpu().second,
-                cameras = c.hardware.cameras(),
+                cameraSpecs = c.hardware.cameras(),
             )
         }
     }
@@ -250,8 +250,8 @@ fun DeviceInfoScreen() {
         }
         item {
             Section(Icons.Outlined.PhotoCamera, stringResource(R.string.dd_cameras_section)) {
-                if (d.cameras.isEmpty()) Text(na, style = MaterialTheme.typography.bodySmall)
-                d.cameras.forEachIndexed { i, cam ->
+                if (d.cameraSpecs.isEmpty()) Text(na, style = MaterialTheme.typography.bodySmall)
+                d.cameraSpecs.forEachIndexed { i, cam ->
                     if (i > 0) Spacer(Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("${cam.facing} · ${cam.megapixels?.let { String.format(Locale.US, "%.1f MP", it) } ?: "—"}",
