@@ -66,6 +66,9 @@ android {
     }
     lint {
         abortOnError = false
+        textReport = true
+        textOutput = file("stdout")
+        checkDependencies = false
     }
     dependenciesInfo {
         // No dependency metadata blob in the APK/AAB.
