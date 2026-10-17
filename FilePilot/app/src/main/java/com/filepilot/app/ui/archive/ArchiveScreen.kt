@@ -70,6 +70,9 @@ data class ArchiveUi(
     val loading: Boolean = true,
     val error: String? = null,
     val entries: List<ZipEntryInfo> = emptyList(),
+    /** Entries grouped by parent folder and pre-sorted, so opening a folder is instant. */
+    val byParent: Map<String, List<ZipEntryInfo>> = emptyMap(),
+    val fileCount: Int = 0,
     val dir: String = "",
     val selected: Set<String> = emptySet(),
 )
@@ -93,16 +96,18 @@ class ArchiveViewModel(private val container: AppContainer, saved: SavedStateHan
             try {
                 ZipArchives.ensureZip(a)
                 val entries = ZipArchives.list(container.files, a)
-                _ui.value = ArchiveUi(loading = false, entries = entries)
+                val order = compareByDescending<ZipEntryInfo> { it.isDirectory }.thenComparator { x, y -> NaturalOrder.compare(x.name, y.name) }
+                val grouped = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    entries.groupBy { it.parent }.mapValues { (_, v) -> v.sortedWith(order) }
+                }
+                _ui.value = ArchiveUi(loading = false, entries = entries, byParent = grouped, fileCount = entries.count { !it.isDirectory })
             } catch (e: Exception) {
                 _ui.value = ArchiveUi(loading = false, error = e.userMessage())
             }
         }
     }
 
-    fun children(ui: ArchiveUi): List<ZipEntryInfo> =
-        ui.entries.filter { it.parent == ui.dir }
-            .sortedWith(compareByDescending<ZipEntryInfo> { it.isDirectory }.thenComparator { a, b -> NaturalOrder.compare(a.name, b.name) })
+    fun children(ui: ArchiveUi): List<ZipEntryInfo> = ui.byParent[ui.dir].orEmpty()
 
     fun enter(dir: String) {
         _ui.value = _ui.value.copy(dir = dir, selected = emptySet())
@@ -174,7 +179,7 @@ fun ArchiveScreen() {
         topBar = {
             BackTopBar(
                 title = archive?.name ?: "Archive",
-                subtitle = if (ui.dir.isNotEmpty()) "/${ui.dir}" else archive?.let { "${Format.size(it.size)} · ${ui.entries.count { e -> !e.isDirectory }} files" },
+                subtitle = if (ui.dir.isNotEmpty()) "/${ui.dir}" else archive?.let { "${Format.size(it.size)} · ${ui.fileCount} files" },
                 onBack = { if (!vm.up()) navigator.back() },
             )
         },

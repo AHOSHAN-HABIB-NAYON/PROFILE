@@ -50,7 +50,7 @@ import kotlinx.coroutines.withContext
 
 private sealed interface TextLoad {
     data object Loading : TextLoad
-    data class Ready(val lines: List<String>, val longest: Int) : TextLoad
+    data class Ready(val lines: List<String>, val longest: Int, val truncated: Boolean) : TextLoad
     data object Binary : TextLoad
     data class Failed(val message: String) : TextLoad
 }
@@ -68,7 +68,7 @@ fun TextViewerScreen(item: FileItem) {
             try {
                 val bytes = container.files.openInput(item).use { input ->
                     val limit = com.filepilot.app.core.model.MAX_TEXT_PREVIEW_BYTES.toInt()
-                    val buf = java.io.ByteArrayOutputStream()
+                    val buf = java.io.ByteArrayOutputStream(minOf(limit, item.size.coerceAtLeast(16_384L).toInt()))
                     val chunk = ByteArray(64 * 1024)
                     while (buf.size() < limit) {
                         val r = input.read(chunk)
@@ -77,6 +77,7 @@ fun TextViewerScreen(item: FileItem) {
                     }
                     buf.toByteArray()
                 }
+                val truncated = item.size > bytes.size || bytes.size >= com.filepilot.app.core.model.MAX_TEXT_PREVIEW_BYTES
                 val head = bytes.take(8192)
                 if (head.any { it == 0.toByte() }) {
                     TextLoad.Binary
@@ -86,7 +87,7 @@ fun TextViewerScreen(item: FileItem) {
                         .onUnmappableCharacter(CodingErrorAction.REPLACE)
                     val text = decoder.decode(ByteBuffer.wrap(bytes)).toString().removePrefix(BYTE_ORDER_MARK)
                     val lines = text.replace("\r\n", "\n").split('\n')
-                    TextLoad.Ready(lines, lines.maxOfOrNull { it.length } ?: 0)
+                    TextLoad.Ready(lines, lines.maxOfOrNull { it.length } ?: 0, truncated)
                 }
             } catch (e: Exception) {
                 TextLoad.Failed(e.userMessage())
@@ -130,7 +131,25 @@ fun TextViewerScreen(item: FileItem) {
                     actionLabel = "Open in another app", onAction = { navigator.openExternal(item, chooser = true) },
                 )
                 is TextLoad.Failed -> ErrorState(l.message, onRetry = null, extraLabel = "Open in another app", onExtra = { navigator.openExternal(item, chooser = true) })
-                is TextLoad.Ready -> TextBody(l, wrap, numbers)
+                is TextLoad.Ready -> androidx.compose.foundation.layout.Column {
+                    if (l.truncated) {
+                        androidx.compose.material3.Surface(color = MaterialTheme.colorScheme.secondaryContainer) {
+                            androidx.compose.foundation.layout.Row(
+                                Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+                                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    "Large file: showing the first ${Format.size(com.filepilot.app.core.model.MAX_TEXT_PREVIEW_BYTES)} of ${Format.size(item.size)}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                androidx.compose.material3.TextButton(onClick = { navigator.openExternal(item, chooser = true) }) { Text("Open full") }
+                            }
+                        }
+                    }
+                    TextBody(l, wrap, numbers)
+                }
             }
         }
     }

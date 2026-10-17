@@ -18,11 +18,19 @@ object Format {
         return String.format(Locale.getDefault(), pattern, value, units[exp - 1])
     }
 
+    // DateFormat is costly to create and not thread-safe: keep one per thread.
+    private val dateFormat = object : ThreadLocal<DateFormat>() {
+        override fun initialValue(): DateFormat = DateFormat.getDateInstance(DateFormat.MEDIUM)
+    }
+    private val dateTimeFormat = object : ThreadLocal<DateFormat>() {
+        override fun initialValue(): DateFormat = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT)
+    }
+
     fun date(millis: Long): String =
-        if (millis <= 0) "—" else DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(millis))
+        if (millis <= 0) "—" else dateFormat.get()!!.format(Date(millis))
 
     fun dateTime(millis: Long): String =
-        if (millis <= 0) "—" else DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(millis))
+        if (millis <= 0) "—" else dateTimeFormat.get()!!.format(Date(millis))
 
     fun items(count: Int): String = if (count == 1) "1 item" else "$count items"
 

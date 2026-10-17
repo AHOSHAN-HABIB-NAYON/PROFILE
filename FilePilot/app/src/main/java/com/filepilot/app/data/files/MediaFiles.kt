@@ -204,7 +204,7 @@ class MediaFiles(private val resolver: ContentResolver) {
         cursor.use { c ->
             while (c.moveToNext() && out.size < limit) {
                 if (out.size % 200 == 0) coroutineContext.ensureActive()
-                val item = rowToItem(collection, c, usePaths, includeDirs) ?: continue
+                val item = rowToItem(collection, c, usePaths, access.fullAccess, includeDirs) ?: continue
                 out.add(item)
             }
         }
@@ -227,24 +227,44 @@ class MediaFiles(private val resolver: ContentResolver) {
             resolver.query(collection, projection, selection, args, "$sortColumn DESC LIMIT $limit")
         }
 
-    private fun rowToItem(collection: Uri, c: Cursor, usePaths: Boolean, includeDirs: Boolean): FileItem? {
+    /**
+     * Builds an item straight from the index columns. No per-row disk access: checking each file
+     * with java.io.File made large categories (thousands of photos) noticeably slow.
+     */
+    private fun rowToItem(collection: Uri, c: Cursor, usePaths: Boolean, writable: Boolean, includeDirs: Boolean): FileItem? {
         val id = c.getLong(0)
         val path = c.getString(5)
-        if (usePaths && path != null) {
-            val f = File(path)
-            if (!f.exists()) return null
-            if (f.isDirectory && !includeDirs) return null
-            if (LocalFiles.isRestricted(path)) return null
-            return LocalFiles.toItem(f, countChildren = false)
-        }
         val name = c.getString(1) ?: path?.substringAfterLast('/') ?: return null
         val mime = c.getString(4)
-        if (mime == null && !includeDirs && path != null && File(path).isDirectory) return null
+        // Folders in the Files table have no MIME type and no extension in most cases.
+        var looksLikeDir = mime == null && !name.contains('.')
+        if (looksLikeDir && !includeDirs) return null
+        // Rare case worth one disk check: an extension-less file in search results.
+        if (looksLikeDir && path != null) looksLikeDir = File(path).isDirectory
+        val size = if (c.isNull(2)) -1L else c.getLong(2)
+        val modified = if (c.isNull(3)) 0L else c.getLong(3) * 1000
+        if (usePaths && path != null) {
+            if (LocalFiles.isRestricted(path)) return null
+            return FileItem(
+                name = name,
+                isDirectory = looksLikeDir,
+                size = if (looksLikeDir) -1 else size,
+                lastModified = modified,
+                mimeType = if (looksLikeDir) MimeTypes.DIRECTORY else MimeTypes.best(name, mime),
+                source = SourceKind.LOCAL,
+                uri = Uri.fromFile(File(path)),
+                path = path,
+                // Actual permission is checked when an operation runs.
+                canWrite = writable,
+                canDelete = writable,
+                canRename = writable,
+            )
+        }
         return FileItem(
             name = name,
             isDirectory = false,
-            size = if (c.isNull(2)) -1 else c.getLong(2),
-            lastModified = if (c.isNull(3)) 0 else c.getLong(3) * 1000,
+            size = size,
+            lastModified = modified,
             mimeType = MimeTypes.best(name, mime),
             source = SourceKind.MEDIA,
             uri = ContentUris.withAppendedId(collection, id),

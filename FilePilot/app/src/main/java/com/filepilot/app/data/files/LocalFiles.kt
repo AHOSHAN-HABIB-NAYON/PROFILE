@@ -9,6 +9,8 @@ import java.io.File
 
 /** Filesystem access through java.io.File, used when the app has full storage access. */
 object LocalFiles {
+    private const val MAX_COUNTED_CHILDREN = 300
+
     val primaryRoot: String = Environment.getExternalStorageDirectory().absolutePath
 
     fun toItem(file: File, countChildren: Boolean = true): FileItem {
@@ -52,9 +54,11 @@ object LocalFiles {
         if (!dir.exists()) throw FileAccessException("This folder no longer exists")
         if (!dir.isDirectory) throw FileAccessException("This is not a folder")
         val children = dir.listFiles() ?: throw FileAccessException("FilePilot can't read this folder")
+        // Counting each subfolder's contents costs one disk read per folder; skip it for huge folders.
+        val countChildren = children.size <= MAX_COUNTED_CHILDREN
         return children.asSequence()
             .filter { showHidden || !it.name.startsWith(".") }
-            .map { toItem(it) }
+            .map { toItem(it, countChildren) }
             .toList()
     }
 

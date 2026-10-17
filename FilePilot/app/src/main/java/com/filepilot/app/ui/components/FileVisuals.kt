@@ -50,7 +50,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import coil3.compose.SubcomposeAsyncImage
+import coil3.compose.AsyncImage
+import androidx.compose.ui.platform.LocalDensity
+import com.filepilot.app.data.thumbs.Thumb
 import coil3.request.ImageRequest
 import com.filepilot.app.core.model.FileItem
 import com.filepilot.app.core.model.FileType
@@ -85,23 +87,29 @@ fun TypeTile(type: FileType, size: Dp = 42.dp, corner: Dp = 12.dp) {
     }
 }
 
-/** Thumbnail for images and videos (decoded on-device), falling back to the type tile. */
+/**
+ * Thumbnail for images and videos. Uses small system thumbnails (not full decodes) and shows the
+ * type tile underneath while loading, so scrolling large photo folders stays smooth.
+ */
 @Composable
 fun FileThumb(item: FileItem, size: Dp = 42.dp, corner: Dp = 12.dp) {
     val type = item.type
     if (type == FileType.IMAGE || type == FileType.VIDEO) {
         val context = LocalContext.current
-        val request = remember(item.uri) {
-            ImageRequest.Builder(context).data(item.uri).build()
+        val px = with(LocalDensity.current) { size.roundToPx() }
+        val request = remember(item.id, item.lastModified, px) {
+            ImageRequest.Builder(context)
+                .data(Thumb(item.uri, item.path, type == FileType.VIDEO, px, item.lastModified))
+                .size(px, px)
+                .build()
         }
         Box(Modifier.size(size).clip(RoundedCornerShape(corner))) {
-            SubcomposeAsyncImage(
+            TypeTile(type, size, corner)
+            AsyncImage(
                 model = request,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
-                loading = { TypeTile(type, size, corner) },
-                error = { TypeTile(type, size, corner) },
             )
             if (type == FileType.VIDEO) {
                 Box(

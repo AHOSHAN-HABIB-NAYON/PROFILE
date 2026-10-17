@@ -6,6 +6,8 @@ import coil3.PlatformContext
 import coil3.SingletonImageLoader
 import coil3.request.crossfade
 import coil3.video.VideoFrameDecoder
+import com.filepilot.app.data.thumbs.ThumbFetcher
+import com.filepilot.app.data.thumbs.ThumbKeyer
 
 class FilePilotApp : Application(), SingletonImageLoader.Factory {
     lateinit var container: AppContainer
@@ -20,7 +22,11 @@ class FilePilotApp : Application(), SingletonImageLoader.Factory {
     /** Thumbnails are decoded locally from files and content URIs; there is no network loader. */
     override fun newImageLoader(context: PlatformContext): ImageLoader =
         ImageLoader.Builder(context)
-            .components { add(VideoFrameDecoder.Factory()) }
-            .crossfade(true)
+            .components {
+                add(ThumbFetcher.Factory(this@FilePilotApp))
+                add(ThumbKeyer())
+                add(VideoFrameDecoder.Factory())
+            }
+            .crossfade(150)
             .build()
 }

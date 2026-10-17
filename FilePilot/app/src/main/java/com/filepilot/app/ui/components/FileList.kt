@@ -45,7 +45,7 @@ fun FileListContent(
     if (viewMode == ViewMode.LIST) {
         LazyColumn(modifier.fillMaxSize(), state = listState, contentPadding = contentPadding) {
             if (header != null) item(key = "__header") { header() }
-            items(items, key = { it.id }) { item ->
+            items(items, key = { it.id }, contentType = { if (it.isDirectory) 0 else 1 }) { item ->
                 FileRow(
                     item = item,
                     showExtension = showExtensions,
@@ -68,7 +68,7 @@ fun FileListContent(
             contentPadding = PaddingValues(start = 8.dp, end = 8.dp, bottom = contentPadding.calculateBottomPadding(), top = 4.dp),
         ) {
             if (header != null) item(key = "__header", span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) { header() }
-            items(items, key = { it.id }) { item ->
+            items(items, key = { it.id }, contentType = { if (it.isDirectory) 0 else 1 }) { item ->
                 FileGridCell(
                     item = item,
                     showExtension = showExtensions,

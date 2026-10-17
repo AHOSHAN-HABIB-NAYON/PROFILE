@@ -202,6 +202,11 @@ fun HomeScreen() {
                         navigator.go(Routes.PERMISSIONS)
                     }
                 }
+                item {
+                    Box(Modifier.fillMaxWidth().padding(top = 20.dp), contentAlignment = Alignment.Center) {
+                        com.filepilot.app.ui.components.DeveloperWatermark()
+                    }
+                }
             }
         }
     }

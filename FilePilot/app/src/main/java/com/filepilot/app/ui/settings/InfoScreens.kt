@@ -54,7 +54,9 @@ fun AboutScreen() {
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(16.dp))
+            com.filepilot.app.ui.components.DeveloperCard()
+            Spacer(Modifier.height(8.dp))
             Fact("Works offline", "No account, no server, no internet permission.")
             Fact("Private by design", "No analytics, ads or tracking. Settings, favorites and history stay on this device.")
             Fact("Respects Android security", "Uses MediaStore, the Storage Access Framework and All files access as Android intends.")

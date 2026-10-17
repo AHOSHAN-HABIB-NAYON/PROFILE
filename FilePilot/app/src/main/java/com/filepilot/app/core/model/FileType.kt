@@ -52,8 +52,8 @@ enum class FileType {
 /** How FilePilot opens a file: inside the app, or via another app. */
 enum class PreviewKind { IMAGE, VIDEO, AUDIO, TEXT, PDF, ARCHIVE, EXTERNAL }
 
-/** Text files larger than this open in other apps instead of the built-in viewer. */
-const val MAX_TEXT_PREVIEW_BYTES = 8L * 1024 * 1024
+/** The built-in text viewer shows at most this much of a file; bigger files show their beginning. */
+const val MAX_TEXT_PREVIEW_BYTES = 4L * 1024 * 1024
 
 fun FileItem.previewKind(): PreviewKind = when (type) {
     FileType.IMAGE -> if (extension in setOf("svg", "dng", "tif", "tiff")) PreviewKind.EXTERNAL else PreviewKind.IMAGE
@@ -61,7 +61,7 @@ fun FileItem.previewKind(): PreviewKind = when (type) {
     FileType.AUDIO -> if (extension in setOf("mid", "midi", "wma")) PreviewKind.EXTERNAL else PreviewKind.AUDIO
     FileType.PDF -> PreviewKind.PDF
     FileType.TEXT, FileType.CODE ->
-        if (extension != "rtf" && (size in 0..MAX_TEXT_PREVIEW_BYTES)) PreviewKind.TEXT else PreviewKind.EXTERNAL
+        if (extension != "rtf") PreviewKind.TEXT else PreviewKind.EXTERNAL
     FileType.ARCHIVE -> if (extension == "zip" || extension == "jar") PreviewKind.ARCHIVE else PreviewKind.EXTERNAL
     else -> PreviewKind.EXTERNAL
 }

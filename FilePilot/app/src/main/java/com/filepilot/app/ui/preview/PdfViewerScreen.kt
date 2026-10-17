@@ -64,14 +64,21 @@ private class PdfDocument(private val pfd: ParcelFileDescriptor) {
     private val renderer = PdfRenderer(pfd)
     private val mutex = Mutex()
     val pageCount: Int = renderer.pageCount
-    val aspect: List<Float> = (0 until pageCount).map { i ->
-        renderer.openPage(i).use { p -> if (p.height > 0) p.width.toFloat() / p.height else 0.707f }
+    /** Page shapes are learned as pages render; the first page's shape is the placeholder for the rest. */
+    private val aspects = java.util.concurrent.ConcurrentHashMap<Int, Float>()
+    val defaultAspect: Float = if (pageCount > 0) {
+        renderer.openPage(0).use { p -> if (p.height > 0) p.width.toFloat() / p.height else 0.707f }.also { aspects[0] = it }
+    } else {
+        0.707f
     }
+
+    fun aspectOf(index: Int): Float = aspects[index] ?: defaultAspect
 
     suspend fun render(index: Int, widthPx: Int): ImageBitmap? = mutex.withLock {
         withContext(Dispatchers.IO) {
             runCatching {
                 renderer.openPage(index).use { page ->
+                    if (page.height > 0) aspects[index] = page.width.toFloat() / page.height
                     val w = widthPx.coerceIn(200, 2400)
                     val h = (w.toFloat() * page.height / page.width).toInt().coerceAtLeast(1)
                     val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
@@ -192,8 +199,10 @@ private fun PdfPages(doc: PdfDocument, listState: androidx.compose.foundation.la
             items(doc.pageCount) { index ->
                 var bitmap by remember(index) { mutableStateOf<ImageBitmap?>(null) }
                 LaunchedEffect(index, widthPx) { bitmap = doc.render(index, (widthPx * 1.5f).toInt()) }
+                // Re-read once the bitmap arrives, when the page's real shape is known.
+                val pageAspect = bitmap.let { doc.aspectOf(index) }
                 Surface(
-                    modifier = Modifier.fillMaxWidth().aspectRatio(doc.aspect[index].coerceIn(0.2f, 5f)).shadow(2.dp),
+                    modifier = Modifier.fillMaxWidth().aspectRatio(pageAspect.coerceIn(0.2f, 5f)).shadow(2.dp),
                     color = Color.White,
                 ) {
                     val b = bitmap

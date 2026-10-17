@@ -124,6 +124,8 @@ fun SettingsScreen() {
             }
             item { NavRow(Icons.Rounded.DeleteSweep, "Clear recent files list", "Doesn't delete any files") { dialog = SettingsDialog.CLEAR_RECENT } }
 
+            item { SectionHeader("Developer") }
+            item { com.filepilot.app.ui.components.DeveloperCard() }
             item { SectionHeader("About") }
             item { NavRow(Icons.Rounded.Info, "About FilePilot", "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})") { navigator.go(Routes.ABOUT) } }
             item { NavRow(Icons.Rounded.Policy, "Privacy policy", "How FilePilot handles your data") { navigator.go(Routes.PRIVACY) } }
