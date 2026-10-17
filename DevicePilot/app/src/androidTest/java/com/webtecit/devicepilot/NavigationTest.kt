@@ -14,7 +14,17 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class NavigationTest {
 
-    @get:Rule val rule = createAndroidComposeRule<MainActivity>()
+    val rule = createAndroidComposeRule<MainActivity>()
+
+    // A stuck test fails with a thread dump instead of hanging the whole run.
+    @get:Rule val chain: org.junit.rules.RuleChain = org.junit.rules.RuleChain
+        .outerRule(
+            org.junit.rules.Timeout.builder()
+                .withTimeout(90, java.util.concurrent.TimeUnit.SECONDS)
+                .withLookingForStuckThread(true)
+                .build()
+        )
+        .around(rule)
 
     @Before fun skipOnboarding() {
         rule.waitUntil(10_000) {

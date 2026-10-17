@@ -53,8 +53,18 @@ class FirewallTest {
         assertNull("VPN consent should be granted for the test", FirewallController.consentIntent(context))
 
         // Android only lets a foreground app start services, so bring the app to the front first.
-        androidx.test.core.app.ActivityScenario.launch(MainActivity::class.java)
+        val scenario = androidx.test.core.app.ActivityScenario.launch(MainActivity::class.java)
         Thread.sleep(1000)
+        try {
+            runBlockingTest()
+        } finally {
+            instrumentation.runOnMainSync { runCatching { FirewallController.stop(context) } }
+            waitFor(FirewallPhase.OFF)
+            scenario.close()
+        }
+    }
+
+    private fun runBlockingTest() {
         runBlocking { DevicePilotApp.container(context).settings.setRule(AppRule("com.android.chrome", true, true)) }
         instrumentation.runOnMainSync { FirewallController.start(context) }
         assertTrue("firewall did not become active: ${FirewallState.status.value}", waitFor(FirewallPhase.ACTIVE))

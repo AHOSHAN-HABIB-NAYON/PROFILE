@@ -55,6 +55,8 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             val s = container.settings.current()
+            // Settings (theme, onboarding) are loaded: the first frame can be drawn.
+            ready = true
             // Resume the firewall if the user left it on and consent is still valid.
             if (s.firewallWanted && s.firewallRules.isNotEmpty() &&
                 FirewallState.status.value.phase == FirewallPhase.OFF &&
@@ -69,7 +71,6 @@ class MainActivity : AppCompatActivity() {
                 container = container,
                 initialRoute = pendingRoute,
                 onRouteConsumed = { pendingRoute = null },
-                onReady = { ready = true },
             )
         }
     }

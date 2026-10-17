@@ -156,11 +156,9 @@ fun DevicePilotRoot(
     container: AppContainer,
     initialRoute: String?,
     onRouteConsumed: () -> Unit,
-    onReady: () -> Unit,
 ) {
     val settings by container.settings.settings.collectAsStateWithLifecycle(initialValue = null)
     val s = settings
-    if (s != null) LaunchedEffect(Unit) { onReady() }
 
     CompositionLocalProvider(LocalContainer provides container) {
         DevicePilotTheme(dark = isDarkTheme(s?.theme ?: com.webtecit.devicepilot.data.ThemeMode.SYSTEM)) {
