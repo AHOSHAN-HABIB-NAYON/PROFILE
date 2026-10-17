@@ -132,7 +132,7 @@ class MediaFiles(private val resolver: ContentResolver) {
         val nameArg = "%$escaped%"
         val all = canQueryAllFiles(access)
         if (all) {
-            val (typeSel, typeArgs): Pair<String?, Array<String>> = when (filter) {
+            val typeClause: Pair<String?, Array<String>> = when (filter) {
                 SearchFilter.ALL -> null to emptyArray<String>()
                 SearchFilter.IMAGES -> mediaTypeClause(MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE)
                 SearchFilter.VIDEOS -> mediaTypeClause(MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO)
@@ -141,6 +141,7 @@ class MediaFiles(private val resolver: ContentResolver) {
                 SearchFilter.ARCHIVES -> extensionClause(FileType.archiveExtensions)
                 SearchFilter.APKS -> extensionClause(setOf("apk", "apks", "xapk"))
             }
+            val (typeSel, typeArgs) = typeClause
             val sel = if (typeSel == null) nameClause else "$nameClause AND ($typeSel)"
             val items = run(filesUri, sel, arrayOf(nameArg) + typeArgs, MediaStore.MediaColumns.DATE_MODIFIED, access, limit, includeDirs = true)
             return CategoryResult(items, false, false)

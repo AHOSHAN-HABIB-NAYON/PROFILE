@@ -260,7 +260,7 @@ fun DuplicatesScreen() {
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
             if (!access.hasAnyAccess) {
-                AccessNotice("Storage access needed", "Allow access so FilePilot can compare your files.", "Review access") { navigator.go(Routes.PERMISSIONS) }
+                AccessNotice("Storage access needed", "Allow access so FilePilot can compare your files.", "Review access", onAction = { navigator.go(Routes.PERMISSIONS) })
                 return@Column
             }
             Row(Modifier.fillMaxWidth().clickable { vm.verify.value = !verify }.padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
