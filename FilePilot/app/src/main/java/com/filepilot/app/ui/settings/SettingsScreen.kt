@@ -22,7 +22,7 @@ import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.ManageSearch
+import androidx.compose.material.icons.automirrored.rounded.ManageSearch
 import androidx.compose.material.icons.rounded.Policy
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Settings
@@ -118,7 +118,7 @@ fun SettingsScreen() {
             item { NavRow(Icons.Rounded.Star, "Manage favorites", "${favorites.size} saved") { navigator.switchTab(Routes.FAVORITES) } }
             item { NavRow(Icons.Rounded.History, "Operation history", "Completed and failed tasks") { navigator.go(Routes.HISTORY) } }
             item {
-                NavRow(Icons.Rounded.ManageSearch, "Clear search history", if (searches.isEmpty()) "Nothing saved" else "${searches.size} saved searches", enabled = searches.isNotEmpty()) {
+                NavRow(Icons.AutoMirrored.Rounded.ManageSearch, "Clear search history", if (searches.isEmpty()) "Nothing saved" else "${searches.size} saved searches", enabled = searches.isNotEmpty()) {
                     dialog = SettingsDialog.CLEAR_SEARCH
                 }
             }

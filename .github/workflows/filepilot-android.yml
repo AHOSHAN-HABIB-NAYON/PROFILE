@@ -44,7 +44,9 @@ jobs:
         run: ./gradlew --no-daemon assembleRelease bundleRelease
 
       - name: Lint
-        run: ./gradlew --no-daemon lintDebug
+        run: |
+          ./gradlew --no-daemon lintDebug
+          cat app/build/reports/lint-results.txt || true
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4

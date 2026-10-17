@@ -20,7 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.History
-import androidx.compose.material.icons.rounded.ManageSearch
+import androidx.compose.material.icons.automirrored.rounded.ManageSearch
 import androidx.compose.material.icons.rounded.SearchOff
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -243,7 +243,7 @@ fun SearchScreen() {
                 query.isBlank() -> {
                     if (history.isEmpty()) {
                         EmptyState(
-                            Icons.Rounded.ManageSearch,
+                            Icons.AutoMirrored.Rounded.ManageSearch,
                             "Search your files",
                             "Find files by name or extension. Use the chips to narrow results to a category.",
                         )

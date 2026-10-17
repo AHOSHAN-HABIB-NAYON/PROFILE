@@ -16,7 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.FormatListNumbered
-import androidx.compose.material.icons.rounded.WrapText
+import androidx.compose.material.icons.automirrored.rounded.WrapText
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -103,7 +103,7 @@ fun TextViewerScreen(item: FileItem) {
                 extraMenu = { close ->
                     DropdownMenuItem(
                         text = { Text(if (wrap) "Don't wrap lines" else "Wrap lines") },
-                        leadingIcon = { Icon(Icons.Rounded.WrapText, null) },
+                        leadingIcon = { Icon(Icons.AutoMirrored.Rounded.WrapText, null) },
                         onClick = {
                             wrap = !wrap
                             close()
