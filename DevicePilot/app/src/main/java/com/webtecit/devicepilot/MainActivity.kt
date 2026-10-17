@@ -32,12 +32,18 @@ class MainActivity : AppCompatActivity() {
         // Keep the splash only until settings (theme/onboarding) are loaded — no artificial delay.
         splash.setKeepOnScreenCondition { !ready }
         splash.setOnExitAnimationListener { provider ->
-            val icon: View = provider.iconView
-            val fade = ObjectAnimator.ofFloat(provider.view, View.ALPHA, 1f, 0f)
-            val scaleX = ObjectAnimator.ofFloat(icon, View.SCALE_X, 1f, 1.15f)
-            val scaleY = ObjectAnimator.ofFloat(icon, View.SCALE_Y, 1f, 1.15f)
+            // The icon view is absent when Android shows the splash without an icon
+            // (for example when opened from a notification), so it is optional here.
+            val icon: View? = runCatching { provider.iconView }.getOrNull()
+            val animators = mutableListOf<android.animation.Animator>(
+                ObjectAnimator.ofFloat(provider.view, View.ALPHA, 1f, 0f),
+            )
+            if (icon != null) {
+                animators += ObjectAnimator.ofFloat(icon, View.SCALE_X, 1f, 1.15f)
+                animators += ObjectAnimator.ofFloat(icon, View.SCALE_Y, 1f, 1.15f)
+            }
             AnimatorSet().apply {
-                playTogether(fade, scaleX, scaleY)
+                playTogether(animators)
                 duration = 260
                 doOnEnd { provider.remove() }
                 start()
