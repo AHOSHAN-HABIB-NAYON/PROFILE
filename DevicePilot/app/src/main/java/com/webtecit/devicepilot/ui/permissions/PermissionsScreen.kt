@@ -138,6 +138,9 @@ fun PermissionsScreen(onDone: () -> Unit) {
                 }
             }
         }
+        if (items.any { it.perm == Perm.USAGE && !it.granted }) item {
+            com.webtecit.devicepilot.ui.common.RestrictedSettingsHelp(startExpanded = attempted.contains(Perm.USAGE.name))
+        }
         item {
             if (grantedCount < items.size) {
                 Button(onClick = { attempted = emptySet(); walking = true; continueWalk() }, modifier = Modifier.fillMaxWidth()) {

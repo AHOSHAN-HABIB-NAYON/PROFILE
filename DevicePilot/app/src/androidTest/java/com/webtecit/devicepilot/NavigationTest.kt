@@ -72,7 +72,7 @@ class NavigationTest {
 
     @Test fun opensSettingsAndAbout() {
         rule.onNodeWithContentDescriptionSafe("Settings")
-        rule.waitUntil(5_000) { rule.onAllNodesWithText("Designed & developed by").fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(5_000) { rule.onAllNodesWithText("Official developer").fetchSemanticsNodes().isNotEmpty() }
         rule.onNodeWithContentDescriptionSafe("About")
         rule.waitUntil(5_000) { rule.onAllNodesWithText("MD. AHOSHAN HABIB NAYON").fetchSemanticsNodes().isNotEmpty() }
     }

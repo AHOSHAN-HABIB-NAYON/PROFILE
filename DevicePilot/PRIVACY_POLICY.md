@@ -8,6 +8,7 @@ DevicePilot ("the app") is developed by **MD. AHOSHAN HABIB NAYON** (https://web
 
 * No account, login, advertising or analytics.
 * No backend server. The app does not send any personal or device data to the developer or to third parties.
+* Optional online lookup: only when you tap "Check online" on Device details, the app downloads Google Play's public supported-devices list (storage.googleapis.com) to show your phone's official name. Your device data is not uploaded; the matching name is cached on the device.
 * Everything the app shows is read on your device and stays on your device.
 
 ## Information the app reads (on device only)

@@ -164,6 +164,7 @@ fun NetworkScreen(navigate: (String) -> Unit) {
             PermissionCard(stringResource(R.string.perm_usage_title), stringResource(R.string.perm_usage_network_text),
                 stringResource(R.string.perm_grant_in_settings), onClick = { SystemSettings.usageAccess(context) })
         }
+        if (!ui.loading && !ui.access) item { com.webtecit.devicepilot.ui.common.RestrictedSettingsHelp() }
         if (ui.loading) item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
         ui.totals?.let { t ->
             item {

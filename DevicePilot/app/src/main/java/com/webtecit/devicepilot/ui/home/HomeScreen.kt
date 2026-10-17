@@ -29,6 +29,9 @@ import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Radar
+import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Smartphone
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material.icons.outlined.Security
 import androidx.compose.material.icons.outlined.SdStorage
@@ -173,79 +176,7 @@ fun HomeScreen(navigate: (String) -> Unit) {
         item { HealthCard(s.health, Modifier.entrance(1)) }
         item { BatteryHealthCard(navigate, Modifier.entrance(2)) }
         item { SectionTitle(stringResource(R.string.home_performance)) }
-        item {
-            Row(Modifier.entrance(3), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                MetricTile(
-                    Icons.Outlined.Memory, stringResource(R.string.metric_ram),
-                    "${s.memory.usedPercent}%",
-                    Modifier.weight(1f),
-                    subtitle = stringResource(R.string.metric_ram_sub, Formatters.bytes(s.memory.availableBytes), Formatters.bytes(s.memory.totalBytes)),
-                    level = pressureLevel(s.memory.pressure),
-                    progress = s.memory.usedPercent / 100f,
-                    onClick = { navigate(Routes.MEMORY) },
-                )
-                val st = s.storage
-                MetricTile(
-                    Icons.Outlined.SdStorage, stringResource(R.string.metric_storage),
-                    if (st != null) "${st.usedPercent}%" else stringResource(R.string.unavailable),
-                    Modifier.weight(1f),
-                    subtitle = st?.let { stringResource(R.string.metric_storage_sub, Formatters.bytes(it.freeBytes)) },
-                    level = st?.let { pressureLevel(it.pressure) } ?: Level.NEUTRAL,
-                    progress = st?.let { it.usedPercent / 100f },
-                    onClick = { navigate(Routes.STORAGE) },
-                )
-            }
-        }
-        item {
-            Row(Modifier.entrance(3), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                val t = s.battery.celsius
-                MetricTile(
-                    Icons.Outlined.Thermostat, stringResource(R.string.metric_battery_temp),
-                    t?.let { TemperatureUtils.format(it, s.unit) } ?: stringResource(R.string.unavailable),
-                    Modifier.weight(1f),
-                    subtitle = stringResource(R.string.source_battery_broadcast),
-                    level = when { t == null -> Level.NEUTRAL; t >= 45 -> Level.BAD; t >= 40 -> Level.WARN; else -> Level.GOOD },
-                    onClick = { navigate(Routes.TEMPERATURE) },
-                )
-                MetricTile(
-                    Icons.Outlined.LocalFireDepartment, stringResource(R.string.metric_thermal),
-                    stringResource(if (s.thermal.supported) thermalLabelRes(s.thermal.level) else R.string.thermal_unsupported_short),
-                    Modifier.weight(1f),
-                    subtitle = stringResource(if (s.thermal.supported) R.string.source_power_manager else R.string.requires_android_10),
-                    level = if (s.thermal.supported) thermalLevel(s.thermal.level) else Level.NEUTRAL,
-                    onClick = { navigate(Routes.TEMPERATURE) },
-                )
-            }
-        }
-        item {
-            Row(Modifier.entrance(4), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                val usage = s.cpu.usagePercent
-                val freqs = s.cpu.currentFreqMhz.filterNotNull()
-                MetricTile(
-                    Icons.Outlined.Speed, stringResource(R.string.metric_cpu),
-                    when {
-                        usage != null -> "$usage%"
-                        freqs.isNotEmpty() -> stringResource(R.string.cpu_freq_value, freqs.max())
-                        else -> stringResource(R.string.cpu_cores_value, s.cpu.cores)
-                    },
-                    Modifier.weight(1f),
-                    subtitle = stringResource(if (usage != null) R.string.source_proc_stat else R.string.cpu_usage_restricted),
-                    level = Level.INFO,
-                    onClick = { navigate(Routes.MEMORY) },
-                )
-                val d: DeviceDataTotals? = data
-                MetricTile(
-                    Icons.Outlined.DataUsage, stringResource(R.string.metric_data_today),
-                    if (d != null) Formatters.bytes((d.wifiTotal ?: 0) + (d.mobileTotal ?: 0)) else stringResource(R.string.needs_usage_access_short),
-                    Modifier.weight(1f),
-                    subtitle = if (d != null) stringResource(R.string.data_split,
-                        d.wifiTotal?.let { Formatters.bytes(it) } ?: "—", d.mobileTotal?.let { Formatters.bytes(it) } ?: "—")
-                    else stringResource(R.string.tap_to_grant),
-                    level = if (d != null) Level.INFO else Level.NEUTRAL,
-                    onClick = { navigate(Routes.NETWORK) },
-                )
-            }
-        }
+        item { DashboardGrid(s, data, navigate, Modifier.entrance(3)) }
         item { SectionTitle(stringResource(R.string.home_quick_actions)) }
         item {
             DpCard(Modifier.entrance(5), contentPadding = 8.dp) {
@@ -270,7 +201,7 @@ fun HomeScreen(navigate: (String) -> Unit) {
             NavigationShortcuts(navigate, s)
         }
         item { SourceNote(stringResource(R.string.home_sources_note)) }
-        item { com.webtecit.devicepilot.brand.DeveloperCard() }
+        item { com.webtecit.devicepilot.brand.DeveloperCredit() }
     }
 }
 
@@ -435,5 +366,121 @@ private fun BigStat(label: String, value: String, modifier: Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally) {
         Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
         Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+    }
+}
+
+
+private data class StaticSpecs(
+    val chipName: String?, val chipCode: String?, val clusters: List<com.webtecit.devicepilot.data.CpuCluster>,
+    val gpu: String?, val display: com.webtecit.devicepilot.data.DisplayInfo?, val cycles: Int?,
+)
+
+/** CPU-X style overview: CPU/GPU on the left, memory, battery, display and network on the right. */
+@Composable
+private fun DashboardGrid(s: HomeState, data: DeviceDataTotals?, navigate: (String) -> Unit, modifier: Modifier) {
+    val c = LocalContainer.current
+    val specs by androidx.compose.runtime.produceState<StaticSpecs?>(null) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val chip = c.hardware.chipset()
+            StaticSpecs(chip.first, chip.second, c.hardware.cpuClusters(), c.hardware.gpu().first, c.details.display(),
+                c.details.batteryExtras(c.monitor.battery()).cycleCount)
+        }
+    }
+    val sp = specs
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            DashTile(Icons.Outlined.Memory, stringResource(R.string.metric_cpu), onClick = { navigate(Routes.DEVICE_INFO) }) {
+                Text(sp?.chipName ?: sp?.chipCode ?: android.os.Build.HARDWARE, style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
+                if (sp?.chipName != null && sp.chipCode != null) Text(sp.chipCode, style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.height(6.dp))
+                sp?.clusters?.forEach {
+                    Text(String.format(java.util.Locale.US, "%d × %.2f GHz", it.cores, it.maxMhz / 1000f),
+                        style = MaterialTheme.typography.bodyMedium)
+                }
+                if (sp?.clusters.isNullOrEmpty()) Text(stringResource(R.string.cpu_cores_value, s.cpu.cores), style = MaterialTheme.typography.bodyMedium)
+                sp?.gpu?.let {
+                    Spacer(Modifier.height(8.dp))
+                    Text(stringResource(R.string.dd_gpu), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(it, style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
+                }
+            }
+            DashTile(Icons.Outlined.DataUsage, stringResource(transportRes(s.network.transport)), onClick = { navigate(Routes.NETWORK) }) {
+                Text(stringResource(if (s.network.validated) R.string.net_internet_ok else R.string.net_no_internet),
+                    style = MaterialTheme.typography.bodyMedium)
+                Spacer(Modifier.height(4.dp))
+                Text(stringResource(R.string.metric_data_today), style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (data != null) Formatters.bytes((data.wifiTotal ?: 0) + (data.mobileTotal ?: 0)) else "—",
+                    style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            }
+        }
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            DashTile(null, null, onClick = { navigate(Routes.MEMORY) }) {
+                BarStat(stringResource(R.string.metric_ram), s.memory.usedPercent / 100f,
+                    "${Formatters.bytes(s.memory.usedBytes)} / ${Formatters.bytes(s.memory.totalBytes)}")
+                Spacer(Modifier.height(12.dp))
+                s.storage?.let { st ->
+                    BarStat(stringResource(R.string.metric_storage), st.usedPercent / 100f,
+                        "${Formatters.bytes(st.usedBytes)} / ${Formatters.bytes(st.totalBytes)}")
+                }
+            }
+            DashTile(Icons.Outlined.BatteryChargingFull, stringResource(R.string.dd_battery), onClick = { navigate(Routes.BATTERY) }) {
+                IconLine(Icons.Outlined.BatteryChargingFull, s.battery.percent?.let { "$it%" } ?: "—")
+                IconLine(Icons.Outlined.Thermostat, s.battery.celsius?.let { TemperatureUtils.format(it, s.unit) } ?: "—")
+                s.battery.currentNowMa?.let { IconLine(Icons.Outlined.Bolt, String.format(java.util.Locale.US, "%.2f A", kotlin.math.abs(it) / 1000f)) }
+                sp?.cycles?.let { IconLine(Icons.Outlined.History, stringResource(R.string.home_cycles, it)) }
+            }
+            sp?.display?.let { d ->
+                DashTile(Icons.Outlined.Smartphone, stringResource(R.string.dd_display), onClick = { navigate(Routes.DEVICE_INFO) }) {
+                    Text("${d.widthPx} × ${d.heightPx}", style = MaterialTheme.typography.bodyMedium)
+                    Text(listOfNotNull(d.sizeInches?.let { String.format(java.util.Locale.US, "%.2f\"", it) },
+                        String.format(java.util.Locale.US, "%.0f Hz", d.maxRefreshRate)).joinToString(" | "),
+                        style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            DashTile(Icons.Outlined.LocalFireDepartment, stringResource(R.string.metric_thermal), onClick = { navigate(Routes.TEMPERATURE) }) {
+                StatusPill(stringResource(if (s.thermal.supported) thermalLabelRes(s.thermal.level) else R.string.thermal_unsupported_short),
+                    if (s.thermal.supported) thermalLevel(s.thermal.level) else Level.NEUTRAL)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DashTile(icon: ImageVector?, title: String?, onClick: () -> Unit, content: @Composable () -> Unit) {
+    DpCard(onClick = onClick, contentPadding = 14.dp) {
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            if (icon != null || title != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (icon != null) Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                    if (icon != null && title != null) Spacer(Modifier.width(6.dp))
+                    if (title != null) Text(title, style = MaterialTheme.typography.titleSmall)
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+            content()
+        }
+    }
+}
+
+@Composable
+private fun BarStat(label: String, progress: Float, value: String) {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, style = MaterialTheme.typography.titleSmall)
+        Spacer(Modifier.height(6.dp))
+        com.webtecit.devicepilot.ui.common.Meter(progress)
+        Spacer(Modifier.height(6.dp))
+        Text(value, style = MaterialTheme.typography.bodyMedium)
+    }
+}
+
+@Composable
+private fun IconLine(icon: ImageVector, text: String) {
+    Row(Modifier.padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(text, style = MaterialTheme.typography.bodyLarge)
     }
 }

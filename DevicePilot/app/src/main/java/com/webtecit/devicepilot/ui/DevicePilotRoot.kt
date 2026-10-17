@@ -6,6 +6,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.background
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Apps
@@ -235,6 +238,17 @@ private fun MainScaffold(
                         style = MaterialTheme.typography.titleLarge)
                 },
                 navigationIcon = {
+                    if (route == Routes.HOME) {
+                        androidx.compose.foundation.layout.Box(
+                            Modifier.padding(start = 12.dp, end = 4.dp).size(34.dp)
+                                .clip(androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+                                .background(androidx.compose.ui.graphics.Brush.linearGradient(
+                                    listOf(androidx.compose.ui.graphics.Color(0xFF2A7BFF), androidx.compose.ui.graphics.Color(0xFF0B1B3F)))),
+                        ) {
+                            androidx.compose.foundation.Image(
+                                androidx.compose.ui.res.painterResource(R.drawable.ic_launcher_foreground), null, Modifier.size(34.dp))
+                        }
+                    }
                     if (!isTopLevel && route != null) {
                         IconButton(onClick = { nav.popBackStack() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back))

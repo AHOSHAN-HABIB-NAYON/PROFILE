@@ -17,6 +17,8 @@ Native Android app (Kotlin, Jetpack Compose, Material 3) for monitoring and mana
 | Area | What it does | Source of data |
 |---|---|---|
 | Device details | Device name, model, chipset, RAM, storage, display (resolution, Hz, size), battery (health, cycles, capacity, charging watts), SIM slots and carriers, IMEI (Android 9 and older; `*#06#` shortcut on newer), last boot time and uptime, kernel, build info, sensors | `Build`, `Settings.Global`, `TelephonyManager`/`SubscriptionManager`, `SystemClock`, `Display`, battery broadcast, sysfs where readable |
+| Online device info | Optional "Check online": official marketing name from Google Play's public device catalog, and a link to full specs in the browser | `storage.googleapis.com/play_public/supported_devices.csv` |
+| Hardware | CPU clusters (e.g. 1 × 3.30 GHz), chipset marketing name, GPU (OpenGL renderer), cameras (MP, aperture, focal length, OIS, flash, max video), rated battery capacity | sysfs cpufreq, `Build.SOC_MODEL`, EGL/GLES, Camera2, system power profile |
 | Running apps | Apps with active foreground services and recently active apps; close background process, internet on/off, Force stop and background restriction shortcuts | `UsageStatsManager.queryEvents`, `ActivityManager.killBackgroundProcesses` |
 | Permission setup | Shown after onboarding: asks for notifications, Usage Access, install permission and VPN one after another ("Grant all") | system dialogs / settings screens |
 | Home | Device identity, RAM, storage, battery temperature, thermal status, CPU, today's data, transparent health score, quick actions | `ActivityManager`, `StatFs`, battery broadcast, `PowerManager`, `NetworkStatsManager` |

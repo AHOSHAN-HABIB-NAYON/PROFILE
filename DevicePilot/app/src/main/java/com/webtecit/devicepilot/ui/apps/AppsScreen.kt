@@ -88,6 +88,7 @@ fun AppsScreen(navigate: (String) -> Unit) {
                 onClick = { SystemSettings.usageAccess(context) },
             )
         }
+        if (!ui.usageAccess) item { com.webtecit.devicepilot.ui.common.RestrictedSettingsHelp() }
         item {
             OutlinedTextField(
                 value = ui.query,

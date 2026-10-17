@@ -129,7 +129,9 @@ fun RunningAppsScreen(navigate: (String) -> Unit) {
         if (!ui.access) item {
             PermissionCard(stringResource(R.string.perm_usage_title), stringResource(R.string.running_needs_access),
                 stringResource(R.string.perm_grant_in_settings), onClick = { SystemSettings.usageAccess(context) })
-        } else {
+        }
+        if (!ui.access) item { com.webtecit.devicepilot.ui.common.RestrictedSettingsHelp() }
+        if (ui.access) {
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {

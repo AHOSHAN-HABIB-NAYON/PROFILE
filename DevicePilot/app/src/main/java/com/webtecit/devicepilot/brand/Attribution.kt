@@ -22,7 +22,7 @@ object Attribution {
     private val N = intArrayOf(23, 30, 116, 122, 27, 18, 21, 9, 18, 27, 20, 122, 18, 27, 24, 19, 24, 122, 20, 27, 3, 21, 20)
     private val W = intArrayOf(50, 46, 46, 42, 41, 96, 117, 117, 45, 63, 56, 46, 63, 57, 51, 46, 116, 57, 53, 55, 117)
     private const val TEXT_DIGEST = "2220b102fd40bce907921802f69d19dd8478d3d208b4919a229f8e8d63a20fab"
-    private const val PHOTO_DIGEST = "768503d667bd36aacaf20c29fdf161f3d372e3442fad43274b16289dcb8f7197"
+    private const val PHOTO_DIGEST = "9ce6b510e4dba82cc455d028a98f3f6d069ab41c2699f3d580f420e238b4d542"
 
     val developerName: String by lazy { decode(N) }
     val website: String by lazy { decode(W) }

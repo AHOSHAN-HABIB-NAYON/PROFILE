@@ -26,6 +26,8 @@ import androidx.compose.material.icons.outlined.Dialpad
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Memory
 import androidx.compose.material.icons.outlined.PhoneAndroid
+import androidx.compose.material.icons.outlined.PhotoCamera
+import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Screenshot
 import androidx.compose.material.icons.outlined.Share
@@ -75,6 +77,7 @@ import com.webtecit.devicepilot.ui.common.batteryHealthRes
 import com.webtecit.devicepilot.ui.common.chargeStateRes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.Locale
 
@@ -100,6 +103,12 @@ private data class Details(
     val features: List<Pair<String, Boolean>>,
     val unit: TemperatureUnit,
     val phonePermission: Boolean,
+    val clusters: String?,
+    val chipName: String?,
+    val chipCode: String?,
+    val gpu: String?,
+    val gpuVendor: String?,
+    val cameras: List<com.webtecit.devicepilot.data.CameraSpec>,
 )
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -122,6 +131,10 @@ fun DeviceInfoScreen() {
                 kernel = r.kernel(), baseband = r.baseband(), bootTime = r.bootTime(), uptime = r.uptimeMs(),
                 sensors = r.sensorCount(), cameras = r.cameraCount(), features = r.features(),
                 unit = c.settings.current().temperatureUnit, phonePermission = r.hasPhonePermission(),
+                clusters = c.hardware.clusterSummary(),
+                chipName = c.hardware.chipset().first, chipCode = c.hardware.chipset().second,
+                gpu = c.hardware.gpu().first, gpuVendor = c.hardware.gpu().second,
+                cameras = c.hardware.cameras(),
             )
         }
     }
@@ -149,6 +162,7 @@ fun DeviceInfoScreen() {
                 }
             }
         }
+        item { OnlineSection() }
         item {
             Section(Icons.Outlined.Schedule, stringResource(R.string.dd_power_on)) {
                 InfoRow(stringResource(R.string.dd_turned_on), dateTime(d.bootTime))
@@ -222,12 +236,36 @@ fun DeviceInfoScreen() {
         }
         item {
             Section(Icons.Outlined.Memory, stringResource(R.string.dd_processor_memory)) {
-                d.soc?.let { InfoRow(stringResource(R.string.dd_chipset), it) }
+                d.chipName?.let { InfoRow(stringResource(R.string.dd_chipset), it) }
+                d.chipCode?.let { InfoRow(stringResource(R.string.dd_chip_model), it) }
                 InfoRow(stringResource(R.string.cpu_cores), d.cores.toString())
+                d.clusters?.let { InfoRow(stringResource(R.string.dd_clusters), it) }
                 InfoRow(stringResource(R.string.dd_max_freq), d.maxFreq?.let { "$it MHz" } ?: na)
+                InfoRow(stringResource(R.string.dd_gpu), d.gpu ?: na)
+                d.gpuVendor?.let { InfoRow(stringResource(R.string.dd_gpu_vendor), it) }
                 InfoRow(stringResource(R.string.dd_abi), Build.SUPPORTED_ABIS.joinToString(", "))
                 InfoRow(stringResource(R.string.dd_ram), "${Formatters.bytes(d.memory.availableBytes)} / ${Formatters.bytes(d.memory.totalBytes)}")
                 d.storage?.let { InfoRow(stringResource(R.string.dd_storage), "${Formatters.bytes(it.freeBytes)} / ${Formatters.bytes(it.totalBytes)}") }
+            }
+        }
+        item {
+            Section(Icons.Outlined.PhotoCamera, stringResource(R.string.dd_cameras_section)) {
+                if (d.cameras.isEmpty()) Text(na, style = MaterialTheme.typography.bodySmall)
+                d.cameras.forEachIndexed { i, cam ->
+                    if (i > 0) Spacer(Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("${cam.facing} · ${cam.megapixels?.let { String.format(Locale.US, "%.1f MP", it) } ?: "—"}",
+                            style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                        StatusPill("ID ${cam.id}", Level.NEUTRAL)
+                    }
+                    cam.resolution?.let { InfoRow(stringResource(R.string.dd_resolution), it) }
+                    cam.aperture?.let { InfoRow(stringResource(R.string.dd_aperture), String.format(Locale.US, "f/%.1f", it)) }
+                    cam.focalMm?.let { InfoRow(stringResource(R.string.dd_focal), String.format(Locale.US, "%.2f mm", it)) }
+                    cam.maxVideo?.let { InfoRow(stringResource(R.string.dd_video), it) }
+                    InfoRow(stringResource(R.string.dd_ois), stringResource(if (cam.ois) R.string.yes else R.string.no))
+                    InfoRow(stringResource(R.string.dd_flash), stringResource(if (cam.flash) R.string.yes else R.string.no))
+                }
+                SourceNote(stringResource(R.string.dd_camera_note))
             }
         }
         d.display?.let { disp ->
@@ -303,5 +341,53 @@ private fun Section(icon: ImageVector, title: String, content: @Composable () ->
         }
         Spacer(Modifier.height(6.dp))
         content()
+    }
+}
+
+
+@Composable
+private fun OnlineSection() {
+    val c = LocalContainer.current
+    val context = LocalContext.current
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var state by androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableStateOf<com.webtecit.devicepilot.data.OnlineName?>(c.online.cached())
+    }
+    var loading by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    Section(Icons.Outlined.Public, stringResource(R.string.dd_online_title)) {
+        when (val s = state) {
+            is com.webtecit.devicepilot.data.OnlineName.Found -> {
+                Text("${s.brand} ${s.marketingName}", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.dd_online_verified), style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.height(8.dp))
+                FilledTonalButton(onClick = { SystemSettings.url(context, c.online.specsUrl("${s.brand} ${s.marketingName}")) }) {
+                    Text(stringResource(R.string.dd_online_specs))
+                }
+            }
+            com.webtecit.devicepilot.data.OnlineName.NotListed ->
+                Text(stringResource(R.string.dd_online_not_listed), style = MaterialTheme.typography.bodySmall)
+            com.webtecit.devicepilot.data.OnlineName.FirewallOn ->
+                Text(stringResource(R.string.dd_online_firewall), style = MaterialTheme.typography.bodySmall,
+                    color = com.webtecit.devicepilot.ui.common.levelColor(Level.WARN))
+            is com.webtecit.devicepilot.data.OnlineName.Failed ->
+                Text(stringResource(R.string.dd_online_failed), style = MaterialTheme.typography.bodySmall,
+                    color = com.webtecit.devicepilot.ui.common.levelColor(Level.BAD))
+            null -> Text(stringResource(R.string.dd_online_text), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (state !is com.webtecit.devicepilot.data.OnlineName.Found) {
+            Spacer(Modifier.height(8.dp))
+            if (loading) androidx.compose.material3.LinearProgressIndicator(Modifier.fillMaxWidth())
+            else FilledTonalButton(onClick = {
+                loading = true
+                scope.launch { state = c.online.officialName(); loading = false }
+            }) { Text(stringResource(R.string.dd_online_check)) }
+            Spacer(Modifier.height(4.dp))
+            androidx.compose.material3.TextButton(onClick = {
+                SystemSettings.url(context, c.online.specsUrl("${Build.MANUFACTURER} ${Build.MODEL}"))
+            }) { Text(stringResource(R.string.dd_online_specs)) }
+        }
+        SourceNote(stringResource(R.string.dd_online_note))
     }
 }

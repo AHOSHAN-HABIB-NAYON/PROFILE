@@ -46,3 +46,11 @@ class UsageTest {
         assertEquals(0f, UsageMath.shareOf(5, 0), 0.0001f)
     }
 }
+
+class CsvTest {
+    @Test fun parsesQuotedFields() {
+        val cols = com.webtecit.devicepilot.data.OnlineLookup.parseCsv("Samsung,\"Galaxy S24, Ultra\",e3q,SM-S928B")
+        assertEquals(listOf("Samsung", "Galaxy S24, Ultra", "e3q", "SM-S928B"), cols)
+    }
+    @Test fun parsesPlain() = assertEquals(4, com.webtecit.devicepilot.data.OnlineLookup.parseCsv("a,b,c,d").size)
+}

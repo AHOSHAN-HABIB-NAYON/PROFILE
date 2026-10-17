@@ -51,6 +51,7 @@ data class DisplayInfo(
 
 /** Static and slow-changing device facts for the Device details page. */
 class DeviceDetailsReader(private val context: Context) {
+    private val hardware = HardwareInfo(context)
 
     fun deviceName(): String {
         val n = if (Build.VERSION.SDK_INT >= 25) runCatching {
@@ -185,7 +186,9 @@ class DeviceDetailsReader(private val context: Context) {
         val cycle = snapshot.cycleCount?.also { cycleSource = "Android (BatteryManager)" }
             ?: readSys("$base/cycle_count")?.toInt()?.takeIf { it >= 0 }?.also { cycleSource = "$base/cycle_count" }
 
-        val design = readSys("$base/charge_full_design")?.let { toMah(it) }
+        var designSource: String? = null
+        val design = readSys("$base/charge_full_design")?.let { toMah(it) }?.also { designSource = "sysfs" }
+            ?: hardware.ratedBatteryCapacityMah()?.also { designSource = "power profile" }
         val full = readSys("$base/charge_full")?.let { toMah(it) }
         val pct = snapshot.percent
         val estimated = if (snapshot.chargeCounterMah != null && pct != null && pct >= 15) snapshot.chargeCounterMah * 100 / pct else null
@@ -193,9 +196,10 @@ class DeviceDetailsReader(private val context: Context) {
         var healthSource: String? = null
         val health = when {
             full != null && design != null && design > 0 -> (full * 100 / design).also { healthSource = "charge_full / charge_full_design" }
-            estimated != null && design != null && design > 0 -> (estimated * 100 / design).also { healthSource = "estimate from charge counter" }
+            estimated != null && design != null && design > 0 ->
+                (estimated * 100 / design).also { healthSource = "charge counter vs rated capacity ($designSource)" }
             else -> null
-        }?.coerceIn(1, 120)
+        }?.coerceIn(1, 100)
 
         val voltageV = (snapshot.voltageMv ?: 0) / 1000f
         val currentA = (snapshot.currentNowMa ?: 0) / 1000f

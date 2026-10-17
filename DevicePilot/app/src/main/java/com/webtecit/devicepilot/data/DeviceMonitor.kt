@@ -132,8 +132,9 @@ class DeviceMonitor(private val context: Context) {
             kotlin.math.abs(currentRaw) > 20_000 -> currentRaw / 1000
             else -> currentRaw
         }
+        // CHARGE_COUNTER is specified in µAh, but a few vendors report mAh.
         val counter = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CHARGE_COUNTER)
-            .takeIf { it != Int.MIN_VALUE && it > 0 }?.let { it / 1000 }
+            .takeIf { it != Int.MIN_VALUE && it > 0 }?.let { if (it > 50_000) it / 1000 else it }
 
         return BatterySnapshot(
             percent = percent,
