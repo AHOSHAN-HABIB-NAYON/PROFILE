@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="dp_navy">#0B1B3F</color>
+    <color name="dp_blue">#1E6BFF</color>
+    <color name="dp_cyan">#12B5E5</color>
+    <color name="dp_background">#F5F8FF</color>
+    <color name="dp_background_dark">#0A1222</color>
+    <color name="ic_launcher_background">#1E6BFF</color>
+</resources>

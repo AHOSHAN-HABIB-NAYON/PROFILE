@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- shield -->
+    <path android:fillColor="#FFFFFF" android:fillAlpha="0.14"
+        android:strokeColor="#FFFFFF" android:strokeAlpha="0.55" android:strokeWidth="1.6"
+        android:pathData="M54,23 L80,32.5 L80,52 C80,68 69,79.5 54,86 C39,79.5 28,68 28,52 L28,32.5 Z" />
+    <!-- phone body -->
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M43,34h22a4,4 0 0,1 4,4v32a4,4 0 0,1 -4,4h-22a4,4 0 0,1 -4,-4v-32a4,4 0 0,1 4,-4z" />
+    <!-- screen -->
+    <path android:fillColor="#0B1B3F"
+        android:pathData="M44,39.5h20a1.5,1.5 0 0,1 1.5,1.5v26a1.5,1.5 0 0,1 -1.5,1.5h-20a1.5,1.5 0 0,1 -1.5,-1.5v-26a1.5,1.5 0 0,1 1.5,-1.5z" />
+    <!-- gauge -->
+    <path android:strokeColor="#22D3EE" android:strokeWidth="2.4" android:strokeLineCap="round"
+        android:pathData="M46.5,58 A7.5,7.5 0 0,1 61.5,58" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="1.8" android:strokeLineCap="round"
+        android:pathData="M54,58 L58.2,52.6" />
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M52.5,58a1.5,1.5 0 1,0 3,0a1.5,1.5 0 1,0 -3,0z" />
+    <!-- small bars -->
+    <path android:fillColor="#22D3EE" android:fillAlpha="0.75"
+        android:pathData="M47,63h2.4v2.5h-2.4z M51,62h2.4v3.5h-2.4z M55,61h2.4v4.5h-2.4z M59,60h2.4v5.5h-2.4z" />
+    <!-- speaker -->
+    <path android:strokeColor="#0B1B3F" android:strokeWidth="1.2" android:strokeLineCap="round"
+        android:pathData="M51.5,36.6 L56.5,36.6" />
+</vector>
