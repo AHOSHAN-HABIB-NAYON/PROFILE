@@ -1,5 +1,5 @@
-# চাকরি সার্কুলার অ্যান্ড্রয়েড অ্যাপ — বিল্ড (সাইন ছাড়া)।
-# সাইন করা হয় আলাদা জায়গায়, চাবি এই রিপোতে কখনো রাখা হয় না।
+# চাকরি সার্কুলার অ্যান্ড্রয়েড অ্যাপ — সাইন করা AAB (Play Store) + APK।
+# চাবি শুধু GitHub Secrets-এ থাকে, রিপোতে কখনো না।
 name: Android build
 
 on:
@@ -31,14 +31,27 @@ jobs:
         with:
           gradle-version: '8.14.3'
 
-      - name: Build AAB + APK
+      - name: Decode upload key
+        run: |
+          echo "${{ secrets.QW_UPLOAD_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          echo "QW_KEYSTORE_FILE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+
+      - name: Build signed AAB + APK
+        env:
+          QW_KEYSTORE_PASSWORD: ${{ secrets.QW_KEYSTORE_PASSWORD }}
+          QW_KEY_ALIAS: ${{ secrets.QW_KEY_ALIAS }}
+          QW_KEY_PASSWORD: ${{ secrets.QW_KEY_PASSWORD }}
         run: gradle -p android :app:bundleRelease :app:assembleRelease --no-daemon --stacktrace
+
+      - name: Remove key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/upload.jks"
 
       - name: Save outputs to the branch
         run: |
-          mkdir -p build-out
-          cp android/app/build/outputs/bundle/release/app-release.aab build-out/app-release-unsigned.aab
-          cp android/app/build/outputs/apk/release/app-release-unsigned.apk build-out/app-release-unsigned.apk
+          rm -rf build-out && mkdir -p build-out
+          cp android/app/build/outputs/bundle/release/app-release.aab build-out/CakriCircular-play.aab
+          cp android/app/build/outputs/apk/release/app-release.apk build-out/CakriCircular.apk
           ls -la build-out > build-out/info.txt
           echo "source: ${GITHUB_SHA}" >> build-out/info.txt
           git config user.name "github-actions[bot]"

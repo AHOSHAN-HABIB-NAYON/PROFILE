@@ -8,16 +8,30 @@ android {
 
     defaultConfig {
         applicationId 'com.cakricircular.app'
-        minSdk 23
+        minSdk 24
         targetSdk 36
-        versionCode 10
-        versionName '2.5'
+        versionCode 11
+        versionName '2.6'
         // শুধু বাংলা আর ইংরেজি — লাইব্রেরির অন্য ভাষার লেখা বাদ (সাইজ কমে)
         resourceConfigurations += ['bn', 'en']
     }
 
+    // Play upload key: decoded from GitHub secrets by the CI workflow, never stored in the repo.
+    signingConfigs {
+        release {
+            def ks = System.getenv('QW_KEYSTORE_FILE')
+            if (ks) {
+                storeFile file(ks)
+                storePassword System.getenv('QW_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('QW_KEY_ALIAS')
+                keyPassword System.getenv('QW_KEY_PASSWORD')
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (System.getenv('QW_KEYSTORE_FILE')) signingConfig signingConfigs.release
             // ছোট সাইজ: অপ্রয়োজনীয় কোড ও রিসোর্স বাদ
             minifyEnabled true
             shrinkResources true
