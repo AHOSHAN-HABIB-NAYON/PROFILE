@@ -1,0 +1,70 @@
+name: FilePilot Android build
+
+on:
+  push:
+    paths:
+      - "FilePilot/**"
+      - ".github/workflows/filepilot-android.yml"
+  pull_request:
+    paths:
+      - "FilePilot/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: filepilot-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: FilePilot
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Unit tests
+        run: ./gradlew --no-daemon testDebugUnitTest
+
+      - name: Build debug APK
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Build release APK and AAB (unsigned unless signing secrets exist)
+        run: ./gradlew --no-daemon assembleRelease bundleRelease
+
+      - name: Lint
+        run: ./gradlew --no-daemon lintDebug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: FilePilot-debug-apk
+          path: FilePilot/app/build/outputs/apk/debug/*.apk
+
+      - name: Upload release outputs
+        uses: actions/upload-artifact@v4
+        with:
+          name: FilePilot-release
+          path: |
+            FilePilot/app/build/outputs/apk/release/*.apk
+            FilePilot/app/build/outputs/bundle/release/*.aab
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FilePilot-lint-report
+          path: FilePilot/app/build/reports/lint-results-debug.html
+          if-no-files-found: ignore

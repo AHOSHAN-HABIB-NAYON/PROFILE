@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Used only to hand a single user-chosen file to another app (open / share). -->
+<paths>
+    <external-path name="external" path="." />
+    <!-- Removable SD cards live outside the primary external path. -->
+    <root-path name="storage" path="storage/" />
+    <cache-path name="cache" path="shared/" />
+</paths>

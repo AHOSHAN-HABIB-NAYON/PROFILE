@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="12 12 84 84" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="12" y1="12" x2="96" y2="96" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#5B5FF2"/><stop offset="1" stop-color="#7A3CE6"/></linearGradient>
+    <radialGradient id="hl" cx="30" cy="22" r="70" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="ar" x1="58" y1="52" x2="50" y2="71" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#4F46E5"/><stop offset="1" stop-color="#7C3AED"/></linearGradient>
+  </defs>
+  <path d="M36,12H72C85.300,12 96,22.700 96,36V72C96,85.300 85.300,96 72,96H36C22.700,96 12,85.300 12,72V36C12,22.700 22.700,12 36,12z" fill="url(#bg)"/><path d="M36,12H72C85.300,12 96,22.700 96,36V72C96,85.300 85.300,96 72,96H36C22.700,96 12,85.300 12,72V36C12,22.700 22.700,12 36,12z" fill="url(#hl)"/>
+  <path d="M34,36h11.2c1.7,0 3.300,0.8 4.300,2.200l2.600,3.600c0.4,0.5 1,0.8 1.600,0.8H74c3.300,0 6,2.700 6,6V70c0,3.300 -2.700,6 -6,6H34c-3.300,0 -6,-2.700 -6,-6V42c0,-3.300 2.700,-6 6,-6z" fill="#fff" fill-opacity=".65"/>
+  <path d="M32,47.500h44c2.200,0 4,1.800 4,4V70c0,3.300 -2.700,6 -6,6H34c-3.300,0 -6,-2.700 -6,-6V51.500c0,-2.200 1.800,-4 4,-4z" fill="#fff"/>
+  <path d="M62.81,52.32L56.30,71.28L53.23,63.74L45.27,62.02Z" fill="url(#ar)"/>
+</svg>
