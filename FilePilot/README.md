@@ -29,7 +29,7 @@ A fast, offline-first Android file manager built with Kotlin, Jetpack Compose an
 | --- | --- | --- |
 | 7 – 10 (API 24–29) | `READ/WRITE_EXTERNAL_STORAGE` runtime permission (`requestLegacyExternalStorage` on 10). SD card writes require adding the card as a picked folder (Android limitation). | Picked folders (SAF). |
 | 11 – 12L (API 30–32) | `MANAGE_EXTERNAL_STORAGE` via the system "All files access" page. | `READ_EXTERNAL_STORAGE` → read-only media; picked folders. |
-| 13+ (API 33–36) | `MANAGE_EXTERNAL_STORAGE`. | `READ_MEDIA_IMAGES/VIDEO/AUDIO` → read-only media; picked folders. |
+| 13+ (API 33–36) | `MANAGE_EXTERNAL_STORAGE`. | `READ_MEDIA_IMAGES/VIDEO/AUDIO` → read-only media (on 14+, "selected photos only" is supported via `READ_MEDIA_VISUAL_USER_SELECTED`); picked folders. |
 
 `Android/data` and `Android/obb` are never accessed. Media-only items are read-only (open, share, copy, favorite).
 
