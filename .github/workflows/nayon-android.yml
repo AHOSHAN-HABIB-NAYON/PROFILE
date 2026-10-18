@@ -115,10 +115,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
+          VERSION="0.2.${GITHUB_RUN_NUMBER}"
           cp apks/apk/debug/app-debug.apk NAYON-Browser.apk
+          cp apks/apk/debug/app-debug.apk "NAYON-Browser-v${VERSION}.apk"
           gh release delete nayon-browser-latest --yes --cleanup-tag || true
-          gh release create nayon-browser-latest NAYON-Browser.apk \
+          gh release create nayon-browser-latest NAYON-Browser.apk "NAYON-Browser-v${VERSION}.apk" \
             --prerelease \
             --target "$GITHUB_SHA" \
-            --title "NAYON Browser – latest test build" \
-            --notes "Debug build from branch ${GITHUB_REF_NAME} (commit ${GITHUB_SHA::7}). For testing only — not a store release."
+            --title "NAYON Browser v${VERSION} – latest test build" \
+            --notes "Version ${VERSION} (commit ${GITHUB_SHA::7}). Both files are the same app; the versioned name makes it easy to tell builds apart. The version is shown at the bottom of the ⋮ menu and in Settings > About. For testing only."

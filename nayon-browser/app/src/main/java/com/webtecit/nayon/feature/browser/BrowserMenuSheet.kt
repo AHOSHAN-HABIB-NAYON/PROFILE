@@ -115,6 +115,13 @@ fun BrowserMenuSheet(
                 )
             }
             SettingsRow(stringResource(R.string.action_settings), { act(MenuAction.SETTINGS) }, icon = Icons.Outlined.Settings, showChevron = false)
+            Text(
+                "NAYON Browser ${com.webtecit.nayon.BuildConfig.VERSION_NAME}",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth().padding(top = Spacing.sm),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
         }
     }
 }

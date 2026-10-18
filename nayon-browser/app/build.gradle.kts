@@ -9,6 +9,10 @@ plugins {
 // See README.md -> "Signing a release build".
 val releaseKeystorePath: String? = System.getenv("NAYON_KEYSTORE_PATH")?.takeIf { it.isNotBlank() }
 
+// Every CI build gets a higher version, so a phone always installs it as an update and the
+// build number is visible in the app (Settings > About). Local builds use 0.
+val ciBuildNumber: Int = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 0
+
 android {
     namespace = "com.webtecit.nayon"
     compileSdk = 36
@@ -17,8 +21,8 @@ android {
         applicationId = "com.webtecit.nayon"
         minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.2.0-stage2"
+        versionCode = 200 + ciBuildNumber
+        versionName = "0.2.$ciBuildNumber"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
     }
