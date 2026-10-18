@@ -269,7 +269,7 @@ private fun AiSettingsDialog(config: AiConfig, hasKey: Boolean, onSave: (AiConfi
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
                             modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
                         )
-                        androidx.compose.material3.ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                             AiProviderKind.entries.forEach { k -> DropdownMenuItem(text = { Text(k.label) }, onClick = { kind = k; expanded = false }) }
                         }
                     }
