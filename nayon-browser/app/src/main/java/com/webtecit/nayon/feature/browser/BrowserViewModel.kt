@@ -115,6 +115,20 @@ class BrowserViewModel(
     private val webViews = mutableMapOf<String, WebView>()
     private val lastUsed = mutableMapOf<String, Long>()
 
+    /** Shows "Downloaded – Open" when one of our downloads finishes. */
+    private val downloadReceiver by lazy { object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
+            if (id < 0) return
+            val info = DownloadFiles.info(context, id) ?: return
+            if (info.second) {
+                _events.tryEmit(BrowserEvent.Message(R.string.download_complete, info.first, action = EventAction.OpenDownload(id)))
+            } else {
+                _events.tryEmit(BrowserEvent.Message(R.string.download_failed_named, info.first, action = EventAction.ShowDownloads))
+            }
+        }
+    } }
+
     init {
         viewModelScope.launch {
             val prefs = prefsRepository.preferences.first()
@@ -901,19 +915,6 @@ class BrowserViewModel(
         }
     }
 
-    // Lazy: it is first used from init, before properties declared below are initialised.
-    private val downloadReceiver by lazy { object : android.content.BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
-            if (id < 0) return
-            val info = DownloadFiles.info(context, id) ?: return
-            if (info.second) {
-                _events.tryEmit(BrowserEvent.Message(R.string.download_complete, info.first, action = EventAction.OpenDownload(id)))
-            } else {
-                _events.tryEmit(BrowserEvent.Message(R.string.download_failed_named, info.first, action = EventAction.ShowDownloads))
-            }
-        }
-    } }
 
     override fun onCleared() {
         runCatching { getApplication<Application>().unregisterReceiver(downloadReceiver) }
