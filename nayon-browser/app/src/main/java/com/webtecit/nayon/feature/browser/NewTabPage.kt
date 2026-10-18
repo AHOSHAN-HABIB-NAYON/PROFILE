@@ -29,7 +29,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Bookmarks
-import androidx.compose.material.icons.outlined.CenterFocusWeak
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.History
@@ -80,6 +79,10 @@ import com.webtecit.nayon.core.designsystem.theme.Spacing
 import com.webtecit.nayon.data.browser.HistoryEntry
 import com.webtecit.nayon.data.settings.HomeShortcut
 import java.util.Calendar
+import com.webtecit.nayon.core.browser.SearchEngine
+import kotlinx.coroutines.delay
+import androidx.compose.ui.res.painterResource
+import androidx.compose.runtime.produceState
 import kotlin.random.Random
 
 /** Everything the home page can do, grouped to keep the call site readable. */
@@ -108,6 +111,7 @@ fun NewTabPage(
     voiceAvailable: Boolean,
     actions: HomeActions,
     modifier: Modifier = Modifier,
+    searchEngine: SearchEngine = SearchEngine.GOOGLE,
 ) {
     val scheme = MaterialTheme.colorScheme
     Box(modifier.fillMaxSize().background(scheme.surface), contentAlignment = Alignment.TopCenter) {
@@ -120,7 +124,7 @@ fun NewTabPage(
                 Modifier.fillMaxWidth().widthIn(max = Layout.maxContentWidth).offset(y = (-30).dp).padding(horizontal = Spacing.gutter),
                 verticalArrangement = Arrangement.spacedBy(Spacing.lg),
             ) {
-                SearchPill(isPrivate, voiceAvailable, actions)
+                SearchPill(isPrivate, voiceAvailable, searchEngine, actions)
                 if (isPrivate) {
                     PrivateInfo(privateIsolationSupported)
                 } else {
@@ -138,18 +142,34 @@ fun NewTabPage(
 
 private enum class Scene { MORNING, DAY, EVENING, NIGHT }
 
-private fun sceneNow(): Scene = when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
-    in 5..10 -> Scene.MORNING
-    in 11..16 -> Scene.DAY
-    in 17..18 -> Scene.EVENING
-    else -> Scene.NIGHT
+/** Morning 5–11, afternoon 12–16, evening 17–19, night 20–4 (so 1:43 AM is night). */
+internal fun sceneForHour(hour: Int): Int = when (hour) {
+    in 5..11 -> 0
+    in 12..16 -> 1
+    in 17..19 -> 2
+    else -> 3
+}
+
+private fun sceneNow(): Scene = Scene.entries[sceneForHour(Calendar.getInstance().get(Calendar.HOUR_OF_DAY))]
+
+/** The current time, ticking every [periodMs] so "5 seconds ago" and the sky stay true. */
+@Composable
+private fun rememberNow(periodMs: Long): Long {
+    val now by produceState(System.currentTimeMillis(), periodMs) {
+        while (true) {
+            delay(periodMs)
+            value = System.currentTimeMillis()
+        }
+    }
+    return now
 }
 
 /** Sky-and-mountains scene that follows the time of day, like the NAYON mock-up. */
 @Composable
 private fun SkyHero() {
     val context = LocalContext.current
-    val scene = remember { sceneNow() }
+    val minute = rememberNow(30_000L)
+    val scene = remember(minute / 60_000L) { sceneNow() }
     val (sky, sunColor, hills, textColor) = when (scene) {
         Scene.MORNING -> Quad(listOf(Color(0xFF7DB7FF), Color(0xFFC9B6FF), Color(0xFFFFD3C2)), Color(0xFFFFF1C1),
             listOf(Color(0xFF8E7CC3), Color(0xFF6C5CA8), Color(0xFF4B3F86)), Color(0xFF1B1530))
@@ -163,9 +183,10 @@ private fun SkyHero() {
     val greeting = when (scene) {
         Scene.MORNING -> R.string.ntp_greeting_morning
         Scene.DAY -> R.string.ntp_greeting_afternoon
-        else -> R.string.ntp_greeting_evening
+        Scene.EVENING -> R.string.ntp_greeting_evening
+        Scene.NIGHT -> R.string.ntp_greeting_night
     }
-    val date = remember { DateUtils.formatDateTime(context, System.currentTimeMillis(), DateUtils.FORMAT_SHOW_WEEKDAY or DateUtils.FORMAT_SHOW_DATE) }
+    val date = remember(minute / 3_600_000L) { DateUtils.formatDateTime(context, System.currentTimeMillis(), DateUtils.FORMAT_SHOW_WEEKDAY or DateUtils.FORMAT_SHOW_DATE) }
     val stars = remember { List(40) { Offset(Random.nextFloat(), Random.nextFloat() * 0.55f) } }
 
     Box(Modifier.fillMaxWidth().height(250.dp)) {
@@ -246,7 +267,7 @@ private fun PrivateInfo(isolationSupported: Boolean) {
 // ---- Search ----------------------------------------------------------------------------
 
 @Composable
-private fun SearchPill(isPrivate: Boolean, voiceAvailable: Boolean, actions: HomeActions) {
+private fun SearchPill(isPrivate: Boolean, voiceAvailable: Boolean, searchEngine: SearchEngine, actions: HomeActions) {
     val scheme = MaterialTheme.colorScheme
     Surface(
         onClick = actions.onSearchClick,
@@ -256,7 +277,7 @@ private fun SearchPill(isPrivate: Boolean, voiceAvailable: Boolean, actions: Hom
             spotColor = scheme.primary.copy(alpha = 0.25f)),
     ) {
         Row(Modifier.padding(start = Spacing.lg, end = Spacing.xs), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Outlined.Search, null, tint = scheme.primary)
+            EngineMark(searchEngine)
             Spacer(Modifier.width(Spacing.md))
             Text(
                 stringResource(if (isPrivate) R.string.address_hint_private else R.string.address_hint),
@@ -266,8 +287,21 @@ private fun SearchPill(isPrivate: Boolean, voiceAvailable: Boolean, actions: Hom
             if (voiceAvailable) {
                 IconButton(onClick = actions.onVoiceClick) { Icon(Icons.Outlined.Mic, stringResource(R.string.action_voice_search), tint = scheme.primary) }
             }
-            IconButton(onClick = actions.onLensClick) { Icon(Icons.Outlined.CenterFocusWeak, stringResource(R.string.action_lens), tint = scheme.primary) }
+            IconButton(onClick = actions.onLensClick) {
+                Icon(painterResource(R.drawable.ic_google_lens), stringResource(R.string.action_lens), tint = Color.Unspecified, modifier = Modifier.size(24.dp))
+            }
         }
+    }
+}
+
+/** The search engine's own mark: the Google "G", or the engine's site icon. */
+@Composable
+private fun EngineMark(engine: SearchEngine) {
+    when {
+        engine == SearchEngine.GOOGLE ->
+            Icon(painterResource(R.drawable.ic_google_g), engine.displayName, tint = Color.Unspecified, modifier = Modifier.size(24.dp))
+        engine.homeUrl.isNotBlank() -> SiteIcon(engine.homeUrl, engine.displayName, size = 26.dp, downloadIcon = true)
+        else -> Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.primary)
     }
 }
 
@@ -382,6 +416,8 @@ private fun QuickTile(icon: ImageVector, label: String, color: Color, onClick: (
 @Composable
 private fun RecentCard(recent: List<HistoryEntry>, actions: HomeActions) {
     val scheme = MaterialTheme.colorScheme
+    val newest = recent.maxOfOrNull { it.visitedAt } ?: 0L
+    val now = rememberNow(if (System.currentTimeMillis() - newest < 60_000L) 1_000L else 30_000L)
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(stringResource(R.string.ntp_recent), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f).padding(start = Spacing.xs))
@@ -402,7 +438,7 @@ private fun RecentCard(recent: List<HistoryEntry>, actions: HomeActions) {
                             Text(e.title.ifBlank { UrlResolver.displayHost(e.url) }, style = MaterialTheme.typography.titleSmall,
                                 maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(
-                                "${UrlResolver.displayHost(e.url)} · ${DateUtils.getRelativeTimeSpanString(e.visitedAt, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS)}",
+                                "${UrlResolver.displayHost(e.url)} · ${timeAgo(e.visitedAt, now)}",
                                 style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
                             )
                         }
@@ -431,4 +467,19 @@ private fun Footer(onOpenAbout: () -> Unit) {
         textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth().clip(CircleShape).clickable(role = Role.Button, onClick = onOpenAbout).padding(Spacing.md),
     )
+}
+
+/** "5 seconds ago", "3 minutes ago", "2 hours ago", "4 days ago", then the date. */
+@Composable
+private fun timeAgo(time: Long, now: Long): String {
+    val res = LocalContext.current.resources
+    val secs = ((now - time) / 1000L).coerceAtLeast(0L)
+    return when {
+        secs < 5 -> res.getString(R.string.time_just_now)
+        secs < 60 -> res.getQuantityString(R.plurals.time_seconds_ago, secs.toInt(), secs.toInt())
+        secs < 3600 -> (secs / 60).toInt().let { res.getQuantityString(R.plurals.time_minutes_ago, it, it) }
+        secs < 86_400 -> (secs / 3600).toInt().let { res.getQuantityString(R.plurals.time_hours_ago, it, it) }
+        secs < 7 * 86_400 -> (secs / 86_400).toInt().let { res.getQuantityString(R.plurals.time_days_ago, it, it) }
+        else -> DateUtils.formatDateTime(LocalContext.current, time, DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_ABBREV_MONTH)
+    }
 }

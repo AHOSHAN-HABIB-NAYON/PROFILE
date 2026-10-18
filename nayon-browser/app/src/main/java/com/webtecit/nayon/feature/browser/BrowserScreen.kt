@@ -193,7 +193,8 @@ fun BrowserScreen(
     val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok -> if (ok) cameraUri?.let(::sendToLens) }
     fun openLens() {
         focusManager.clearFocus()
-        showLens = true
+        // Straight into the Lens camera like Chrome; the photo / gallery sheet is the fallback.
+        if (!LensLauncher.launchCamera(context)) showLens = true
     }
 
     fun submit(text: String) {
@@ -329,6 +330,7 @@ fun BrowserScreen(
                                 privateIsolationSupported = viewModel.privateIsolationSupported,
                                 voiceAvailable = voiceAvailable,
                                 actions = homeActions,
+                                searchEngine = prefs.searchEngine,
                             )
                         } else {
                             Box(Modifier.fillMaxSize()) {
@@ -491,7 +493,7 @@ fun BrowserScreen(
     }
 }
 
-private const val GOOGLE_APP = "com.google.android.googlequicksearchbox"
+private const val GOOGLE_APP = LensLauncher.GOOGLE_APP
 private const val LENS_WEB = "https://lens.google.com"
 private const val LENS_BY_URL = "https://lens.google.com/uploadbyurl?url="
 

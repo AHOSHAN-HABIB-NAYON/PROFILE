@@ -843,7 +843,14 @@ class BrowserViewModel(
             updateTab(tabId) { it.copy(isLoading = false, progress = 100, url = url, title = view.title ?: it.title) }
             val host = UrlResolver.displayHost(url)
             if (tab(tabId)?.isPrivate == false && UrlResolver.isWebUrl(url) && host.isNotBlank()) {
-                viewModelScope.launch { favicons.upgrade(host) }
+                // Store the icon only now, under the host of the page that actually finished.
+                // Icons that arrive mid-navigation can belong to the previous or next site.
+                val icon = view.favicon
+                val sameSite = UrlResolver.displayHost(view.url) == host
+                viewModelScope.launch {
+                    if (icon != null && sameSite) favicons.save(host, icon)
+                    favicons.upgrade(host)
+                }
             }
             syncNavState(tabId, view)
         }
@@ -903,10 +910,8 @@ class BrowserViewModel(
 
         override fun onReceivedIcon(view: WebView, icon: Bitmap?) {
             if (icon == null) return
+            // Shown on the tab only; it is stored when the page finishes (see onPageFinished).
             updateTab(tabId) { it.copy(favicon = icon) }
-            val tab = tab(tabId) ?: return
-            val host = UrlResolver.displayHost(view.url)
-            if (!tab.isPrivate && host.isNotBlank()) viewModelScope.launch { favicons.save(host, icon) }
         }
 
         override fun onShowCustomView(view: View, callback: WebChromeClient.CustomViewCallback) {

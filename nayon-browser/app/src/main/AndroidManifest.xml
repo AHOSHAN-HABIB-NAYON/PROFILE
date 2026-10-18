@@ -20,6 +20,7 @@
         </intent>
         <!-- Google app, to open Google Lens from the address bar when installed. -->
         <package android:name="com.google.android.googlequicksearchbox" />
+        <package android:name="com.google.ar.lens" />
     </queries>
 
     <application

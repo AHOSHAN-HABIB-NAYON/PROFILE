@@ -1,5 +1,7 @@
 package com.webtecit.nayon.feature.browser
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
@@ -27,7 +29,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.CenterFocusWeak
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.Refresh
@@ -259,7 +260,9 @@ private fun PillTrailing(
             if (voiceAvailable) {
                 IconButton(onClick = onVoice) { Icon(Icons.Outlined.Mic, stringResource(R.string.action_voice_search), modifier = Modifier.size(22.dp)) }
             }
-            IconButton(onClick = onLens) { Icon(Icons.Outlined.CenterFocusWeak, stringResource(R.string.action_lens), modifier = Modifier.size(22.dp)) }
+            IconButton(onClick = onLens) {
+                Icon(painterResource(R.drawable.ic_google_lens), stringResource(R.string.action_lens), tint = Color.Unspecified, modifier = Modifier.size(22.dp))
+            }
         }
         !focused && onPage && tab?.isLoading == true ->
             IconButton(onClick = onStop) { Icon(Icons.Filled.Close, stringResource(R.string.action_stop), modifier = Modifier.size(20.dp)) }

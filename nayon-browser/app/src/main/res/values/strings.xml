@@ -120,6 +120,12 @@
     <string name="ntp_greeting_morning">Good morning</string>
     <string name="ntp_greeting_afternoon">Good afternoon</string>
     <string name="ntp_greeting_evening">Good evening</string>
+    <string name="ntp_greeting_night">Good night</string>
+    <string name="time_just_now">Just now</string>
+    <plurals name="time_seconds_ago"><item quantity="one">%d second ago</item><item quantity="other">%d seconds ago</item></plurals>
+    <plurals name="time_minutes_ago"><item quantity="one">%d minute ago</item><item quantity="other">%d minutes ago</item></plurals>
+    <plurals name="time_hours_ago"><item quantity="one">%d hour ago</item><item quantity="other">%d hours ago</item></plurals>
+    <plurals name="time_days_ago"><item quantity="one">%d day ago</item><item quantity="other">%d days ago</item></plurals>
     <string name="ntp_shortcuts">Shortcuts</string>
     <string name="ntp_recent">Recently visited</string>
     <string name="ntp_see_all">See all</string>
