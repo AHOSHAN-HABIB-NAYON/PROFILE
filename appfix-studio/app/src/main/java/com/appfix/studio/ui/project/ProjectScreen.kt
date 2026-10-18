@@ -98,6 +98,8 @@ fun ProjectScreen(
     onOpenEditor: () -> Unit,
     onOpenRepair: () -> Unit,
     onDeleted: () -> Unit,
+    onOpenResources: () -> Unit = {},
+    onOpenSearch: () -> Unit = {},
 ) {
     val vm = appViewModel(key = "project-$projectId") { ProjectViewModel(it, projectId) }
     val project by vm.project.collectAsStateWithLifecycle()
@@ -137,7 +139,7 @@ fun ProjectScreen(
                 tabs.forEachIndexed { i, t -> Tab(selected = tab == i, onClick = { tab = i }, text = { Text(t) }) }
             }
             when (tabs.getOrNull(tab)) {
-                "Overview" -> if (p.kind == ProjectKind.APK) ApkOverview(vm, p, onOpenApkReport) else SourceOverview(vm, p, onOpenEditor, onOpenRepair)
+                "Overview" -> if (p.kind == ProjectKind.APK) ApkOverview(vm, p, onOpenApkReport) else SourceOverview(vm, p, onOpenEditor, onOpenRepair, onOpenResources, onOpenSearch)
                 "Contents" -> ApkContents(vm, onOpenFile)
                 "Files" -> {
                     val container = appContainer()
@@ -293,7 +295,7 @@ private fun ApkContents(vm: ProjectViewModel, onOpenFile: (String) -> Unit) {
 // ----------------------------------------------------------------------------- Source
 
 @Composable
-private fun SourceOverview(vm: ProjectViewModel, p: ProjectEntity, onOpenEditor: () -> Unit, onOpenRepair: () -> Unit) {
+private fun SourceOverview(vm: ProjectViewModel, p: ProjectEntity, onOpenEditor: () -> Unit, onOpenRepair: () -> Unit, onOpenResources: () -> Unit, onOpenSearch: () -> Unit) {
     val info by vm.info.collectAsStateWithLifecycle()
     val i = info
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -306,6 +308,8 @@ private fun SourceOverview(vm: ProjectViewModel, p: ProjectEntity, onOpenEditor:
                 OutlinedButton(onClick = onOpenEditor) {
                     Icon(Icons.Outlined.Code, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Open editor")
                 }
+                OutlinedButton(onClick = onOpenResources) { Text("Strings & colours") }
+                OutlinedButton(onClick = onOpenSearch) { Text("Search") }
             }
         }
         if (i == null) {

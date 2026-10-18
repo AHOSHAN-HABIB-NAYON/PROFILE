@@ -46,7 +46,13 @@ import com.appfix.studio.ui.nav.LimitationsRoute
 import com.appfix.studio.ui.nav.ProjectRoute
 import com.appfix.studio.ui.nav.ProjectsRoute
 import com.appfix.studio.ui.nav.RepairRoute
+import com.appfix.studio.ui.nav.ResourcesRoute
+import com.appfix.studio.ui.nav.SearchRoute
 import com.appfix.studio.ui.nav.SettingsRoute
+import com.appfix.studio.data.db.ProjectKind
+import com.appfix.studio.ui.editor.OpenRequest
+import com.appfix.studio.ui.resources.ResourcesScreen
+import com.appfix.studio.ui.search.ProjectSearchScreen
 import com.appfix.studio.ui.project.ProjectScreen
 import com.appfix.studio.ui.projects.ProjectsScreen
 import com.appfix.studio.ui.repair.RepairScreen
@@ -74,6 +80,20 @@ fun AppRoot() {
     val backStack by nav.currentBackStackEntryAsState()
     val destination = backStack?.destination
     val showBottomBar = topLevels.any { t -> destination?.hierarchy?.any { it.hasRoute(t.routeClass) } == true }
+
+    /** Source files open in the editor; APK entries open in the read-only viewer. */
+    fun openFile(projectId: String, path: String, line: Int?) {
+        scope.launch {
+            val kind = container.projects.get(projectId)?.kind
+            if (kind == ProjectKind.SOURCE) {
+                container.settings.setCurrentProject(projectId)
+                container.editorRequests.value = OpenRequest(projectId, path, line)
+                nav.navigateTopLevel(EditorRoute)
+            } else {
+                nav.navigate(FileViewerRoute(projectId, path, line ?: 0))
+            }
+        }
+    }
 
     ImportHost(importVm, onImported = { id -> nav.navigate(ProjectRoute(id)) }) {
         Scaffold(
@@ -104,12 +124,23 @@ fun AppRoot() {
                 }
                 composable<ProjectsRoute> { ProjectsScreen(onOpenProject = { id -> nav.navigate(ProjectRoute(id)) }) }
                 composable<EditorRoute> {
-                    EditorScreen(onOpenProjects = { nav.navigateTopLevel(ProjectsRoute) })
+                    EditorScreen(
+                        onOpenProjects = { nav.navigateTopLevel(ProjectsRoute) },
+                        onOpenSearch = { id -> nav.navigate(SearchRoute(id)) },
+                        onOpenResources = { id -> nav.navigate(ResourcesRoute(id)) },
+                    )
+                }
+                composable<SearchRoute> { entry ->
+                    val id = entry.toRoute<SearchRoute>().id
+                    ProjectSearchScreen(id, onBack = { nav.popBackStack() }, onOpenInEditor = { path, line -> openFile(id, path, line) })
+                }
+                composable<ResourcesRoute> { entry ->
+                    ResourcesScreen(entry.toRoute<ResourcesRoute>().id, onBack = { nav.popBackStack() })
                 }
                 composable<RepairRoute> {
                     RepairScreen(
                         onOpenProjects = { nav.navigateTopLevel(ProjectsRoute) },
-                        onOpenFile = { id, path, line -> nav.navigate(FileViewerRoute(id, path, line ?: 0)) },
+                        onOpenFile = { id, path, line -> openFile(id, path, line) },
                     )
                 }
                 composable<SettingsRoute> { SettingsScreen(onOpenLimitations = { nav.navigate(LimitationsRoute) }) }
@@ -120,7 +151,9 @@ fun AppRoot() {
                         projectId = route.id,
                         onBack = { nav.popBackStack() },
                         onOpenApkReport = { nav.navigate(ApkReportRoute(route.id)) },
-                        onOpenFile = { path -> nav.navigate(FileViewerRoute(route.id, path)) },
+                        onOpenFile = { path -> openFile(route.id, path, null) },
+                        onOpenResources = { nav.navigate(ResourcesRoute(route.id)) },
+                        onOpenSearch = { nav.navigate(SearchRoute(route.id)) },
                         onOpenEditor = {
                             scope.launch { container.settings.setCurrentProject(route.id) }
                             nav.navigateTopLevel(EditorRoute)

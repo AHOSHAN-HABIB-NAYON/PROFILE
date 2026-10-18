@@ -5,6 +5,8 @@ import com.appfix.studio.data.db.AppDatabase
 import com.appfix.studio.data.repo.ProjectRepository
 import com.appfix.studio.data.repo.ProjectStorage
 import com.appfix.studio.data.settings.SettingsRepository
+import com.appfix.studio.ui.editor.OpenRequest
+import kotlinx.coroutines.flow.MutableStateFlow
 
 /** Manual dependency container; one instance per process. */
 class AppContainer(context: Context) {
@@ -13,4 +15,7 @@ class AppContainer(context: Context) {
     val storage: ProjectStorage by lazy { ProjectStorage(appContext) }
     val settings: SettingsRepository by lazy { SettingsRepository(appContext) }
     val projects: ProjectRepository by lazy { ProjectRepository(appContext, database.projects(), storage) }
+
+    /** One-shot requests to open a file in the editor, posted by other screens. */
+    val editorRequests = MutableStateFlow<OpenRequest?>(null)
 }
