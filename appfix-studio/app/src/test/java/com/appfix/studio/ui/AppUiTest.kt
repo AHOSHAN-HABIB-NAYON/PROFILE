@@ -15,7 +15,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
-import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasScrollToNodeAction
 import androidx.compose.ui.unit.dp
 import com.appfix.studio.MainActivity
 import org.junit.Assert.assertTrue
@@ -60,6 +60,13 @@ class AppUiTest {
         assertTrue("$screen: ${problems.joinToString("; ")}", problems.isEmpty())
     }
 
+    /** Lazy lists only compose visible items, so scroll the list until the node exists. */
+    private fun scrollTo(text: String) {
+        rule.waitForIdle()
+        if (rule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()) return
+        rule.onAllNodes(hasScrollToNodeAction()).onFirst().performScrollToNode(hasText(text))
+    }
+
     @Test fun `bottom navigation reaches every top-level screen`() {
         rule.onNodeWithText("Fix it. Customise it. Rebuild it.").assertExists()
         assertAccessible("Home")
@@ -80,9 +87,10 @@ class AppUiTest {
     }
 
     @Test fun `import the sample and open the assistant and repair tools`() {
-        rule.onAllNodes(hasScrollAction()).onFirst().performScrollToNode(hasText("Sample app"))
+        scrollTo("Sample app")
         rule.onNodeWithText("Sample app").performClick()
-        rule.waitUntil(30_000) { rule.onAllNodesWithText("AI assistant").fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(30_000) { rule.onAllNodesWithText("Overview").fetchSemanticsNodes().isNotEmpty() }
+        scrollTo("AI assistant")
         assertAccessible("Project")
         rule.onNodeWithText("AI assistant").performClick()
         rule.waitUntil(10_000) { rule.onAllNodesWithText("AI is not set up", substring = true).fetchSemanticsNodes().isNotEmpty() }
@@ -91,7 +99,8 @@ class AppUiTest {
         rule.onNodeWithText("AI provider").assertExists()
         rule.onNodeWithText("Cancel").performClick()
         rule.activityRule.scenario.onActivity { it.onBackPressedDispatcher.onBackPressed() }
-        rule.waitUntil(5_000) { rule.onAllNodesWithText("Visual editor").fetchSemanticsNodes().isNotEmpty() }
+        rule.waitUntil(5_000) { rule.onAllNodesWithText("Overview").fetchSemanticsNodes().isNotEmpty() }
+        scrollTo("Visual editor")
         rule.onNodeWithText("Visual editor").performClick()
         rule.waitUntil(10_000) { rule.onAllNodesWithText("activity_main", substring = true).fetchSemanticsNodes().isNotEmpty() }
         assertAccessible("Visual editor")

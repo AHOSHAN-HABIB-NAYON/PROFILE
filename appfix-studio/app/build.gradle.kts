@@ -81,6 +81,11 @@ android {
     testOptions {
         unitTests.isIncludeAndroidResources = true
         unitTests.all { test ->
+            test.testLogging {
+                events("failed")
+                exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+                showStandardStreams = false
+            }
             System.getenv("APPFIX_SAMPLE_APK")?.let { test.environment("APPFIX_SAMPLE_APK", it) }
             System.getenv("APPFIX_MODIFIED_OUT")?.let { test.environment("APPFIX_MODIFIED_OUT", it) }
             System.getenv("APPFIX_SIGNED_OUT")?.let { test.environment("APPFIX_SIGNED_OUT", it) }
