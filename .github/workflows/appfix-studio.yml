@@ -57,7 +57,16 @@ jobs:
         run: |
           export APPFIX_SAMPLE_APK="$PWD/sample-project/app/build/outputs/apk/debug/app-debug.apk"
           export APPFIX_FRAMEWORK_JAR="$ANDROID_HOME/platforms/android-36/android.jar"
+          export APPFIX_GENERATED_OUT="$RUNNER_TEMP/generated"
           ./gradlew :core:test --stacktrace
+
+      - name: Compile projects modified by the generators (Kotlin+XML, Java+XML, Compose)
+        run: |
+          for variant in kotlin-xml java-xml compose; do
+            echo "::group::Build $variant"
+            ./gradlew -p "$RUNNER_TEMP/generated/$variant" assembleDebug --stacktrace
+            echo "::endgroup::"
+          done
 
       - name: App unit tests
         run: ./gradlew :app:testDebugUnitTest --stacktrace

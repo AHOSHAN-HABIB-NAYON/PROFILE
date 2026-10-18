@@ -172,7 +172,7 @@ private fun CapabilityCard(onOpenLimitations: () -> Unit) {
         "Crash-log and build-log analysis" to Cap.READY,
         "Backups, undo and change history" to Cap.READY,
         "Code editor, project search and resource editor" to Cap.READY,
-        "Visual layout editor & feature generators" to Cap.PLANNED,
+        "Visual layout editor & feature generators" to Cap.READY,
         "Cloud builds and APK re-signing" to Cap.PLANNED,
         "On-device Gradle builds" to Cap.LIMITED,
     )

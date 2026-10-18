@@ -94,7 +94,13 @@ import io.github.rosemoe.sora.widget.EditorSearcher
 import kotlinx.coroutines.launch
 
 @Composable
-fun EditorScreen(onOpenProjects: () -> Unit, onOpenSearch: (String) -> Unit, onOpenResources: (String) -> Unit) {
+fun EditorScreen(
+    onOpenProjects: () -> Unit,
+    onOpenSearch: (String) -> Unit,
+    onOpenResources: (String) -> Unit,
+    onOpenVisual: (String) -> Unit = {},
+    onOpenFeatures: (String) -> Unit = {},
+) {
     val vm = appViewModel { EditorViewModel(it) }
     val container = appContainer()
     val project by vm.project.collectAsStateWithLifecycle()
@@ -240,6 +246,8 @@ fun EditorScreen(onOpenProjects: () -> Unit, onOpenSearch: (String) -> Unit, onO
                                 HorizontalDivider()
                                 item("Search in project") { onOpenSearch(p.id) }
                                 item("Edit strings & colours") { onOpenResources(p.id) }
+                                item("Visual layout editor") { onOpenVisual(p.id) }
+                                item("Add a feature") { onOpenFeatures(p.id) }
                                 item("New file") { showNewFile = true }
                                 item("Delete file", hasFile) { confirmDelete = true }
                                 item("Close tab", hasFile) { activePath?.let { if (vm.isDirty(it)) confirmClose = it else vm.close(it) } }

@@ -48,6 +48,10 @@ import com.appfix.studio.ui.nav.ProjectsRoute
 import com.appfix.studio.ui.nav.RepairRoute
 import com.appfix.studio.ui.nav.ResourcesRoute
 import com.appfix.studio.ui.nav.SearchRoute
+import com.appfix.studio.ui.nav.FeaturesRoute
+import com.appfix.studio.ui.nav.VisualEditorRoute
+import com.appfix.studio.ui.features.FeaturesScreen
+import com.appfix.studio.ui.visual.VisualEditorScreen
 import com.appfix.studio.ui.nav.SettingsRoute
 import com.appfix.studio.data.db.ProjectKind
 import com.appfix.studio.ui.editor.OpenRequest
@@ -128,7 +132,16 @@ fun AppRoot() {
                         onOpenProjects = { nav.navigateTopLevel(ProjectsRoute) },
                         onOpenSearch = { id -> nav.navigate(SearchRoute(id)) },
                         onOpenResources = { id -> nav.navigate(ResourcesRoute(id)) },
+                        onOpenVisual = { id -> nav.navigate(VisualEditorRoute(id)) },
+                        onOpenFeatures = { id -> nav.navigate(FeaturesRoute(id)) },
                     )
+                }
+                composable<VisualEditorRoute> { entry ->
+                    val id = entry.toRoute<VisualEditorRoute>().id
+                    VisualEditorScreen(id, onBack = { nav.popBackStack() }, onOpenSource = { path -> openFile(id, path, null) })
+                }
+                composable<FeaturesRoute> { entry ->
+                    FeaturesScreen(entry.toRoute<FeaturesRoute>().id, onBack = { nav.popBackStack() })
                 }
                 composable<SearchRoute> { entry ->
                     val id = entry.toRoute<SearchRoute>().id
@@ -154,6 +167,8 @@ fun AppRoot() {
                         onOpenFile = { path -> openFile(route.id, path, null) },
                         onOpenResources = { nav.navigate(ResourcesRoute(route.id)) },
                         onOpenSearch = { nav.navigate(SearchRoute(route.id)) },
+                        onOpenVisual = { nav.navigate(VisualEditorRoute(route.id)) },
+                        onOpenFeatures = { nav.navigate(FeaturesRoute(route.id)) },
                         onOpenEditor = {
                             scope.launch { container.settings.setCurrentProject(route.id) }
                             nav.navigateTopLevel(EditorRoute)
