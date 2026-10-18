@@ -1,4 +1,6 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 plugins {
     alias(libs.plugins.android.application)
@@ -106,4 +108,62 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)
+}
+
+/**
+ * Packs files the app ships as assets:
+ * - bundled/sample-project.zip: the sample app, importable from the Home screen
+ * - bundled/wrapper/*: Gradle wrapper templates used by the "Add Gradle wrapper" repair
+ */
+abstract class BundleAppFixAssets : DefaultTask() {
+    @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val sampleDir: DirectoryProperty
+
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NAME_ONLY)
+    abstract val wrapperFiles: ConfigurableFileCollection
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun bundle() {
+        val out = outputDir.get().asFile
+        out.deleteRecursively()
+        val bundled = File(out, "bundled").apply { mkdirs() }
+        val skip = setOf("build", ".gradle", ".idea", ".kotlin", ".cxx")
+        val root = sampleDir.get().asFile
+        ZipOutputStream(File(bundled, "sample-project.zip").outputStream().buffered()).use { zip ->
+            root.walkTopDown()
+                .onEnter { it == root || it.name !in skip }
+                .filter { it.isFile && it.name != "local.properties" }
+                .sortedBy { it.relativeTo(root).invariantSeparatorsPath }
+                .forEach { f ->
+                    val entry = ZipEntry("sample-project/" + f.relativeTo(root).invariantSeparatorsPath)
+                    entry.time = 0L // reproducible archive
+                    zip.putNextEntry(entry)
+                    f.inputStream().use { it.copyTo(zip) }
+                    zip.closeEntry()
+                }
+        }
+        val wrapper = File(bundled, "wrapper").apply { mkdirs() }
+        wrapperFiles.files.forEach { it.copyTo(File(wrapper, it.name), overwrite = true) }
+    }
+}
+
+val bundleAppFixAssets = tasks.register<BundleAppFixAssets>("bundleAppFixAssets") {
+    sampleDir.set(rootProject.layout.projectDirectory.dir("sample-project"))
+    wrapperFiles.from(
+        rootProject.file("gradle/wrapper/gradle-wrapper.jar"),
+        rootProject.file("gradlew"),
+        rootProject.file("gradlew.bat"),
+    )
+    outputDir.set(layout.buildDirectory.dir("generated/appfixAssets"))
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(bundleAppFixAssets, BundleAppFixAssets::outputDir)
+    }
 }

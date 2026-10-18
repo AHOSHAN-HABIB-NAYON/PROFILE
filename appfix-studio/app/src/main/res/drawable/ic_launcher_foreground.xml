@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AppFix Studio mark: code brackets with a repair slash. Drawn inside the 66dp safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M42,40L30,54L42,68"
+        android:strokeWidth="6"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M66,40L78,54L66,68"
+        android:strokeWidth="6"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M59,37L49,71"
+        android:strokeWidth="6"
+        android:strokeColor="#FFC8F0EA"
+        android:strokeLineCap="round" />
+    <path
+        android:fillColor="#FFC8F0EA"
+        android:pathData="M61.5,30.5m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0" />
+</vector>
