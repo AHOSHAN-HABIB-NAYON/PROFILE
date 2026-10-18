@@ -104,6 +104,8 @@ fun BrowserScreen(
     val fullscreen by viewModel.fullscreen.collectAsStateWithLifecycle()
     val fileChooser by viewModel.fileChooser.collectAsStateWithLifecycle()
     val find by viewModel.find.collectAsStateWithLifecycle()
+    val shortcuts by viewModel.shortcuts.collectAsStateWithLifecycle()
+    var showLens by rememberSaveable { mutableStateOf(false) }
     val contextTarget by viewModel.contextMenu.collectAsStateWithLifecycle()
 
     val focusRequester = remember { FocusRequester() }
@@ -133,6 +135,8 @@ fun BrowserScreen(
         val request = fileChooser ?: return@LaunchedEffect
         try { fileLauncher.launch(request.intent) } catch (e: ActivityNotFoundException) { viewModel.onFileChooserFailed() }
     }
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    var askedNotifications by rememberSaveable { mutableStateOf(false) }
     val viewLabel = stringResource(R.string.action_view)
     val openLabel = stringResource(R.string.downloads_open)
     val switchLabel = stringResource(R.string.action_switch)
@@ -140,6 +144,13 @@ fun BrowserScreen(
         viewModel.events.collect { event ->
             when (event) {
                 is BrowserEvent.Message -> {
+                    if (event.text == R.string.download_started && !askedNotifications && Build.VERSION.SDK_INT >= 33 &&
+                        androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) !=
+                        android.content.pm.PackageManager.PERMISSION_GRANTED
+                    ) {
+                        askedNotifications = true
+                        notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                    }
                     val text = if (event.arg != null) context.getString(event.text, event.arg) else context.getString(event.text)
                     val label = when (event.action) {
                         EventAction.ShowDownloads -> viewLabel
@@ -151,7 +162,7 @@ fun BrowserScreen(
                     if (result == SnackbarResult.ActionPerformed) {
                         when (val a = event.action) {
                             EventAction.ShowDownloads -> onOpenDownloads()
-                            is EventAction.OpenDownload -> com.webtecit.nayon.feature.downloads.DownloadFiles.open(context, a.id, event.arg.orEmpty())
+                            is EventAction.OpenDownload -> viewModel.openDownload(a.id)
                             is EventAction.SwitchTab -> viewModel.selectTab(a.id)
                             null -> Unit
                         }
@@ -165,15 +176,46 @@ fun BrowserScreen(
         try { voiceLauncher.launch(voiceIntent) } catch (e: ActivityNotFoundException) { /* hidden when unavailable */ }
     }
 
+    // Google Lens: pick or take a photo, then hand it to the Google app's Lens (its supported entry point).
+    var cameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    fun sendToLens(uri: android.net.Uri) {
+        val send = Intent(Intent.ACTION_SEND).setType("image/*").putExtra(Intent.EXTRA_STREAM, uri)
+            .setPackage(GOOGLE_APP).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        send.clipData = ClipData.newRawUri("", uri)
+        try {
+            context.startActivity(send)
+        } catch (e: ActivityNotFoundException) {
+            android.widget.Toast.makeText(context, R.string.lens_no_google, android.widget.Toast.LENGTH_LONG).show()
+            viewModel.newTab(LENS_WEB)
+        }
+    }
+    val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let(::sendToLens) }
+    val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok -> if (ok) cameraUri?.let(::sendToLens) }
     fun openLens() {
         focusManager.clearFocus()
-        val lens = Intent(Intent.ACTION_VIEW, "googleapp://lens".toUri()).setPackage(GOOGLE_APP)
-        try { context.startActivity(lens) } catch (e: ActivityNotFoundException) { viewModel.newTab(LENS_WEB) }
+        showLens = true
     }
 
     fun submit(text: String) {
         focusManager.clearFocus()
         viewModel.navigate(text)
+    }
+
+    val homeActions = remember(viewModel) {
+        HomeActions(
+            onSearchClick = { focusRequester.requestFocus() },
+            onVoiceClick = { startVoice() },
+            onLensClick = { openLens() },
+            onOpenUrl = viewModel::openInCurrentTab,
+            onSeeHistory = onOpenHistory,
+            onOpenBookmarks = onOpenBookmarks,
+            onOpenDownloads = onOpenDownloads,
+            onNewPrivateTab = { viewModel.newTab(private = true) },
+            onOpenAbout = onOpenAbout,
+            onAddShortcut = { l, u -> viewModel.addShortcut(l, u) },
+            onRemoveShortcut = { viewModel.removeShortcut(it) },
+            onRemoveRecent = { viewModel.removeFromHistory(it) },
+        )
     }
 
     BackHandler(enabled = editing) { focusManager.clearFocus() }
@@ -282,14 +324,11 @@ fun BrowserScreen(
                             NewTabPage(
                                 isPrivate = current.isPrivate,
                                 showShortcuts = prefs.showShortcuts,
+                                shortcuts = shortcuts,
                                 recent = if (prefs.showRecentOnHome) recent else emptyList(),
                                 privateIsolationSupported = viewModel.privateIsolationSupported,
                                 voiceAvailable = voiceAvailable,
-                                onSearchClick = { focusRequester.requestFocus() },
-                                onVoiceClick = ::startVoice,
-                                onOpenUrl = viewModel::openInCurrentTab,
-                                onSeeHistory = onOpenHistory,
-                                onOpenAbout = onOpenAbout,
+                                actions = homeActions,
                             )
                         } else {
                             Box(Modifier.fillMaxSize()) {
@@ -400,6 +439,26 @@ fun BrowserScreen(
                     MenuAction.TRANSLATE -> viewModel.translatePage()
                     MenuAction.ADD_TO_HOME -> tab?.let { addToHomeScreen(context, it) }
                 }
+            },
+        )
+    }
+
+    if (showLens) {
+        LensSheet(
+            onDismiss = { showLens = false },
+            onCamera = {
+                showLens = false
+                runCatching {
+                    val dir = java.io.File(context.cacheDir, "lens").apply { mkdirs() }
+                    val file = java.io.File(dir, "lens_${System.currentTimeMillis()}.jpg")
+                    val uri = androidx.core.content.FileProvider.getUriForFile(context, context.packageName + ".files", file)
+                    cameraUri = uri
+                    takePicture.launch(uri)
+                }
+            },
+            onGallery = {
+                showLens = false
+                runCatching { pickImage.launch(androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
             },
         )
     }

@@ -84,8 +84,10 @@ class AppearanceScreenTest {
         compose.setContent {
             NayonTheme(family, brightness) {
                 NewTabPage(
-                    isPrivate = false, showShortcuts = true, recent = emptyList(), privateIsolationSupported = true,
-                    voiceAvailable = false, onSearchClick = {}, onVoiceClick = {}, onOpenUrl = {}, onSeeHistory = {}, onOpenAbout = {},
+                    isPrivate = false, showShortcuts = true,
+                    shortcuts = com.webtecit.nayon.data.settings.DefaultHomeShortcuts,
+                    recent = emptyList(), privateIsolationSupported = true, voiceAvailable = false,
+                    actions = com.webtecit.nayon.feature.browser.HomeActions({}, {}, {}, {}, {}, {}, {}, {}, {}, { _, _ -> }, {}, {}),
                 )
             }
         }

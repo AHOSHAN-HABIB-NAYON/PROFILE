@@ -47,7 +47,6 @@ import com.webtecit.nayon.data.browser.SavedTab
 import com.webtecit.nayon.data.settings.BrowserPreferences
 import com.webtecit.nayon.data.settings.BrowserPreferencesRepository
 import com.webtecit.nayon.data.settings.ToolbarLayout
-import com.webtecit.nayon.feature.downloads.DownloadFiles
 import android.graphics.Canvas
 import android.net.http.SslCertificate
 import kotlinx.coroutines.FlowPreview
@@ -79,6 +78,7 @@ class BrowserViewModel(
     private val browsing: BrowsingRepository,
     private val prefsRepository: BrowserPreferencesRepository,
     private val favicons: FaviconStore,
+    private val downloads: com.webtecit.nayon.data.downloads.DownloadEngine,
 ) : AndroidViewModel(app) {
 
     private val _tabs = MutableStateFlow<List<TabState>>(emptyList())
@@ -115,19 +115,6 @@ class BrowserViewModel(
     private val webViews = mutableMapOf<String, WebView>()
     private val lastUsed = mutableMapOf<String, Long>()
 
-    /** Shows "Downloaded – Open" when one of our downloads finishes. */
-    private val downloadReceiver by lazy { object : android.content.BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
-            if (id < 0) return
-            val info = DownloadFiles.info(context, id) ?: return
-            if (info.second) {
-                _events.tryEmit(BrowserEvent.Message(R.string.download_complete, info.first, action = EventAction.OpenDownload(id)))
-            } else {
-                _events.tryEmit(BrowserEvent.Message(R.string.download_failed_named, info.first, action = EventAction.ShowDownloads))
-            }
-        }
-    } }
 
     init {
         viewModelScope.launch {
@@ -167,10 +154,16 @@ class BrowserViewModel(
             }
         }
         // Tell the user when a download finishes, with a button to open it.
-        androidx.core.content.ContextCompat.registerReceiver(
-            app, downloadReceiver, android.content.IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
-            androidx.core.content.ContextCompat.RECEIVER_EXPORTED,
-        )
+        viewModelScope.launch {
+            downloads.notices.collect { n ->
+                when (n) {
+                    is com.webtecit.nayon.data.downloads.DownloadNotice.Finished ->
+                        _events.tryEmit(BrowserEvent.Message(R.string.download_complete, n.fileName, action = EventAction.OpenDownload(n.id)))
+                    is com.webtecit.nayon.data.downloads.DownloadNotice.Failed ->
+                        _events.tryEmit(BrowserEvent.Message(R.string.download_failed_named, n.fileName, action = EventAction.ShowDownloads))
+                }
+            }
+        }
     }
 
     // ---- Activity binding -------------------------------------------------------------
@@ -270,6 +263,21 @@ class BrowserViewModel(
     fun setRestoreTabs(enabled: Boolean) = viewModelScope.launch { prefsRepository.setRestoreTabs(enabled) }
     fun setShowShortcuts(enabled: Boolean) = viewModelScope.launch { prefsRepository.setShowShortcuts(enabled) }
     fun setShowRecentOnHome(enabled: Boolean) = viewModelScope.launch { prefsRepository.setShowRecentOnHome(enabled) }
+    val shortcuts: StateFlow<List<com.webtecit.nayon.data.settings.HomeShortcut>> = prefsRepository.shortcuts
+        .stateIn(viewModelScope, SharingStarted.Eagerly, com.webtecit.nayon.data.settings.DefaultHomeShortcuts)
+
+    fun addShortcut(label: String, url: String) = viewModelScope.launch {
+        val resolved = UrlResolver.resolve(url, preferences.value.searchTemplate)?.takeIf { UrlResolver.isWebUrl(it) } ?: return@launch
+        val name = label.trim().ifBlank { UrlResolver.displayHost(resolved) }
+        prefsRepository.setShortcuts(shortcuts.value.filterNot { it.url == resolved } + com.webtecit.nayon.data.settings.HomeShortcut(name, resolved))
+    }
+
+    fun removeShortcut(url: String) = viewModelScope.launch {
+        prefsRepository.setShortcuts(shortcuts.value.filterNot { it.url == url })
+    }
+
+    fun removeFromHistory(id: Long) = viewModelScope.launch { browsing.deleteHistory(id) }
+
     fun setTextZoom(percent: Int) = viewModelScope.launch { prefsRepository.setTextZoom(percent) }
     fun setSearchSuggestions(enabled: Boolean) = viewModelScope.launch { prefsRepository.setSearchSuggestions(enabled) }
     fun setPullToRefresh(enabled: Boolean) = viewModelScope.launch { prefsRepository.setPullToRefresh(enabled) }
@@ -741,33 +749,44 @@ class BrowserViewModel(
     }
 
     private fun startDownload(url: String, userAgent: String?, disposition: String?, mime: String?, private: Boolean) {
-        if (!UrlResolver.isWebUrl(url)) {
-            _events.tryEmit(BrowserEvent.Message(R.string.download_unsupported)); return
-        }
-        val app = getApplication<Application>()
-        val name = URLUtil.guessFileName(url, disposition, mime)
-        val request = runCatching {
-            DownloadManager.Request(url.toUri()).apply {
-                setMimeType(mime)
-                setTitle(name)
-                userAgent?.let { addRequestHeader("User-Agent", it) }
-                if (!private) CookieManager.getInstance().getCookie(url)?.let { addRequestHeader("Cookie", it) }
-                setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, name)
-                } else {
-                    // App-specific folder: needs no storage permission on Android 7–9.
-                    setDestinationInExternalFilesDir(app, Environment.DIRECTORY_DOWNLOADS, name)
-                }
+        val referer = activeTab.value?.url
+        when {
+            url.startsWith("data:", ignoreCase = true) -> viewModelScope.launch {
+                if (downloads.saveDataUrl(url, private) == null) _events.tryEmit(BrowserEvent.Message(R.string.download_failed))
             }
-        }.getOrNull()
-        val dm = app.getSystemService(Context.DOWNLOAD_SERVICE) as? DownloadManager
-        if (request == null || dm == null || runCatching { dm.enqueue(request) }.isFailure) {
-            _events.tryEmit(BrowserEvent.Message(R.string.download_failed))
-        } else {
-            _events.tryEmit(BrowserEvent.Message(R.string.download_started, name, action = EventAction.ShowDownloads))
+            !UrlResolver.isWebUrl(url) -> _events.tryEmit(BrowserEvent.Message(R.string.download_unsupported))
+            else -> viewModelScope.launch {
+                val name = URLUtil.guessFileName(url, disposition, mime)
+                downloads.enqueue(
+                    com.webtecit.nayon.data.downloads.DownloadRequest(
+                        url = url,
+                        fileName = name,
+                        mimeType = mime?.takeIf { it.isNotBlank() },
+                        userAgent = userAgent,
+                        cookies = CookieManager.getInstance().getCookie(url),
+                        referer = referer,
+                        isPrivate = private,
+                    ),
+                )
+                _events.tryEmit(BrowserEvent.Message(R.string.download_started, name, action = EventAction.ShowDownloads))
+            }
         }
     }
+
+    /** Opens a finished download (from the "Downloaded – Open" message). */
+    fun openDownload(id: Long) {
+        viewModelScope.launch {
+            downloads.get(id)?.let { com.webtecit.nayon.data.downloads.DownloadFiles.open(getApplication(), it) }
+        }
+    }
+
+    // replay = 1: the request may arrive (from a notification) before the screen is ready.
+    private val _showDownloads = MutableSharedFlow<Unit>(replay = 1)
+    /** Emits when a download notification asks to show the downloads page. */
+    val showDownloads: SharedFlow<Unit> = _showDownloads
+    fun requestShowDownloads() { _showDownloads.tryEmit(Unit) }
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    fun consumeShowDownloads() { _showDownloads.resetReplayCache() }
 
     /** Opens non-web links (mailto:, tel:, intent:, app links) in other apps — only after a user tap. */
     private fun openOutside(tabId: String, uri: Uri, hasGesture: Boolean) {
@@ -822,6 +841,10 @@ class BrowserViewModel(
 
         override fun onPageFinished(view: WebView, url: String) {
             updateTab(tabId) { it.copy(isLoading = false, progress = 100, url = url, title = view.title ?: it.title) }
+            val host = UrlResolver.displayHost(url)
+            if (tab(tabId)?.isPrivate == false && UrlResolver.isWebUrl(url) && host.isNotBlank()) {
+                viewModelScope.launch { favicons.upgrade(host) }
+            }
             syncNavState(tabId, view)
         }
 
@@ -917,7 +940,6 @@ class BrowserViewModel(
 
 
     override fun onCleared() {
-        runCatching { getApplication<Application>().unregisterReceiver(downloadReceiver) }
         webViews.keys.toList().forEach { destroyWebView(it) }
         webContext.baseContext = getApplication()
         super.onCleared()

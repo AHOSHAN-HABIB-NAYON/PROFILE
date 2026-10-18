@@ -111,19 +111,22 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    /** Opens links shared from other apps, and web searches. */
+    /** Opens links shared from other apps, web searches and the downloads page. */
     private fun handleIntent(intent: Intent?) {
         when (intent?.action) {
+            ACTION_SHOW_DOWNLOADS -> browser.requestShowDownloads()
             Intent.ACTION_VIEW -> intent.dataString?.let { browser.openExternalLink(it) }
             Intent.ACTION_WEB_SEARCH -> intent.getStringExtra(SearchManager.QUERY)?.takeIf { it.isNotBlank() }
                 ?.let { browser.openSearch(it) }
         }
     }
 
-    private companion object {
+    companion object {
+        const val ACTION_SHOW_DOWNLOADS = "com.webtecit.nayon.SHOW_DOWNLOADS"
+
         // Same scrims androidx.activity uses for 3-button navigation.
-        val LIGHT_SCRIM = Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
-        val DARK_SCRIM = Color.argb(0x80, 0x1b, 0x1b, 0x1b)
+        private val LIGHT_SCRIM = Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
+        private val DARK_SCRIM = Color.argb(0x80, 0x1b, 0x1b, 0x1b)
     }
 }
 

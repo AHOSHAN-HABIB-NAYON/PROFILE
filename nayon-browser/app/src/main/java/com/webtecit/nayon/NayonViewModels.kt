@@ -28,11 +28,11 @@ object NayonViewModelFactory {
         initializer { AppearanceViewModel(app().container.appearanceRepository) }
         initializer {
             val app = app()
-            BrowserViewModel(app, app.container.browsingRepository, app.container.browserPreferences, app.container.faviconStore)
+            BrowserViewModel(app, app.container.browsingRepository, app.container.browserPreferences, app.container.faviconStore, app.container.downloadEngine)
         }
         initializer { BookmarksViewModel(app().container.browsingRepository) }
         initializer { HistoryViewModel(app().container.browsingRepository) }
-        initializer { DownloadsViewModel(app()) }
+        initializer { DownloadsViewModel(app().container.downloadEngine) }
     }
 
     private fun androidx.lifecycle.viewmodel.CreationExtras.app(): NayonApp =

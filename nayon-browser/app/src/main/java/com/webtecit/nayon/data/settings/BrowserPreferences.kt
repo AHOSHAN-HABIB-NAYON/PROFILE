@@ -45,7 +45,40 @@ data class BrowserPreferences(
         }
 }
 
+/** A user-editable home-page shortcut. */
+data class HomeShortcut(val label: String, val url: String)
+
+val DefaultHomeShortcuts = listOf(
+    HomeShortcut("Google", "https://www.google.com"),
+    HomeShortcut("YouTube", "https://m.youtube.com"),
+    HomeShortcut("Facebook", "https://m.facebook.com"),
+    HomeShortcut("Wikipedia", "https://www.wikipedia.org"),
+    HomeShortcut("WebTecIT", "https://webtecit.com"),
+    HomeShortcut("GitHub", "https://github.com"),
+    HomeShortcut("Gmail", "https://mail.google.com"),
+)
+
 class BrowserPreferencesRepository(private val dataStore: DataStore<Preferences>) {
+
+    private val shortcutsKey = stringPreferencesKey("home_shortcuts_json")
+
+    val shortcuts: Flow<List<HomeShortcut>> = dataStore.data
+        .catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
+        .map { p ->
+            p[shortcutsKey]?.let { json ->
+                runCatching {
+                    val arr = org.json.JSONArray(json)
+                    (0 until arr.length()).map { i -> arr.getJSONObject(i).let { HomeShortcut(it.getString("label"), it.getString("url")) } }
+                }.getOrNull()
+            } ?: DefaultHomeShortcuts
+        }
+        .distinctUntilChanged()
+
+    suspend fun setShortcuts(list: List<HomeShortcut>) = dataStore.edit {
+        val arr = org.json.JSONArray()
+        list.forEach { s -> arr.put(org.json.JSONObject().put("label", s.label).put("url", s.url)) }
+        it[shortcutsKey] = arr.toString()
+    }
 
     private object Keys {
         val engine = stringPreferencesKey("search_engine")

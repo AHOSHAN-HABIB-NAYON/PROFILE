@@ -53,7 +53,7 @@ checking by hand on a real device.
 | Clear browsing data (history, cookies & site data, cache) | Implemented | — | — | Manual |
 | JavaScript on/off | Implemented | Global setting (per-site later) | — | Manual |
 | Desktop site | Implemented | User-agent switch; some sites still detect mobile | — | `UrlResolverTest.desktopUserAgentRemovesMobileMarkers` |
-| Downloads | Partial | Uses Android DownloadManager (system controls pause/resume). blob:/data: downloads unsupported. Android 7–9 save into the app's own Downloads folder | — | Manual |
+| Downloads — NAYON download engine | Implemented | Up to 8 parallel connections with work stealing, real pause/resume (also after restart), retries, background service with progress notification. Single connection when the server doesn't support ranges. `data:` URLs saved; `blob:` not yet. Android 7–9 save into the app's own Downloads folder | — | Manual |
 | File upload from web pages | Implemented | Uses the system file picker | — | Manual |
 | Full-screen video | Implemented | Attached directly to the window; turns landscape for wide videos only; site controls stay usable; screen kept on; uses the notch area. Depends on the site and WebView | — | Manual |
 | Chrome-style compact top toolbar (default) or top + bottom bars | Implemented | Setting: Toolbar layout | — | Manual |
@@ -62,9 +62,10 @@ checking by hand on a real device.
 | Site information sheet (connection, certificate, cookies, permissions, delete site data) | Implemented | Per-site cookie deletion clears the cookies the page can see | — | Manual |
 | Animated tab switcher and tab transitions | Implemented | Chrome-style cards, tab search | — | Manual |
 | Search panel (current page, most visited, recent searches) | Implemented | Recent searches are read from search-result pages in history; local only | — | `UrlResolverTest.recentSearchesAreReadFromResultPages` |
-| Google Lens button | Implemented | Opens the Google app's Lens when installed, otherwise lens.google.com | Google app (optional) | Manual |
-| Real site icons (favicons) | Implemented | From visited pages; home shortcuts fetch the site's own icon once | — | Manual |
-| In-app Downloads page (progress, open, share, delete, cancel) | Implemented | Pause/resume is controlled by Android | — | Manual |
+| Google Lens button | Implemented | Take or choose a photo; it is shared to the Google app's Lens. Without the Google app, lens.google.com opens | Google app (optional) | Manual |
+| Real site icons (favicons), high resolution | Implemented | Uses the site's declared apple-touch/manifest icons (checked once a week per site) | — | Manual |
+| Home page: time-of-day sky scene, search, editable shortcuts, Quick access, Recent | Implemented | — | — | `newTabPageRendersInEveryThemeAndBrightness` |
+| Downloads page (speed, time left, connections, pause/resume, type filters, date groups, thumbnails, storage use) | Implemented | — | — | Manual |
 | Clear browsing data time range | Implemented | Only history can be limited by date; cookies and cache are cleared completely | — | Manual |
 | Long-press menu for links and images (new tab, private tab, copy link/text, download, share, Lens) | Implemented | Uses WebView hit-testing; text long-press keeps the normal selection menu | — | Manual |
 | Find in page | Implemented | — | — | Manual |

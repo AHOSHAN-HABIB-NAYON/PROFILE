@@ -49,7 +49,11 @@ fun SiteIcon(
             modifier.size(size).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerLowest),
             contentAlignment = Alignment.Center,
         ) {
-            Image(image, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.size(size * 0.62f).clip(RoundedCornerShape(size * 0.12f)))
+            // Never stretch a small icon far beyond its real size — that is what makes icons blurry.
+            val density = androidx.compose.ui.platform.LocalDensity.current.density
+            val natural = (icon.width / density * 1.5f).dp
+            val shown = minOf(size * 0.62f, maxOf(natural, size * 0.36f))
+            Image(image, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.size(shown).clip(RoundedCornerShape(shown * 0.18f)))
         }
         return
     }

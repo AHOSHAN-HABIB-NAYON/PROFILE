@@ -11,6 +11,9 @@ import androidx.room.Room
 import com.webtecit.nayon.data.browser.BrowserDatabase
 import com.webtecit.nayon.data.browser.BrowsingRepository
 import com.webtecit.nayon.data.browser.FaviconStore
+import com.webtecit.nayon.data.downloads.DownloadEngine
+import com.webtecit.nayon.data.downloads.DownloadService
+import com.webtecit.nayon.data.downloads.DownloadsDatabase
 import com.webtecit.nayon.data.settings.AppearanceRepository
 import com.webtecit.nayon.data.settings.BrowserPreferencesRepository
 import com.webtecit.nayon.data.settings.DataStoreAppearanceRepository
@@ -36,6 +39,12 @@ class AppContainer(context: Context) {
 
     val faviconStore = FaviconStore(java.io.File(context.filesDir, "favicons"))
 
+    private val downloadsDatabase: DownloadsDatabase by lazy {
+        Room.databaseBuilder(context, DownloadsDatabase::class.java, "nayon_downloads.db").build()
+    }
+
+    val downloadEngine: DownloadEngine by lazy { DownloadEngine(context.applicationContext, downloadsDatabase.downloads()) }
+
     val browsingRepository: BrowsingRepository by lazy {
         BrowsingRepository(database.historyDao(), database.bookmarkDao(), database.savedTabDao())
     }
@@ -48,5 +57,6 @@ class NayonApp : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        DownloadService.createChannels(this)
     }
 }

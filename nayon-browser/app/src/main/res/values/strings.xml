@@ -332,4 +332,38 @@
     <string name="settings_section_accessibility">Accessibility</string>
     <string name="settings_text_size">Text size on websites</string>
     <string name="settings_text_size_preview">Preview: This is how text on websites will look.</string>
+
+    <!-- v0.5: download engine, home, lens -->
+    <string name="notif_channel_progress">Download progress</string>
+    <string name="notif_channel_done">Finished downloads</string>
+    <plurals name="notif_downloading">
+        <item quantity="one">Downloading %1$d file</item>
+        <item quantity="other">Downloading %1$d files</item>
+    </plurals>
+    <string name="notif_done">Download complete · Tap to open</string>
+    <string name="notif_failed">Download failed · Tap to see downloads</string>
+    <string name="downloads_pause_all">Pause all</string>
+    <string name="dl_videos">Videos</string>
+    <string name="dl_audio">Audio</string>
+    <string name="dl_images">Images</string>
+    <string name="dl_documents">Documents</string>
+    <string name="dl_apps">Apps</string>
+    <string name="dl_other">Other</string>
+    <string name="dl_storage">Using %1$s of %2$s</string>
+    <string name="dl_in_progress">In progress</string>
+    <string name="dl_pause">Pause</string>
+    <string name="dl_resume">Resume</string>
+    <string name="dl_paused">Paused</string>
+    <string name="dl_connections">%1$d connections</string>
+    <string name="ntp_add_shortcut">Add shortcut</string>
+    <string name="ntp_remove_shortcut">Remove</string>
+    <string name="ntp_shortcut_url">Web address</string>
+    <string name="ntp_quick_access">Quick access</string>
+    <string name="ntp_private_short">Private</string>
+    <string name="ntp_remove_recent">Remove from history</string>
+    <string name="ntp_footer">NAYON Browser · Crafted by MD. AHOSHAN HABIB NAYON</string>
+    <string name="lens_title">Search with Google Lens</string>
+    <string name="lens_camera">Take a photo</string>
+    <string name="lens_gallery">Choose an image</string>
+    <string name="lens_no_google">The Google app isn\'t installed, so Lens opens on the web.</string>
 </resources>

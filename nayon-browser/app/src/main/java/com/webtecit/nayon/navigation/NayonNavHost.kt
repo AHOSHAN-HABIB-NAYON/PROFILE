@@ -58,6 +58,7 @@ fun NayonNavHost(
     val openNewTab: (String) -> Unit = { url -> browser.newTab(url); showBrowser() }
 
     LaunchedEffect(browser) { browser.showBrowser.collect { showBrowser() } }
+    LaunchedEffect(browser) { browser.showDownloads.collect { browser.consumeShowDownloads(); go(Routes.DOWNLOADS) } }
 
     NavHost(
         navController = navController,
