@@ -62,7 +62,7 @@ class DownloadService : Service() {
                         val done = live.values.sumOf { it.downloaded }
                         val total = live.values.sumOf { if (it.total > 0) it.total else 0 }
                         val speed = live.values.sumOf { it.bytesPerSecond }
-                        runCatching {
+                        if (canNotify(this@DownloadService)) {
                             NotificationManagerCompat.from(this@DownloadService)
                                 .notify(NOTIFICATION_ID, progressNotification(this@DownloadService, done, total, speed, active))
                         }
@@ -82,6 +82,12 @@ class DownloadService : Service() {
         const val CHANNEL_DONE = "downloads_done"
         private const val NOTIFICATION_ID = 4100
         private const val ACTION_PAUSE_ALL = "com.webtecit.nayon.PAUSE_ALL_DOWNLOADS"
+
+        /** Android 13+ needs the user's permission to show notifications. */
+        fun canNotify(context: Context): Boolean =
+            Build.VERSION.SDK_INT < 33 ||
+                ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) ==
+                android.content.pm.PackageManager.PERMISSION_GRANTED
 
         fun start(context: Context) {
             runCatching { ContextCompat.startForegroundService(context, Intent(context, DownloadService::class.java)) }
@@ -142,7 +148,7 @@ class DownloadService : Service() {
                 .setAutoCancel(true)
                 .setContentIntent(tap)
                 .build()
-            runCatching { NotificationManagerCompat.from(context).notify(5000 + record.id.toInt(), n) }
+            if (canNotify(context)) NotificationManagerCompat.from(context).notify(5000 + record.id.toInt(), n)
         }
     }
 }
