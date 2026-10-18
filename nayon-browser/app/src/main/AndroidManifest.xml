@@ -6,6 +6,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Used only to tell "you are offline" apart from "site not found" on error pages. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Lets the user install APK files they downloaded (Android asks for confirmation). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- Lets the app offer voice search when a speech recogniser is installed (Android 11+ visibility). -->
     <queries>

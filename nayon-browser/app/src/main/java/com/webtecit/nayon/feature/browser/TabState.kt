@@ -44,8 +44,27 @@ class FullscreenVideo(val view: View, val callback: WebChromeClient.CustomViewCa
 class FileChooserRequest(val callback: ValueCallback<Array<Uri>>, val intent: Intent)
 
 sealed interface BrowserEvent {
-    data class Message(@StringRes val text: Int, val arg: String? = null, val showDownloads: Boolean = false) : BrowserEvent
+    data class Message(@StringRes val text: Int, val arg: String? = null, val action: EventAction? = null) : BrowserEvent
 }
 
 @Immutable
 data class Suggestion(val url: String, val title: String, val isBookmark: Boolean)
+
+/** Optional button on a browser message (snackbar). */
+sealed interface EventAction {
+    data object ShowDownloads : EventAction
+    data class OpenDownload(val id: Long) : EventAction
+    data class SwitchTab(val id: String) : EventAction
+}
+
+/** What was long-pressed on a page. */
+@Immutable
+data class ContextTarget(
+    val linkUrl: String? = null,
+    val linkText: String? = null,
+    val imageUrl: String? = null,
+    val isPrivate: Boolean = false,
+)
+
+@Immutable
+data class FindState(val query: String = "", val current: Int = 0, val total: Int = 0)

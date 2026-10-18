@@ -93,7 +93,7 @@ fun NayonNavHost(
             popExitTransition = { fadeOut(tween(180)) + scaleOut(tween(220), targetScale = 0.92f) },
         ) { TabsScreen(browser, onBack = back) }
         composable(Routes.BOOKMARKS) { BookmarksScreen(onBack = back, onOpen = openHere, onOpenInNewTab = openNewTab) }
-        composable(Routes.HISTORY) { HistoryScreen(onBack = back, onOpen = openHere) }
+        composable(Routes.HISTORY) { HistoryScreen(onBack = back, onOpen = openHere, onOpenClearData = { go(Routes.CLEAR_DATA) }) }
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 appearance = appearance,

@@ -47,6 +47,7 @@ import com.webtecit.nayon.data.browser.SavedTab
 import com.webtecit.nayon.data.settings.BrowserPreferences
 import com.webtecit.nayon.data.settings.BrowserPreferencesRepository
 import com.webtecit.nayon.data.settings.ToolbarLayout
+import com.webtecit.nayon.feature.downloads.DownloadFiles
 import android.graphics.Canvas
 import android.net.http.SslCertificate
 import kotlinx.coroutines.FlowPreview
@@ -146,6 +147,16 @@ class BrowserViewModel(
                 webViews.values.forEach { it.settings.javaScriptEnabled = enabled }
             }
         }
+        viewModelScope.launch {
+            preferences.map { it.textZoom }.distinctUntilChanged().collect { zoom ->
+                webViews.values.forEach { it.settings.textZoom = zoom }
+            }
+        }
+        // Tell the user when a download finishes, with a button to open it.
+        androidx.core.content.ContextCompat.registerReceiver(
+            app, downloadReceiver, android.content.IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+            androidx.core.content.ContextCompat.RECEIVER_EXPORTED,
+        )
     }
 
     // ---- Activity binding -------------------------------------------------------------
@@ -168,6 +179,29 @@ class BrowserViewModel(
         return id
     }
 
+    /** Opens [url] in a new tab behind the current one, like Chrome's "Open in new tab". */
+    fun openInBackground(url: String, private: Boolean = false) {
+        if (!UrlResolver.isWebUrl(url)) return
+        val id = UUID.randomUUID().toString()
+        val current = _tabs.value.indexOfFirst { it.id == _activeId.value }
+        val tab = TabState(id = id, isPrivate = private, url = url, title = UrlResolver.displayHost(url), showingHome = false)
+        _tabs.update { list -> list.toMutableList().apply { add(if (current >= 0) current + 1 else size, tab) } }
+        _events.tryEmit(BrowserEvent.Message(
+            if (private) R.string.opened_private_tab else R.string.opened_new_tab, action = EventAction.SwitchTab(id),
+        ))
+    }
+
+    // ---- Recently closed (Undo) -----------------------------------------------------------
+
+    private val recentlyClosed = ArrayDeque<Pair<Int, TabState>>()
+
+    fun undoCloseTab() {
+        val (index, tab) = recentlyClosed.removeLastOrNull() ?: return
+        val restored = tab.copy(isLoading = false, progress = 0, canGoBack = false, canGoForward = false, error = null)
+        _tabs.update { list -> list.toMutableList().apply { add(index.coerceIn(0, size), restored) } }
+        selectTab(restored.id)
+    }
+
     private val _showBrowser = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     /** Emits when a link arrives from another app, so the UI can return to the browser page. */
     val showBrowser: SharedFlow<Unit> = _showBrowser
@@ -186,7 +220,7 @@ class BrowserViewModel(
         load(id, url)
     }
 
-    /** Local-only suggestions from bookmarks and history. Nothing is sent to a server. */
+    /** Matching bookmarks and history (on this device). */
     fun suggestionsFor(query: String): Flow<List<Suggestion>> {
         val q = query.trim()
         if (q.length < 2) return kotlinx.coroutines.flow.flowOf(emptyList())
@@ -195,8 +229,20 @@ class BrowserViewModel(
             val out = mutableListOf<Suggestion>()
             marks.forEach { if (seen.add(it.url)) out += Suggestion(it.url, it.title, isBookmark = true) }
             history.forEach { if (seen.add(it.url)) out += Suggestion(it.url, it.title, isBookmark = false) }
-            out.take(6)
+            out.take(4)
         }
+    }
+
+    /**
+     * Search suggestions from the selected search engine, like Chrome. Only when the setting
+     * is on and never in private tabs.
+     */
+    fun searchSuggestionsFor(query: String): Flow<List<String>> = kotlinx.coroutines.flow.flow {
+        val q = query.trim()
+        val prefs = preferences.value
+        if (q.isEmpty() || !prefs.searchSuggestions || activeTab.value?.isPrivate == true) { emit(emptyList()); return@flow }
+        kotlinx.coroutines.delay(150)
+        emit(com.webtecit.nayon.core.browser.SearchSuggestions.fetch(prefs.searchEngine, q))
     }
 
     /** Recent distinct sites for the new-tab page. */
@@ -210,6 +256,8 @@ class BrowserViewModel(
     fun setRestoreTabs(enabled: Boolean) = viewModelScope.launch { prefsRepository.setRestoreTabs(enabled) }
     fun setShowShortcuts(enabled: Boolean) = viewModelScope.launch { prefsRepository.setShowShortcuts(enabled) }
     fun setShowRecentOnHome(enabled: Boolean) = viewModelScope.launch { prefsRepository.setShowRecentOnHome(enabled) }
+    fun setTextZoom(percent: Int) = viewModelScope.launch { prefsRepository.setTextZoom(percent) }
+    fun setSearchSuggestions(enabled: Boolean) = viewModelScope.launch { prefsRepository.setSearchSuggestions(enabled) }
     fun setPullToRefresh(enabled: Boolean) = viewModelScope.launch { prefsRepository.setPullToRefresh(enabled) }
     fun setToolbarLayout(layout: ToolbarLayout) = viewModelScope.launch { prefsRepository.setToolbarLayout(layout) }
     fun setHideToolbarsOnScroll(enabled: Boolean) = viewModelScope.launch {
@@ -220,10 +268,17 @@ class BrowserViewModel(
     // ---- Collapsing toolbars ------------------------------------------------------------
 
     /**
-     * Receives (scrollY, dy) for the active tab's page. The UI uses it to slide the toolbars
-     * with the finger, without resizing the page while it scrolls.
+     * Receives page scrolls of the active tab: (scrollY, dy, fingerDown, userDriven).
+     * userDriven is false for scrolls the page makes by itself (text selection, anchors),
+     * which must never move the toolbars.
      */
-    var onActivePageScroll: ((Int, Int) -> Unit)? = null
+    var onActivePageScroll: ((Int, Int, Boolean, Boolean) -> Unit)? = null
+
+    /** Called when the finger leaves the active page. */
+    var onActiveGestureEnd: (() -> Unit)? = null
+
+    private var fingerDown = false
+    private var lastFingerUp = 0L
 
     private val _showBarsRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 4)
     val showBarsRequests: SharedFlow<Unit> = _showBarsRequests
@@ -234,7 +289,90 @@ class BrowserViewModel(
 
     private fun onWebScroll(tabId: String, y: Int, oldY: Int) {
         if (tabId != _activeId.value) return
-        onActivePageScroll?.invoke(y, y - oldY)
+        val userDriven = fingerDown || android.os.SystemClock.uptimeMillis() - lastFingerUp < 1_500
+        onActivePageScroll?.invoke(y, y - oldY, fingerDown, userDriven)
+    }
+
+    private fun onWebTouch(tabId: String, action: Int) {
+        when (action) {
+            android.view.MotionEvent.ACTION_DOWN -> fingerDown = true
+            android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                fingerDown = false
+                lastFingerUp = android.os.SystemClock.uptimeMillis()
+                if (tabId == _activeId.value) onActiveGestureEnd?.invoke()
+            }
+        }
+    }
+
+    // ---- Long-press menu (links and images) ---------------------------------------------
+
+    private val _contextMenu = MutableStateFlow<ContextTarget?>(null)
+    val contextMenu: StateFlow<ContextTarget?> = _contextMenu.asStateFlow()
+
+    fun dismissContextMenu() { _contextMenu.value = null }
+
+    private fun onLongPress(tabId: String, wv: WebView): Boolean {
+        val hit = wv.hitTestResult
+        val extra = hit.extra ?: return false
+        val isPrivate = tab(tabId)?.isPrivate == true
+        val target = when (hit.type) {
+            WebView.HitTestResult.SRC_ANCHOR_TYPE -> ContextTarget(linkUrl = extra, isPrivate = isPrivate)
+            WebView.HitTestResult.IMAGE_TYPE -> ContextTarget(imageUrl = extra, isPrivate = isPrivate)
+            WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE -> ContextTarget(imageUrl = extra, isPrivate = isPrivate)
+            else -> return false
+        }
+        _contextMenu.value = target
+        wv.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
+        // Ask the page for the link's text and real address (for linked images).
+        val handler = android.os.Handler(android.os.Looper.getMainLooper()) { msg ->
+            val url = msg.data.getString("url")
+            val title = msg.data.getString("title")
+            _contextMenu.update { cur ->
+                cur?.copy(
+                    linkUrl = cur.linkUrl ?: url?.takeIf { UrlResolver.isWebUrl(it) },
+                    linkText = title?.takeIf { it.isNotBlank() } ?: cur.linkText,
+                )
+            }
+            true
+        }
+        wv.requestFocusNodeHref(handler.obtainMessage())
+        return true
+    }
+
+    /** Downloads a link or image from the long-press menu. */
+    fun downloadUrl(url: String, private: Boolean) {
+        val ua = webViews.values.firstOrNull()?.settings?.userAgentString
+        startDownload(url, ua, null, null, private)
+    }
+
+    // ---- Find in page -------------------------------------------------------------------
+
+    private val _find = MutableStateFlow<FindState?>(null)
+    val find: StateFlow<FindState?> = _find.asStateFlow()
+
+    fun startFind() { _find.value = FindState() }
+
+    fun findQuery(query: String) {
+        _find.value = (_find.value ?: FindState()).copy(query = query, current = 0, total = 0)
+        val wv = activeWebView() ?: return
+        if (query.isEmpty()) wv.clearMatches() else wv.findAllAsync(query)
+    }
+
+    fun findNext(forward: Boolean) { activeWebView()?.findNext(forward) }
+
+    fun stopFind() {
+        activeWebView()?.clearMatches()
+        _find.value = null
+    }
+
+    // ---- Translate ----------------------------------------------------------------------
+
+    /** Opens the page through Google Translate's website (no API key; Google sees the page address). */
+    fun translatePage() {
+        val tab = activeTab.value ?: return
+        val url = tab.url?.takeIf { tab.isWebPage } ?: return
+        val lang = java.util.Locale.getDefault().language.ifBlank { "en" }
+        load(tab.id, "https://translate.google.com/translate?sl=auto&tl=$lang&u=" + java.net.URLEncoder.encode(url, "UTF-8"))
     }
 
     fun activeWebView(): WebView? = _activeId.value?.let { webViews[it] }
@@ -299,6 +437,8 @@ class BrowserViewModel(
         val index = list.indexOfFirst { it.id == id }
         if (index < 0) return
         val closing = list[index]
+        recentlyClosed.addLast(index to closing.copy(thumbnail = null))
+        if (recentlyClosed.size > 10) recentlyClosed.removeFirst()
         destroyWebView(id)
         val remaining = list - closing
         _tabs.value = remaining
@@ -515,7 +655,7 @@ class BrowserViewModel(
         runCatching { ProfileStore.getInstance().deleteProfile(PRIVATE_PROFILE) }
     }
 
-    @SuppressLint("SetJavaScriptEnabled", "RequiresFeature")
+    @SuppressLint("SetJavaScriptEnabled", "RequiresFeature", "ClickableViewAccessibility")
     private fun createWebView(tab: TabState): WebView {
         val wv = WebView(webContext)
         if (tab.isPrivate && privateIsolationSupported) {
@@ -549,6 +689,12 @@ class BrowserViewModel(
         wv.webViewClient = Client(tab.id)
         wv.webChromeClient = ChromeClient(tab.id)
         wv.setOnScrollChangeListener { _, _, y, _, oldY -> onWebScroll(tab.id, y, oldY) }
+        wv.setOnTouchListener { _, e -> onWebTouch(tab.id, e.actionMasked); false }
+        wv.setOnLongClickListener { onLongPress(tab.id, wv) }
+        wv.setFindListener { active, count, _ ->
+            if (tab.id == _activeId.value) _find.update { it?.copy(current = if (count == 0) 0 else active + 1, total = count) }
+        }
+        wv.settings.textZoom = preferences.value.textZoom
         wv.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
             startDownload(url, userAgent, contentDisposition, mimeType, tab.isPrivate)
         }
@@ -605,7 +751,7 @@ class BrowserViewModel(
         if (request == null || dm == null || runCatching { dm.enqueue(request) }.isFailure) {
             _events.tryEmit(BrowserEvent.Message(R.string.download_failed))
         } else {
-            _events.tryEmit(BrowserEvent.Message(R.string.download_started, name, showDownloads = true))
+            _events.tryEmit(BrowserEvent.Message(R.string.download_started, name, action = EventAction.ShowDownloads))
         }
     }
 
@@ -755,7 +901,22 @@ class BrowserViewModel(
         }
     }
 
+    // Lazy: it is first used from init, before properties declared below are initialised.
+    private val downloadReceiver by lazy { object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1L)
+            if (id < 0) return
+            val info = DownloadFiles.info(context, id) ?: return
+            if (info.second) {
+                _events.tryEmit(BrowserEvent.Message(R.string.download_complete, info.first, action = EventAction.OpenDownload(id)))
+            } else {
+                _events.tryEmit(BrowserEvent.Message(R.string.download_failed_named, info.first, action = EventAction.ShowDownloads))
+            }
+        }
+    } }
+
     override fun onCleared() {
+        runCatching { getApplication<Application>().unregisterReceiver(downloadReceiver) }
         webViews.keys.toList().forEach { destroyWebView(it) }
         webContext.baseContext = getApplication()
         super.onCleared()

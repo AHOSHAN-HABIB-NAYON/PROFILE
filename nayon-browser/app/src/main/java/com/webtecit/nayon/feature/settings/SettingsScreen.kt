@@ -23,6 +23,24 @@ import androidx.compose.material.icons.outlined.UnfoldLess
 import androidx.compose.material.icons.outlined.VerticalAlignBottom
 import androidx.compose.material.icons.outlined.VerticalAlignTop
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.outlined.FormatSize
+import androidx.compose.material.icons.outlined.ManageSearch
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Text
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.sp
+import com.webtecit.nayon.core.designsystem.theme.Spacing
+import kotlin.math.roundToInt
 import androidx.compose.ui.Modifier
 import com.webtecit.nayon.core.designsystem.component.RadioRow
 import com.webtecit.nayon.data.settings.ToolbarLayout
@@ -65,6 +83,9 @@ fun SettingsScreen(
         item {
             SettingsGroup {
                 SettingsRow(stringResource(R.string.settings_search_engine), onOpenSearchEngine, icon = Icons.Outlined.Search, subtitle = engineName)
+                GroupDivider()
+                SettingsSwitchRow(stringResource(R.string.settings_suggestions), prefs.searchSuggestions, { browser.setSearchSuggestions(it) },
+                    icon = Icons.Outlined.ManageSearch, subtitle = stringResource(R.string.settings_suggestions_desc, engineName))
                 GroupDivider()
                 SettingsSwitchRow(stringResource(R.string.settings_restore_tabs), prefs.restoreTabs, { browser.setRestoreTabs(it) },
                     icon = Icons.Outlined.Restore, subtitle = stringResource(R.string.settings_restore_tabs_desc))
@@ -126,6 +147,33 @@ fun SettingsScreen(
                     icon = Icons.Outlined.Palette,
                     onClick = onOpenAppearance,
                 )
+            }
+        }
+
+        item { SectionHeader(stringResource(R.string.settings_section_accessibility)) }
+        item {
+            SettingsGroup {
+                Column(Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.md)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.FormatSize, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.width(Spacing.lg))
+                        Text(stringResource(R.string.settings_text_size), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                        Text("${prefs.textZoom}%", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                    }
+                    var zoom by remember(prefs.textZoom) { mutableFloatStateOf(prefs.textZoom.toFloat()) }
+                    Slider(
+                        value = zoom,
+                        onValueChange = { zoom = it },
+                        onValueChangeFinished = { browser.setTextZoom(zoom.roundToInt()) },
+                        valueRange = 50f..200f,
+                        steps = 14,
+                    )
+                    Text(
+                        stringResource(R.string.settings_text_size_preview),
+                        fontSize = (16 * zoom / 100f).sp,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                }
             }
         }
 

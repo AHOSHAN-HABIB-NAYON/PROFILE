@@ -66,6 +66,14 @@ checking by hand on a real device.
 | Real site icons (favicons) | Implemented | From visited pages; home shortcuts fetch the site's own icon once | — | Manual |
 | In-app Downloads page (progress, open, share, delete, cancel) | Implemented | Pause/resume is controlled by Android | — | Manual |
 | Clear browsing data time range | Implemented | Only history can be limited by date; cookies and cache are cleared completely | — | Manual |
+| Long-press menu for links and images (new tab, private tab, copy link/text, download, share, Lens) | Implemented | Uses WebView hit-testing; text long-press keeps the normal selection menu | — | Manual |
+| Find in page | Implemented | — | — | Manual |
+| Translate page | Implemented | Opens the page through Google Translate's website | — | Manual |
+| Add to Home screen | Implemented | Needs a launcher that supports pinned shortcuts | — | Manual |
+| Search suggestions from the search engine | Implemented (setting, on by default) | Typed text is sent to the selected engine; never in private tabs; not available for Yahoo/custom | — | `searchSuggestionsParseOpenSearchFormat` |
+| Text size on websites | Implemented | WebView text zoom 50–200% | — | Manual |
+| Swipe to close tabs, Undo close | Implemented | Undo keeps the last 10 closed tabs (address only) | — | Manual |
+| Download complete notice with Open | Implemented | Opening APKs needs "Install unknown apps" permission for NAYON Browser | — | Manual |
 | Optimized test build | Implemented | Test APKs are R8-optimized release builds signed with the shared test key | — | CI |
 | Share page / copy link | Implemented | — | — | Manual |
 | Open links from other apps; set as default browser | Implemented | User chooses default browser in Android settings | — | Manual |

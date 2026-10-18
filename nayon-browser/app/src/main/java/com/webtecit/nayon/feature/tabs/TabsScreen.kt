@@ -34,6 +34,16 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -83,6 +93,18 @@ fun TabsScreen(viewModel: BrowserViewModel, onBack: () -> Unit) {
     var confirmCloseAll by remember { mutableStateOf(false) }
     var menu by remember { mutableStateOf(false) }
     val scheme = MaterialTheme.colorScheme
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val undoLabel = stringResource(R.string.action_undo)
+    val closedText = stringResource(R.string.tab_closed)
+    fun close(tab: TabState) {
+        viewModel.closeTab(tab.id)
+        scope.launch {
+            snackbar.currentSnackbarData?.dismiss()
+            val r = snackbar.showSnackbar("$closedText: ${tab.displayTitle.ifBlank { "" }}".trimEnd(':', ' '), undoLabel, duration = SnackbarDuration.Short)
+            if (r == SnackbarResult.ActionPerformed) viewModel.undoCloseTab()
+        }
+    }
     val visible = tabs.filter { it.isPrivate == showPrivate }
         .filter { query.isBlank() || it.displayTitle.contains(query, true) || it.url.orEmpty().contains(query, true) }
 
@@ -159,17 +181,22 @@ fun TabsScreen(viewModel: BrowserViewModel, onBack: () -> Unit) {
                 modifier = Modifier.weight(1f),
             ) {
                 items(visible, key = { it.id }) { tab ->
-                    TabCard(
-                        tab = tab,
-                        selected = tab.id == activeId,
-                        onClick = { viewModel.selectTab(tab.id); onBack() },
-                        onClose = { viewModel.closeTab(tab.id) },
-                        modifier = Modifier.animateItem(),
-                    )
+                    SwipeToClose(onClose = { close(tab) }, modifier = Modifier.animateItem()) {
+                        TabCard(
+                            tab = tab,
+                            selected = tab.id == activeId,
+                            onClick = { viewModel.selectTab(tab.id); onBack() },
+                            onClose = { close(tab) },
+                        )
+                    }
                 }
                 item(span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(Spacing.xl)) }
             }
         }
+    }
+
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        SnackbarHost(snackbar, Modifier.navigationBarsPadding().padding(Spacing.md))
     }
 
     if (confirmCloseAll) {
@@ -246,4 +273,16 @@ private fun TabCard(tab: TabState, selected: Boolean, onClick: () -> Unit, onClo
             }
         }
     }
+}
+
+/** Swipe a tab card sideways to close it, like Chrome. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SwipeToClose(onClose: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val state = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value != SwipeToDismissBoxValue.Settled) { onClose(); true } else false
+        },
+    )
+    SwipeToDismissBox(state = state, backgroundContent = {}, modifier = modifier) { content() }
 }

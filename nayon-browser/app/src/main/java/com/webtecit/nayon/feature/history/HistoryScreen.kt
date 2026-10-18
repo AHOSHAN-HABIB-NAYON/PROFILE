@@ -86,6 +86,7 @@ fun dayKey(time: Long, now: Long = System.currentTimeMillis()): Long {
 fun HistoryScreen(
     onBack: () -> Unit,
     onOpen: (String) -> Unit,
+    onOpenClearData: () -> Unit,
     viewModel: HistoryViewModel = viewModel(factory = NayonViewModelFactory.Factory),
 ) {
     val context = LocalContext.current
@@ -107,6 +108,11 @@ fun HistoryScreen(
         },
     ) {
         item { SearchField(query, { viewModel.query.value = it }, stringResource(R.string.history_search)) }
+        item {
+            androidx.compose.material3.TextButton(onClick = onOpenClearData) {
+                Text(stringResource(R.string.history_delete_data_link), style = MaterialTheme.typography.titleSmall)
+            }
+        }
         val list = entries
         when {
             list == null -> Unit

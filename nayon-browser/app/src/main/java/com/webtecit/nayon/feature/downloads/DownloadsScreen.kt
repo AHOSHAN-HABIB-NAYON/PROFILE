@@ -135,21 +135,8 @@ fun DownloadsScreen(onBack: () -> Unit, viewModel: DownloadsViewModel = viewMode
     val items by viewModel.items.collectAsStateWithLifecycle()
     var filter by rememberSaveable { mutableStateOf(Filter.ALL) }
 
-    fun open(item: DownloadItem) {
-        val uri = viewModel.uriFor(item.id) ?: return
-        val intent = Intent(Intent.ACTION_VIEW).setDataAndType(uri, viewModel.mimeFor(item.id) ?: item.mime ?: "*/*")
-            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
-        try { context.startActivity(intent) } catch (e: ActivityNotFoundException) {
-            Toast.makeText(context, R.string.downloads_no_app, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    fun share(item: DownloadItem) {
-        val uri = viewModel.uriFor(item.id) ?: return
-        val send = Intent(Intent.ACTION_SEND).setType(viewModel.mimeFor(item.id) ?: "*/*")
-            .putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        runCatching { context.startActivity(Intent.createChooser(send, item.name)) }
-    }
+    fun open(item: DownloadItem) = DownloadFiles.open(context, item.id, item.name)
+    fun share(item: DownloadItem) = DownloadFiles.share(context, item.id, item.name)
 
     ScreenScaffold(title = stringResource(R.string.downloads_title), onBack = onBack) {
         item {

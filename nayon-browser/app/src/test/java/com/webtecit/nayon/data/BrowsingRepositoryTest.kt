@@ -81,6 +81,12 @@ class BrowsingRepositoryTest {
         assertEquals(listOf("3"), repo.loadSavedTabs().map { it.id })
     }
 
+    @Test fun searchSuggestionsParseOpenSearchFormat() {
+        val parsed = com.webtecit.nayon.core.browser.SearchSuggestions.parse("""["nay",["nayon","nayon browser","nayon"],[],{}]""")
+        assertEquals(listOf("nayon", "nayon browser"), parsed)
+        assertTrue(com.webtecit.nayon.core.browser.SearchSuggestions.parse("not json").isEmpty())
+    }
+
     @Test fun historyDayBuckets() {
         val cal = Calendar.getInstance().apply { set(2026, Calendar.MARCH, 10, 15, 0) }
         val nowMs = cal.timeInMillis

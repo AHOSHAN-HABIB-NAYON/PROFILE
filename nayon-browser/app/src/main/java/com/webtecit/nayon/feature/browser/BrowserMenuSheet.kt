@@ -18,6 +18,9 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.AddToHomeScreen
+import androidx.compose.material.icons.outlined.FindInPage
+import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material.icons.outlined.Bookmarks
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.DesktopWindows
@@ -53,7 +56,7 @@ import com.webtecit.nayon.core.designsystem.theme.Spacing
 
 enum class MenuAction {
     NEW_TAB, NEW_PRIVATE_TAB, BOOKMARKS, HISTORY, DOWNLOADS, SETTINGS,
-    TOGGLE_BOOKMARK, SHARE, COPY_LINK, DESKTOP, DUPLICATE, FORWARD, RELOAD, SITE_INFO,
+    TOGGLE_BOOKMARK, SHARE, COPY_LINK, DESKTOP, DUPLICATE, FORWARD, RELOAD, SITE_INFO, FIND, TRANSLATE, ADD_TO_HOME,
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -103,6 +106,9 @@ fun BrowserMenuSheet(
             SettingsRow(stringResource(R.string.action_history), { act(MenuAction.HISTORY) }, icon = Icons.Outlined.History, showChevron = false)
             SettingsRow(stringResource(R.string.action_downloads), { act(MenuAction.DOWNLOADS) }, icon = Icons.Outlined.Download, showChevron = false)
             if (onPage) {
+                SettingsRow(stringResource(R.string.action_find), { act(MenuAction.FIND) }, icon = Icons.Outlined.FindInPage, showChevron = false)
+                SettingsRow(stringResource(R.string.action_translate), { act(MenuAction.TRANSLATE) }, icon = Icons.Outlined.Translate, showChevron = false)
+                SettingsRow(stringResource(R.string.action_add_to_home), { act(MenuAction.ADD_TO_HOME) }, icon = Icons.Outlined.AddToHomeScreen, showChevron = false)
                 SettingsRow(stringResource(R.string.action_copy_link), { act(MenuAction.COPY_LINK) }, icon = Icons.Outlined.ContentCopy, showChevron = false)
                 SettingsRow(stringResource(R.string.action_duplicate), { act(MenuAction.DUPLICATE) }, icon = Icons.Outlined.FileCopy, showChevron = false)
             }

@@ -103,6 +103,8 @@ fun BrowserScreen(
     val recent by viewModel.recentSites.collectAsStateWithLifecycle()
     val fullscreen by viewModel.fullscreen.collectAsStateWithLifecycle()
     val fileChooser by viewModel.fileChooser.collectAsStateWithLifecycle()
+    val find by viewModel.find.collectAsStateWithLifecycle()
+    val contextTarget by viewModel.contextMenu.collectAsStateWithLifecycle()
 
     val focusRequester = remember { FocusRequester() }
     var editing by remember { mutableStateOf(false) }
@@ -132,17 +134,28 @@ fun BrowserScreen(
         try { fileLauncher.launch(request.intent) } catch (e: ActivityNotFoundException) { viewModel.onFileChooserFailed() }
     }
     val viewLabel = stringResource(R.string.action_view)
+    val openLabel = stringResource(R.string.downloads_open)
+    val switchLabel = stringResource(R.string.action_switch)
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
                 is BrowserEvent.Message -> {
                     val text = if (event.arg != null) context.getString(event.text, event.arg) else context.getString(event.text)
-                    val result = snackbar.showSnackbar(
-                        text,
-                        actionLabel = if (event.showDownloads) viewLabel else null,
-                        duration = SnackbarDuration.Short,
-                    )
-                    if (result == SnackbarResult.ActionPerformed) onOpenDownloads()
+                    val label = when (event.action) {
+                        EventAction.ShowDownloads -> viewLabel
+                        is EventAction.OpenDownload -> openLabel
+                        is EventAction.SwitchTab -> switchLabel
+                        null -> null
+                    }
+                    val result = snackbar.showSnackbar(text, actionLabel = label, duration = SnackbarDuration.Short)
+                    if (result == SnackbarResult.ActionPerformed) {
+                        when (val a = event.action) {
+                            EventAction.ShowDownloads -> onOpenDownloads()
+                            is EventAction.OpenDownload -> com.webtecit.nayon.feature.downloads.DownloadFiles.open(context, a.id, event.arg.orEmpty())
+                            is EventAction.SwitchTab -> viewModel.selectTab(a.id)
+                            null -> Unit
+                        }
+                    }
                 }
             }
         }
@@ -164,6 +177,7 @@ fun BrowserScreen(
     }
 
     BackHandler(enabled = editing) { focusManager.clearFocus() }
+    BackHandler(enabled = !editing && find != null) { viewModel.stopFind() }
     BackHandler(enabled = !editing && tab?.let { (it.showingHome && it.url != null) || (!it.showingHome && it.canGoBack) } == true) {
         viewModel.goBack()
     }
@@ -175,35 +189,55 @@ fun BrowserScreen(
     val bottomH = if (compact) 0f else with(density) { BottomBarHeight.toPx() }
     val barOffset = remember { Animatable(0f) }          // 0 = shown, -topH = hidden
     var tallPage by remember { mutableStateOf(false) }   // page extends under the hidden bars
-    val collapsible = onWebPage && !editing && prefs.hideToolbarsOnScroll && tab?.error == null
+    val collapsible = onWebPage && !editing && prefs.hideToolbarsOnScroll && tab?.error == null && find == null
 
     LaunchedEffect(collapsible) {
-        if (!collapsible) { barOffset.animateTo(0f, tween(160)); tallPage = false }
+        if (!collapsible && barOffset.value != 0f) { barOffset.animateTo(0f, tween(160)); tallPage = false }
     }
     LaunchedEffect(Unit) {
-        viewModel.showBarsRequests.collect { barOffset.animateTo(0f, tween(160)); tallPage = false }
+        viewModel.showBarsRequests.collect { if (barOffset.value != 0f) barOffset.animateTo(0f, tween(160)); tallPage = false }
     }
+    // Bars move only after the finger lifts (or during a fling). Moving the page under a
+    // finger makes it shake, and page-made scrolls (text selection) must not move them.
     DisposableEffect(collapsible, topH) {
-        var settle: Job? = null
-        var ignoreUntil = 0L
-        viewModel.onActivePageScroll = if (!collapsible) null else { y, dy ->
-            val now = SystemClock.uptimeMillis()
-            if (y <= 0) {
-                settle?.cancel()
-                scope.launch { barOffset.animateTo(0f, tween(140)); tallPage = false }
-            } else if (now >= ignoreUntil && dy != 0) {
-                if (dy > 0 && !tallPage) { tallPage = true; ignoreUntil = now + 250 }
-                settle?.cancel()
-                scope.launch { barOffset.snapTo((barOffset.value - dy).coerceIn(-topH, 0f)) }
-                settle = scope.launch {
-                    delay(160)
-                    val hide = barOffset.value < -topH / 2
-                    barOffset.animateTo(if (hide) -topH else 0f, tween(140))
-                    if (!hide) { tallPage = false; ignoreUntil = SystemClock.uptimeMillis() + 250 }
+        var run = 0
+        var hidden = false
+        fun hide() {
+            if (hidden) return
+            hidden = true
+            tallPage = true
+            scope.launch { barOffset.animateTo(-topH, tween(200)) }
+        }
+        fun show() {
+            if (!hidden && barOffset.value == 0f) return
+            hidden = false
+            scope.launch { barOffset.animateTo(0f, tween(200)); tallPage = false }
+        }
+        fun decide() {
+            val threshold = with(density) { 24.dp.toPx() }
+            if (run > threshold) hide() else if (run < -threshold) show()
+        }
+        if (collapsible) {
+            viewModel.onActivePageScroll = { y, dy, fingerDown, userDriven ->
+                when {
+                    y <= 0 -> { run = 0; show() }
+                    !userDriven || dy == 0 -> Unit
+                    else -> {
+                        if ((dy > 0) != (run > 0)) run = 0
+                        run += dy
+                        if (!fingerDown) decide()   // fling after the finger lifted
+                    }
                 }
             }
+            viewModel.onActiveGestureEnd = { decide() }
+        } else {
+            viewModel.onActivePageScroll = null
+            viewModel.onActiveGestureEnd = null
         }
-        onDispose { viewModel.onActivePageScroll = null; settle?.cancel() }
+        onDispose {
+            viewModel.onActivePageScroll = null
+            viewModel.onActiveGestureEnd = null
+        }
     }
 
     val scheme = MaterialTheme.colorScheme
@@ -286,8 +320,18 @@ fun BrowserScreen(
                 SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(Spacing.md))
             }
 
-            // Top bar, sliding up as the page scrolls.
-            TopToolbar(
+            // Top bar, sliding up as the page scrolls. Find-in-page replaces it while active.
+            val findState = find
+            if (findState != null) {
+                FindBar(
+                    state = findState,
+                    onQuery = viewModel::findQuery,
+                    onNext = { viewModel.findNext(true) },
+                    onPrevious = { viewModel.findNext(false) },
+                    onClose = viewModel::stopFind,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            } else TopToolbar(
                 tab = tab,
                 tabCount = tabCount,
                 compact = compact,
@@ -352,8 +396,26 @@ fun BrowserScreen(
                     MenuAction.FORWARD -> viewModel.goForward()
                     MenuAction.RELOAD -> viewModel.reload()
                     MenuAction.SITE_INFO -> showPageInfo = true
+                    MenuAction.FIND -> viewModel.startFind()
+                    MenuAction.TRANSLATE -> viewModel.translatePage()
+                    MenuAction.ADD_TO_HOME -> tab?.let { addToHomeScreen(context, it) }
                 }
             },
+        )
+    }
+
+    contextTarget?.let { target ->
+        LinkContextSheet(
+            target = target,
+            onDismiss = viewModel::dismissContextMenu,
+            onOpenNewTab = { viewModel.openInBackground(it) },
+            onOpenPrivate = { viewModel.openInBackground(it, private = true) },
+            onOpenHere = { viewModel.openInCurrentTab(it) },
+            onCopy = { copyLink(context, it) },
+            onCopyText = { copyText(context, it) },
+            onDownload = { viewModel.downloadUrl(it, target.isPrivate) },
+            onShare = { url -> shareText(context, url) },
+            onLens = { url -> viewModel.newTab(LENS_BY_URL + java.net.URLEncoder.encode(url, "UTF-8")) },
         )
     }
 
@@ -372,6 +434,7 @@ fun BrowserScreen(
 
 private const val GOOGLE_APP = "com.google.android.googlequicksearchbox"
 private const val LENS_WEB = "https://lens.google.com"
+private const val LENS_BY_URL = "https://lens.google.com/uploadbyurl?url="
 
 /** Hosts the tab's WebView inside a pull-to-refresh container. */
 @Composable
@@ -481,4 +544,44 @@ fun copyLink(context: Context, url: String) {
     if (Build.VERSION.SDK_INT < 33) {
         android.widget.Toast.makeText(context, R.string.link_copied, android.widget.Toast.LENGTH_SHORT).show()
     }
+}
+
+fun copyText(context: Context, text: String) {
+    val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
+    cm.setPrimaryClip(ClipData.newPlainText("Text", text))
+    if (Build.VERSION.SDK_INT < 33) {
+        android.widget.Toast.makeText(context, R.string.text_copied, android.widget.Toast.LENGTH_SHORT).show()
+    }
+}
+
+fun shareText(context: Context, text: String) {
+    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
+    runCatching { context.startActivity(Intent.createChooser(send, context.getString(R.string.share_page_via))) }
+}
+
+/** Pins the page to the home screen; tapping it opens the page in NAYON Browser. */
+fun addToHomeScreen(context: Context, tab: TabState) {
+    val url = tab.url ?: return
+    if (!androidx.core.content.pm.ShortcutManagerCompat.isRequestPinShortcutSupported(context)) {
+        android.widget.Toast.makeText(context, R.string.add_to_home_unsupported, android.widget.Toast.LENGTH_SHORT).show()
+        return
+    }
+    val intent = Intent(Intent.ACTION_VIEW, url.toUri()).setClass(context, com.webtecit.nayon.MainActivity::class.java)
+    val icon = tab.favicon?.let { fav ->
+        val size = 192
+        val bmp = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(bmp)
+        canvas.drawColor(android.graphics.Color.WHITE)
+        val inset = size / 4
+        canvas.drawBitmap(fav, null, android.graphics.Rect(inset, inset, size - inset, size - inset),
+            android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG))
+        androidx.core.graphics.drawable.IconCompat.createWithAdaptiveBitmap(bmp)
+    } ?: androidx.core.graphics.drawable.IconCompat.createWithResource(context, R.mipmap.ic_launcher)
+    val label = tab.title.ifBlank { com.webtecit.nayon.core.browser.UrlResolver.displayHost(url) }.take(25)
+    val info = androidx.core.content.pm.ShortcutInfoCompat.Builder(context, "page:" + url.hashCode())
+        .setShortLabel(label)
+        .setIcon(icon)
+        .setIntent(intent)
+        .build()
+    androidx.core.content.pm.ShortcutManagerCompat.requestPinShortcut(context, info, null)
 }

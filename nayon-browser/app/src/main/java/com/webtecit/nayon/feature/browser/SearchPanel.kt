@@ -69,6 +69,8 @@ fun SearchPanel(
     val searches by viewModel.recentSearches.collectAsStateWithLifecycle()
     val suggestionsFlow = remember(query) { viewModel.suggestionsFor(query) }
     val suggestions by suggestionsFlow.collectAsState(initial = emptyList())
+    val remoteFlow = remember(query) { viewModel.searchSuggestionsFor(query) }
+    val remote by remoteFlow.collectAsState(initial = emptyList())
     val typing = query.isNotBlank() && query != tab?.url
 
     LazyColumn(
@@ -82,6 +84,14 @@ fun SearchPanel(
                     title = stringResource(R.string.search_for, query.trim()),
                     onClick = { onSearch(query) },
                     trailing = { FillButton { onFill(query.trim()) } },
+                )
+            }
+            items(remote.filter { !it.equals(query.trim(), ignoreCase = true) }, key = { "q:$it" }) { q ->
+                PanelRow(
+                    leading = { Icon(Icons.Outlined.Search, null, tint = scheme.onSurfaceVariant) },
+                    title = q,
+                    onClick = { onSearch(q) },
+                    trailing = { FillButton { onFill(q) } },
                 )
             }
             items(suggestions, key = { it.url }) { s ->

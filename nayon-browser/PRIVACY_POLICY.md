@@ -33,7 +33,8 @@ Private tabs are never written to history or saved tabs.
 ## What leaves your device
 
 - **Websites you visit** receive your requests directly, as with any browser.
-- **Your search engine** receives the words you search for.
+- **Your search engine** receives the words you search for. If **Search suggestions** is on (Settings → General), what you type in the address bar is also sent to that engine to show suggestions. This never happens in private tabs and can be switched off.
+- **Translate** opens the page through Google Translate's website, so Google receives the page address.
 - **Google Safe Browsing**: when available, Android System WebView may check addresses with Google to warn about dangerous sites.
 - **Downloads** are fetched by Android's download manager.
 - **Home-page shortcut icons**: for a shortcut you have never visited, NAYON Browser downloads that site's own icon once (for example `https://www.youtube.com/favicon.ico`). No third-party icon service is used. Icons of sites you visit are taken from the page itself.
