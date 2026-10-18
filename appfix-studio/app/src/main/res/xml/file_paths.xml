@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Build outputs and signed APKs that the user explicitly shares or installs. -->
+    <files-path name="projects" path="projects/" />
+    <files-path name="signed" path="signed/" />
+</paths>

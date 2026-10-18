@@ -50,6 +50,10 @@ import com.appfix.studio.ui.nav.ResourcesRoute
 import com.appfix.studio.ui.nav.SearchRoute
 import com.appfix.studio.ui.nav.FeaturesRoute
 import com.appfix.studio.ui.nav.BrandingRoute
+import com.appfix.studio.ui.nav.BuildRoute
+import com.appfix.studio.ui.nav.SigningRoute
+import com.appfix.studio.ui.build.BuildScreen
+import com.appfix.studio.ui.build.SigningScreen
 import com.appfix.studio.ui.branding.BrandingScreen
 import com.appfix.studio.ui.nav.VisualEditorRoute
 import com.appfix.studio.ui.features.FeaturesScreen
@@ -137,7 +141,24 @@ fun AppRoot() {
                         onOpenVisual = { id -> nav.navigate(VisualEditorRoute(id)) },
                         onOpenFeatures = { id -> nav.navigate(FeaturesRoute(id)) },
                         onOpenBranding = { id -> nav.navigate(BrandingRoute(id)) },
+                        onOpenBuild = { id -> nav.navigate(BuildRoute(id)) },
                     )
+                }
+                composable<BuildRoute> { entry ->
+                    val id = entry.toRoute<BuildRoute>().id
+                    BuildScreen(
+                        id,
+                        onBack = { nav.popBackStack() },
+                        onAnalyzeLog = { log ->
+                            scope.launch { container.settings.setCurrentProject(id) }
+                            container.buildLogRequests.value = log
+                            nav.navigateTopLevel(RepairRoute)
+                        },
+                        onSign = { path -> nav.navigate(SigningRoute(path)) },
+                    )
+                }
+                composable<SigningRoute> { entry ->
+                    SigningScreen(entry.toRoute<SigningRoute>().file.ifEmpty { null }, onBack = { nav.popBackStack() })
                 }
                 composable<BrandingRoute> { entry ->
                     BrandingScreen(entry.toRoute<BrandingRoute>().id, onBack = { nav.popBackStack() })
@@ -176,6 +197,8 @@ fun AppRoot() {
                         onOpenVisual = { nav.navigate(VisualEditorRoute(route.id)) },
                         onOpenFeatures = { nav.navigate(FeaturesRoute(route.id)) },
                         onOpenBranding = { nav.navigate(BrandingRoute(route.id)) },
+                        onOpenBuild = { nav.navigate(BuildRoute(route.id)) },
+                        onSignApk = { path -> nav.navigate(SigningRoute(path)) },
                         onOpenEditor = {
                             scope.launch { container.settings.setCurrentProject(route.id) }
                             nav.navigateTopLevel(EditorRoute)

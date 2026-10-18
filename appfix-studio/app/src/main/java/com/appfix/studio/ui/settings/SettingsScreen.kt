@@ -105,10 +105,10 @@ fun SettingsScreen(onOpenLimitations: () -> Unit) {
                 }
             }
             item {
-                SectionCard("Builds & AI", subtitle = "Planned for later phases") {
+                SectionCard("Builds & AI") {
                     BulletList(
                         listOf(
-                            "Cloud builds will run on a GitHub Actions or Linux build worker you control. They are not available yet, so no build button is shown.",
+                            "Cloud builds run on GitHub Actions in a repository you own. Open a source project and choose Cloud build to connect GitHub.",
                             "The AI assistant will use a provider you configure, with keys kept on a backend — never inside the app.",
                         ),
                     )

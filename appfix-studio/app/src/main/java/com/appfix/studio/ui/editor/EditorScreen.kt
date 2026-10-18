@@ -101,6 +101,7 @@ fun EditorScreen(
     onOpenVisual: (String) -> Unit = {},
     onOpenFeatures: (String) -> Unit = {},
     onOpenBranding: (String) -> Unit = {},
+    onOpenBuild: (String) -> Unit = {},
 ) {
     val vm = appViewModel { EditorViewModel(it) }
     val container = appContainer()
@@ -250,6 +251,7 @@ fun EditorScreen(
                                 item("Visual layout editor") { onOpenVisual(p.id) }
                                 item("Add a feature") { onOpenFeatures(p.id) }
                                 item("Branding studio") { onOpenBranding(p.id) }
+                                item("Cloud build") { onOpenBuild(p.id) }
                                 item("New file") { showNewFile = true }
                                 item("Delete file", hasFile) { confirmDelete = true }
                                 item("Close tab", hasFile) { activePath?.let { if (vm.isDirty(it)) confirmClose = it else vm.close(it) } }

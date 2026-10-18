@@ -40,7 +40,7 @@ data class VisualState(
     val resources: PreviewResources = PreviewResources(emptyMap(), emptyMap(), emptySet()),
     val host: HostActivity? = null,
     val history: List<String> = emptyList(),
-    /** Names of res/raw/*.json files (Lottie animations). */
+    /** Names of the JSON files in res/raw (Lottie animations). */
     val rawAnimations: List<String> = emptyList(),
 )
 

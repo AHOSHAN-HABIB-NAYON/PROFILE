@@ -103,6 +103,8 @@ fun ProjectScreen(
     onOpenVisual: () -> Unit = {},
     onOpenFeatures: () -> Unit = {},
     onOpenBranding: () -> Unit = {},
+    onOpenBuild: () -> Unit = {},
+    onSignApk: (String) -> Unit = {},
 ) {
     val vm = appViewModel(key = "project-$projectId") { ProjectViewModel(it, projectId) }
     val project by vm.project.collectAsStateWithLifecycle()
@@ -142,7 +144,7 @@ fun ProjectScreen(
                 tabs.forEachIndexed { i, t -> Tab(selected = tab == i, onClick = { tab = i }, text = { Text(t) }) }
             }
             when (tabs.getOrNull(tab)) {
-                "Overview" -> if (p.kind == ProjectKind.APK) ApkOverview(vm, p, onOpenApkReport) else SourceOverview(vm, p, onOpenEditor, onOpenRepair, onOpenResources, onOpenSearch, onOpenVisual, onOpenFeatures, onOpenBranding)
+                "Overview" -> if (p.kind == ProjectKind.APK) ApkOverview(vm, p, onOpenApkReport, onSignApk) else SourceOverview(vm, p, onOpenEditor, onOpenRepair, onOpenResources, onOpenSearch, onOpenVisual, onOpenFeatures, onOpenBranding, onOpenBuild)
                 "Contents" -> ApkContents(vm, onOpenFile)
                 "Files" -> {
                     val container = appContainer()
@@ -195,7 +197,8 @@ private fun Header(p: ProjectEntity, extra: String?) {
 // ----------------------------------------------------------------------------- APK
 
 @Composable
-private fun ApkOverview(vm: ProjectViewModel, p: ProjectEntity, onOpenApkReport: () -> Unit) {
+private fun ApkOverview(vm: ProjectViewModel, p: ProjectEntity, onOpenApkReport: () -> Unit, onSignApk: (String) -> Unit) {
+    val container = appContainer()
     val report by vm.apkReport.collectAsStateWithLifecycle()
     val signature by vm.signature.collectAsStateWithLifecycle()
     val r = report
@@ -218,6 +221,9 @@ private fun ApkOverview(vm: ProjectViewModel, p: ProjectEntity, onOpenApkReport:
             }
         }
         item { SigningCard(r, signature, onVerify = vm::verifySignature) }
+        item {
+            OutlinedButton(onClick = { container.storage.originalApk(vm.projectId)?.let { onSignApk(it.absolutePath) } }) { Text("Re-sign a copy with my key") }
+        }
         item { EditabilityCard(r) }
         if (r.warnings.isNotEmpty()) item { SectionCard("Notes") { BulletList(r.warnings) } }
     }
@@ -298,7 +304,7 @@ private fun ApkContents(vm: ProjectViewModel, onOpenFile: (String) -> Unit) {
 // ----------------------------------------------------------------------------- Source
 
 @Composable
-private fun SourceOverview(vm: ProjectViewModel, p: ProjectEntity, onOpenEditor: () -> Unit, onOpenRepair: () -> Unit, onOpenResources: () -> Unit, onOpenSearch: () -> Unit, onOpenVisual: () -> Unit, onOpenFeatures: () -> Unit, onOpenBranding: () -> Unit) {
+private fun SourceOverview(vm: ProjectViewModel, p: ProjectEntity, onOpenEditor: () -> Unit, onOpenRepair: () -> Unit, onOpenResources: () -> Unit, onOpenSearch: () -> Unit, onOpenVisual: () -> Unit, onOpenFeatures: () -> Unit, onOpenBranding: () -> Unit, onOpenBuild: () -> Unit) {
     val info by vm.info.collectAsStateWithLifecycle()
     val i = info
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -308,6 +314,7 @@ private fun SourceOverview(vm: ProjectViewModel, p: ProjectEntity, onOpenEditor:
                 Button(onClick = onOpenRepair) {
                     Icon(Icons.Outlined.Build, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Analyze & repair")
                 }
+                Button(onClick = onOpenBuild) { Text("Cloud build") }
                 OutlinedButton(onClick = onOpenEditor) {
                     Icon(Icons.Outlined.Code, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Open editor")
                 }
@@ -330,7 +337,7 @@ private fun SourceOverview(vm: ProjectViewModel, p: ProjectEntity, onOpenEditor:
                     CodeBlock(cmd)
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Phones cannot run a full Android SDK + Gradle toolchain reliably, so builds run on a computer, CI or a cloud build worker.",
+                        "Phones cannot run a full Android SDK + Gradle toolchain reliably, so builds run on GitHub Actions in your repository (Cloud build) or on a computer.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

@@ -174,7 +174,7 @@ private fun CapabilityCard(onOpenLimitations: () -> Unit) {
         "Code editor, project search and resource editor" to Cap.READY,
         "Visual layout editor & feature generators" to Cap.READY,
         "Branding: icon, name, colours, splash, motion, font" to Cap.READY,
-        "Cloud builds and APK re-signing" to Cap.PLANNED,
+        "Cloud builds (GitHub Actions) and on-device APK signing" to Cap.READY,
         "On-device Gradle builds" to Cap.LIMITED,
     )
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {

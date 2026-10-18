@@ -18,6 +18,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.serialization.json)
     api(libs.diff.utils)
+    api(libs.bouncycastle.pkix)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
 }

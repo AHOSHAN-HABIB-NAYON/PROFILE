@@ -24,6 +24,7 @@ apksig = "8.11.1"
 soraEditor = "0.24.0"
 diffUtils = "4.12"
 desugar = "2.1.5"
+bouncycastle = "1.80"
 
 junit = "4.13.2"
 robolectric = "4.15.1"
@@ -61,6 +62,7 @@ androidx-documentfile = { module = "androidx.documentfile:documentfile", version
 apksig = { module = "com.android.tools.build:apksig", version.ref = "apksig" }
 sora-editor = { module = "io.github.rosemoe:editor", version.ref = "soraEditor" }
 diff-utils = { module = "io.github.java-diff-utils:java-diff-utils", version.ref = "diffUtils" }
+bouncycastle-pkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar" }
 
 junit = { module = "junit:junit", version.ref = "junit" }

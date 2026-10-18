@@ -68,8 +68,10 @@ jobs:
             echo "::endgroup::"
           done
 
-      - name: App unit tests
-        run: ./gradlew :app:testDebugUnitTest --stacktrace
+      - name: App unit tests (includes apksig re-signing of the sample APK)
+        run: |
+          export APPFIX_SAMPLE_APK="$PWD/sample-project/app/build/outputs/apk/debug/app-debug.apk"
+          ./gradlew :app:testDebugUnitTest --stacktrace
 
       - name: Android lint
         run: ./gradlew :app:lintDebug

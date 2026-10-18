@@ -100,6 +100,15 @@ fun RepairScreen(onOpenProjects: () -> Unit, onOpenFile: (String, String, Int?) 
     var tab by rememberSaveable { mutableStateOf(0) }
 
     LaunchedEffect(selected?.id) { vm.onProjectShown(selected?.id) }
+    val container = com.appfix.studio.ui.appContainer()
+    val pendingLog by container.buildLogRequests.collectAsStateWithLifecycle()
+    LaunchedEffect(pendingLog, selected?.id) {
+        val log = pendingLog ?: return@LaunchedEffect
+        if (selected == null) return@LaunchedEffect
+        tab = 2
+        vm.analyzeBuildLog(log)
+        container.buildLogRequests.value = null
+    }
     LaunchedEffect(message) { message?.let { snackbar.showSnackbar(it); vm.consumeMessage() } }
 
     Scaffold(

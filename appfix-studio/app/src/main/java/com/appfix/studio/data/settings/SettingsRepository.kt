@@ -20,6 +20,8 @@ data class AppSettings(
     val editorWordWrap: Boolean = false,
     val currentProjectId: String? = null,
     val autoBackupBeforeChanges: Boolean = true,
+    /** owner/name of the GitHub repository used for cloud builds. */
+    val buildRepo: String = "",
 )
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -32,6 +34,7 @@ class SettingsRepository(private val context: Context) {
         val wrap = booleanPreferencesKey("editor_word_wrap")
         val current = stringPreferencesKey("current_project")
         val autoBackup = booleanPreferencesKey("auto_backup")
+        val buildRepo = stringPreferencesKey("build_repo")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { p ->
@@ -42,6 +45,7 @@ class SettingsRepository(private val context: Context) {
             editorWordWrap = p[Keys.wrap] ?: false,
             currentProjectId = p[Keys.current],
             autoBackupBeforeChanges = p[Keys.autoBackup] ?: true,
+            buildRepo = p[Keys.buildRepo].orEmpty(),
         )
     }
 
@@ -49,6 +53,7 @@ class SettingsRepository(private val context: Context) {
     suspend fun setDynamicColor(enabled: Boolean) = context.dataStore.edit { it[Keys.dynamic] = enabled }
     suspend fun setEditorFontSize(size: Int) = context.dataStore.edit { it[Keys.fontSize] = size.coerceIn(10, 24) }
     suspend fun setEditorWordWrap(enabled: Boolean) = context.dataStore.edit { it[Keys.wrap] = enabled }
+    suspend fun setBuildRepo(repo: String) = context.dataStore.edit { it[Keys.buildRepo] = repo.trim() }
     suspend fun setAutoBackup(enabled: Boolean) = context.dataStore.edit { it[Keys.autoBackup] = enabled }
     suspend fun setCurrentProject(id: String?) = context.dataStore.edit {
         if (id == null) it.remove(Keys.current) else it[Keys.current] = id
