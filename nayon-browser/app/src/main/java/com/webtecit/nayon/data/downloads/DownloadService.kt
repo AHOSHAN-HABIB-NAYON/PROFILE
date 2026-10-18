@@ -1,5 +1,6 @@
 package com.webtecit.nayon.data.downloads
 
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -36,6 +37,7 @@ class DownloadService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    @SuppressLint("MissingPermission") // checked by canNotify() right before notify()
     @OptIn(kotlinx.coroutines.FlowPreview::class)
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val engine = (application as NayonApp).container.downloadEngine
@@ -134,6 +136,7 @@ class DownloadService : Service() {
                 .build()
 
         /** "Download complete" notification; tapping opens the file. */
+        @SuppressLint("MissingPermission") // checked by canNotify() right before notify()
         fun notifyFinished(context: Context, record: DownloadRecord, success: Boolean) {
             val tap = if (success && record.destUri != null) {
                 val open = DownloadFiles.viewIntent(context, record)
