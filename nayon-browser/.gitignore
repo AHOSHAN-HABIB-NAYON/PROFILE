@@ -11,4 +11,6 @@ build/
 # Signing material must never be committed
 *.jks
 *.keystore
+# Shared DEBUG key only (public, password "android") so test builds can update each other.
+!app/debug.keystore
 keystore.properties

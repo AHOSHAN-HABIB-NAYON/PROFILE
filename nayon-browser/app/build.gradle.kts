@@ -24,6 +24,14 @@ android {
     }
 
     signingConfigs {
+        // Debug-only key committed on purpose so every CI test build can install over the
+        // previous one. It is NOT used for releases and must never sign a Play Store build.
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         if (releaseKeystorePath != null) {
             create("release") {
                 storeFile = file(releaseKeystorePath)

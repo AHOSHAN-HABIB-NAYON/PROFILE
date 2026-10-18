@@ -84,7 +84,11 @@ request that touches `nayon-browser/`, and can be run manually:
 4. Release APK + App Bundle (signed if secrets exist)
 5. Uploads `nayon-browser-apks` and `nayon-browser-reports` as run artifacts
 
-Download the APK from the run's **Artifacts** section on the Actions tab.
+Each successful push also publishes the debug APK as a direct download (no sign-in needed):
+<https://github.com/AHOSHAN-HABIB-NAYON/PROFILE/releases/download/nayon-browser-latest/NAYON-Browser.apk>
+
+Debug builds are signed with the committed `app/debug.keystore` (a public, debug-only key with
+password `android`) so each new test build installs over the previous one. It is never used for releases.
 
 ## Signing a release build (secrets management)
 

@@ -95,3 +95,30 @@ jobs:
             nayon-browser/app/build/reports/
             nayon-browser/app/build/test-results/
           if-no-files-found: ignore
+
+  # Publishes the latest test APK as a direct download (no zip, no sign-in):
+  # https://github.com/AHOSHAN-HABIB-NAYON/PROFILE/releases/download/nayon-browser-latest/NAYON-Browser.apk
+  publish-test-apk:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: nayon-browser-apks
+          path: apks
+      - name: Replace the "latest test build" pre-release
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          cp apks/apk/debug/app-debug.apk NAYON-Browser.apk
+          gh release delete nayon-browser-latest --yes --cleanup-tag || true
+          gh release create nayon-browser-latest NAYON-Browser.apk \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "NAYON Browser – latest test build" \
+            --notes "Debug build from branch ${GITHUB_REF_NAME} (commit ${GITHUB_SHA::7}). For testing only — not a store release."

@@ -30,7 +30,7 @@ once it exists._
 | Third-party SDKs | None for analytics, ads, crash reporting or tracking. |
 | Exported components | Only the launcher activity. |
 | Release builds | R8 minification and resource shrinking enabled. |
-| Secrets | No API keys or secrets in source. Signing material comes from CI secrets or local environment variables and is git-ignored. |
+| Secrets | No API keys or secrets in source. Release signing material comes from CI secrets or local environment variables and is git-ignored. The only committed key is `app/debug.keystore`, a public debug-only key for test builds. |
 
 ## Planned controls (later stages)
 
