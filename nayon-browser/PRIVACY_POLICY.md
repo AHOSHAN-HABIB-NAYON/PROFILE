@@ -1,6 +1,6 @@
 # NAYON Browser — Privacy Policy (DRAFT)
 
-> **Draft.** This describes the Stage 1 build and will be updated before any public release
+> **Draft.** This describes the Stage 2 build and will be updated before any public release
 > and whenever features change. It is not yet a reviewed legal document. No live
 > privacy-policy URL exists yet.
 
@@ -17,33 +17,41 @@ according to their policies. Sensitive credentials must be protected by the impl
 security architecture. Private browsing does not make you completely anonymous online.
 Review the Privacy Policy and individual permission settings before using optional services.
 
-## What the current build collects and stores
+## What NAYON Browser stores (all on your device)
 
-| Data | Where | Purpose | Retention | Shared with |
-|---|---|---|---|---|
-| Appearance mode, colour theme, dark-mode schedule | On device, app-private storage | Remember your theme | Until you clear app data or uninstall | Nobody |
+| Data | Purpose | Retention | How to delete |
+|---|---|---|---|
+| Settings (theme, search engine, toggles) | Remember your choices | Until cleared | Clear app storage / uninstall |
+| Browsing history (normal tabs only) | History page, suggestions, recent sites | Until you delete it | History page or Settings → Clear browsing data |
+| Bookmarks | Bookmarks page | Until you delete them | Bookmarks page |
+| Open normal tabs (if "Restore tabs" is on) | Reopen tabs next time | Replaced as tabs change | Turn the setting off / close tabs |
+| Cookies, site data and cache created by websites | Keep you signed in, load pages faster | Set by websites | Settings → Clear browsing data |
 
-The current build:
+Private tabs are never written to history or saved tabs.
 
-- requests **no Android permissions**;
-- has **no internet access** and sends **no data** to the developer or any third party;
-- contains **no analytics, advertising, crash-reporting or tracking SDKs**;
-- excludes its data from Android cloud backup and device-to-device transfer.
+## What leaves your device
+
+- **Websites you visit** receive your requests directly, as with any browser.
+- **Your search engine** receives the words you search for.
+- **Google Safe Browsing**: when available, Android System WebView may check addresses with Google to warn about dangerous sites.
+- **Downloads** are fetched by Android's download manager.
+- Nothing is sent to the developer. There are **no analytics, advertising, crash-reporting or tracking SDKs**.
+
+All app data is excluded from Android cloud backup and device-to-device transfer.
 
 ## Deleting your data
 
-Android Settings → Apps → NAYON Browser → Storage → **Clear storage**, or uninstall the app.
+Use History, Bookmarks or Settings → Clear browsing data, or Android Settings → Apps → NAYON Browser → Storage → **Clear storage**, or uninstall the app.
 
 ## Future features
 
-When web browsing, history, bookmarks, downloads, saved passwords, sign-in, sync, search
-suggestions or payments are added, this policy will be updated **before release** to state
+When saved passwords, sign-in, sync, online search suggestions or payments are added, this policy will be updated **before release** to state
 exactly what is collected, where it is stored, how long it is kept, who it is shared with and
 how to delete it. Optional connected services will be off until you enable them.
 
 ## Children
 
-The app is not directed at children under 13 and collects no personal information.
+The app is not directed at children under 13. The developer collects no personal information.
 
 ## Contact
 

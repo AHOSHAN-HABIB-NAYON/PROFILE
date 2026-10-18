@@ -8,10 +8,10 @@ A modern, privacy-respecting Android browser written in Kotlin with Jetpack Comp
 - Website: <https://webtecit.com>
 - Package: `com.webtecit.nayon` (debug builds: `com.webtecit.nayon.debug`)
 
-> **Current stage: 1 — Foundation.** The app has its design system, complete theming
-> (System / Light / Dark / AMOLED / Scheduled, five colour themes + Material You), splash
-> screen, launcher icon, Settings, About, privacy-policy draft and licences pages.
-> **It does not browse the web yet** — the engine arrives in Stage 2.
+> **Current stage: 2 — Browser engine.** NAYON Browser now browses the web with Android System
+> WebView: address bar with search, six search engines plus custom, tabs and private tabs, tab
+> switcher, bookmarks, history, downloads, desktop site, voice search, full-screen video and error
+> pages — on top of the Stage 1 design system and themes.
 > See [FEATURES_STATUS.md](FEATURES_STATUS.md) for the exact state of every feature.
 
 ## Requirements
@@ -54,7 +54,9 @@ nayon-browser/
 │   ├── core/designsystem/component/  reusable UI components
 │   ├── data/settings/                DataStore-backed appearance repository
 │   ├── navigation/                   NavHost and routes
-│   └── feature/                      home, settings, appearance, about
+│   ├── core/browser/                 URL/search resolution, search engines
+│   ├── data/browser/                 Room database: history, bookmarks, saved tabs
+│   └── feature/                      browser, tabs, bookmarks, history, settings, appearance, about
 ├── app/src/test/                     unit + Robolectric Compose tests
 ├── docs/ARCHITECTURE.md              architecture & feasibility assessment
 ├── FEATURES_STATUS.md · SECURITY.md · PRIVACY_POLICY.md
@@ -116,15 +118,19 @@ For Google Play, enrol in Play App Signing and upload the AAB.
 | `ThemeResolutionTest` | System/Light/Dark/AMOLED/Scheduled resolve correctly, incl. schedules crossing midnight |
 | `ThemeContrastTest` | Every built-in theme × brightness meets WCAG AA 4.5:1 on text roles; AMOLED is true black |
 | `DataStoreAppearanceRepositoryTest` | Settings persist, invalid stored values fall back safely, times are clamped |
-| `AppearanceScreenTest` (Robolectric) | Mode/theme selection works, schedule options appear only when relevant, selection is exposed to accessibility, Home renders in every theme |
+| `AppearanceScreenTest` (Robolectric) | Mode/theme selection works, schedule options appear only when relevant, selection is exposed to accessibility, the new-tab page renders in every theme |
+| `UrlResolverTest` | Addresses vs searches, unsafe schemes never loaded, search engines, custom-engine validation, desktop user agent |
+| `BrowsingRepositoryTest` (Robolectric + Room) | History recording/merging/search/delete, unique bookmarks, saved tabs, day grouping |
 
-Manual checks still required on real devices: splash screen, system-bar icon colours,
-landscape, large font sizes, TalkBack, and 60/90/120 Hz displays.
+Manual checks still required on real devices: browsing on many sites, downloads, uploads,
+full-screen video, splash screen, landscape, large font sizes, TalkBack, and 60/90/120 Hz displays.
 
 ## Current limitations
 
-- No web browsing yet (Stage 2).
-- The website link in About opens in another installed browser until the engine exists.
+- Website requests for camera, microphone and location are denied until Stage 3 adds prompts.
+- Private-tab cookie isolation needs a WebView version with multi-profile support; older devices are told on the private page.
+- Downloads are handled by Android's download manager; there is no in-app downloads page yet.
+- Bookmark folders, import/export and the password manager are not built yet.
 - Material You colours need Android 12+; the option is hidden on older versions.
 - Scheduled theme switches while the app is open; it does not run in the background.
 - See [FEATURES_STATUS.md](FEATURES_STATUS.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)

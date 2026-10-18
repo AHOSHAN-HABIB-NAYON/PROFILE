@@ -74,8 +74,17 @@ com.webtecit.nayon
     └── (Stage 2+) browser, tabs, bookmarks, history, downloads, vault, privacy, sync
 ```
 
-Planned Stage 2+ packages: `engine` (WebView wrapper, clients, settings hardening),
-`data/tabs`, `data/history`, `data/bookmarks` (Room), `data/downloads`, `security/vault`.
+Stage 2 added `core/browser` (URL/search logic), `data/browser` (Room: history, bookmarks,
+saved tabs) and `feature/browser`, `tabs`, `bookmarks`, `history`.
+
+### Browser engine design (Stage 2)
+
+- `BrowserViewModel` owns every tab's `WebView`, created with a `MutableContextWrapper` that points
+  at the current Activity while attached (dialogs work, no Activity leak) and at the Application otherwise.
+- Compose shows the active tab's WebView through `AndroidView`; switching tabs re-parents the view.
+- At most 4 WebViews stay alive; older background tabs are destroyed and reload from their URL when reopened.
+- Private tabs use a separate WebView profile (`androidx.webkit` `MULTI_PROFILE`) that is deleted when
+  the last private tab closes; on older WebViews this is not possible and the UI says so.
 
 ## 5. Theme system
 
@@ -102,7 +111,7 @@ Planned Stage 2+ packages: `engine` (WebView wrapper, clients, settings hardenin
 ## 7. Build stages
 
 1. **Foundation** — this stage. ✅
-2. Browser engine: WebView, address bar, search, tabs, bookmarks, history.
+2. **Browser engine** — WebView, address bar, search, tabs, bookmarks, history. ✅
 3. Storage & security: downloads, site data, private browsing, password vault, autofill.
 4. Advanced: sign-in, sync backend, passkeys, PWA shortcuts, content blocking, payments (only if configured).
 5. QA: device matrix, accessibility, performance, lifecycle.

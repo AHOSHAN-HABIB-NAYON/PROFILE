@@ -3,11 +3,11 @@
 Status values: **Implemented**, **Partial**, **Planned**, **Unsupported**.
 "Testing evidence" lists only checks that actually run. CI = `.github/workflows/nayon-android.yml`.
 
-_Last updated: Stage 1 (foundation)._
+_Last updated: Stage 2 (browser engine)._
 
-**Latest verified CI run:** [run #6](https://github.com/AHOSHAN-HABIB-NAYON/PROFILE/actions/runs/39138110985):
-debug build, 17/17 unit + Robolectric UI tests, lint, minified release APK and AAB all passed.
-The app has **not yet been checked by hand on a physical device or emulator**.
+**Verification:** every push runs `.github/workflows/nayon-android.yml` (debug build, unit + Robolectric
+UI tests, lint, minified release APK and AAB). Items marked "Manual" in the evidence column still need
+checking by hand on a real device.
 
 ## Stage 1 — Foundation
 
@@ -31,21 +31,48 @@ The app has **not yet been checked by hand on a physical device or emulator**.
 | Privacy policy draft (in-app + `PRIVACY_POLICY.md`) | Implemented (draft) | Not a final legal document | Legal review before release | — |
 | Open-source licences page | Implemented | Hand-maintained list | Update with dependencies | — |
 
+## Stage 2 — Browser engine
+
+| Feature | Status | Technical limitation | Required configuration | Testing evidence |
+|---|---|---|---|---|
+| Web page loading (Android System WebView) | Implemented | WebView feature set, not full desktop Chromium | — | Compiles in CI; manual device check pending |
+| Address bar: URL vs search detection | Implemented | Only http/https load directly; other schemes are searched | — | `UrlResolverTest` |
+| Search engines: Google, Bing, DuckDuckGo, Brave, Ecosia, Yahoo | Implemented | Public search URLs only; no search API | — | `UrlResolverTest` |
+| Custom search engine | Implemented | Must be https and contain `%s` | — | `UrlResolverTest.customTemplateValidation` |
+| Local suggestions (bookmarks + history) | Implemented | No online search suggestions (privacy) | — | Manual |
+| Voice search | Implemented | Needs a speech recogniser on the device; button hidden otherwise | — | Manual |
+| Back / forward / reload / stop / home, progress bar | Implemented | — | — | Manual |
+| Secure / not-secure indicator | Implemented | Based on https and certificate errors | — | Manual |
+| Multiple tabs, tab switcher with thumbnails | Implemented | Thumbnails captured when opening the switcher | — | Manual |
+| Close / close all / duplicate tab | Implemented | — | — | Manual |
+| Private tabs | Implemented | No history. Cookies/storage isolated only where WebView supports profiles (`MULTI_PROFILE`); otherwise shared with normal tabs and the private page says so | — | Manual |
+| Restore normal tabs on start | Implemented (setting) | Restores URL and title, not back/forward history | — | `BrowsingRepositoryTest.savedTabsReplaceInOrder` |
+| Background tab memory limit | Implemented | Max 4 live WebViews; older tabs reload when reopened | — | Code review |
+| Bookmarks: add, remove, rename, search, open in new tab | Implemented | Folders and import/export not yet | — | `BrowsingRepositoryTest` |
+| History: grouped by day, search, delete item, clear all | Implemented | Private tabs never recorded | — | `BrowsingRepositoryTest` |
+| Clear browsing data (history, cookies & site data, cache) | Implemented | — | — | Manual |
+| JavaScript on/off | Implemented | Global setting (per-site later) | — | Manual |
+| Desktop site | Implemented | User-agent switch; some sites still detect mobile | — | `UrlResolverTest.desktopUserAgentRemovesMobileMarkers` |
+| Downloads | Partial | Uses Android DownloadManager (system controls pause/resume). blob:/data: downloads unsupported. Android 7–9 save into the app's own Downloads folder | — | Manual |
+| File upload from web pages | Implemented | Uses the system file picker | — | Manual |
+| Full-screen video | Implemented | Depends on the site and WebView | — | Manual |
+| Share page / copy link | Implemented | — | — | Manual |
+| Open links from other apps; set as default browser | Implemented | User chooses default browser in Android settings | — | Manual |
+| External app links (mailto:, tel:, intent:) | Implemented | Opened only after a user tap; fallback URL used when no app | — | Manual |
+| Error pages (offline, not found, timeout, insecure, crashed) | Implemented | — | — | Manual |
+| Website camera / microphone / location requests | Planned (Stage 3) | Currently denied automatically | — | — |
+| New logo (launcher, splash, in-app) | Implemented | — | — | Built by CI |
+| Developer profile with photo (About, home page credit) | Implemented | — | — | Manual |
+
 ## Planned — later stages
 
 | Feature | Status | Technical limitation | Required configuration | Testing evidence |
 |---|---|---|---|---|
-| Web browsing (address bar, search, navigation, progress) | Planned (Stage 2) | Android System WebView feature set | — | — |
-| Multiple tabs, tab switcher, private tabs | Planned (Stage 2) | Background tabs will be hibernated to limit memory | — | — |
-| Search engine manager (Google, Bing, DuckDuckGo, custom) | Planned (Stage 2) | Search *suggestions* need each provider's suggest endpoint | — | — |
-| Bookmarks, folders, history, reading list | Planned (Stage 2) | — | — | — |
-| Desktop-site toggle | Planned (Stage 2) | User-agent + viewport override; some sites still detect mobile | — | — |
-| Downloads manager | Planned (Stage 3) | Pause/resume controlled by Android `DownloadManager` | — | — |
-| Cookies / site data / permissions / pop-up blocking | Planned (Stage 3) | — | — | — |
-| Private browsing | Planned (Stage 3) | Not anonymity: network, ISP and sites can still identify users | — | — |
+| Bookmark folders, reading list, import/export | Planned | — | — | — |
+| In-app downloads manager page | Planned (Stage 3) | Pause/resume controlled by Android `DownloadManager` | — | — |
+| Per-site settings, website permission prompts | Planned (Stage 3) | — | — | — |
 | Encrypted password vault + biometric lock | Planned (Stage 3) | Keystore-backed; no custom crypto | — | — |
 | Android Autofill service | Planned (Stage 3) — Partial expected | User must choose NAYON as autofill provider | — | — |
-| Voice search | Planned (Stage 2) | Needs an on-device speech recogniser | — | — |
 | Google Sign-In | Planned (Stage 4) | — | Google Cloud project + OAuth client ID | — |
 | Cloud sync | Planned (Stage 4) | Needs a backend; sign-in alone is not sync | Backend hosting, auth rules, deletion flow | — |
 | Passkeys | Planned (Stage 4) — Partial expected | Depends on WebView WebAuthn support per version; per-site testing | — | — |
