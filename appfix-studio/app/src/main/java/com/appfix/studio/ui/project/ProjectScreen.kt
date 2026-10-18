@@ -102,6 +102,7 @@ fun ProjectScreen(
     onOpenSearch: () -> Unit = {},
     onOpenVisual: () -> Unit = {},
     onOpenFeatures: () -> Unit = {},
+    onOpenBranding: () -> Unit = {},
 ) {
     val vm = appViewModel(key = "project-$projectId") { ProjectViewModel(it, projectId) }
     val project by vm.project.collectAsStateWithLifecycle()
@@ -141,7 +142,7 @@ fun ProjectScreen(
                 tabs.forEachIndexed { i, t -> Tab(selected = tab == i, onClick = { tab = i }, text = { Text(t) }) }
             }
             when (tabs.getOrNull(tab)) {
-                "Overview" -> if (p.kind == ProjectKind.APK) ApkOverview(vm, p, onOpenApkReport) else SourceOverview(vm, p, onOpenEditor, onOpenRepair, onOpenResources, onOpenSearch, onOpenVisual, onOpenFeatures)
+                "Overview" -> if (p.kind == ProjectKind.APK) ApkOverview(vm, p, onOpenApkReport) else SourceOverview(vm, p, onOpenEditor, onOpenRepair, onOpenResources, onOpenSearch, onOpenVisual, onOpenFeatures, onOpenBranding)
                 "Contents" -> ApkContents(vm, onOpenFile)
                 "Files" -> {
                     val container = appContainer()
@@ -297,7 +298,7 @@ private fun ApkContents(vm: ProjectViewModel, onOpenFile: (String) -> Unit) {
 // ----------------------------------------------------------------------------- Source
 
 @Composable
-private fun SourceOverview(vm: ProjectViewModel, p: ProjectEntity, onOpenEditor: () -> Unit, onOpenRepair: () -> Unit, onOpenResources: () -> Unit, onOpenSearch: () -> Unit, onOpenVisual: () -> Unit, onOpenFeatures: () -> Unit) {
+private fun SourceOverview(vm: ProjectViewModel, p: ProjectEntity, onOpenEditor: () -> Unit, onOpenRepair: () -> Unit, onOpenResources: () -> Unit, onOpenSearch: () -> Unit, onOpenVisual: () -> Unit, onOpenFeatures: () -> Unit, onOpenBranding: () -> Unit) {
     val info by vm.info.collectAsStateWithLifecycle()
     val i = info
     LazyColumn(contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -312,6 +313,7 @@ private fun SourceOverview(vm: ProjectViewModel, p: ProjectEntity, onOpenEditor:
                 }
                 OutlinedButton(onClick = onOpenVisual) { Text("Visual editor") }
                 OutlinedButton(onClick = onOpenFeatures) { Text("Add feature") }
+                OutlinedButton(onClick = onOpenBranding) { Text("Branding") }
                 OutlinedButton(onClick = onOpenResources) { Text("Strings & colours") }
                 OutlinedButton(onClick = onOpenSearch) { Text("Search") }
             }

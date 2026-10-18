@@ -23,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.outlined.Celebration
 import androidx.compose.material.icons.outlined.ContactMail
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.PrivacyTip
@@ -86,6 +87,7 @@ private val features = listOf(
     FeatureInfo(FeatureKind.PRIVACY, Icons.Outlined.PrivacyTip, "Your privacy policy text, with an optional link to the full policy."),
     FeatureInfo(FeatureKind.HELP, Icons.AutoMirrored.Outlined.HelpOutline, "A simple FAQ with questions you can edit."),
     FeatureInfo(FeatureKind.SETTINGS, Icons.Outlined.Settings, "Dark theme and notification switches saved on the device."),
+    FeatureInfo(FeatureKind.ONBOARDING, Icons.Outlined.Celebration, "Three intro pages shown once, the first time the app starts."),
 )
 
 @Composable
@@ -219,7 +221,7 @@ private fun FeatureForm(kind: FeatureKind, onDismiss: () -> Unit, onPrepare: (Fe
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Screen title (optional)") }, singleLine = true)
-                if (kind == FeatureKind.ABOUT || kind == FeatureKind.CONTACT) {
+                if (kind == FeatureKind.ABOUT || kind == FeatureKind.CONTACT || kind == FeatureKind.ONBOARDING) {
                     OutlinedTextField(value = description, onValueChange = { description = it }, label = { Text("Description (optional)") }, minLines = 2)
                 }
                 if (kind == FeatureKind.CONTACT || kind == FeatureKind.HELP) {
@@ -231,7 +233,7 @@ private fun FeatureForm(kind: FeatureKind, onDismiss: () -> Unit, onPrepare: (Fe
                 if (kind == FeatureKind.PRIVACY) {
                     OutlinedTextField(value = policy, onValueChange = { policy = it }, label = { Text("Policy text (optional)") }, minLines = 3)
                 }
-                Row(Modifier.toggleable(value = entry, role = Role.Checkbox, onValueChange = { entry = it }), verticalAlignment = Alignment.CenterVertically) {
+                if (kind != FeatureKind.ONBOARDING) Row(Modifier.toggleable(value = entry, role = Role.Checkbox, onValueChange = { entry = it }), verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(checked = entry, onCheckedChange = null)
                     Text("Add a button to the main screen that opens it (XML layouts only)", modifier = Modifier.padding(start = 8.dp))
                 }

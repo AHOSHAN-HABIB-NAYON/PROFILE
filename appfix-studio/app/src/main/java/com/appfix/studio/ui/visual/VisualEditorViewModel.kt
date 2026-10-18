@@ -40,6 +40,8 @@ data class VisualState(
     val resources: PreviewResources = PreviewResources(emptyMap(), emptyMap(), emptySet()),
     val host: HostActivity? = null,
     val history: List<String> = emptyList(),
+    /** Names of res/raw/*.json files (Lottie animations). */
+    val rawAnimations: List<String> = emptyList(),
 )
 
 class VisualEditorViewModel(private val container: AppContainer, val projectId: String) : ViewModel() {
@@ -111,9 +113,10 @@ class VisualEditorViewModel(private val container: AppContainer, val projectId: 
             }.orEmpty()
             val drawables = File(ws, res).listFiles().orEmpty().filter { it.isDirectory && (it.name.startsWith("drawable") || it.name.startsWith("mipmap")) }
                 .flatMap { d -> d.listFiles().orEmpty().map { "@${d.name.substringBefore('-')}/${it.name.substringBefore('.')}" } }.toSortedSet()
-            PreviewResources(values("strings.xml", "string"), values("colors.xml", "color"), drawables)
+            PreviewResources(values("strings.xml", "string"), values("colors.xml", "color"), drawables) to
+                File(ws, "$res/raw").listFiles().orEmpty().filter { it.extension == "json" }.map { it.nameWithoutExtension }.sorted()
         }
-        state.value = state.value.copy(resources = r.copy(strings = r.strings + changedStrings + newStrings))
+        state.value = state.value.copy(resources = r.first.copy(strings = r.first.strings + changedStrings + newStrings), rawAnimations = r.second)
     }
 
     private fun updateText(text: String, record: Boolean = true, label: String? = null) {
@@ -205,7 +208,17 @@ class VisualEditorViewModel(private val container: AppContainer, val projectId: 
         setAttribute("android:background", "@drawable/$name")
     }
 
-    fun insert(kind: ComponentKind) {
+    /** Adds or removes ripple touch feedback on the selected view (one undo step). */
+    fun setRipple(enabled: Boolean) {
+        val path = state.value.selected ?: return
+        edit(if (enabled) "Add touch ripple" else "Remove touch ripple") { t ->
+            var out = LayoutEditor.setAttribute(t, path, "android:foreground", if (enabled) "?android:attr/selectableItemBackground" else null)
+            out = LayoutEditor.setAttribute(out, path, "android:clickable", if (enabled) "true" else null)
+            LayoutEditor.setAttribute(out, path, "android:focusable", if (enabled) "true" else null)
+        }
+    }
+
+    fun insert(kind: ComponentKind, label: String? = null) {
         val tree = state.value.tree ?: return
         val sel = state.value.selected ?: emptyList()
         val node = tree.find(sel) ?: tree
@@ -218,7 +231,7 @@ class VisualEditorViewModel(private val container: AppContainer, val projectId: 
         }
         try {
             val ids = LayoutEditor.declaredIds(state.value.text) + allProjectIds()
-            val r = LayoutEditor.insert(state.value.text, parentPath, index, kind, caps, ids)
+            val r = LayoutEditor.insert(state.value.text, parentPath, index, kind, caps, ids, label)
             newStrings.putAll(r.strings)
             state.value = state.value.copy(resources = state.value.resources.copy(strings = state.value.resources.strings + r.strings))
             updateText(r.layoutText, label = "Add ${kind.displayName.lowercase()}")

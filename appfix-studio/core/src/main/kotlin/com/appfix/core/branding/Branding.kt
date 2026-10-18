@@ -31,6 +31,12 @@ class BrandingEditor(private val workspace: File, private val info: ProjectInfo)
     private val manifestPath = module.manifestPath ?: throw BrandingException("The app module has no AndroidManifest.xml.")
     private fun read(rel: String): String? = File(root, rel).takeIf { it.isFile }?.readText()
 
+    /** Drawable and mipmap resource references available in the app module. */
+    fun drawableResources(): List<String> = File(root, resDir).listFiles().orEmpty()
+        .filter { it.isDirectory && (it.name.startsWith("drawable") || it.name.startsWith("mipmap")) }
+        .flatMap { d -> d.listFiles().orEmpty().filter { it.isFile }.map { "@${d.name.substringBefore('-')}/${it.name.substringBefore('.')}" } }
+        .distinct().sorted()
+
     // ------------------------------------------------------------------ Launcher icon
 
     data class IconNames(val icon: String, val round: String?)

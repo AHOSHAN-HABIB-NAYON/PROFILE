@@ -49,6 +49,8 @@ import com.appfix.studio.ui.nav.RepairRoute
 import com.appfix.studio.ui.nav.ResourcesRoute
 import com.appfix.studio.ui.nav.SearchRoute
 import com.appfix.studio.ui.nav.FeaturesRoute
+import com.appfix.studio.ui.nav.BrandingRoute
+import com.appfix.studio.ui.branding.BrandingScreen
 import com.appfix.studio.ui.nav.VisualEditorRoute
 import com.appfix.studio.ui.features.FeaturesScreen
 import com.appfix.studio.ui.visual.VisualEditorScreen
@@ -134,7 +136,11 @@ fun AppRoot() {
                         onOpenResources = { id -> nav.navigate(ResourcesRoute(id)) },
                         onOpenVisual = { id -> nav.navigate(VisualEditorRoute(id)) },
                         onOpenFeatures = { id -> nav.navigate(FeaturesRoute(id)) },
+                        onOpenBranding = { id -> nav.navigate(BrandingRoute(id)) },
                     )
+                }
+                composable<BrandingRoute> { entry ->
+                    BrandingScreen(entry.toRoute<BrandingRoute>().id, onBack = { nav.popBackStack() })
                 }
                 composable<VisualEditorRoute> { entry ->
                     val id = entry.toRoute<VisualEditorRoute>().id
@@ -169,6 +175,7 @@ fun AppRoot() {
                         onOpenSearch = { nav.navigate(SearchRoute(route.id)) },
                         onOpenVisual = { nav.navigate(VisualEditorRoute(route.id)) },
                         onOpenFeatures = { nav.navigate(FeaturesRoute(route.id)) },
+                        onOpenBranding = { nav.navigate(BrandingRoute(route.id)) },
                         onOpenEditor = {
                             scope.launch { container.settings.setCurrentProject(route.id) }
                             nav.navigateTopLevel(EditorRoute)

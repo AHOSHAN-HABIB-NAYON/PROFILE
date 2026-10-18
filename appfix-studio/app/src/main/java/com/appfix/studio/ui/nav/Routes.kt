@@ -15,3 +15,4 @@ import kotlinx.serialization.Serializable
 @Serializable data class ResourcesRoute(val id: String)
 @Serializable data class VisualEditorRoute(val id: String)
 @Serializable data class FeaturesRoute(val id: String)
+@Serializable data class BrandingRoute(val id: String)

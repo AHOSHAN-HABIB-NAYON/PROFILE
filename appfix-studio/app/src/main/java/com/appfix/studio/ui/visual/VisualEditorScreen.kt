@@ -234,6 +234,10 @@ private fun PropertiesPanel(vm: VisualEditorViewModel, state: VisualState, onCli
             Choice("Gravity", listOf("start", "center", "end", "center_vertical"), node.attributes["android:gravity"].orEmpty()) { vm.setAttribute("android:gravity", it) }
         }
         item { Choice("Visibility", listOf("visible", "invisible", "gone"), node.attributes["android:visibility"] ?: "visible") { vm.setAttribute("android:visibility", it.takeIf { v -> v != "visible" }) } }
+        item {
+            val ripple = node.attributes["android:foreground"]?.contains("selectableItemBackground") == true
+            Choice("Touch ripple", listOf("off", "on"), if (ripple) "on" else "off") { vm.setRipple(it == "on") }
+        }
         item { CornerField { r, c -> vm.setCornerRadius(r, c) } }
         if (tag in setOf("ImageView", "ImageButton", "ShapeableImageView")) {
             item { DrawablePicker(state.resources.drawables.toList(), node.attributes["android:src"].orEmpty()) { vm.setAttribute("android:src", it) } }
@@ -336,6 +340,21 @@ private fun DrawablePicker(options: List<String>, current: String, onPick: (Stri
 @Composable
 private fun AddPanel(vm: VisualEditorViewModel, state: VisualState) {
     val target = state.selected?.let { state.tree?.find(it) } ?: state.tree
+    var pickLottie by remember { mutableStateOf(false) }
+    if (pickLottie) {
+        AlertDialog(
+            onDismissRequest = { pickLottie = false },
+            title = { Text("Choose animation") },
+            text = {
+                Column {
+                    if (state.rawAnimations.isEmpty()) Text("No animations in res/raw yet. Add one in the Branding studio (Motion tab).")
+                    state.rawAnimations.forEach { n -> TextButton(onClick = { pickLottie = false; vm.insert(ComponentKind.LOTTIE, n) }) { Text("@raw/$n") } }
+                }
+            },
+            confirmButton = {},
+            dismissButton = { TextButton(onClick = { pickLottie = false }) { Text("Cancel") } },
+        )
+    }
     Column(Modifier.verticalScroll(rememberScrollState()).padding(16.dp)) {
         Text(
             if (target?.isContainer == true) "Adds inside ${target.label}" else "Adds after ${target?.label ?: "the selection"}",
@@ -343,7 +362,7 @@ private fun AddPanel(vm: VisualEditorViewModel, state: VisualState) {
         )
         Spacer(Modifier.height(8.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            ComponentKind.entries.forEach { k -> AssistChip(onClick = { vm.insert(k) }, label = { Text(k.displayName) }) }
+            ComponentKind.entries.forEach { k -> AssistChip(onClick = { if (k == ComponentKind.LOTTIE) pickLottie = true else vm.insert(k) }, label = { Text(k.displayName) }) }
         }
         Spacer(Modifier.height(12.dp))
         Text("Text you enter is stored in strings.xml instead of being hard-coded.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

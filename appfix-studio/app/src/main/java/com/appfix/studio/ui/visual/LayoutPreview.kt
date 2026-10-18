@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.ViewList
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -150,6 +151,10 @@ private fun PreviewNode(node: LayoutNode, res: PreviewResources, selected: List<
             Switch(checked = node.a("checked") == "true", onCheckedChange = null, enabled = false)
         }
         tag == "View" && (dp(height) ?: 99.dp) <= 2.dp -> HorizontalDivider(m)
+        tag == "ProgressBar" || tag.endsWith("ProgressIndicator") -> Box(m) { CircularProgressIndicator(Modifier.size(36.dp)) }
+        tag == "LottieAnimationView" -> Box(m.then(if (dp(width) == null) Modifier.size(120.dp) else Modifier).background(MaterialTheme.colorScheme.tertiaryContainer, RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+            Text("Lottie\n${node.attributes["app:lottie_rawRes"]?.substringAfter('/') ?: ""}", style = MaterialTheme.typography.labelMedium)
+        }
         tag == "Space" -> Spacer(m.height(dp(height) ?: 8.dp))
         tag in setOf("RecyclerView", "ListView", "GridView") -> Surface(m.height(dp(height) ?: 120.dp), color = MaterialTheme.colorScheme.surfaceContainer, shape = RoundedCornerShape(8.dp)) {
             Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
