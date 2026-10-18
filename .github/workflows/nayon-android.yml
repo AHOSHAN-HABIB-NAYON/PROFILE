@@ -45,14 +45,21 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
+
       - name: Unit & UI tests (JVM / Robolectric)
-        run: ./gradlew --stacktrace testDebugUnitTest
+        run: ./gradlew testDebugUnitTest
+
+      - name: Show failing tests
+        if: failure()
+        run: |
+          for f in app/build/test-results/testDebugUnitTest/*.xml; do
+            grep -q "<failure" "$f" && grep -A15 "<failure" "$f" | head -60
+          done || true
 
       - name: Lint
-        run: ./gradlew --stacktrace lintDebug
-
-      - name: Build debug APK
-        run: ./gradlew --stacktrace assembleDebug
+        run: ./gradlew lintDebug
 
       # Signed only when the NAYON_* secrets are configured; otherwise an unsigned release APK is produced.
       - name: Decode release keystore
@@ -67,7 +74,7 @@ jobs:
           NAYON_KEYSTORE_PASSWORD: ${{ secrets.NAYON_KEYSTORE_PASSWORD }}
           NAYON_KEY_ALIAS: ${{ secrets.NAYON_KEY_ALIAS }}
           NAYON_KEY_PASSWORD: ${{ secrets.NAYON_KEY_PASSWORD }}
-        run: ./gradlew --stacktrace assembleRelease bundleRelease
+        run: ./gradlew assembleRelease bundleRelease
 
       - name: Upload APKs
         uses: actions/upload-artifact@v4
