@@ -18,10 +18,26 @@ android {
         applicationId = "com.appfix.studio"
         minSdk = libs.versions.minSdk.get().toInt()
         targetSdk = libs.versions.targetSdk.get().toInt()
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.9.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
+    }
+
+    // Release signing comes only from the environment (CI secrets or a local shell), never from the repository.
+    val releaseStore = System.getenv("APPFIX_RELEASE_KEYSTORE")?.let(::file)?.takeIf { it.isFile }
+    signingConfigs {
+        if (releaseStore != null) {
+            create("release") {
+                storeFile = releaseStore
+                storePassword = System.getenv("APPFIX_RELEASE_STORE_PASSWORD")
+                keyAlias = System.getenv("APPFIX_RELEASE_KEY_ALIAS")
+                keyPassword = System.getenv("APPFIX_RELEASE_KEY_PASSWORD") ?: System.getenv("APPFIX_RELEASE_STORE_PASSWORD")
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+            }
+        }
     }
 
     buildTypes {
@@ -30,8 +46,11 @@ android {
             versionNameSuffix = "-debug"
         }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Without a configured key the release APK stays unsigned (app-release-unsigned.apk).
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 

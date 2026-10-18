@@ -93,12 +93,37 @@ jobs:
       - name: Assemble debug APK
         run: ./gradlew :app:assembleDebug --stacktrace
 
+      - name: Assemble minified release APK (signed with a throwaway CI key)
+        run: |
+          # The key is generated on the runner for this job only, so the minified build can be installed
+          # by the device smoke test. Real release signing uses the owner's secrets in the release workflow.
+          export APPFIX_RELEASE_KEYSTORE="$RUNNER_TEMP/ci-throwaway.p12"
+          export APPFIX_RELEASE_STORE_PASSWORD="$(openssl rand -hex 16)"
+          export APPFIX_RELEASE_KEY_ALIAS=ci
+          keytool -genkeypair -keystore "$APPFIX_RELEASE_KEYSTORE" -storetype PKCS12 -alias ci -keyalg RSA -keysize 2048 \
+            -validity 2 -dname "CN=AppFix CI throwaway" -storepass "$APPFIX_RELEASE_STORE_PASSWORD" -keypass "$APPFIX_RELEASE_STORE_PASSWORD" > /dev/null
+          ./gradlew :app:assembleRelease --stacktrace
+          rm -f "$APPFIX_RELEASE_KEYSTORE"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify app/build/outputs/apk/release/app-release.apk
+          ls -l app/build/outputs/apk/debug/*.apk app/build/outputs/apk/release/*.apk
+
       - name: Upload AppFix Studio debug APK
         uses: actions/upload-artifact@v4
         with:
           name: appfix-studio-debug-apk
           path: appfix-studio/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      - name: Upload APKs for the device smoke test
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-apks
+          path: |
+            appfix-studio/app/build/outputs/apk/debug/*.apk
+            appfix-studio/app/build/outputs/apk/release/*.apk
+            appfix-studio/app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: error
+          retention-days: 3
 
       - name: Upload sample APK
         uses: actions/upload-artifact@v4
@@ -116,4 +141,57 @@ jobs:
             appfix-studio/app/build/reports/
             appfix-studio/core/build/test-results/
             appfix-studio/app/build/test-results/
+          if-no-files-found: ignore
+
+  device-smoke:
+    name: Device smoke test (API ${{ matrix.api }})
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - api: 24
+            target: default
+            arch: x86
+          - api: 35
+            target: google_apis
+            arch: x86_64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: smoke-apks
+          path: ${{ runner.temp }}/smoke
+
+      - name: Collect APKs
+        run: |
+          mkdir -p "$RUNNER_TEMP/apks"
+          find "$RUNNER_TEMP/smoke" -name '*.apk' -exec cp {} "$RUNNER_TEMP/apks/" \;
+          ls -l "$RUNNER_TEMP/apks"
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install, launch and walk the app on an emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: ${{ matrix.target }}
+          arch: ${{ matrix.arch }}
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          script: bash appfix-studio/tools/ci/device-smoke.sh "${{ runner.temp }}/apks"
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-screenshots-api${{ matrix.api }}
+          path: ${{ runner.temp }}/*.png
           if-no-files-found: ignore

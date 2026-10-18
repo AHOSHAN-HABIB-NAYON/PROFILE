@@ -52,7 +52,8 @@ All dependency versions are pinned in [`gradle/libs.versions.toml`](gradle/libs.
 cd appfix-studio
 ./gradlew :app:assembleDebug          # APK in app/build/outputs/apk/debug/
 ./gradlew :core:test                  # JVM unit tests for the engine
-./gradlew :app:testDebugUnitTest      # Robolectric tests for imports and repairs
+./gradlew :app:testDebugUnitTest      # Robolectric tests: imports, signing, UI navigation, accessibility
+./gradlew :app:assembleRelease        # R8-minified release (unsigned unless APPFIX_RELEASE_* are set)
 ./gradlew :app:lintDebug              # Android lint
 ./gradlew -p sample-project assembleDebug   # build the sample fixture app
 ```
@@ -80,7 +81,13 @@ request that touches `appfix-studio/`. It:
 4. runs the app unit tests (Robolectric imports and apksig signing, including signing the modified APK);
 5. checks the modified, re-signed APK with `apksigner verify`, `aapt2 dump badging` (new version and label)
    and `zipalign -c`;
-6. runs Android lint, assembles the AppFix Studio debug APK, and uploads APKs and reports.
+6. runs Android lint, plus Robolectric UI tests that walk every tab, import the sample and open the
+   assistant. These tests also check that every clickable element has a label and a large enough touch target;
+7. assembles the debug APK and the R8-minified release APK;
+8. installs both on **API 24 and API 35 emulators**, launches them, taps through the main screens and
+   imports the sample project, and fails on any crash.
+
+Tagged releases (`appfix-studio-v*`) are built and signed with the owner's secrets. See [docs/RELEASE.md](docs/RELEASE.md).
 
 No secrets, keystores or API keys are stored in the repository.
 
@@ -97,6 +104,7 @@ appfix-studio/
 * [Architecture](docs/ARCHITECTURE.md)
 * [Security and compatibility limitations](docs/SECURITY_AND_LIMITATIONS.md)
 * [AI assistant, patch rules and proxy contract](docs/AI_ASSISTANT.md)
+* [Release packaging and signing](docs/RELEASE.md)
 * [Roadmap and phase status](docs/ROADMAP.md)
 
 ## Legal
