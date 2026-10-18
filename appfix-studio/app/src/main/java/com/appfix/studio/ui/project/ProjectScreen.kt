@@ -105,6 +105,7 @@ fun ProjectScreen(
     onOpenBranding: () -> Unit = {},
     onOpenBuild: () -> Unit = {},
     onSignApk: (String) -> Unit = {},
+    onModifyApk: () -> Unit = {},
 ) {
     val vm = appViewModel(key = "project-$projectId") { ProjectViewModel(it, projectId) }
     val project by vm.project.collectAsStateWithLifecycle()
@@ -144,7 +145,7 @@ fun ProjectScreen(
                 tabs.forEachIndexed { i, t -> Tab(selected = tab == i, onClick = { tab = i }, text = { Text(t) }) }
             }
             when (tabs.getOrNull(tab)) {
-                "Overview" -> if (p.kind == ProjectKind.APK) ApkOverview(vm, p, onOpenApkReport, onSignApk) else SourceOverview(vm, p, onOpenEditor, onOpenRepair, onOpenResources, onOpenSearch, onOpenVisual, onOpenFeatures, onOpenBranding, onOpenBuild)
+                "Overview" -> if (p.kind == ProjectKind.APK) ApkOverview(vm, p, onOpenApkReport, onSignApk, onModifyApk) else SourceOverview(vm, p, onOpenEditor, onOpenRepair, onOpenResources, onOpenSearch, onOpenVisual, onOpenFeatures, onOpenBranding, onOpenBuild)
                 "Contents" -> ApkContents(vm, onOpenFile)
                 "Files" -> {
                     val container = appContainer()
@@ -197,7 +198,7 @@ private fun Header(p: ProjectEntity, extra: String?) {
 // ----------------------------------------------------------------------------- APK
 
 @Composable
-private fun ApkOverview(vm: ProjectViewModel, p: ProjectEntity, onOpenApkReport: () -> Unit, onSignApk: (String) -> Unit) {
+private fun ApkOverview(vm: ProjectViewModel, p: ProjectEntity, onOpenApkReport: () -> Unit, onSignApk: (String) -> Unit, onModifyApk: () -> Unit) {
     val container = appContainer()
     val report by vm.apkReport.collectAsStateWithLifecycle()
     val signature by vm.signature.collectAsStateWithLifecycle()
@@ -222,7 +223,10 @@ private fun ApkOverview(vm: ProjectViewModel, p: ProjectEntity, onOpenApkReport:
         }
         item { SigningCard(r, signature, onVerify = vm::verifySignature) }
         item {
-            OutlinedButton(onClick = { container.storage.originalApk(vm.projectId)?.let { onSignApk(it.absolutePath) } }) { Text("Re-sign a copy with my key") }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = onModifyApk) { Text("Modify APK") }
+                OutlinedButton(onClick = { container.storage.originalApk(vm.projectId)?.let { onSignApk(it.absolutePath) } }) { Text("Re-sign a copy") }
+            }
         }
         item { EditabilityCard(r) }
         if (r.warnings.isNotEmpty()) item { SectionCard("Notes") { BulletList(r.warnings) } }

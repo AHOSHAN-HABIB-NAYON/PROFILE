@@ -58,6 +58,7 @@ jobs:
           export APPFIX_SAMPLE_APK="$PWD/sample-project/app/build/outputs/apk/debug/app-debug.apk"
           export APPFIX_FRAMEWORK_JAR="$ANDROID_HOME/platforms/android-36/android.jar"
           export APPFIX_GENERATED_OUT="$RUNNER_TEMP/generated"
+          export APPFIX_MODIFIED_OUT="$RUNNER_TEMP/sample-modified-unsigned.apk"
           ./gradlew :core:test --stacktrace
 
       - name: Compile projects modified by the generators (Kotlin+XML, Java+XML, Compose)
@@ -71,7 +72,20 @@ jobs:
       - name: App unit tests (includes apksig re-signing of the sample APK)
         run: |
           export APPFIX_SAMPLE_APK="$PWD/sample-project/app/build/outputs/apk/debug/app-debug.apk"
+          export APPFIX_MODIFIED_OUT="$RUNNER_TEMP/sample-modified-unsigned.apk"
+          export APPFIX_SIGNED_OUT="$RUNNER_TEMP/sample-modified-signed.apk"
           ./gradlew :app:testDebugUnitTest --stacktrace
+
+      - name: Check the modified and re-signed sample APK with apksigner and aapt2
+        run: |
+          APK="$RUNNER_TEMP/sample-modified-signed.apk"
+          BT="$ANDROID_HOME/build-tools/36.0.0"
+          "$BT/apksigner" verify --verbose "$APK"
+          "$BT/aapt2" dump badging "$APK" | tee "$RUNNER_TEMP/badging.txt" | head -20
+          grep -q "versionCode='7'" "$RUNNER_TEMP/badging.txt"
+          grep -q "versionName='1.0-appfix'" "$RUNNER_TEMP/badging.txt"
+          grep -q "application-label:'Sample Modified'" "$RUNNER_TEMP/badging.txt"
+          "$BT/zipalign" -c -P 16 4 "$APK"
 
       - name: Android lint
         run: ./gradlew :app:lintDebug

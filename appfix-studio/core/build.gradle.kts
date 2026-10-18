@@ -27,7 +27,7 @@ tasks.test {
     // CI passes the freshly built sample APK so the APK inspector is tested against a real build.
     System.getenv("APPFIX_SAMPLE_APK")?.let { systemProperty("appfix.sampleApk", it) }
     // When CI asks for generated projects to be written, the test must really run (not come from cache).
-    if (System.getenv("APPFIX_GENERATED_OUT") != null) {
+    if (System.getenv("APPFIX_GENERATED_OUT") != null || System.getenv("APPFIX_MODIFIED_OUT") != null) {
         outputs.cacheIf { false }
         outputs.upToDateWhen { false }
     }

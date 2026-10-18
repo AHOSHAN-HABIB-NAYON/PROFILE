@@ -18,3 +18,4 @@ import kotlinx.serialization.Serializable
 @Serializable data class BrandingRoute(val id: String)
 @Serializable data class BuildRoute(val id: String)
 @Serializable data class SigningRoute(val file: String = "")
+@Serializable data class ApkModifyRoute(val id: String)

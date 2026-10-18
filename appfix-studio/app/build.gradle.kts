@@ -63,6 +63,8 @@ android {
         unitTests.isIncludeAndroidResources = true
         unitTests.all { test ->
             System.getenv("APPFIX_SAMPLE_APK")?.let { test.environment("APPFIX_SAMPLE_APK", it) }
+            System.getenv("APPFIX_MODIFIED_OUT")?.let { test.environment("APPFIX_MODIFIED_OUT", it) }
+            System.getenv("APPFIX_SIGNED_OUT")?.let { test.environment("APPFIX_SIGNED_OUT", it) }
         }
     }
 }

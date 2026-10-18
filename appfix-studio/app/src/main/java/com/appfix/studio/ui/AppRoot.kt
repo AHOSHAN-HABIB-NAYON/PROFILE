@@ -51,6 +51,8 @@ import com.appfix.studio.ui.nav.SearchRoute
 import com.appfix.studio.ui.nav.FeaturesRoute
 import com.appfix.studio.ui.nav.BrandingRoute
 import com.appfix.studio.ui.nav.BuildRoute
+import com.appfix.studio.ui.nav.ApkModifyRoute
+import com.appfix.studio.ui.apk.ApkModifyScreen
 import com.appfix.studio.ui.nav.SigningRoute
 import com.appfix.studio.ui.build.BuildScreen
 import com.appfix.studio.ui.build.SigningScreen
@@ -157,6 +159,9 @@ fun AppRoot() {
                         onSign = { path -> nav.navigate(SigningRoute(path)) },
                     )
                 }
+                composable<ApkModifyRoute> { entry ->
+                    ApkModifyScreen(entry.toRoute<ApkModifyRoute>().id, onBack = { nav.popBackStack() }, onSignWithKey = { path -> nav.navigate(SigningRoute(path)) })
+                }
                 composable<SigningRoute> { entry ->
                     SigningScreen(entry.toRoute<SigningRoute>().file.ifEmpty { null }, onBack = { nav.popBackStack() })
                 }
@@ -199,6 +204,7 @@ fun AppRoot() {
                         onOpenBranding = { nav.navigate(BrandingRoute(route.id)) },
                         onOpenBuild = { nav.navigate(BuildRoute(route.id)) },
                         onSignApk = { path -> nav.navigate(SigningRoute(path)) },
+                        onModifyApk = { nav.navigate(ApkModifyRoute(route.id)) },
                         onOpenEditor = {
                             scope.launch { container.settings.setCurrentProject(route.id) }
                             nav.navigateTopLevel(EditorRoute)
