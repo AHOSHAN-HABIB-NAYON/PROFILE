@@ -12,6 +12,8 @@
         <intent>
             <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
         </intent>
+        <!-- Google app, to open Google Lens from the address bar when installed. -->
+        <package android:name="com.google.android.googlequicksearchbox" />
     </queries>
 
     <application

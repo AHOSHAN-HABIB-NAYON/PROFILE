@@ -10,6 +10,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
 import com.webtecit.nayon.data.browser.BrowserDatabase
 import com.webtecit.nayon.data.browser.BrowsingRepository
+import com.webtecit.nayon.data.browser.FaviconStore
 import com.webtecit.nayon.data.settings.AppearanceRepository
 import com.webtecit.nayon.data.settings.BrowserPreferencesRepository
 import com.webtecit.nayon.data.settings.DataStoreAppearanceRepository
@@ -32,6 +33,8 @@ class AppContainer(context: Context) {
     private val database: BrowserDatabase by lazy {
         Room.databaseBuilder(context, BrowserDatabase::class.java, "nayon_browser.db").build()
     }
+
+    val faviconStore = FaviconStore(java.io.File(context.filesDir, "favicons"))
 
     val browsingRepository: BrowsingRepository by lazy {
         BrowsingRepository(database.historyDao(), database.bookmarkDao(), database.savedTabDao())

@@ -55,12 +55,18 @@ checking by hand on a real device.
 | Desktop site | Implemented | User-agent switch; some sites still detect mobile | — | `UrlResolverTest.desktopUserAgentRemovesMobileMarkers` |
 | Downloads | Partial | Uses Android DownloadManager (system controls pause/resume). blob:/data: downloads unsupported. Android 7–9 save into the app's own Downloads folder | — | Manual |
 | File upload from web pages | Implemented | Uses the system file picker | — | Manual |
-| Full-screen video | Implemented | Landscape by default with a rotate button, screen kept on, uses the notch area. Depends on the site and WebView | — | Manual |
+| Full-screen video | Implemented | Attached directly to the window; turns landscape for wide videos only; site controls stay usable; screen kept on; uses the notch area. Depends on the site and WebView | — | Manual |
 | Chrome-style compact top toolbar (default) or top + bottom bars | Implemented | Setting: Toolbar layout | — | Manual |
-| Auto-hide toolbars while scrolling | Implemented | Works for pages that scroll the main document; pages with their own inner scroll areas keep the bars | — | Manual |
+| Auto-hide toolbars while scrolling | Implemented | Bars slide with the finger and the page is not resized mid-scroll; pages with their own inner scroll areas keep the bars | — | Manual |
 | Pull to refresh | Implemented | Triggers only when the page is scrolled to the top; pages with inner scroll areas may trigger it early (can be turned off) | — | Manual |
 | Site information sheet (connection, certificate, cookies, permissions, delete site data) | Implemented | Per-site cookie deletion clears the cookies the page can see | — | Manual |
-| Animated tab switcher and tab transitions | Implemented | — | — | Manual |
+| Animated tab switcher and tab transitions | Implemented | Chrome-style cards, tab search | — | Manual |
+| Search panel (current page, most visited, recent searches) | Implemented | Recent searches are read from search-result pages in history; local only | — | `UrlResolverTest.recentSearchesAreReadFromResultPages` |
+| Google Lens button | Implemented | Opens the Google app's Lens when installed, otherwise lens.google.com | Google app (optional) | Manual |
+| Real site icons (favicons) | Implemented | From visited pages; home shortcuts fetch the site's own icon once | — | Manual |
+| In-app Downloads page (progress, open, share, delete, cancel) | Implemented | Pause/resume is controlled by Android | — | Manual |
+| Clear browsing data time range | Implemented | Only history can be limited by date; cookies and cache are cleared completely | — | Manual |
+| Optimized test build | Implemented | Test APKs are R8-optimized release builds signed with the shared test key | — | CI |
 | Share page / copy link | Implemented | — | — | Manual |
 | Open links from other apps; set as default browser | Implemented | User chooses default browser in Android settings | — | Manual |
 | External app links (mailto:, tel:, intent:) | Implemented | Opened only after a user tap; fallback URL used when no app | — | Manual |
@@ -74,7 +80,6 @@ checking by hand on a real device.
 | Feature | Status | Technical limitation | Required configuration | Testing evidence |
 |---|---|---|---|---|
 | Bookmark folders, reading list, import/export | Planned | — | — | — |
-| In-app downloads manager page | Planned (Stage 3) | Pause/resume controlled by Android `DownloadManager` | — | — |
 | Per-site settings, website permission prompts | Planned (Stage 3) | — | — | — |
 | Encrypted password vault + biometric lock | Planned (Stage 3) | Keystore-backed; no custom crypto | — | — |
 | Android Autofill service | Planned (Stage 3) — Partial expected | User must choose NAYON as autofill provider | — | — |

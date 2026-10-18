@@ -24,6 +24,7 @@ Review the Privacy Policy and individual permission settings before using option
 | Settings (theme, search engine, toggles) | Remember your choices | Until cleared | Clear app storage / uninstall |
 | Browsing history (normal tabs only) | History page, suggestions, recent sites | Until you delete it | History page or Settings → Clear browsing data |
 | Bookmarks | Bookmarks page | Until you delete them | Bookmarks page |
+| Site icons (favicons) of visited sites and home shortcuts | Show icons in lists | Until history is cleared (all time) | Settings → Clear browsing data → All time |
 | Open normal tabs (if "Restore tabs" is on) | Reopen tabs next time | Replaced as tabs change | Turn the setting off / close tabs |
 | Cookies, site data and cache created by websites | Keep you signed in, load pages faster | Set by websites | Settings → Clear browsing data |
 
@@ -35,6 +36,7 @@ Private tabs are never written to history or saved tabs.
 - **Your search engine** receives the words you search for.
 - **Google Safe Browsing**: when available, Android System WebView may check addresses with Google to warn about dangerous sites.
 - **Downloads** are fetched by Android's download manager.
+- **Home-page shortcut icons**: for a shortcut you have never visited, NAYON Browser downloads that site's own icon once (for example `https://www.youtube.com/favicon.ico`). No third-party icon service is used. Icons of sites you visit are taken from the page itself.
 - Nothing is sent to the developer. There are **no analytics, advertising, crash-reporting or tracking SDKs**.
 
 All app data is excluded from Android cloud backup and device-to-device transfer.

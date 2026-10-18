@@ -214,7 +214,7 @@ private fun ShortcutGrid(shortcuts: List<Shortcut>, onOpen: (String) -> Unit) {
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                         ) {
-                            SiteIcon(s.url, s.label, size = 52.dp, background = s.color)
+                            SiteIcon(s.url, s.label, size = 52.dp, background = s.color, downloadIcon = true)
                             Text(s.label, style = MaterialTheme.typography.labelMedium, maxLines = 1,
                                 overflow = TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurface)
                         }

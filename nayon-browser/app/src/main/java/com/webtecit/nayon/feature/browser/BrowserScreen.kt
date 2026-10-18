@@ -1,98 +1,86 @@
 package com.webtecit.nayon.feature.browser
 
 import android.app.Activity
-import android.app.DownloadManager
 import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
+import android.content.pm.ActivityInfo
+import android.os.Build
+import android.os.SystemClock
 import android.speech.RecognizerIntent
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.FrameLayout
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import android.content.pm.ActivityInfo
-import android.os.Build
-import android.view.WindowManager
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.outlined.FullscreenExit
-import androidx.compose.material.icons.outlined.ScreenRotation
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.webtecit.nayon.data.settings.ToolbarLayout
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.CallMade
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.webtecit.nayon.R
-import com.webtecit.nayon.core.browser.UrlResolver
-import com.webtecit.nayon.core.designsystem.component.SiteIcon
 import com.webtecit.nayon.core.designsystem.theme.Spacing
+import com.webtecit.nayon.data.settings.ToolbarLayout
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
+
+private val TopBarHeight = 56.dp
+private val BottomBarHeight = 52.dp
 
 @Composable
 fun BrowserScreen(
@@ -100,11 +88,14 @@ fun BrowserScreen(
     onOpenTabs: () -> Unit,
     onOpenBookmarks: () -> Unit,
     onOpenHistory: () -> Unit,
+    onOpenDownloads: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenAbout: () -> Unit,
 ) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
+    val density = LocalDensity.current
+    val scope = rememberCoroutineScope()
     val tab by viewModel.activeTab.collectAsStateWithLifecycle()
     val tabs by viewModel.tabs.collectAsStateWithLifecycle()
     val prefs by viewModel.preferences.collectAsStateWithLifecycle()
@@ -112,11 +103,11 @@ fun BrowserScreen(
     val recent by viewModel.recentSites.collectAsStateWithLifecycle()
     val fullscreen by viewModel.fullscreen.collectAsStateWithLifecycle()
     val fileChooser by viewModel.fileChooser.collectAsStateWithLifecycle()
-    val barsVisible by viewModel.barsVisible.collectAsStateWithLifecycle()
 
     val focusRequester = remember { FocusRequester() }
     var editing by remember { mutableStateOf(false) }
     var typed by remember { mutableStateOf("") }
+    var fillRequest by remember { mutableStateOf<String?>(null) }
     var showMenu by rememberSaveable { mutableStateOf(false) }
     var showPageInfo by rememberSaveable { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
@@ -140,18 +131,31 @@ fun BrowserScreen(
         val request = fileChooser ?: return@LaunchedEffect
         try { fileLauncher.launch(request.intent) } catch (e: ActivityNotFoundException) { viewModel.onFileChooserFailed() }
     }
+    val viewLabel = stringResource(R.string.action_view)
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
-                is BrowserEvent.Message -> snackbar.showSnackbar(
-                    if (event.arg != null) context.getString(event.text, event.arg) else context.getString(event.text),
-                )
+                is BrowserEvent.Message -> {
+                    val text = if (event.arg != null) context.getString(event.text, event.arg) else context.getString(event.text)
+                    val result = snackbar.showSnackbar(
+                        text,
+                        actionLabel = if (event.showDownloads) viewLabel else null,
+                        duration = SnackbarDuration.Short,
+                    )
+                    if (result == SnackbarResult.ActionPerformed) onOpenDownloads()
+                }
             }
         }
     }
 
     fun startVoice() {
-        try { voiceLauncher.launch(voiceIntent) } catch (e: ActivityNotFoundException) { /* button hidden when unavailable */ }
+        try { voiceLauncher.launch(voiceIntent) } catch (e: ActivityNotFoundException) { /* hidden when unavailable */ }
+    }
+
+    fun openLens() {
+        focusManager.clearFocus()
+        val lens = Intent(Intent.ACTION_VIEW, "googleapp://lens".toUri()).setPackage(GOOGLE_APP)
+        try { context.startActivity(lens) } catch (e: ActivityNotFoundException) { viewModel.newTab(LENS_WEB) }
     }
 
     fun submit(text: String) {
@@ -164,45 +168,72 @@ fun BrowserScreen(
         viewModel.goBack()
     }
 
+    // ---- Collapsing toolbars: they slide with the finger; the page is never resized mid-scroll.
     val compact = prefs.toolbarLayout == ToolbarLayout.TOP
     val onWebPage = tab?.isWebPage == true
-    val showBars = barsVisible || editing || !onWebPage || !prefs.hideToolbarsOnScroll
-    val barColor = if (tab?.isPrivate == true) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surface
+    val topH = with(density) { TopBarHeight.toPx() }
+    val bottomH = if (compact) 0f else with(density) { BottomBarHeight.toPx() }
+    val barOffset = remember { Animatable(0f) }          // 0 = shown, -topH = hidden
+    var tallPage by remember { mutableStateOf(false) }   // page extends under the hidden bars
+    val collapsible = onWebPage && !editing && prefs.hideToolbarsOnScroll && tab?.error == null
+
+    LaunchedEffect(collapsible) {
+        if (!collapsible) { barOffset.animateTo(0f, tween(160)); tallPage = false }
+    }
+    LaunchedEffect(Unit) {
+        viewModel.showBarsRequests.collect { barOffset.animateTo(0f, tween(160)); tallPage = false }
+    }
+    DisposableEffect(collapsible, topH) {
+        var settle: Job? = null
+        var ignoreUntil = 0L
+        viewModel.onActivePageScroll = if (!collapsible) null else { y, dy ->
+            val now = SystemClock.uptimeMillis()
+            if (y <= 0) {
+                settle?.cancel()
+                scope.launch { barOffset.animateTo(0f, tween(140)); tallPage = false }
+            } else if (now >= ignoreUntil && dy != 0) {
+                if (dy > 0 && !tallPage) { tallPage = true; ignoreUntil = now + 250 }
+                settle?.cancel()
+                scope.launch { barOffset.snapTo((barOffset.value - dy).coerceIn(-topH, 0f)) }
+                settle = scope.launch {
+                    delay(160)
+                    val hide = barOffset.value < -topH / 2
+                    barOffset.animateTo(if (hide) -topH else 0f, tween(140))
+                    if (!hide) { tallPage = false; ignoreUntil = SystemClock.uptimeMillis() + 250 }
+                }
+            }
+        }
+        onDispose { viewModel.onActivePageScroll = null; settle?.cancel() }
+    }
+
+    val scheme = MaterialTheme.colorScheme
+    val barColor = if (tab?.isPrivate == true) scheme.surfaceContainerHigh else scheme.surface
     val tabCount = tabs.count { it.isPrivate == (tab?.isPrivate == true) }
     val openTabs = { viewModel.captureActiveThumbnail(); onOpenTabs() }
+    val fullHeightPage = onWebPage && prefs.hideToolbarsOnScroll
 
     Box(Modifier.fillMaxSize().background(barColor)) {
-        Column(
+        Box(
             Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.statusBars)
-                .windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars).only(WindowInsetsSides.Bottom)),
+                .windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars).only(WindowInsetsSides.Bottom))
+                .clipToBounds(),
         ) {
-            AnimatedVisibility(
-                visible = showBars,
-                enter = expandVertically(tween(BAR_ANIM_MS), expandFrom = Alignment.Top),
-                exit = shrinkVertically(tween(BAR_ANIM_MS), shrinkTowards = Alignment.Top),
+            // Page / home content, placed under the visible part of the top bar.
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(scheme.surface)
+                    .layout { measurable, constraints ->
+                        val h = if (fullHeightPage && tallPage) constraints.maxHeight
+                        else (constraints.maxHeight - topH - bottomH).roundToInt().coerceAtLeast(0)
+                        val placeable = measurable.measure(constraints.copy(minHeight = h, maxHeight = h))
+                        layout(constraints.maxWidth, constraints.maxHeight) {
+                            placeable.place(0, (topH + barOffset.value).roundToInt())
+                        }
+                    },
             ) {
-                TopToolbar(
-                    tab = tab,
-                    tabCount = tabCount,
-                    compact = compact,
-                    focusRequester = focusRequester,
-                    voiceAvailable = voiceAvailable,
-                    onFocusChange = { editing = it },
-                    onTextChange = { typed = it },
-                    onSubmit = ::submit,
-                    onVoice = ::startVoice,
-                    onReload = viewModel::reload,
-                    onStop = viewModel::stopLoading,
-                    onHome = viewModel::goHome,
-                    onNewTab = { viewModel.newTab(private = tab?.isPrivate == true) },
-                    onTabs = openTabs,
-                    onMenu = { showMenu = true },
-                    onSiteInfo = { showPageInfo = true },
-                )
-            }
-            Box(Modifier.weight(1f).fillMaxWidth().background(MaterialTheme.colorScheme.surface)) {
                 val current = tab
                 if (current != null) {
                     AnimatedContent(
@@ -241,17 +272,46 @@ fun BrowserScreen(
                     }
                 }
                 if (editing) {
-                    SuggestionsPanel(viewModel, typed, onSearch = ::submit, onOpen = { url ->
-                        focusManager.clearFocus(); viewModel.openInCurrentTab(url)
-                    })
+                    SearchPanel(
+                        viewModel = viewModel,
+                        tab = tab,
+                        query = typed,
+                        onSearch = ::submit,
+                        onOpen = { url -> focusManager.clearFocus(); viewModel.openInCurrentTab(url) },
+                        onFill = { fillRequest = it },
+                        onShare = { tab?.let { sharePage(context, it) } },
+                        onCopy = { tab?.url?.let { copyLink(context, it) } },
+                    )
                 }
                 SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(Spacing.md))
             }
-            AnimatedVisibility(
-                visible = !compact && !editing && showBars,
-                enter = expandVertically(tween(BAR_ANIM_MS), expandFrom = Alignment.Bottom),
-                exit = shrinkVertically(tween(BAR_ANIM_MS), shrinkTowards = Alignment.Bottom),
-            ) {
+
+            // Top bar, sliding up as the page scrolls.
+            TopToolbar(
+                tab = tab,
+                tabCount = tabCount,
+                compact = compact,
+                focusRequester = focusRequester,
+                voiceAvailable = voiceAvailable,
+                fillRequest = fillRequest,
+                onFillConsumed = { fillRequest = null },
+                onFocusChange = { editing = it },
+                onTextChange = { typed = it },
+                onSubmit = ::submit,
+                onVoice = ::startVoice,
+                onLens = ::openLens,
+                onReload = viewModel::reload,
+                onStop = viewModel::stopLoading,
+                onHome = viewModel::goHome,
+                onNewTab = { viewModel.newTab(private = tab?.isPrivate == true) },
+                onTabs = openTabs,
+                onMenu = { showMenu = true },
+                onSiteInfo = { showPageInfo = true },
+                modifier = Modifier.fillMaxWidth().graphicsLayer { translationY = barOffset.value },
+            )
+
+            // Optional bottom bar, sliding down together with the top bar.
+            if (!compact && !editing) {
                 BrowserToolbar(
                     tab = tab,
                     tabCount = tabCount,
@@ -260,11 +320,15 @@ fun BrowserScreen(
                     onHome = viewModel::goHome,
                     onTabs = openTabs,
                     onMenu = { showMenu = true },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .graphicsLayer { translationY = -barOffset.value / topH * bottomH },
                 )
             }
         }
 
-        fullscreen?.let { FullscreenVideoLayer(it, onExit = viewModel::exitFullscreen) }
+        fullscreen?.let { FullscreenVideoEffect(it, viewModel, onExit = viewModel::exitFullscreen) }
     }
 
     if (showMenu) {
@@ -278,7 +342,7 @@ fun BrowserScreen(
                     MenuAction.NEW_PRIVATE_TAB -> viewModel.newTab(private = true)
                     MenuAction.BOOKMARKS -> onOpenBookmarks()
                     MenuAction.HISTORY -> onOpenHistory()
-                    MenuAction.DOWNLOADS -> openSystemDownloads(context)
+                    MenuAction.DOWNLOADS -> onOpenDownloads()
                     MenuAction.SETTINGS -> onOpenSettings()
                     MenuAction.TOGGLE_BOOKMARK -> viewModel.toggleBookmark()
                     MenuAction.SHARE -> tab?.let { sharePage(context, it) }
@@ -306,12 +370,10 @@ fun BrowserScreen(
     }
 }
 
-private const val BAR_ANIM_MS = 180
+private const val GOOGLE_APP = "com.google.android.googlequicksearchbox"
+private const val LENS_WEB = "https://lens.google.com"
 
-/**
- * Hosts the tab's WebView inside a pull-to-refresh container. The WebView is owned by the
- * ViewModel and survives recomposition and tab switches.
- */
+/** Hosts the tab's WebView inside a pull-to-refresh container. */
 @Composable
 private fun WebViewHost(viewModel: BrowserViewModel, tabId: String, pullToRefresh: Boolean, refreshing: Boolean) {
     val scheme = MaterialTheme.colorScheme
@@ -322,7 +384,6 @@ private fun WebViewHost(viewModel: BrowserViewModel, tabId: String, pullToRefres
             SwipeRefreshLayout(ctx).apply {
                 addView(FrameLayout(ctx), ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
                 setOnRefreshListener { viewModel.reload() }
-                // Only pull to refresh when the page itself is scrolled to the very top.
                 setOnChildScrollUpCallback { _, _ -> viewModel.webViewOrNull(tabId)?.canScrollVertically(-1) ?: false }
             }
         },
@@ -346,142 +407,67 @@ private fun WebViewHost(viewModel: BrowserViewModel, tabId: String, pullToRefres
     )
 }
 
-@Composable
-private fun SuggestionsPanel(viewModel: BrowserViewModel, query: String, onSearch: (String) -> Unit, onOpen: (String) -> Unit) {
-    val flow = remember(query) { viewModel.suggestionsFor(query) }
-    val suggestions by flow.collectAsState(initial = emptyList())
-    LazyColumn(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface)) {
-        if (query.isNotBlank()) {
-            item {
-                SuggestionRow(
-                    leading = { Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.primary) },
-                    title = stringResource(R.string.search_for, query.trim()),
-                    subtitle = null,
-                    onClick = { onSearch(query) },
-                )
-            }
-        }
-        items(suggestions, key = { it.url }) { s ->
-            SuggestionRow(
-                leading = { SiteIcon(s.url, s.title, size = 32.dp) },
-                title = s.title.ifBlank { UrlResolver.displayHost(s.url) },
-                subtitle = s.url,
-                onClick = { onOpen(s.url) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun SuggestionRow(leading: @Composable () -> Unit, title: String, subtitle: String?, onClick: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick).padding(horizontal = Spacing.lg, vertical = Spacing.md),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) { leading() }
-        Spacer(Modifier.width(Spacing.lg))
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (subtitle != null) {
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-        }
-        Icon(Icons.AutoMirrored.Outlined.CallMade, null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
-    }
-}
-
 /**
- * Shows a website's full-screen video: hides the system bars, turns to landscape, keeps the
- * screen on and uses the display-cutout area. A rotate button appears briefly for portrait videos.
+ * Website full-screen video. The video view is attached straight to the window (outside
+ * Compose) so rotation and re-layout never interrupt playback. The site's own controls stay
+ * fully usable. Orientation follows the video's shape, like Chrome.
  */
 @Composable
-private fun FullscreenVideoLayer(video: FullscreenVideo, onExit: () -> Unit) {
+private fun FullscreenVideoEffect(video: FullscreenVideo, viewModel: BrowserViewModel, onExit: () -> Unit) {
     val view = LocalView.current
-    val activity = remember(view) { view.context.findActivity() }
-    var landscape by rememberSaveable { mutableStateOf(true) }
-    var controlsVisible by remember { mutableStateOf(true) }
     BackHandler(onBack = onExit)
-
-    DisposableEffect(video, activity) {
+    DisposableEffect(video) {
+        val activity = view.context.findActivity()
         val window = activity?.window
+        val decor = window?.decorView as? FrameLayout
+        val holder = FrameLayout(view.context).apply { setBackgroundColor(android.graphics.Color.BLACK) }
+        (video.view.parent as? ViewGroup)?.removeView(video.view)
+        holder.addView(video.view, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        decor?.addView(holder, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+
         val controller = window?.let { WindowCompat.getInsetsController(it, view) }
-        val previousOrientation = activity?.requestedOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        val previousCutout = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) window?.attributes?.layoutInDisplayCutoutMode else null
         controller?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         controller?.hide(WindowInsetsCompat.Type.systemBars())
         window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        val previousCutout = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) window?.attributes?.layoutInDisplayCutoutMode else null
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && window != null) {
             window.attributes = window.attributes.apply {
                 layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
             }
         }
+        val previousOrientation = activity?.requestedOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        // Landscape for wide videos, unchanged for tall (Shorts-style) videos.
+        viewModel.activeWebView()?.evaluateJavascript(VIDEO_SIZE_JS) { result ->
+            val parts = result?.trim('"')?.split('x')?.mapNotNull { it.toIntOrNull() }
+            val wide = parts == null || parts.size != 2 || parts[0] >= parts[1]
+            if (wide && activity != null) activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+        }
+
         onDispose {
+            decor?.removeView(holder)
+            holder.removeAllViews()
             controller?.show(WindowInsetsCompat.Type.systemBars())
             window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            activity?.requestedOrientation = previousOrientation
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && window != null && previousCutout != null) {
                 window.attributes = window.attributes.apply { layoutInDisplayCutoutMode = previousCutout }
             }
-        }
-    }
-    LaunchedEffect(landscape, activity) {
-        activity?.requestedOrientation = if (landscape) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        else ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-    }
-    LaunchedEffect(controlsVisible) {
-        if (controlsVisible) { kotlinx.coroutines.delay(3500); controlsVisible = false }
-    }
-
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
-        AndroidView(
-            factory = { ctx ->
-                FrameLayout(ctx).apply {
-                    setBackgroundColor(android.graphics.Color.BLACK)
-                    (video.view.parent as? ViewGroup)?.removeView(video.view)
-                    addView(video.view, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-                    // Any touch on the video brings the NAYON controls back briefly.
-                    setOnHierarchyChangeListener(null)
-                }
-            },
-            onRelease = { it.removeAllViews() },
-            modifier = Modifier.fillMaxSize().pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        awaitPointerEvent(androidx.compose.ui.input.pointer.PointerEventPass.Initial)
-                        controlsVisible = true
-                    }
-                }
-            },
-        )
-        AnimatedVisibility(
-            visible = controlsVisible,
-            enter = fadeIn(), exit = fadeOut(),
-            modifier = Modifier.align(Alignment.TopEnd).padding(Spacing.md),
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                FullscreenButton(Icons.Outlined.ScreenRotation, stringResource(R.string.action_rotate)) { landscape = !landscape }
-                FullscreenButton(Icons.Outlined.FullscreenExit, stringResource(R.string.action_exit_fullscreen), onExit)
-            }
+            activity?.requestedOrientation = previousOrientation
         }
     }
 }
 
-@Composable
-private fun FullscreenButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit) {
-    Box(
-        Modifier.size(44.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.55f)).clickable(role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) { Icon(icon, label, tint = Color.White) }
-}
+/** Reads the full-screen video's natural size, e.g. "1920x1080". Read-only; no page changes. */
+private const val VIDEO_SIZE_JS = """(function(){var e=document.fullscreenElement||document.webkitFullscreenElement;
+var v=e&&(e.tagName==='VIDEO'?e:e.querySelector('video'));if(!v){v=document.querySelector('video');}
+return v&&v.videoWidth?v.videoWidth+'x'+v.videoHeight:'';})()"""
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
-    is android.content.ContextWrapper -> baseContext.findActivity()
+    is ContextWrapper -> baseContext.findActivity()
     else -> null
 }
 
-private fun sharePage(context: Context, tab: TabState) {
+fun sharePage(context: Context, tab: TabState) {
     val url = tab.url ?: return
     val send = Intent(Intent.ACTION_SEND).setType("text/plain")
         .putExtra(Intent.EXTRA_TEXT, url)
@@ -489,18 +475,10 @@ private fun sharePage(context: Context, tab: TabState) {
     runCatching { context.startActivity(Intent.createChooser(send, context.getString(R.string.share_page_via))) }
 }
 
-private fun copyLink(context: Context, url: String) {
+fun copyLink(context: Context, url: String) {
     val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
     cm.setPrimaryClip(ClipData.newPlainText("URL", url))
-    if (android.os.Build.VERSION.SDK_INT < 33) {
+    if (Build.VERSION.SDK_INT < 33) {
         android.widget.Toast.makeText(context, R.string.link_copied, android.widget.Toast.LENGTH_SHORT).show()
-    }
-}
-
-fun openSystemDownloads(context: Context) {
-    try {
-        context.startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-    } catch (e: ActivityNotFoundException) {
-        android.widget.Toast.makeText(context, R.string.error_no_app_to_open_link, android.widget.Toast.LENGTH_SHORT).show()
     }
 }

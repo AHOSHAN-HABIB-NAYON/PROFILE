@@ -13,6 +13,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import com.webtecit.nayon.data.browser.LocalFaviconStore
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
@@ -92,7 +94,9 @@ class MainActivity : ComponentActivity() {
         }
 
         NayonTheme(family = settings.family, brightness = brightness) {
-            NayonNavHost(appearance = settings, browser = browser)
+            CompositionLocalProvider(LocalFaviconStore provides (application as NayonApp).container.faviconStore) {
+                NayonNavHost(appearance = settings, browser = browser)
+            }
         }
     }
 

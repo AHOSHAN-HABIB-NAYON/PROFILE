@@ -57,6 +57,15 @@ class UrlResolverTest {
         assertFalse(UrlResolver.isWebUrl(null))
     }
 
+    @Test fun recentSearchesAreReadFromResultPages() {
+        assertEquals("kotlin flow", UrlResolver.searchQueryOf("https://www.google.com/search?q=kotlin+flow&oq=x"))
+        assertEquals("বাংলা", UrlResolver.searchQueryOf("https://duckduckgo.com/?q=%E0%A6%AC%E0%A6%BE%E0%A6%82%E0%A6%B2%E0%A6%BE"))
+        assertEquals("nayon", UrlResolver.searchQueryOf("https://search.yahoo.com/search?p=nayon"))
+        assertNull(UrlResolver.searchQueryOf("https://www.google.com/maps?q=dhaka"))
+        assertNull(UrlResolver.searchQueryOf("https://webtecit.com/?q=hello"))
+        assertNull(UrlResolver.searchQueryOf(null))
+    }
+
     @Test fun displayHostStripsWww() {
         assertEquals("webtecit.com", UrlResolver.displayHost("https://www.webtecit.com/about"))
         assertEquals("", UrlResolver.displayHost(null))

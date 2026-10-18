@@ -58,8 +58,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            // Without the real release key (local builds, test CI builds) the optimized build is
+            // signed with the shared debug key so it can still be installed for testing.
+            // Such builds are marked "-test" and must never be uploaded to a store.
             if (releaseKeystorePath != null) {
                 signingConfig = signingConfigs.getByName("release")
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
+                versionNameSuffix = "-test"
             }
         }
     }

@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.CenterFocusWeak
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.Refresh
@@ -80,10 +81,13 @@ fun TopToolbar(
     compact: Boolean,
     focusRequester: FocusRequester,
     voiceAvailable: Boolean,
+    fillRequest: String?,
+    onFillConsumed: () -> Unit,
     onFocusChange: (Boolean) -> Unit,
     onTextChange: (String) -> Unit,
     onSubmit: (String) -> Unit,
     onVoice: () -> Unit,
+    onLens: () -> Unit,
     onReload: () -> Unit,
     onStop: () -> Unit,
     onHome: () -> Unit,
@@ -105,6 +109,15 @@ fun TopToolbar(
             field = TextFieldValue(text, TextRange(0, text.length))
             onTextChange(text)
         }
+    }
+
+    // Text chosen in the search panel (a recent search, or "edit" on the current page).
+    LaunchedEffect(fillRequest) {
+        val text = fillRequest ?: return@LaunchedEffect
+        field = TextFieldValue(text, TextRange(text.length))
+        onTextChange(text)
+        onFillConsumed()
+        focusRequester.requestFocus()
     }
 
     Box(modifier.background(if (isPrivate) scheme.surfaceContainerHigh else scheme.surface)) {
@@ -164,6 +177,7 @@ fun TopToolbar(
                     voiceAvailable = voiceAvailable,
                     onClear = { field = TextFieldValue(""); onTextChange("") },
                     onVoice = onVoice,
+                    onLens = onLens,
                     onReload = onReload,
                     onStop = onStop,
                 )
@@ -234,13 +248,19 @@ private fun PillTrailing(
     voiceAvailable: Boolean,
     onClear: () -> Unit,
     onVoice: () -> Unit,
+    onLens: () -> Unit,
     onReload: () -> Unit,
     onStop: () -> Unit,
 ) {
     val onPage = tab?.isWebPage == true
     when {
         focused && hasText -> IconButton(onClick = onClear) { Icon(Icons.Filled.Close, stringResource(R.string.action_clear)) }
-        focused && voiceAvailable -> IconButton(onClick = onVoice) { Icon(Icons.Outlined.Mic, stringResource(R.string.action_voice_search)) }
+        focused -> Row(verticalAlignment = Alignment.CenterVertically) {
+            if (voiceAvailable) {
+                IconButton(onClick = onVoice) { Icon(Icons.Outlined.Mic, stringResource(R.string.action_voice_search), modifier = Modifier.size(22.dp)) }
+            }
+            IconButton(onClick = onLens) { Icon(Icons.Outlined.CenterFocusWeak, stringResource(R.string.action_lens), modifier = Modifier.size(22.dp)) }
+        }
         !focused && onPage && tab?.isLoading == true ->
             IconButton(onClick = onStop) { Icon(Icons.Filled.Close, stringResource(R.string.action_stop), modifier = Modifier.size(20.dp)) }
         !focused && onPage && showReload ->

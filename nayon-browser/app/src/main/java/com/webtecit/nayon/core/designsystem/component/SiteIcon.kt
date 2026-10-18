@@ -9,7 +9,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.webtecit.nayon.data.browser.rememberFavicon
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,14 +38,18 @@ fun SiteIcon(
     favicon: Bitmap? = null,
     size: Dp = 40.dp,
     background: Color? = null,
+    /** Fetch a missing icon from the site itself (home-page shortcuts only). */
+    downloadIcon: Boolean = false,
 ) {
-    if (favicon != null) {
-        val image = remember(favicon) { favicon.asImageBitmap() }
+    val stored by rememberFavicon(url, download = downloadIcon)
+    val icon = favicon ?: stored
+    if (icon != null) {
+        val image = remember(icon) { icon.asImageBitmap() }
         Box(
-            modifier.size(size).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerHighest),
+            modifier.size(size).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerLowest),
             contentAlignment = Alignment.Center,
         ) {
-            Image(image, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.size(size * 0.6f))
+            Image(image, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.size(size * 0.62f).clip(RoundedCornerShape(size * 0.12f)))
         }
         return
     }

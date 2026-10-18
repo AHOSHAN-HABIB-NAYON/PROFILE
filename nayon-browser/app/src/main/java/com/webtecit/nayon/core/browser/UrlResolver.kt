@@ -49,5 +49,25 @@ object UrlResolver {
         return host.removePrefix("www.")
     }
 
+    private val searchHosts = mapOf(
+        "google." to "q", "bing.com" to "q", "duckduckgo.com" to "q", "search.brave.com" to "q",
+        "ecosia.org" to "q", "search.yahoo.com" to "p",
+    )
+
+    /** The search words if [url] is a results page of a known search engine, else null. */
+    fun searchQueryOf(url: String?): String? {
+        if (url.isNullOrBlank()) return null
+        val uri = runCatching { URI(url) }.getOrNull() ?: return null
+        val host = uri.host ?: return null
+        val path = uri.path.orEmpty()
+        val param = searchHosts.entries.firstOrNull { (h, _) -> host.contains(h) }?.value ?: return null
+        if (host.contains("google.") && !path.startsWith("/search")) return null
+        val query = uri.rawQuery ?: return null
+        return query.split('&').firstNotNullOfOrNull { kv ->
+            val (k, v) = kv.split('=', limit = 2).let { it[0] to it.getOrElse(1) { "" } }
+            if (k == param) runCatching { java.net.URLDecoder.decode(v, "UTF-8") }.getOrNull()?.trim()?.takeIf { it.isNotEmpty() } else null
+        }
+    }
+
     private fun isValidUri(s: String) = runCatching { URI(s).host != null }.getOrDefault(false)
 }

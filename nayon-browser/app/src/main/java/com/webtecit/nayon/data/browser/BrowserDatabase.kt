@@ -67,6 +67,12 @@ interface HistoryDao {
     @Query("DELETE FROM history")
     suspend fun clear()
 
+    @Query("DELETE FROM history WHERE visitedAt >= :since")
+    suspend fun deleteSince(since: Long)
+
+    @Query("SELECT COUNT(*) FROM history WHERE visitedAt >= :since")
+    fun countSince(since: Long): Flow<Int>
+
     @Query("DELETE FROM history WHERE visitedAt < :before")
     suspend fun deleteOlderThan(before: Long)
 }

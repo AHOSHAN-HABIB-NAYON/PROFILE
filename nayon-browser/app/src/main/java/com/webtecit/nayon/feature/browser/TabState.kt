@@ -44,7 +44,7 @@ class FullscreenVideo(val view: View, val callback: WebChromeClient.CustomViewCa
 class FileChooserRequest(val callback: ValueCallback<Array<Uri>>, val intent: Intent)
 
 sealed interface BrowserEvent {
-    data class Message(@StringRes val text: Int, val arg: String? = null) : BrowserEvent
+    data class Message(@StringRes val text: Int, val arg: String? = null, val showDownloads: Boolean = false) : BrowserEvent
 }
 
 @Immutable

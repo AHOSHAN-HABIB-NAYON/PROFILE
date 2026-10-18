@@ -71,7 +71,7 @@
     <string name="privacy_section_current">What this build stores</string>
     <string name="privacy_current">Stored only on this device: your settings, browsing history and bookmarks (normal tabs only), open normal tabs if “Restore tabs” is on, and cookies, site data and cache created by websites you visit. None of it is included in Android cloud backup or device transfer.</string>
     <string name="privacy_section_not_collected">What this build does not do</string>
-    <string name="privacy_not_collected">NAYON Browser contains no analytics, advertising or tracking SDKs and sends nothing to the developer. Websites you open receive your requests directly. Your search words go to the search engine you choose. When Google Safe Browsing is available on your device, Android System WebView may check site addresses with Google to warn you about dangerous sites. Private tabs are not saved to history.</string>
+    <string name="privacy_not_collected">NAYON Browser contains no analytics, advertising or tracking SDKs and sends nothing to the developer. Websites you open receive your requests directly. Your search words go to the search engine you choose. Home-page shortcut icons are downloaded once from each shortcut\'s own website. When Google Safe Browsing is available on your device, Android System WebView may check site addresses with Google to warn you about dangerous sites. Private tabs are not saved to history.</string>
     <string name="privacy_section_deletion">Deleting your data</string>
     <string name="privacy_deletion">Use Settings → Clear browsing data, delete single items in History and Bookmarks, or clear the app\'s storage in Android settings. Uninstalling removes everything.</string>
     <string name="privacy_section_changes">Changes</string>
@@ -257,4 +257,41 @@
     <string name="site_data_cleared">Site data deleted</string>
     <string name="action_rotate">Rotate video</string>
     <string name="action_exit_fullscreen">Exit full screen</string>
+
+    <!-- v0.3: search panel, downloads page, tabs, clear data range -->
+    <string name="action_view">View</string>
+    <string name="action_lens">Search with Google Lens</string>
+    <string name="action_edit">Edit</string>
+    <string name="search_recent">Recent searches</string>
+    <string name="downloads_title">Downloads</string>
+    <string name="downloads_all">All</string>
+    <string name="downloads_running">Downloading</string>
+    <string name="downloads_done">Completed</string>
+    <string name="downloads_empty_title">No downloads</string>
+    <string name="downloads_empty_body">Files you download from websites appear here.</string>
+    <string name="downloads_open">Open</string>
+    <string name="downloads_no_app">No app on this phone can open this file</string>
+    <string name="downloads_status_done">Completed</string>
+    <string name="downloads_status_failed">Download failed</string>
+    <string name="downloads_status_waiting">Waiting for network</string>
+    <string name="downloads_status_starting">Starting…</string>
+    <string name="tabs_search">Search your tabs</string>
+    <string name="tabs_no_results">No tabs match your search</string>
+    <string name="range_title">Time range</string>
+    <string name="range_hour">Last hour</string>
+    <string name="range_day">Last 24 hours</string>
+    <string name="range_week">Last 7 days</string>
+    <string name="range_month">Last 4 weeks</string>
+    <string name="range_all">All time</string>
+    <string name="clear_data_cookies_desc_all">All time. Signs you out of most sites.</string>
+    <string name="clear_data_cache_size">%1$s. Some sites may load more slowly next time.</string>
+    <string name="clear_data_tabs">Tabs</string>
+    <plurals name="clear_data_history_count">
+        <item quantity="one">%1$d page in this time range</item>
+        <item quantity="other">%1$d pages in this time range</item>
+    </plurals>
+    <plurals name="clear_data_tabs_count">
+        <item quantity="one">Close %1$d tab</item>
+        <item quantity="other">Close %1$d tabs</item>
+    </plurals>
 </resources>

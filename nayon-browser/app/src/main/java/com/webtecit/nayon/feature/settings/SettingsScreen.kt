@@ -42,7 +42,6 @@ import com.webtecit.nayon.core.designsystem.component.SettingsSwitchRow
 import com.webtecit.nayon.core.designsystem.theme.AppearanceSettings
 import com.webtecit.nayon.feature.appearance.nameRes
 import com.webtecit.nayon.feature.browser.BrowserViewModel
-import com.webtecit.nayon.feature.browser.openSystemDownloads
 
 @Composable
 fun SettingsScreen(
@@ -52,6 +51,7 @@ fun SettingsScreen(
     onOpenAppearance: () -> Unit,
     onOpenSearchEngine: () -> Unit,
     onOpenClearData: () -> Unit,
+    onOpenDownloads: () -> Unit,
     onOpenAbout: () -> Unit,
     onOpenPrivacy: () -> Unit,
     onOpenLicenses: () -> Unit,
@@ -146,7 +146,7 @@ fun SettingsScreen(
         item { SectionHeader(stringResource(R.string.settings_section_downloads)) }
         item {
             SettingsGroup {
-                SettingsRow(stringResource(R.string.settings_open_downloads), { openSystemDownloads(context) }, icon = Icons.Outlined.Download,
+                SettingsRow(stringResource(R.string.settings_open_downloads), onOpenDownloads, icon = Icons.Outlined.Download,
                     subtitle = stringResource(R.string.settings_open_downloads_desc))
             }
         }

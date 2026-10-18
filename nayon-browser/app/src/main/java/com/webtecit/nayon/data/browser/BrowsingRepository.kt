@@ -32,6 +32,8 @@ class BrowsingRepository(
 
     suspend fun deleteHistory(id: Long) = history.delete(id)
     suspend fun clearHistory() = history.clear()
+    suspend fun clearHistorySince(since: Long) = if (since <= 0L) history.clear() else history.deleteSince(since)
+    fun historyCountSince(since: Long): Flow<Int> = history.countSince(since)
 
     fun bookmarks(): Flow<List<Bookmark>> = bookmarks.all()
     fun searchBookmarks(query: String): Flow<List<Bookmark>> = bookmarks.search(query)

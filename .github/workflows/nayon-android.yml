@@ -96,7 +96,7 @@ jobs:
             nayon-browser/app/build/test-results/
           if-no-files-found: ignore
 
-  # Publishes the latest test APK as a direct download (no zip, no sign-in):
+  # Publishes the latest optimized test APK as a direct download (no zip, no sign-in):
   # https://github.com/AHOSHAN-HABIB-NAYON/PROFILE/releases/download/nayon-browser-latest/NAYON-Browser.apk
   publish-test-apk:
     needs: build
@@ -116,8 +116,9 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           VERSION="0.2.${GITHUB_RUN_NUMBER}"
-          cp apks/apk/debug/app-debug.apk NAYON-Browser.apk
-          cp apks/apk/debug/app-debug.apk "NAYON-Browser-v${VERSION}.apk"
+          # Optimized (R8) build. Signed with the real key when configured, else the shared test key.
+          cp apks/apk/release/app-release.apk NAYON-Browser.apk
+          cp apks/apk/release/app-release.apk "NAYON-Browser-v${VERSION}.apk"
           gh release delete nayon-browser-latest --yes --cleanup-tag || true
           gh release create nayon-browser-latest NAYON-Browser.apk "NAYON-Browser-v${VERSION}.apk" \
             --prerelease \

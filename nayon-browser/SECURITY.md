@@ -19,7 +19,7 @@ once it exists._
 | Area | Current behaviour |
 |---|---|
 | Permissions | `INTERNET` (load pages) and `ACCESS_NETWORK_STATE` (tell "offline" from "site not found"). No runtime permissions. |
-| Network | Only requests the user's pages make. No telemetry. WebView metrics collection opted out in the manifest. |
+| Network | Only requests the user's pages make, plus a one-time icon download from each home-page shortcut's own site. No telemetry. WebView metrics collection opted out in the manifest. |
 | WebView | File and content access off, mixed content blocked, Safe Browsing on when supported, certificate errors are never bypassed, third-party cookies blocked, pop-up windows disabled, geolocation off, website camera/mic requests denied (Stage 3 adds prompts), no JavaScript bridges. |
 | Address bar | Only `http`/`https` are loaded; `javascript:`, `file:`, `content:` and other schemes typed by the user are treated as searches. |
 | External apps | Non-web links (`intent:`, `mailto:` …) open other apps only after a user tap; intents are stripped of explicit components and selectors. |

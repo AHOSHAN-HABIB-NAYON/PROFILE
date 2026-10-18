@@ -20,6 +20,7 @@ import com.webtecit.nayon.feature.appearance.AppearanceRoute
 import com.webtecit.nayon.feature.bookmarks.BookmarksScreen
 import com.webtecit.nayon.feature.browser.BrowserScreen
 import com.webtecit.nayon.feature.browser.BrowserViewModel
+import com.webtecit.nayon.feature.downloads.DownloadsScreen
 import com.webtecit.nayon.feature.history.HistoryScreen
 import com.webtecit.nayon.feature.settings.ClearDataScreen
 import com.webtecit.nayon.feature.settings.SearchEngineScreen
@@ -38,6 +39,7 @@ object Routes {
     const val ABOUT = "about"
     const val PRIVACY = "privacy"
     const val LICENSES = "licenses"
+    const val DOWNLOADS = "downloads"
 }
 
 private const val NAV_ANIM_MS = 220
@@ -77,6 +79,7 @@ fun NayonNavHost(
                 onOpenTabs = { go(Routes.TABS) },
                 onOpenBookmarks = { go(Routes.BOOKMARKS) },
                 onOpenHistory = { go(Routes.HISTORY) },
+                onOpenDownloads = { go(Routes.DOWNLOADS) },
                 onOpenSettings = { go(Routes.SETTINGS) },
                 onOpenAbout = { go(Routes.ABOUT) },
             )
@@ -99,6 +102,7 @@ fun NayonNavHost(
                 onOpenAppearance = { go(Routes.APPEARANCE) },
                 onOpenSearchEngine = { go(Routes.SEARCH_ENGINE) },
                 onOpenClearData = { go(Routes.CLEAR_DATA) },
+                onOpenDownloads = { go(Routes.DOWNLOADS) },
                 onOpenAbout = { go(Routes.ABOUT) },
                 onOpenPrivacy = { go(Routes.PRIVACY) },
                 onOpenLicenses = { go(Routes.LICENSES) },
@@ -110,6 +114,7 @@ fun NayonNavHost(
         composable(Routes.ABOUT) {
             AboutScreen(onBack = back, onOpenPrivacy = { go(Routes.PRIVACY) }, onOpenLicenses = { go(Routes.LICENSES) }, onOpenUrl = openNewTab)
         }
+        composable(Routes.DOWNLOADS) { DownloadsScreen(onBack = back) }
         composable(Routes.PRIVACY) { PrivacyPolicyScreen(onBack = back) }
         composable(Routes.LICENSES) { LicensesScreen(onBack = back, onOpenUrl = openNewTab) }
     }

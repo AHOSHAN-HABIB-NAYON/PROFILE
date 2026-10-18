@@ -40,6 +40,7 @@ import androidx.webkit.WebViewFeature
 import com.webtecit.nayon.R
 import com.webtecit.nayon.core.browser.SearchEngine
 import com.webtecit.nayon.core.browser.UrlResolver
+import com.webtecit.nayon.data.browser.FaviconStore
 import com.webtecit.nayon.data.browser.HistoryEntry
 import com.webtecit.nayon.data.browser.BrowsingRepository
 import com.webtecit.nayon.data.browser.SavedTab
@@ -76,6 +77,7 @@ class BrowserViewModel(
     app: Application,
     private val browsing: BrowsingRepository,
     private val prefsRepository: BrowserPreferencesRepository,
+    private val favicons: FaviconStore,
 ) : AndroidViewModel(app) {
 
     private val _tabs = MutableStateFlow<List<TabState>>(emptyList())
@@ -212,34 +214,48 @@ class BrowserViewModel(
     fun setToolbarLayout(layout: ToolbarLayout) = viewModelScope.launch { prefsRepository.setToolbarLayout(layout) }
     fun setHideToolbarsOnScroll(enabled: Boolean) = viewModelScope.launch {
         prefsRepository.setHideToolbarsOnScroll(enabled)
-        if (!enabled) _barsVisible.value = true
+        if (!enabled) showBars()
     }
 
-    // ---- Auto-hiding toolbars ---------------------------------------------------------
+    // ---- Collapsing toolbars ------------------------------------------------------------
 
-    private val _barsVisible = MutableStateFlow(true)
-    /** False while the user scrolls down a page, so the page gets the whole screen. */
-    val barsVisible: StateFlow<Boolean> = _barsVisible.asStateFlow()
-    private var scrollRun = 0
-    private val density = app.resources.displayMetrics.density
+    /**
+     * Receives (scrollY, dy) for the active tab's page. The UI uses it to slide the toolbars
+     * with the finger, without resizing the page while it scrolls.
+     */
+    var onActivePageScroll: ((Int, Int) -> Unit)? = null
+
+    private val _showBarsRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 4)
+    val showBarsRequests: SharedFlow<Unit> = _showBarsRequests
 
     fun showBars() {
-        _barsVisible.value = true
-        scrollRun = 0
+        _showBarsRequests.tryEmit(Unit)
     }
 
     private fun onWebScroll(tabId: String, y: Int, oldY: Int) {
-        if (tabId != _activeId.value || !preferences.value.hideToolbarsOnScroll) return
-        if (y <= 8 * density) { showBars(); return }
-        val dy = y - oldY
-        if (dy == 0) return
-        if ((dy > 0) != (scrollRun > 0)) scrollRun = 0
-        scrollRun += dy
-        when {
-            scrollRun > 28 * density -> _barsVisible.value = false
-            scrollRun < -20 * density -> _barsVisible.value = true
-        }
+        if (tabId != _activeId.value) return
+        onActivePageScroll?.invoke(y, y - oldY)
     }
+
+    fun activeWebView(): WebView? = _activeId.value?.let { webViews[it] }
+
+    // ---- Search panel data ------------------------------------------------------------
+
+    /** Most visited sites (by number of visits) for the search panel. */
+    val topSites: StateFlow<List<HistoryEntry>> = browsing.recentHistory(400)
+        .map { list ->
+            list.groupBy { UrlResolver.displayHost(it.url) }
+                .filterKeys { it.isNotBlank() }
+                .entries.sortedByDescending { it.value.size }
+                .take(8)
+                .map { (host, visits) -> visits.first().copy(url = "https://$host") }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Recent search words, read back from search-result pages in history. */
+    val recentSearches: StateFlow<List<String>> = browsing.recentHistory(400)
+        .map { list -> list.mapNotNull { UrlResolver.searchQueryOf(it.url) }.distinctBy { it.lowercase() }.take(12) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     // ---- Page info --------------------------------------------------------------------
 
@@ -424,9 +440,16 @@ class BrowserViewModel(
 
     // ---- Settings & data ----------------------------------------------------------------
 
-    fun clearBrowsingData(history: Boolean, cookies: Boolean, cache: Boolean) {
+    /**
+     * Deletes browsing data. History honours [since] (0 = all time). WebView cannot limit
+     * cookies or cache by date, so those are always cleared completely.
+     */
+    fun clearBrowsingData(since: Long, history: Boolean, cookies: Boolean, cache: Boolean, closeTabs: Boolean = false) {
         viewModelScope.launch {
-            if (history) browsing.clearHistory()
+            if (history) {
+                browsing.clearHistorySince(since)
+                if (since <= 0L) favicons.clear()
+            }
             if (cookies) {
                 CookieManager.getInstance().removeAllCookies(null)
                 CookieManager.getInstance().flush()
@@ -434,14 +457,18 @@ class BrowserViewModel(
             }
             if (cache) {
                 val wv = webViews.values.firstOrNull()
-                if (wv != null) {
-                    wv.clearCache(true)
-                } else {
-                    WebView(webContext).apply { clearCache(true); destroy() }
-                }
+                if (wv != null) wv.clearCache(true) else WebView(webContext).apply { clearCache(true); destroy() }
             }
+            if (closeTabs) closeAll(private = false)
             _events.tryEmit(BrowserEvent.Message(R.string.clear_data_done))
         }
+    }
+
+    fun historyCountSince(since: Long): Flow<Int> = browsing.historyCountSince(since)
+
+    /** Size of cached web files, for the clear-data screen. */
+    suspend fun cacheSizeBytes(): Long = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        getApplication<Application>().cacheDir.walkTopDown().filter { it.isFile }.sumOf { it.length() }
     }
 
     // ---- WebView management -------------------------------------------------------------
@@ -578,7 +605,7 @@ class BrowserViewModel(
         if (request == null || dm == null || runCatching { dm.enqueue(request) }.isFailure) {
             _events.tryEmit(BrowserEvent.Message(R.string.download_failed))
         } else {
-            _events.tryEmit(BrowserEvent.Message(R.string.download_started, name))
+            _events.tryEmit(BrowserEvent.Message(R.string.download_started, name, showDownloads = true))
         }
     }
 
@@ -692,7 +719,11 @@ class BrowserViewModel(
         }
 
         override fun onReceivedIcon(view: WebView, icon: Bitmap?) {
-            if (icon != null) updateTab(tabId) { it.copy(favicon = icon) }
+            if (icon == null) return
+            updateTab(tabId) { it.copy(favicon = icon) }
+            val tab = tab(tabId) ?: return
+            val host = UrlResolver.displayHost(view.url)
+            if (!tab.isPrivate && host.isNotBlank()) viewModelScope.launch { favicons.save(host, icon) }
         }
 
         override fun onShowCustomView(view: View, callback: WebChromeClient.CustomViewCallback) {
