@@ -52,6 +52,8 @@ import com.appfix.studio.ui.nav.FeaturesRoute
 import com.appfix.studio.ui.nav.BrandingRoute
 import com.appfix.studio.ui.nav.BuildRoute
 import com.appfix.studio.ui.nav.ApkModifyRoute
+import com.appfix.studio.ui.nav.AssistantRoute
+import com.appfix.studio.ui.assistant.AssistantScreen
 import com.appfix.studio.ui.apk.ApkModifyScreen
 import com.appfix.studio.ui.nav.SigningRoute
 import com.appfix.studio.ui.build.BuildScreen
@@ -159,6 +161,10 @@ fun AppRoot() {
                         onSign = { path -> nav.navigate(SigningRoute(path)) },
                     )
                 }
+                composable<AssistantRoute> { entry ->
+                    val id = entry.toRoute<AssistantRoute>().id
+                    AssistantScreen(id, onBack = { nav.popBackStack() }, onOpenBuild = { nav.navigate(BuildRoute(id)) })
+                }
                 composable<ApkModifyRoute> { entry ->
                     ApkModifyScreen(entry.toRoute<ApkModifyRoute>().id, onBack = { nav.popBackStack() }, onSignWithKey = { path -> nav.navigate(SigningRoute(path)) })
                 }
@@ -205,6 +211,7 @@ fun AppRoot() {
                         onOpenBuild = { nav.navigate(BuildRoute(route.id)) },
                         onSignApk = { path -> nav.navigate(SigningRoute(path)) },
                         onModifyApk = { nav.navigate(ApkModifyRoute(route.id)) },
+                        onOpenAssistant = { nav.navigate(AssistantRoute(route.id)) },
                         onOpenEditor = {
                             scope.launch { container.settings.setCurrentProject(route.id) }
                             nav.navigateTopLevel(EditorRoute)

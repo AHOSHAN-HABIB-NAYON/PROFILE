@@ -59,6 +59,8 @@ class SecretStore(context: Context) {
     companion object {
         private const val ALIAS = "appfix_secret_key"
         const val GITHUB_TOKEN = "github_token"
+        /** API key for a direct AI provider, or the optional token for the user's own AI proxy. */
+        const val AI_KEY = "ai_key"
         fun keystorePassword(file: String) = "keystore_password:$file"
     }
 }
