@@ -8,7 +8,9 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.webtecit.nayon.core.designsystem.theme.AppearanceSettings
 import com.webtecit.nayon.core.designsystem.theme.Brightness
@@ -48,7 +50,8 @@ class AppearanceScreenTest {
         compose.onNodeWithText("Dark").performClick()
         assertEquals(ThemeMode.DARK, settings.mode)
 
-        compose.onNodeWithText("Emerald").performScrollTo().performClick()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Emerald"))
+        compose.onNodeWithText("Emerald").performClick()
         assertEquals(ThemeFamily.EMERALD, settings.family)
     }
 
@@ -61,8 +64,10 @@ class AppearanceScreenTest {
         }
         compose.onNodeWithText("Dark from").assertDoesNotExist()
         compose.onNodeWithText("Scheduled").performClick()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Dark from"))
         compose.onNodeWithText("Dark from").assertIsDisplayed()
-        compose.onNodeWithText("Use AMOLED black at night").assertExists()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Use AMOLED black at night"))
+        compose.onNodeWithText("Use AMOLED black at night").assertIsDisplayed()
     }
 
     @Test fun selectedModeIsExposedToAccessibility() {
