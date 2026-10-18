@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Window-level theme. All in-app styling comes from the Compose design system (NayonTheme). -->
+    <style name="Theme.Nayon" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/nayon_window_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <style name="Theme.Nayon.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/nayon_splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <item name="windowSplashScreenAnimationDuration">300</item>
+        <item name="postSplashScreenTheme">@style/Theme.Nayon</item>
+    </style>
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="nayon_splash_background">#FFFAF9FE</color>
+    <color name="nayon_launcher_background">#FF0B1026</color>
+    <color name="nayon_window_background">#FFFAF9FE</color>
+</resources>

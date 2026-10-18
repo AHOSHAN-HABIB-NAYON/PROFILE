@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NAYON Browser</string>
+    <string name="tagline">One Browser. Your Digital World.</string>
+    <string name="developer_name">MD. AHOSHAN HABIB NAYON</string>
+    <string name="developer_website" translatable="false">https://webtecit.com</string>
+    <string name="developed_by">Developed by MD. AHOSHAN HABIB NAYON</string>
+
+    <!-- Common -->
+    <string name="action_back">Back</string>
+    <string name="action_open_settings">Open settings</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+    <string name="selected">Selected</string>
+    <string name="error_no_app_to_open_link">No app is available to open this link.</string>
+
+    <!-- Home -->
+    <string name="home_engine_title">Browser engine is under construction</string>
+    <string name="home_engine_body">This build delivers the foundation: design system, themes, splash screen and settings. Web browsing, tabs, bookmarks and history arrive in Stage 2.</string>
+    <string name="home_engine_badge">Stage 1 build</string>
+    <string name="home_your_theme">Your theme</string>
+    <string name="home_customize_theme">Customize appearance</string>
+    <string name="home_quick_access">Quick access</string>
+    <string name="home_tile_appearance">Appearance</string>
+    <string name="home_tile_settings">Settings</string>
+    <string name="home_tile_about">About</string>
+    <string name="home_tile_privacy">Privacy</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_section_appearance">Appearance</string>
+    <string name="settings_theme_and_colors">Theme and colors</string>
+    <string name="settings_section_about">About</string>
+    <string name="settings_about_app">About NAYON Browser</string>
+    <string name="settings_privacy_policy">Privacy policy (draft)</string>
+    <string name="settings_licenses">Open-source licenses</string>
+    <string name="settings_coming_title">More settings coming</string>
+    <string name="settings_coming_body">Search engine, privacy, downloads, passwords and sync settings appear here as each feature is implemented. Nothing is shown before it works.</string>
+
+    <!-- Appearance -->
+    <string name="appearance_title">Appearance</string>
+    <string name="appearance_mode">Mode</string>
+    <string name="appearance_mode_system">System default</string>
+    <string name="appearance_mode_system_desc">Follow the device light/dark setting</string>
+    <string name="appearance_mode_light">Light</string>
+    <string name="appearance_mode_light_desc">Bright surfaces with clear text</string>
+    <string name="appearance_mode_dark">Dark</string>
+    <string name="appearance_mode_dark_desc">Layered dark surfaces, easy on the eyes</string>
+    <string name="appearance_mode_amoled">AMOLED black</string>
+    <string name="appearance_mode_amoled_desc">True black surfaces for OLED displays</string>
+    <string name="appearance_mode_scheduled">Scheduled</string>
+    <string name="appearance_mode_scheduled_desc">Dark at night, light during the day</string>
+    <string name="appearance_schedule">Schedule</string>
+    <string name="appearance_dark_from">Dark from</string>
+    <string name="appearance_dark_until">Dark until</string>
+    <string name="appearance_schedule_amoled">Use AMOLED black at night</string>
+    <string name="appearance_schedule_amoled_desc">Pure black surfaces during the dark period</string>
+    <string name="appearance_color_theme">Color theme</string>
+    <string name="appearance_pick_time">Choose time</string>
+
+    <string name="theme_aurora">Aurora</string>
+    <string name="theme_aurora_desc">Violet and blue</string>
+    <string name="theme_obsidian">Obsidian</string>
+    <string name="theme_obsidian_desc">Deep navy and cyan</string>
+    <string name="theme_emerald">Emerald</string>
+    <string name="theme_emerald_desc">Green and mint</string>
+    <string name="theme_cyber_neon">Cyber Neon</string>
+    <string name="theme_cyber_neon_desc">Purple and electric blue</string>
+    <string name="theme_warm_minimal">Warm Minimal</string>
+    <string name="theme_warm_minimal_desc">Neutral and brown</string>
+    <string name="theme_device">Device colors</string>
+    <string name="theme_device_desc">Material You wallpaper colors</string>
+
+    <!-- About -->
+    <string name="about_title">About</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_developer">Developer</string>
+    <string name="about_website">Website</string>
+    <string name="about_visit_website">Visit webtecit.com</string>
+    <string name="about_statement">NAYON Browser is developed by MD. AHOSHAN HABIB NAYON. It is a privacy-respecting Android browser built with Kotlin and Jetpack Compose.</string>
+
+    <!-- Privacy -->
+    <string name="privacy_title">Privacy policy</string>
+    <string name="privacy_draft_notice">Draft — this describes the current Stage 1 build and will be updated as features are added. It is not yet a final legal policy.</string>
+    <string name="privacy_section_summary">Summary</string>
+    <string name="privacy_summary">NAYON Browser is developed by MD. AHOSHAN HABIB NAYON. Website: https://webtecit.com. NAYON Browser may process browsing data locally to provide browser functionality. If optional cloud synchronization, authentication, search suggestions, payment integrations or other connected services are enabled, relevant data may be processed by the selected providers according to their policies. Sensitive credentials must be protected by the implemented security architecture. Private browsing does not make you completely anonymous online. Review the Privacy Policy and individual permission settings before using optional services.</string>
+    <string name="privacy_section_current">What this build stores</string>
+    <string name="privacy_current">Only your appearance preferences (mode, color theme and schedule) are stored, locally on this device. They are excluded from Android cloud backup and device transfer.</string>
+    <string name="privacy_section_not_collected">What this build does not do</string>
+    <string name="privacy_not_collected">This build requests no permissions, has no internet access, contains no analytics, advertising or tracking SDKs, and sends no data to the developer or any third party.</string>
+    <string name="privacy_section_deletion">Deleting your data</string>
+    <string name="privacy_deletion">Clearing the app\'s storage in Android settings, or uninstalling the app, removes all stored preferences.</string>
+    <string name="privacy_section_changes">Changes</string>
+    <string name="privacy_changes">When browsing, history, downloads, passwords or optional connected services are added, this policy will be updated to describe exactly what is collected, where it is stored, how long it is kept and how to delete it.</string>
+
+    <!-- Licenses -->
+    <string name="licenses_title">Open-source licenses</string>
+    <string name="licenses_intro">NAYON Browser is built with the following open-source software, each licensed under the Apache License 2.0.</string>
+    <string name="licenses_apache">Apache License 2.0</string>
+</resources>
