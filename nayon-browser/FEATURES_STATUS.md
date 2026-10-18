@@ -5,6 +5,10 @@ Status values: **Implemented**, **Partial**, **Planned**, **Unsupported**.
 
 _Last updated: Stage 1 (foundation)._
 
+**Latest verified CI run:** [run #6](https://github.com/AHOSHAN-HABIB-NAYON/PROFILE/actions/runs/39138110985):
+debug build, 17/17 unit + Robolectric UI tests, lint, minified release APK and AAB all passed.
+The app has **not yet been checked by hand on a physical device or emulator**.
+
 ## Stage 1 — Foundation
 
 | Feature | Status | Technical limitation | Required configuration | Testing evidence |
