@@ -11,7 +11,7 @@ import com.webtecit.nayon.R
 fun Context.openExternalLink(url: String) {
     try {
         startActivity(Intent(Intent.ACTION_VIEW, url.toUri()).addCategory(Intent.CATEGORY_BROWSABLE))
-    } catch (_: ActivityNotFoundException) {
+    } catch (e: ActivityNotFoundException) {
         Toast.makeText(this, R.string.error_no_app_to_open_link, Toast.LENGTH_SHORT).show()
     }
 }
