@@ -8,23 +8,12 @@
 
     <!-- Common -->
     <string name="action_back">Back</string>
-    <string name="action_open_settings">Open settings</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_save">Save</string>
     <string name="selected">Selected</string>
     <string name="error_no_app_to_open_link">No app is available to open this link.</string>
 
     <!-- Home -->
-    <string name="home_engine_title">Browser engine is under construction</string>
-    <string name="home_engine_body">This build delivers the foundation: design system, themes, splash screen and settings. Web browsing, tabs, bookmarks and history arrive in Stage 2.</string>
-    <string name="home_engine_badge">Stage 1 build</string>
-    <string name="home_your_theme">Your theme</string>
-    <string name="home_customize_theme">Customize appearance</string>
-    <string name="home_quick_access">Quick access</string>
-    <string name="home_tile_appearance">Appearance</string>
-    <string name="home_tile_settings">Settings</string>
-    <string name="home_tile_about">About</string>
-    <string name="home_tile_privacy">Privacy</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
@@ -34,8 +23,6 @@
     <string name="settings_about_app">About NAYON Browser</string>
     <string name="settings_privacy_policy">Privacy policy (draft)</string>
     <string name="settings_licenses">Open-source licenses</string>
-    <string name="settings_coming_title">More settings coming</string>
-    <string name="settings_coming_body">Search engine, privacy, downloads, passwords and sync settings appear here as each feature is implemented. Nothing is shown before it works.</string>
 
     <!-- Appearance -->
     <string name="appearance_title">Appearance</string>
@@ -74,22 +61,19 @@
     <!-- About -->
     <string name="about_title">About</string>
     <string name="about_version">Version %1$s</string>
-    <string name="about_developer">Developer</string>
-    <string name="about_website">Website</string>
-    <string name="about_visit_website">Visit webtecit.com</string>
     <string name="about_statement">NAYON Browser is developed by MD. AHOSHAN HABIB NAYON. It is a privacy-respecting Android browser built with Kotlin and Jetpack Compose.</string>
 
     <!-- Privacy -->
     <string name="privacy_title">Privacy policy</string>
-    <string name="privacy_draft_notice">Draft — this describes the current Stage 1 build and will be updated as features are added. It is not yet a final legal policy.</string>
+    <string name="privacy_draft_notice">Draft — this describes the current Stage 2 build and will be updated as features are added. It is not yet a final legal policy.</string>
     <string name="privacy_section_summary">Summary</string>
     <string name="privacy_summary">NAYON Browser is developed by MD. AHOSHAN HABIB NAYON. Website: https://webtecit.com. NAYON Browser may process browsing data locally to provide browser functionality. If optional cloud synchronization, authentication, search suggestions, payment integrations or other connected services are enabled, relevant data may be processed by the selected providers according to their policies. Sensitive credentials must be protected by the implemented security architecture. Private browsing does not make you completely anonymous online. Review the Privacy Policy and individual permission settings before using optional services.</string>
     <string name="privacy_section_current">What this build stores</string>
-    <string name="privacy_current">Only your appearance preferences (mode, color theme and schedule) are stored, locally on this device. They are excluded from Android cloud backup and device transfer.</string>
+    <string name="privacy_current">Stored only on this device: your settings, browsing history and bookmarks (normal tabs only), open normal tabs if “Restore tabs” is on, and cookies, site data and cache created by websites you visit. None of it is included in Android cloud backup or device transfer.</string>
     <string name="privacy_section_not_collected">What this build does not do</string>
-    <string name="privacy_not_collected">This build requests no permissions, has no internet access, contains no analytics, advertising or tracking SDKs, and sends no data to the developer or any third party.</string>
+    <string name="privacy_not_collected">NAYON Browser contains no analytics, advertising or tracking SDKs and sends nothing to the developer. Websites you open receive your requests directly. Your search words go to the search engine you choose. When Google Safe Browsing is available on your device, Android System WebView may check site addresses with Google to warn you about dangerous sites. Private tabs are not saved to history.</string>
     <string name="privacy_section_deletion">Deleting your data</string>
-    <string name="privacy_deletion">Clearing the app\'s storage in Android settings, or uninstalling the app, removes all stored preferences.</string>
+    <string name="privacy_deletion">Use Settings → Clear browsing data, delete single items in History and Bookmarks, or clear the app\'s storage in Android settings. Uninstalling removes everything.</string>
     <string name="privacy_section_changes">Changes</string>
     <string name="privacy_changes">When browsing, history, downloads, passwords or optional connected services are added, this policy will be updated to describe exactly what is collected, where it is stored, how long it is kept and how to delete it.</string>
 
@@ -97,4 +81,148 @@
     <string name="licenses_title">Open-source licenses</string>
     <string name="licenses_intro">NAYON Browser is built with the following open-source software, each licensed under the Apache License 2.0.</string>
     <string name="licenses_apache">Apache License 2.0</string>
+
+    <!-- Browser -->
+    <string name="address_hint">Search or type web address</string>
+    <string name="address_hint_private">Search privately or type address</string>
+    <string name="action_clear">Clear</string>
+    <string name="action_reload">Reload</string>
+    <string name="action_stop">Stop loading</string>
+    <string name="action_forward">Forward</string>
+    <string name="action_home">Home</string>
+    <string name="action_tabs">Tabs, %1$d open</string>
+    <string name="action_menu">Menu</string>
+    <string name="action_voice_search">Voice search</string>
+    <string name="action_share">Share</string>
+    <string name="action_bookmark">Bookmark</string>
+    <string name="action_remove_bookmark">Remove bookmark</string>
+    <string name="action_new_tab">New tab</string>
+    <string name="action_new_private_tab">New private tab</string>
+    <string name="action_bookmarks">Bookmarks</string>
+    <string name="action_history">History</string>
+    <string name="action_downloads">Downloads</string>
+    <string name="action_desktop_site">Desktop site</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_copy_link">Copy link</string>
+    <string name="action_retry">Try again</string>
+    <string name="action_close_tab">Close tab</string>
+    <string name="action_close_all">Close all</string>
+    <string name="action_duplicate">Duplicate</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_rename">Rename</string>
+    <string name="secure_connection">Secure connection</string>
+    <string name="not_secure">Not secure</string>
+    <string name="private_tab">Private tab</string>
+    <string name="search_for">Search for “%1$s”</string>
+    <string name="link_copied">Link copied</string>
+    <string name="share_page_via">Share page via</string>
+
+    <string name="ntp_greeting_morning">Good morning</string>
+    <string name="ntp_greeting_afternoon">Good afternoon</string>
+    <string name="ntp_greeting_evening">Good evening</string>
+    <string name="ntp_shortcuts">Shortcuts</string>
+    <string name="ntp_recent">Recently visited</string>
+    <string name="ntp_see_all">See all</string>
+    <string name="ntp_developed_by">Developed by</string>
+    <string name="ntp_private_title">You\'re in a private tab</string>
+    <string name="ntp_private_body">Pages you visit here aren\'t saved to history, and this tab\'s cookies and site data are deleted when you close all private tabs.</string>
+    <string name="ntp_private_note">Private browsing does not make you anonymous. Websites, your employer or school, and your internet provider can still see your activity.</string>
+    <string name="ntp_private_not_isolated">On this device\'s WebView version, private tabs share cookies with normal tabs. History is still not saved.</string>
+
+    <string name="error_offline_title">You\'re offline</string>
+    <string name="error_offline_body">Check your Wi-Fi or mobile data, then try again.</string>
+    <string name="error_not_found_title">This site can\'t be reached</string>
+    <string name="error_not_found_body">The address may be wrong, or the site may be down.</string>
+    <string name="error_timeout_title">The site took too long to respond</string>
+    <string name="error_timeout_body">The connection timed out. Try again in a moment.</string>
+    <string name="error_not_secure_title">Connection is not secure</string>
+    <string name="error_not_secure_body">This site\'s security certificate isn\'t trusted, so NAYON Browser stopped loading it to protect your data.</string>
+    <string name="error_crashed_title">This page stopped working</string>
+    <string name="error_crashed_body">The page used too much memory or crashed. Reload to try again.</string>
+    <string name="error_generic_title">This page couldn\'t load</string>
+    <string name="error_generic_body">Something went wrong while loading the page.</string>
+
+    <string name="bookmark_added">Bookmark added</string>
+    <string name="bookmark_removed">Bookmark removed</string>
+    <string name="download_started">Downloading %1$s</string>
+    <string name="download_failed">Download couldn\'t start</string>
+    <string name="download_unsupported">This kind of download isn\'t supported yet</string>
+
+    <!-- Tabs -->
+    <string name="tabs_title">Tabs</string>
+    <string name="tabs_normal">Tabs (%1$d)</string>
+    <string name="tabs_private">Private (%1$d)</string>
+    <string name="tabs_empty_private_title">No private tabs</string>
+    <string name="tabs_empty_private_body">Open a private tab to browse without saving history.</string>
+    <string name="tabs_close_all_title">Close all tabs?</string>
+    <string name="tabs_close_all_body">All tabs in this list will be closed.</string>
+    <string name="tabs_new_page">New tab</string>
+
+    <!-- Bookmarks / history -->
+    <string name="bookmarks_title">Bookmarks</string>
+    <string name="bookmarks_search">Search bookmarks</string>
+    <string name="bookmarks_empty_title">No bookmarks yet</string>
+    <string name="bookmarks_empty_body">Tap the star in the menu while viewing a page to save it here.</string>
+    <string name="bookmarks_no_results">No bookmarks match your search</string>
+    <string name="bookmark_rename_title">Rename bookmark</string>
+    <string name="bookmark_name">Name</string>
+    <string name="history_title">History</string>
+    <string name="history_search">Search history</string>
+    <string name="history_empty_title">No history yet</string>
+    <string name="history_empty_body">Pages you visit in normal tabs appear here. Private tabs are never saved.</string>
+    <string name="history_no_results">No history matches your search</string>
+    <string name="history_today">Today</string>
+    <string name="history_yesterday">Yesterday</string>
+    <string name="history_clear">Clear history</string>
+    <string name="history_clear_title">Clear all history?</string>
+    <string name="history_clear_body">This removes every page from your browsing history on this device.</string>
+    <string name="history_cleared">History cleared</string>
+
+    <!-- Settings (browser) -->
+    <string name="settings_section_general">General</string>
+    <string name="settings_search_engine">Search engine</string>
+    <string name="settings_restore_tabs">Restore tabs on start</string>
+    <string name="settings_restore_tabs_desc">Reopen your normal tabs next time. Private tabs are never restored.</string>
+    <string name="settings_home_shortcuts">Shortcuts on home page</string>
+    <string name="settings_home_recent">Recent sites on home page</string>
+    <string name="settings_section_privacy">Privacy and security</string>
+    <string name="settings_clear_data">Clear browsing data</string>
+    <string name="settings_clear_data_desc">History, cookies, site data and cache</string>
+    <string name="settings_javascript">JavaScript</string>
+    <string name="settings_javascript_desc">Most websites need JavaScript to work properly</string>
+    <string name="settings_security_info">Built-in protection</string>
+    <string name="settings_security_info_desc">Google Safe Browsing (when available), certificate errors blocked, third-party cookies blocked, mixed content blocked</string>
+    <string name="settings_section_downloads">Downloads</string>
+    <string name="settings_open_downloads">Open downloads</string>
+    <string name="settings_open_downloads_desc">Files are saved to your Downloads folder</string>
+    <string name="settings_default_browser">Set as default browser</string>
+    <string name="settings_default_browser_desc">Open links from other apps in NAYON Browser</string>
+
+    <string name="search_engine_title">Search engine</string>
+    <string name="search_engine_custom_desc">Your own search URL</string>
+    <string name="search_engine_custom_title">Custom search engine</string>
+    <string name="search_engine_custom_label">Search URL</string>
+    <string name="search_engine_custom_help" formatted="false">Use %s where the search words go, e.g. https://example.com/search?q=%s</string>
+    <string name="search_engine_error_empty">Enter a search URL</string>
+    <string name="search_engine_error_https">The URL must start with https://</string>
+    <string name="search_engine_error_placeholder" formatted="false">The URL must contain %s</string>
+    <string name="search_engine_error_invalid">This isn\'t a valid web address</string>
+
+    <string name="clear_data_title">Clear browsing data</string>
+    <string name="clear_data_history">Browsing history</string>
+    <string name="clear_data_history_desc">Every page in your history</string>
+    <string name="clear_data_cookies">Cookies and site data</string>
+    <string name="clear_data_cookies_desc">Signs you out of most sites</string>
+    <string name="clear_data_cache">Cached images and files</string>
+    <string name="clear_data_cache_desc">Some sites may load more slowly next time</string>
+    <string name="clear_data_action">Clear data</string>
+    <string name="clear_data_confirm_title">Clear selected data?</string>
+    <string name="clear_data_confirm_body">This can\'t be undone.</string>
+    <string name="clear_data_done">Browsing data cleared</string>
+
+    <!-- About (developer) -->
+    <string name="about_developer_role">Developer of NAYON Browser</string>
+    <string name="about_developer_photo">Photo of MD. AHOSHAN HABIB NAYON</string>
+    <string name="about_built_with">Built with Kotlin and Jetpack Compose</string>
+    <string name="about_meet_developer">Meet the developer</string>
 </resources>

@@ -8,6 +8,9 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.webtecit.nayon.core.designsystem.theme.AppearanceSettings
 import com.webtecit.nayon.data.settings.AppearanceRepository
 import com.webtecit.nayon.feature.appearance.AppearanceViewModel
+import com.webtecit.nayon.feature.bookmarks.BookmarksViewModel
+import com.webtecit.nayon.feature.browser.BrowserViewModel
+import com.webtecit.nayon.feature.history.HistoryViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -22,6 +25,12 @@ object NayonViewModelFactory {
     val Factory = viewModelFactory {
         initializer { MainViewModel(app().container.appearanceRepository) }
         initializer { AppearanceViewModel(app().container.appearanceRepository) }
+        initializer {
+            val app = app()
+            BrowserViewModel(app, app.container.browsingRepository, app.container.browserPreferences)
+        }
+        initializer { BookmarksViewModel(app().container.browsingRepository) }
+        initializer { HistoryViewModel(app().container.browsingRepository) }
     }
 
     private fun androidx.lifecycle.viewmodel.CreationExtras.app(): NayonApp =

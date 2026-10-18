@@ -18,7 +18,7 @@ import com.webtecit.nayon.core.designsystem.theme.NayonTheme
 import com.webtecit.nayon.core.designsystem.theme.ThemeFamily
 import com.webtecit.nayon.core.designsystem.theme.ThemeMode
 import com.webtecit.nayon.feature.appearance.AppearanceScreen
-import com.webtecit.nayon.feature.home.HomeScreen
+import com.webtecit.nayon.feature.browser.NewTabPage
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -78,16 +78,21 @@ class AppearanceScreenTest {
         compose.onNodeWithText("AMOLED black").assertIsSelected()
     }
 
-    @Test fun homeScreenRendersInEveryThemeAndBrightness() {
+    @Test fun newTabPageRendersInEveryThemeAndBrightness() {
         var family by mutableStateOf(ThemeFamily.AURORA)
         var brightness by mutableStateOf(Brightness.LIGHT)
         compose.setContent {
-            NayonTheme(family, brightness) { HomeScreen(AppearanceSettings(family = family), {}, {}, {}, {}) }
+            NayonTheme(family, brightness) {
+                NewTabPage(
+                    isPrivate = false, showShortcuts = true, recent = emptyList(), privateIsolationSupported = true,
+                    voiceAvailable = false, onSearchClick = {}, onVoiceClick = {}, onOpenUrl = {}, onSeeHistory = {}, onOpenAbout = {},
+                )
+            }
         }
         for (f in families) for (b in Brightness.entries) {
             family = f; brightness = b
             compose.waitForIdle()
-            compose.onNodeWithText("One Browser. Your Digital World.").assertIsDisplayed()
+            compose.onNodeWithText("Search or type web address").assertIsDisplayed()
         }
     }
 }

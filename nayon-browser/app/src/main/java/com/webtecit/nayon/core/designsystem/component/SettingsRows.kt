@@ -15,6 +15,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -146,5 +147,20 @@ fun RadioRow(
 ) {
     Column(modifier.selectable(selected = selected, onClick = onSelect, role = Role.RadioButton)) {
         RowContent(icon, title, subtitle) { RadioButton(selected = selected, onClick = null) }
+    }
+}
+
+/** Multi-choice row; the whole row toggles the checkbox. */
+@Composable
+fun CheckboxRow(
+    title: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    subtitle: String? = null,
+) {
+    Column(modifier.toggleable(value = checked, onValueChange = onCheckedChange, role = Role.Checkbox)) {
+        RowContent(icon, title, subtitle) { Checkbox(checked = checked, onCheckedChange = null) }
     }
 }

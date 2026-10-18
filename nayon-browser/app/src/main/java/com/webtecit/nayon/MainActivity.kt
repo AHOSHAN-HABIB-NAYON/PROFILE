@@ -1,6 +1,8 @@
 package com.webtecit.nayon
 
 import android.animation.AnimatorSet
+import android.app.SearchManager
+import android.content.Intent
 import android.animation.ObjectAnimator
 import android.graphics.Color
 import android.os.Bundle
@@ -26,6 +28,7 @@ import com.webtecit.nayon.core.designsystem.theme.Brightness
 import com.webtecit.nayon.core.designsystem.theme.NayonTheme
 import com.webtecit.nayon.core.designsystem.theme.ThemeMode
 import com.webtecit.nayon.core.designsystem.theme.resolveBrightness
+import com.webtecit.nayon.feature.browser.BrowserViewModel
 import com.webtecit.nayon.navigation.NayonNavHost
 import kotlinx.coroutines.delay
 import java.util.Calendar
@@ -33,6 +36,7 @@ import java.util.Calendar
 class MainActivity : ComponentActivity() {
 
     private val viewModel: MainViewModel by viewModels { NayonViewModelFactory.Factory }
+    private val browser: BrowserViewModel by viewModels { NayonViewModelFactory.Factory }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splash = installSplashScreen()
@@ -40,7 +44,7 @@ class MainActivity : ComponentActivity() {
 
         // Keep the system splash only until saved appearance is read (a few ms), so the
         // first frame already uses the user's theme. No artificial delay.
-        splash.setKeepOnScreenCondition { viewModel.appearance.value == null }
+        splash.setKeepOnScreenCondition { viewModel.appearance.value == null || !browser.ready.value }
         splash.setOnExitAnimationListener { provider ->
             val view = provider.view
             val icon: View? = runCatching { provider.iconView }.getOrNull()
@@ -62,6 +66,8 @@ class MainActivity : ComponentActivity() {
         }
 
         enableEdgeToEdge()
+        browser.attachActivity(this)
+        if (savedInstanceState == null) handleIntent(intent)
 
         setContent {
             val appearance by viewModel.appearance.collectAsStateWithLifecycle()
@@ -86,7 +92,27 @@ class MainActivity : ComponentActivity() {
         }
 
         NayonTheme(family = settings.family, brightness = brightness) {
-            NayonNavHost(appearance = settings)
+            NayonNavHost(appearance = settings, browser = browser)
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    override fun onDestroy() {
+        browser.detachActivity(this)
+        super.onDestroy()
+    }
+
+    /** Opens links shared from other apps, and web searches. */
+    private fun handleIntent(intent: Intent?) {
+        when (intent?.action) {
+            Intent.ACTION_VIEW -> intent.dataString?.let { browser.openExternalLink(it) }
+            Intent.ACTION_WEB_SEARCH -> intent.getStringExtra(SearchManager.QUERY)?.takeIf { it.isNotBlank() }
+                ?.let { browser.openSearch(it) }
         }
     }
 

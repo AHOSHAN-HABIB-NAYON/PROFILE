@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="512" height="512">
+ <defs>
+  <radialGradient id="bg" cx="34" cy="26" r="96" gradientUnits="userSpaceOnUse">
+   <stop offset="0" stop-color="#2B2F86"/><stop offset="0.45" stop-color="#121640"/><stop offset="1" stop-color="#05061A"/>
+  </radialGradient>
+  <linearGradient id="lp" x1="0" y1="30" x2="0" y2="78" gradientUnits="userSpaceOnUse">
+   <stop offset="0" stop-color="#67E8F9"/><stop offset="1" stop-color="#2563EB"/>
+  </linearGradient>
+  <linearGradient id="rp" x1="0" y1="30" x2="0" y2="78" gradientUnits="userSpaceOnUse">
+   <stop offset="0" stop-color="#E879F9"/><stop offset="1" stop-color="#7C3AED"/>
+  </linearGradient>
+  <linearGradient id="dg" x1="32" y1="32" x2="76" y2="76" gradientUnits="userSpaceOnUse">
+   <stop offset="0" stop-color="#38BDF8"/><stop offset="0.5" stop-color="#6366F1"/><stop offset="1" stop-color="#C026D3"/>
+  </linearGradient>
+  <linearGradient id="orb" x1="18" y1="0" x2="90" y2="0" gradientUnits="userSpaceOnUse">
+   <stop offset="0" stop-color="#22D3EE"/><stop offset="1" stop-color="#E879F9"/>
+  </linearGradient>
+ </defs>
+ <rect width="108" height="108" fill="url(#bg)"/>
+ <!-- orbit back half -->
+ <g transform="rotate(-24 54 54)">
+  <path d="M22,54 A32,11 0 0,1 86,54" fill="none" stroke="url(#orb)" stroke-width="2.2" stroke-opacity="0.45" stroke-linecap="round"/>
+ </g>
+ <!-- N -->
+ <path d="M30.6,36.2 C29.2,33.4 31.2,31 34.2,31 L37.6,31 C39.6,31 41.2,31.9 42.2,33.6 L77.4,71.8 C78.8,74.6 76.8,77 73.8,77 L70.4,77 C68.4,77 66.8,76.1 65.8,74.4 Z" fill="url(#dg)"/>
+ <rect x="30" y="31" width="11" height="46" rx="5.5" fill="url(#lp)"/>
+ <rect x="67" y="31" width="11" height="46" rx="5.5" fill="url(#rp)"/>
+ <!-- top gloss -->
+ <rect x="32" y="33" width="3" height="18" rx="1.5" fill="#fff" fill-opacity="0.35"/>
+ <rect x="69" y="33" width="3" height="18" rx="1.5" fill="#fff" fill-opacity="0.30"/>
+ <!-- orbit front half -->
+ <g transform="rotate(-24 54 54)">
+  <path d="M86,54 A32,11 0 0,1 22,54" fill="none" stroke="url(#orb)" stroke-width="2.6" stroke-linecap="round"/>
+  <circle cx="78.5" cy="61" r="4.6" fill="#E879F9" fill-opacity="0.28"/>
+  <circle cx="78.5" cy="61" r="2.4" fill="#FFFFFF"/>
+ </g>
+</svg>

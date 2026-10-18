@@ -5,7 +5,6 @@ import androidx.compose.material.icons.outlined.Code
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.webtecit.nayon.R
 import com.webtecit.nayon.core.designsystem.component.GroupDivider
@@ -25,11 +24,12 @@ private val libraries = listOf(
     "AndroidX Lifecycle" to "Google / AndroidX",
     "AndroidX Navigation" to "Google / AndroidX",
     "AndroidX DataStore" to "Google / AndroidX",
+    "AndroidX Room" to "Google / AndroidX",
+    "AndroidX WebKit" to "Google / AndroidX",
 )
 
 @Composable
-fun LicensesScreen(onBack: () -> Unit) {
-    val context = LocalContext.current
+fun LicensesScreen(onBack: () -> Unit, onOpenUrl: (String) -> Unit) {
     val license = stringResource(R.string.licenses_apache)
     ScreenScaffold(title = stringResource(R.string.licenses_title), onBack = onBack) {
         item {
@@ -44,7 +44,7 @@ fun LicensesScreen(onBack: () -> Unit) {
                         title = name,
                         subtitle = "$owner · $license",
                         icon = Icons.Outlined.Code,
-                        onClick = { context.openExternalLink(APACHE_2_URL) },
+                        onClick = { onOpenUrl(APACHE_2_URL) },
                     )
                 }
             }

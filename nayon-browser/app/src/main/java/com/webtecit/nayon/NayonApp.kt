@@ -7,7 +7,11 @@ import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.room.Room
+import com.webtecit.nayon.data.browser.BrowserDatabase
+import com.webtecit.nayon.data.browser.BrowsingRepository
 import com.webtecit.nayon.data.settings.AppearanceRepository
+import com.webtecit.nayon.data.settings.BrowserPreferencesRepository
 import com.webtecit.nayon.data.settings.DataStoreAppearanceRepository
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(
@@ -22,6 +26,16 @@ private val Context.settingsDataStore: DataStore<Preferences> by preferencesData
 class AppContainer(context: Context) {
     val appearanceRepository: AppearanceRepository =
         DataStoreAppearanceRepository(context.settingsDataStore)
+
+    val browserPreferences = BrowserPreferencesRepository(context.settingsDataStore)
+
+    private val database: BrowserDatabase by lazy {
+        Room.databaseBuilder(context, BrowserDatabase::class.java, "nayon_browser.db").build()
+    }
+
+    val browsingRepository: BrowsingRepository by lazy {
+        BrowsingRepository(database.historyDao(), database.bookmarkDao(), database.savedTabDao())
+    }
 }
 
 class NayonApp : Application() {
