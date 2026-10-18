@@ -26,7 +26,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
-@Config(sdk = [34])
+@Config(sdk = [34], qualifiers = "w411dp-h891dp-xxhdpi")
 class AppearanceScreenTest {
 
     @get:Rule val compose = createComposeRule()
@@ -63,6 +63,7 @@ class AppearanceScreenTest {
             }
         }
         compose.onNodeWithText("Dark from").assertDoesNotExist()
+        compose.onNode(hasScrollAction()).performScrollToNode(hasText("Scheduled"))
         compose.onNodeWithText("Scheduled").performClick()
         compose.onNode(hasScrollAction()).performScrollToNode(hasText("Dark from"))
         compose.onNodeWithText("Dark from").assertIsDisplayed()
