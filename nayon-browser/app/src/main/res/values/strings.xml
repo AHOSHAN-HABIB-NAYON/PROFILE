@@ -225,4 +225,36 @@
     <string name="about_developer_photo">Photo of MD. AHOSHAN HABIB NAYON</string>
     <string name="about_built_with">Built with Kotlin and Jetpack Compose</string>
     <string name="about_meet_developer">Meet the developer</string>
+
+    <!-- Stage 2.1: toolbar, page info, full screen -->
+    <string name="settings_toolbar_layout">Toolbar layout</string>
+    <string name="toolbar_layout_top">Top only</string>
+    <string name="toolbar_layout_top_desc">Compact bar at the top, like Chrome. Most space for websites.</string>
+    <string name="toolbar_layout_bottom">Top and bottom</string>
+    <string name="toolbar_layout_bottom_desc">Back, forward, tabs and menu in a bottom bar within thumb reach.</string>
+    <string name="settings_hide_toolbars">Hide toolbars while scrolling</string>
+    <string name="settings_hide_toolbars_desc">Scroll down to give the page the full screen, scroll up to bring them back</string>
+    <string name="settings_pull_refresh">Pull to refresh</string>
+    <string name="settings_pull_refresh_desc">Swipe down at the top of a page to reload it</string>
+    <string name="action_site_info">View site information</string>
+    <string name="page_info_secure_title">Connection is secure</string>
+    <string name="page_info_secure_body">Your information, like passwords or card numbers, is private when it is sent to this site.</string>
+    <string name="page_info_insecure_title">Connection is not secure</string>
+    <string name="page_info_insecure_body">Don\'t enter sensitive information on this site, like passwords or card numbers. It could be read by others on the network.</string>
+    <string name="page_info_cert_error_body">The site\'s security certificate isn\'t trusted. NAYON Browser blocked the page to protect you.</string>
+    <string name="page_info_certificate">Certificate is valid</string>
+    <string name="page_info_issued_to">Issued to</string>
+    <string name="page_info_issued_by">Issued by</string>
+    <string name="page_info_valid_until">Valid until</string>
+    <string name="page_info_cookies">Cookies and site data</string>
+    <string name="page_info_cookies_count">%1$d cookies in use</string>
+    <string name="page_info_no_cookies">No cookies in use</string>
+    <string name="page_info_clear_site">Delete</string>
+    <string name="page_info_permissions">Site permissions</string>
+    <string name="page_info_permissions_body">Camera, microphone and location are blocked for all sites</string>
+    <string name="page_info_javascript_on">JavaScript is allowed</string>
+    <string name="page_info_javascript_off">JavaScript is blocked</string>
+    <string name="site_data_cleared">Site data deleted</string>
+    <string name="action_rotate">Rotate video</string>
+    <string name="action_exit_fullscreen">Exit full screen</string>
 </resources>

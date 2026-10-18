@@ -30,9 +30,7 @@ import android.webkit.WebSettings
 import android.webkit.WebStorage
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.core.graphics.scale
 import androidx.core.net.toUri
-import androidx.core.view.drawToBitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.webkit.ProfileStore
@@ -47,6 +45,9 @@ import com.webtecit.nayon.data.browser.BrowsingRepository
 import com.webtecit.nayon.data.browser.SavedTab
 import com.webtecit.nayon.data.settings.BrowserPreferences
 import com.webtecit.nayon.data.settings.BrowserPreferencesRepository
+import com.webtecit.nayon.data.settings.ToolbarLayout
+import android.graphics.Canvas
+import android.net.http.SslCertificate
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -207,11 +208,72 @@ class BrowserViewModel(
     fun setRestoreTabs(enabled: Boolean) = viewModelScope.launch { prefsRepository.setRestoreTabs(enabled) }
     fun setShowShortcuts(enabled: Boolean) = viewModelScope.launch { prefsRepository.setShowShortcuts(enabled) }
     fun setShowRecentOnHome(enabled: Boolean) = viewModelScope.launch { prefsRepository.setShowRecentOnHome(enabled) }
+    fun setPullToRefresh(enabled: Boolean) = viewModelScope.launch { prefsRepository.setPullToRefresh(enabled) }
+    fun setToolbarLayout(layout: ToolbarLayout) = viewModelScope.launch { prefsRepository.setToolbarLayout(layout) }
+    fun setHideToolbarsOnScroll(enabled: Boolean) = viewModelScope.launch {
+        prefsRepository.setHideToolbarsOnScroll(enabled)
+        if (!enabled) _barsVisible.value = true
+    }
+
+    // ---- Auto-hiding toolbars ---------------------------------------------------------
+
+    private val _barsVisible = MutableStateFlow(true)
+    /** False while the user scrolls down a page, so the page gets the whole screen. */
+    val barsVisible: StateFlow<Boolean> = _barsVisible.asStateFlow()
+    private var scrollRun = 0
+    private val density = app.resources.displayMetrics.density
+
+    fun showBars() {
+        _barsVisible.value = true
+        scrollRun = 0
+    }
+
+    private fun onWebScroll(tabId: String, y: Int, oldY: Int) {
+        if (tabId != _activeId.value || !preferences.value.hideToolbarsOnScroll) return
+        if (y <= 8 * density) { showBars(); return }
+        val dy = y - oldY
+        if (dy == 0) return
+        if ((dy > 0) != (scrollRun > 0)) scrollRun = 0
+        scrollRun += dy
+        when {
+            scrollRun > 28 * density -> _barsVisible.value = false
+            scrollRun < -20 * density -> _barsVisible.value = true
+        }
+    }
+
+    // ---- Page info --------------------------------------------------------------------
+
+    fun certificateFor(id: String): SslCertificate? = webViews[id]?.certificate
+
+    fun cookieCount(url: String?): Int =
+        url?.let { CookieManager.getInstance().getCookie(it) }?.split(';')?.count { it.isNotBlank() } ?: 0
+
+    /** Deletes this site's cookies and storage, then reloads it. */
+    fun clearSiteData(url: String) {
+        val uri = url.toUri()
+        val host = uri.host ?: return
+        val cm = CookieManager.getInstance()
+        val names = cm.getCookie(url)?.split(';')?.map { it.substringBefore('=').trim() }?.filter { it.isNotEmpty() }.orEmpty()
+        val expired = "Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT"
+        val domains = listOf(host) + host.split('.').let { parts ->
+            (1 until parts.size - 1).map { parts.drop(it).joinToString(".") }
+        }
+        names.forEach { name ->
+            cm.setCookie(url, "$name=; $expired; Path=/")
+            domains.forEach { d -> cm.setCookie(url, "$name=; $expired; Path=/; Domain=.$d") }
+        }
+        cm.flush()
+        val port = if (uri.port != -1) ":${uri.port}" else ""
+        WebStorage.getInstance().deleteOrigin("${uri.scheme}://$host$port")
+        reload()
+        _events.tryEmit(BrowserEvent.Message(R.string.site_data_cleared))
+    }
 
     fun selectTab(id: String) {
         val previous = _activeId.value
         if (previous != null && previous != id) webViews[previous]?.onPause()
         _activeId.value = id
+        showBars()
         lastUsed[id] = System.currentTimeMillis()
         webViews[id]?.onResume()
     }
@@ -326,11 +388,17 @@ class BrowserViewModel(
         val tab = activeTab.value ?: return
         val wv = webViews[tab.id] ?: return
         if (!tab.isWebPage || wv.width == 0 || wv.height == 0) return
+        // Draw straight into a small bitmap: far cheaper than a full-size screenshot.
         val bitmap = runCatching {
-            val full = wv.drawToBitmap(Bitmap.Config.RGB_565)
-            val w = 320
-            val h = (full.height * w / full.width.toFloat()).toInt().coerceAtLeast(1)
-            full.scale(w, h).also { if (it !== full) full.recycle() }
+            val w = THUMB_WIDTH
+            val scale = w / wv.width.toFloat()
+            val h = (wv.height * scale).toInt().coerceAtLeast(1)
+            Bitmap.createBitmap(w, h, Bitmap.Config.RGB_565).also { bmp ->
+                val canvas = Canvas(bmp)
+                canvas.scale(scale, scale)
+                canvas.translate(-wv.scrollX.toFloat(), -wv.scrollY.toFloat())
+                wv.draw(canvas)
+            }
         }.getOrNull() ?: return
         updateTab(tab.id) { it.copy(thumbnail = bitmap) }
     }
@@ -453,6 +521,7 @@ class BrowserViewModel(
         wv.isFocusableInTouchMode = true
         wv.webViewClient = Client(tab.id)
         wv.webChromeClient = ChromeClient(tab.id)
+        wv.setOnScrollChangeListener { _, _, y, _, oldY -> onWebScroll(tab.id, y, oldY) }
         wv.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
             startDownload(url, userAgent, contentDisposition, mimeType, tab.isPrivate)
         }
@@ -554,6 +623,7 @@ class BrowserViewModel(
         }
 
         override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
+            if (tabId == _activeId.value) showBars()
             updateTab(tabId) {
                 it.copy(
                     url = url, isLoading = true, progress = it.progress.coerceAtLeast(5), error = null,
@@ -662,6 +732,7 @@ class BrowserViewModel(
 
     companion object {
         const val MAX_LIVE_WEBVIEWS = 4
+        const val THUMB_WIDTH = 270
         const val PRIVATE_PROFILE = "nayon_private"
 
         fun desktopUserAgent(mobile: String): String = mobile

@@ -17,7 +17,15 @@ import androidx.compose.material.icons.outlined.PrivacyTip
 import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Shield
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.UnfoldLess
+import androidx.compose.material.icons.outlined.VerticalAlignBottom
+import androidx.compose.material.icons.outlined.VerticalAlignTop
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import com.webtecit.nayon.core.designsystem.component.RadioRow
+import com.webtecit.nayon.data.settings.ToolbarLayout
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -79,6 +87,33 @@ fun SettingsScreen(
                     icon = Icons.Outlined.OpenInBrowser,
                     subtitle = stringResource(R.string.settings_default_browser_desc),
                 )
+            }
+        }
+
+        item { SectionHeader(stringResource(R.string.settings_toolbar_layout)) }
+        item {
+            SettingsGroup(Modifier.selectableGroup()) {
+                RadioRow(
+                    title = stringResource(R.string.toolbar_layout_top),
+                    subtitle = stringResource(R.string.toolbar_layout_top_desc),
+                    icon = Icons.Outlined.VerticalAlignTop,
+                    selected = prefs.toolbarLayout == ToolbarLayout.TOP,
+                    onSelect = { browser.setToolbarLayout(ToolbarLayout.TOP) },
+                )
+                GroupDivider()
+                RadioRow(
+                    title = stringResource(R.string.toolbar_layout_bottom),
+                    subtitle = stringResource(R.string.toolbar_layout_bottom_desc),
+                    icon = Icons.Outlined.VerticalAlignBottom,
+                    selected = prefs.toolbarLayout == ToolbarLayout.TOP_AND_BOTTOM,
+                    onSelect = { browser.setToolbarLayout(ToolbarLayout.TOP_AND_BOTTOM) },
+                )
+                GroupDivider()
+                SettingsSwitchRow(stringResource(R.string.settings_hide_toolbars), prefs.hideToolbarsOnScroll, { browser.setHideToolbarsOnScroll(it) },
+                    icon = Icons.Outlined.UnfoldLess, subtitle = stringResource(R.string.settings_hide_toolbars_desc))
+                GroupDivider()
+                SettingsSwitchRow(stringResource(R.string.settings_pull_refresh), prefs.pullToRefresh, { browser.setPullToRefresh(it) },
+                    icon = Icons.Outlined.Refresh, subtitle = stringResource(R.string.settings_pull_refresh_desc))
             }
         }
 

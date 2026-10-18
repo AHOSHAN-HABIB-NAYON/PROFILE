@@ -13,7 +13,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Bookmarks
 import androidx.compose.material.icons.outlined.ContentCopy
@@ -50,7 +53,7 @@ import com.webtecit.nayon.core.designsystem.theme.Spacing
 
 enum class MenuAction {
     NEW_TAB, NEW_PRIVATE_TAB, BOOKMARKS, HISTORY, DOWNLOADS, SETTINGS,
-    TOGGLE_BOOKMARK, SHARE, COPY_LINK, DESKTOP, DUPLICATE,
+    TOGGLE_BOOKMARK, SHARE, COPY_LINK, DESKTOP, DUPLICATE, FORWARD, RELOAD, SITE_INFO,
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,16 +82,18 @@ fun BrowserMenuSheet(
                 }
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = Spacing.lg, vertical = Spacing.md),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
+                    QuickAction(Icons.AutoMirrored.Outlined.ArrowForward, stringResource(R.string.action_forward),
+                        enabled = tab.canGoForward) { act(MenuAction.FORWARD) }
                     QuickAction(
                         if (isBookmarked) Icons.Filled.Star else Icons.Outlined.StarBorder,
                         stringResource(if (isBookmarked) R.string.action_remove_bookmark else R.string.action_bookmark),
                         highlighted = isBookmarked,
                     ) { act(MenuAction.TOGGLE_BOOKMARK) }
+                    QuickAction(Icons.Outlined.Info, stringResource(R.string.action_site_info)) { act(MenuAction.SITE_INFO) }
                     QuickAction(Icons.Outlined.Share, stringResource(R.string.action_share)) { act(MenuAction.SHARE) }
-                    QuickAction(Icons.Outlined.ContentCopy, stringResource(R.string.action_copy_link)) { act(MenuAction.COPY_LINK) }
-                    QuickAction(Icons.Outlined.FileCopy, stringResource(R.string.action_duplicate)) { act(MenuAction.DUPLICATE) }
+                    QuickAction(Icons.Outlined.Refresh, stringResource(R.string.action_reload)) { act(MenuAction.RELOAD) }
                 }
                 HorizontalDivider(Modifier.padding(horizontal = Spacing.lg), color = MaterialTheme.colorScheme.outlineVariant)
             }
@@ -97,6 +102,10 @@ fun BrowserMenuSheet(
             SettingsRow(stringResource(R.string.action_bookmarks), { act(MenuAction.BOOKMARKS) }, icon = Icons.Outlined.Bookmarks, showChevron = false)
             SettingsRow(stringResource(R.string.action_history), { act(MenuAction.HISTORY) }, icon = Icons.Outlined.History, showChevron = false)
             SettingsRow(stringResource(R.string.action_downloads), { act(MenuAction.DOWNLOADS) }, icon = Icons.Outlined.Download, showChevron = false)
+            if (onPage) {
+                SettingsRow(stringResource(R.string.action_copy_link), { act(MenuAction.COPY_LINK) }, icon = Icons.Outlined.ContentCopy, showChevron = false)
+                SettingsRow(stringResource(R.string.action_duplicate), { act(MenuAction.DUPLICATE) }, icon = Icons.Outlined.FileCopy, showChevron = false)
+            }
             if (onPage && tab != null) {
                 SettingsSwitchRow(
                     title = stringResource(R.string.action_desktop_site),
@@ -111,12 +120,13 @@ fun BrowserMenuSheet(
 }
 
 @Composable
-private fun QuickAction(icon: ImageVector, label: String, highlighted: Boolean = false, onClick: () -> Unit) {
+private fun QuickAction(icon: ImageVector, label: String, highlighted: Boolean = false, enabled: Boolean = true, onClick: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-        modifier = Modifier.width(76.dp)) {
+        modifier = Modifier.width(64.dp)) {
         FilledTonalIconButton(
             onClick = onClick,
-            modifier = Modifier.size(52.dp),
+            enabled = enabled,
+            modifier = Modifier.size(48.dp),
             shape = CircleShape,
             colors = if (highlighted) {
                 IconButtonDefaults.filledTonalIconButtonColors(

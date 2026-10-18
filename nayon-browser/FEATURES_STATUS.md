@@ -55,7 +55,12 @@ checking by hand on a real device.
 | Desktop site | Implemented | User-agent switch; some sites still detect mobile | — | `UrlResolverTest.desktopUserAgentRemovesMobileMarkers` |
 | Downloads | Partial | Uses Android DownloadManager (system controls pause/resume). blob:/data: downloads unsupported. Android 7–9 save into the app's own Downloads folder | — | Manual |
 | File upload from web pages | Implemented | Uses the system file picker | — | Manual |
-| Full-screen video | Implemented | Depends on the site and WebView | — | Manual |
+| Full-screen video | Implemented | Landscape by default with a rotate button, screen kept on, uses the notch area. Depends on the site and WebView | — | Manual |
+| Chrome-style compact top toolbar (default) or top + bottom bars | Implemented | Setting: Toolbar layout | — | Manual |
+| Auto-hide toolbars while scrolling | Implemented | Works for pages that scroll the main document; pages with their own inner scroll areas keep the bars | — | Manual |
+| Pull to refresh | Implemented | Triggers only when the page is scrolled to the top; pages with inner scroll areas may trigger it early (can be turned off) | — | Manual |
+| Site information sheet (connection, certificate, cookies, permissions, delete site data) | Implemented | Per-site cookie deletion clears the cookies the page can see | — | Manual |
+| Animated tab switcher and tab transitions | Implemented | — | — | Manual |
 | Share page / copy link | Implemented | — | — | Manual |
 | Open links from other apps; set as default browser | Implemented | User chooses default browser in Android settings | — | Manual |
 | External app links (mailto:, tel:, intent:) | Implemented | Opened only after a user tap; fallback URL used when no app | — | Manual |

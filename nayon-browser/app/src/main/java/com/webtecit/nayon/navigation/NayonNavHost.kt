@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavHostController
@@ -63,7 +65,13 @@ fun NayonNavHost(
         popEnterTransition = { fadeIn(tween(NAV_ANIM_MS)) },
         popExitTransition = { slideOutOfContainer(SlideDirection.End, tween(NAV_ANIM_MS)) + fadeOut(tween(NAV_ANIM_MS)) },
     ) {
-        composable(Routes.BROWSER) {
+        composable(
+            Routes.BROWSER,
+            enterTransition = { fadeIn(tween(200)) + scaleIn(tween(240), initialScale = 1.04f) },
+            exitTransition = { fadeOut(tween(160)) + scaleOut(tween(220), targetScale = 1.04f) },
+            popEnterTransition = { fadeIn(tween(220)) + scaleIn(tween(260), initialScale = 1.04f) },
+            popExitTransition = { fadeOut(tween(160)) },
+        ) {
             BrowserScreen(
                 viewModel = browser,
                 onOpenTabs = { go(Routes.TABS) },
@@ -73,7 +81,14 @@ fun NayonNavHost(
                 onOpenAbout = { go(Routes.ABOUT) },
             )
         }
-        composable(Routes.TABS) { TabsScreen(browser, onBack = back) }
+        // The tab switcher zooms in and out of the page, like a card stack.
+        composable(
+            Routes.TABS,
+            enterTransition = { fadeIn(tween(200)) + scaleIn(tween(240), initialScale = 0.92f) },
+            exitTransition = { fadeOut(tween(160)) },
+            popEnterTransition = { fadeIn(tween(200)) },
+            popExitTransition = { fadeOut(tween(180)) + scaleOut(tween(220), targetScale = 0.92f) },
+        ) { TabsScreen(browser, onBack = back) }
         composable(Routes.BOOKMARKS) { BookmarksScreen(onBack = back, onOpen = openHere, onOpenInNewTab = openNewTab) }
         composable(Routes.HISTORY) { HistoryScreen(onBack = back, onOpen = openHere) }
         composable(Routes.SETTINGS) {

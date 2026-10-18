@@ -127,6 +127,7 @@ fun TabsScreen(viewModel: BrowserViewModel, onBack: () -> Unit) {
                 ) {
                     items(visible, key = { it.id }) { tab ->
                         TabCard(
+                            modifier = Modifier.animateItem(),
                             tab = tab,
                             selected = tab.id == activeId,
                             onClick = { viewModel.selectTab(tab.id); onBack() },
@@ -152,13 +153,13 @@ fun TabsScreen(viewModel: BrowserViewModel, onBack: () -> Unit) {
 }
 
 @Composable
-private fun TabCard(tab: TabState, selected: Boolean, onClick: () -> Unit, onClose: () -> Unit) {
+private fun TabCard(tab: TabState, selected: Boolean, onClick: () -> Unit, onClose: () -> Unit, modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
     Card(
         onClick = onClick,
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = scheme.surfaceContainerHigh),
-        modifier = Modifier.border(
+        modifier = modifier.border(
             width = if (selected) 2.dp else 0.dp,
             color = if (selected) scheme.primary else scheme.surfaceContainerHigh,
             shape = MaterialTheme.shapes.large,
