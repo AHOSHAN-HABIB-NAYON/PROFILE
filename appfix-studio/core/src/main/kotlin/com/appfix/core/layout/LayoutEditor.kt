@@ -37,6 +37,9 @@ data class LayoutNode(
 enum class ComponentKind(val displayName: String) {
     TEXT("Text"), BUTTON("Button"), IMAGE("Image"), INPUT("Text input"), CARD("Card"), DIVIDER("Divider"),
     VERTICAL_LAYOUT("Vertical layout"), HORIZONTAL_LAYOUT("Horizontal layout"), LIST("List"), SPACE("Space"), ICON_BUTTON("Icon button"), SWITCH("Switch"),
+    PROGRESS("Loading indicator"),
+    /** Needs the Lottie dependency and a res/raw animation; [LayoutEditor.insert] takes the raw name as the label. */
+    LOTTIE("Lottie animation"),
 }
 
 /** What the project offers, which decides the XML used for some components. */
@@ -103,6 +106,7 @@ object LayoutEditor {
 
     /** Generates an id like button_2 that is not used in [existingIds]. */
     fun uniqueId(base: String, existingIds: Set<String>): String {
+        if (com.appfix.core.util.JavaNames.isReserved(base)) return uniqueId("${base}_view", existingIds)
         if (base !in existingIds) return base
         var i = 2
         while ("${base}_$i" in existingIds) i++
@@ -124,7 +128,8 @@ object LayoutEditor {
         val baseId = when (kind) {
             ComponentKind.TEXT -> "text"; ComponentKind.BUTTON -> "button"; ComponentKind.IMAGE -> "image"; ComponentKind.INPUT -> "input"
             ComponentKind.CARD -> "card"; ComponentKind.DIVIDER -> "divider"; ComponentKind.VERTICAL_LAYOUT, ComponentKind.HORIZONTAL_LAYOUT -> "container"
-            ComponentKind.LIST -> "list"; ComponentKind.SPACE -> "space"; ComponentKind.ICON_BUTTON -> "icon_button"; ComponentKind.SWITCH -> "switch"
+            ComponentKind.LIST -> "list"; ComponentKind.SPACE -> "space"; ComponentKind.ICON_BUTTON -> "icon_button"; ComponentKind.SWITCH -> "toggle"
+            ComponentKind.PROGRESS -> "progress"; ComponentKind.LOTTIE -> "animation"
         }
         val id = uniqueId(baseId, existingIds)
         val strings = linkedMapOf<String, String>()
@@ -240,9 +245,29 @@ object LayoutEditor {
                     $margin
                     android:minHeight="48dp"
                     android:text="${str("text", label ?: "Option")}" />""".trimIndent()
+            ComponentKind.PROGRESS -> """
+                <ProgressBar
+                    $common
+                    style="?android:attr/progressBarStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    $margin
+                    android:indeterminate="true" />""".trimIndent()
+            ComponentKind.LOTTIE -> {
+                val raw = label?.takeIf { it.matches(Regex("[a-z][a-z0-9_]*")) } ?: throw LayoutEditException("Add a Lottie animation in the Branding studio first")
+                """
+                <com.airbnb.lottie.LottieAnimationView
+                    $common
+                    android:layout_width="160dp"
+                    android:layout_height="160dp"
+                    $margin
+                    app:lottie_autoPlay="true"
+                    app:lottie_loop="true"
+                    app:lottie_rawRes="@raw/$raw" />""".trimIndent()
+            }
         }.let { x -> if (isConstraint) x.replaceFirst("\n    $margin", "\n    $margin$constraint") else x }
         var out = XmlEdits.insertChild(text, parent, xml, index)
-        if (isConstraint && !text.contains("xmlns:app=")) {
+        if ((isConstraint || kind == ComponentKind.LOTTIE) && !text.contains("xmlns:app=")) {
             val root = XmlSource.parse(out).root
             out = XmlEdits.setAttribute(out, root, "xmlns:app", "http://schemas.android.com/apk/res-auto")
         }

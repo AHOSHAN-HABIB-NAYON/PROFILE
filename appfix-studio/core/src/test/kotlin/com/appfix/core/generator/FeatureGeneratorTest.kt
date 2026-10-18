@@ -67,6 +67,17 @@ class FeatureGeneratorTest {
     }
 
     @Test
+    fun `onboarding is shown on first launch from the launcher activity`() {
+        val ws = TestFixtures.copySample()
+        val g = FeatureGenerator(ws, ProjectDetector.detect(ws)).generate(FeatureKind.ONBOARDING)
+        val main = g.change.changes.first { it.path.endsWith("MainActivity.kt") }.after!!
+        assertTrue(main, main.contains("        super.onCreate(savedInstanceState)\n        if (!getSharedPreferences(\"onboarding\", MODE_PRIVATE).getBoolean(\"done\", false)) {\n            startActivity(android.content.Intent(this, OnboardingActivity::class.java))\n        }\n"))
+        assertTrue(g.change.changes.any { it.path.endsWith("activity_onboarding.xml") })
+        ChangeApplier(ws, File(ws.parentFile, "h")).apply(g.change)
+        assertNoErrors(ws)
+    }
+
+    @Test
     fun `contact page requires contact details and validates email`() {
         val ws = TestFixtures.copySample()
         val gen = FeatureGenerator(ws, ProjectDetector.detect(ws))
@@ -100,6 +111,7 @@ class FeatureGeneratorTest {
         TestFixtures.copySample().copyRecursively(kotlinXml)
         applyAll(kotlinXml)
         addEveryComponentAndAction(kotlinXml, "kotlin")
+        com.appfix.core.branding.BrandingTest.applyAllBranding(kotlinXml)
         assertNoErrors(kotlinXml)
 
         // 2. Java + XML.
@@ -142,7 +154,7 @@ class FeatureGeneratorTest {
         var layout = File(ws, layoutPath).readText()
         val strings = linkedMapOf<String, String>()
         val ids = mutableListOf<String>()
-        for (kind in ComponentKind.entries) {
+        for (kind in ComponentKind.entries.filter { it != ComponentKind.LOTTIE }) {
             val r = LayoutEditor.insert(layout, emptyList(), null, kind, LayoutCapabilities(true, true, false), LayoutEditor.declaredIds(layout))
             layout = r.layoutText
             strings += r.strings

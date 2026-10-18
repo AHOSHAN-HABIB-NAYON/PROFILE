@@ -68,3 +68,15 @@ object TextFiles {
         else -> "text"
     }
 }
+
+/** Java keywords and literals; resource names and view ids may not use them (aapt rejects them). */
+object JavaNames {
+    val reserved = setOf(
+        "abstract", "assert", "boolean", "break", "byte", "case", "catch", "char", "class", "const", "continue", "default", "do", "double",
+        "else", "enum", "extends", "final", "finally", "float", "for", "goto", "if", "implements", "import", "instanceof", "int", "interface",
+        "long", "native", "new", "package", "private", "protected", "public", "return", "short", "static", "strictfp", "super", "switch",
+        "synchronized", "this", "throw", "throws", "transient", "try", "void", "volatile", "while", "true", "false", "null", "_",
+    )
+
+    fun isReserved(name: String) = name in reserved
+}

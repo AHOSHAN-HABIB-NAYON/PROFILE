@@ -148,7 +148,7 @@ class RepairEngine(private val workspace: File, private val resources: FixResour
 
     /** Inserts [line] as the first statement of the top-level `android { }` block. */
     fun insertIntoAndroidBlock(text: String, line: String): String {
-        val m = Regex("""(?m)^(\s*)android\s*\{[ \t]*\n?""").find(text) ?: throw FixNotAvailableException("No android { } block found in the build file")
+        val m = Regex("""(?m)^([ \t]*)android\s*\{[ \t]*\n?""").find(text) ?: throw FixNotAvailableException("No android { } block found in the build file")
         val outer = m.groupValues[1].replace("\n", "")
         val nextLine = text.substring(m.range.last + 1).lineSequence().firstOrNull { it.isNotBlank() }
         val indent = nextLine?.takeWhile { it == ' ' || it == '\t' }?.takeIf { it.length > outer.length } ?: "$outer    "

@@ -32,8 +32,16 @@ internal object ViewTemplates {
             body.append("\n        <ImageView\n            android:layout_width=\"72dp\"\n            android:layout_height=\"72dp\"\n")
             body.append("            android:contentDescription=\"@string/${p}_title\"\n            android:src=\"@mipmap/ic_launcher\" />\n")
         }
-        text(null, "${p}_title", size = "24sp", bold = true, top = if (kind == FeatureKind.ABOUT && hasIcon) "16dp" else "0dp")
+        if (kind != FeatureKind.ONBOARDING) text(null, "${p}_title", size = "24sp", bold = true, top = if (kind == FeatureKind.ABOUT && hasIcon) "16dp" else "0dp")
         when (kind) {
+            FeatureKind.ONBOARDING -> {
+                text("${p}_heading", "${p}_page1_title", size = "26sp", bold = true, top = "48dp")
+                text("${p}_body", "${p}_page1_body")
+                body.append("\n        <LinearLayout\n            android:layout_width=\"match_parent\"\n            android:layout_height=\"wrap_content\"\n            android:layout_marginTop=\"32dp\"\n            android:orientation=\"horizontal\">\n")
+                body.append("\n            <Button\n                android:id=\"@+id/${p}_skip\"\n                style=\"?android:attr/borderlessButtonStyle\"\n                android:layout_width=\"wrap_content\"\n                android:layout_height=\"wrap_content\"\n                android:text=\"@string/${p}_skip\" />\n")
+                body.append("\n            <Space\n                android:layout_width=\"0dp\"\n                android:layout_height=\"0dp\"\n                android:layout_weight=\"1\" />\n")
+                body.append("\n            <Button\n                android:id=\"@+id/${p}_next\"\n                android:layout_width=\"wrap_content\"\n                android:layout_height=\"wrap_content\"\n                android:text=\"@string/${p}_next\" />\n        </LinearLayout>\n")
+            }
             FeatureKind.ABOUT -> { text("${p}_version", "${p}_version", size = "14sp", top = "4dp"); text(null, "${p}_description") }
             FeatureKind.CONTACT -> {
                 text(null, "${p}_description")
@@ -104,6 +112,34 @@ internal object ViewTemplates {
                     |""".trimMargin())
             }
             FeatureKind.HELP -> Unit
+            FeatureKind.ONBOARDING -> {
+                imports += listOf("android.widget.Button", "android.widget.TextView")
+                body.append("""
+                    |        show()
+                    |        findViewById<Button>(R.id.${p}_next).setOnClickListener {
+                    |            if (page < titles.lastIndex) {
+                    |                page++
+                    |                show()
+                    |            } else {
+                    |                complete()
+                    |            }
+                    |        }
+                    |        findViewById<Button>(R.id.${p}_skip).setOnClickListener { complete() }
+                    |""".trimMargin())
+                helpers.append("""
+                    |
+                    |    private fun show() {
+                    |        findViewById<TextView>(R.id.${p}_heading).setText(titles[page])
+                    |        findViewById<TextView>(R.id.${p}_body).setText(bodies[page])
+                    |        findViewById<Button>(R.id.${p}_next).setText(if (page == titles.lastIndex) R.string.${p}_done else R.string.${p}_next)
+                    |    }
+                    |
+                    |    private fun complete() {
+                    |        getSharedPreferences("onboarding", MODE_PRIVATE).edit().putBoolean("done", true).apply()
+                    |        finish()
+                    |    }
+                    |""".trimMargin())
+            }
             FeatureKind.SETTINGS -> {
                 imports += "android.widget.CompoundButton"
                 if (style.appCompat) imports += "androidx.appcompat.app.AppCompatDelegate"
@@ -127,6 +163,11 @@ internal object ViewTemplates {
             append("package ${style.namespace}\n\n")
             imports.forEach { append("import $it\n") }
             append("\nclass ${kind.className} : $baseName() {\n")
+            if (kind == FeatureKind.ONBOARDING) {
+                append("    private var page = 0\n")
+                append("    private val titles = intArrayOf(R.string.${p}_page1_title, R.string.${p}_page2_title, R.string.${p}_page3_title)\n")
+                append("    private val bodies = intArrayOf(R.string.${p}_page1_body, R.string.${p}_page2_body, R.string.${p}_page3_body)\n\n")
+            }
             append("    override fun onCreate(savedInstanceState: Bundle?) {\n")
             append("        super.onCreate(savedInstanceState)\n")
             append("        setContentView(R.layout.activity_$p)\n")
@@ -173,6 +214,34 @@ internal object ViewTemplates {
                     |""".trimMargin())
             }
             FeatureKind.HELP -> Unit
+            FeatureKind.ONBOARDING -> {
+                imports += listOf("android.widget.Button", "android.widget.TextView")
+                body.append("""
+                    |        show();
+                    |        findViewById(R.id.${p}_next).setOnClickListener(v -> {
+                    |            if (page < titles.length - 1) {
+                    |                page++;
+                    |                show();
+                    |            } else {
+                    |                complete();
+                    |            }
+                    |        });
+                    |        findViewById(R.id.${p}_skip).setOnClickListener(v -> complete());
+                    |""".trimMargin())
+                helpers.append("""
+                    |
+                    |    private void show() {
+                    |        ((TextView) findViewById(R.id.${p}_heading)).setText(titles[page]);
+                    |        ((TextView) findViewById(R.id.${p}_body)).setText(bodies[page]);
+                    |        ((Button) findViewById(R.id.${p}_next)).setText(page == titles.length - 1 ? R.string.${p}_done : R.string.${p}_next);
+                    |    }
+                    |
+                    |    private void complete() {
+                    |        getSharedPreferences("onboarding", MODE_PRIVATE).edit().putBoolean("done", true).apply();
+                    |        finish();
+                    |    }
+                    |""".trimMargin())
+            }
             FeatureKind.SETTINGS -> {
                 imports += listOf("android.content.SharedPreferences", "android.widget.CompoundButton")
                 if (style.appCompat) imports += "androidx.appcompat.app.AppCompatDelegate"
@@ -196,6 +265,11 @@ internal object ViewTemplates {
             append("package ${style.namespace};\n\n")
             imports.forEach { append("import $it;\n") }
             append("\npublic class ${kind.className} extends $baseName {\n")
+            if (kind == FeatureKind.ONBOARDING) {
+                append("    private int page = 0;\n")
+                append("    private final int[] titles = {R.string.${p}_page1_title, R.string.${p}_page2_title, R.string.${p}_page3_title};\n")
+                append("    private final int[] bodies = {R.string.${p}_page1_body, R.string.${p}_page2_body, R.string.${p}_page3_body};\n\n")
+            }
             append("    @Override\n    protected void onCreate(Bundle savedInstanceState) {\n")
             append("        super.onCreate(savedInstanceState);\n")
             append("        setContentView(R.layout.activity_$p);\n")

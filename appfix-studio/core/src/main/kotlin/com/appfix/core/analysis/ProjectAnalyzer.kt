@@ -347,6 +347,12 @@ class ProjectAnalyzer(private val workspace: File) {
                 "Resource file names may only contain lowercase a–z, 0–9 and underscores. aapt2 rejects other names.",
                 file = path, suggestedFix = "Rename the file (and update references to it).")
         }
+        for ((type, name, file) in index.reservedNames) {
+            ctx.findings += Finding("resources.reserved_name", Severity.ERROR, Certainty.CONFIRMED, Categories.RESOURCES,
+                "@$type/$name uses a reserved Java keyword",
+                "\"$name\" is a Java keyword, so it cannot be a resource name or view id (aapt fails with \"not a valid resource name\").",
+                file = file, suggestedFix = "Rename it, for example to ${name}_view, and update references.")
+        }
         for ((key, files) in index.valueDefinitions) {
             if (files.size > 1) {
                 ctx.findings += Finding("resources.duplicate", Severity.ERROR, Certainty.CONFIRMED, Categories.RESOURCES,

@@ -39,11 +39,13 @@ class LayoutEditorTest {
     fun `every component kind produces valid xml`() {
         var text = layout
         for (kind in ComponentKind.entries) {
-            val r = LayoutEditor.insert(text, emptyList(), null, kind, caps, LayoutEditor.declaredIds(text))
+            val r = LayoutEditor.insert(text, emptyList(), null, kind, caps, LayoutEditor.declaredIds(text), label = if (kind == ComponentKind.LOTTIE) "intro" else null)
             XmlSource.parse(r.layoutText)
             text = r.layoutText
         }
         assertEquals(4 + ComponentKind.entries.size, LayoutEditor.parse(text).children.size)
+        assertTrue("lottie needs the app namespace", text.contains("xmlns:app=\"http://schemas.android.com/apk/res-auto\""))
+        try { LayoutEditor.insert(layout, emptyList(), null, ComponentKind.LOTTIE, caps, emptySet()); fail() } catch (e: LayoutEditException) {}
     }
 
     @Test
@@ -77,5 +79,18 @@ class LayoutEditorTest {
         val binding = HostActivity("A.kt", "kotlin", "binding")
         val b = ClickActions.addHandler("class A { fun onCreate() {\n    setContentView(binding.root)\n} }", binding, "primary_button", ClickSpec(ClickAction.OPEN_URL, "example.com"))
         assertTrue(b.source, b.source.contains("binding.primaryButton.setOnClickListener {") && b.source.contains("Uri.parse(\"https://example.com\")"))
+    }
+}
+
+class ReservedNameTest {
+    @Test
+    fun `ids never use java keywords and the analyzer reports them`() {
+        org.junit.Assert.assertEquals("switch_view", LayoutEditor.uniqueId("switch", emptySet()))
+        org.junit.Assert.assertNotNull(com.appfix.core.resources.ValuesEditor.validate("string", "new", "x"))
+        val ws = TestFixtures.copySample()
+        val layout = File(ws, "app/src/main/res/layout/activity_main.xml")
+        layout.writeText(layout.readText().replace("@+id/counter", "@+id/switch").replace("R.id.counter", "R.id.switch"))
+        val report = com.appfix.core.analysis.ProjectAnalyzer(ws).analyze(com.appfix.core.project.ProjectDetector.detect(ws))
+        assertTrue(report.findings.any { it.ruleId == "resources.reserved_name" && it.title.contains("@id/switch") })
     }
 }

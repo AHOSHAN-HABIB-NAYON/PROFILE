@@ -22,6 +22,7 @@ enum class FeatureKind(val displayName: String, val prefix: String, val classNam
     PRIVACY("Privacy policy page", "privacy", "PrivacyPolicyActivity"),
     HELP("Help / FAQ page", "help", "HelpActivity"),
     SETTINGS("Settings page", "settings", "SettingsActivity"),
+    ONBOARDING("Intro / onboarding screens", "onboarding", "OnboardingActivity"),
 }
 
 data class FeatureOptions(
@@ -140,6 +141,18 @@ class FeatureGenerator(private val workspace: File, private val info: ProjectInf
                 strings["${p}_q3"] = "How can I contact support?"
                 strings["${p}_a3"] = options.email.ifBlank { "Add your support contact details here." }
             }
+            FeatureKind.ONBOARDING -> {
+                strings["${p}_title"] = options.title.ifBlank { "Welcome" }
+                strings["${p}_page1_title"] = options.title.ifBlank { "Welcome" }
+                strings["${p}_page1_body"] = options.description.ifBlank { "Say what the app does in one sentence." }
+                strings["${p}_page2_title"] = "Stay organised"
+                strings["${p}_page2_body"] = "Describe a key feature here."
+                strings["${p}_page3_title"] = "You're all set"
+                strings["${p}_page3_body"] = "Explain how to get started."
+                strings["${p}_next"] = "Next"
+                strings["${p}_skip"] = "Skip"
+                strings["${p}_done"] = "Get started"
+            }
             FeatureKind.SETTINGS -> {
                 strings["${p}_dark_theme"] = "Dark theme"
                 strings["${p}_dark_theme_summary"] = "Use a dark colour scheme"
@@ -189,7 +202,11 @@ class FeatureGenerator(private val workspace: File, private val info: ProjectInf
         plan += "Declare $cls in ${style.manifest} (not exported)"
 
         // Entry point
-        if (options.addEntryButton) {
+        if (kind == FeatureKind.ONBOARDING) {
+            val inject = firstLaunchHook(style, cls)
+            changes += inject.first
+            plan += inject.second
+        } else if (options.addEntryButton) {
             val entry = entryPoint(style, cls, title)
             if (entry != null) {
                 changes += entry.first
@@ -207,6 +224,32 @@ class FeatureGenerator(private val workspace: File, private val info: ProjectInf
                 followUps = listOf("Rebuild the project to confirm it compiles.", "Edit the generated text in Strings & colours.")),
             warnings = warnings,
         )
+    }
+
+    /** Starts [cls] from the launcher activity until the user has finished onboarding. */
+    private fun firstLaunchHook(style: ProjectStyle, cls: String): Pair<FileChange, String> {
+        val launcher = style.launcherClass ?: throw GeneratorException("No launcher activity was found to show onboarding from.")
+        val src = listOf(File(root, style.sourceRoot)).flatMap { d -> d.walkTopDown().filter { it.isFile && it.nameWithoutExtension == launcher.substringAfterLast('.') && (it.extension == "kt" || it.extension == "java") }.toList() }.firstOrNull()
+            ?: throw GeneratorException("The launcher activity source (${launcher.substringAfterLast('.')}) was not found.")
+        val text = src.readText()
+        if (text.contains("$cls::class.java") || text.contains("$cls.class")) throw GeneratorException("${src.name} already opens $cls.")
+        val anchor = Regex("""super\.onCreate\s*\(""").find(text) ?: throw GeneratorException("Could not find super.onCreate(...) in ${src.name}")
+        var depth = 0
+        var i = anchor.range.last
+        while (i < text.length) { when (text[i]) { '(' -> depth++; ')' -> { depth--; if (depth == 0) break } }; i++ }
+        var end = i + 1
+        if (end < text.length && text[end] == ';') end++
+        val lineStart = text.lastIndexOf('\n', anchor.range.first) + 1
+        val indent = text.substring(lineStart).takeWhile { it == ' ' || it == '\t' }
+        val kotlin = src.extension == "kt"
+        val hook = if (kotlin) {
+            "if (!getSharedPreferences(\"onboarding\", MODE_PRIVATE).getBoolean(\"done\", false)) {\n    startActivity(android.content.Intent(this, $cls::class.java))\n}"
+        } else {
+            "if (!getSharedPreferences(\"onboarding\", MODE_PRIVATE).getBoolean(\"done\", false)) {\n    startActivity(new android.content.Intent(this, $cls.class));\n}"
+        }
+        val block = "\n" + hook.lines().joinToString("\n") { indent + it }
+        val after = text.substring(0, end) + block + text.substring(end)
+        return FileChange(ws(src.relativeTo(root).invariantSeparatorsPath), text, after) to "Show $cls on first launch from ${src.name}"
     }
 
     /** Adds a button to the launcher layout and a click handler that opens [cls]. */

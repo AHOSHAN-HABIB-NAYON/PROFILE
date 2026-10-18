@@ -11,6 +11,8 @@ class ResourceIndex private constructor(
     val valueDefinitions: Map<Pair<String, String>, List<String>>,
     val parseErrors: List<Triple<String, Int, String>>,
     val badFileNames: List<String>,
+    /** (type, name, file) for resources or ids that use a Java keyword as their name. */
+    val reservedNames: List<Triple<String, String, String>> = emptyList(),
 ) {
     fun has(type: String, name: String): Boolean {
         val normalizedType = when (type) { "array", "string-array", "integer-array" -> "array"; else -> type }
@@ -34,13 +36,19 @@ class ResourceIndex private constructor(
             val defs = HashMap<Pair<String, String>, MutableList<String>>()
             val errors = mutableListOf<Triple<String, Int, String>>()
             val badNames = mutableListOf<String>()
-            fun add(type: String, name: String) { defined.getOrPut(type) { HashSet() } += name.replace('.', '_') }
+            val reserved = mutableListOf<Triple<String, String, String>>()
+            var currentFile = ""
+            fun add(type: String, name: String) {
+                defined.getOrPut(type) { HashSet() } += name.replace('.', '_')
+                if (com.appfix.core.util.JavaNames.isReserved(name)) reserved += Triple(type, name, currentFile)
+            }
             for (res in resDirs) {
                 for (folder in res.listFiles().orEmpty().filter { it.isDirectory }) {
                     val type = folder.name.substringBefore('-')
                     val qualifier = folder.name.substringAfter('-', "")
                     for (file in folder.listFiles().orEmpty().filter { it.isFile }) {
                         if (file.name.startsWith(".")) continue
+                        currentFile = relativize(file)
                         if (type == "values") {
                             if (file.extension != "xml") continue
                             val text = file.readText()
@@ -76,7 +84,7 @@ class ResourceIndex private constructor(
                     }
                 }
             }
-            return ResourceIndex(defined, defs, errors, badNames)
+            return ResourceIndex(defined, defs, errors, badNames, reserved.distinct())
         }
 
         /** Resource prefixes and style families that come from AndroidX / Material libraries. */

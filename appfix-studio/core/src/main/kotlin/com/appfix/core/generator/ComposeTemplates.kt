@@ -20,7 +20,7 @@ internal object ComposeTemplates {
             "androidx.compose.ui.res.stringResource", "androidx.compose.ui.unit.dp",
         )
         val content = StringBuilder()
-        content.append("        Text(stringResource(R.string.${p}_title), style = $titleStyle)\n")
+        if (kind != FeatureKind.ONBOARDING) content.append("        Text(stringResource(R.string.${p}_title), style = $titleStyle)\n")
         val helpers = StringBuilder()
         when (kind) {
             FeatureKind.ABOUT -> {
@@ -65,6 +65,33 @@ internal object ComposeTemplates {
             FeatureKind.HELP -> for (i in 1..3) {
                 content.append("        Text(stringResource(R.string.${p}_q$i), style = $labelStyle)\n")
                 content.append("        Text(stringResource(R.string.${p}_a$i), style = $bodyStyle)\n")
+            }
+            FeatureKind.ONBOARDING -> {
+                imports += listOf(
+                    "android.app.Activity", "$material.Button", "$material.TextButton", "androidx.compose.foundation.layout.Row",
+                    "androidx.compose.foundation.layout.Spacer", "androidx.compose.foundation.layout.fillMaxWidth", "androidx.compose.runtime.getValue",
+                    "androidx.compose.runtime.mutableStateOf", "androidx.compose.runtime.remember", "androidx.compose.runtime.setValue",
+                    "androidx.compose.ui.platform.LocalContext",
+                )
+                content.append("""
+                    |        val activity = LocalContext.current as? Activity
+                    |        val titles = listOf(R.string.${p}_page1_title, R.string.${p}_page2_title, R.string.${p}_page3_title)
+                    |        val bodies = listOf(R.string.${p}_page1_body, R.string.${p}_page2_body, R.string.${p}_page3_body)
+                    |        var page by remember { mutableStateOf(0) }
+                    |        val complete = {
+                    |            activity?.getSharedPreferences("onboarding", Activity.MODE_PRIVATE)?.edit()?.putBoolean("done", true)?.apply()
+                    |            activity?.finish()
+                    |        }
+                    |        Text(stringResource(titles[page]), style = $titleStyle)
+                    |        Text(stringResource(bodies[page]), style = $bodyStyle)
+                    |        Row(Modifier.fillMaxWidth()) {
+                    |            TextButton(onClick = { complete() }) { Text(stringResource(R.string.${p}_skip)) }
+                    |            Spacer(Modifier.weight(1f))
+                    |            Button(onClick = { if (page < titles.lastIndex) page++ else complete() }) {
+                    |                Text(stringResource(if (page == titles.lastIndex) R.string.${p}_done else R.string.${p}_next))
+                    |            }
+                    |        }
+                    |""".trimMargin())
             }
             FeatureKind.SETTINGS -> {
                 imports += listOf(

@@ -52,6 +52,7 @@ object ValuesEditor {
 
     fun validate(type: String, name: String, value: String): String? {
         if (!namePattern.matches(name)) return "Names may contain letters, digits, '_' and '.', and must not start with a digit."
+        if (com.appfix.core.util.JavaNames.isReserved(name)) return "\"$name\" is a reserved Java keyword and cannot be used as a resource name."
         return when (type) {
             "color" -> if (colorPattern.matches(value.trim()) || value.trim().startsWith("@color/") || value.trim().startsWith("@android:color/")) null else "Use #RGB, #ARGB, #RRGGBB or #AARRGGBB, or a @color/ reference."
             "dimen" -> if (dimenPattern.matches(value.trim()) || value.trim().startsWith("@dimen/")) null else "Use a number with a unit, for example 16dp or 14sp."
