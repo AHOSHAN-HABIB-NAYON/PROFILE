@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Sample Notes</string>
+    <string name="title">Hello from Sample Notes</string>
+    <string name="body">This small app is used to test AppFix Studio editing, repair and build workflows.</string>
+    <string name="no_taps">No taps yet</string>
+    <string name="tap_me">Tap me</string>
+    <string name="tap_count">Tapped %1$d times</string>
+</resources>
