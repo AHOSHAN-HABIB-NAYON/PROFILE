@@ -19,6 +19,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.outlined.Key
+import androidx.compose.material.icons.outlined.CreditCard
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.PhotoCamera
@@ -256,7 +258,7 @@ fun AutofillBar(offer: AutofillOffer, onFill: (Long) -> Unit, onDismiss: () -> U
     var menu by remember { mutableStateOf(false) }
     val first = offer.entries.first()
     val isCard = offer.kind == com.webtecit.nayon.data.security.AutofillKind.CARD
-    val icon = if (isCard) androidx.compose.material.icons.Icons.Outlined.CreditCard else androidx.compose.material.icons.Icons.Outlined.Home
+    val icon = if (isCard) Icons.Outlined.CreditCard else Icons.Outlined.Home
     Surface(shape = RoundedCornerShape(28.dp), color = scheme.inverseSurface, shadowElevation = 8.dp, modifier = modifier) {
         Row(Modifier.padding(start = Spacing.lg, end = Spacing.xs).height(52.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, null, tint = scheme.inversePrimary, modifier = Modifier.size(20.dp))
@@ -300,7 +302,7 @@ fun SaveFormSheet(offer: SaveFormOffer, onSave: () -> Unit, onDismiss: () -> Uni
         Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = Spacing.xl).padding(bottom = Spacing.lg)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(44.dp).clip(CircleShape).background(scheme.primaryContainer), contentAlignment = Alignment.Center) {
-                    Icon(if (isCard) androidx.compose.material.icons.Icons.Outlined.CreditCard else androidx.compose.material.icons.Icons.Outlined.Home,
+                    Icon(if (isCard) Icons.Outlined.CreditCard else Icons.Outlined.Home,
                         null, tint = scheme.onPrimaryContainer)
                 }
                 Spacer(Modifier.width(Spacing.md))
