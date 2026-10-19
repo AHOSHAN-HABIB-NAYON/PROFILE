@@ -207,13 +207,44 @@ class BrowserViewModel(
 
     // ---- Recently closed (Undo) -----------------------------------------------------------
 
-    private val recentlyClosed = ArrayDeque<Pair<Int, TabState>>()
+    /** A closed tab: where it was, and its history (page, scroll position, back/forward). */
+    private class ClosedTab(val index: Int, val tab: TabState, val state: android.os.Bundle?)
+
+    private val recentlyClosed = ArrayDeque<ClosedTab>()
+
+    /** The last closed tab's WebView, kept alive for a short while so Undo is instant. */
+    private var undoWebView: Pair<String, WebView>? = null
+    private var undoExpiry: kotlinx.coroutines.Job? = null
 
     fun undoCloseTab() {
-        val (index, tab) = recentlyClosed.removeLastOrNull() ?: return
-        val restored = tab.copy(isLoading = false, progress = 0, canGoBack = false, canGoForward = false, error = null)
-        _tabs.update { list -> list.toMutableList().apply { add(index.coerceIn(0, size), restored) } }
-        selectTab(restored.id)
+        val closed = recentlyClosed.removeLastOrNull() ?: return
+        val id = closed.tab.id
+        val kept = undoWebView?.takeIf { it.first == id }?.second
+        val restored = if (kept != null) {
+            // Still alive: the page comes back exactly where it was, with no reload.
+            undoExpiry?.cancel()
+            undoWebView = null
+            webViews[id] = kept
+            kept.onResume()
+            closed.tab.copy(error = null)
+        } else {
+            // Rebuilt from its saved history: same page and scroll position, loaded from cache.
+            closed.state?.let { savedStates[id] = it }
+            closed.tab.copy(isLoading = false, progress = 0, error = null)
+        }
+        _tabs.update { list -> list.toMutableList().apply { add(closed.index.coerceIn(0, size), restored) } }
+        selectTab(id)
+        hibernateOldTabs()
+    }
+
+    private fun releaseUndoWebView() {
+        undoExpiry?.cancel()
+        undoWebView?.second?.let { wv ->
+            (wv.parent as? android.view.ViewGroup)?.removeView(wv)
+            wv.stopLoading()
+            wv.destroy()
+        }
+        undoWebView = null
     }
 
     private val _showBrowser = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
@@ -470,7 +501,11 @@ class BrowserViewModel(
 
     fun selectTab(id: String) {
         val previous = _activeId.value
-        if (previous != null && previous != id) webViews[previous]?.onPause()
+        if (previous != null && previous != id) {
+            // Background tabs keep running (videos, chats, timers), like on a computer. Their
+            // history is saved so they come back in place if Android ever frees their memory.
+            webViews[previous]?.let { wv -> android.os.Bundle().also { b -> if (wv.saveState(b) != null) savedStates[previous] = b } }
+        }
         _activeId.value = id
         showBars()
         lastUsed[id] = System.currentTimeMillis()
@@ -482,9 +517,23 @@ class BrowserViewModel(
         val index = list.indexOfFirst { it.id == id }
         if (index < 0) return
         val closing = list[index]
-        recentlyClosed.addLast(index to closing.copy(thumbnail = null))
+        val wv = webViews[id]
+        val state = wv?.let { android.os.Bundle().also { b -> it.saveState(b) } } ?: savedStates[id]
+        recentlyClosed.addLast(ClosedTab(index, closing.copy(thumbnail = null), state))
         if (recentlyClosed.size > 10) recentlyClosed.removeFirst()
-        destroyWebView(id)
+        releaseUndoWebView()
+        if (wv != null && !closing.isPrivate) {
+            // Keep the closed page alive (silenced) for the Undo window, then free it.
+            webViews.remove(id)
+            lastUsed.remove(id)
+            (wv.parent as? android.view.ViewGroup)?.removeView(wv)
+            wv.evaluateJavascript(PAUSE_MEDIA_JS, null)
+            wv.onPause()
+            undoWebView = id to wv
+            undoExpiry = viewModelScope.launch { kotlinx.coroutines.delay(UNDO_KEEP_MS); releaseUndoWebView() }
+        } else {
+            destroyWebView(id)
+        }
         savedStates.remove(id); openers.remove(id); externalTabs.remove(id)
         val remaining = list - closing
         _tabs.value = remaining
@@ -734,13 +783,53 @@ class BrowserViewModel(
     fun webViewOrNull(id: String): WebView? = webViews[id]
 
 
-    /** Keeps at most [MAX_LIVE_WEBVIEWS] WebViews in memory. Others reload when reopened. */
+    /**
+     * How many tabs stay live at once, from the phone's memory: more on big phones, fewer on
+     * small ones, so live tabs never make the browser lag or crash.
+     */
+    private val maxLiveWebViews: Int by lazy {
+        val am = getApplication<Application>().getSystemService(android.app.ActivityManager::class.java)
+        val info = android.app.ActivityManager.MemoryInfo().also { am?.getMemoryInfo(it) }
+        val gb = info.totalMem / (1024.0 * 1024 * 1024)
+        when {
+            am?.isLowRamDevice == true -> 2
+            gb < 3.5 -> 3
+            gb < 5.5 -> 5
+            gb < 9 -> 7
+            else -> 9
+        }
+    }
+
+    /** Called when Android asks apps to free memory: sleep background tabs (history kept). */
+    fun onTrimMemory(level: Int) {
+        // RUNNING_LOW / RUNNING_CRITICAL while in use, or BACKGROUND and above once the app is
+        // in the background. Plain UI_HIDDEN (just switching apps) keeps tabs live.
+        val low = android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW
+        val critical = android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL
+        val uiHidden = android.content.ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN
+        if (level < low || level == uiHidden) return
+        releaseUndoWebView()
+        val active = _activeId.value
+        val keep = if (level == critical || level >= android.content.ComponentCallbacks2.TRIM_MEMORY_MODERATE) 0 else 1
+        webViews.keys.filter { it != active }
+            .sortedByDescending { lastUsed[it] ?: 0L }
+            .drop(keep)
+            .forEach { id -> hibernate(id) }
+    }
+
+    private fun hibernate(id: String) {
+        webViews[id]?.let { wv -> android.os.Bundle().also { b -> if (wv.saveState(b) != null) savedStates[id] = b } }
+        destroyWebView(id)
+        updateTab(id) { it.copy(isLoading = false, progress = 0) }
+    }
+
+    /** Keeps at most [maxLiveWebViews] WebViews in memory. Others come back from saved history. */
     private fun hibernateOldTabs() {
-        if (webViews.size <= MAX_LIVE_WEBVIEWS) return
+        if (webViews.size <= maxLiveWebViews) return
         val active = _activeId.value
         webViews.keys.filter { it != active }
             .sortedBy { lastUsed[it] ?: 0L }
-            .take(webViews.size - MAX_LIVE_WEBVIEWS)
+            .take(webViews.size - maxLiveWebViews)
             .forEach { id ->
                 // Keep the tab's back/forward history so Back still works after it wakes up.
                 webViews[id]?.let { wv -> android.os.Bundle().also { b -> if (wv.saveState(b) != null) savedStates[id] = b } }
@@ -985,9 +1074,14 @@ class BrowserViewModel(
         }
 
         override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
-            // The page's renderer crashed or was killed to free memory. Drop this WebView and offer a reload.
+            // The page's renderer crashed or was killed to free memory. Drop this WebView.
             if (webViews[tabId] === view) destroyWebView(tabId)
-            updateTab(tabId) { it.copy(isLoading = false, error = PageError(PageError.Kind.CRASHED, it.url.orEmpty())) }
+            if (tabId == _activeId.value) {
+                updateTab(tabId) { it.copy(isLoading = false, error = PageError(PageError.Kind.CRASHED, it.url.orEmpty())) }
+            } else {
+                // A background tab: it quietly comes back from its saved history when opened.
+                updateTab(tabId) { it.copy(isLoading = false, progress = 0) }
+            }
             return true
         }
     }
@@ -1048,13 +1142,17 @@ class BrowserViewModel(
 
 
     override fun onCleared() {
+        releaseUndoWebView()
         webViews.keys.toList().forEach { destroyWebView(it) }
         webContext.baseContext = getApplication()
         super.onCleared()
     }
 
     companion object {
-        const val MAX_LIVE_WEBVIEWS = 4
+        /** How long a closed tab's page stays alive for Undo. */
+        const val UNDO_KEEP_MS = 15_000L
+        /** Silences a closed tab's audio and video while it waits for Undo. */
+        const val PAUSE_MEDIA_JS = "document.querySelectorAll('video,audio').forEach(function(m){try{m.pause();}catch(e){}});"
         const val THUMB_WIDTH = 270
         const val PRIVATE_PROFILE = "nayon_private"
 

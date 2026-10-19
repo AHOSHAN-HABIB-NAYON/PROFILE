@@ -115,4 +115,6 @@ checking by hand on a real device.
 | Text selection menu | Implemented | WebView's Copy / Cut / Paste / Select all / Share, plus NAYON's own Web search that opens results in a new NAYON tab | — | Manual |
 | Chrome-style Back | Implemented | Page history checked live; sleeping tabs keep their history; a link-opened tab closes back to its parent; on the last page, press Back twice to leave | — | Manual |
 | ⋮ menu as an in-window popup | Implemented | No separate dialog window, so it opens without stutter | — | Manual |
+| Instant Undo for closed tabs | Implemented | The closed page stays alive (silenced) for 15 s, so Undo brings it back exactly as it was. Later restores use saved history (same page and scroll, may refetch) | — | Manual |
+| Live background tabs | Implemented | Background tabs keep running instead of being paused. The number kept live depends on the phone's memory (2–9); when Android asks for memory, background tabs sleep with their history saved and wake in place. WebView itself still slows timers in hidden pages | — | Manual |
 
