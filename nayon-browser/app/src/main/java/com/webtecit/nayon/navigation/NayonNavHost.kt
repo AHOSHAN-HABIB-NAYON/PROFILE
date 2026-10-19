@@ -40,6 +40,8 @@ object Routes {
     const val PRIVACY = "privacy"
     const val LICENSES = "licenses"
     const val DOWNLOADS = "downloads"
+    const val PASSWORDS = "passwords"
+    const val SITE_SETTINGS = "site_settings"
 }
 
 private const val NAV_ANIM_MS = 220
@@ -107,6 +109,8 @@ fun NayonNavHost(
                 onOpenAbout = { go(Routes.ABOUT) },
                 onOpenPrivacy = { go(Routes.PRIVACY) },
                 onOpenLicenses = { go(Routes.LICENSES) },
+                onOpenPasswords = { go(Routes.PASSWORDS) },
+                onOpenSiteSettings = { go(Routes.SITE_SETTINGS) },
             )
         }
         composable(Routes.APPEARANCE) { AppearanceRoute(onBack = back) }
@@ -116,6 +120,8 @@ fun NayonNavHost(
             AboutScreen(onBack = back, onOpenPrivacy = { go(Routes.PRIVACY) }, onOpenLicenses = { go(Routes.LICENSES) }, onOpenUrl = openNewTab)
         }
         composable(Routes.DOWNLOADS) { DownloadsScreen(onBack = back) }
+        composable(Routes.PASSWORDS) { com.webtecit.nayon.feature.security.PasswordsScreen(onBack = back, onOpenSite = openNewTab) }
+        composable(Routes.SITE_SETTINGS) { com.webtecit.nayon.feature.security.SiteSettingsScreen(onBack = back) }
         composable(Routes.PRIVACY) { PrivacyPolicyScreen(onBack = back) }
         composable(Routes.LICENSES) { LicensesScreen(onBack = back, onOpenUrl = openNewTab) }
     }

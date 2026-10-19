@@ -28,11 +28,15 @@ object NayonViewModelFactory {
         initializer { AppearanceViewModel(app().container.appearanceRepository) }
         initializer {
             val app = app()
-            BrowserViewModel(app, app.container.browsingRepository, app.container.browserPreferences, app.container.faviconStore, app.container.downloadEngine)
+            BrowserViewModel(app, app.container.browsingRepository, app.container.browserPreferences, app.container.faviconStore, app.container.downloadEngine, app.container.securityRepository)
         }
         initializer { BookmarksViewModel(app().container.browsingRepository) }
         initializer { HistoryViewModel(app().container.browsingRepository) }
         initializer { DownloadsViewModel(app().container.downloadEngine) }
+        initializer {
+            com.webtecit.nayon.feature.security.PasswordsViewModel(app().container.securityRepository, app().container.browserPreferences)
+        }
+        initializer { com.webtecit.nayon.feature.security.SiteSettingsViewModel(app().container.securityRepository) }
     }
 
     private fun androidx.lifecycle.viewmodel.CreationExtras.app(): NayonApp =

@@ -67,3 +67,23 @@ compatibility scripts, none of which read page content or send anything anywhere
   failing, because WebView does not support it and video players stall on the failure.
   NAYON rotates full-screen video itself.
 
+## Passwords (Stage 3)
+
+- Saved usernames and passwords are encrypted with AES-256-GCM. The key is created inside the
+  Android Keystore and never leaves it, so a copy of the database file cannot be decrypted.
+- Viewing passwords requires fingerprint, face or the screen lock. Copied passwords are marked
+  sensitive so Android hides them from clipboard previews.
+- Sign-in detection uses WebView's message channel (WebMessageListener). The site origin used
+  for saving comes from WebView itself, not from the page. Only https pages in normal tabs are
+  considered, and only the top frame.
+- Saved passwords are filled only after you tap "Sign in as …", and only if the tab is still on
+  the same origin. "Delete all passwords" also destroys the Keystore key.
+- A page can see that NAYON's message channel exists, and could send a fake sign-in message;
+  the worst result is a "Save password?" prompt for that same site, which you can decline.
+
+## Website permissions (Stage 3)
+
+- Camera, microphone, location and protected content are denied unless you allow the site.
+  Decisions are stored per origin (scheme + host + port). Private tabs never store decisions.
+- Android's own permission is requested only after you allow a site, and only for what it asked.
+

@@ -38,3 +38,31 @@ class GoogleAccountsParseTest {
         assertEquals(null, com.webtecit.nayon.data.browser.GoogleAccounts.parse("""["gaia.l.a.r",[]]"""))
     }
 }
+
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+@org.robolectric.annotation.Config(sdk = [34])
+class Stage3LogicTest {
+    @Test
+    fun originKeepsSchemeHostAndPortOnly() {
+        val o = com.webtecit.nayon.data.security.SecurityRepository.Companion
+        assertEquals("https://accounts.google.com", o.originOf("https://accounts.google.com/signin/v2?x=1#y"))
+        assertEquals("https://example.com:8443", o.originOf("https://Example.com:8443/login"))
+        assertEquals(null, o.originOf("javascript:alert(1)"))
+        assertEquals(null, o.originOf("file:///sdcard/a.html"))
+    }
+
+    @Test
+    fun passwordMessageIsParsedAndBounded() {
+        val bridge = com.webtecit.nayon.feature.browser.PasswordBridge
+        assertEquals("me@x.com" to "s3cret", bridge.parse("""{"u":"me@x.com","p":"s3cret"}"""))
+        assertEquals(null, bridge.parse("""{"u":"me","p":""}"""))
+        assertEquals(null, bridge.parse("not json"))
+    }
+
+    @Test
+    fun fillScriptEscapesValues() {
+        val js = com.webtecit.nayon.feature.browser.PasswordBridge.fillScript("a\"b", "p'</script>")
+        org.junit.Assert.assertTrue(js.contains("\"a\\\"b\""))
+        org.junit.Assert.assertTrue(js.contains("p'<\\/script>"))
+    }
+}

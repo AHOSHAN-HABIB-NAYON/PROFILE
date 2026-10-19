@@ -7,6 +7,14 @@
     <!-- Google Lens camera: asked for only when the Lens button is tapped. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- Only used when you allow a website to use them (asked per site, like Chrome). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <uses-feature android:name="android.hardware.location" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
     <!-- Used only to tell "you are offline" apart from "site not found" on error pages. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Lets the user install APK files they downloaded (Android asks for confirmation). -->

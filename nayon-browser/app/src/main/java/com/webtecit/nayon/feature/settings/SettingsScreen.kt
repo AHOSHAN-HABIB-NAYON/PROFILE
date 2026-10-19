@@ -14,6 +14,8 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PrivacyTip
+import androidx.compose.material.icons.outlined.Key
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Shield
@@ -73,6 +75,8 @@ fun SettingsScreen(
     onOpenAbout: () -> Unit,
     onOpenPrivacy: () -> Unit,
     onOpenLicenses: () -> Unit,
+    onOpenPasswords: () -> Unit = {},
+    onOpenSiteSettings: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val prefs by browser.preferences.collectAsStateWithLifecycle()
@@ -180,6 +184,12 @@ fun SettingsScreen(
         item { SectionHeader(stringResource(R.string.settings_section_privacy)) }
         item {
             SettingsGroup {
+                SettingsRow(stringResource(R.string.passwords_title), onOpenPasswords, icon = Icons.Outlined.Key,
+                    subtitle = stringResource(R.string.settings_passwords_desc))
+                GroupDivider()
+                SettingsRow(stringResource(R.string.site_settings_title), onOpenSiteSettings, icon = Icons.Outlined.Tune,
+                    subtitle = stringResource(R.string.settings_site_settings_desc))
+                GroupDivider()
                 SettingsRow(stringResource(R.string.settings_clear_data), onOpenClearData, icon = Icons.Outlined.DeleteOutline,
                     subtitle = stringResource(R.string.settings_clear_data_desc))
                 GroupDivider()

@@ -63,6 +63,9 @@ fun PageInfoSheet(
     javaScriptEnabled: Boolean,
     onClearSiteData: () -> Unit,
     onDismiss: () -> Unit,
+    permissions: List<com.webtecit.nayon.data.security.SitePermission> = emptyList(),
+    onSetPermission: (com.webtecit.nayon.data.security.SiteKind, Boolean?) -> Unit = { _, _ -> },
+    onResetPermissions: () -> Unit = {},
 ) {
     val scheme = MaterialTheme.colorScheme
     val context = LocalContext.current
@@ -158,8 +161,16 @@ fun PageInfoSheet(
             InfoLine(
                 icon = Icons.Outlined.Shield,
                 title = stringResource(R.string.page_info_permissions),
-                subtitle = stringResource(R.string.page_info_permissions_body),
+                subtitle = if (permissions.isEmpty()) stringResource(R.string.page_info_permissions_none) else null,
+                trailing = if (permissions.isEmpty()) null else {
+                    { TextButton(onClick = onResetPermissions) { Text(stringResource(R.string.action_reset)) } }
+                },
             )
+            if (permissions.isNotEmpty()) {
+                Column(Modifier.padding(start = Spacing.xl, end = Spacing.lg, bottom = Spacing.sm)) {
+                    permissions.forEach { p -> com.webtecit.nayon.feature.security.PermissionLine(p, onSetPermission) }
+                }
+            }
             InfoLine(
                 icon = Icons.Outlined.Code,
                 title = stringResource(if (javaScriptEnabled) R.string.page_info_javascript_on else R.string.page_info_javascript_off),

@@ -7,7 +7,7 @@ import android.animation.ObjectAnimator
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
-import androidx.activity.ComponentActivity
+import androidx.fragment.app.FragmentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -35,7 +35,8 @@ import com.webtecit.nayon.navigation.NayonNavHost
 import kotlinx.coroutines.delay
 import java.util.Calendar
 
-class MainActivity : ComponentActivity() {
+/** FragmentActivity (a ComponentActivity) so the fingerprint / screen-lock prompt can be shown. */
+class MainActivity : FragmentActivity() {
 
     private val viewModel: MainViewModel by viewModels { NayonViewModelFactory.Factory }
     private val browser: BrowserViewModel by viewModels { NayonViewModelFactory.Factory }

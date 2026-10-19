@@ -37,6 +37,10 @@ import androidx.webkit.ProfileStore
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
+import com.webtecit.nayon.data.security.SaveCheck
+import com.webtecit.nayon.data.security.SecurityRepository
+import com.webtecit.nayon.data.security.SitePermission
+import com.webtecit.nayon.data.security.SiteKind
 import com.webtecit.nayon.R
 import com.webtecit.nayon.core.browser.SearchEngine
 import com.webtecit.nayon.core.browser.UrlResolver
@@ -79,7 +83,134 @@ class BrowserViewModel(
     private val prefsRepository: BrowserPreferencesRepository,
     private val favicons: FaviconStore,
     private val downloads: com.webtecit.nayon.data.downloads.DownloadEngine,
+    private val security: SecurityRepository,
 ) : AndroidViewModel(app) {
+
+    // ---- Website permissions (camera, microphone, location, protected media) -----------------
+
+    private val _permissionAsk = MutableStateFlow<PermissionAsk?>(null)
+    /** A website is asking for a permission; the UI shows the prompt and Android's own dialog. */
+    val permissionAsk: StateFlow<PermissionAsk?> = _permissionAsk.asStateFlow()
+    private var pendingWebRequest: PermissionRequest? = null
+    private var pendingGeo: Pair<String, GeolocationPermissions.Callback>? = null
+
+    private fun askPermission(tabId: String, origin: String, kinds: List<SiteKind>) {
+        val private = tab(tabId)?.isPrivate == true
+        viewModelScope.launch {
+            val decisions = if (private) kinds.map { null } else kinds.map { security.decision(origin, it) }
+            when {
+                decisions.any { it == false } -> finishPermission(false)
+                decisions.all { it == true } -> _permissionAsk.value = PermissionAsk(origin, kinds, needsPrompt = false, isPrivate = private)
+                else -> _permissionAsk.value = PermissionAsk(origin, kinds, needsPrompt = true, isPrivate = private)
+            }
+        }
+    }
+
+    /** The user's answer (and whether Android itself granted the app permission). */
+    fun answerPermission(choice: PermissionChoice, androidGranted: Boolean) {
+        val ask = _permissionAsk.value ?: return finishPermission(false)
+        if (!ask.isPrivate && choice != PermissionChoice.ALLOW_ONCE) {
+            viewModelScope.launch { ask.kinds.forEach { security.setDecision(ask.origin, it, choice == PermissionChoice.ALLOW) } }
+        }
+        val granted = choice != PermissionChoice.BLOCK && androidGranted
+        if (choice != PermissionChoice.BLOCK && !androidGranted) _events.tryEmit(BrowserEvent.Message(R.string.permission_android_denied))
+        finishPermission(granted)
+    }
+
+    private fun finishPermission(granted: Boolean) {
+        pendingWebRequest?.let { r -> runCatching { if (granted) r.grant(r.resources.filter { webResourceKind(it) != null }.toTypedArray()) else r.deny() } }
+        pendingGeo?.let { (origin, cb) -> runCatching { cb.invoke(origin, granted, false) } }
+        pendingWebRequest = null
+        pendingGeo = null
+        _permissionAsk.value = null
+    }
+
+    private fun webResourceKind(resource: String): SiteKind? = when (resource) {
+        PermissionRequest.RESOURCE_VIDEO_CAPTURE -> SiteKind.CAMERA
+        PermissionRequest.RESOURCE_AUDIO_CAPTURE -> SiteKind.MICROPHONE
+        PermissionRequest.RESOURCE_PROTECTED_MEDIA_ID -> SiteKind.PROTECTED_MEDIA
+        else -> null
+    }
+
+    /** Saved permission decisions for one site (shown in Site information). */
+    fun permissionsFor(url: String?): Flow<List<SitePermission>> {
+        val origin = SecurityRepository.originOf(url) ?: return kotlinx.coroutines.flow.flowOf(emptyList())
+        return security.sitePermissions.map { list -> list.filter { it.origin == origin } }
+    }
+
+    fun setSitePermission(origin: String, kind: SiteKind, allowed: Boolean?) = viewModelScope.launch { security.setDecision(origin, kind, allowed) }
+    fun resetSitePermissions(origin: String) = viewModelScope.launch { security.resetSite(origin) }
+
+    // ---- Passwords ----------------------------------------------------------------------------
+
+    private val _passwordOffer = MutableStateFlow<PasswordOffer?>(null)
+    /** "Save password?" after a sign-in. The password is held in memory only until answered. */
+    val passwordOffer: StateFlow<PasswordOffer?> = _passwordOffer.asStateFlow()
+
+    private val _fillOffer = MutableStateFlow<FillOffer?>(null)
+    /** Saved sign-ins for the page in front of the user, offered on a sign-in page. */
+    val fillOffer: StateFlow<FillOffer?> = _fillOffer.asStateFlow()
+
+    private fun onSignInSubmitted(tabId: String, origin: String, username: String, password: String) {
+        val tab = tab(tabId) ?: return
+        if (tab.isPrivate || !preferences.value.savePasswords || !origin.startsWith("https://")) return
+        viewModelScope.launch {
+            when (security.check(origin, username, password)) {
+                SaveCheck.NEW -> _passwordOffer.value = PasswordOffer(origin, username, password, update = false)
+                SaveCheck.UPDATE -> _passwordOffer.value = PasswordOffer(origin, username, password, update = true)
+                SaveCheck.SAME, SaveCheck.NEVER -> Unit
+            }
+        }
+    }
+
+    fun savePassword() {
+        val offer = _passwordOffer.value ?: return
+        _passwordOffer.value = null
+        viewModelScope.launch {
+            runCatching { security.save(offer.origin, offer.username, offer.password) }
+                .onSuccess { _events.tryEmit(BrowserEvent.Message(R.string.password_saved)) }
+        }
+    }
+
+    fun neverSavePassword() {
+        val offer = _passwordOffer.value ?: return
+        _passwordOffer.value = null
+        viewModelScope.launch { security.neverSave(offer.origin) }
+    }
+
+    fun dismissPasswordOffer() { _passwordOffer.value = null }
+
+    private fun offerFill(tabId: String, view: WebView, url: String) {
+        val tab = tab(tabId) ?: return
+        val origin = SecurityRepository.originOf(url) ?: return
+        if (tab.isPrivate || !origin.startsWith("https://")) return
+        viewModelScope.launch {
+            val logins = security.loginsFor(origin)
+            if (logins.isEmpty()) return@launch
+            view.evaluateJavascript(PasswordBridge.HAS_PASSWORD_FIELD_JS) { has ->
+                if (has == "true" && SecurityRepository.originOf(view.url) == origin) _fillOffer.value = FillOffer(tabId, origin, logins)
+            }
+        }
+    }
+
+    /** Fills a saved sign-in into the page, only if the tab is still on the same site. */
+    fun fillLogin(loginId: Long) {
+        val offer = _fillOffer.value ?: return
+        _fillOffer.value = null
+        val wv = webViews[offer.tabId] ?: return
+        if (SecurityRepository.originOf(wv.url) != offer.origin) return
+        val login = offer.logins.firstOrNull { it.id == loginId } ?: return
+        viewModelScope.launch {
+            val password = security.password(loginId) ?: return@launch
+            if (SecurityRepository.originOf(wv.url) != offer.origin) return@launch
+            wv.evaluateJavascript(PasswordBridge.fillScript(login.username, password), null)
+            security.markUsed(loginId)
+        }
+    }
+
+    fun dismissFillOffer() { _fillOffer.value = null }
+
+    fun setSavePasswords(enabled: Boolean) = viewModelScope.launch { prefsRepository.setSavePasswords(enabled) }
 
     private val _tabs = MutableStateFlow<List<TabState>>(emptyList())
     val tabs: StateFlow<List<TabState>> = _tabs.asStateFlow()
@@ -877,7 +1008,7 @@ class BrowserViewModel(
             // Like Chrome after you interact with a page: players that rebuild their video
             // (live streams, full-screen switches) may start it again without a fresh tap.
             mediaPlaybackRequiresUserGesture = false
-            setGeolocationEnabled(false)
+            setGeolocationEnabled(true)   // each site still has to be allowed (see onGeolocationPermissionsShowPrompt)
             if (tab.isPrivate) cacheMode = WebSettings.LOAD_NO_CACHE
             // Draws the page just outside the screen too, so scrolling and tab switches are smoother.
             offscreenPreRaster = true
@@ -901,6 +1032,19 @@ class BrowserViewModel(
         wv.setOnTouchListener { _, e -> onWebTouch(tab.id, e.actionMasked); false }
         wv.setOnLongClickListener { onLongPress(tab.id, wv) }
         wv.onWebSearch = { text -> newTab(UrlResolver.search(text, preferences.value.searchTemplate), private = tab.isPrivate) }
+        if (!tab.isPrivate && WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER) &&
+            WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
+        ) {
+            runCatching {
+                WebViewCompat.addWebMessageListener(wv, PasswordBridge.CHANNEL, setOf("*")) { _, message, sourceOrigin, isMainFrame, _ ->
+                    if (!isMainFrame) return@addWebMessageListener
+                    val origin = SecurityRepository.originOf(sourceOrigin.toString()) ?: return@addWebMessageListener
+                    val (user, pass) = PasswordBridge.parse(message.data) ?: return@addWebMessageListener
+                    onSignInSubmitted(tab.id, origin, user, pass)
+                }
+                WebViewCompat.addDocumentStartJavaScript(wv, PasswordBridge.CAPTURE_SCRIPT, setOf("*"))
+            }
+        }
         wv.setFindListener { active, count, _ ->
             if (tab.id == _activeId.value) _find.update { it?.copy(current = if (count == 0) 0 else active + 1, total = count) }
         }
@@ -1017,6 +1161,7 @@ class BrowserViewModel(
         }
 
         override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
+            if (_fillOffer.value?.tabId == tabId) _fillOffer.value = null
             if (tabId == _activeId.value) showBars()
             updateTab(tabId) {
                 it.copy(
@@ -1028,6 +1173,7 @@ class BrowserViewModel(
         }
 
         override fun onPageFinished(view: WebView, url: String) {
+            if (tabId == _activeId.value) offerFill(tabId, view, url)
             updateTab(tabId) { it.copy(isLoading = false, progress = 100, url = url, title = view.title ?: it.title) }
             val host = UrlResolver.displayHost(url)
             if (tab(tabId)?.isPrivate == false && UrlResolver.isWebUrl(url) && host.isNotBlank()) {
@@ -1126,13 +1272,28 @@ class BrowserViewModel(
             return true
         }
 
-        // Camera, microphone and location for websites arrive in Stage 3 with proper prompts.
+        // Camera, microphone, protected media and location: asked per site, like Chrome.
         override fun onPermissionRequest(request: PermissionRequest) {
-            request.deny()
+            val origin = SecurityRepository.originOf(request.origin?.toString())
+            val kinds = request.resources.mapNotNull { webResourceKind(it) }.distinct()
+            if (origin == null || kinds.isEmpty() || pendingWebRequest != null || pendingGeo != null) { request.deny(); return }
+            pendingWebRequest = request
+            askPermission(tabId, origin, kinds)
+        }
+
+        override fun onPermissionRequestCanceled(request: PermissionRequest) {
+            if (pendingWebRequest === request) { pendingWebRequest = null; _permissionAsk.value = null }
         }
 
         override fun onGeolocationPermissionsShowPrompt(origin: String, callback: GeolocationPermissions.Callback) {
-            callback.invoke(origin, false, false)
+            val site = SecurityRepository.originOf(origin)
+            if (site == null || pendingWebRequest != null || pendingGeo != null) { callback.invoke(origin, false, false); return }
+            pendingGeo = origin to callback
+            askPermission(tabId, site, listOf(SiteKind.LOCATION))
+        }
+
+        override fun onGeolocationPermissionsHidePrompt() {
+            if (pendingGeo != null) { pendingGeo = null; _permissionAsk.value = null }
         }
     }
 

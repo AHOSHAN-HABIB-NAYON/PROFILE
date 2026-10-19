@@ -68,3 +68,21 @@ data class ContextTarget(
 
 @Immutable
 data class FindState(val query: String = "", val current: Int = 0, val total: Int = 0)
+
+/** A website asking for camera / microphone / location / protected media. */
+data class PermissionAsk(
+    val origin: String,
+    val kinds: List<com.webtecit.nayon.data.security.SiteKind>,
+    /** False when the site is already allowed and only Android's own permission may be needed. */
+    val needsPrompt: Boolean,
+    val isPrivate: Boolean,
+)
+
+enum class PermissionChoice { ALLOW, ALLOW_ONCE, BLOCK }
+
+/** "Save password?" after a sign-in. */
+data class PasswordOffer(val origin: String, val username: String, val password: String, val update: Boolean)
+
+/** Saved sign-ins offered on a sign-in page. */
+data class FillOffer(val tabId: String, val origin: String, val logins: List<com.webtecit.nayon.data.security.SavedLogin>)
+

@@ -8,7 +8,7 @@ A modern, privacy-respecting Android browser written in Kotlin with Jetpack Comp
 - Website: <https://webtecit.com>
 - Package: `com.webtecit.nayon` (debug builds: `com.webtecit.nayon.debug`)
 
-> **Current stage: 2 — Browser engine.** NAYON Browser now browses the web with Android System
+> **Current stage: 3 — Storage & security** (password manager, site permissions). Earlier: **Stage 2 — Browser engine.** NAYON Browser now browses the web with Android System
 > WebView: address bar with search, six search engines plus custom, tabs and private tabs, tab
 > switcher, bookmarks, history, downloads, desktop site, voice search, full-screen video and error
 > pages — on top of the Stage 1 design system and themes.
@@ -131,7 +131,7 @@ full-screen video, splash screen, landscape, large font sizes, TalkBack, and 60/
 
 ## Current limitations
 
-- Website requests for camera, microphone and location are denied until Stage 3 adds prompts.
+- Websites must ask before using the camera, microphone or location; you can allow, allow once or block (Settings → Site settings).
 - Private-tab cookie isolation needs a WebView version with multi-profile support; older devices are told on the private page.
 - Downloads are handled by Android's download manager; there is no in-app downloads page yet.
 - Bookmark folders, import/export and the password manager are not built yet.

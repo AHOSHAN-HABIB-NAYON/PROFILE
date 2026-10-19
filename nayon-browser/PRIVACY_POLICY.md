@@ -63,3 +63,12 @@ The app is not directed at children under 13. The developer collects no personal
 
 Via the website https://webtecit.com. _(A dedicated privacy contact address has not been
 published yet.)_
+
+## Passwords and site permissions
+
+- Passwords you choose to save stay encrypted on your phone. NAYON does not upload, sync or
+  share them. Uninstalling the app or "Delete all passwords" removes them.
+- Camera, microphone and location are used only by websites you allow, only while you use them.
+  NAYON itself does not record, store or send this data. Your allow/block choices are stored on
+  your phone and can be reset in Settings → Site settings.
+

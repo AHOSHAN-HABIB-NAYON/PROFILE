@@ -3,7 +3,7 @@
 Status values: **Implemented**, **Partial**, **Planned**, **Unsupported**.
 "Testing evidence" lists only checks that actually run. CI = `.github/workflows/nayon-android.yml`.
 
-_Last updated: Stage 2 (browser engine)._
+_Last updated: Stage 3 (storage & security)._
 
 **Verification:** every push runs `.github/workflows/nayon-android.yml` (debug build, unit + Robolectric
 UI tests, lint, minified release APK and AAB). Items marked "Manual" in the evidence column still need
@@ -82,7 +82,7 @@ checking by hand on a real device.
 | Open links from other apps; set as default browser | Implemented | User chooses default browser in Android settings | — | Manual |
 | External app links (mailto:, tel:, intent:) | Implemented | Opened only after a user tap; fallback URL used when no app | — | Manual |
 | Error pages (offline, not found, timeout, insecure, crashed) | Implemented | — | — | Manual |
-| Website camera / microphone / location requests | Planned (Stage 3) | Currently denied automatically | — | — |
+| Website camera / microphone / location requests | Implemented (Stage 3) | See Stage 3 below | — | Manual |
 | New logo (launcher, splash, in-app) | Implemented | — | — | Built by CI |
 | Developer profile with photo (About, home page credit) | Implemented | — | — | Manual |
 
@@ -91,9 +91,9 @@ checking by hand on a real device.
 | Feature | Status | Technical limitation | Required configuration | Testing evidence |
 |---|---|---|---|---|
 | Bookmark folders, reading list, import/export | Planned | — | — | — |
-| Per-site settings, website permission prompts | Planned (Stage 3) | — | — | — |
-| Encrypted password vault + biometric lock | Planned (Stage 3) | Keystore-backed; no custom crypto | — | — |
-| Android Autofill service | Planned (Stage 3) — Partial expected | User must choose NAYON as autofill provider | — | — |
+| Per-site settings, website permission prompts | Implemented (Stage 3) | See Stage 3 below | — | Manual |
+| Encrypted password vault + biometric lock | Implemented (Stage 3) | See Stage 3 below | — | Manual |
+| Android Autofill service (filling other apps) | Not implemented | NAYON fills its own web pages; it is not a system-wide autofill provider. Android's own autofill (e.g. Google Password Manager) keeps working inside NAYON pages | — | — |
 | Google Sign-In | Planned (Stage 4) | — | Google Cloud project + OAuth client ID | — |
 | Cloud sync | Planned (Stage 4) | Needs a backend; sign-in alone is not sync | Backend hosting, auth rules, deletion flow | — |
 | Passkeys | Planned (Stage 4) — Partial expected | Depends on WebView WebAuthn support per version; per-site testing | — | — |
@@ -117,4 +117,15 @@ checking by hand on a real device.
 | ⋮ menu as an in-window popup | Implemented | No separate dialog window, so it opens without stutter | — | Manual |
 | Instant Undo for closed tabs | Implemented | The closed page stays alive (silenced) for 15 s, so Undo brings it back exactly as it was. Later restores use saved history (same page and scroll, may refetch) | — | Manual |
 | Live background tabs | Implemented | Background tabs keep running instead of being paused. The number kept live depends on the phone's memory (2–9); when Android asks for memory, background tabs sleep with their history saved and wake in place. WebView itself still slows timers in hidden pages | — | Manual |
+
+## Stage 3 — Storage & security
+| Feature | Status | Notes | Depends on | Tested |
+|---|---|---|---|---|
+| Website permission prompts | Implemented | Camera, microphone, location and protected content. Chrome-style prompt: Allow while visiting / Allow this time / Don't allow, then Android's own permission dialog if needed. Private tabs never remember answers | Android permissions (asked only when a site needs them) | Manual |
+| Site settings | Implemented | Settings → Site settings lists every remembered decision; change or reset per site, or reset all. Also in Site information (tap the icon in the address bar) | — | Manual |
+| Password manager | Implemented | Settings → Passwords. Opening it needs fingerprint, face or screen lock. Search, show, copy (marked sensitive), open site, delete, delete all, "Never saved" list | Phone screen lock | Manual |
+| Password encryption | Implemented | AES-256-GCM with a key in the Android Keystore (hardware-backed where available). Usernames and passwords are both encrypted. Stored only on this phone; never uploaded | — | Manual |
+| Save password after sign-in | Implemented | Detects sign-in form submits on https pages (normal tabs only) through WebView's message channel; no Java object is exposed to pages. Save / Update / Never for this site / Not now | WebView with WEB_MESSAGE_LISTENER + DOCUMENT_START_SCRIPT (Android System WebView 86+) | Manual |
+| Fill saved password | Implemented | On a sign-in page of a site with saved passwords, a "Sign in as …" bar appears; filling happens only when you tap it and only if the tab is still on the same site | Same as above | Manual |
+| Passkeys / sync / export | Planned (Stage 4) | — | — | — |
 

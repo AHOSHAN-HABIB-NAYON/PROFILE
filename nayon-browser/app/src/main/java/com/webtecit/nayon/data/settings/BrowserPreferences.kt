@@ -31,6 +31,8 @@ data class BrowserPreferences(
     /** Web page text size in percent (Chrome's "Text scaling"). */
     val textZoom: Int = 100,
     val searchSuggestions: Boolean = true,
+    /** Offer to save passwords after signing in (normal tabs only). */
+    val savePasswords: Boolean = true,
 ) {
     /** Search URL template in effect. Falls back to Google if the custom one is invalid. */
     val searchTemplate: String
@@ -92,6 +94,7 @@ class BrowserPreferencesRepository(private val dataStore: DataStore<Preferences>
         val pullRefresh = booleanPreferencesKey("pull_to_refresh")
         val textZoom = intPreferencesKey("text_zoom")
         val suggestions = booleanPreferencesKey("search_suggestions")
+        val savePasswords = booleanPreferencesKey("save_passwords")
     }
 
     val preferences: Flow<BrowserPreferences> = dataStore.data
@@ -110,6 +113,7 @@ class BrowserPreferencesRepository(private val dataStore: DataStore<Preferences>
                 pullToRefresh = p[Keys.pullRefresh] ?: d.pullToRefresh,
                 textZoom = (p[Keys.textZoom] ?: d.textZoom).coerceIn(50, 200),
                 searchSuggestions = p[Keys.suggestions] ?: d.searchSuggestions,
+                savePasswords = p[Keys.savePasswords] ?: d.savePasswords,
             )
         }
         .distinctUntilChanged()
@@ -128,4 +132,5 @@ class BrowserPreferencesRepository(private val dataStore: DataStore<Preferences>
     suspend fun setPullToRefresh(enabled: Boolean) = dataStore.edit { it[Keys.pullRefresh] = enabled }
     suspend fun setTextZoom(percent: Int) = dataStore.edit { it[Keys.textZoom] = percent.coerceIn(50, 200) }
     suspend fun setSearchSuggestions(enabled: Boolean) = dataStore.edit { it[Keys.suggestions] = enabled }
+    suspend fun setSavePasswords(enabled: Boolean) = dataStore.edit { it[Keys.savePasswords] = enabled }
 }

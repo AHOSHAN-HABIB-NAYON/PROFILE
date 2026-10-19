@@ -26,6 +26,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -111,6 +112,9 @@ fun BrowserScreen(
     var aiMode by remember { mutableStateOf(false) }
     val contextTarget by viewModel.contextMenu.collectAsStateWithLifecycle()
     val googleAccount by viewModel.googleAccount.collectAsStateWithLifecycle()
+    val permissionAsk by viewModel.permissionAsk.collectAsStateWithLifecycle()
+    val passwordOffer by viewModel.passwordOffer.collectAsStateWithLifecycle()
+    val fillOffer by viewModel.fillOffer.collectAsStateWithLifecycle()
 
     val focusRequester = remember { FocusRequester() }
     var editing by remember { mutableStateOf(false) }
@@ -196,6 +200,28 @@ fun BrowserScreen(
     fun openLens() {
         focusManager.clearFocus()
         showLens = true
+    }
+
+    // Website permissions: NAYON's prompt first, then Android's own permission dialog if needed.
+    var pendingChoice by remember { mutableStateOf<PermissionChoice?>(null) }
+    var pendingKinds by remember { mutableStateOf<List<com.webtecit.nayon.data.security.SiteKind>>(emptyList()) }
+    val androidPermissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { _ ->
+        val choice = pendingChoice ?: PermissionChoice.ALLOW_ONCE
+        pendingChoice = null
+        viewModel.answerPermission(choice, androidAllows(context, pendingKinds))
+    }
+    fun proceedPermission(ask: PermissionAsk, choice: PermissionChoice) {
+        if (choice == PermissionChoice.BLOCK) { viewModel.answerPermission(choice, false); return }
+        val needed = androidPermissionsFor(ask.kinds).filter {
+            androidx.core.content.ContextCompat.checkSelfPermission(context, it) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+        if (needed.isEmpty() || androidAllows(context, ask.kinds)) {
+            viewModel.answerPermission(choice, true)
+        } else {
+            pendingChoice = choice
+            pendingKinds = ask.kinds
+            runCatching { androidPermissions.launch(needed.toTypedArray()) }.onFailure { viewModel.answerPermission(choice, false) }
+        }
     }
 
     fun submit(text: String) {
@@ -387,6 +413,16 @@ fun BrowserScreen(
                         onCopy = { tab?.url?.let { copyLink(context, it) } },
                     )
                 }
+                val fill = fillOffer
+                if (fill != null && fill.tabId == tab?.id && !editing && tab?.showingHome == false) {
+                    FillPasswordBar(
+                        offer = fill,
+                        onFill = viewModel::fillLogin,
+                        onDismiss = viewModel::dismissFillOffer,
+                        modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = Spacing.lg, vertical = Spacing.lg)
+                            .widthIn(max = 520.dp).fillMaxWidth(),
+                    )
+                }
                 SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(Spacing.md))
             }
 
@@ -475,6 +511,24 @@ fun BrowserScreen(
         },
     )
 
+    permissionAsk?.let { ask ->
+        if (ask.needsPrompt) {
+            PermissionPromptSheet(ask) { choice -> proceedPermission(ask, choice) }
+        } else {
+            // Already allowed for this site: only Android's own permission may still be needed.
+            LaunchedEffect(ask) { proceedPermission(ask, PermissionChoice.ALLOW_ONCE) }
+        }
+    }
+
+    passwordOffer?.let { offer ->
+        SavePasswordSheet(
+            offer = offer,
+            onSave = viewModel::savePassword,
+            onNever = viewModel::neverSavePassword,
+            onDismiss = viewModel::dismissPasswordOffer,
+        )
+    }
+
     if (showAccount) {
         GoogleAccountSheet(
             signedIn = remember { viewModel.googleSignedIn() },
@@ -512,6 +566,13 @@ fun BrowserScreen(
             javaScriptEnabled = prefs.javaScriptEnabled,
             onClearSiteData = { infoTab.url?.let(viewModel::clearSiteData) },
             onDismiss = { showPageInfo = false },
+            permissions = remember(infoTab.url) { viewModel.permissionsFor(infoTab.url) }.collectAsStateWithLifecycle(emptyList()).value,
+            onSetPermission = { kind, allowed ->
+                com.webtecit.nayon.data.security.SecurityRepository.originOf(infoTab.url)?.let { viewModel.setSitePermission(it, kind, allowed) }
+            },
+            onResetPermissions = {
+                com.webtecit.nayon.data.security.SecurityRepository.originOf(infoTab.url)?.let { viewModel.resetSitePermissions(it) }
+            },
         )
     }
 }
@@ -687,3 +748,29 @@ fun addToHomeScreen(context: Context, tab: TabState) {
         .build()
     androidx.core.content.pm.ShortcutManagerCompat.requestPinShortcut(context, info, null)
 }
+
+/** Android permissions the app itself needs before a site may use [kinds]. */
+private fun androidPermissionsFor(kinds: List<com.webtecit.nayon.data.security.SiteKind>): List<String> = kinds.flatMap { kind ->
+    when (kind) {
+        com.webtecit.nayon.data.security.SiteKind.CAMERA -> listOf(android.Manifest.permission.CAMERA)
+        com.webtecit.nayon.data.security.SiteKind.MICROPHONE -> listOf(android.Manifest.permission.RECORD_AUDIO)
+        com.webtecit.nayon.data.security.SiteKind.LOCATION ->
+            listOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION)
+        com.webtecit.nayon.data.security.SiteKind.PROTECTED_MEDIA -> emptyList()
+    }
+}.distinct()
+
+/** Whether Android lets the app use everything in [kinds] (approximate location is enough). */
+private fun androidAllows(context: Context, kinds: List<com.webtecit.nayon.data.security.SiteKind>): Boolean {
+    fun has(p: String) = androidx.core.content.ContextCompat.checkSelfPermission(context, p) == android.content.pm.PackageManager.PERMISSION_GRANTED
+    return kinds.all { kind ->
+        when (kind) {
+            com.webtecit.nayon.data.security.SiteKind.CAMERA -> has(android.Manifest.permission.CAMERA)
+            com.webtecit.nayon.data.security.SiteKind.MICROPHONE -> has(android.Manifest.permission.RECORD_AUDIO)
+            com.webtecit.nayon.data.security.SiteKind.LOCATION ->
+                has(android.Manifest.permission.ACCESS_FINE_LOCATION) || has(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+            com.webtecit.nayon.data.security.SiteKind.PROTECTED_MEDIA -> true
+        }
+    }
+}
+

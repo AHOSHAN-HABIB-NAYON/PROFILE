@@ -112,7 +112,7 @@ saved tabs) and `feature/browser`, `tabs`, `bookmarks`, `history`.
 
 1. **Foundation** — this stage. ✅
 2. **Browser engine** — WebView, address bar, search, tabs, bookmarks, history. ✅
-3. Storage & security: downloads, site data, private browsing, password vault, autofill.
+3. Storage & security: downloads, site data, private browsing, password vault, website permissions. ✅
 4. Advanced: sign-in, sync backend, passkeys, PWA shortcuts, content blocking, payments (only if configured).
 5. QA: device matrix, accessibility, performance, lifecycle.
 6. Release: signed AAB, Play listing, final privacy policy.

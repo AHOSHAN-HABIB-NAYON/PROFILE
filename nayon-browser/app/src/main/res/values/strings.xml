@@ -390,4 +390,66 @@
     <string name="account_sign_out">Sign out of Google</string>
     <string name="account_no_sync">NAYON doesn\'t sync passwords, bookmarks or history with your Google Account.</string>
     <string name="lens_no_google">The Google app isn\'t installed, so Lens opens on the web.</string>
+
+    <!-- Stage 3: website permissions -->
+    <string name="site_kind_camera">camera</string>
+    <string name="site_kind_microphone">microphone</string>
+    <string name="site_kind_location">location</string>
+    <string name="site_kind_protected_media">protected content</string>
+    <string name="permission_prompt_title" formatted="false">%1$s wants to use your %2$s</string>
+    <string name="permission_prompt_private">Private tab: this choice is forgotten when you close private tabs.</string>
+    <string name="permission_allow_always">Allow while visiting the site</string>
+    <string name="permission_allow_once">Allow this time</string>
+    <string name="permission_block">Don\'t allow</string>
+    <string name="permission_android_denied">Android blocked this permission for NAYON. You can allow it in the phone\'s Settings.</string>
+    <string name="page_info_permissions_none">No permissions allowed or blocked for this site</string>
+    <string name="site_settings_title">Site settings</string>
+    <string name="site_settings_intro">Websites must ask before using your camera, microphone, location or protected content. Your answers are remembered here.</string>
+    <string name="site_settings_empty_title">No site permissions yet</string>
+    <string name="site_settings_empty_body">When a website asks and you choose \"Allow while visiting\" or \"Don\'t allow\", it appears here.</string>
+    <string name="site_settings_sites">Sites</string>
+    <string name="site_settings_reset_all">Reset all site permissions</string>
+    <string name="site_settings_reset_all_body">Every website will have to ask again.</string>
+    <string name="site_allowed">Allowed</string>
+    <string name="site_blocked">Blocked</string>
+    <string name="action_reset">Reset</string>
+    <string name="settings_site_settings_desc">Camera, microphone, location and protected content</string>
+
+    <!-- Stage 3: passwords -->
+    <string name="passwords_title">Passwords</string>
+    <string name="settings_passwords_desc">Saved passwords, protected by your fingerprint or screen lock</string>
+    <string name="passwords_unlock_subtitle">Confirm it\'s you to see your saved passwords</string>
+    <string name="passwords_unlock">Unlock</string>
+    <string name="passwords_locked_title">Passwords are locked</string>
+    <string name="passwords_locked_body">Use your fingerprint, face or screen lock to see them.</string>
+    <string name="passwords_need_lock_title">Set a screen lock first</string>
+    <string name="passwords_need_lock_body">To protect your passwords, NAYON only shows them on a phone with a screen lock (PIN, pattern, password or fingerprint). Add one in your phone\'s Settings.</string>
+    <string name="passwords_offer_to_save">Offer to save passwords</string>
+    <string name="passwords_offer_to_save_desc">Asks after you sign in to a website (never in private tabs)</string>
+    <string name="passwords_protection">Encrypted on this phone</string>
+    <string name="passwords_protection_desc">Locked with a key in Android\'s secure Keystore. Never uploaded or synced.</string>
+    <string name="passwords_empty_title">No saved passwords</string>
+    <string name="passwords_empty_body">When you sign in to a website, NAYON offers to save the password here.</string>
+    <string name="passwords_search">Search passwords</string>
+    <string name="passwords_saved_count">Saved passwords (%d)</string>
+    <string name="passwords_never_saved">Never saved</string>
+    <string name="passwords_delete_all">Delete all passwords</string>
+    <string name="passwords_delete_all_body">All saved passwords will be permanently deleted from this phone.</string>
+    <string name="passwords_delete_title">Delete password?</string>
+    <string name="passwords_delete_body">The saved password for %s will be deleted.</string>
+    <string name="passwords_copy_username">Copy username</string>
+    <string name="passwords_copy_password">Copy password</string>
+    <string name="passwords_copied">Copied</string>
+    <string name="passwords_open_site">Open site</string>
+    <string name="password_save_title">Save password?</string>
+    <string name="password_update_title">Update password?</string>
+    <string name="password_save">Save</string>
+    <string name="password_update">Update</string>
+    <string name="password_never">Never for this site</string>
+    <string name="password_not_now">Not now</string>
+    <string name="password_show">Show password</string>
+    <string name="password_no_username">No username</string>
+    <string name="password_save_note">Saved encrypted on this phone only.</string>
+    <string name="password_saved">Password saved</string>
+    <string name="password_fill_as">Sign in as %s</string>
 </resources>
