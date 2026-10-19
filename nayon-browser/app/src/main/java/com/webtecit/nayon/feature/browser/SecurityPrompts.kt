@@ -47,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -79,7 +80,8 @@ fun SiteKind.label(): Int = when (this) {
 fun PermissionPromptSheet(ask: PermissionAsk, onChoice: (PermissionChoice) -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val host = UrlResolver.displayHost(ask.origin)
-    val what = ask.kinds.joinToString(" + ") { stringResource(it.label()) }
+    val resources = LocalContext.current.resources
+    val what = ask.kinds.joinToString(" + ") { resources.getString(it.label()) }
     ModalBottomSheet(
         onDismissRequest = { onChoice(PermissionChoice.BLOCK) },
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
