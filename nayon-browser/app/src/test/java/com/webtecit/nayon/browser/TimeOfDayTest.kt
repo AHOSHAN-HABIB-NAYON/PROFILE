@@ -54,8 +54,11 @@ class Stage3LogicTest {
     @Test
     fun passwordMessageIsParsedAndBounded() {
         val bridge = com.webtecit.nayon.feature.browser.PasswordBridge
-        assertEquals("me@x.com" to "s3cret", bridge.parse("""{"u":"me@x.com","p":"s3cret"}"""))
-        assertEquals(null, bridge.parse("""{"u":"me","p":""}"""))
+        assertEquals(bridge.Event("submit", "me@x.com", "s3cret"), bridge.parse("""{"t":"submit","u":"me@x.com","p":"s3cret"}"""))
+        assertEquals(null, bridge.parse("""{"t":"submit","u":"me","p":""}"""))
+        assertEquals(bridge.Event("user", username = "me@x.com"), bridge.parse("""{"t":"user","u":"me@x.com"}"""))
+        assertEquals(bridge.Event("focus", field = "p"), bridge.parse("""{"t":"focus","f":"p"}"""))
+        assertEquals(null, bridge.parse("""{"t":"evil"}"""))
         assertEquals(null, bridge.parse("not json"))
     }
 

@@ -151,6 +151,50 @@ class BrowserViewModel(
     /** Saved sign-ins for the page in front of the user, offered on a sign-in page. */
     val fillOffer: StateFlow<FillOffer?> = _fillOffer.asStateFlow()
 
+    /** A sign-in typed on a page, waiting until the sign-in actually goes through. */
+    private data class PendingSignIn(val origin: String, val username: String, val password: String, val at: Long)
+
+    private val pendingSignIns = mutableMapOf<String, PendingSignIn>()
+    /** Username from an "email first" step, per tab, used when the password page has no username field. */
+    private val stepUsernames = mutableMapOf<String, Pair<String, String>>()
+    /** Pages where the user closed the fill bar; it then only comes back when a field is tapped. */
+    private val fillDismissedUrls = mutableMapOf<String, String?>()
+
+    private fun onPasswordEvent(tabId: String, origin: String, event: PasswordBridge.Event) {
+        val tab = tab(tabId) ?: return
+        if (tab.isPrivate || !origin.startsWith("https://")) return
+        when (event.type) {
+            "user" -> stepUsernames[tabId] = origin to event.username
+            "submit" -> {
+                val user = event.username.ifBlank { stepUsernames[tabId]?.takeIf { it.first == origin }?.second.orEmpty() }
+                pendingSignIns[tabId] = PendingSignIn(origin, user, event.password, android.os.SystemClock.elapsedRealtime())
+            }
+            "gone" -> flushSignIn(tabId)
+            "focus" -> offerFillFor(tabId, origin, fromFocus = true)
+            "form" -> offerFillFor(tabId, origin, fromFocus = false)
+        }
+    }
+
+    /** The sign-in went through (the page moved on): now ask "Save password?", like Chrome. */
+    private fun flushSignIn(tabId: String) {
+        val pending = pendingSignIns.remove(tabId) ?: return
+        if (android.os.SystemClock.elapsedRealtime() - pending.at > 90_000) return
+        onSignInSubmitted(tabId, pending.origin, pending.username, pending.password)
+    }
+
+    private fun offerFillFor(tabId: String, origin: String, fromFocus: Boolean) {
+        if (tabId != _activeId.value) return
+        val url = tab(tabId)?.url
+        if (!fromFocus && fillDismissedUrls[tabId] == url) return
+        if (_fillOffer.value?.let { it.tabId == tabId && it.origin == origin } == true) return
+        viewModelScope.launch {
+            val logins = security.loginsFor(origin)
+            if (logins.isNotEmpty() && tabId == _activeId.value && SecurityRepository.originOf(webViews[tabId]?.url) == origin) {
+                _fillOffer.value = FillOffer(tabId, origin, logins)
+            }
+        }
+    }
+
     private fun onSignInSubmitted(tabId: String, origin: String, username: String, password: String) {
         val tab = tab(tabId) ?: return
         if (tab.isPrivate || !preferences.value.savePasswords || !origin.startsWith("https://")) return
@@ -208,7 +252,10 @@ class BrowserViewModel(
         }
     }
 
-    fun dismissFillOffer() { _fillOffer.value = null }
+    fun dismissFillOffer() {
+        _fillOffer.value?.let { fillDismissedUrls[it.tabId] = tab(it.tabId)?.url }
+        _fillOffer.value = null
+    }
 
     fun setSavePasswords(enabled: Boolean) = viewModelScope.launch { prefsRepository.setSavePasswords(enabled) }
 
@@ -1039,8 +1086,8 @@ class BrowserViewModel(
                 WebViewCompat.addWebMessageListener(wv, PasswordBridge.CHANNEL, setOf("*")) { _, message, sourceOrigin, isMainFrame, _ ->
                     if (!isMainFrame) return@addWebMessageListener
                     val origin = SecurityRepository.originOf(sourceOrigin.toString()) ?: return@addWebMessageListener
-                    val (user, pass) = PasswordBridge.parse(message.data) ?: return@addWebMessageListener
-                    onSignInSubmitted(tab.id, origin, user, pass)
+                    val event = PasswordBridge.parse(message.data) ?: return@addWebMessageListener
+                    onPasswordEvent(tab.id, origin, event)
                 }
                 WebViewCompat.addDocumentStartJavaScript(wv, PasswordBridge.CAPTURE_SCRIPT, setOf("*"))
             }
@@ -1162,6 +1209,7 @@ class BrowserViewModel(
 
         override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
             if (_fillOffer.value?.tabId == tabId) _fillOffer.value = null
+            flushSignIn(tabId)
             if (tabId == _activeId.value) showBars()
             updateTab(tabId) {
                 it.copy(
@@ -1173,7 +1221,7 @@ class BrowserViewModel(
         }
 
         override fun onPageFinished(view: WebView, url: String) {
-            if (tabId == _activeId.value) offerFill(tabId, view, url)
+            if (tabId == _activeId.value && !WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) offerFill(tabId, view, url)
             updateTab(tabId) { it.copy(isLoading = false, progress = 100, url = url, title = view.title ?: it.title) }
             val host = UrlResolver.displayHost(url)
             if (tab(tabId)?.isPrivate == false && UrlResolver.isWebUrl(url) && host.isNotBlank()) {
@@ -1186,6 +1234,7 @@ class BrowserViewModel(
         }
 
         override fun doUpdateVisitedHistory(view: WebView, url: String, isReload: Boolean) {
+            flushSignIn(tabId)   // single-page sites change the address after signing in
             updateTab(tabId) { it.copy(url = url) }
             syncNavState(tabId, view)
             val tab = tab(tabId) ?: return
