@@ -40,7 +40,7 @@ Private tabs are never written to history or saved tabs.
 - **Downloads** are fetched by Android's download manager.
 - **Site icons**: to show sharp icons, NAYON Browser asks each site you visit (and each home shortcut) once a week for its own declared icon — the site's home page and icon files. No third-party icon service is used. Never for private tabs.
 - **Google Lens**: the camera is used only while the Lens screen is open (Android asks you for camera permission first). A photo you take or choose for Lens is shared with the Google app (or opens lens.google.com) only when you use the Lens button. Lens photos are kept in the app's cache and deleted after about an hour.
-- **Google account**: signing in to Google happens on Google's own web pages, like on any website. NAYON only checks whether Google's sign-in cookie exists to show the account button's state; it does not read, store or sync your account data.
+- **Google account**: signing in to Google happens on Google's own web pages, like on any website. When you are signed in, NAYON asks accounts.google.com which account is signed in (sending only Google's own cookies, the same request Chrome makes) to show your name, email and photo on the home page. This stays in memory only; NAYON does not store or sync your account data.
 - Nothing is sent to the developer. There are **no analytics, advertising, crash-reporting or tracking SDKs**.
 
 All app data is excluded from Android cloud backup and device-to-device transfer.

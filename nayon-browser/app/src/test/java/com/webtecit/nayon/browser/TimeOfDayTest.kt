@@ -20,3 +20,20 @@ class TimeOfDayTest {
         assertEquals(3, sceneForHour(23))
     }
 }
+
+/** Robolectric supplies the real org.json used by the parser. */
+@org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+class GoogleAccountsParseTest {
+    @Test
+    fun readsNameEmailAndPhotoOfFirstSignedInAccount() {
+        val body = """["gaia.l.a.r",[["gaia.l.a",1,"Out User","out@gmail.com","https://lh3.googleusercontent.com/a/x",1,1,0,null,1,"1",null,null,null,1],
+            ["gaia.l.a",1,"Nayon","nayon@gmail.com","https://lh3.googleusercontent.com/a/y",1,1,0,null,1,"2",null,null,null,0]]]"""
+        val parsed = com.webtecit.nayon.data.browser.GoogleAccounts.parse(body)
+        assertEquals(Triple("Nayon", "nayon@gmail.com", "https://lh3.googleusercontent.com/a/y"), parsed)
+    }
+
+    @Test
+    fun emptyListMeansSignedOut() {
+        assertEquals(null, com.webtecit.nayon.data.browser.GoogleAccounts.parse("""["gaia.l.a.r",[]]"""))
+    }
+}

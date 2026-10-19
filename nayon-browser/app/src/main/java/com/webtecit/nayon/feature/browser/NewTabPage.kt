@@ -79,6 +79,12 @@ import com.webtecit.nayon.core.designsystem.theme.Spacing
 import com.webtecit.nayon.data.browser.HistoryEntry
 import com.webtecit.nayon.data.settings.HomeShortcut
 import java.util.Calendar
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.foundation.Image
+import com.webtecit.nayon.data.browser.GoogleAccount
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.outlined.Translate
@@ -119,6 +125,7 @@ fun NewTabPage(
     modifier: Modifier = Modifier,
     searchEngine: SearchEngine = SearchEngine.GOOGLE,
     googleSignedIn: Boolean = false,
+    googleAccount: GoogleAccount? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     Box(modifier.fillMaxSize().background(scheme.surface), contentAlignment = Alignment.TopCenter) {
@@ -126,7 +133,7 @@ fun NewTabPage(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            if (isPrivate) PrivateHero() else SkyHero(googleSignedIn, actions.onAccount)
+            if (isPrivate) PrivateHero() else SkyHero(googleSignedIn, googleAccount, actions.onAccount)
             Column(
                 Modifier.fillMaxWidth().widthIn(max = Layout.maxContentWidth).offset(y = (-30).dp).padding(horizontal = Spacing.gutter),
                 verticalArrangement = Arrangement.spacedBy(Spacing.lg),
@@ -174,7 +181,7 @@ private fun rememberNow(periodMs: Long): Long {
 
 /** Sky-and-mountains scene that follows the time of day, like the NAYON mock-up. */
 @Composable
-private fun SkyHero(signedIn: Boolean, onAccount: () -> Unit) {
+private fun SkyHero(signedIn: Boolean, account: GoogleAccount?, onAccount: () -> Unit) {
     val context = LocalContext.current
     val minute = rememberNow(30_000L)
     val scene = remember(minute / 60_000L) { sceneNow() }
@@ -229,7 +236,7 @@ private fun SkyHero(signedIn: Boolean, onAccount: () -> Unit) {
                 Spacer(Modifier.width(Spacing.sm))
                 Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium, color = textColor, fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f))
-                AccountButton(signedIn, onAccount)
+                AccountButton(signedIn, account, onAccount)
             }
             Spacer(Modifier.height(Spacing.lg))
             Text(stringResource(greeting), style = MaterialTheme.typography.headlineMedium, color = textColor,
@@ -241,18 +248,35 @@ private fun SkyHero(signedIn: Boolean, onAccount: () -> Unit) {
 
 /** Chrome-style account avatar: Google account sign-in, management and Google apps. */
 @Composable
-private fun AccountButton(signedIn: Boolean, onClick: () -> Unit) {
+private fun AccountButton(signedIn: Boolean, account: GoogleAccount?, onClick: () -> Unit) {
     Box {
-        Surface(onClick = onClick, shape = CircleShape, color = Color.White, shadowElevation = 2.dp, modifier = Modifier.size(38.dp)
-            .semantics { contentDescription = "Google account" }) {
+        Surface(onClick = onClick, shape = CircleShape, color = Color.White, shadowElevation = 2.dp, modifier = Modifier.size(40.dp)
+            .semantics { contentDescription = account?.let { "Google account: ${it.email}" } ?: "Google account" }) {
             Box(contentAlignment = Alignment.Center) {
-                if (signedIn) Icon(Icons.Filled.AccountCircle, null, tint = Color(0xFF4285F4), modifier = Modifier.size(34.dp))
-                else Icon(painterResource(R.drawable.ic_google_g), null, tint = Color.Unspecified, modifier = Modifier.size(22.dp))
+                when {
+                    account != null -> AccountAvatar(account, 40.dp)
+                    signedIn -> Icon(Icons.Filled.AccountCircle, null, tint = Color(0xFF4285F4), modifier = Modifier.size(36.dp))
+                    else -> Icon(painterResource(R.drawable.ic_google_g), null, tint = Color.Unspecified, modifier = Modifier.size(22.dp))
+                }
             }
         }
         if (signedIn) {
             Box(Modifier.align(Alignment.BottomEnd).size(12.dp).clip(CircleShape).background(Color.White).padding(2.dp)
                 .clip(CircleShape).background(Color(0xFF34A853)))
+        }
+    }
+}
+
+/** The account's Google profile photo, or its first letter on a Google-blue circle. */
+@Composable
+fun AccountAvatar(account: GoogleAccount, size: Dp) {
+    val photo = account.photo
+    if (photo != null) {
+        val image = remember(photo) { photo.asImageBitmap() }
+        Image(image, account.name, contentScale = ContentScale.Crop, modifier = Modifier.size(size).clip(CircleShape))
+    } else {
+        Box(Modifier.size(size).clip(CircleShape).background(Color(0xFF4285F4)), contentAlignment = Alignment.Center) {
+            Text(account.name.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = (size.value * 0.45f).sp)
         }
     }
 }

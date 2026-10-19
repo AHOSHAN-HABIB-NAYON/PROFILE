@@ -290,11 +290,11 @@ class BrowserViewModel(
     // ---- Collapsing toolbars ------------------------------------------------------------
 
     /**
-     * Receives page scrolls of the active tab: (scrollY, dy, fingerDown, userDriven).
+     * Receives page scrolls of the active tab: (scrollY, dy, fingerDown, userDriven, scrollRoom).
      * userDriven is false for scrolls the page makes by itself (text selection, anchors),
-     * which must never move the toolbars.
+     * which must never move the toolbars. scrollRoom is how far the page can scroll in total.
      */
-    var onActivePageScroll: ((Int, Int, Boolean, Boolean) -> Unit)? = null
+    var onActivePageScroll: ((Int, Int, Boolean, Boolean, Int) -> Unit)? = null
 
     /** Called when the finger leaves the active page. */
     var onActiveGestureEnd: (() -> Unit)? = null
@@ -312,7 +312,8 @@ class BrowserViewModel(
     private fun onWebScroll(tabId: String, y: Int, oldY: Int) {
         if (tabId != _activeId.value) return
         val userDriven = fingerDown || android.os.SystemClock.uptimeMillis() - lastFingerUp < 1_500
-        onActivePageScroll?.invoke(y, y - oldY, fingerDown, userDriven)
+        val room = (webViews[tabId] as? NayonWebView)?.scrollRoom ?: Int.MAX_VALUE
+        onActivePageScroll?.invoke(y, y - oldY, fingerDown, userDriven, room)
     }
 
     private fun onWebTouch(tabId: String, action: Int) {
@@ -496,6 +497,25 @@ class BrowserViewModel(
         CookieManager.getInstance().getCookie("https://accounts.google.com").orEmpty().split(';')
             .any { c -> c.trim().let { it.startsWith("SID=") || it.startsWith("__Secure-3PSID=") } }
     }.getOrDefault(false)
+
+    private val _googleAccount = MutableStateFlow<com.webtecit.nayon.data.browser.GoogleAccount?>(null)
+    /** The Google account signed in on the web (name, email, photo), or null. */
+    val googleAccount: StateFlow<com.webtecit.nayon.data.browser.GoogleAccount?> = _googleAccount.asStateFlow()
+    private var accountCheckedAt = 0L
+    private var accountJob: kotlinx.coroutines.Job? = null
+
+    /** Refreshes [googleAccount]; cheap to call whenever the home page shows. */
+    fun refreshGoogleAccount(force: Boolean = false) {
+        if (!googleSignedIn()) { _googleAccount.value = null; return }
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (!force && _googleAccount.value != null && now - accountCheckedAt < 5 * 60_000L) return
+        if (accountJob?.isActive == true) return
+        accountCheckedAt = now
+        val cookies = CookieManager.getInstance().getCookie("https://accounts.google.com") ?: return
+        accountJob = viewModelScope.launch {
+            com.webtecit.nayon.data.browser.GoogleAccounts.fetch(cookies)?.let { _googleAccount.value = it }
+        }
+    }
 
     /** Asks Google's AI Mode. */
     fun aiSearch(query: String) {
@@ -692,7 +712,7 @@ class BrowserViewModel(
 
     @SuppressLint("SetJavaScriptEnabled", "RequiresFeature", "ClickableViewAccessibility")
     private fun createWebView(tab: TabState): WebView {
-        val wv = WebView(webContext)
+        val wv = NayonWebView(webContext)
         if (tab.isPrivate && privateIsolationSupported) {
             runCatching {
                 ProfileStore.getInstance().getOrCreateProfile(PRIVATE_PROFILE)
@@ -711,9 +731,17 @@ class BrowserViewModel(
             displayZoomControls = false
             loadWithOverviewMode = true
             useWideViewPort = true
-            mediaPlaybackRequiresUserGesture = true
+            // Like Chrome after you interact with a page: players that rebuild their video
+            // (live streams, full-screen switches) may start it again without a fresh tap.
+            mediaPlaybackRequiresUserGesture = false
             setGeolocationEnabled(false)
             if (tab.isPrivate) cacheMode = WebSettings.LOAD_NO_CACHE
+            // Draws the page just outside the screen too, so scrolling and tab switches are smoother.
+            offscreenPreRaster = true
+        }
+        // Keep the visible page's renderer at top priority so it is never slowed or killed first.
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            wv.setRendererPriorityPolicy(WebView.RENDERER_PRIORITY_IMPORTANT, true)
         }
         if (WebViewFeature.isFeatureSupported(WebViewFeature.SAFE_BROWSING_ENABLE)) {
             WebSettingsCompat.setSafeBrowsingEnabled(wv.settings, true)

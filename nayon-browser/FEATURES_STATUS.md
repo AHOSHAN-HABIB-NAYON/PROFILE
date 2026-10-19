@@ -63,7 +63,7 @@ checking by hand on a real device.
 | Animated tab switcher and tab transitions | Implemented | Chrome-style cards, tab search | — | Manual |
 | Search panel (current page, most visited, recent searches) | Implemented | Recent searches are read from search-result pages in history; local only | — | `UrlResolverTest.recentSearchesAreReadFromResultPages` |
 | Google Lens button | Implemented | Opens NAYON's own Lens camera (viewfinder, tap-to-focus, pinch zoom, flash, gallery). The photo is handed to the Google app's Lens; without the Google app, lens.google.com opens. Chrome's private direct link into Lens is reserved for Chrome | Google app (optional), camera permission | Manual |
-| Google account button (home) | Implemented | Shows whether you are signed in to Google on the web; sign in, manage account, sign out and Google apps. No sync of passwords/bookmarks/history | — | Manual |
+| Google account button (home) | Implemented | Shows the Google account signed in on the web (photo, name, email); sign in, manage account, sign out and Google apps. No sync of passwords/bookmarks/history | — | Manual |
 | AI Mode and Incognito buttons (home) | Implemented | AI Mode sends your question to Google AI Mode (google.com/search?udm=50) | — | Manual |
 | Real site icons (favicons), high resolution | Implemented | Uses the site's declared apple-touch/manifest icons (checked once a week per site) | — | Manual |
 | Home page: time-of-day sky scene, search, editable shortcuts, Quick access, Recent | Implemented | — | — | `newTabPageRendersInEveryThemeAndBrightness` |

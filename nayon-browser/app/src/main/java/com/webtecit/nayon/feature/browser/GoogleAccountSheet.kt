@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.webtecit.nayon.R
+import com.webtecit.nayon.data.browser.GoogleAccount
 import com.webtecit.nayon.core.designsystem.component.SiteIcon
 import com.webtecit.nayon.core.designsystem.theme.Spacing
 
@@ -60,7 +61,7 @@ const val GOOGLE_SIGN_OUT_URL = "https://accounts.google.com/Logout"
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GoogleAccountSheet(signedIn: Boolean, onOpen: (String) -> Unit, onDismiss: () -> Unit) {
+fun GoogleAccountSheet(signedIn: Boolean, account: GoogleAccount?, onOpen: (String) -> Unit, onDismiss: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     fun open(url: String) { onDismiss(); onOpen(url) }
     ModalBottomSheet(
@@ -73,9 +74,10 @@ fun GoogleAccountSheet(signedIn: Boolean, onOpen: (String) -> Unit, onDismiss: (
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box {
-                Surface(shape = CircleShape, color = scheme.surfaceContainerLowest, modifier = Modifier.size(64.dp)) {
+                Surface(shape = CircleShape, color = scheme.surfaceContainerLowest, modifier = Modifier.size(72.dp)) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(painterResource(R.drawable.ic_google_g), null, tint = Color.Unspecified, modifier = Modifier.size(34.dp))
+                        if (account != null) AccountAvatar(account, 72.dp)
+                        else Icon(painterResource(R.drawable.ic_google_g), null, tint = Color.Unspecified, modifier = Modifier.size(36.dp))
                     }
                 }
                 if (signedIn) {
@@ -84,9 +86,9 @@ fun GoogleAccountSheet(signedIn: Boolean, onOpen: (String) -> Unit, onDismiss: (
                 }
             }
             Spacer(Modifier.height(Spacing.md))
-            Text(stringResource(R.string.account_title), style = MaterialTheme.typography.titleLarge)
+            Text(account?.name ?: stringResource(R.string.account_title), style = MaterialTheme.typography.titleLarge)
             Text(
-                stringResource(if (signedIn) R.string.account_signed_in else R.string.account_signed_out),
+                account?.email ?: stringResource(if (signedIn) R.string.account_signed_in else R.string.account_signed_out),
                 style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant, textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = Spacing.xs),
             )

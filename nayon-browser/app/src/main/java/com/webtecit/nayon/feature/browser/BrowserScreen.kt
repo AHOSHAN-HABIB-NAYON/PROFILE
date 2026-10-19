@@ -110,6 +110,7 @@ fun BrowserScreen(
     var showAccount by rememberSaveable { mutableStateOf(false) }
     var aiMode by remember { mutableStateOf(false) }
     val contextTarget by viewModel.contextMenu.collectAsStateWithLifecycle()
+    val googleAccount by viewModel.googleAccount.collectAsStateWithLifecycle()
 
     val focusRequester = remember { FocusRequester() }
     var editing by remember { mutableStateOf(false) }
@@ -266,10 +267,15 @@ fun BrowserScreen(
             if (run > threshold) hide() else if (run < -threshold) show()
         }
         if (collapsible) {
-            viewModel.onActivePageScroll = { y, dy, fingerDown, userDriven ->
+            // Short pages (like Google's home page) would stop being scrollable once the bars
+            // hide, snap back and show the bars again: a shaking loop. Only pages with room
+            // for well over the bars' height collapse them.
+            val minRoom = (topH + bottomH) * 3
+            viewModel.onActivePageScroll = { y, dy, fingerDown, userDriven, room ->
                 when {
                     y <= 0 -> { run = 0; show() }
                     !userDriven || dy == 0 -> Unit
+                    !hidden && room < minRoom -> run = 0
                     else -> {
                         if ((dy > 0) != (run > 0)) run = 0
                         run += dy
@@ -327,6 +333,7 @@ fun BrowserScreen(
                         label = "tab-content",
                     ) { (id, home) ->
                         if (home) {
+                            LaunchedEffect(current.id, current.url, showAccount) { viewModel.refreshGoogleAccount() }
                             NewTabPage(
                                 isPrivate = current.isPrivate,
                                 showShortcuts = prefs.showShortcuts,
@@ -336,7 +343,8 @@ fun BrowserScreen(
                                 voiceAvailable = voiceAvailable,
                                 actions = homeActions,
                                 searchEngine = prefs.searchEngine,
-                                googleSignedIn = remember(current.id, current.url, showAccount) { viewModel.googleSignedIn() },
+                                googleSignedIn = remember(current.id, current.url, showAccount, googleAccount) { viewModel.googleSignedIn() },
+                                googleAccount = googleAccount,
                             )
                         } else {
                             Box(Modifier.fillMaxSize()) {
@@ -455,6 +463,7 @@ fun BrowserScreen(
     if (showAccount) {
         GoogleAccountSheet(
             signedIn = remember { viewModel.googleSignedIn() },
+            account = googleAccount,
             onOpen = { url -> if (tab?.isPrivate == true) viewModel.newTab(url) else viewModel.openInCurrentTab(url) },
             onDismiss = { showAccount = false },
         )
@@ -505,7 +514,12 @@ private fun WebViewHost(viewModel: BrowserViewModel, tabId: String, pullToRefres
             SwipeRefreshLayout(ctx).apply {
                 addView(FrameLayout(ctx), ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
                 setOnRefreshListener { viewModel.reload() }
-                setOnChildScrollUpCallback { _, _ -> viewModel.webViewOrNull(tabId)?.canScrollVertically(-1) ?: false }
+                // Refresh only when the pull goes past the top of the page itself, like Chrome. Pages
+                // that scroll an inner panel (AI Mode, maps, chats) keep their own scrolling.
+                setOnChildScrollUpCallback { _, _ ->
+                    val wv = viewModel.webViewOrNull(tabId) ?: return@setOnChildScrollUpCallback false
+                    wv.canScrollVertically(-1) || (wv as? NayonWebView)?.pulledPastTop == false
+                }
             }
         },
         update = { layout ->
@@ -557,11 +571,14 @@ private fun FullscreenVideoEffect(video: FullscreenVideo, viewModel: BrowserView
             }
         }
         val previousOrientation = activity?.requestedOrientation ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        // Landscape for wide videos, unchanged for tall (Shorts-style) videos.
+        // Landscape straight away, like Chrome. Only a video known to be tall (Shorts-style)
+        // follows the phone's sensor instead, so turning the phone still rotates it even when
+        // auto-rotate is off.
+        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         viewModel.activeWebView()?.evaluateJavascript(VIDEO_SIZE_JS) { result ->
             val parts = result?.trim('"')?.split('x')?.mapNotNull { it.toIntOrNull() }
-            val wide = parts == null || parts.size != 2 || parts[0] >= parts[1]
-            if (wide && activity != null) activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            val tall = parts != null && parts.size == 2 && parts[0] > 0 && parts[1] > parts[0] * 1.05
+            if (tall && activity != null) activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
         }
 
         onDispose {
@@ -579,8 +596,9 @@ private fun FullscreenVideoEffect(video: FullscreenVideo, viewModel: BrowserView
 
 /** Reads the full-screen video's natural size, e.g. "1920x1080". Read-only; no page changes. */
 private const val VIDEO_SIZE_JS = """(function(){var e=document.fullscreenElement||document.webkitFullscreenElement;
-var v=e&&(e.tagName==='VIDEO'?e:e.querySelector('video'));if(!v){v=document.querySelector('video');}
-return v&&v.videoWidth?v.videoWidth+'x'+v.videoHeight:'';})()"""
+if(!e||e.tagName==='IFRAME')return '';var vs=e.tagName==='VIDEO'?[e]:Array.prototype.slice.call(e.querySelectorAll('video'));
+var b=null,a=0;vs.forEach(function(v){var r=v.getBoundingClientRect(),s=r.width*r.height;if(v.videoWidth&&s>a){a=s;b=v;}});
+return b?b.videoWidth+'x'+b.videoHeight:'';})()"""
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
