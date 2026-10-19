@@ -1,7 +1,16 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package com.webtecit.nayon.feature.browser
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,6 +81,22 @@ fun SearchPanel(
     val remoteFlow = remember(query) { viewModel.searchSuggestionsFor(query) }
     val remote by remoteFlow.collectAsState(initial = emptyList())
     val typing = query.isNotBlank() && query != tab?.url
+    // Long-press on a history suggestion: "Remove suggestion from history?", like Chrome.
+    var removing by remember { mutableStateOf<Pair<String, () -> Unit>?>(null) }
+    val haptics = LocalHapticFeedback.current
+    fun askRemove(label: String, action: () -> Unit) {
+        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+        removing = label to action
+    }
+    removing?.let { (label, action) ->
+        AlertDialog(
+            onDismissRequest = { removing = null },
+            title = { Text(label, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+            text = { Text(stringResource(R.string.search_remove_question)) },
+            confirmButton = { TextButton(onClick = { action(); removing = null }) { Text(stringResource(R.string.action_remove)) } },
+            dismissButton = { TextButton(onClick = { removing = null }) { Text(stringResource(R.string.action_cancel)) } },
+        )
+    }
 
     LazyColumn(
         Modifier.fillMaxSize().background(scheme.surface),
@@ -103,6 +128,9 @@ fun SearchPanel(
                     title = s.title.ifBlank { UrlResolver.displayHost(s.url) },
                     subtitle = s.url,
                     onClick = { onOpen(s.url) },
+                    onLongClick = if (s.isBookmark) null else {
+                        { askRemove(s.title.ifBlank { s.url }) { viewModel.removeUrlFromHistory(s.url) } }
+                    },
                     trailing = { FillButton { onFill(s.url) } },
                 )
             }
@@ -145,7 +173,13 @@ fun SearchPanel(
                     items(topSites, key = { it.url }) { site ->
                         Column(
                             Modifier.width(76.dp).clip(MaterialTheme.shapes.medium)
-                                .clickable(role = Role.Button) { onOpen(site.url) }
+                                .combinedClickable(
+                                    role = Role.Button,
+                                    onClick = { onOpen(site.url) },
+                                    onLongClick = {
+                                        askRemove(site.title.ifBlank { UrlResolver.displayHost(site.url) }) { viewModel.removeSiteFromHistory(site.url) }
+                                    },
+                                )
                                 .padding(vertical = Spacing.sm),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(Spacing.sm),
@@ -185,6 +219,7 @@ fun SearchPanel(
                                 leading = { Icon(Icons.Outlined.History, null, tint = scheme.onSurfaceVariant) },
                                 title = q,
                                 onClick = { onSearch(q) },
+                                onLongClick = { askRemove(q) { viewModel.removeSearchFromHistory(q) } },
                                 trailing = { FillButton { onFill(q) } },
                             )
                         }
@@ -213,10 +248,11 @@ private fun PanelRow(
     title: String,
     onClick: () -> Unit,
     subtitle: String? = null,
+    onLongClick: (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null,
 ) {
     Row(
-        Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick)
+        Modifier.fillMaxWidth().combinedClickable(role = Role.Button, onClick = onClick, onLongClick = onLongClick)
             .padding(start = Spacing.lg, end = Spacing.xs, top = Spacing.xs, bottom = Spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {

@@ -227,8 +227,23 @@ fun BrowserScreen(
 
     BackHandler(enabled = editing) { focusManager.clearFocus() }
     BackHandler(enabled = !editing && find != null) { viewModel.stopFind() }
-    BackHandler(enabled = !editing && tab?.let { (it.showingHome && it.url != null) || (!it.showingHome && it.canGoBack) } == true) {
-        viewModel.goBack()
+    // Back never closes the app by surprise: page history first, then the parent tab; on the
+    // last page a second Back within 2 seconds leaves (the app keeps running, like Chrome).
+    var lastBackAt by remember { mutableStateOf(0L) }
+    BackHandler(enabled = !editing && find == null) {
+        when (viewModel.handleBack()) {
+            BrowserViewModel.BackResult.HANDLED -> Unit
+            BrowserViewModel.BackResult.LEAVE_APP -> context.findActivity()?.moveTaskToBack(true)
+            BrowserViewModel.BackResult.NOTHING_LEFT -> {
+                val now = android.os.SystemClock.uptimeMillis()
+                if (now - lastBackAt < 2_000) {
+                    context.findActivity()?.moveTaskToBack(true)
+                } else {
+                    lastBackAt = now
+                    android.widget.Toast.makeText(context, R.string.press_back_again, android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 
     // ---- Collapsing toolbars: they slide with the finger; the page is never resized mid-scroll.
@@ -431,34 +446,34 @@ fun BrowserScreen(
         fullscreen?.let { FullscreenVideoEffect(it, viewModel, onExit = viewModel::exitFullscreen) }
     }
 
-    if (showMenu) {
-        BrowserMenuSheet(
-            tab = tab,
-            isBookmarked = tab?.url?.let { it in bookmarked } == true,
-            onDismiss = { showMenu = false },
-            onAction = { action ->
-                when (action) {
-                    MenuAction.NEW_TAB -> viewModel.newTab()
-                    MenuAction.NEW_PRIVATE_TAB -> viewModel.newTab(private = true)
-                    MenuAction.BOOKMARKS -> onOpenBookmarks()
-                    MenuAction.HISTORY -> onOpenHistory()
-                    MenuAction.DOWNLOADS -> onOpenDownloads()
-                    MenuAction.SETTINGS -> onOpenSettings()
-                    MenuAction.TOGGLE_BOOKMARK -> viewModel.toggleBookmark()
-                    MenuAction.SHARE -> tab?.let { sharePage(context, it) }
-                    MenuAction.COPY_LINK -> tab?.url?.let { copyLink(context, it) }
-                    MenuAction.DESKTOP -> viewModel.toggleDesktopMode()
-                    MenuAction.DUPLICATE -> tab?.let { viewModel.duplicateTab(it.id) }
-                    MenuAction.FORWARD -> viewModel.goForward()
-                    MenuAction.RELOAD -> viewModel.reload()
-                    MenuAction.SITE_INFO -> showPageInfo = true
-                    MenuAction.FIND -> viewModel.startFind()
-                    MenuAction.TRANSLATE -> viewModel.translatePage()
-                    MenuAction.ADD_TO_HOME -> tab?.let { addToHomeScreen(context, it) }
-                }
-            },
-        )
-    }
+    BrowserMenu(
+        visible = showMenu,
+        atBottom = !compact,
+        tab = tab,
+        isBookmarked = tab?.url?.let { it in bookmarked } == true,
+        onDismiss = { showMenu = false },
+        onAction = { action ->
+            when (action) {
+                MenuAction.NEW_TAB -> viewModel.newTab()
+                MenuAction.NEW_PRIVATE_TAB -> viewModel.newTab(private = true)
+                MenuAction.BOOKMARKS -> onOpenBookmarks()
+                MenuAction.HISTORY -> onOpenHistory()
+                MenuAction.DOWNLOADS -> onOpenDownloads()
+                MenuAction.SETTINGS -> onOpenSettings()
+                MenuAction.TOGGLE_BOOKMARK -> viewModel.toggleBookmark()
+                MenuAction.SHARE -> tab?.let { sharePage(context, it) }
+                MenuAction.COPY_LINK -> tab?.url?.let { copyLink(context, it) }
+                MenuAction.DESKTOP -> viewModel.toggleDesktopMode()
+                MenuAction.DUPLICATE -> tab?.let { viewModel.duplicateTab(it.id) }
+                MenuAction.FORWARD -> viewModel.goForward()
+                MenuAction.RELOAD -> viewModel.reload()
+                MenuAction.SITE_INFO -> showPageInfo = true
+                MenuAction.FIND -> viewModel.startFind()
+                MenuAction.TRANSLATE -> viewModel.translatePage()
+                MenuAction.ADD_TO_HOME -> tab?.let { addToHomeScreen(context, it) }
+            }
+        },
+    )
 
     if (showAccount) {
         GoogleAccountSheet(

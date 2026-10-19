@@ -9,6 +9,8 @@
     <!-- Common -->
     <string name="action_back">Back</string>
     <string name="action_cancel">Cancel</string>
+    <string name="action_remove">Remove</string>
+    <string name="search_remove_question">Remove suggestion from history?</string>
     <string name="action_save">Save</string>
     <string name="selected">Selected</string>
     <string name="error_no_app_to_open_link">No app is available to open this link.</string>
@@ -374,6 +376,8 @@
     <string name="lens_flash">Flash</string>
     <string name="lens_capture_failed">Couldn\'t take the photo. Try again.</string>
     <string name="lens_camera_denied">Camera access is off, so choose an image instead.</string>
+    <string name="action_web_search">Web search</string>
+    <string name="press_back_again">Press back again to leave NAYON</string>
     <string name="ntp_ai_mode">AI Mode</string>
     <string name="ntp_incognito">Incognito</string>
     <string name="ntp_translate">Translate</string>

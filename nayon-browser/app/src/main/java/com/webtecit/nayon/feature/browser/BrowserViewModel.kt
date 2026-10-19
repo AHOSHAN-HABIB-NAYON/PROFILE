@@ -114,6 +114,12 @@ class BrowserViewModel(
     private val webContext = MutableContextWrapper(app)
     private val webViews = mutableMapOf<String, WebView>()
     private val lastUsed = mutableMapOf<String, Long>()
+    /** Tabs opened from a link in another tab, and the tab they came from. */
+    private val openers = mutableMapOf<String, String>()
+    /** Tabs opened by another app; Back closes them and returns to that app, like Chrome. */
+    private val externalTabs = mutableSetOf<String>()
+    /** History of hibernated tabs, restored when they wake up. */
+    private val savedStates = mutableMapOf<String, android.os.Bundle>()
 
 
     init {
@@ -192,6 +198,7 @@ class BrowserViewModel(
         val id = UUID.randomUUID().toString()
         val current = _tabs.value.indexOfFirst { it.id == _activeId.value }
         val tab = TabState(id = id, isPrivate = private, url = url, title = UrlResolver.displayHost(url), showingHome = false)
+        _activeId.value?.let { openers[id] = it }
         _tabs.update { list -> list.toMutableList().apply { add(if (current >= 0) current + 1 else size, tab) } }
         _events.tryEmit(BrowserEvent.Message(
             if (private) R.string.opened_private_tab else R.string.opened_new_tab, action = EventAction.SwitchTab(id),
@@ -214,7 +221,7 @@ class BrowserViewModel(
     val showBrowser: SharedFlow<Unit> = _showBrowser
 
     fun openExternalLink(url: String) {
-        if (UrlResolver.isWebUrl(url)) { newTab(url); _showBrowser.tryEmit(Unit) }
+        if (UrlResolver.isWebUrl(url)) { externalTabs += newTab(url); _showBrowser.tryEmit(Unit) }
     }
 
     fun openSearch(query: String) {
@@ -277,6 +284,21 @@ class BrowserViewModel(
     }
 
     fun removeFromHistory(id: Long) = viewModelScope.launch { browsing.deleteHistory(id) }
+
+    /** Long-press "Remove suggestion from history", like Chrome. */
+    fun removeSearchFromHistory(query: String) =
+        removeHistoryWhere { UrlResolver.searchQueryOf(it.url)?.equals(query, ignoreCase = true) == true }
+
+    fun removeUrlFromHistory(url: String) = removeHistoryWhere { it.url == url }
+
+    fun removeSiteFromHistory(url: String) {
+        val host = UrlResolver.displayHost(url)
+        if (host.isNotBlank()) removeHistoryWhere { UrlResolver.displayHost(it.url) == host }
+    }
+
+    private fun removeHistoryWhere(match: (com.webtecit.nayon.data.browser.HistoryEntry) -> Boolean) = viewModelScope.launch {
+        runCatching { browsing.recentHistory(5_000).first().filter(match).forEach { browsing.deleteHistory(it.id) } }
+    }
 
     fun setTextZoom(percent: Int) = viewModelScope.launch { prefsRepository.setTextZoom(percent) }
     fun setSearchSuggestions(enabled: Boolean) = viewModelScope.launch { prefsRepository.setSearchSuggestions(enabled) }
@@ -463,6 +485,7 @@ class BrowserViewModel(
         recentlyClosed.addLast(index to closing.copy(thumbnail = null))
         if (recentlyClosed.size > 10) recentlyClosed.removeFirst()
         destroyWebView(id)
+        savedStates.remove(id); openers.remove(id); externalTabs.remove(id)
         val remaining = list - closing
         _tabs.value = remaining
         if (_activeId.value == id) {
@@ -536,6 +559,32 @@ class BrowserViewModel(
     }
 
     /** Handles the system back gesture. Returns false when there is nothing to go back to. */
+    /** What the system Back gesture did. */
+    enum class BackResult { HANDLED, LEAVE_APP, NOTHING_LEFT }
+
+
+    /**
+     * Chrome-style Back: page history first (checked live on the WebView, never a stale flag),
+     * then a link-opened tab closes back to its parent tab. NOTHING_LEFT asks before leaving.
+     */
+    fun handleBack(): BackResult {
+        val tab = activeTab.value ?: return BackResult.NOTHING_LEFT
+        if (tab.showingHome) {
+            if (tab.url != null) { updateTab(tab.id) { it.copy(showingHome = false) }; ensureWebView(tab.id); return BackResult.HANDLED }
+            return BackResult.NOTHING_LEFT
+        }
+        val wv = ensureWebView(tab.id)
+        if (wv != null && wv.canGoBack()) { wv.goBack(); return BackResult.HANDLED }
+        if (tab.id in externalTabs) { closeTab(tab.id); return BackResult.LEAVE_APP }
+        val opener = openers[tab.id]
+        if (opener != null && _tabs.value.any { it.id == opener }) {
+            closeTab(tab.id)
+            selectTab(opener)
+            return BackResult.HANDLED
+        }
+        return BackResult.NOTHING_LEFT
+    }
+
     fun goBack(): Boolean {
         val tab = activeTab.value ?: return false
         if (tab.showingHome && tab.url != null && webViews[tab.id] != null) {
@@ -675,12 +724,15 @@ class BrowserViewModel(
         val wv = createWebView(tab)
         webViews[id] = wv
         lastUsed[id] = System.currentTimeMillis()
-        if (tab.url != null && !tab.showingHome) wv.loadUrl(tab.url)
+        val saved = savedStates.remove(id)
+        if (saved != null && wv.restoreState(saved) != null) syncNavState(id, wv)
+        else if (tab.url != null && !tab.showingHome) wv.loadUrl(tab.url)
         hibernateOldTabs()
         return wv
     }
 
     fun webViewOrNull(id: String): WebView? = webViews[id]
+
 
     /** Keeps at most [MAX_LIVE_WEBVIEWS] WebViews in memory. Others reload when reopened. */
     private fun hibernateOldTabs() {
@@ -690,6 +742,8 @@ class BrowserViewModel(
             .sortedBy { lastUsed[it] ?: 0L }
             .take(webViews.size - MAX_LIVE_WEBVIEWS)
             .forEach { id ->
+                // Keep the tab's back/forward history so Back still works after it wakes up.
+                webViews[id]?.let { wv -> android.os.Bundle().also { b -> if (wv.saveState(b) != null) savedStates[id] = b } }
                 destroyWebView(id)
                 updateTab(id) { it.copy(isLoading = false, progress = 0, canGoBack = false, canGoForward = false) }
             }
@@ -757,6 +811,7 @@ class BrowserViewModel(
         wv.setOnScrollChangeListener { _, _, y, _, oldY -> onWebScroll(tab.id, y, oldY) }
         wv.setOnTouchListener { _, e -> onWebTouch(tab.id, e.actionMasked); false }
         wv.setOnLongClickListener { onLongPress(tab.id, wv) }
+        wv.onWebSearch = { text -> newTab(UrlResolver.search(text, preferences.value.searchTemplate), private = tab.isPrivate) }
         wv.setFindListener { active, count, _ ->
             if (tab.id == _activeId.value) _find.update { it?.copy(current = if (count == 0) 0 else active + 1, total = count) }
         }

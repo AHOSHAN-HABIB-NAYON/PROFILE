@@ -107,3 +107,12 @@ checking by hand on a real device.
 | Alternative: built-in, sandboxed add-ons (reader mode, user CSS, force-dark pages) | Planned (Stage 4) | Limited to what the app implements itself | — | — |
 | Guaranteed 120 fps web rendering | **Unsupported** | App UI follows display refresh rate; web content is rendered by WebView | — | — |
 | Universal DRM / background playback | **Unsupported** | Depends on WebView, site and licence | — | — |
+
+### v0.2.24 additions
+| Feature | Status | Notes | Depends on | Tested |
+|---|---|---|---|---|
+| Remove suggestion from history (long-press in the search panel) | Implemented | Recent searches, history suggestions and most-visited sites | — | Manual |
+| Text selection menu | Implemented | WebView's Copy / Cut / Paste / Select all / Share, plus NAYON's own Web search that opens results in a new NAYON tab | — | Manual |
+| Chrome-style Back | Implemented | Page history checked live; sleeping tabs keep their history; a link-opened tab closes back to its parent; on the last page, press Back twice to leave | — | Manual |
+| ⋮ menu as an in-window popup | Implemented | No separate dialog window, so it opens without stutter | — | Manual |
+
