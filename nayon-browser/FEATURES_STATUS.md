@@ -129,3 +129,13 @@ checking by hand on a real device.
 | Fill saved password | Implemented | On a sign-in page of a site with saved passwords, a "Sign in as …" bar appears; filling happens only when you tap it and only if the tab is still on the same site | Same as above | Manual |
 | Passkeys / sync / export | Planned (Stage 4) | — | — | — |
 
+### Autofill and passwords (v0.2.31)
+| Feature | Status | Notes | Depends on | Tested |
+|---|---|---|---|---|
+| "Autofill and passwords" hub | Implemented | Settings → Autofill and passwords, laid out like Chrome: Password Manager, Payments, Contact info, Identity docs, Travel, Autofill settings | — | Manual |
+| Payments: cards, IBANs, loyalty cards | Implemented | Encrypted (Android Keystore). Cards are offered on checkout forms ("Use Visa •••• 4242") after fingerprint / screen lock (can be turned off). "Save card?" after a checkout form is sent. The CVV is never saved | Screen lock to view | Manual |
+| Contact info: addresses | Implemented | Offered on address / delivery forms; "Save address?" after such a form is sent | — | Manual |
+| Identity docs, travel info, vehicles | Implemented (store & view) | Encrypted, behind fingerprint / screen lock; view, copy, edit. Not filled into web pages automatically | Screen lock | Manual |
+| Autofill settings | Implemented | Switches for passwords, payments, card verification, addresses, and letting other Android autofill apps fill in NAYON; link to Android's autofill provider screen (Android 14+) | — | Manual |
+| Passkeys | Not available | Android only lets approved browsers create/use passkeys for any website through WebView | Google allow-listing | — |
+

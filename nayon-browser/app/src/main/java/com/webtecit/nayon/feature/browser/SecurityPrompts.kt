@@ -59,6 +59,8 @@ import com.webtecit.nayon.core.browser.UrlResolver
 import com.webtecit.nayon.core.designsystem.component.SiteIcon
 import com.webtecit.nayon.core.designsystem.theme.Spacing
 import com.webtecit.nayon.data.security.SiteKind
+import com.webtecit.nayon.data.security.AutofillKind
+import com.webtecit.nayon.data.security.CardInfo
 
 fun SiteKind.icon(): ImageVector = when (this) {
     SiteKind.CAMERA -> Icons.Outlined.PhotoCamera
@@ -211,6 +213,113 @@ fun FillPasswordBar(offer: FillOffer, onFill: (Long) -> Unit, onDismiss: () -> U
                 }
             }
             IconButton(onClick = onDismiss) { Icon(Icons.Filled.Close, stringResource(R.string.action_close), tint = scheme.inverseOnSurface) }
+        }
+    }
+}
+
+/** One-line summary of a saved card / address / document etc. */
+@Composable
+fun autofillTitle(e: com.webtecit.nayon.data.security.AutofillEntry): String {
+    val res = androidx.compose.ui.platform.LocalContext.current.resources
+    return autofillTitle(e, res)
+}
+
+fun autofillTitle(e: com.webtecit.nayon.data.security.AutofillEntry, res: android.content.res.Resources): String {
+    return when (e.kind) {
+        AutofillKind.CARD -> e["nickname"].ifBlank { CardInfo.brand(e["number"]) } + " •••• " + CardInfo.last4(e["number"])
+        AutofillKind.IBAN -> e["nickname"].ifBlank { "IBAN" } + " •••• " + CardInfo.last4(e["iban"])
+        AutofillKind.LOYALTY -> e["program"]
+        AutofillKind.ADDRESS -> e["name"]
+        AutofillKind.ID_DOC -> e["type"].ifBlank { res.getString(e.kind.title) }
+        AutofillKind.TRAVEL_INFO -> e["type"].ifBlank { res.getString(e.kind.title) }
+        AutofillKind.VEHICLE -> listOf(e["make"], e["model"]).filter { it.isNotBlank() }.joinToString(" ").ifBlank { e["plate"] }
+    }
+}
+
+fun autofillSubtitle(e: com.webtecit.nayon.data.security.AutofillEntry): String {
+    fun join(vararg parts: String) = parts.filter { it.isNotBlank() }.joinToString(" · ")
+    return when (e.kind) {
+        AutofillKind.CARD -> join(e["name"], e["exp"])
+        AutofillKind.IBAN -> ""
+        AutofillKind.LOYALTY -> join(e["name"], "•••• " + CardInfo.last4(e["number"]))
+        AutofillKind.ADDRESS -> join(e["street"], e["city"], e["postal"])
+        AutofillKind.ID_DOC -> join(e["name"], "•••• " + CardInfo.last4(e["number"]), e["expires"])
+        AutofillKind.TRAVEL_INFO -> join(e["program"], "•••• " + CardInfo.last4(e["number"]))
+        AutofillKind.VEHICLE -> join(e["plate"], e["region"])
+    }
+}
+
+/** "Use card / Fill address" bar above the keyboard on checkout and address forms. */
+@Composable
+fun AutofillBar(offer: AutofillOffer, onFill: (Long) -> Unit, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+    val scheme = MaterialTheme.colorScheme
+    var menu by remember { mutableStateOf(false) }
+    val first = offer.entries.first()
+    val isCard = offer.kind == com.webtecit.nayon.data.security.AutofillKind.CARD
+    val icon = if (isCard) androidx.compose.material.icons.Icons.Outlined.CreditCard else androidx.compose.material.icons.Icons.Outlined.Home
+    Surface(shape = RoundedCornerShape(28.dp), color = scheme.inverseSurface, shadowElevation = 8.dp, modifier = modifier) {
+        Row(Modifier.padding(start = Spacing.lg, end = Spacing.xs).height(52.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, tint = scheme.inversePrimary, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(Spacing.md))
+            Box(Modifier.weight(1f)) {
+                Text(
+                    stringResource(if (isCard) R.string.af_use_card else R.string.af_use_address, autofillTitle(first)),
+                    color = scheme.inverseOnSurface, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(role = Role.Button) {
+                        if (offer.entries.size == 1) onFill(first.id) else menu = true
+                    }.padding(vertical = Spacing.sm),
+                )
+                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    offer.entries.forEach { e ->
+                        DropdownMenuItem(
+                            text = { Column { Text(autofillTitle(e)); Text(autofillSubtitle(e), style = MaterialTheme.typography.bodySmall) } },
+                            leadingIcon = { Icon(icon, null) },
+                            onClick = { menu = false; onFill(e.id) },
+                        )
+                    }
+                }
+            }
+            IconButton(onClick = onDismiss) { Icon(Icons.Filled.Close, stringResource(R.string.action_close), tint = scheme.inverseOnSurface) }
+        }
+    }
+}
+
+/** "Save card?" / "Save address?" after a checkout or address form was sent. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SaveFormSheet(offer: SaveFormOffer, onSave: () -> Unit, onDismiss: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val isCard = offer.kind == com.webtecit.nayon.data.security.AutofillKind.CARD
+    val preview = com.webtecit.nayon.data.security.AutofillEntry(0, offer.kind, offer.values, 0)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = scheme.surfaceContainerLow,
+    ) {
+        Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = Spacing.xl).padding(bottom = Spacing.lg)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(44.dp).clip(CircleShape).background(scheme.primaryContainer), contentAlignment = Alignment.Center) {
+                    Icon(if (isCard) androidx.compose.material.icons.Icons.Outlined.CreditCard else androidx.compose.material.icons.Icons.Outlined.Home,
+                        null, tint = scheme.onPrimaryContainer)
+                }
+                Spacer(Modifier.width(Spacing.md))
+                Text(stringResource(if (isCard) R.string.af_save_card_title else R.string.af_save_address_title),
+                    style = MaterialTheme.typography.titleLarge)
+            }
+            Spacer(Modifier.height(Spacing.lg))
+            Surface(shape = RoundedCornerShape(16.dp), color = scheme.surfaceContainerHigh, modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(Spacing.lg), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                    Text(autofillTitle(preview), style = MaterialTheme.typography.titleMedium)
+                    val sub = autofillSubtitle(preview)
+                    if (sub.isNotBlank()) Text(sub, style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant)
+                }
+            }
+            Text(stringResource(if (isCard) R.string.af_save_card_note else R.string.password_save_note),
+                style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant, modifier = Modifier.padding(top = Spacing.sm))
+            Spacer(Modifier.height(Spacing.lg))
+            Button(onClick = onSave, modifier = Modifier.fillMaxWidth().height(48.dp)) { Text(stringResource(R.string.password_save)) }
+            TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth().padding(top = Spacing.xs)) { Text(stringResource(R.string.af_no_thanks)) }
         }
     }
 }

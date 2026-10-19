@@ -72,3 +72,9 @@ published yet.)_
   NAYON itself does not record, store or send this data. Your allow/block choices are stored on
   your phone and can be reset in Settings → Site settings.
 
+## Cards, addresses and documents
+
+- Cards, IBANs, loyalty cards, addresses, identity documents, travel info and vehicles you save
+  stay encrypted on your phone. Nothing is uploaded or synced. Card security codes (CVV) are
+  never saved. A card or address is written into a website only when you tap it.
+

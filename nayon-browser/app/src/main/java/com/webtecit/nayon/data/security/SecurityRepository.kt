@@ -21,6 +21,33 @@ enum class SaveCheck { NEW, UPDATE, SAME, NEVER }
 class SecurityRepository(db: SecurityDatabase, private val crypto: VaultCrypto = VaultCrypto()) {
     private val credentials = db.credentials()
     private val permissions = db.sitePermissions()
+    private val autofill = db.autofill()
+
+    // ---- Autofill: cards, IBANs, loyalty cards, addresses, documents, travel, vehicles ----
+
+    val autofillEntries: Flow<List<AutofillEntry>> = autofill.all().map { list -> list.mapNotNull { it.toEntry() } }
+
+    suspend fun entriesOf(kind: AutofillKind): List<AutofillEntry> = withContext(Dispatchers.IO) {
+        autofill.ofKind(kind.name).mapNotNull { it.toEntry() }
+    }
+
+    suspend fun entry(id: Long): AutofillEntry? = withContext(Dispatchers.IO) { autofill.byId(id)?.toEntry() }
+
+    suspend fun saveEntry(kind: AutofillKind, values: Map<String, String>, id: Long = 0): Long = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
+        val json = org.json.JSONObject().apply { values.filterValues { it.isNotBlank() }.forEach { (k, v) -> put(k, v.trim()) } }
+        val existing = if (id != 0L) autofill.byId(id) else null
+        autofill.upsert(AutofillEntity(id = id, kind = kind.name, dataCipher = crypto.encrypt(json.toString()),
+            createdAt = existing?.createdAt ?: now, updatedAt = now))
+    }
+
+    suspend fun deleteEntry(id: Long) = withContext(Dispatchers.IO) { autofill.delete(id) }
+
+    private fun AutofillEntity.toEntry(): AutofillEntry? = runCatching {
+        val k = AutofillKind.valueOf(kind)
+        val o = org.json.JSONObject(crypto.decrypt(dataCipher))
+        AutofillEntry(id, k, o.keys().asSequence().associateWith { o.optString(it) }, updatedAt)
+    }.getOrNull()
 
     // ---- Passwords -----------------------------------------------------------------------
 
@@ -70,7 +97,6 @@ class SecurityRepository(db: SecurityDatabase, private val crypto: VaultCrypto =
 
     suspend fun deleteAllPasswords() = withContext(Dispatchers.IO) {
         credentials.clear()
-        crypto.destroyKey()
     }
 
     private fun decrypt(cipher: String): String? = runCatching { crypto.decrypt(cipher) }.getOrNull()

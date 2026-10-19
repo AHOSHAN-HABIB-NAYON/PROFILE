@@ -33,6 +33,14 @@ data class BrowserPreferences(
     val searchSuggestions: Boolean = true,
     /** Offer to save passwords after signing in (normal tabs only). */
     val savePasswords: Boolean = true,
+    /** Offer to save and fill cards (Payments). */
+    val savePayments: Boolean = true,
+    /** Offer to save and fill addresses (Contact info). */
+    val saveAddresses: Boolean = true,
+    /** Ask for fingerprint / screen lock before filling a card. */
+    val verifyPayments: Boolean = true,
+    /** Let Android autofill apps (Google, 1Password, ...) fill inside NAYON pages too. */
+    val otherAutofillApps: Boolean = true,
 ) {
     /** Search URL template in effect. Falls back to Google if the custom one is invalid. */
     val searchTemplate: String
@@ -95,6 +103,10 @@ class BrowserPreferencesRepository(private val dataStore: DataStore<Preferences>
         val textZoom = intPreferencesKey("text_zoom")
         val suggestions = booleanPreferencesKey("search_suggestions")
         val savePasswords = booleanPreferencesKey("save_passwords")
+        val savePayments = booleanPreferencesKey("save_payments")
+        val saveAddresses = booleanPreferencesKey("save_addresses")
+        val verifyPayments = booleanPreferencesKey("verify_payments")
+        val otherAutofill = booleanPreferencesKey("other_autofill_apps")
     }
 
     val preferences: Flow<BrowserPreferences> = dataStore.data
@@ -114,6 +126,10 @@ class BrowserPreferencesRepository(private val dataStore: DataStore<Preferences>
                 textZoom = (p[Keys.textZoom] ?: d.textZoom).coerceIn(50, 200),
                 searchSuggestions = p[Keys.suggestions] ?: d.searchSuggestions,
                 savePasswords = p[Keys.savePasswords] ?: d.savePasswords,
+                savePayments = p[Keys.savePayments] ?: d.savePayments,
+                saveAddresses = p[Keys.saveAddresses] ?: d.saveAddresses,
+                verifyPayments = p[Keys.verifyPayments] ?: d.verifyPayments,
+                otherAutofillApps = p[Keys.otherAutofill] ?: d.otherAutofillApps,
             )
         }
         .distinctUntilChanged()
@@ -133,4 +149,8 @@ class BrowserPreferencesRepository(private val dataStore: DataStore<Preferences>
     suspend fun setTextZoom(percent: Int) = dataStore.edit { it[Keys.textZoom] = percent.coerceIn(50, 200) }
     suspend fun setSearchSuggestions(enabled: Boolean) = dataStore.edit { it[Keys.suggestions] = enabled }
     suspend fun setSavePasswords(enabled: Boolean) = dataStore.edit { it[Keys.savePasswords] = enabled }
+    suspend fun setSavePayments(enabled: Boolean) = dataStore.edit { it[Keys.savePayments] = enabled }
+    suspend fun setSaveAddresses(enabled: Boolean) = dataStore.edit { it[Keys.saveAddresses] = enabled }
+    suspend fun setVerifyPayments(enabled: Boolean) = dataStore.edit { it[Keys.verifyPayments] = enabled }
+    suspend fun setOtherAutofillApps(enabled: Boolean) = dataStore.edit { it[Keys.otherAutofill] = enabled }
 }

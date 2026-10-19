@@ -37,6 +37,9 @@ object NayonViewModelFactory {
             com.webtecit.nayon.feature.security.PasswordsViewModel(app().container.securityRepository, app().container.browserPreferences)
         }
         initializer { com.webtecit.nayon.feature.security.SiteSettingsViewModel(app().container.securityRepository) }
+        initializer {
+            com.webtecit.nayon.feature.security.AutofillViewModel(app().container.securityRepository, app().container.browserPreferences)
+        }
     }
 
     private fun androidx.lifecycle.viewmodel.CreationExtras.app(): NayonApp =

@@ -28,6 +28,34 @@ data class CredentialEntity(
 @Entity(tableName = "never_save")
 data class NeverSaveEntity(@PrimaryKey val origin: String, val createdAt: Long)
 
+/** Cards, IBANs, addresses, documents, travel info and vehicles. All fields encrypted as one JSON blob. */
+@Entity(tableName = "autofill_entries")
+data class AutofillEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val kind: String,
+    val dataCipher: String,
+    val createdAt: Long,
+    val updatedAt: Long,
+)
+
+@Dao
+interface AutofillDao {
+    @Query("SELECT * FROM autofill_entries ORDER BY updatedAt DESC")
+    fun all(): Flow<List<AutofillEntity>>
+
+    @Query("SELECT * FROM autofill_entries WHERE kind = :kind ORDER BY updatedAt DESC")
+    suspend fun ofKind(kind: String): List<AutofillEntity>
+
+    @Query("SELECT * FROM autofill_entries WHERE id = :id")
+    suspend fun byId(id: Long): AutofillEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(entity: AutofillEntity): Long
+
+    @Query("DELETE FROM autofill_entries WHERE id = :id")
+    suspend fun delete(id: Long)
+}
+
 /** A remembered website permission decision (camera, microphone, location, protected media). */
 @Entity(tableName = "site_permissions", primaryKeys = ["origin", "kind"])
 data class SitePermissionEntity(val origin: String, val kind: String, val allowed: Boolean, val updatedAt: Long)
@@ -93,11 +121,24 @@ interface SitePermissionDao {
 }
 
 @Database(
-    entities = [CredentialEntity::class, NeverSaveEntity::class, SitePermissionEntity::class],
-    version = 1,
+    entities = [CredentialEntity::class, NeverSaveEntity::class, SitePermissionEntity::class, AutofillEntity::class],
+    version = 2,
     exportSchema = false,
 )
 abstract class SecurityDatabase : RoomDatabase() {
     abstract fun credentials(): CredentialDao
     abstract fun sitePermissions(): SitePermissionDao
+    abstract fun autofill(): AutofillDao
+
+    companion object {
+        /** v2 adds autofill entries; saved passwords and permissions are kept. */
+        val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `autofill_entries` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "`kind` TEXT NOT NULL, `dataCipher` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL)",
+                )
+            }
+        }
+    }
 }

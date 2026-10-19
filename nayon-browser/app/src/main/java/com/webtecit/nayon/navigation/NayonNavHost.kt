@@ -42,6 +42,10 @@ object Routes {
     const val DOWNLOADS = "downloads"
     const val PASSWORDS = "passwords"
     const val SITE_SETTINGS = "site_settings"
+    const val AUTOFILL = "autofill"
+    const val AUTOFILL_SETTINGS = "autofill_settings"
+    const val AUTOFILL_GROUP = "autofill_group/{group}"
+    const val AUTOFILL_EDIT = "autofill_edit/{kind}/{id}"
 }
 
 private const val NAV_ANIM_MS = 220
@@ -109,7 +113,7 @@ fun NayonNavHost(
                 onOpenAbout = { go(Routes.ABOUT) },
                 onOpenPrivacy = { go(Routes.PRIVACY) },
                 onOpenLicenses = { go(Routes.LICENSES) },
-                onOpenPasswords = { go(Routes.PASSWORDS) },
+                onOpenPasswords = { go(Routes.AUTOFILL) },
                 onOpenSiteSettings = { go(Routes.SITE_SETTINGS) },
             )
         }
@@ -122,6 +126,26 @@ fun NayonNavHost(
         composable(Routes.DOWNLOADS) { DownloadsScreen(onBack = back) }
         composable(Routes.PASSWORDS) { com.webtecit.nayon.feature.security.PasswordsScreen(onBack = back, onOpenSite = openNewTab) }
         composable(Routes.SITE_SETTINGS) { com.webtecit.nayon.feature.security.SiteSettingsScreen(onBack = back) }
+        composable(Routes.AUTOFILL) {
+            com.webtecit.nayon.feature.security.AutofillHubScreen(
+                onBack = back,
+                onOpenPasswords = { go(Routes.PASSWORDS) },
+                onOpenGroup = { g -> go("autofill_group/${g.name}") },
+                onOpenSettings = { go(Routes.AUTOFILL_SETTINGS) },
+            )
+        }
+        composable(Routes.AUTOFILL_SETTINGS) { com.webtecit.nayon.feature.security.AutofillSettingsScreen(onBack = back) }
+        composable(Routes.AUTOFILL_GROUP) { entry ->
+            val group = runCatching { com.webtecit.nayon.data.security.AutofillGroup.valueOf(entry.arguments?.getString("group").orEmpty()) }
+                .getOrDefault(com.webtecit.nayon.data.security.AutofillGroup.PAYMENTS)
+            com.webtecit.nayon.feature.security.AutofillGroupScreen(group, onBack = back, onEdit = { kind, id -> go("autofill_edit/${kind.name}/$id") })
+        }
+        composable(Routes.AUTOFILL_EDIT) { entry ->
+            val kind = runCatching { com.webtecit.nayon.data.security.AutofillKind.valueOf(entry.arguments?.getString("kind").orEmpty()) }
+                .getOrDefault(com.webtecit.nayon.data.security.AutofillKind.CARD)
+            val id = entry.arguments?.getString("id")?.toLongOrNull() ?: 0L
+            com.webtecit.nayon.feature.security.AutofillEditScreen(kind, id, onBack = back)
+        }
         composable(Routes.PRIVACY) { PrivacyPolicyScreen(onBack = back) }
         composable(Routes.LICENSES) { LicensesScreen(onBack = back, onOpenUrl = openNewTab) }
     }

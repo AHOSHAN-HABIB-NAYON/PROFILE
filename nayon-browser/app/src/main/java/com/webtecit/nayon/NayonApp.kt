@@ -50,7 +50,9 @@ class AppContainer(context: Context) {
     val downloadEngine: DownloadEngine by lazy { DownloadEngine(context.applicationContext, downloadsDatabase.downloads()) }
 
     private val securityDatabase: com.webtecit.nayon.data.security.SecurityDatabase by lazy {
-        Room.databaseBuilder(context, com.webtecit.nayon.data.security.SecurityDatabase::class.java, "nayon_security.db").build()
+        Room.databaseBuilder(context, com.webtecit.nayon.data.security.SecurityDatabase::class.java, "nayon_security.db")
+            .addMigrations(com.webtecit.nayon.data.security.SecurityDatabase.MIGRATION_1_2)
+            .build()
     }
 
     /** Encrypted password vault and website permission decisions. */

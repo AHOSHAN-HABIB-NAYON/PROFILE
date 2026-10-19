@@ -86,3 +86,14 @@ data class PasswordOffer(val origin: String, val username: String, val password:
 /** Saved sign-ins offered on a sign-in page. */
 data class FillOffer(val tabId: String, val origin: String, val logins: List<com.webtecit.nayon.data.security.SavedLogin>)
 
+/** Saved cards / addresses offered on a checkout or address form. */
+data class AutofillOffer(
+    val tabId: String,
+    val origin: String,
+    val kind: com.webtecit.nayon.data.security.AutofillKind,
+    val entries: List<com.webtecit.nayon.data.security.AutofillEntry>,
+)
+
+/** "Save card?" / "Save address?" after a form was sent. */
+data class SaveFormOffer(val kind: com.webtecit.nayon.data.security.AutofillKind, val values: Map<String, String>)
+

@@ -184,8 +184,8 @@ fun SettingsScreen(
         item { SectionHeader(stringResource(R.string.settings_section_privacy)) }
         item {
             SettingsGroup {
-                SettingsRow(stringResource(R.string.passwords_title), onOpenPasswords, icon = Icons.Outlined.Key,
-                    subtitle = stringResource(R.string.settings_passwords_desc))
+                SettingsRow(stringResource(R.string.af_hub_title), onOpenPasswords, icon = Icons.Outlined.Key,
+                    subtitle = stringResource(R.string.af_hub_desc))
                 GroupDivider()
                 SettingsRow(stringResource(R.string.site_settings_title), onOpenSiteSettings, icon = Icons.Outlined.Tune,
                     subtitle = stringResource(R.string.settings_site_settings_desc))

@@ -38,6 +38,9 @@ import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import com.webtecit.nayon.data.security.SaveCheck
+import com.webtecit.nayon.data.security.AutofillEntry
+import com.webtecit.nayon.data.security.AutofillKind
+import com.webtecit.nayon.data.security.CardInfo
 import com.webtecit.nayon.data.security.SecurityRepository
 import com.webtecit.nayon.data.security.SitePermission
 import com.webtecit.nayon.data.security.SiteKind
@@ -170,13 +173,118 @@ class BrowserViewModel(
                 pendingSignIns[tabId] = PendingSignIn(origin, user, event.password, android.os.SystemClock.elapsedRealtime())
             }
             "gone" -> flushSignIn(tabId)
-            "focus" -> offerFillFor(tabId, origin, fromFocus = true)
+            "focus" -> when (event.field) {
+                "card" -> offerAutofill(tabId, origin, AutofillKind.CARD)
+                "address" -> offerAutofill(tabId, origin, AutofillKind.ADDRESS)
+                else -> offerFillFor(tabId, origin, fromFocus = true)
+            }
+            "card" -> if (preferences.value.savePayments) pendingForms[tabId] = AutofillKind.CARD to event.data
+            "address" -> if (preferences.value.saveAddresses && pendingForms[tabId]?.first != AutofillKind.CARD) {
+                pendingForms[tabId] = AutofillKind.ADDRESS to event.data
+            }
             "form" -> offerFillFor(tabId, origin, fromFocus = false)
         }
     }
 
+    // ---- Cards and addresses (Payments / Contact info) ------------------------------------------
+
+    private val pendingForms = mutableMapOf<String, Pair<AutofillKind, Map<String, String>>>()
+
+    private val _autofillOffer = MutableStateFlow<AutofillOffer?>(null)
+    /** Saved cards or addresses offered while filling a checkout / address form. */
+    val autofillOffer: StateFlow<AutofillOffer?> = _autofillOffer.asStateFlow()
+
+    private val _saveFormOffer = MutableStateFlow<SaveFormOffer?>(null)
+    /** "Save card?" / "Save address?" after a form was sent. */
+    val saveFormOffer: StateFlow<SaveFormOffer?> = _saveFormOffer.asStateFlow()
+
+    private fun offerAutofill(tabId: String, origin: String, kind: AutofillKind) {
+        if (tabId != _activeId.value) return
+        val prefs = preferences.value
+        if (kind == AutofillKind.CARD && !prefs.savePayments || kind == AutofillKind.ADDRESS && !prefs.saveAddresses) return
+        if (_autofillOffer.value?.let { it.tabId == tabId && it.kind == kind } == true) return
+        viewModelScope.launch {
+            val entries = security.entriesOf(kind)
+            if (entries.isNotEmpty() && tabId == _activeId.value) _autofillOffer.value = AutofillOffer(tabId, origin, kind, entries)
+        }
+    }
+
+    /** Fills the chosen card / address. For cards the UI confirms the screen lock first (if enabled). */
+    fun fillAutofill(entryId: Long) {
+        val offer = _autofillOffer.value ?: return
+        _autofillOffer.value = null
+        val wv = webViews[offer.tabId] ?: return
+        if (SecurityRepository.originOf(wv.url) != offer.origin) return
+        viewModelScope.launch {
+            val e = security.entry(entryId) ?: return@launch
+            if (SecurityRepository.originOf(wv.url) != offer.origin) return@launch
+            wv.evaluateJavascript(PasswordBridge.fillFormScript(fieldValues(e)), null)
+        }
+    }
+
+    fun dismissAutofillOffer() { _autofillOffer.value = null }
+
+    private fun fieldValues(e: AutofillEntry): Map<String, String> = when (e.kind) {
+        AutofillKind.CARD -> {
+            val exp = e["exp"]
+            val month = exp.substringBefore('/', "")
+            val year = exp.substringAfter('/', "").let { if (it.length == 2) "20$it" else it }
+            mapOf("ccnum" to CardInfo.digits(e["number"]), "ccname" to e["name"], "ccexp" to exp, "ccm" to month, "ccy" to year)
+        }
+        AutofillKind.ADDRESS -> {
+            val name = e["name"].trim()
+            mapOf(
+                "name" to name, "given" to name.substringBefore(' '), "family" to name.substringAfter(' ', ""),
+                "org" to e["organization"], "street" to e["street"], "city" to e["city"], "state" to e["state"],
+                "postal" to e["postal"], "country" to e["country"], "tel" to e["phone"], "email" to e["email"],
+            )
+        }
+        else -> emptyMap()
+    }
+
+    private fun flushForm(tabId: String) {
+        val (kind, data) = pendingForms.remove(tabId) ?: return
+        if (tab(tabId)?.isPrivate == true) return
+        viewModelScope.launch {
+            val values: Map<String, String> = when (kind) {
+                AutofillKind.CARD -> {
+                    val number = CardInfo.digits(data["ccnum"].orEmpty())
+                    if (!CardInfo.luhnValid(number)) return@launch
+                    val exp = CardInfo.normaliseExpiry(data["ccexp"].orEmpty())
+                        ?: CardInfo.normaliseExpiry(data["ccm"].orEmpty().padStart(2, '0') + data["ccy"].orEmpty().takeLast(2))
+                        ?: ""
+                    if (security.entriesOf(AutofillKind.CARD).any { CardInfo.digits(it["number"]) == number }) return@launch
+                    mapOf("number" to number, "name" to data["ccname"].orEmpty(), "exp" to exp)
+                }
+                AutofillKind.ADDRESS -> {
+                    val name = data["name"].orEmpty().ifBlank { listOf(data["given"], data["family"]).filterNot { it.isNullOrBlank() }.joinToString(" ") }
+                    val street = listOf(data["street"], data["street2"]).filterNot { it.isNullOrBlank() }.joinToString(", ")
+                    if (name.isBlank() && street.isBlank()) return@launch
+                    if (security.entriesOf(AutofillKind.ADDRESS).any { it["name"].equals(name, true) && it["street"].equals(street, true) }) return@launch
+                    mapOf("name" to name, "organization" to data["org"].orEmpty(), "street" to street, "city" to data["city"].orEmpty(),
+                        "state" to data["state"].orEmpty(), "postal" to data["postal"].orEmpty(), "country" to data["country"].orEmpty(),
+                        "phone" to data["tel"].orEmpty(), "email" to data["email"].orEmpty())
+                }
+                else -> return@launch
+            }
+            _saveFormOffer.value = SaveFormOffer(kind, values)
+        }
+    }
+
+    fun saveFormEntry() {
+        val offer = _saveFormOffer.value ?: return
+        _saveFormOffer.value = null
+        viewModelScope.launch {
+            runCatching { security.saveEntry(offer.kind, offer.values) }
+                .onSuccess { _events.tryEmit(BrowserEvent.Message(if (offer.kind == AutofillKind.CARD) R.string.af_card_saved else R.string.af_address_saved)) }
+        }
+    }
+
+    fun dismissSaveFormOffer() { _saveFormOffer.value = null }
+
     /** The sign-in went through (the page moved on): now ask "Save password?", like Chrome. */
     private fun flushSignIn(tabId: String) {
+        flushForm(tabId)
         val pending = pendingSignIns.remove(tabId) ?: return
         if (android.os.SystemClock.elapsedRealtime() - pending.at > 90_000) return
         onSignInSubmitted(tabId, pending.origin, pending.username, pending.password)
@@ -1078,6 +1186,10 @@ class BrowserViewModel(
         wv.setOnScrollChangeListener { _, _, y, _, oldY -> onWebScroll(tab.id, y, oldY) }
         wv.setOnTouchListener { _, e -> onWebTouch(tab.id, e.actionMasked); false }
         wv.setOnLongClickListener { onLongPress(tab.id, wv) }
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            wv.importantForAutofill = if (preferences.value.otherAutofillApps) View.IMPORTANT_FOR_AUTOFILL_AUTO
+            else View.IMPORTANT_FOR_AUTOFILL_NO_EXCLUDE_DESCENDANTS
+        }
         wv.onWebSearch = { text -> newTab(UrlResolver.search(text, preferences.value.searchTemplate), private = tab.isPrivate) }
         if (!tab.isPrivate && WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER) &&
             WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
@@ -1209,6 +1321,7 @@ class BrowserViewModel(
 
         override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
             if (_fillOffer.value?.tabId == tabId) _fillOffer.value = null
+            if (_autofillOffer.value?.tabId == tabId) _autofillOffer.value = null
             flushSignIn(tabId)
             if (tabId == _activeId.value) showBars()
             updateTab(tabId) {

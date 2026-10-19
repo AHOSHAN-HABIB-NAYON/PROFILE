@@ -77,7 +77,7 @@ compatibility scripts, none of which read page content or send anything anywhere
   for saving comes from WebView itself, not from the page. Only https pages in normal tabs are
   considered, and only the top frame.
 - Saved passwords are filled only after you tap "Sign in as …", and only if the tab is still on
-  the same origin. "Delete all passwords" also destroys the Keystore key.
+  the same origin. "Delete all passwords" deletes every saved sign-in.
 - A page can see that NAYON's message channel exists, and could send a fake sign-in message;
   the worst result is a "Save password?" prompt for that same site, which you can decline.
 

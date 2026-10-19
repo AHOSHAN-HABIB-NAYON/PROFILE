@@ -115,6 +115,8 @@ fun BrowserScreen(
     val permissionAsk by viewModel.permissionAsk.collectAsStateWithLifecycle()
     val passwordOffer by viewModel.passwordOffer.collectAsStateWithLifecycle()
     val fillOffer by viewModel.fillOffer.collectAsStateWithLifecycle()
+    val autofillOffer by viewModel.autofillOffer.collectAsStateWithLifecycle()
+    val saveFormOffer by viewModel.saveFormOffer.collectAsStateWithLifecycle()
 
     val focusRequester = remember { FocusRequester() }
     var editing by remember { mutableStateOf(false) }
@@ -423,6 +425,27 @@ fun BrowserScreen(
                             .widthIn(max = 520.dp).fillMaxWidth(),
                     )
                 }
+                val af = autofillOffer
+                if (af != null && af.tabId == tab?.id && !editing && tab?.showingHome == false && fillOffer == null) {
+                    val verifyTitle = stringResource(R.string.af_verify_title)
+                    val verifySubtitle = stringResource(R.string.af_verify_subtitle)
+                    AutofillBar(
+                        offer = af,
+                        onFill = { id ->
+                            val isCard = af.kind == com.webtecit.nayon.data.security.AutofillKind.CARD
+                            if (isCard && prefs.verifyPayments && com.webtecit.nayon.feature.security.DeviceLock.available(context)) {
+                                com.webtecit.nayon.feature.security.DeviceLock.confirm(context, verifyTitle, verifySubtitle) { ok ->
+                                    if (ok) viewModel.fillAutofill(id)
+                                }
+                            } else {
+                                viewModel.fillAutofill(id)
+                            }
+                        },
+                        onDismiss = viewModel::dismissAutofillOffer,
+                        modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = Spacing.lg, vertical = Spacing.lg)
+                            .widthIn(max = 520.dp).fillMaxWidth(),
+                    )
+                }
                 SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter).padding(Spacing.md))
             }
 
@@ -518,6 +541,10 @@ fun BrowserScreen(
             // Already allowed for this site: only Android's own permission may still be needed.
             LaunchedEffect(ask) { proceedPermission(ask, PermissionChoice.ALLOW_ONCE) }
         }
+    }
+
+    saveFormOffer?.let { offer ->
+        SaveFormSheet(offer = offer, onSave = viewModel::saveFormEntry, onDismiss = viewModel::dismissSaveFormOffer)
     }
 
     passwordOffer?.let { offer ->

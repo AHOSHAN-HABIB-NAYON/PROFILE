@@ -69,3 +69,20 @@ class Stage3LogicTest {
         org.junit.Assert.assertTrue(js.contains("p'<\\/script>"))
     }
 }
+
+class CardInfoTest {
+    private val c = com.webtecit.nayon.data.security.CardInfo
+
+    @Test
+    fun luhnBrandAndExpiry() {
+        org.junit.Assert.assertTrue(c.luhnValid("4242 4242 4242 4242"))
+        org.junit.Assert.assertFalse(c.luhnValid("4242 4242 4242 4241"))
+        assertEquals("Visa", c.brand("4242424242424242"))
+        assertEquals("Mastercard", c.brand("5555555555554444"))
+        assertEquals("American Express", c.brand("378282246310005"))
+        assertEquals("4242", c.last4("4242 4242 4242 4242"))
+        assertEquals("08/27", c.normaliseExpiry("8/27"))
+        assertEquals("12/29", c.normaliseExpiry("12/2029"))
+        assertEquals(null, c.normaliseExpiry("13/27"))
+    }
+}
