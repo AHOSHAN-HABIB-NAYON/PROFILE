@@ -37,9 +37,10 @@ class AppContainer(context: Context) {
         Room.databaseBuilder(context, BrowserDatabase::class.java, "nayon_browser.db").build()
     }
 
-    // "favicons2": earlier builds could file an icon under the wrong site, so start a clean cache.
-    val faviconStore = FaviconStore(java.io.File(context.filesDir, "favicons2")).also {
+    // "favicons3": earlier builds could file an icon under the wrong site, so start a clean cache.
+    val faviconStore = FaviconStore(java.io.File(context.filesDir, "favicons3")).also {
         java.io.File(context.filesDir, "favicons").deleteRecursively()
+        java.io.File(context.filesDir, "favicons2").deleteRecursively()
     }
 
     private val downloadsDatabase: DownloadsDatabase by lazy {

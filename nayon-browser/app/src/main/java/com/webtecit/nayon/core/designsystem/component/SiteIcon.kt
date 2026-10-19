@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.webtecit.nayon.core.browser.UrlResolver
+import com.webtecit.nayon.R
+import androidx.compose.ui.res.painterResource
 import kotlin.math.abs
 
 /**
@@ -41,6 +43,17 @@ fun SiteIcon(
     /** Fetch a missing icon from the site itself (home-page shortcuts only). */
     downloadIcon: Boolean = false,
 ) {
+    val host = UrlResolver.displayHost(url)
+    if (isGoogleSearchHost(host)) {
+        // Google's own "G", built in, so the Google shortcut can never show another site's logo.
+        Box(
+            modifier.size(size).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceContainerLowest),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(painterResource(R.drawable.ic_google_g), contentDescription = null, modifier = Modifier.size(size * 0.5f))
+        }
+        return
+    }
     val stored by rememberFavicon(url, download = downloadIcon)
     val icon = favicon ?: stored
     if (icon != null) {
@@ -57,7 +70,6 @@ fun SiteIcon(
         }
         return
     }
-    val host = UrlResolver.displayHost(url)
     val letter = (title.ifBlank { host }.firstOrNull { it.isLetterOrDigit() } ?: '•').uppercaseChar().toString()
     val palette = avatarColors()
     val (bg, fg) = if (background != null) background to Color.White else palette[abs(host.hashCode()) % palette.size]
@@ -65,6 +77,10 @@ fun SiteIcon(
         Text(letter, color = fg, fontWeight = FontWeight.SemiBold, fontSize = (size.value * 0.42f).sp)
     }
 }
+
+/** google.com and its country sites (google.com.bd, google.co.uk, ...), not other Google services. */
+private fun isGoogleSearchHost(host: String): Boolean =
+    host == "google.com" || Regex("^google\\.(com?\\.)?[a-z]{2,3}$").matches(host)
 
 @Composable
 private fun avatarColors(): List<Pair<Color, Color>> {

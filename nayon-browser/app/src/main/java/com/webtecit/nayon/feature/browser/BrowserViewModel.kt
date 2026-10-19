@@ -1031,14 +1031,10 @@ class BrowserViewModel(
             updateTab(tabId) { it.copy(isLoading = false, progress = 100, url = url, title = view.title ?: it.title) }
             val host = UrlResolver.displayHost(url)
             if (tab(tabId)?.isPrivate == false && UrlResolver.isWebUrl(url) && host.isNotBlank()) {
-                // Store the icon only now, under the host of the page that actually finished.
-                // Icons that arrive mid-navigation can belong to the previous or next site.
-                val icon = view.favicon
-                val sameSite = UrlResolver.displayHost(view.url) == host
-                viewModelScope.launch {
-                    if (icon != null && sameSite) favicons.save(host, icon)
-                    favicons.upgrade(host)
-                }
+                // Saved icons come only from the site itself (its own icon files). The icon WebView
+                // reports can still be the previous site's while a new page loads, which once put
+                // another site's logo on the Google shortcut.
+                viewModelScope.launch { favicons.upgrade(host) }
             }
             syncNavState(tabId, view)
         }
