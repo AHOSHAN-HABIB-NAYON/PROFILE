@@ -97,6 +97,7 @@ fun TopToolbar(
     onMenu: () -> Unit,
     onSiteInfo: () -> Unit,
     modifier: Modifier = Modifier,
+    aiMode: Boolean = false,
 ) {
     val scheme = MaterialTheme.colorScheme
     var focused by remember { mutableStateOf(false) }
@@ -162,7 +163,11 @@ fun TopToolbar(
                     val showHint = if (focused) field.text.isEmpty() else pageUrl == null
                     if (showHint) {
                         Text(
-                            stringResource(if (isPrivate) R.string.address_hint_private else R.string.address_hint),
+                            stringResource(when {
+                                aiMode && focused -> R.string.address_hint_ai
+                                isPrivate -> R.string.address_hint_private
+                                else -> R.string.address_hint
+                            }),
                             style = MaterialTheme.typography.bodyLarge,
                             color = scheme.onSurfaceVariant,
                             maxLines = 1,

@@ -1,5 +1,6 @@
 package com.webtecit.nayon.feature.browser
 
+import com.webtecit.nayon.core.browser.UrlResolver
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.ClipData
@@ -106,6 +107,8 @@ fun BrowserScreen(
     val find by viewModel.find.collectAsStateWithLifecycle()
     val shortcuts by viewModel.shortcuts.collectAsStateWithLifecycle()
     var showLens by rememberSaveable { mutableStateOf(false) }
+    var showAccount by rememberSaveable { mutableStateOf(false) }
+    var aiMode by remember { mutableStateOf(false) }
     val contextTarget by viewModel.contextMenu.collectAsStateWithLifecycle()
 
     val focusRequester = remember { FocusRequester() }
@@ -176,30 +179,30 @@ fun BrowserScreen(
         try { voiceLauncher.launch(voiceIntent) } catch (e: ActivityNotFoundException) { /* hidden when unavailable */ }
     }
 
-    // Google Lens: pick or take a photo, then hand it to the Google app's Lens (its supported entry point).
-    var cameraUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    // Google Lens: our own camera screen (like Chrome's), or a gallery photo, handed to Google Lens.
     fun sendToLens(uri: android.net.Uri) {
-        val send = Intent(Intent.ACTION_SEND).setType("image/*").putExtra(Intent.EXTRA_STREAM, uri)
-            .setPackage(GOOGLE_APP).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        send.clipData = ClipData.newRawUri("", uri)
-        try {
-            context.startActivity(send)
-        } catch (e: ActivityNotFoundException) {
+        showLens = false
+        if (!GoogleLens.search(context, uri)) {
             android.widget.Toast.makeText(context, R.string.lens_no_google, android.widget.Toast.LENGTH_LONG).show()
-            viewModel.newTab(LENS_WEB)
+            viewModel.newTab(GoogleLens.WEB)
         }
     }
     val pickImage = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri -> uri?.let(::sendToLens) }
-    val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok -> if (ok) cameraUri?.let(::sendToLens) }
+    fun pickFromGallery() {
+        showLens = false
+        runCatching { pickImage.launch(androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+    }
     fun openLens() {
         focusManager.clearFocus()
-        // Straight into the Lens camera like Chrome; the photo / gallery sheet is the fallback.
-        if (!LensLauncher.launchCamera(context)) showLens = true
+        showLens = true
     }
 
     fun submit(text: String) {
+        val ai = aiMode
         focusManager.clearFocus()
-        viewModel.navigate(text)
+        // In AI Mode, anything that isn't a web address is a question for AI Mode.
+        val isQuestion = UrlResolver.resolve(text.trim(), "nayon-ai:%s")?.startsWith("nayon-ai:") != false
+        if (ai && isQuestion) viewModel.aiSearch(text) else viewModel.navigate(text)
     }
 
     val homeActions = remember(viewModel) {
@@ -216,6 +219,8 @@ fun BrowserScreen(
             onAddShortcut = { l, u -> viewModel.addShortcut(l, u) },
             onRemoveShortcut = { viewModel.removeShortcut(it) },
             onRemoveRecent = { viewModel.removeFromHistory(it) },
+            onAccount = { showAccount = true },
+            onAiMode = { aiMode = true; focusRequester.requestFocus() },
         )
     }
 
@@ -331,6 +336,7 @@ fun BrowserScreen(
                                 voiceAvailable = voiceAvailable,
                                 actions = homeActions,
                                 searchEngine = prefs.searchEngine,
+                                googleSignedIn = remember(current.id, current.url, showAccount) { viewModel.googleSignedIn() },
                             )
                         } else {
                             Box(Modifier.fillMaxSize()) {
@@ -380,7 +386,8 @@ fun BrowserScreen(
                 voiceAvailable = voiceAvailable,
                 fillRequest = fillRequest,
                 onFillConsumed = { fillRequest = null },
-                onFocusChange = { editing = it },
+                onFocusChange = { editing = it; if (!it) aiMode = false },
+                aiMode = aiMode,
                 onTextChange = { typed = it },
                 onSubmit = ::submit,
                 onVoice = ::startVoice,
@@ -445,24 +452,16 @@ fun BrowserScreen(
         )
     }
 
-    if (showLens) {
-        LensSheet(
-            onDismiss = { showLens = false },
-            onCamera = {
-                showLens = false
-                runCatching {
-                    val dir = java.io.File(context.cacheDir, "lens").apply { mkdirs() }
-                    val file = java.io.File(dir, "lens_${System.currentTimeMillis()}.jpg")
-                    val uri = androidx.core.content.FileProvider.getUriForFile(context, context.packageName + ".files", file)
-                    cameraUri = uri
-                    takePicture.launch(uri)
-                }
-            },
-            onGallery = {
-                showLens = false
-                runCatching { pickImage.launch(androidx.activity.result.PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
-            },
+    if (showAccount) {
+        GoogleAccountSheet(
+            signedIn = remember { viewModel.googleSignedIn() },
+            onOpen = { url -> if (tab?.isPrivate == true) viewModel.newTab(url) else viewModel.openInCurrentTab(url) },
+            onDismiss = { showAccount = false },
         )
+    }
+
+    if (showLens) {
+        LensCamera(onClose = { showLens = false }, onPhoto = ::sendToLens, onGallery = ::pickFromGallery)
     }
 
     contextTarget?.let { target ->
@@ -493,8 +492,6 @@ fun BrowserScreen(
     }
 }
 
-private const val GOOGLE_APP = LensLauncher.GOOGLE_APP
-private const val LENS_WEB = "https://lens.google.com"
 private const val LENS_BY_URL = "https://lens.google.com/uploadbyurl?url="
 
 /** Hosts the tab's WebView inside a pull-to-refresh container. */

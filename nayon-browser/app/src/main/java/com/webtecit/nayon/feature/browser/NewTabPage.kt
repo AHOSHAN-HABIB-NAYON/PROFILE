@@ -79,6 +79,10 @@ import com.webtecit.nayon.core.designsystem.theme.Spacing
 import com.webtecit.nayon.data.browser.HistoryEntry
 import com.webtecit.nayon.data.settings.HomeShortcut
 import java.util.Calendar
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.outlined.Translate
+import androidx.compose.material.icons.outlined.AutoAwesome
 import com.webtecit.nayon.core.browser.SearchEngine
 import kotlinx.coroutines.delay
 import androidx.compose.ui.res.painterResource
@@ -99,6 +103,8 @@ class HomeActions(
     val onAddShortcut: (label: String, url: String) -> Unit,
     val onRemoveShortcut: (url: String) -> Unit,
     val onRemoveRecent: (id: Long) -> Unit,
+    val onAccount: () -> Unit = {},
+    val onAiMode: () -> Unit = {},
 )
 
 @Composable
@@ -112,6 +118,7 @@ fun NewTabPage(
     actions: HomeActions,
     modifier: Modifier = Modifier,
     searchEngine: SearchEngine = SearchEngine.GOOGLE,
+    googleSignedIn: Boolean = false,
 ) {
     val scheme = MaterialTheme.colorScheme
     Box(modifier.fillMaxSize().background(scheme.surface), contentAlignment = Alignment.TopCenter) {
@@ -119,12 +126,13 @@ fun NewTabPage(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            if (isPrivate) PrivateHero() else SkyHero()
+            if (isPrivate) PrivateHero() else SkyHero(googleSignedIn, actions.onAccount)
             Column(
                 Modifier.fillMaxWidth().widthIn(max = Layout.maxContentWidth).offset(y = (-30).dp).padding(horizontal = Spacing.gutter),
                 verticalArrangement = Arrangement.spacedBy(Spacing.lg),
             ) {
                 SearchPill(isPrivate, voiceAvailable, searchEngine, actions)
+                if (!isPrivate) ModeButtons(actions)
                 if (isPrivate) {
                     PrivateInfo(privateIsolationSupported)
                 } else {
@@ -166,7 +174,7 @@ private fun rememberNow(periodMs: Long): Long {
 
 /** Sky-and-mountains scene that follows the time of day, like the NAYON mock-up. */
 @Composable
-private fun SkyHero() {
+private fun SkyHero(signedIn: Boolean, onAccount: () -> Unit) {
     val context = LocalContext.current
     val minute = rememberNow(30_000L)
     val scene = remember(minute / 60_000L) { sceneNow() }
@@ -219,12 +227,32 @@ private fun SkyHero() {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 NayonLogo(size = 30.dp)
                 Spacer(Modifier.width(Spacing.sm))
-                Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium, color = textColor, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium, color = textColor, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f))
+                AccountButton(signedIn, onAccount)
             }
             Spacer(Modifier.height(Spacing.lg))
             Text(stringResource(greeting), style = MaterialTheme.typography.headlineMedium, color = textColor,
                 fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() })
             Text(date, style = MaterialTheme.typography.bodyMedium, color = textColor.copy(alpha = 0.85f))
+        }
+    }
+}
+
+/** Chrome-style account avatar: Google account sign-in, management and Google apps. */
+@Composable
+private fun AccountButton(signedIn: Boolean, onClick: () -> Unit) {
+    Box {
+        Surface(onClick = onClick, shape = CircleShape, color = Color.White, shadowElevation = 2.dp, modifier = Modifier.size(38.dp)
+            .semantics { contentDescription = "Google account" }) {
+            Box(contentAlignment = Alignment.Center) {
+                if (signedIn) Icon(Icons.Filled.AccountCircle, null, tint = Color(0xFF4285F4), modifier = Modifier.size(34.dp))
+                else Icon(painterResource(R.drawable.ic_google_g), null, tint = Color.Unspecified, modifier = Modifier.size(22.dp))
+            }
+        }
+        if (signedIn) {
+            Box(Modifier.align(Alignment.BottomEnd).size(12.dp).clip(CircleShape).background(Color.White).padding(2.dp)
+                .clip(CircleShape).background(Color(0xFF34A853)))
         }
     }
 }
@@ -302,6 +330,26 @@ private fun EngineMark(engine: SearchEngine) {
             Icon(painterResource(R.drawable.ic_google_g), engine.displayName, tint = Color.Unspecified, modifier = Modifier.size(24.dp))
         engine.homeUrl.isNotBlank() -> SiteIcon(engine.homeUrl, engine.displayName, size = 26.dp, downloadIcon = true)
         else -> Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.primary)
+    }
+}
+
+/** AI Mode and Incognito, as on Chrome's new tab page. */
+@Composable
+private fun ModeButtons(actions: HomeActions) {
+    Row(Modifier.fillMaxWidth().offset(y = (-6).dp), horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
+        ModeButton(Icons.Outlined.AutoAwesome, stringResource(R.string.ntp_ai_mode), actions.onAiMode, Modifier.weight(1f))
+        ModeButton(Icons.Outlined.VisibilityOff, stringResource(R.string.ntp_incognito), actions.onNewPrivateTab, Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun ModeButton(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier) {
+    Surface(onClick = onClick, shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = modifier.height(48.dp)) {
+        Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(Spacing.sm))
+            Text(label, style = MaterialTheme.typography.titleSmall)
+        }
     }
 }
 
@@ -393,7 +441,8 @@ private fun QuickAccess(actions: HomeActions) {
             QuickTile(Icons.Outlined.Bookmarks, stringResource(R.string.action_bookmarks), Color(0xFF6366F1), actions.onOpenBookmarks, Modifier.weight(1f))
             QuickTile(Icons.Outlined.History, stringResource(R.string.action_history), Color(0xFF0EA5E9), actions.onSeeHistory, Modifier.weight(1f))
             QuickTile(Icons.Outlined.Download, stringResource(R.string.action_downloads), Color(0xFF10B981), actions.onOpenDownloads, Modifier.weight(1f))
-            QuickTile(Icons.Outlined.VisibilityOff, stringResource(R.string.ntp_private_short), Color(0xFFA855F7), actions.onNewPrivateTab, Modifier.weight(1f))
+            QuickTile(Icons.Outlined.Translate, stringResource(R.string.ntp_translate), Color(0xFFA855F7),
+                { actions.onOpenUrl("https://translate.google.com") }, Modifier.weight(1f))
         }
     }
 }

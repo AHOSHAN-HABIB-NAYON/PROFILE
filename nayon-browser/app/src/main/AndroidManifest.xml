@@ -4,6 +4,9 @@
 
     <!-- Needed to load web pages. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Google Lens camera: asked for only when the Lens button is tapped. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <!-- Used only to tell "you are offline" apart from "site not found" on error pages. -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- Lets the user install APK files they downloaded (Android asks for confirmation). -->
@@ -20,7 +23,6 @@
         </intent>
         <!-- Google app, to open Google Lens from the address bar when installed. -->
         <package android:name="com.google.android.googlequicksearchbox" />
-        <package android:name="com.google.ar.lens" />
     </queries>
 
     <application

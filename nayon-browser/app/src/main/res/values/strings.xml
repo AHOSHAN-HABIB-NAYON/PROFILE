@@ -368,8 +368,22 @@
     <string name="ntp_private_short">Private</string>
     <string name="ntp_remove_recent">Remove from history</string>
     <string name="ntp_footer">NAYON Browser · Crafted by MD. AHOSHAN HABIB NAYON</string>
-    <string name="lens_title">Search with Google Lens</string>
-    <string name="lens_camera">Take a photo</string>
     <string name="lens_gallery">Choose an image</string>
+    <string name="lens_hint">Point at something to search</string>
+    <string name="lens_search">Search with Google Lens</string>
+    <string name="lens_flash">Flash</string>
+    <string name="lens_capture_failed">Couldn\'t take the photo. Try again.</string>
+    <string name="lens_camera_denied">Camera access is off, so choose an image instead.</string>
+    <string name="ntp_ai_mode">AI Mode</string>
+    <string name="ntp_incognito">Incognito</string>
+    <string name="ntp_translate">Translate</string>
+    <string name="address_hint_ai">Ask AI Mode anything</string>
+    <string name="account_title">Google Account</string>
+    <string name="account_signed_in">You\'re signed in to Google in NAYON Browser.</string>
+    <string name="account_signed_out">Sign in to use Gmail, YouTube, Drive and other Google services.</string>
+    <string name="account_sign_in">Sign in to Google</string>
+    <string name="account_manage">Manage your Google Account</string>
+    <string name="account_sign_out">Sign out of Google</string>
+    <string name="account_no_sync">NAYON doesn\'t sync passwords, bookmarks or history with your Google Account.</string>
     <string name="lens_no_google">The Google app isn\'t installed, so Lens opens on the web.</string>
 </resources>

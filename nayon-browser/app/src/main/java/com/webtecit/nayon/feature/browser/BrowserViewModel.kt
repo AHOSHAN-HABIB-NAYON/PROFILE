@@ -491,6 +491,19 @@ class BrowserViewModel(
     // ---- Navigation ---------------------------------------------------------------------
 
     /** Loads what the user typed: a URL or a search with the current engine. */
+    /** Whether the regular (non-private) browser is signed in to a Google account on the web. */
+    fun googleSignedIn(): Boolean = runCatching {
+        CookieManager.getInstance().getCookie("https://accounts.google.com").orEmpty().split(';')
+            .any { c -> c.trim().let { it.startsWith("SID=") || it.startsWith("__Secure-3PSID=") } }
+    }.getOrDefault(false)
+
+    /** Asks Google's AI Mode. */
+    fun aiSearch(query: String) {
+        if (query.isBlank()) return
+        val id = _activeId.value ?: newTab()
+        load(id, "https://www.google.com/search?udm=50&q=" + java.net.URLEncoder.encode(query.trim(), "UTF-8"))
+    }
+
     fun navigate(input: String) {
         val url = UrlResolver.resolve(input, preferences.value.searchTemplate) ?: return
         val id = _activeId.value ?: newTab()
