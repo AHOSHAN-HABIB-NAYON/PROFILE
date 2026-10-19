@@ -23,6 +23,7 @@ class TimeOfDayTest {
 
 /** Robolectric supplies the real org.json used by the parser. */
 @org.junit.runner.RunWith(org.robolectric.RobolectricTestRunner::class)
+@org.robolectric.annotation.Config(sdk = [34])
 class GoogleAccountsParseTest {
     @Test
     fun readsNameEmailAndPhotoOfFirstSignedInAccount() {
