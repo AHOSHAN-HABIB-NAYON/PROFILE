@@ -580,8 +580,14 @@ private fun FullscreenVideoEffect(video: FullscreenVideo, viewModel: BrowserView
             val tall = parts != null && parts.size == 2 && parts[0] > 0 && parts[1] > parts[0] * 1.05
             if (tall && activity != null) activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
         }
+        // Some players pause while moving to full screen (or after the rotation) and never
+        // resume, leaving a spinner. Resume videos that were playing (live or part-watched).
+        val resume = Runnable { viewModel.activeWebView()?.evaluateJavascript(RESUME_VIDEO_JS, null) }
+        view.postDelayed(resume, 700)
+        view.postDelayed(resume, 2_000)
 
         onDispose {
+            view.removeCallbacks(resume)
             decor?.removeView(holder)
             holder.removeAllViews()
             controller?.show(WindowInsetsCompat.Type.systemBars())
@@ -593,6 +599,11 @@ private fun FullscreenVideoEffect(video: FullscreenVideo, viewModel: BrowserView
         }
     }
 }
+
+/** Resumes paused, already-started (or live) videos inside the full-screen element. */
+private const val RESUME_VIDEO_JS = """(function(){var e=document.fullscreenElement||document.webkitFullscreenElement;if(!e)return;
+var vs=e.tagName==='VIDEO'?[e]:e.querySelectorAll('video');Array.prototype.forEach.call(vs,function(v){
+if(v.paused&&!v.ended&&(v.currentTime>0||v.duration===Infinity)){var p=v.play();if(p&&p.catch)p.catch(function(){});}});})()"""
 
 /** Reads the full-screen video's natural size, e.g. "1920x1080". Read-only; no page changes. */
 private const val VIDEO_SIZE_JS = """(function(){var e=document.fullscreenElement||document.webkitFullscreenElement;

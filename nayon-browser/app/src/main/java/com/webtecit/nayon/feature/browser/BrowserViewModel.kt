@@ -747,6 +747,9 @@ class BrowserViewModel(
             WebSettingsCompat.setSafeBrowsingEnabled(wv.settings, true)
         }
         CookieManager.getInstance().setAcceptThirdPartyCookies(wv, false)
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
+            runCatching { WebViewCompat.addDocumentStartJavaScript(wv, ORIENTATION_LOCK_SHIM, setOf("*")) }
+        }
         wv.isFocusable = true
         wv.isFocusableInTouchMode = true
         wv.webViewClient = Client(tab.id)
@@ -964,6 +967,10 @@ class BrowserViewModel(
             _fullscreen.value = null
         }
 
+        // WebView's default poster is a big grey play button; Chrome shows nothing until the
+        // first frame arrives. A transparent poster matches Chrome.
+        override fun getDefaultVideoPoster(): Bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
+
         override fun onShowFileChooser(
             webView: WebView,
             filePathCallback: ValueCallback<Array<Uri>>,
@@ -1002,3 +1009,12 @@ class BrowserViewModel(
             .replace(" Mobile", "")
     }
 }
+
+/**
+ * Chrome lets a full-screen page lock the screen to landscape (screen.orientation.lock); WebView
+ * rejects the call, and many video players stop right there (endless spinner). NAYON already
+ * rotates full-screen video itself, so the lock is reported as done. Nothing is read or sent.
+ */
+private const val ORIENTATION_LOCK_SHIM = """(function(){try{var o=screen.orientation;if(!o||!o.lock)return;
+var lock=o.lock.bind(o);o.lock=function(t){try{return lock(t).catch(function(){});}catch(e){return Promise.resolve();}};
+if(o.unlock){var un=o.unlock.bind(o);o.unlock=function(){try{un();}catch(e){}};}}catch(e){}})();"""

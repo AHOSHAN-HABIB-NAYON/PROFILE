@@ -55,3 +55,15 @@ These are design commitments, not implemented features. Status is tracked in `FE
   explicit user consent.
 - Never commit keystores, passwords, OAuth client secrets or API keys.
 - Request permissions only at the moment a feature needs them, with an explanation.
+
+## Scripts NAYON runs in pages
+
+NAYON exposes no JavaScript interface to web pages. It runs three small read-only or
+compatibility scripts, none of which read page content or send anything anywhere:
+
+- At full screen: reads the video's width and height (to pick landscape or portrait), and
+  resumes a video inside the full-screen element that paused during the switch.
+- At page start (all sites): makes `screen.orientation.lock()` report success instead of
+  failing, because WebView does not support it and video players stall on the failure.
+  NAYON rotates full-screen video itself.
+
