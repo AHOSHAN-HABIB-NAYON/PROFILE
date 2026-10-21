@@ -19,10 +19,12 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(QwGalleryPlugin.class);
         registerPlugin(QwPasskeyPlugin.class);
         registerPlugin(QwBarsPlugin.class);
+        super.onCreate(savedInstanceState);
         // Edge-to-edge on every Android version (required look on 15+): the bars are drawn over
         // the app, and the web view's container is padded by their size so nothing hides under them.
+        // Must run after super.onCreate: earlier, the window is built with the splash theme and
+        // shows a title bar.
         EdgeToEdge.enable(this);
-        super.onCreate(savedInstanceState);
         if (bridge == null || bridge.getWebView() == null) return;
         if (bridge.getWebView().getParent() instanceof View) {
             View host = (View) bridge.getWebView().getParent();
@@ -33,6 +35,7 @@ public class MainActivity extends BridgeActivity {
                 v.setPadding(bars.left, bars.top, bars.right, Math.max(bars.bottom, ime.bottom));
                 return WindowInsetsCompat.CONSUMED;
             });
+            ViewCompat.requestApplyInsets(host);
         }
         WebSettings settings = bridge.getWebView().getSettings();
         enableWebViewPasskeys(settings);
