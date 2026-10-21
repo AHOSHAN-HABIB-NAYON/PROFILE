@@ -1,7 +1,14 @@
 package app.quizwar.bd;
 
+import android.graphics.Color;
 import android.os.Bundle;
+import android.view.View;
 import android.webkit.WebSettings;
+
+import androidx.activity.EdgeToEdge;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import com.getcapacitor.BridgeActivity;
 
@@ -11,8 +18,22 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(QwAppInfoPlugin.class);
         registerPlugin(QwGalleryPlugin.class);
         registerPlugin(QwPasskeyPlugin.class);
+        registerPlugin(QwBarsPlugin.class);
+        // Edge-to-edge on every Android version (required look on 15+): the bars are drawn over
+        // the app, and the web view's container is padded by their size so nothing hides under them.
+        EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
         if (bridge == null || bridge.getWebView() == null) return;
+        if (bridge.getWebView().getParent() instanceof View) {
+            View host = (View) bridge.getWebView().getParent();
+            host.setBackgroundColor(Color.parseColor("#172554"));
+            ViewCompat.setOnApplyWindowInsetsListener(host, (v, insets) -> {
+                Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+                Insets ime = insets.getInsets(WindowInsetsCompat.Type.ime());
+                v.setPadding(bars.left, bars.top, bars.right, Math.max(bars.bottom, ime.bottom));
+                return WindowInsetsCompat.CONSUMED;
+            });
+        }
         WebSettings settings = bridge.getWebView().getSettings();
         enableWebViewPasskeys(settings);
         // App screens never zoom (no pinch or double-tap zoom).

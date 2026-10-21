@@ -1,6 +1,6 @@
+import { registerPlugin } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
 import { SplashScreen } from '@capacitor/splash-screen';
-import { StatusBar, Style } from '@capacitor/status-bar';
 import { lazy, Suspense, useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { AppShell } from './components/AppShell';
@@ -27,6 +27,9 @@ import { setMusic } from './lib/sound';
 import { toast } from './lib/toast';
 import { Login, Register } from './pages/Auth';
 import Home from './pages/Home';
+
+/** System bar colours (native edge-to-edge helper in MainActivity / QwBarsPlugin). */
+const Bars = registerPlugin<{ set(o: { color: string; dark: boolean }): Promise<void> }>('QwBars');
 
 const Intro = lazy(() => import('./pages/Intro'));
 const Battle = lazy(() => import('./pages/Battle'));
@@ -212,8 +215,7 @@ export function App() {
     const darkTheme = document.documentElement.dataset.theme === 'dark';
     const darkTop = splash || DARK_TOP.test(loc.pathname);
     const color = darkTop ? '#172554' : darkTheme ? '#0a0f1e' : '#f4f6fb';
-    void StatusBar.setBackgroundColor({ color }).catch(() => undefined);
-    void StatusBar.setStyle({ style: darkTop || darkTheme ? Style.Dark : Style.Light }).catch(() => undefined);
+    void Bars.set({ color, dark: darkTop || darkTheme }).catch(() => undefined);
   }, [loc.pathname, theme, splash]);
 
   // Background music: menu track on menus, match track during battles.

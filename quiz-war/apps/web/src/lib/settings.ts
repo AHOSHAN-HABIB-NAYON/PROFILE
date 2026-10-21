@@ -26,7 +26,7 @@ export const useSettings = create<SettingsState>()(
   persist(
     (set) => ({
       theme: 'light',
-      lang: 'bn',
+      lang: 'en',
       introSeen: false,
       pushAsked: false,
       rateCounter: 0,

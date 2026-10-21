@@ -27,7 +27,6 @@ const config: CapacitorConfig = {
       showSpinner: false,
     },
     PushNotifications: { presentationOptions: ['badge', 'sound', 'alert'] },
-    StatusBar: { overlaysWebView: false, style: 'LIGHT', backgroundColor: '#1d4ed8' },
     SocialLogin: { google: true, apple: false, facebook: false, twitter: false },
   },
 };

@@ -5,11 +5,17 @@ project(':capacitor-android').projectDir = new File('../../node_modules/@capacit
 include ':aparajita-capacitor-secure-storage'
 project(':aparajita-capacitor-secure-storage').projectDir = new File('../../node_modules/@aparajita/capacitor-secure-storage/android')
 
+include ':capacitor-community-in-app-review'
+project(':capacitor-community-in-app-review').projectDir = new File('../../node_modules/@capacitor-community/in-app-review/android')
+
 include ':capacitor-mlkit-barcode-scanning'
 project(':capacitor-mlkit-barcode-scanning').projectDir = new File('../../node_modules/@capacitor-mlkit/barcode-scanning/android')
 
 include ':capacitor-app'
 project(':capacitor-app').projectDir = new File('../../node_modules/@capacitor/app/android')
+
+include ':capacitor-filesystem'
+project(':capacitor-filesystem').projectDir = new File('../../node_modules/@capacitor/filesystem/android')
 
 include ':capacitor-haptics'
 project(':capacitor-haptics').projectDir = new File('../../node_modules/@capacitor/haptics/android')
@@ -29,8 +35,8 @@ project(':capacitor-share').projectDir = new File('../../node_modules/@capacitor
 include ':capacitor-splash-screen'
 project(':capacitor-splash-screen').projectDir = new File('../../node_modules/@capacitor/splash-screen/android')
 
-include ':capacitor-status-bar'
-project(':capacitor-status-bar').projectDir = new File('../../node_modules/@capacitor/status-bar/android')
+include ':capgo-capacitor-autofill-save-password'
+project(':capgo-capacitor-autofill-save-password').projectDir = new File('../../node_modules/@capgo/capacitor-autofill-save-password/android')
 
 include ':capgo-capacitor-social-login'
 project(':capgo-capacitor-social-login').projectDir = new File('../../node_modules/@capgo/capacitor-social-login/android')
