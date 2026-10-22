@@ -1,11 +1,16 @@
-// On-device face analysis for KYC (face-api / TensorFlow.js, loaded only on the KYC screens).
-// Gives: face box, head turn (yaw), head tilt (pitch), eye openness, smile, and a 128-number face
-// template used to compare the live face with the photo on the ID card.
+// On-device face analysis for KYC.
+// - Live checks (head turns, blink, eyes closed, smile): Google MediaPipe Face Landmarker. It tracks
+//   478 face points and reports blinks and smiles directly, so it works in normal phone conditions.
+// - Face match (128-number template, ID photo vs live face): face-api / TensorFlow.js.
+// Both are served from our own server and loaded only on the KYC screens.
 let faceapi = null;
-let loading = null;
+let apiLoading = null;
+let landmarker = null;
+let liveLoading = null;
 
+// ---------- Face match (face-api) ----------
 export function loadFace() {
-  loading ||= (async () => {
+  apiLoading ||= (async () => {
     faceapi = await import('/vendor/face-api/face-api.esm.js');
     const { tf } = faceapi;
     try { await tf.setBackend('webgl'); } catch { await tf.setBackend('cpu'); }
@@ -18,13 +23,12 @@ export function loadFace() {
       faceapi.nets.faceExpressionNet.loadFromUri(url),
     ]);
     return faceapi;
-  })().catch((err) => { loading = null; throw err; });
-  return loading;
+  })().catch((err) => { apiLoading = null; throw err; });
+  return apiLoading;
 }
 
 const opts = (inputSize, scoreThreshold = 0.45) => new faceapi.TinyFaceDetectorOptions({ inputSize, scoreThreshold });
 
-// One face with landmarks (+ expressions / template when asked). Returns null if no face.
 export async function analyze(input, { descriptor = false, expressions = false, size = 224, threshold } = {}) {
   let t = faceapi.detectSingleFace(input, opts(size, threshold)).withFaceLandmarks();
   if (expressions) t = t.withFaceExpressions();
@@ -41,35 +45,72 @@ export async function idCardFace(img) {
   return null;
 }
 
-const d = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-const mean = (pts) => ({ x: pts.reduce((s, p) => s + p.x, 0) / pts.length, y: pts.reduce((s, p) => s + p.y, 0) / pts.length });
-const ear = (e) => (d(e[1], e[5]) + d(e[2], e[4])) / (2 * d(e[0], e[3]));
-
-// Geometry from the 68 landmarks, measured on the raw (not mirrored) camera image.
-export function metrics(r) {
-  const p = r.landmarks.positions;
-  const le = p.slice(36, 42); const re = p.slice(42, 48);
-  const lc = mean(le); const rc = mean(re);
-  const eyes = { x: (lc.x + rc.x) / 2, y: (lc.y + rc.y) / 2 };
-  const inter = d(lc, rc) || 1;
-  const nose = p[30]; const chin = p[8];
-  return {
-    box: r.detection.box,
-    score: r.detection.score,
-    // > 0 when the person turns to THEIR left (their left is on the right of the raw image).
-    yaw: (nose.x - eyes.x) / inter,
-    // Nose position between eyes and chin: smaller when looking up, larger when nodding down.
-    pitch: (nose.y - eyes.y) / ((chin.y - eyes.y) || 1),
-    ear: (ear(le) + ear(re)) / 2,
-    mouth: d(p[48], p[54]) / inter,
-    happy: r.expressions?.happy ?? 0,
-  };
+// Face template of the live camera frame (several sizes, lenient threshold).
+export async function liveDescriptor(video) {
+  for (const size of [320, 416, 224]) {
+    const r = await analyze(video, { descriptor: true, size, threshold: 0.35 });
+    if (r) return r;
+  }
+  return null;
 }
 
 export const distance = (a, b) => Math.sqrt(a.reduce((s, v, i) => s + (v - b[i]) ** 2, 0));
 export const toArray = (desc) => Array.from(desc, (v) => Math.round(v * 1e6) / 1e6);
 
-// Average brightness (0-255) of a video/canvas, sampled small for speed.
+// ---------- Live tracking (MediaPipe) ----------
+export function loadLive() {
+  liveLoading ||= (async () => {
+    const { FaceLandmarker, FilesetResolver } = await import('/vendor/mediapipe/vision_bundle.mjs');
+    const fileset = await FilesetResolver.forVisionTasks('/vendor/mediapipe');
+    const make = (delegate) => FaceLandmarker.createFromOptions(fileset, {
+      baseOptions: { modelAssetPath: '/vendor/mediapipe/face_landmarker.task', delegate },
+      runningMode: 'VIDEO', numFaces: 2, outputFaceBlendshapes: true,
+      minFaceDetectionConfidence: 0.4, minFacePresenceConfidence: 0.4, minTrackingConfidence: 0.4,
+    });
+    try { landmarker = await make('GPU'); } catch { landmarker = await make('CPU'); }
+    return landmarker;
+  })().catch((err) => { liveLoading = null; throw err; });
+  return liveLoading;
+}
+
+let lastTs = 0;
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
+/**
+ * One video frame -> { faces, box, yaw, pitch, blink, smile } or null when no face.
+ * yaw > 0 when the person turns to THEIR left (raw camera image, not mirrored).
+ * pitch is smaller when looking up, larger when nodding down.
+ * blink / smile are 0..1 (MediaPipe blendshapes).
+ */
+export function liveRead(video) {
+  if (!landmarker || !video.videoWidth) return null;
+  let ts = performance.now();
+  if (ts <= lastTs) ts = lastTs + 1;
+  lastTs = ts;
+  const r = landmarker.detectForVideo(video, ts);
+  const faces = r.faceLandmarks?.length || 0;
+  if (!faces) return { faces: 0 };
+  const W = video.videoWidth; const H = video.videoHeight;
+  const lm = r.faceLandmarks[0].map((p) => ({ x: p.x * W, y: p.y * H }));
+  let minX = W; let minY = H; let maxX = 0; let maxY = 0;
+  for (const p of lm) { if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x; if (p.y < minY) minY = p.y; if (p.y > maxY) maxY = p.y; }
+  const eyeA = lm[33]; const eyeB = lm[263];
+  const eyes = { x: (eyeA.x + eyeB.x) / 2, y: (eyeA.y + eyeB.y) / 2 };
+  const inter = dist(eyeA, eyeB) || 1;
+  const nose = lm[1]; const chin = lm[152];
+  const bs = {};
+  for (const c of r.faceBlendshapes?.[0]?.categories || []) bs[c.categoryName] = c.score;
+  return {
+    faces,
+    box: { x: minX, y: minY, width: maxX - minX, height: maxY - minY },
+    yaw: (nose.x - eyes.x) / inter,
+    pitch: (nose.y - eyes.y) / ((chin.y - eyes.y) || 1),
+    blink: ((bs.eyeBlinkLeft ?? 0) + (bs.eyeBlinkRight ?? 0)) / 2,
+    smile: ((bs.mouthSmileLeft ?? 0) + (bs.mouthSmileRight ?? 0)) / 2,
+  };
+}
+
+// Average brightness (0-255) of the video, sampled small for speed.
 const probe = document.createElement('canvas');
 probe.width = 48; probe.height = 36;
 export function brightness(src) {
@@ -82,57 +123,86 @@ export function brightness(src) {
 }
 
 /**
- * Liveness prompts. Each detector gets the latest metrics and the person's neutral baseline and
+ * Liveness prompts. Each detector gets the latest reading and the person's neutral baseline and
  * returns true once the movement is done. "wrong" gives a hint when they move the other way.
  */
 export const PROMPTS = {
   look_left: {
     text: 'Look left', say: 'Slowly turn your head to the left', icon: '←',
-    done: (m, b) => m.yaw - b.yaw > 0.17, wrong: (m, b) => m.yaw - b.yaw < -0.2,
+    done: (m, b) => m.yaw - b.yaw > 0.14, wrong: (m, b) => m.yaw - b.yaw < -0.18,
   },
   look_right: {
     text: 'Look right', say: 'Slowly turn your head to the right', icon: '→',
-    done: (m, b) => m.yaw - b.yaw < -0.17, wrong: (m, b) => m.yaw - b.yaw > 0.2,
+    done: (m, b) => m.yaw - b.yaw < -0.14, wrong: (m, b) => m.yaw - b.yaw > 0.18,
   },
   look_up: {
     text: 'Look up', say: 'Tilt your head up', icon: '↑',
-    done: (m, b) => m.pitch - b.pitch < -0.06, wrong: (m, b) => m.pitch - b.pitch > 0.09,
+    done: (m, b) => m.pitch - b.pitch < -0.045, wrong: (m, b) => m.pitch - b.pitch > 0.08,
   },
   nod_down: {
     text: 'Nod your head down', say: 'Nod your head down', icon: '↓',
-    done: (m, b) => m.pitch - b.pitch > 0.06, wrong: (m, b) => m.pitch - b.pitch < -0.09,
+    done: (m, b) => m.pitch - b.pitch > 0.045, wrong: (m, b) => m.pitch - b.pitch < -0.08,
   },
   smile: {
     text: 'Smile', say: 'Give us a big smile', icon: '☺',
-    done: (m, b) => m.happy > 0.6 || m.mouth > b.mouth * 1.13,
+    // Relative to the person's neutral face, capped so naturally smiley faces can still pass.
+    done: (m, b) => m.smile > Math.min(0.8, Math.max(0.45, b.smile + 0.22)),
   },
   blink: {
     text: 'Blink', say: 'Blink your eyes', icon: '◉',
-    // closed, then open again
     stateful: true,
     step(m, b, st) {
-      if (!st.closed && m.ear < b.ear * 0.68) st.closed = performance.now();
-      if (st.closed && m.ear > b.ear * 0.85) return true;
-      return false;
+      if (!st.closed && m.blink > Math.max(0.45, b.blink + 0.3)) st.closed = true;
+      return !!(st.closed && m.blink < Math.max(0.3, b.blink + 0.12));
     },
   },
   eyes_closed: {
-    text: 'Close your eyes, then open', say: 'Close your eyes, then open them', icon: '◡',
+    text: 'Close your eyes, then open', say: 'Close your eyes for a moment, then open them', icon: '◡',
     stateful: true,
     step(m, b, st) {
       const now = performance.now();
-      if (m.ear < b.ear * 0.68) { st.since ||= now; if (now - st.since > 600) st.held = true; } else if (!st.held) st.since = 0;
-      return !!(st.held && m.ear > b.ear * 0.85);
+      if (m.blink > Math.max(0.45, b.blink + 0.3)) { st.since ||= now; if (now - st.since > 600) st.held = true; } else if (!st.held) st.since = 0;
+      return !!(st.held && m.blink < Math.max(0.3, b.blink + 0.12));
     },
   },
 };
 
+// ---------- Voice prompts ----------
+// Phone browsers only allow speech that starts from a tap, so unlockVoice() must be called
+// directly inside the tap handler. In the Android app the phone's own text-to-speech is used.
+const tts = () => (window.Capacitor?.isPluginAvailable?.('TextToSpeech') ? window.Capacitor.Plugins.TextToSpeech : null);
+let enVoice = null;
+function pickVoice() {
+  try {
+    const vs = window.speechSynthesis?.getVoices() || [];
+    enVoice = vs.find((v) => /en[-_]US/i.test(v.lang) && /female|samantha|google/i.test(v.name)) || vs.find((v) => /^en/i.test(v.lang)) || null;
+  } catch { /* ignore */ }
+}
+if ('speechSynthesis' in window) { pickVoice(); window.speechSynthesis.onvoiceschanged = pickVoice; }
+
+export function unlockVoice(first = 'Starting face check') {
+  if (tts()) { tts().speak({ text: first, lang: 'en-US', rate: 1.0 }).catch(() => {}); return; }
+  try {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(first);
+    u.lang = 'en-US'; if (enVoice) u.voice = enVoice;
+    window.speechSynthesis.speak(u);
+  } catch { /* voice is optional */ }
+}
+
 export function speak(text) {
+  if (tts()) { tts().stop?.().catch(() => {}); tts().speak({ text, lang: 'en-US', rate: 1.0 }).catch(() => {}); return; }
   try {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en-US'; u.rate = 1;
-    window.speechSynthesis.speak(u);
+    u.lang = 'en-US'; u.rate = 1; if (enVoice) u.voice = enVoice;
+    // Chrome sometimes drops an utterance spoken right after cancel(); a tiny delay avoids it.
+    setTimeout(() => window.speechSynthesis.speak(u), 60);
   } catch { /* voice is optional */ }
+}
+
+export function stopVoice() {
+  try { tts()?.stop?.(); window.speechSynthesis?.cancel(); } catch { /* ignore */ }
 }

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 260">
+  <defs>
+    <linearGradient id="bA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5ea0ff"/><stop offset="1" stop-color="#1747d1"/></linearGradient>
+    <linearGradient id="bS" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f6bff"/><stop offset="1" stop-color="#0d2a8a"/></linearGradient>
+    <linearGradient id="bT" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9cc8ff"/><stop offset="1" stop-color="#6aa6ff"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#f0a500"/></linearGradient>
+    <linearGradient id="arrow" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0ecb81"/><stop offset="1" stop-color="#7cf5c4"/></linearGradient>
+    <radialGradient id="glow" cx=".5" cy=".55" r=".55"><stop offset="0" stop-color="#2f6bff" stop-opacity=".35"/><stop offset="1" stop-color="#2f6bff" stop-opacity="0"/></radialGradient>
+  </defs>
+  <ellipse cx="160" cy="150" rx="150" ry="110" fill="url(#glow)"/>
+  <!-- base plate -->
+  <path d="M40 200 L160 240 L280 200 L160 160 Z" fill="#dbe7ff"/>
+  <path d="M40 200 L160 240 L160 252 L40 212 Z" fill="#a9c2f5"/>
+  <path d="M280 200 L160 240 L160 252 L280 212 Z" fill="#8fb0ee"/>
+  <!-- bars (front face, side, top) -->
+  <g>
+    <path d="M78 196 L104 205 L104 150 L78 141 Z" fill="url(#bA)"/><path d="M104 205 L118 199 L118 144 L104 150 Z" fill="url(#bS)"/><path d="M78 141 L92 135 L118 144 L104 150 Z" fill="url(#bT)"/>
+    <path d="M122 211 L148 220 L148 132 L122 123 Z" fill="url(#bA)"/><path d="M148 220 L162 214 L162 126 L148 132 Z" fill="url(#bS)"/><path d="M122 123 L136 117 L162 126 L148 132 Z" fill="url(#bT)"/>
+    <path d="M168 214 L194 205 L194 100 L168 109 Z" fill="url(#bA)"/><path d="M194 205 L208 199 L208 94 L194 100 Z" fill="url(#bS)"/><path d="M168 109 L182 103 L208 94 L194 100 Z" fill="url(#bT)"/>
+    <path d="M212 198 L238 189 L238 70 L212 79 Z" fill="url(#bA)"/><path d="M238 189 L252 183 L252 64 L238 70 Z" fill="url(#bS)"/><path d="M212 79 L226 73 L252 64 L238 70 Z" fill="url(#bT)"/>
+  </g>
+  <!-- rising arrow -->
+  <path d="M60 150 L120 112 L160 128 L250 44" fill="none" stroke="url(#arrow)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M232 40 L262 34 L256 64 Z" fill="#7cf5c4"/>
+  <!-- coin -->
+  <g transform="translate(262 150)">
+    <ellipse cx="0" cy="6" rx="30" ry="30" fill="#c98500"/>
+    <circle r="30" fill="url(#gold)"/>
+    <circle r="22" fill="none" stroke="#fff6cc" stroke-width="3" opacity=".8"/>
+    <text x="0" y="9" text-anchor="middle" font-family="Arial, sans-serif" font-size="26" font-weight="800" fill="#a86b00">$</text>
+  </g>
+  <g transform="translate(46 96)" opacity=".95">
+    <circle r="16" fill="url(#gold)"/><text x="0" y="6" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="800" fill="#a86b00">₿</text>
+  </g>
+</svg>

@@ -1,4 +1,5 @@
 # Builds the OryzenX BD Android app (APK) and publishes it on the repo's Releases page for direct sharing.
+# Every build updates the same release (tag oryzenx-app), so the download link never changes.
 #
 # Runs automatically when the app files change, or manually: Actions -> "OryzenX Android APK" -> Run workflow.
 #
@@ -127,15 +128,27 @@ jobs:
           name: OryzenX-BD-apk
           path: oryzenx/mobile/OryzenX-BD.apk
 
+      - name: Move the stable app tag to this commit
+        id: tag
+        run: |
+          git tag -f oryzenx-app ${{ github.sha }}
+          git push -f origin refs/tags/oryzenx-app
+          echo "built=$(date -u '+%Y-%m-%d %H:%M UTC')" >> "$GITHUB_OUTPUT"
+
+      # One stable release: the download link never changes, each build replaces the APK.
       - name: Publish on the Releases page
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: app-v1.3.${{ github.run_number }}
-          name: OryzenX BD app 1.3.${{ github.run_number }}
-          target_commitish: ${{ github.sha }}
+          tag_name: oryzenx-app
+          name: OryzenX BD app (latest)
+          make_latest: true
+          overwrite_files: true
           files: oryzenx/mobile/OryzenX-BD.apk
           body: |
             Android app for OryzenX BD. Download **OryzenX-BD.apk** below and open it on your phone
             (allow "Install unknown apps" for your browser or file manager when asked).
+
+            Version 1.3.${{ github.run_number }}, built ${{ steps.tag.outputs.built }} from commit ${{ github.sha }}.
+            This link always has the newest build: https://github.com/${{ github.repository }}/releases/download/oryzenx-app/OryzenX-BD.apk
 
             Server: ${{ env.APP_URL }} · Push notifications: ${{ env.HAS_FIREBASE == 'true' && 'on' || 'off (add Firebase to enable)' }} · Signing: ${{ env.HAS_KEYSTORE == 'true' && 'release key' || 'debug key' }}

@@ -166,7 +166,9 @@ export function formValues(form) {
 }
 
 // Runs an async action with a spinner on the button and shows errors in the form.
+// Pass the button itself (not e.currentTarget after an await: it is null by then).
 export async function busy(btn, fn, errorEl) {
+  if (!btn) { try { return await fn(); } catch (err) { if (errorEl) { errorEl.textContent = err.message; errorEl.classList.remove('hidden'); } else toast(err.message, 'err'); return undefined; } }
   const label = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = '<span class="spin"></span>';
@@ -225,4 +227,17 @@ export function pager(page, limit, total) {
     <span class="faint">Page ${page} of ${pages} · ${total} total</span>
     <span class="row"><button class="btn ghost sm" data-page="${page - 1}" ${page <= 1 ? raw('disabled') : ''}>Previous</button>
     <button class="btn ghost sm" data-page="${page + 1}" ${page >= pages ? raw('disabled') : ''}>Next</button></span></div>`;
+}
+
+// Shrink money amounts (and other marked numbers) until they fit their box.
+const FIT = '[data-fit], .hero-v, .tile-v, .stat .value, .big-num, .coin-price, .mini-tile b, .kpi-v, .admin-hero-stats b, .mini-kv b, .pnl-grid b';
+export function fitAll(root = document) {
+  root.querySelectorAll(FIT).forEach((el) => {
+    if (!el.isConnected || !el.clientWidth) return;
+    el.style.fontSize = '';
+    if (el.scrollWidth <= el.clientWidth + 1) return;
+    const base = parseFloat(getComputedStyle(el).fontSize);
+    const size = Math.max(10, Math.floor(base * (el.clientWidth / el.scrollWidth) * 0.97));
+    el.style.fontSize = `${size}px`;
+  });
 }

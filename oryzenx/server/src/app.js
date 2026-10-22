@@ -16,6 +16,22 @@ const fs = require('fs');
 const WEB = [path.join(__dirname, '..', 'web'), path.join(__dirname, '..', '..', 'web')]
   .find((p) => fs.existsSync(path.join(p, 'index.html')));
 
+let cachedVersion = null;
+function webVersion() {
+  if (cachedVersion) return cachedVersion;
+  const crypto = require('crypto');
+  const h = crypto.createHash('sha1');
+  const walk = (dir) => {
+    for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, f.name);
+      if (f.isDirectory()) { if (!['vendor', 'coins', 'fonts'].includes(f.name)) walk(p); } else { const st = fs.statSync(p); h.update(`${p}:${st.size}:${st.mtimeMs}`); }
+    }
+  };
+  try { walk(WEB); } catch { h.update(String(Date.now())); }
+  cachedVersion = h.digest('hex').slice(0, 12);
+  return cachedVersion;
+}
+
 function createApp() {
   const app = express();
   app.set('trust proxy', 1); // behind Nginx / Hostinger proxy
@@ -25,7 +41,7 @@ function createApp() {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", 'https://accounts.google.com/gsi/client'],
+        scriptSrc: ["'self'", "'wasm-unsafe-eval'", 'https://accounts.google.com/gsi/client'],
         styleSrc: ["'self'", "'unsafe-inline'", 'https://accounts.google.com/gsi/style'],
         imgSrc: ["'self'", 'data:', 'blob:', 'https://*.googleusercontent.com', 'https://bin.bnbstatic.com'],
         mediaSrc: ["'self'", 'blob:'],
@@ -65,6 +81,8 @@ function createApp() {
   app.use('/api', (_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
+  // Changes whenever the web app files change, so open apps can offer "Update now".
+  app.get('/api/version', (_req, res) => res.json({ version: webVersion() }));
   app.use('/api/auth', require('./routes/auth').router);
   app.use('/api/me', require('./routes/me').router);
   app.use('/api/kyc', require('./routes/kyc'));

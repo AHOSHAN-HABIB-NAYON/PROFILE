@@ -14,6 +14,8 @@ const COLUMNS = [
   ['users', 'totp_secret', 'BLOB NULL'],
   ['users', 'totp_enabled', 'TINYINT(1) NOT NULL DEFAULT 0'],
   ['users', 'totp_backup', 'JSON NULL'],
+  ['user_tokens', 'code_hash', 'CHAR(64) NULL'],
+  ['user_tokens', 'attempts', 'TINYINT UNSIGNED NOT NULL DEFAULT 0'],
 ];
 
 async function ensureColumn(table, column, ddl) {

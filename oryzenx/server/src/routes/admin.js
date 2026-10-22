@@ -352,14 +352,49 @@ router.put('/schedule', ah(async (req, res) => {
   res.json({ ok: true });
 }));
 
+// Every active member for the month, with their payment if one exists (members without a salary
+// can still be paid: the admin enters the amount).
 router.get('/payments', ah(async (req, res) => {
   const m = month(req.query.month);
   await ensurePayments(m);
   const rows = await query(
-    `SELECT p.*, u.name, u.email FROM payments p JOIN users u ON u.id = p.user_id WHERE p.month = ? ORDER BY p.status DESC, u.name`, [m],
+    `SELECT u.id AS user_id, u.name, u.email, u.avatar_url, u.salary, u.role,
+            p.id, p.amount, p.status, p.method, p.paid_at, p.note
+       FROM users u LEFT JOIN payments p ON p.user_id = u.id AND p.month = ?
+      WHERE u.status IN ('active','restricted') OR p.id IS NOT NULL
+      ORDER BY (p.status = 'paid'), u.name`, [m],
   );
   const methods = await query('SELECT user_id, type, account, holder, network, is_default FROM payment_methods');
-  res.json({ rows: rows.map((r) => ({ ...r, payment_methods: methods.filter((x) => x.user_id === r.user_id) })) });
+  res.json({
+    month: m,
+    rows: rows.map((r) => ({
+      ...r, amount: r.amount ?? r.salary, status: r.status || 'none', payment_methods: methods.filter((x) => x.user_id === r.user_id),
+    })),
+  });
+}));
+
+// Pay a member for a month in one step (creates the payment if needed).
+router.post('/payments/pay', ah(async (req, res) => {
+  const m = month(req.body.month);
+  const u = await getUserOr404(req.body.user_id);
+  const amount = num(req.body.amount, { field: 'Amount', min: 0.01, required: true });
+  const method = oneOf(req.body.method, METHOD_TYPES, 'Method');
+  const paidAt = datetime(req.body.paid_at, { field: 'Paid on' });
+  const note = str(req.body.note, { field: 'Note', max: 255 });
+  await query(
+    `INSERT INTO payments (user_id, month, amount, status, method, paid_at, note, marked_by) VALUES (?, ?, ?, 'paid', ?, COALESCE(?, NOW()), ?, ?)
+     ON DUPLICATE KEY UPDATE amount = VALUES(amount), status = 'paid', method = VALUES(method), paid_at = VALUES(paid_at), note = COALESCE(VALUES(note), note), marked_by = VALUES(marked_by)`,
+    [u.id, m, amount, method, paidAt, note, req.user.id],
+  );
+  const p = await one('SELECT * FROM payments WHERE user_id = ? AND month = ?', [u.id, m]);
+  await notify(u.id, 'Payment sent', `${money(p.amount)} for ${m} was paid via ${METHOD_NAMES[method]}.`, 'profile');
+  await sendEmail(u, 'payment_paid', {
+    subject: `Payment sent: ${money(p.amount)}`, title: 'Your payment was sent',
+    body: `Hi ${esc(u.name)},<br>Your payment for <b>${m}</b> has been marked <b>Paid</b>.<br>
+      <b>Amount:</b> ${money(p.amount)}<br><b>Date:</b> ${esc(p.paid_at)}<br><b>Method:</b> ${METHOD_NAMES[method]}`,
+  });
+  await audit(req, 'payment_paid', 'payment', p.id, { user_id: u.id, amount: p.amount, method, month: m });
+  res.json({ ok: true });
 }));
 
 router.put('/payments/:id', ah(async (req, res) => {

@@ -59,12 +59,17 @@ async function consumeToken(token, type) {
   return row.user_id;
 }
 
+// Email verification: a 6-digit code to type in the app, plus a link as a fallback.
 async function sendVerification(user) {
   const token = await issueToken(user.id, 'verify_email', 48);
+  const code = String(crypto.randomInt(0, 1e6)).padStart(6, '0');
+  await query('UPDATE user_tokens SET code_hash = ? WHERE token_hash = ?', [sha256(`${user.id}:${code}`), sha256(token)]);
   await sendEmail(user, 'verify_email', {
-    subject: 'Verify your email - OryzenX BD',
+    subject: `${code} is your OryzenX BD verification code`,
     title: 'Verify your email',
-    body: `Hi ${esc(user.name)},<br>Tap the button below to verify your email address. The link expires in 48 hours.`,
+    body: `Hi ${esc(user.name)},<br>Enter this code in the app to verify your email:<br>
+      <div style="font-size:32px;font-weight:800;letter-spacing:10px;margin:14px 0;color:#1d5bff">${code}</div>
+      Or tap the button below. The code and link expire in 48 hours.`,
     cta: { label: 'Verify email', url: `${config.appUrl}/#/verify-email?token=${token}` },
   });
 }
@@ -292,6 +297,24 @@ router.post('/verify-email', strictLimit, ah(async (req, res) => {
   await query('UPDATE users SET email_verified_at = COALESCE(email_verified_at, NOW()) WHERE id = ?', [userId]);
   const user = await one('SELECT * FROM users WHERE id = ?', [userId]);
   res.json({ ok: true, stage: stageOf(user) });
+}));
+
+// Verify with the 6-digit code (5 tries per code).
+router.post('/verify-code', strictLimit, requireLogin, ah(async (req, res) => {
+  if (req.user.email_verified_at) return res.json({ ok: true, stage: stageOf(req.user) });
+  const row = await one(
+    "SELECT * FROM user_tokens WHERE user_id = ? AND type = 'verify_email' AND used_at IS NULL AND expires_at > NOW() ORDER BY id DESC LIMIT 1", [req.user.id],
+  );
+  if (!row || row.attempts >= 5) throw bad('This code expired. Tap "Resend code" to get a new one.');
+  const code = String(req.body.code || '').replace(/\D/g, '');
+  if (row.code_hash !== sha256(`${req.user.id}:${code}`)) {
+    await query('UPDATE user_tokens SET attempts = attempts + 1 WHERE id = ?', [row.id]);
+    throw bad(`That code is not correct${row.attempts >= 4 ? '' : `. ${4 - row.attempts} tries left`}.`);
+  }
+  await query('UPDATE user_tokens SET used_at = NOW() WHERE id = ?', [row.id]);
+  await query('UPDATE users SET email_verified_at = COALESCE(email_verified_at, NOW()) WHERE id = ?', [req.user.id]);
+  const user = await one('SELECT * FROM users WHERE id = ?', [req.user.id]);
+  res.json({ ok: true, user: privateUser(user), stage: stageOf(user) });
 }));
 
 router.post('/resend-verification', strictLimit, requireLogin, ah(async (req, res) => {
