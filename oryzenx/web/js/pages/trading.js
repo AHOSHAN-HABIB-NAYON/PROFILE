@@ -1,14 +1,12 @@
 import { api } from '../api.js';
 import {
-  html, mount, usd, coinIcon, dateTime, skeleton, empty, $, $$, cls,
+  html, mount, usd, coinIcon, dateTime, skeleton, empty, $, $$, cls, icon,
 } from '../ui.js';
 import * as market from '../market.js';
 import { state } from '../app.js';
-import {
-  marketList, statCard, pnlText, openChart,
-} from './common.js';
+import { marketList, pnlText } from './common.js';
 
-const PERIODS = [['today', 'Today'], ['yesterday', 'Yesterday'], ['d7', '7 Days'], ['d30', '30 Days'], ['y1', '1 Year']];
+const PERIODS = [['today', 'Today'], ['yesterday', 'Yesterday'], ['d7', '7D'], ['d30', '30D'], ['y1', '1Y']];
 
 export async function render({ el }) {
   mount(el, skeleton(110, 3));
@@ -18,38 +16,47 @@ export async function render({ el }) {
 
   mount(el, html`<div class="stack">
     <div class="card">
-      <div class="card-head"><h2>Profit summary</h2><div class="tabs" id="tabs">${PERIODS.map(([k, l], i) => html`<button class="tab ${i === 0 ? 'active' : ''}" data-k="${k}">${l}</button>`)}</div></div>
-      <div class="grid g3" id="period"></div>
+      <div class="card-head"><h2>Profit summary</h2><div class="seg" id="tabs">${PERIODS.map(([k, l], i) => html`<button class="${i === 0 ? 'active' : ''}" data-k="${k}">${l}</button>`)}</div></div>
+      <div class="pnl-grid" id="period"></div>
     </div>
-    <div class="grid g3">
-      ${statCard('Main Balance', usd(d.balances.main_balance), { ic: 'home' })}
-      ${statCard('Trading Balance', usd(d.balances.trading_balance), { ic: 'chart' })}
-      ${statCard('Total Loss (all time)', usd(d.balances.loss_balance), { ic: 'x', extra: 'loss' })}
+    <div class="tiles three">
+      <div class="tile"><div class="tile-ic">${icon('home')}</div><div class="tile-l">Main Balance</div><div class="tile-v num">${usd(d.balances.main_balance)}</div><div class="tile-s">After salaries paid</div></div>
+      <div class="tile"><div class="tile-ic">${icon('chart')}</div><div class="tile-l">Trading Balance</div><div class="tile-v num">${usd(d.balances.trading_balance)}</div><div class="tile-s">Set by admin</div></div>
+      <div class="tile"><div class="tile-ic down">${icon('x')}</div><div class="tile-l">Total Loss</div><div class="tile-v num down">${usd(d.balances.loss_balance)}</div><div class="tile-s">All time, after fees</div></div>
     </div>
-    <div class="card pad-0">
-      <div class="card-head" style="padding:16px 16px 0"><h2>Coins we trade</h2><span class="faint">Tap a coin for its live chart</span></div>
-      ${d.by_coin.length ? html`<div class="table-wrap"><table><thead><tr><th>Coin</th><th class="right">Trades</th><th class="right">Net result</th><th class="right hide-m">Last trade</th></tr></thead><tbody>
-        ${d.by_coin.map((c) => html`<tr class="clickable" data-coin="${c.coin}"><td><div class="row">${coinIcon(c.coin)}<b>${c.coin}</b></div></td>
-          <td class="right">${c.trades}</td><td class="right num ${cls(c.net)}"><b>${pnlText(c.net)}</b></td><td class="right faint hide-m">${dateTime(c.last_trade)}</td></tr>`)}
-      </tbody></table></div>` : empty('No trades recorded yet')}
+    <div class="grid g2">
+      <div class="card pad-0">
+        <div class="card-head" style="padding:14px 16px 6px"><h2>Coins we trade</h2><span class="faint" style="font-size:12px">Tap for chart</span></div>
+        ${d.by_coin.length ? d.by_coin.map((c) => html`<a class="list-item link" href="#/coin/${c.coin}">${coinIcon(c.coin)}
+          <div class="grow"><div class="t">${c.coin}</div><div class="s">${c.trades} trade${c.trades === 1 ? '' : 's'} · last ${dateTime(c.last_trade)}</div></div>
+          <b class="num ${cls(c.net)}">${pnlText(c.net)}</b></a>`) : empty('No trades recorded yet')}
+      </div>
+      <div class="card pad-0">
+        <div class="card-head" style="padding:14px 16px 6px"><h2>Markets</h2><input class="input sm search" id="q" placeholder="Search coin" aria-label="Search coin" autocomplete="off"></div>
+        <div id="mkt"></div>
+      </div>
     </div>
-    <div class="card pad-0"><div class="card-head" style="padding:16px 16px 0"><h2>Live market</h2></div><div id="mkt"></div></div>
   </div>`);
 
   const showPeriod = (k) => {
     const p = d.profit[k];
     mount($('#period', el), html`
-      ${statCard('Profit', usd(p.profit), { sub: `${p.trades} trades`, subCls: 'faint', extra: '' })}
-      ${statCard('Loss', usd(p.loss), { extra: 'loss' })}
-      ${statCard('Net result', pnlText(p.net), { sub: 'After fees', subCls: 'faint' })}`);
-    $('#period .card:last-child .value', el).classList.add(cls(p.net));
+      <div><span>Profit</span><b class="num up">${usd(p.profit)}</b><small>${p.trades} trade${p.trades === 1 ? '' : 's'}</small></div>
+      <div><span>Loss</span><b class="num down">${usd(p.loss)}</b><small>Losing trades + fees</small></div>
+      <div><span>Net result</span><b class="num ${cls(p.net)}">${pnlText(p.net)}</b><small>Added to Main Balance</small></div>`);
   };
   showPeriod('today');
   $('#tabs', el).onclick = (e) => {
     const b = e.target.closest('[data-k]'); if (!b) return;
-    $$('#tabs .tab', el).forEach((t) => t.classList.toggle('active', t === b));
+    $$('#tabs button', el).forEach((t) => t.classList.toggle('active', t === b));
     showPeriod(b.dataset.k);
   };
-  el.querySelector('tbody')?.addEventListener('click', (e) => { const r = e.target.closest('[data-coin]'); if (r) openChart(r.dataset.coin); });
-  return marketList($('#mkt', el), coins);
+  let off = marketList($('#mkt', el), coins);
+  $('#q', el).oninput = (e) => {
+    const q = e.target.value.trim().toUpperCase();
+    off();
+    off = marketList($('#mkt', el), q ? coins.filter((c) => c.includes(q)).concat(/^[A-Z0-9]{2,10}$/.test(q) && !coins.includes(q) ? [q] : []) : coins);
+    if (q && !coins.includes(q)) market.watch([...coins, q]);
+  };
+  return () => off();
 }

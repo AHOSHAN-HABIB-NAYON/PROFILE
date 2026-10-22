@@ -5,7 +5,7 @@ import {
 import * as market from '../market.js';
 import { state } from '../app.js';
 import {
-  setLive, statCard, pnlText, openChart,
+  setLive, statCard, pnlText,
 } from './common.js';
 
 export async function render({ el }) {
@@ -33,23 +33,20 @@ export async function render({ el }) {
 
     <div class="card pad-0">
       <div class="card-head" style="padding:16px 16px 0"><h2>Holdings</h2><span class="faint">Live from Binance · tap for chart</span></div>
-      ${open.length ? html`<div class="table-wrap"><table><thead><tr><th>Coin</th><th class="right">Quantity</th><th class="right hide-m">Entry price</th><th class="right">Live price</th><th class="right">Value</th><th class="right">P/L</th></tr></thead><tbody>
-        ${open.map((x) => html`<tr class="clickable" data-coin="${x.coin}"><td><div class="row">${coinIcon(x.coin)}<div><b>${x.coin}</b><div class="faint" style="font-size:12px">${date(x.invested_at)}</div></div></div></td>
-          <td class="right num">${qty(x.quantity)}</td><td class="right num hide-m">${price(x.entry_price)}</td>
-          <td class="right num" data-p="${x.id}">—</td><td class="right num" data-v="${x.id}">—</td><td class="right num" data-pl="${x.id}">—</td></tr>`)}
-      </tbody></table></div>` : empty('No open investments', 'invest')}
+      ${open.length ? open.map((x) => html`<a class="list-item link" href="#/coin/${x.coin}">${coinIcon(x.coin)}
+        <div class="grow"><div class="t num">${x.coin} <span class="faint" style="font-weight:500">${qty(x.quantity)}</span></div>
+          <div class="s">Entry ${price(x.entry_price)} · now <span class="num" data-p="${x.id}">—</span></div></div>
+        <div class="right"><div class="num" style="font-weight:700" data-v="${x.id}">—</div><div class="num" style="font-size:12px" data-pl="${x.id}">—</div></div></a>`)
+    : empty('No open investments', 'invest')}
     </div>
 
     ${closed.length ? html`<div class="card pad-0"><div class="card-head" style="padding:16px 16px 0"><h2>Closed positions</h2></div>
-      <div class="table-wrap"><table><thead><tr><th>Coin</th><th class="right">Quantity</th><th class="right">Entry price</th><th class="right">Date</th></tr></thead><tbody>
-      ${closed.map((x) => html`<tr><td><div class="row">${coinIcon(x.coin)}<b>${x.coin}</b></div></td><td class="right num">${qty(x.quantity)}</td><td class="right num">${price(x.entry_price)}</td><td class="right faint">${date(x.invested_at)}</td></tr>`)}
-      </tbody></table></div></div>` : ''}
+      ${closed.map((x) => html`<div class="list-item">${coinIcon(x.coin)}<div class="grow"><div class="t">${x.coin} <span class="faint">${qty(x.quantity)}</span></div><div class="s">Entry ${price(x.entry_price)} · ${date(x.invested_at)}</div></div><span class="chip">Closed</span></div>`)}</div>` : ''}
   </div>`);
 
   // Make sure every held coin is streaming, alongside the normal watchlist.
   market.watch([...state.watchlist, ...open.map((x) => x.coin)]);
 
-  el.querySelector('tbody')?.addEventListener('click', (e) => { const row = e.target.closest('[data-coin]'); if (row) openChart(row.dataset.coin); });
   return market.subscribe(() => {
     let total = 0;
     for (const x of open) {
@@ -60,7 +57,7 @@ export async function render({ el }) {
       setLive(el.querySelector(`[data-p="${x.id}"]`), price(p), p);
       setLive(el.querySelector(`[data-v="${x.id}"]`), usd(value), value);
       const plEl = el.querySelector(`[data-pl="${x.id}"]`);
-      if (plEl) { plEl.className = `right num ${cls(pl)}`; plEl.textContent = `${pnlText(pl)} (${pct((pl / (x.quantity * x.entry_price || 1)) * 100)})`; }
+      if (plEl) { plEl.className = `num ${cls(pl)}`; plEl.textContent = `${pnlText(pl)} (${pct((pl / (x.quantity * x.entry_price || 1)) * 100)})`; }
     }
     const cost = d.balances.investment_cost;
     setLive($('#v-val', el), usd(total), total);

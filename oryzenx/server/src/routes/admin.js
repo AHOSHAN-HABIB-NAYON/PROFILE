@@ -36,6 +36,33 @@ async function getUserOr404(id) {
   return u;
 }
 
+// ---------- Overview ----------
+
+router.get('/overview', ah(async (_req, res) => {
+  const m = (await one("SELECT DATE_FORMAT(CURDATE(), '%Y-%m') AS m")).m;
+  const [users, kyc, pay, sched, emails, trades, logins] = await Promise.all([
+    one(`SELECT SUM(status IN ('active','restricted')) AS active, SUM(status = 'pending') AS pending,
+                SUM(status = 'disabled') AS disabled, COUNT(*) AS total FROM users`),
+    one("SELECT SUM(kyc_status IN ('submitted','review')) AS pending, SUM(kyc_status = 'review') AS review FROM users"),
+    one("SELECT SUM(status = 'paid') AS paid, SUM(status = 'pending') AS pending, COALESCE(SUM(IF(status = 'pending', amount, 0)), 0) AS due FROM payments WHERE month = ?", [m]),
+    one('SELECT pay_date FROM payment_schedule WHERE month = ?', [m]),
+    one("SELECT SUM(status = 'failed') AS failed, SUM(status = 'queued') AS queued FROM email_queue WHERE created_at >= NOW() - INTERVAL 7 DAY"),
+    one('SELECT COUNT(*) AS n, COALESCE(SUM(profit - fee), 0) AS net FROM trades WHERE traded_at >= CURDATE()'),
+    one('SELECT SUM(success = 0) AS failed FROM login_events WHERE created_at >= NOW() - INTERVAL 1 DAY'),
+  ]);
+  const n = (v) => Number(v || 0);
+  res.json({
+    month: m,
+    pay_date: sched?.pay_date || null,
+    users: { active: n(users.active), pending: n(users.pending), disabled: n(users.disabled), total: n(users.total) },
+    kyc: { pending: n(kyc.pending), review: n(kyc.review) },
+    payments: { paid: n(pay.paid), pending: n(pay.pending), due: n(pay.due) },
+    emails: { failed: n(emails.failed), queued: n(emails.queued) },
+    trades_today: { count: n(trades.n), net: n(trades.net) },
+    failed_logins_24h: n(logins.failed),
+  });
+}));
+
 // ---------- Users ----------
 
 router.get('/users', ah(async (req, res) => {
@@ -275,7 +302,7 @@ router.put('/method-logos/:type', ah(async (req, res) => {
   const type = oneOf(req.params.type, METHOD_TYPES, 'Method');
   const logos = await getSetting('method_logos', {});
   const url = await saveDataUrl(req.body.image, 'logos', {
-    allow: ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'], maxBytes: 200 * 1024, name: type,
+    allow: ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'], maxBytes: 200 * 1024, ownerId: req.user.id,
   });
   await removeUpload(logos[type]);
   logos[type] = url;

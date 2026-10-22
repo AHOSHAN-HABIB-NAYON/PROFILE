@@ -83,11 +83,26 @@ const COIN_COLORS = {
   BTC: '#f7931a', ETH: '#627eea', SOL: '#9945ff', BNB: '#f0b90b', XRP: '#23292f', SUI: '#4da2ff', ZEC: '#e5a93d',
   PEPE: '#3d9a37', DOGE: '#c2a633', ADA: '#0033ad', USDT: '#26a17b', TRX: '#eb0029', LINK: '#2a5ada', AVAX: '#e84142',
 };
-export function coinIcon(c) {
-  let color = COIN_COLORS[c];
-  if (!color) { let h = 0; for (const ch of c) h = (h * 31 + ch.charCodeAt(0)) % 360; color = `hsl(${h} 60% 45%)`; }
-  return html`<span class="coin-ico" style="background:${color}">${c.slice(0, 4)}</span>`;
+function coinColor(c) {
+  if (COIN_COLORS[c]) return COIN_COLORS[c];
+  let h = 0; for (const ch of c) h = (h * 31 + ch.charCodeAt(0)) % 360;
+  return `hsl(${h} 60% 45%)`;
 }
+// Real coin logo: our own copy first, then Binance's logo, then a coloured badge with the ticker.
+export function coinIcon(c, size = '') {
+  return html`<img class="coin-ico ${size}" src="/coins/${c}.svg" alt="${c}" loading="lazy" decoding="async" data-sym="${c}">`;
+}
+document.addEventListener('error', (e) => {
+  const img = e.target;
+  if (!(img instanceof HTMLImageElement) || !img.classList.contains('coin-ico')) return;
+  const c = img.dataset.sym || img.alt;
+  if (!img.dataset.tried) { img.dataset.tried = '1'; img.src = `https://bin.bnbstatic.com/static/assets/logos/${c}.png`; return; }
+  const span = document.createElement('span');
+  span.className = img.className;
+  span.style.background = coinColor(c);
+  span.textContent = c.slice(0, 4);
+  img.replaceWith(span);
+}, true);
 
 export function avatar(u, size = '') {
   if (u?.avatar_url) return html`<img class="avatar ${size}" src="${u.avatar_url}" alt="" loading="lazy">`;

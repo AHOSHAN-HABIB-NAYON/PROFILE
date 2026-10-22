@@ -44,7 +44,7 @@ router.put('/', ah(async (req, res) => {
 
 router.post('/avatar', ah(async (req, res) => {
   const url = await saveDataUrl(req.body.image, 'avatars', {
-    allow: ['image/webp', 'image/jpeg', 'image/png'], maxBytes: 400 * 1024, name: `u${req.user.id}`,
+    allow: ['image/webp', 'image/jpeg', 'image/png'], maxBytes: 400 * 1024, ownerId: req.user.id,
   });
   await query('UPDATE users SET avatar_url = ? WHERE id = ?', [url, req.user.id]);
   await removeUpload(req.user.avatar_url);

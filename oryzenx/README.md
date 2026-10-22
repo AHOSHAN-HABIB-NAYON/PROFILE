@@ -9,7 +9,7 @@ Private investment, trading and loan monitor for a small group of friends. Web a
 
 ## What's in this version
 
-Stage 1 is complete, plus the core of Stage 2:
+Stages 1 and 2 are complete:
 
 | Area | Status |
 | --- | --- |
@@ -30,8 +30,24 @@ Stage 1 is complete, plus the core of Stage 2:
 | Email queue with retry, email log, per-type admin toggles, member opt-out for reminder emails only | ✅ |
 | In-app notifications | ✅ |
 | Security: bcrypt, rate limiting, admin activity log, login log, HTTPS headers, daily DB backup script | ✅ |
+| Coin pages: real coin logos, Binance-style candlestick chart with 1m/5m/15m/30m/1H/4H/1D/1W, MA7/25/99, live candles | ✅ |
+| KYC: consent → ID card front and back (in-app camera, light/focus/glare/framing checks, auto-capture, preview and retake) → live face check → admin review | ✅ |
+| Live face check: random server-chosen prompts (look left/right/up, nod, smile, blink, close eyes), voice + text, oval guide, light check, progress ring | ✅ |
+| Face match against the ID photo (on-device face templates, checked again on the server); "Face does not match" warning, 3 tries, then manual review — no auto-ban | ✅ |
+| KYC data encrypted at rest (AES-256-GCM), admin-only, every view audited, admin can delete on request, emails on every status change | ✅ |
+| Admin KYC panel: ID front, back and live face side by side, liveness steps, match score, attempt log, Approve / Reject / Ask to redo | ✅ |
 
-**Not built yet (Stage 2/3):** ID card + face verification (KYC) with liveness, risk-based face re-verification, app lock (PIN/fingerprint), screenshot blocking, FCM push notifications, optional 2FA, the 5-day friendly reminder and the monthly summary email. The database and email system are ready for these.
+**Not built yet (Stage 3):** risk-based face re-verification, app lock (PIN/fingerprint), screenshot blocking, FCM push notifications, optional 2FA, the 5-day friendly reminder and the monthly summary email.
+
+### About the face check
+
+Face detection, liveness and matching run on the phone with [face-api](https://github.com/vladmandic/face-api) (TensorFlow.js), served from this server (about 8 MB, downloaded only on the KYC screens). The server picks the prompts and their order, checks timing, re-computes the match from the face templates, and stores the ID photos, one face photo and the templates encrypted. Admins always make the final decision.
+
+Limits to know: random prompts stop printed photos and simple replays, but a determined attacker with a mask or a deepfake video could get past an on-device check. Admin review is the safety net. If you need bank-grade anti-spoofing later, plug in a KYC provider.
+
+Encryption key: set `KYC_KEY` (64 hex characters) to use a separate key. If it is not set, the key is derived from `JWT_SECRET`, so **never change `JWT_SECRET`** after members have verified, or their KYC files become unreadable.
+
+Admins and Super Admins skip KYC so the group can never lock itself out. Every member (role User) must pass KYC and admin review before reaching the dashboard.
 
 ### How the balances are calculated
 

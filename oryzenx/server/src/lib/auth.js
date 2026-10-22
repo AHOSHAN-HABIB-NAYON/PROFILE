@@ -18,9 +18,16 @@ function clearSession(res) {
 }
 
 // Where the user is in onboarding. Data pages need 'ready'.
+// Members go through KYC (ID card + live face check) and admin review. Admins are exempt so the
+// group can never lock itself out.
 function stageOf(u) {
   if (u.status === 'disabled') return 'disabled';
   if (!u.email_verified_at) return 'verify_email';
+  if (u.role === 'user') {
+    if (u.kyc_status === 'none' || u.kyc_status === 'resubmit') return 'kyc';
+    if (u.kyc_status === 'submitted' || u.kyc_status === 'review') return 'kyc_pending';
+    if (u.kyc_status === 'rejected') return 'kyc_rejected';
+  }
   if (u.status === 'pending') return 'pending_approval';
   if (!u.privacy_accepted_at) return 'privacy';
   return 'ready';
@@ -86,6 +93,7 @@ function privateUser(u) {
     ...publicUser(u), email: u.email, phone: u.phone, address: u.address,
     email_verified: !!u.email_verified_at, privacy_accepted_at: u.privacy_accepted_at,
     reminder_emails: !!u.reminder_emails, has_password: !!u.password_hash, google_linked: !!u.google_sub,
+    kyc_status: u.kyc_status, kyc_note: u.kyc_note, kyc_fail_count: u.kyc_fail_count, kyc_consent_at: u.kyc_consent_at,
   };
 }
 

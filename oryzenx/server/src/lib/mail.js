@@ -10,6 +10,7 @@ const EMAIL_TYPES = {
   reset_password: { label: 'Password reset', locked: true },
   welcome: { label: 'Welcome email' },
   account_approved: { label: 'Account approved' },
+  kyc: { label: 'KYC status changes (submitted, approved, rejected, re-submit)' },
   payment_date: { label: 'Monthly payment date set or changed' },
   payment_reminder: { label: 'Payment reminders (3 days, 1 day, payment day)', reminder: true },
   payment_paid: { label: 'Payment marked Paid' },

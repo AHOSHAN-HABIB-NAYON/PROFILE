@@ -87,7 +87,7 @@ async function activate(user) {
 }
 
 async function notifyAdminsOfSignup(user) {
-  await notify(null, 'New member waiting', `${user.name} signed up and is waiting for admin approval.`).catch(() => {});
+  await notify.admins('New member signed up', `${user.name} signed up. They will appear in KYC review after verifying their ID.`).catch(() => {});
 }
 
 async function loginAlert(req, user) {

@@ -7,6 +7,7 @@ const rateLimit = require('express-rate-limit');
 const config = require('./config');
 const { loadUser } = require('./lib/auth');
 const { HttpError } = require('./lib/util');
+const { one } = require('./db');
 const { ROOT: UPLOADS } = require('./lib/uploads');
 
 const fs = require('fs');
@@ -26,9 +27,11 @@ function createApp() {
         defaultSrc: ["'self'"],
         scriptSrc: ["'self'", 'https://accounts.google.com/gsi/client'],
         styleSrc: ["'self'", "'unsafe-inline'", 'https://accounts.google.com/gsi/style'],
-        imgSrc: ["'self'", 'data:', 'blob:', 'https://*.googleusercontent.com'],
+        imgSrc: ["'self'", 'data:', 'blob:', 'https://*.googleusercontent.com', 'https://bin.bnbstatic.com'],
+        mediaSrc: ["'self'", 'blob:'],
         connectSrc: ["'self'", 'https://api.binance.com', 'https://data-api.binance.vision',
           'wss://stream.binance.com:9443', 'wss://data-stream.binance.vision', 'https://accounts.google.com/gsi/'],
+        workerSrc: ["'self'", 'blob:'],
         frameSrc: ['https://accounts.google.com/gsi/'],
         fontSrc: ["'self'"],
         objectSrc: ["'none'"],
@@ -44,7 +47,7 @@ function createApp() {
   }));
   app.use(compression());
   app.use(cookieParser());
-  app.use(express.json({ limit: '1mb' }));
+  app.use(express.json({ limit: '4mb' })); // KYC photos are sent as compressed JPEG data URLs
 
   // CSRF defence: state-changing API calls must be JSON (browsers cannot send cross-site JSON
   // without a CORS preflight, which this server never allows), on top of SameSite=Lax cookies.
@@ -61,9 +64,25 @@ function createApp() {
   app.get('/api/health', (_req, res) => res.json({ ok: true }));
   app.use('/api/auth', require('./routes/auth').router);
   app.use('/api/me', require('./routes/me').router);
+  app.use('/api/kyc', require('./routes/kyc'));
+  app.use('/api/admin/kyc', require('./routes/adminKyc'));
   app.use('/api/admin', require('./routes/admin').router);
   app.use('/api', require('./routes/data'));
   app.use('/api', (_req, _res, next) => next(new HttpError(404, 'Not found')));
+
+  // Images stored in the database (profile photos, logos). Members only.
+  app.get('/files/:id.:ext', loadUser, async (req, res, next) => {
+    try {
+      if (!req.user) return res.status(401).end();
+      const f = await one('SELECT mime, data FROM files WHERE id = ?', [Number(req.params.id)]);
+      if (!f) return res.status(404).end();
+      res.set({
+        'Content-Type': f.mime, 'Cache-Control': 'private, max-age=2592000, immutable',
+        'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'", 'X-Content-Type-Options': 'nosniff',
+      });
+      res.send(f.data);
+    } catch (err) { next(err); }
+  });
 
   // Uploaded images are only ever shown with <img>; this CSP stops an uploaded SVG from running anything.
   app.use('/uploads', (_req, res, next) => {
@@ -73,9 +92,10 @@ function createApp() {
 
   app.use(express.static(WEB, {
     setHeaders(res, file) {
-      // index.html and the service worker must always be fresh; versioned assets can be cached.
-      if (/index\.html$|sw\.js$|manifest\.webmanifest$/.test(file)) res.set('Cache-Control', 'no-cache');
-      else res.set('Cache-Control', 'public, max-age=604800');
+      // App code is revalidated on every load (cheap 304s) so an update never mixes old and new files.
+      // Libraries, models, icons and coin logos rarely change and are cached for a week.
+      if (/[\\/](vendor|coins|icons)[\\/]/.test(file)) res.set('Cache-Control', 'public, max-age=604800');
+      else res.set('Cache-Control', 'no-cache');
     },
   }));
 

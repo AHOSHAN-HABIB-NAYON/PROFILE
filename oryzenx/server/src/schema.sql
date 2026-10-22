@@ -193,3 +193,57 @@ CREATE TABLE IF NOT EXISTS audit_log (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX (created_at)
 );
+
+-- Uploaded images (profile photos, payment logos). Kept in the database so they survive redeploys.
+CREATE TABLE IF NOT EXISTS files (
+  id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  owner_id   INT UNSIGNED NULL,
+  kind       VARCHAR(20) NOT NULL,
+  mime       VARCHAR(40) NOT NULL,
+  data       MEDIUMBLOB NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- KYC images, AES-256-GCM encrypted. Only admins can read them, and every view is audited.
+CREATE TABLE IF NOT EXISTS kyc_files (
+  user_id    INT UNSIGNED NOT NULL,
+  kind       ENUM('id_front','id_back','face') NOT NULL,
+  mime       VARCHAR(40) NOT NULL,
+  data       MEDIUMBLOB NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, kind),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Encrypted face templates (128 numbers each, not images) and the liveness result.
+CREATE TABLE IF NOT EXISTS kyc_profiles (
+  user_id        INT UNSIGNED PRIMARY KEY,
+  id_template    BLOB NULL,
+  face_template  BLOB NULL,
+  match_distance FLOAT NULL,
+  liveness       JSON NULL,
+  updated_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- One live face check at a time per user: the server picks the prompts and their order.
+CREATE TABLE IF NOT EXISTS kyc_challenges (
+  user_id    INT UNSIGNED PRIMARY KEY,
+  nonce      CHAR(64) NOT NULL,
+  prompts    JSON NOT NULL,
+  issued_at  DATETIME NOT NULL,
+  expires_at DATETIME NOT NULL
+);
+
+-- Every KYC attempt and admin decision (time, device, result).
+CREATE TABLE IF NOT EXISTS kyc_events (
+  id         BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id    INT UNSIGNED NOT NULL,
+  kind       VARCHAR(30) NOT NULL,
+  result     VARCHAR(30) NULL,
+  detail     JSON NULL,
+  ip         VARCHAR(64) NULL,
+  user_agent VARCHAR(255) NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX (user_id, created_at)
+);

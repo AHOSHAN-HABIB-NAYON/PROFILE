@@ -34,6 +34,9 @@ const GATES = {
   pending_approval: () => import('./pages/auth.js').then((m) => m.pending),
   privacy: () => import('./pages/auth.js').then((m) => m.privacy),
   disabled: () => import('./pages/auth.js').then((m) => m.disabled),
+  kyc: () => import('./pages/kyc.js').then((m) => m.kyc),
+  kyc_pending: () => import('./pages/kyc.js').then((m) => m.kycPending),
+  kyc_rejected: () => import('./pages/kyc.js').then((m) => m.kycRejected),
 };
 const PAGES = {
   home: { title: 'Home', icon: 'home', load: () => import('./pages/home.js') },
@@ -45,6 +48,7 @@ const PAGES = {
   profile: { title: 'My Profile', icon: 'user', load: () => import('./pages/profile.js') },
   settings: { title: 'Settings', icon: 'settings', load: () => import('./pages/settings.js') },
   notifications: { title: 'Notifications', icon: 'bell', load: () => import('./pages/notifications.js'), hidden: true },
+  coin: { title: 'Chart', icon: 'chart', load: () => import('./pages/coin.js'), hidden: true, nav: 'trading' },
   admin: { title: 'Admin Panel', icon: 'admin', load: () => import('./pages/admin.js'), admin: true },
 };
 const SIDEBAR = ['home', 'trading', 'invest', 'history', 'loans', 'members', '-', 'profile', 'settings', 'admin'];
@@ -88,7 +92,7 @@ async function render() {
   const def = PAGES[route.name];
   if (!def || (def.admin && !isAdmin())) return go('home');
   if (!shellMounted) mountShell();
-  updateNav(route.name);
+  updateNav(def.nav || route.name);
   $('#page-title').textContent = def.title;
   document.title = `${def.title} · OryzenX BD`;
   const el = $('#page');

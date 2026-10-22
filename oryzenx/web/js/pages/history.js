@@ -3,7 +3,7 @@ import {
   html, mount, usd, coinIcon, dateTime, skeleton, empty, $, cls, icon, pager,
 } from '../ui.js';
 import { state } from '../app.js';
-import { pnlText, openChart } from './common.js';
+import { pnlText } from './common.js';
 
 export async function render({ el }) {
   const f = { coin: '', from: '', to: '', result: '', page: 1 };
@@ -27,19 +27,16 @@ export async function render({ el }) {
     const s = d.sums;
     mount($('#sums', el), html`${[['Trades', String(d.total), ''], ['Profit', usd(s.profit), 'up'], ['Loss', usd(s.loss), 'down'], ['Net (adds to Main Balance)', pnlText(s.net), cls(s.net)]]
       .map(([k, v, c]) => html`<div class="card stat"><div class="label">${k}</div><div class="value num ${c}" style="font-size:18px">${v}</div></div>`)}`);
-    mount($('#list', el), d.rows.length ? html`<div class="table-wrap"><table>
-      <thead><tr><th>Date</th><th>Coin</th><th class="hide-m">Side</th><th class="right">Profit</th><th class="right">Fee</th><th class="right">Net</th></tr></thead><tbody>
-      ${d.rows.map((t) => { const net = t.profit - t.fee; return html`<tr class="clickable" data-coin="${t.coin}"><td class="faint">${dateTime(t.traded_at)}</td>
-        <td><div class="row">${coinIcon(t.coin)}<b>${t.coin}</b></div></td><td class="hide-m"><span class="chip">${t.side}</span></td>
-        <td class="right num ${cls(t.profit)}">${pnlText(t.profit)}</td><td class="right num faint">${usd(t.fee)}</td><td class="right num ${cls(net)}"><b>${pnlText(net)}</b></td></tr>`; })}
-      </tbody></table></div>${pager(d.page, d.limit, d.total)}` : empty('No trades match these filters'));
+    mount($('#list', el), d.rows.length ? html`${d.rows.map((t) => { const net = t.profit - t.fee; return html`<a class="list-item link" href="#/coin/${t.coin}">${coinIcon(t.coin)}
+        <div class="grow"><div class="t">${t.coin} <span class="chip">${t.side}</span></div><div class="s">${dateTime(t.traded_at)}${t.note ? ` · ${t.note}` : ''}</div></div>
+        <div class="right"><div class="num ${cls(net)}" style="font-weight:700">${pnlText(net)}</div><div class="faint num" style="font-size:12px">P/L ${pnlText(t.profit)} · fee ${usd(t.fee)}</div></div></a>`; })}
+      ${pager(d.page, d.limit, d.total)}` : empty('No trades match these filters'));
   };
   $('#filters', el).onchange = (e) => { f[e.target.name] = e.target.value; f.page = 1; load(); };
   $('#filters', el).onsubmit = (e) => e.preventDefault();
   $('#list', el).onclick = (e) => {
     const p = e.target.closest('[data-page]');
     if (p) { f.page = Number(p.dataset.page); load(); return; }
-    const r = e.target.closest('[data-coin]'); if (r) openChart(r.dataset.coin);
   };
   await load();
 }

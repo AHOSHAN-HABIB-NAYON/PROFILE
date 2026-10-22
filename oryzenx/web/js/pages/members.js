@@ -27,11 +27,11 @@ export async function render({ el }) {
     </div>
     <div class="card pad-0">
       <div class="card-head" style="padding:16px 16px 0"><h2>Members (${members.rows.length})</h2><span class="faint">Tap for payment history</span></div>
-      <div class="table-wrap"><table><thead><tr><th>Member</th><th class="right">Deposit</th><th class="right hide-m">Deposit date</th><th class="right">Salary</th><th class="right hide-m">Total received</th></tr></thead><tbody>
-      ${members.rows.map((u) => html`<tr class="clickable" data-user="${u.id}"><td><div class="row">${avatar(u, 'sm')}<div><b>${u.name}</b><div class="faint" style="font-size:12px">${u.role === 'user' ? 'Member' : u.role.replace('_', ' ')} · since ${date(u.member_since)}</div></div></div></td>
-        <td class="right num">${usd(u.deposit_amount)}<div>${u.deposit_received_at ? html`<span class="chip up">Received</span>` : html`<span class="chip warn">Not yet</span>`}</div></td>
-        <td class="right hide-m">${date(u.deposit_date)}</td><td class="right num">${usd(u.salary)}</td><td class="right num hide-m">${usd(u.total_paid)}</td></tr>`)}
-      </tbody></table></div>
+      <div class="member-grid">${members.rows.map((u) => html`<button class="member-card" data-user="${u.id}">
+        <div class="row" style="gap:10px">${avatar(u)}<div class="grow" style="text-align:left"><b>${u.name}</b><div class="faint" style="font-size:12px">${u.role === 'user' ? 'Member' : u.role.replace('_', ' ')} · since ${date(u.member_since)}</div></div>
+          ${u.deposit_received_at ? html`<span class="chip up">Deposit ✓</span>` : html`<span class="chip warn">Deposit due</span>`}</div>
+        <div class="mini-kv"><div><span>Deposit</span><b class="num">${usd(u.deposit_amount)}</b></div><div><span>Due date</span><b>${date(u.deposit_date)}</b></div>
+          <div><span>Salary</span><b class="num">${usd(u.salary)}</b></div><div><span>Received</span><b class="num up">${usd(u.total_paid)}</b></div></div></button>`)}</div>
     </div>
   </div>`);
 
@@ -47,7 +47,7 @@ export async function render({ el }) {
     : empty('No payments for this month yet')}`);
   };
   $('#month', el).onchange = (e) => { month = e.target.value; loadPay(); };
-  el.querySelector('tbody').onclick = async (e) => {
+  el.querySelector('.member-grid').onclick = async (e) => {
     const r = e.target.closest('[data-user]'); if (!r) return;
     const u = members.rows.find((x) => x.id === Number(r.dataset.user));
     const h = await api.get(`/payments/history?user_id=${u.id}`);

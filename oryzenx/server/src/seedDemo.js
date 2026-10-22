@@ -26,6 +26,7 @@ const { pool, query, one, setSetting } = require('./db');
       [name, email, hash, role],
     );
   }
+  await query("UPDATE users SET kyc_status = 'approved' WHERE email LIKE '%@demo.local'");
   await query("INSERT IGNORE INTO users (name, email, password_hash, status, email_verified_at) VALUES ('Tanvir Islam', 'pending@demo.local', ?, 'pending', NOW())", [hash]);
   await setSetting('balances', { main_base: 10000, trading_capital: 2540 });
   await setSetting('default_deposit', { amount: 100000, date: '2027-12-31' });
