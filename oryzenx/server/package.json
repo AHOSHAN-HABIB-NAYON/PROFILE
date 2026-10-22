@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "description": "OryzenX BD - private investment, trading and loan monitor API",
-  "main": "src/index.js",
+  "main": "server.js",
   "type": "commonjs",
   "engines": {
     "node": ">=18"
   },
   "scripts": {
-    "start": "node src/index.js",
+    "start": "node server.js",
     "dev": "node --watch src/index.js",
     "migrate": "node src/migrate.js",
     "create-admin": "node src/createAdmin.js",
