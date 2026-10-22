@@ -18,7 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.ShowChart
+import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
@@ -114,7 +114,7 @@ private fun signedIn(nav: NavHostController, data: JsonObject?, context: Context
 @Composable
 fun WelcomeScreen(nav: NavHostController) {
     AuthLayout(t("welcome_title"), t("welcome_lead")) {
-        listOf(Icons.Default.ShowChart to "welcome_point_1", Icons.Default.VerifiedUser to "welcome_point_2", Icons.Default.Notifications to "welcome_point_3").forEach { (icon, key) ->
+        listOf(Icons.AutoMirrored.Filled.ShowChart to "welcome_point_1", Icons.Default.VerifiedUser to "welcome_point_2", Icons.Default.Notifications to "welcome_point_3").forEach { (icon, key) ->
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(icon, null, tint = Ox.colors.primary, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.size(12.dp))

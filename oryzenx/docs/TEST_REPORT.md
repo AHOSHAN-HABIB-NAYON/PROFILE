@@ -25,7 +25,12 @@ Run on GitHub Actions (`OryzenX CI`) with **PHP 8.1.34 and PHP 8.3 against MySQL
 
 ### Android
 
-ANDROID_RESULT
+Built on GitHub Actions (run 39778014314, commit `c3095b9`, Java 17, Gradle 8.11.1): `assembleDebug`, `assembleRelease` (R8 minified, resources shrunk), `lintDebug`, `lintVitalRelease` and `testDebugUnitTest`. All passed: **BUILD SUCCESSFUL**. The APKs are published as the `oryzenx-android-apks` artifact.
+
+- Unit tests (`FormatTest`): exact decimal parsing of money strings, sign handling and the SOL 106→120/100 example.
+- The compiler reported only deprecation warnings (icon names), which have since been fixed.
+- The build ran **without** `google-services.json` (push disabled) and **without** a release keystore, so the release APK is unsigned.
+- The app was **compiled only**. It was not installed or run on an emulator or phone.
 
 ## Not tested (needs real accounts, devices or production hosting)
 

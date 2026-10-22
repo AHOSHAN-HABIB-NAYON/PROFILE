@@ -30,7 +30,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.Undo
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -106,7 +106,7 @@ fun txIcon(type: String?) = when (type) {
     "withdrawal" -> Icons.Default.Payments
     "trade_close" -> Icons.Default.CandlestickChart
     "loan_disbursement", "loan_repayment", "loan_charge" -> Icons.Default.AccountBalance
-    "reversal" -> Icons.Default.Undo
+    "reversal" -> Icons.AutoMirrored.Filled.Undo
     else -> Icons.Default.Receipt
 }
 

@@ -48,7 +48,7 @@ import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.ShowChart
+import androidx.compose.material.icons.automirrored.filled.ShowChart
 import androidx.compose.material.icons.filled.SupportAgent
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Verified
@@ -360,8 +360,8 @@ private fun PaymentForm(methods: List<JsonObject>, methodId: Int?, firstTime: Bo
 
 // ------------------------------------------------------------------ Notifications
 fun notifIcon(type: String?): Pair<ImageVector, String> = when (type) {
-    "realized_profit" -> Icons.Default.ShowChart to "gain"
-    "realized_loss" -> Icons.Default.ShowChart to "loss"
+    "realized_profit" -> Icons.AutoMirrored.Filled.ShowChart to "gain"
+    "realized_loss" -> Icons.AutoMirrored.Filled.ShowChart to "loss"
     "salary_status" -> Icons.Default.AccountBalanceWallet to ""
     "loan_status" -> Icons.Default.AccountBalance to ""
     "verification_decision" -> Icons.Default.Verified to "primary"
@@ -468,7 +468,7 @@ fun MoreScreen(nav: NavHostController) {
                 MenuRow(Icons.Default.Verified, t("verification_status")) { nav.go("verification") }
                 MenuRow(Icons.Default.AccountBalanceWallet, t("salary_payments")) { nav.go("salary") }
                 MenuRow(Icons.Default.AccountBalance, t("loans_title")) { nav.go("loans") }
-                MenuRow(Icons.Default.ShowChart, t("markets")) { nav.go("markets") }
+                MenuRow(Icons.AutoMirrored.Filled.ShowChart, t("markets")) { nav.go("markets") }
                 MenuRow(Icons.Default.Notifications, t("notifications"), badge = AppState.unread) { nav.go("notifications") }
             }
             SectionTitle(t("settings"))
