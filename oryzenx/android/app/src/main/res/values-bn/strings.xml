@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OryzenX</string>
+    <string name="channel_account_updates">অ্যাকাউন্টের হালনাগাদ</string>
+    <string name="channel_account_updates_desc">ট্রেড, বেতন, ঋণ ও নিরাপত্তা বার্তা</string>
+</resources>

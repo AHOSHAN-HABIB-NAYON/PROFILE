@@ -400,4 +400,7 @@ return [
     'pm_instr_nagad' => 'Personal Nagad account number.',
     'pm_instr_rocket' => 'Rocket account number (12 digits including check digit).',
     'pm_instr_bank' => 'Bank account in your own name.',
+    'choose_photo' => 'Choose photo', 'photo_selected' => 'Photo selected — tap to change', 'uploading' => 'Uploading…',
+    'email_change_note' => 'To change your email address, contact support.',
+    'push_not_configured' => 'Push delivery is not configured in this build. In-app and email notifications still work.',
 ];

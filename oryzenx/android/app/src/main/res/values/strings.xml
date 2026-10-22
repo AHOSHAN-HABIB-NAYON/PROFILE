@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- In-app text comes from assets/i18n/*.json (shared with the web apps). Only system-level strings live here. -->
+<resources>
+    <string name="app_name">OryzenX</string>
+    <string name="channel_account_updates">Account updates</string>
+    <string name="channel_account_updates_desc">Trades, salary, loans and security notices</string>
+</resources>
