@@ -1,0 +1,9 @@
+# Safety net if the project root is accidentally used as the document root: route to /public, deny the rest.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteRule ^(app|bin|config|database|resources|routes|storage|tests|vendor|android|docs)(/|$) - [F,L]
+  RewriteRule ^(?!public/)(.*)$ public/$1 [L]
+</IfModule>
+<FilesMatch "\.(json|lock|md|xml|dist|sql|env)$">
+  Require all denied
+</FilesMatch>

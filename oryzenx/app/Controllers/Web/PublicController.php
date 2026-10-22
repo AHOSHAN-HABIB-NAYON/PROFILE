@@ -176,6 +176,7 @@ final class PublicController extends Controller
             'strings' => $this->content->appStrings($locale),
             'googleClientId' => $this->settings->googleClientIds()[0] ?? null,
             'demo' => Config::demoMode(),
+            'timezone' => $this->settings->timezone()->getName(),
             'brand' => (string) $this->settings->get('brand_primary', '#1A56DB'),
         ]);
         $res = Response::html($html);
