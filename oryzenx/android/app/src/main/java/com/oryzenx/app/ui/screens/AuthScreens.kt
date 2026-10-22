@@ -105,6 +105,7 @@ private fun signedIn(nav: NavHostController, data: JsonObject?, context: Context
     data?.str("token")?.let { app.session.token = it }
     val user = data.obj("user") ?: return
     AppState.user = user
+    app.session.cachedUser = user.toString()
     user.str("locale")?.let { loc -> if (loc != I18n.locale) switchLanguage(context, loc) }
     PushRegistrar.register(context)
     val dest = if (user.obj("verification").bool("email_verified")) "home" else "verify"

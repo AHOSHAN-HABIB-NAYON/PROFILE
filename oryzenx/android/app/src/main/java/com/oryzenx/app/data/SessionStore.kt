@@ -38,6 +38,11 @@ class SessionStore(context: Context) {
         get() = secure.getString("push_token", null)
         set(v) { secure.edit().apply { if (v == null) remove("push_token") else putString("push_token", v) }.apply() }
 
+    /** Last known profile (encrypted), so a signed-in user can open the app while offline. */
+    var cachedUser: String?
+        get() = secure.getString("user", null)
+        set(v) { secure.edit().apply { if (v == null) remove("user") else putString("user", v) }.apply() }
+
     /** "light" (default) | "dark" | "system" */
     var theme: String
         get() = prefs.getString("theme", "light") ?: "light"
@@ -53,5 +58,6 @@ class SessionStore(context: Context) {
 
     fun clear() {
         token = null
+        cachedUser = null
     }
 }

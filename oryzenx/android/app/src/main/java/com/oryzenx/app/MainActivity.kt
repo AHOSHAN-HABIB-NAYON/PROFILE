@@ -43,7 +43,14 @@ class MainActivity : ComponentActivity() {
                 cfg.str("timezone")?.let { tz -> runCatching { ZoneId.of(tz) }.getOrNull()?.let { Fmt.zone = it; app.session.timezone = tz } }
             }
             if (app.session.token != null) {
-                runCatching { app.api.get("/api/me").data().obj("user") }.getOrNull()?.let { u ->
+                val me = runCatching { app.api.get("/api/me").data().obj("user") }
+                // Offline: keep the user signed in with the last known profile; a 401 has already cleared the session.
+                val offline = (me.exceptionOrNull() as? com.oryzenx.app.data.ApiException)?.code == "network"
+                val user = me.getOrNull() ?: if (offline && app.session.token != null) app.session.cachedUser?.let {
+                    runCatching { kotlinx.serialization.json.Json.parseToJsonElement(it) as kotlinx.serialization.json.JsonObject }.getOrNull()
+                } else null
+                me.getOrNull()?.let { app.session.cachedUser = it.toString() }
+                user?.let { u ->
                     AppState.user = u
                     u.str("locale")?.let { loc -> if (loc != I18n.locale) { app.session.locale = loc; I18n.apply(this@MainActivity, loc) } }
                     PushRegistrar.register(this@MainActivity)
