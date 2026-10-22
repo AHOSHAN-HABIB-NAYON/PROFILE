@@ -10,6 +10,7 @@ const { parseDataUrl } = require('../lib/uploads');
 const { encrypt, encryptJson, decryptJson } = require('../lib/crypto');
 const { sendEmail, esc } = require('../lib/mail');
 const notify = require('../lib/notify');
+const risk = require('../lib/risk');
 
 const router = express.Router();
 router.use(requireLogin);
@@ -159,6 +160,7 @@ router.post('/face/submit', ah(async (req, res) => {
   }
 
   await save();
+  await risk.trustDevice(req, req.user.id);
   await query("UPDATE users SET kyc_status = 'submitted', kyc_submitted_at = NOW(), kyc_note = NULL WHERE id = ?", [req.user.id]);
   await logEvent(req, 'face_attempt', 'matched', { distance: dist });
   await sendEmail(req.user, 'kyc', {
@@ -168,6 +170,68 @@ router.post('/face/submit', ah(async (req, res) => {
   await notify.admins('KYC ready for review', `${req.user.name} submitted their ID and face check.`);
   const u = await one('SELECT * FROM users WHERE id = ?', [req.user.id]);
   res.json({ result: 'submitted', user: privateUser(u), stage: stageOf(u) });
+}));
+
+// ---------- Quick re-verification after a risky event (new device, password change, ...) ----------
+const REVERIFY_THRESHOLD = 0.5; // same phone camera as the KYC face, so a little stricter
+
+function inReverify(req) {
+  if (stageOf(req.user) !== 'reverify') throw new HttpError(409, 'No security check is needed right now');
+}
+
+router.post('/reverify/start', ah(async (req, res) => {
+  inReverify(req);
+  const prof = await one('SELECT face_template FROM kyc_profiles WHERE user_id = ?', [req.user.id]);
+  if (!prof?.face_template) throw bad('No face on file. Please contact an admin.');
+  const pool = [...PROMPTS];
+  for (let i = pool.length - 1; i > 0; i -= 1) { const j = crypto.randomInt(i + 1); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  const prompts = pool.slice(0, 2);
+  const nonce = crypto.randomBytes(32).toString('hex');
+  await query(
+    `INSERT INTO kyc_challenges (user_id, nonce, prompts, issued_at, expires_at) VALUES (?, ?, ?, NOW(), NOW() + INTERVAL 10 MINUTE)
+     ON DUPLICATE KEY UPDATE nonce = VALUES(nonce), prompts = VALUES(prompts), issued_at = NOW(), expires_at = VALUES(expires_at)`,
+    [req.user.id, nonce, JSON.stringify(prompts)],
+  );
+  await logEvent(req, 'reverify_start', 'issued', { prompts, reason: req.user.reverify_reason });
+  res.json({ nonce, prompts, id_template: decryptJson(prof.face_template), threshold: REVERIFY_THRESHOLD, reason: req.user.reverify_reason });
+}));
+
+router.post('/reverify/submit', ah(async (req, res) => {
+  inReverify(req);
+  const ch = await one('SELECT *, TIMESTAMPDIFF(MICROSECOND, issued_at, NOW()) / 1000 AS elapsed_ms, expires_at > NOW() AS fresh FROM kyc_challenges WHERE user_id = ?', [req.user.id]);
+  if (!ch || ch.nonce !== req.body.nonce || !ch.fresh) throw bad('This check expired. Please start again.');
+  await query('DELETE FROM kyc_challenges WHERE user_id = ?', [req.user.id]);
+  const prompts = typeof ch.prompts === 'string' ? JSON.parse(ch.prompts) : ch.prompts;
+  const steps = Array.isArray(req.body.steps) ? req.body.steps : [];
+  const timingOk = steps.length === prompts.length
+    && steps.every((s, i) => s && s.prompt === prompts[i] && s.ok === true && Number(s.ms) >= 250 && Number(s.ms) <= 20000)
+    && ch.elapsed_ms + 3000 >= steps.reduce((t, s) => t + Number(s.ms), 0);
+  const face = descriptor(req.body.descriptor, 'Face');
+  const endFace = req.body.end_descriptor ? descriptor(req.body.end_descriptor, 'Face') : face;
+  const prof = await one('SELECT face_template, id_template FROM kyc_profiles WHERE user_id = ?', [req.user.id]);
+  const dFace = distance(face, decryptJson(prof.face_template));
+  const dId = prof.id_template ? distance(face, decryptJson(prof.id_template)) : 9;
+  const passed = timingOk && distance(face, endFace) < 0.5 && (dFace <= REVERIFY_THRESHOLD || dId <= MATCH_THRESHOLD);
+  if (passed) {
+    await query('UPDATE users SET reverify_reason = NULL, reverify_fails = 0 WHERE id = ?', [req.user.id]);
+    await risk.trustDevice(req, req.user.id);
+    await logEvent(req, 'reverify', 'passed', { distance: dFace, reason: req.user.reverify_reason });
+    const u = await one('SELECT * FROM users WHERE id = ?', [req.user.id]);
+    return res.json({ result: 'passed', user: privateUser(u), stage: stageOf(u) });
+  }
+  const fails = req.user.reverify_fails + 1;
+  await query('UPDATE users SET reverify_fails = ? WHERE id = ?', [fails, req.user.id]);
+  await logEvent(req, 'reverify', timingOk ? 'mismatch' : 'liveness_failed', { distance: dFace, fails, reason: req.user.reverify_reason });
+  if (fails >= MAX_FAILS) {
+    await risk.lockAfterFails(req, req.user);
+    await sendEmail(req.user, 'security', {
+      subject: 'Your account is on hold', title: 'Security check failed',
+      body: `Hi ${esc(req.user.name)},<br>We could not confirm it was you after several tries, so your account is on hold. An admin will review it.`,
+    });
+    const u = await one('SELECT * FROM users WHERE id = ?', [req.user.id]);
+    return res.json({ result: 'locked', user: privateUser(u), stage: stageOf(u) });
+  }
+  res.json({ result: timingOk ? 'mismatch' : 'liveness', attempts_left: MAX_FAILS - fails });
 }));
 
 module.exports = router;

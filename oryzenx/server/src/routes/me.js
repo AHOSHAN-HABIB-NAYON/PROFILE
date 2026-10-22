@@ -6,6 +6,7 @@ const { requireReady, privateUser } = require('../lib/auth');
 const { saveDataUrl, removeUpload } = require('../lib/uploads');
 const { sendEmail, esc } = require('../lib/mail');
 const audit = require('../lib/audit');
+const risk = require('../lib/risk');
 
 const router = express.Router();
 router.use(requireReady);
@@ -32,6 +33,7 @@ router.put('/', ah(async (req, res) => {
   await query('UPDATE users SET name = ?, phone = ?, address = ?, reminder_emails = ? WHERE id = ?',
     [fields.name, fields.phone, fields.address, fields.reminder_emails, req.user.id]);
   const changed = ['name', 'phone', 'address'].filter((k) => (req.user[k] || null) !== fields[k]);
+  if (req.user.phone && changed.includes('phone')) await risk.flag(req, req.user, 'Phone number changed');
   if (changed.length) {
     await sendEmail(req.user, 'security', {
       subject: 'Your OryzenX BD profile was updated', title: 'Profile updated',
@@ -69,6 +71,7 @@ router.put('/payment-methods/:type', ah(async (req, res) => {
     body: `Your <b>${METHOD_NAMES[type]}</b> payout details were ${existing ? 'updated' : 'added'}. If this was not you, change your password and tell an admin right away.`,
   });
   await audit(req, existing ? 'payment_method_change' : 'payment_method_add', 'user', req.user.id, { type });
+  if (existing) await risk.flag(req, req.user, 'Payment method changed');
   res.json({ ok: true });
 }));
 
@@ -76,6 +79,19 @@ router.delete('/payment-methods/:type', ah(async (req, res) => {
   const type = oneOf(req.params.type, METHOD_TYPES, 'Method');
   await query('DELETE FROM payment_methods WHERE user_id = ? AND type = ?', [req.user.id, type]);
   await audit(req, 'payment_method_remove', 'user', req.user.id, { type });
+  res.json({ ok: true });
+}));
+
+// Push notification token from the Android app.
+router.post('/push-token', ah(async (req, res) => {
+  const token = str(req.body.token, { field: 'Token', max: 255, required: true, min: 20 });
+  await query('INSERT INTO push_tokens (token, user_id, platform) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE user_id = VALUES(user_id), updated_at = NOW()',
+    [token, req.user.id, req.body.platform === 'ios' ? 'ios' : 'android']);
+  res.json({ ok: true });
+}));
+
+router.delete('/push-token', ah(async (req, res) => {
+  await query('DELETE FROM push_tokens WHERE token = ? AND user_id = ?', [String(req.body.token || ''), req.user.id]);
   res.json({ ok: true });
 }));
 

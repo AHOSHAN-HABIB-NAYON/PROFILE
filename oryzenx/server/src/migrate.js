@@ -9,6 +9,11 @@ const COLUMNS = [
   ['users', 'kyc_fail_count', 'TINYINT UNSIGNED NOT NULL DEFAULT 0'],
   ['users', 'kyc_consent_at', 'DATETIME NULL'],
   ['users', 'kyc_submitted_at', 'DATETIME NULL'],
+  ['users', 'reverify_reason', 'VARCHAR(160) NULL'],
+  ['users', 'reverify_fails', 'TINYINT UNSIGNED NOT NULL DEFAULT 0'],
+  ['users', 'totp_secret', 'BLOB NULL'],
+  ['users', 'totp_enabled', 'TINYINT(1) NOT NULL DEFAULT 0'],
+  ['users', 'totp_backup', 'JSON NULL'],
 ];
 
 async function ensureColumn(table, column, ddl) {

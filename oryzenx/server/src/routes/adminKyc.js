@@ -32,6 +32,7 @@ router.get('/', ah(async (req, res) => {
     approved: "kyc_status = 'approved'",
     rejected: "kyc_status IN ('rejected','resubmit')",
     waiting: "kyc_status = 'none' AND role = 'user' AND status <> 'disabled'",
+    security: 'reverify_reason IS NOT NULL',
   }[filter];
   if (!where) throw bad('Unknown filter');
   const rows = await query(
@@ -39,6 +40,15 @@ router.get('/', ah(async (req, res) => {
       WHERE ${where} ORDER BY u.kyc_submitted_at DESC, u.created_at DESC LIMIT 200`,
   );
   res.json({ rows: rows.map((u) => ({ ...privateUser(u), match_distance: u.match_distance, kyc_submitted_at: u.kyc_submitted_at })) });
+}));
+
+// All KYC and security-check events (new device, re-verification, decisions), newest first.
+router.get('/events/all', ah(async (req, res) => {
+  const pageNo = Math.max(1, Number(req.query.page) || 1);
+  const rows = await query(
+    `SELECT e.*, u.name FROM kyc_events e JOIN users u ON u.id = e.user_id ORDER BY e.id DESC LIMIT 50 OFFSET ?`, [(pageNo - 1) * 50],
+  );
+  res.json({ rows, page: pageNo, limit: 50 });
 }));
 
 router.get('/:id', ah(async (req, res) => {
@@ -50,7 +60,7 @@ router.get('/:id', ah(async (req, res) => {
   ]);
   await audit(req, 'kyc_view', 'user', u.id);
   res.json({
-    user: { ...privateUser(u), kyc_submitted_at: u.kyc_submitted_at },
+    user: { ...privateUser(u), kyc_submitted_at: u.kyc_submitted_at, status: u.status, reverify_fails: u.reverify_fails },
     profile: prof ? { ...prof, liveness: typeof prof.liveness === 'string' ? JSON.parse(prof.liveness) : prof.liveness } : null,
     files: files.map((f) => f.kind),
     events,
@@ -94,6 +104,16 @@ router.post('/:id/reject', ah(async (req, res) => {
     body: `Hi ${esc(u.name)},<br>${redo ? 'An admin asked you to submit your ID and face check again.' : 'An admin could not approve your verification.'}<br><b>Reason:</b> ${esc(reason)}`,
     cta: redo ? { label: 'Verify again', url: config.appUrl } : undefined,
   });
+  res.json({ ok: true });
+}));
+
+// Lift a security hold / skip a pending re-verification for this member.
+router.post('/:id/clear-reverify', ah(async (req, res) => {
+  const u = await member(req.params.id);
+  await query("UPDATE users SET reverify_reason = NULL, reverify_fails = 0, status = IF(status = 'restricted', 'active', status) WHERE id = ?", [u.id]);
+  await event(req, u.id, 'admin_decision', 'reverify_cleared', { reason: u.reverify_reason });
+  await audit(req, 'reverify_clear', 'user', u.id, { reason: u.reverify_reason });
+  await notify(u.id, 'Account restored', 'An admin restored your account. Welcome back!');
   res.json({ ok: true });
 }));
 

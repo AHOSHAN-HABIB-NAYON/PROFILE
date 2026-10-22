@@ -588,3 +588,36 @@ svg.i.flip { transform: rotate(180deg); }
   .qa a { font-size: 11px; }
   .hero-minis b { font-size: 15px; }
 }
+
+/* =================================================================
+   v3: App Lock, 2-step login, settings
+   ================================================================= */
+.lock-screen { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 24px 16px;
+  background: radial-gradient(900px 500px at 50% -10%, #173aa8 0%, transparent 60%), var(--bg); animation: fade 160ms var(--ease); outline: none; }
+.lock-screen.out { opacity: 0; transition: opacity 220ms; }
+.lock-inner { width: 100%; max-width: 330px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.lock-inner img { filter: drop-shadow(0 10px 30px rgba(47,107,255,.45)); margin-bottom: 10px; }
+.lock-inner h2 { font-size: 20px; }
+.pin-dots { display: flex; gap: 14px; margin: 18px 0 26px; }
+.pin-dots i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--text-3); transition: background 120ms, border-color 120ms, transform 120ms; }
+.pin-dots i.on { background: var(--brand-2); border-color: var(--brand-2); transform: scale(1.1); }
+.pin-dots.shake { animation: shake 400ms; }
+.pin-dots.shake i { border-color: var(--down); }
+@keyframes shake { 20%, 60% { transform: translateX(-9px); } 40%, 80% { transform: translateX(9px); } }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 22px; width: 100%; }
+.keypad button { height: 66px; border-radius: 50%; width: 66px; justify-self: center; border: 0; background: var(--card); color: var(--text); font: inherit; font-size: 26px; font-weight: 600; cursor: pointer; display: grid; place-items: center; transition: background 120ms, transform 120ms; box-shadow: inset 0 0 0 1px var(--line); }
+.keypad button:active { transform: scale(.92); background: var(--brand-soft); }
+.keypad button svg { width: 26px; height: 26px; }
+.keypad button.invisible { visibility: hidden; }
+.lk-forgot { margin-top: 18px; background: none; border: 0; color: var(--text-3); font: inherit; font-size: 13px; cursor: pointer; text-decoration: underline; }
+.code-input { font-size: 22px; letter-spacing: .35em; text-align: center; font-variant-numeric: tabular-nums; height: 54px; }
+.steps-list { margin: 0 0 12px; padding-left: 20px; color: var(--text-2); line-height: 1.6; }
+.qr-box { display: grid; place-items: center; padding: 14px; background: #fff; border-radius: 14px; width: fit-content; margin: 0 auto; }
+.secret { display: block; margin: 10px auto 0; background: var(--card-2); border: 1px dashed var(--line); color: var(--text); padding: 8px 12px; border-radius: 10px; font-size: 14px; cursor: pointer; word-break: break-all; }
+.backup-codes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.backup-codes span { background: var(--card-2); border-radius: 8px; padding: 8px; text-align: center; font-size: 15px; user-select: all; }
+.theme-pick { font: inherit; color: inherit; text-align: left; cursor: pointer; background: var(--card-2); border: 2px solid var(--line); border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 10px; transition: border-color var(--t-fast); }
+.theme-pick.active { border-color: var(--brand); }
+.theme-prev { height: 64px; border-radius: 10px; display: flex; flex-direction: column; gap: 6px; padding: 10px; }
+.theme-prev.light { background: linear-gradient(135deg, #fff, #e8eefc); } .theme-prev.dark { background: linear-gradient(135deg, #1f242d, #0b0e11); }
+.theme-prev i { height: 8px; border-radius: 4px; background: #2f6bff; width: 60%; } .theme-prev i + i { width: 85%; opacity: .35; background: #94a3b8; } .theme-prev i + i + i { width: 45%; }

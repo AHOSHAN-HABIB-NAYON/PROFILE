@@ -3,6 +3,8 @@ import {
   html, mount, icon, avatar, $, $$, modal, toast, ago,
 } from './ui.js';
 import * as market from './market.js';
+import * as native from './native.js';
+import { initLock } from './lock.js';
 
 // ---------- State ----------
 export const state = { me: null, stage: 'logged_out', watchlist: [] };
@@ -37,6 +39,8 @@ const GATES = {
   kyc: () => import('./pages/kyc.js').then((m) => m.kyc),
   kyc_pending: () => import('./pages/kyc.js').then((m) => m.kycPending),
   kyc_rejected: () => import('./pages/kyc.js').then((m) => m.kycRejected),
+  reverify: () => import('./pages/kyc.js').then((m) => m.reverify),
+  reverify_locked: () => import('./pages/kyc.js').then((m) => m.reverifyLocked),
 };
 const PAGES = {
   home: { title: 'Home', icon: 'home', load: () => import('./pages/home.js') },
@@ -74,6 +78,7 @@ async function render() {
   // Public pages (login, reset links...) always render, except login/signup when already signed in.
   if (PUBLIC[route.name] && !(state.me && ['login', 'signup', 'forgot'].includes(route.name))) {
     shellMounted = false;
+    native.secureFor('route', false);
     const page = await PUBLIC[route.name]();
     const root = mount($('#app'), html`<div></div>`).firstElementChild;
     cleanup = await page({ el: root, query: route.query }) || null;
@@ -83,6 +88,7 @@ async function render() {
 
   if (state.stage !== 'ready') {
     shellMounted = false;
+    native.secureFor('route', true); // ID card, face and security screens
     const page = await GATES[state.stage]();
     const root = mount($('#app'), html`<div></div>`).firstElementChild;
     cleanup = await page({ el: root, query: route.query }) || null;
@@ -90,6 +96,8 @@ async function render() {
   }
 
   const def = PAGES[route.name];
+  // Block screenshots and screen recording on screens with private data (Android app).
+  native.secureFor('route', ['profile', 'settings', 'admin'].includes(route.name));
   if (!def || (def.admin && !isAdmin())) return go('home');
   if (!shellMounted) mountShell();
   updateNav(def.nav || route.name);
@@ -183,6 +191,7 @@ export async function checkNotifications() {
 export function setUnreadZero() { unread = 0; $('#notif-dot')?.classList.add('hidden'); }
 
 export async function logout() {
+  readyDone = false;
   await api.post('/auth/logout').catch(() => {});
   state.me = null; state.stage = 'logged_out';
   api.clear();
@@ -191,13 +200,24 @@ export async function logout() {
 
 window.addEventListener('ox:logged-out', () => { state.me = null; state.stage = 'logged_out'; if (!PUBLIC[parseHash().name]) go('login'); });
 window.addEventListener('hashchange', render);
+window.addEventListener('ox:theme', native.syncStatusBar);
 
 // After login or any onboarding step, re-check where the user is and route there.
+// Runs once the member can use the app: live prices, app lock, push notifications.
+let readyDone = false;
+function onReady() {
+  startMarket();
+  if (readyDone) return;
+  readyDone = true;
+  initLock(state.me, { logout });
+  native.setupPush((token) => api.post('/me/push-token', { token, platform: 'android' }).catch(() => {}));
+}
+
 export async function afterAuth() {
   await refreshMe();
   shellMounted = false;
   if (state.stage === 'ready') {
-    startMarket();
+    onReady();
     if (!PAGES[parseHash().name]) go('home'); else render();
   } else if (parseHash().name === 'onboarding') render(); else go('onboarding');
 }
@@ -212,7 +232,9 @@ export async function startMarket() {
 
 (async function boot() {
   try { await refreshMe(); } catch { /* offline: show login */ }
-  if (state.stage === 'ready') startMarket();
+  if (state.stage === 'ready') onReady();
+  native.setupBackButton();
+  native.syncStatusBar();
   await render();
   setInterval(() => { if (state.stage === 'ready' && !document.hidden) checkNotifications(); }, 60000);
   const splash = $('#splash');

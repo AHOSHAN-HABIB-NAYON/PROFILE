@@ -69,8 +69,8 @@ async function setupGoogle(el, invite) {
     client_id: cfg.googleClientId,
     callback: async ({ credential }) => {
       try {
-        await api.post('/auth/google', { credential, invite });
-        await afterAuth();
+        const r = await api.post('/auth/google', { credential, invite });
+        if (r.need_2fa) twoFactor(el, r.ticket); else await afterAuth();
       } catch (err) { toast(err.message, 'err'); }
     },
   });
@@ -100,11 +100,33 @@ export async function login({ el }) {
     busy(e.submitter, async () => {
       const v = formValues(e.target);
       if (!v.email || !v.password) throw new Error('Enter your email and password');
-      await api.post('/auth/login', v);
-      await afterAuth();
+      const r = await api.post('/auth/login', v);
+      if (r.need_2fa) twoFactor(el, r.ticket); else await afterAuth();
     }, $('#err', el));
   };
   return off;
+}
+
+// Second login step: code from the authenticator app (or a backup code).
+function twoFactor(el, ticket) {
+  mount($('.auth-card', el), html`<div class="head"><div class="state-icon">${icon('shield')}</div><h1>2-step verification</h1>
+    <p>Enter the 6-digit code from your authenticator app.</p></div>
+    <form class="form" id="tf">
+      <input class="input code-input" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="9" placeholder="123456" aria-label="6-digit code" required>
+      <div class="form-error hidden" id="err"></div>
+      <button class="btn block" type="submit">Verify and log in</button>
+      <p class="faint" style="text-align:center;margin:0;font-size:13px">Lost your phone? Enter one of your backup codes (like <span class="mono">ab12-cd34</span>).</p>
+      <p style="text-align:center;margin:0"><a href="#/login" id="back">Back to login</a></p>
+    </form>`);
+  $('#code', el).focus();
+  $('#back', el).onclick = (e) => { e.preventDefault(); login({ el }); };
+  $('#tf', el).onsubmit = (e) => {
+    e.preventDefault();
+    busy(e.submitter, async () => {
+      await api.post('/auth/2fa/verify', { ticket, code: $('#code', el).value.trim() });
+      await afterAuth();
+    }, $('#err', el));
+  };
 }
 
 export async function signup({ el, query }) {

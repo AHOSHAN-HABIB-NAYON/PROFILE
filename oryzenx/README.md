@@ -9,7 +9,7 @@ Private investment, trading and loan monitor for a small group of friends. Web a
 
 ## What's in this version
 
-Stages 1 and 2 are complete:
+All three stages are complete:
 
 | Area | Status |
 | --- | --- |
@@ -37,7 +37,14 @@ Stages 1 and 2 are complete:
 | KYC data encrypted at rest (AES-256-GCM), admin-only, every view audited, admin can delete on request, emails on every status change | ✅ |
 | Admin KYC panel: ID front, back and live face side by side, liveness steps, match score, attempt log, Approve / Reject / Ask to redo | ✅ |
 
-**Not built yet (Stage 3):** risk-based face re-verification, app lock (PIN/fingerprint), screenshot blocking, FCM push notifications, optional 2FA, the 5-day friendly reminder and the monthly summary email.
+| Risk-based re-verification: new device, new network, 5+ failed logins, password / phone / payment-method change → quick live face check; 3 failures → account on hold for admin (no auto-ban); every attempt logged | ✅ |
+| App Lock: 6-digit PIN + fingerprint/face (Android biometric prompt in the app, WebAuthn in browsers), auto-lock in background and when idle | ✅ |
+| Screenshot and screen-recording blocking on sensitive screens (Android app: KYC, profile, settings, admin, lock screen) | ✅ |
+| Push notifications (Firebase Cloud Messaging) for every in-app notification; tapping opens the right screen | ✅ (needs Firebase, see below) |
+| Optional 2-step login (authenticator app codes + 8 one-time backup codes) | ✅ |
+| Friendly reminder every 5 days and a monthly summary email on the 1st | ✅ |
+| Hardening: per-account login lockout, smaller request limits, Permissions-Policy, Super Admin database backup download | ✅ |
+| Android app: Capacitor 7, custom icon and splash, Android back button, status bar follows the theme; built and published by GitHub Actions | ✅ |
 
 ### About the face check
 
@@ -121,11 +128,30 @@ With a Hostinger email account: `SMTP_HOST=smtp.hostinger.com`, `SMTP_PORT=465`,
 
 Google Cloud Console → APIs & Services → Credentials → **Create OAuth client ID** (Web application). Add `https://your-domain.com` under *Authorized JavaScript origins*. Put the client ID in `GOOGLE_CLIENT_ID` and restart. The Google button appears automatically.
 
+## Push notifications (optional, about 10 minutes)
+
+1. Go to [console.firebase.google.com](https://console.firebase.google.com) → **Add project** (any name).
+2. In the project, **Add app → Android**, package name **`bd.oryzenx.app`**. Download **google-services.json**.
+3. On GitHub: repository **Settings → Secrets and variables → Actions → New repository secret**: name `GOOGLE_SERVICES_JSON`, value = the whole content of google-services.json.
+4. In Firebase: **Project settings → Service accounts → Generate new private key**. Put the whole downloaded JSON into the Hostinger environment variable **`FCM_SERVICE_ACCOUNT`** and redeploy.
+5. Re-run the **OryzenX Android APK** action and install the new APK. Admin → Settings shows "Push notifications: Connected".
+
+## Same signature for every update (optional)
+
+Android only installs an update over the old app if both are signed with the same key. Without a key, each APK is signed with a new debug key, so members must uninstall the old app first (their data is on the server, nothing is lost). To keep one key:
+
+```bash
+keytool -genkeypair -v -keystore oryzenx.keystore -alias oryzenx -keyalg RSA -keysize 2048 -validity 10000
+base64 -w0 oryzenx.keystore   # copy the output
+```
+
+Add three repository secrets: `ANDROID_KEYSTORE_BASE64` (the base64 text), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` (`oryzenx`). Keep the keystore file safe: losing it means members must reinstall once.
+
 ## Android app (APK)
 
 1. Deploy the website first (it must be on HTTPS).
-2. On GitHub: **Actions → OryzenX Android APK → Run workflow**, enter your site URL.
-3. When it finishes, download **oryzenx-bd-apk** from the run's *Artifacts*, unzip, and share `app-debug.apk` with the group. Phones need "Install unknown apps" allowed for the app used to open it.
+2. The **OryzenX Android APK** action builds automatically when the app files change (or run it by hand from the Actions tab).
+3. The APK appears on the repository's **Releases** page as `OryzenX-BD.apk`. Share that link with the group. Phones need "Install unknown apps" allowed for the browser or file manager used to open it.
 
 Because the app loads the live site, you only need a new APK if the URL or app icon changes. (The APK is debug-signed, which is fine for direct sharing; a signed release build can be added in Stage 3.)
 

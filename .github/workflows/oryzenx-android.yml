@@ -1,20 +1,41 @@
-# Builds the OryzenX BD Android app (APK) for direct sharing. No Play Store needed.
-# Run it from the Actions tab: "OryzenX Android APK" -> Run workflow -> enter your site URL.
+# Builds the OryzenX BD Android app (APK) and publishes it on the repo's Releases page for direct sharing.
+#
+# Runs automatically when the app files change, or manually: Actions -> "OryzenX Android APK" -> Run workflow.
+#
+# Optional repository secrets (Settings -> Secrets and variables -> Actions):
+#   GOOGLE_SERVICES_JSON       Firebase google-services.json (plain or base64) -> enables push notifications
+#   ANDROID_KEYSTORE_BASE64    release keystore (base64) -> same signature for every update
+#   ANDROID_KEYSTORE_PASSWORD  keystore + key password
+#   ANDROID_KEY_ALIAS          key alias
 name: OryzenX Android APK
 
 on:
   workflow_dispatch:
     inputs:
       app_url:
-        description: 'Your live site URL, e.g. https://oryzenx.your-domain.com'
+        description: 'Your live site URL'
         required: true
+        default: 'https://bd.oryzenx.com'
+  push:
+    branches: [main, claude/fervent-wright-b2vy7c]
+    paths:
+      - 'oryzenx/mobile/**'
+      - '.github/workflows/oryzenx-android.yml'
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: oryzenx-apk-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      APP_URL: ${{ inputs.app_url || 'https://bd.oryzenx.com' }}
+      HAS_FIREBASE: ${{ secrets.GOOGLE_SERVICES_JSON != '' }}
+      HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     defaults:
       run:
         working-directory: oryzenx/mobile
@@ -27,36 +48,94 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+
       - name: Point the app at your server
-        env:
-          APP_URL: ${{ inputs.app_url }}
         run: |
           case "$APP_URL" in https://*) ;; *) echo "app_url must start with https://"; exit 1;; esac
           node -e "const f='capacitor.config.json';const c=require('./'+f);c.server.url=process.env.APP_URL.replace(/\/$/,'');require('fs').writeFileSync(f,JSON.stringify(c,null,2))"
           cat capacitor.config.json
-      - name: Create Android project
+
+      - name: Install
         run: |
           npm install
+          # Without Firebase the push plugin would crash on start, so leave it out.
+          if [ "$HAS_FIREBASE" != "true" ]; then npm uninstall @capacitor/push-notifications; fi
+
+      - name: Create Android project
+        run: |
+          rm -rf android
           npx cap add android
           npx cap sync android
-      - name: Camera permission (ID card and face verification)
+
+      - name: Firebase (push notifications)
+        if: env.HAS_FIREBASE == 'true'
+        env:
+          GS: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if echo "$GS" | head -c 1 | grep -q '{'; then echo "$GS" > android/app/google-services.json; else echo "$GS" | base64 -d > android/app/google-services.json; fi
+
+      - name: Permissions, icon, splash, version
         run: |
           M=android/app/src/main/AndroidManifest.xml
-          grep -q 'android.permission.CAMERA' $M || sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />#' $M
-          grep -n "permission\|uses-feature" $M
-      - name: App icon
+          sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.USE_BIOMETRIC" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-feature android:name="android.hardware.camera" android:required="false" />#' $M
+          cat $M | grep -n "permission\|feature"
+          rm -rf android/app/src/main/res/mipmap-anydpi-v26
+          cp -r res/* android/app/src/main/res/
+          G=android/app/build.gradle
+          sed -i "s/versionCode 1$/versionCode ${{ github.run_number }}/; s/versionName \"1.0\"/versionName \"1.3.${{ github.run_number }}\"/" $G
+          grep -n "versionCode\|versionName" $G
+
+      - name: Release signing
+        if: env.HAS_KEYSTORE == 'true'
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          RES=android/app/src/main/res
-          rm -rf $RES/mipmap-anydpi-v26
-          for d in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
-            n=${d%%:*}; s=${d##*:}
-            convert icon-512.png -resize ${s}x${s} $RES/mipmap-$n/ic_launcher.png
-            convert icon-512.png -resize ${s}x${s} $RES/mipmap-$n/ic_launcher_round.png
-          done
+          echo "$KS" | base64 -d > android/app/release.keystore
+          cat >> android/app/build.gradle <<'GRADLE'
+
+          android {
+              signingConfigs {
+                  release {
+                      storeFile file('release.keystore')
+                      storePassword System.getenv('KS_PASSWORD')
+                      keyAlias System.getenv('KS_ALIAS')
+                      keyPassword System.getenv('KS_PASSWORD')
+                  }
+              }
+              buildTypes { release { signingConfig signingConfigs.release; minifyEnabled false } }
+          }
+          GRADLE
+
       - name: Build APK
         working-directory: oryzenx/mobile/android
-        run: ./gradlew assembleDebug --no-daemon
+        env:
+          KS_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KS_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          chmod +x gradlew
+          if [ "$HAS_KEYSTORE" = "true" ]; then
+            ./gradlew assembleRelease --no-daemon
+            cp app/build/outputs/apk/release/app-release.apk ../OryzenX-BD.apk
+          else
+            ./gradlew assembleDebug --no-daemon
+            cp app/build/outputs/apk/debug/app-debug.apk ../OryzenX-BD.apk
+          fi
+          ls -la ../OryzenX-BD.apk
+
       - uses: actions/upload-artifact@v4
         with:
-          name: oryzenx-bd-apk
-          path: oryzenx/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          name: OryzenX-BD-apk
+          path: oryzenx/mobile/OryzenX-BD.apk
+
+      - name: Publish on the Releases page
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: app-v1.3.${{ github.run_number }}
+          name: OryzenX BD app 1.3.${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          files: oryzenx/mobile/OryzenX-BD.apk
+          body: |
+            Android app for OryzenX BD. Download **OryzenX-BD.apk** below and open it on your phone
+            (allow "Install unknown apps" for your browser or file manager when asked).
+
+            Server: ${{ env.APP_URL }} · Push notifications: ${{ env.HAS_FIREBASE == 'true' && 'on' || 'off (add Firebase to enable)' }} · Signing: ${{ env.HAS_KEYSTORE == 'true' && 'release key' || 'debug key' }}

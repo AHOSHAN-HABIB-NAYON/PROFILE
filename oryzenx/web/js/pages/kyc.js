@@ -235,10 +235,12 @@ function faceCheck(el, note, st, restartId) {
   $('#start', el).onclick = (e) => busy(e.currentTarget, () => runFaceCheck(el, note, st, restartId));
 }
 
-async function runFaceCheck(el, note, st, restartId) {
+async function runFaceCheck(el, note, st, restartId, cfg = {}) {
   await face.loadFace();
-  const ch = await api.post('/kyc/face/start');
-  shell(el, 'face', html`<div class="kyc-card">
+  const ch = await api.post(cfg.reverify ? '/kyc/reverify/start' : '/kyc/face/start');
+  const retry = cfg.retry || (() => faceCheck(el, note, st, restartId));
+  const draw = cfg.shell || ((b) => shell(el, 'face', b, note));
+  draw(html`<div class="kyc-card">
     <div class="face-stage">
       <div class="cam face-cam"><video id="v" playsinline muted></video></div>
       <svg class="ring" viewBox="0 0 100 120" aria-hidden="true"><ellipse class="track" cx="50" cy="60" rx="46" ry="56"/><ellipse class="bar" id="bar" cx="50" cy="60" rx="46" ry="56" pathLength="100"/></svg>
@@ -248,13 +250,13 @@ async function runFaceCheck(el, note, st, restartId) {
     <div class="p-dots" id="dots">${ch.prompts.map(() => html`<i></i>`)}</div>
     <div class="row between mt-s"><button class="btn ghost sm" id="voice">${icon('bell')} Voice on</button><button class="btn ghost sm" id="cancel">Cancel</button></div>
     <div id="err"></div>
-  </div>`, note);
+  </div>`);
 
   const video = $('#v', el); const msg = $('#msg', el); const ptext = $('#ptext', el); const pic = $('#pic', el);
   const bar = $('#bar', el); const dots = [...el.querySelectorAll('#dots i')];
   let voice = true; let cancelled = false;
   $('#voice', el).onclick = (e) => { voice = !voice; e.currentTarget.lastChild.textContent = voice ? ' Voice on' : ' Voice off'; if (!voice) window.speechSynthesis?.cancel(); };
-  $('#cancel', el).onclick = () => { cancelled = true; stopCamera(); faceCheck(el, note, st, restartId); };
+  $('#cancel', el).onclick = () => { cancelled = true; stopCamera(); retry(); };
   const say = (t) => { if (voice) face.speak(t); };
   const setProgress = (p) => { bar.style.strokeDasharray = `${Math.round(p * 100)} 100`; bar.style.opacity = p > 0 ? 1 : 0; };
   setProgress(0);
@@ -288,7 +290,7 @@ async function runFaceCheck(el, note, st, restartId) {
     mount($('.kyc-card', el), html`<div class="state-icon" style="background:var(--down-soft);color:var(--down)">${icon('x')}</div>
       <h2 class="center">${text}</h2><p class="muted center">Find good light, keep your face in the oval and follow each prompt.</p>
       <button class="btn block mt" id="again">Try again</button>`);
-    $('#again', el).onclick = () => faceCheck(el, note, st, restartId);
+    $('#again', el).onclick = () => retry();
   };
 
   // 1. Calibrate on a still, frontal face and take the template + snapshot.
@@ -360,11 +362,20 @@ async function runFaceCheck(el, note, st, restartId) {
 
   ptext.textContent = 'Checking…'; msg.textContent = 'Comparing your face with your ID card';
   const descriptor = face.toArray(neutral.descriptor);
-  const res = await api.post('/kyc/face/submit', {
+  const res = await api.post(cfg.reverify ? '/kyc/reverify/submit' : '/kyc/face/submit', {
     nonce: ch.nonce, steps, descriptor, end_descriptor: face.toArray(end.descriptor), snapshot, lighting: Math.round(lightAtStart),
   }).catch((err) => { fail(err.message); return null; });
   if (!res) return undefined;
 
+  if (cfg.reverify && (res.result === 'mismatch' || res.result === 'liveness')) {
+    say('Warning. Face does not match.');
+    mount($('.kyc-card', el), html`<div class="state-icon" style="background:var(--down-soft);color:var(--down)">${icon('x')}</div>
+      <h2 class="center down">${res.result === 'mismatch' ? 'Warning: Face does not match' : 'The live check did not pass'}</h2>
+      <p class="muted center">Try again in good light and follow each prompt. You have <b>${res.attempts_left}</b> attempt${res.attempts_left === 1 ? '' : 's'} left before your account is put on hold for an admin to review.</p>
+      <button class="btn block mt" id="again">Try again</button>`);
+    $('#again', el).onclick = retry;
+    return undefined;
+  }
   if (res.result === 'mismatch') {
     say('Warning. Face does not match.');
     st.fails += 1;
@@ -373,11 +384,11 @@ async function runFaceCheck(el, note, st, restartId) {
       <p class="muted center">Your face did not match the photo on your ID card. Make sure you used your own card and try again in good light.
       You have <b>${res.attempts_left}</b> attempt${res.attempts_left === 1 ? '' : 's'} left before an admin reviews it manually.</p>
       <button class="btn block mt" id="again">Try again</button><button class="btn ghost block mt-s" id="redo-id">Retake ID card photos</button>`);
-    $('#again', el).onclick = () => faceCheck(el, note, st, restartId);
+    $('#again', el).onclick = () => retry();
     $('#redo-id', el).onclick = restartId;
     return undefined;
   }
-  say(res.result === 'review' ? 'Sent for review' : 'Verification submitted');
+  say(res.result === 'passed' ? 'Thank you' : res.result === 'review' ? 'Sent for review' : res.result === 'locked' ? 'Account on hold' : 'Verification submitted');
   await afterAuth();
   return undefined;
 }
@@ -405,6 +416,40 @@ export async function kycPending({ el }) {
   });
   const t = setInterval(() => { if (!document.hidden) afterAuth().catch(() => {}); }, 30000);
   return () => clearInterval(t);
+}
+
+// ---------- Quick security re-check (new device, password change, ...) ----------
+const REASON_TEXT = (r) => (r ? `Why: ${r}.` : '');
+
+export async function reverify({ el }) {
+  face.loadFace().catch(() => {});
+  const wrap = (body) => mount(el, html`<div class="kyc-screen">
+    <header class="kyc-top"><img src="/icons/logo.svg" width="32" height="32" alt=""><b>Security check</b><span class="grow"></span>
+      <button class="icon-btn" id="k-out" aria-label="Log out" title="Log out">${icon('logout')}</button></header>
+    <div class="kyc-body">${body}</div></div>`) && ($('#k-out', el).onclick = () => { stopCamera(); logout(); });
+  const intro = () => {
+    wrap(html`<div class="kyc-card">
+      <div class="state-icon">${icon('shield')}</div>
+      <h1>Quick face check</h1>
+      <p class="muted">We noticed something new on your account, so we need to make sure it's really you. It takes about 10 seconds.</p>
+      <div class="note-bar">${icon('shield')}<span>${REASON_TEXT(state.me.reverify_reason)}</span></div>
+      <button class="btn block mt" id="start">${icon('camera')} Start face check</button>
+      <p class="faint center" style="font-size:12px;margin-top:10px">Not you? Log out and change your password.</p></div>`);
+    $('#start', el).onclick = (e) => busy(e.currentTarget, () => runFaceCheck(el, '', {}, intro, { reverify: true, retry: intro, shell: wrap }));
+  };
+  intro();
+  return () => { stopCamera(); window.speechSynthesis?.cancel(); };
+}
+
+export async function reverifyLocked({ el }) {
+  gate(el, html`<div class="state-icon" style="background:var(--warn-soft);color:var(--warn)">${icon('clock')}</div>
+    <h1>Account on hold</h1>
+    <p class="muted">We could not confirm it was you after several tries, so your account is on hold for your safety. An admin has been notified and will review it.</p>
+    <button class="btn block mt" id="again">Check again</button>`);
+  $('#again', el).onclick = (e) => busy(e.currentTarget, async () => {
+    await afterAuth();
+    if (state.stage === 'reverify_locked') toast('Still on hold', 'err');
+  });
 }
 
 export async function kycRejected({ el }) {

@@ -19,6 +19,8 @@ const EMAIL_TYPES = {
   payment_method: { label: 'Payment method added or changed' },
   security: { label: 'Profile/password changed and new login alerts' },
   loan_reminder: { label: 'Loan repayment reminders', reminder: true },
+  friendly: { label: 'Friendly reminder every 5 days', reminder: true },
+  monthly_summary: { label: 'Monthly summary (balance, profit, loss, your payment)' },
 };
 
 const MAX_ATTEMPTS = 5;

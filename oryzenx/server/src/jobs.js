@@ -4,6 +4,8 @@ const { query, one, getSetting, setSetting } = require('./db');
 const { sendEmail, esc } = require('./lib/mail');
 const notify = require('./lib/notify');
 const { money } = require('./lib/util');
+const stats = require('./lib/stats');
+const config = require('./config');
 
 const fmt = (d) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', timeZone: 'UTC' });
 
@@ -77,8 +79,65 @@ async function depositReminders() {
   }
 }
 
+// A short, friendly nudge every 5 days (members can switch reminder emails off).
+const TIPS = [
+  'Stay connected. Invest smart. Grow together.',
+  'Check the live market and our latest trades anytime in the app.',
+  'Keep your payment method up to date so your monthly payment reaches you fast.',
+  'Never share your password, codes or project data outside the group.',
+  'Turn on App Lock and 2-step login in Settings for extra safety.',
+];
+async function friendlyReminder() {
+  const day = (await one('SELECT DATEDIFF(CURDATE(), \'2024-01-01\') AS d')).d;
+  if (day % 5 !== 0) return;
+  await oncePerKey(`friendly-${day}`, async () => {
+    const tip = TIPS[(day / 5) % TIPS.length];
+    const m = await stats.thisMonth();
+    const s = await one('SELECT pay_date FROM payment_schedule WHERE month = ?', [m]);
+    const b = await stats.balances();
+    await notify(null, 'Hello from OryzenX BD', tip, 'home');
+    const users = await query("SELECT * FROM users WHERE status = 'active'");
+    for (const u of users) {
+      await sendEmail(u, 'friendly', {
+        subject: 'A quick hello from OryzenX BD', title: `Hi ${u.name.split(' ')[0]}!`,
+        body: `${esc(tip)}<br><br>Main balance: <b>${money(b.main_balance)}</b>${s ? `<br>This month's payment date: <b>${fmt(s.pay_date)}</b>` : ''}`,
+        cta: { label: 'Open the app', url: config.appUrl },
+      });
+    }
+  });
+}
+
+// On the 1st of each month: last month's numbers and the member's own payment status.
+async function monthlySummary() {
+  const r = await one("SELECT DAY(CURDATE()) AS d, DATE_FORMAT(CURDATE() - INTERVAL 1 MONTH, '%Y-%m') AS prev");
+  if (r.d !== 1) return;
+  await oncePerKey(`summary-${r.prev}`, async () => {
+    const pnl = await stats.pnl("DATE_FORMAT(traded_at, '%Y-%m') = ?", [r.prev]);
+    const b = await stats.balances();
+    const label = new Date(`${r.prev}-01T00:00:00Z`).toLocaleDateString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+    const users = await query(
+      `SELECT u.*, p.amount, p.status AS pay_status, p.paid_at FROM users u
+         LEFT JOIN payments p ON p.user_id = u.id AND p.month = ? WHERE u.status = 'active'`, [r.prev],
+    );
+    await notify(null, `${label} summary`, `Net result ${money(pnl.net)} · profit ${money(pnl.profit)} · loss ${money(pnl.loss)}.`, 'trading');
+    for (const u of users) {
+      const pay = u.amount == null ? 'No payment this month' : u.pay_status === 'paid' ? `Paid ${money(u.amount)}` : `Pending ${money(u.amount)}`;
+      await sendEmail(u, 'monthly_summary', {
+        subject: `Your ${label} summary`, title: `${label} summary`,
+        body: `<table cellpadding="6" style="border-collapse:collapse;font-size:15px">
+          <tr><td>Main balance</td><td align="right"><b>${money(b.main_balance)}</b></td></tr>
+          <tr><td>Profit</td><td align="right" style="color:#03a66d"><b>${money(pnl.profit)}</b></td></tr>
+          <tr><td>Loss</td><td align="right" style="color:#e33b54"><b>${money(pnl.loss)}</b></td></tr>
+          <tr><td>Net result</td><td align="right"><b>${money(pnl.net)}</b> (${pnl.trades} trades)</td></tr>
+          <tr><td>Your payment</td><td align="right"><b>${esc(pay)}</b></td></tr></table>`,
+        cta: { label: 'Open the app', url: config.appUrl },
+      });
+    }
+  });
+}
+
 async function runAll() {
-  for (const job of [paymentReminders, loanReminders, depositReminders]) {
+  for (const job of [paymentReminders, loanReminders, depositReminders, friendlyReminder, monthlySummary]) {
     try { await job(); } catch (err) { console.error(`job ${job.name} failed`, err.message); }
   }
 }

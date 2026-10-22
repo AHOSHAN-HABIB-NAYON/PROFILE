@@ -47,7 +47,10 @@ function createApp() {
   }));
   app.use(compression());
   app.use(cookieParser());
-  app.use(express.json({ limit: '4mb' })); // KYC photos are sent as compressed JPEG data URLs
+  // Photos (KYC, profile, logos) are sent as compressed JPEG data URLs; everything else is small.
+  app.use(['/api/kyc', '/api/me/avatar', '/api/admin/method-logos'], express.json({ limit: '4mb' }));
+  app.use(express.json({ limit: '200kb' }));
+  app.use((_req, res, next) => { res.set('Permissions-Policy', 'camera=(self), microphone=(), geolocation=(), payment=()'); next(); });
 
   // CSRF defence: state-changing API calls must be JSON (browsers cannot send cross-site JSON
   // without a CORS preflight, which this server never allows), on top of SameSite=Lax cookies.

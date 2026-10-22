@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
@@ -13,6 +14,11 @@ const {
 const { sendEmail, esc } = require('../lib/mail');
 const notify = require('../lib/notify');
 const audit = require('../lib/audit');
+const jwt = require('jsonwebtoken');
+const QRCode = require('qrcode');
+const risk = require('../lib/risk');
+const totp = require('../lib/totp');
+const { encrypt, decrypt } = require('../lib/crypto');
 
 const router = express.Router();
 const google = config.googleClientId ? new OAuth2Client(config.googleClientId) : null;
@@ -137,21 +143,109 @@ router.post('/signup', strictLimit, ah(async (req, res) => {
   res.status(201).json({ user: privateUser(fresh), stage: stageOf(fresh) });
 }));
 
+// Per-account lockout on top of the per-IP limit: 8 wrong passwords in 15 minutes locks that email
+// for 15 minutes, even if the attacker rotates IPs.
+const failures = new Map();
+function accountLocked(email) {
+  const f = failures.get(email);
+  return f && f.count >= 8 && Date.now() - f.first < 15 * 60 * 1000;
+}
+function recordFailure(email) {
+  const f = failures.get(email);
+  if (!f || Date.now() - f.first > 15 * 60 * 1000) failures.set(email, { count: 1, first: Date.now() });
+  else f.count += 1;
+  if (failures.size > 5000) failures.clear();
+}
+
+// After the password (or Google) check: ask for the 2-step code if enabled, else sign in.
+async function finishLogin(req, res, user) {
+  if (user.totp_enabled) {
+    const ticket = jwt.sign({ uid: user.id, purpose: '2fa' }, config.jwtSecret, { expiresIn: '5m' });
+    return res.json({ need_2fa: true, ticket });
+  }
+  setSession(res, user);
+  await loginAlert(req, user);
+  await risk.assessLogin(req, user);
+  const fresh = await one('SELECT * FROM users WHERE id = ?', [user.id]);
+  return res.json({ user: privateUser(fresh), stage: stageOf(fresh) });
+}
+
 router.post('/login', strictLimit, ah(async (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase();
   const password = String(req.body.password || '');
+  if (accountLocked(email)) throw new HttpError(429, 'Too many wrong passwords for this account. Try again in 15 minutes or reset your password.');
   const user = email ? await one('SELECT * FROM users WHERE email = ?', [email]) : null;
   // Always run bcrypt so response time does not reveal whether the email exists.
   const ok = await bcrypt.compare(password, user?.password_hash || DUMMY_HASH);
   if (!user || !user.password_hash || !ok) {
     await query('INSERT INTO login_events (user_id, email, ip, user_agent, success) VALUES (?, ?, ?, ?, 0)',
       [user?.id || null, email.slice(0, 190), req.ip, String(req.get('user-agent') || '').slice(0, 255)]);
+    recordFailure(email);
     throw new HttpError(401, 'Wrong email or password');
   }
   if (user.status === 'disabled') throw new HttpError(403, 'This account is disabled. Contact an admin.');
+  failures.delete(email);
+  await finishLogin(req, res, user);
+}));
+
+// Second step of login: 6-digit code from the authenticator app, or a one-time backup code.
+router.post('/2fa/verify', strictLimit, ah(async (req, res) => {
+  let uid;
+  try {
+    const t = jwt.verify(String(req.body.ticket || ''), config.jwtSecret);
+    if (t.purpose !== '2fa') throw new Error('bad');
+    uid = t.uid;
+  } catch { throw new HttpError(401, 'This sign-in expired. Please log in again.'); }
+  const user = await one('SELECT * FROM users WHERE id = ?', [uid]);
+  if (!user || !user.totp_enabled || user.status === 'disabled') throw new HttpError(401, 'Please log in again');
+  const input = String(req.body.code || '').trim();
+  let ok = totp.verify(decrypt(user.totp_secret).toString(), input);
+  if (!ok && /^[a-z0-9]{4}-?[a-z0-9]{4}$/i.test(input)) {
+    const codes = (typeof user.totp_backup === 'string' ? JSON.parse(user.totp_backup) : user.totp_backup) || [];
+    const h = sha256(input.replace('-', '').toLowerCase());
+    if (codes.includes(h)) {
+      ok = true;
+      await query('UPDATE users SET totp_backup = ? WHERE id = ?', [JSON.stringify(codes.filter((c) => c !== h)), user.id]);
+      await audit({ user, ip: req.ip }, 'backup_code_used', 'user', user.id);
+    }
+  }
+  if (!ok) {
+    await query('INSERT INTO login_events (user_id, email, ip, user_agent, success) VALUES (?, ?, ?, ?, 0)', [user.id, user.email, req.ip, String(req.get('user-agent') || '').slice(0, 255)]);
+    throw new HttpError(401, 'That code is not correct. Check the time on your phone and try again.');
+  }
   setSession(res, user);
   await loginAlert(req, user);
-  res.json({ user: privateUser(user), stage: stageOf(user) });
+  await risk.assessLogin(req, user);
+  const fresh = await one('SELECT * FROM users WHERE id = ?', [user.id]);
+  res.json({ user: privateUser(fresh), stage: stageOf(fresh) });
+}));
+
+// Turn on 2-step login: create a secret and show it as a QR code.
+router.post('/2fa/setup', strictLimit, requireLogin, ah(async (req, res) => {
+  if (req.user.totp_enabled) throw bad('2-step login is already on');
+  const secret = totp.newSecret();
+  await query('UPDATE users SET totp_secret = ? WHERE id = ?', [encrypt(Buffer.from(secret)), req.user.id]);
+  const url = totp.uri(secret, req.user.email);
+  res.json({ secret, otpauth: url, qr: await QRCode.toDataURL(url, { margin: 1, width: 240 }) });
+}));
+
+router.post('/2fa/enable', strictLimit, requireLogin, ah(async (req, res) => {
+  if (!req.user.totp_secret) throw bad('Start the setup first');
+  if (!totp.verify(decrypt(req.user.totp_secret).toString(), req.body.code)) throw bad('That code is not correct. Try the newest code in your app.');
+  const backup = Array.from({ length: 8 }, () => { const c = crypto.randomBytes(5).toString('hex').slice(0, 8); return `${c.slice(0, 4)}-${c.slice(4)}`; });
+  await query('UPDATE users SET totp_enabled = 1, totp_backup = ? WHERE id = ?', [JSON.stringify(backup.map((c) => sha256(c.replace('-', '')))), req.user.id]);
+  await audit(req, '2fa_enable', 'user', req.user.id);
+  await sendEmail(req.user, 'security', { subject: '2-step login turned on', title: '2-step login is on', body: 'Your account now asks for a code from your authenticator app when you log in.' });
+  res.json({ ok: true, backup_codes: backup });
+}));
+
+router.post('/2fa/disable', strictLimit, requireLogin, ah(async (req, res) => {
+  if (!req.user.totp_enabled) return res.json({ ok: true });
+  if (!totp.verify(decrypt(req.user.totp_secret).toString(), req.body.code)) throw bad('Enter the current code from your authenticator app');
+  await query('UPDATE users SET totp_enabled = 0, totp_secret = NULL, totp_backup = NULL WHERE id = ?', [req.user.id]);
+  await audit(req, '2fa_disable', 'user', req.user.id);
+  await sendEmail(req.user, 'security', { subject: '2-step login turned off', title: '2-step login is off', body: 'If this was not you, change your password and contact an admin right away.' });
+  res.json({ ok: true });
 }));
 
 router.post('/google', strictLimit, ah(async (req, res) => {
@@ -183,9 +277,7 @@ router.post('/google', strictLimit, ah(async (req, res) => {
     });
   }
   user = await one('SELECT * FROM users WHERE id = ?', [user.id]);
-  setSession(res, user);
-  await loginAlert(req, user);
-  res.json({ user: privateUser(user), stage: stageOf(user) });
+  await finishLogin(req, res, user);
 }));
 
 router.post('/logout', (_req, res) => { clearSession(res); res.json({ ok: true }); });
@@ -255,6 +347,7 @@ router.post('/change-password', strictLimit, requireLogin, ah(async (req, res) =
     body: 'Your password was just changed. If this was not you, contact an admin right away.',
   });
   await audit(req, 'password_change', 'user', user.id);
+  await risk.flag(req, user, 'Password changed');
   res.json({ ok: true });
 }));
 

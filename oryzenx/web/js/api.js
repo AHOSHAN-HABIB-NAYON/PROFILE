@@ -6,13 +6,22 @@ export class ApiError extends Error {
   constructor(status, message) { super(message); this.status = status; }
 }
 
+// A random id per install, used by the server to notice logins from a new device.
+export function deviceId() {
+  try {
+    let id = localStorage.getItem('ox-device');
+    if (!id) { id = (crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`); localStorage.setItem('ox-device', id); }
+    return id;
+  } catch { return ''; }
+}
+
 async function request(method, path, body) {
   let res;
   try {
     res = await fetch(`/api${path}`, {
       method,
       credentials: 'same-origin',
-      headers: body !== undefined ? { 'Content-Type': 'application/json' } : {},
+      headers: { 'X-Device-Id': deviceId(), ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}) },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch {

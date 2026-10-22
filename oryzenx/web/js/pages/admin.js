@@ -44,6 +44,7 @@ async function overview(el) {
   const o = await api.get('/admin/overview', { fresh: true });
   const alerts = [
     o.kyc.pending && { href: 'kyc', tone: 'warn', ic: 'shield', text: `${o.kyc.pending} KYC verification${o.kyc.pending > 1 ? 's' : ''} to review${o.kyc.review ? ` (${o.kyc.review} need manual review)` : ''}` },
+    o.kyc.held && { href: 'kyc', tone: 'down', ic: 'shield', text: `${o.kyc.held} account${o.kyc.held > 1 ? 's' : ''} on security hold (failed face re-check)` },
     o.users.pending && { href: 'users', tone: 'brand', ic: 'users', text: `${o.users.pending} member${o.users.pending > 1 ? 's' : ''} waiting for approval` },
     !o.pay_date && { href: 'payments', tone: 'warn', ic: 'calendar', text: `Payment date for ${monthName(o.month)} is not set` },
     o.payments.pending && { href: 'payments', tone: 'brand', ic: 'calendar', text: `${o.payments.pending} payment${o.payments.pending > 1 ? 's' : ''} pending · ${usd(o.payments.due)} due` },
@@ -211,7 +212,7 @@ async function kyc(box, sub, actions, filter = 'pending') {
   mount(actions, '');
   const { rows } = await api.get(`/admin/kyc?status=${filter}`, { fresh: true });
   mount(box, html`<div class="stack">
-    <div class="toolbar">${seg([['pending', 'To review'], ['approved', 'Approved'], ['rejected', 'Rejected / redo'], ['waiting', 'Not started']], filter)}</div>
+    <div class="toolbar">${seg([['pending', 'To review'], ['security', 'Security checks'], ['approved', 'Approved'], ['rejected', 'Rejected / redo'], ['waiting', 'Not started']], filter)}</div>
     ${rows.length ? html`<div class="item-grid">${rows.map((u) => {
     const [mc, ml] = matchLabel(u.match_distance);
     return html`<a class="item-card link" href="#/admin/kyc/${u.id}">
@@ -219,7 +220,8 @@ async function kyc(box, sub, actions, filter = 'pending') {
           <span class="chip ${KYC_CHIP[u.kyc_status][0]}">${KYC_CHIP[u.kyc_status][1]}</span></div>
         <div class="chips">${u.match_distance !== null && u.match_distance !== undefined ? html`<span class="chip ${mc}">${ml} · ${Number(u.match_distance).toFixed(2)}</span>` : ''}
           ${u.kyc_submitted_at ? html`<span class="chip">${icon('clock')} ${ago(u.kyc_submitted_at)}</span>` : ''}
-          ${u.kyc_note ? html`<span class="chip warn">${u.kyc_note}</span>` : ''}</div>
+          ${u.kyc_note ? html`<span class="chip warn">${u.kyc_note}</span>` : ''}
+          ${u.reverify_reason ? html`<span class="chip ${u.status === 'restricted' ? 'down' : 'warn'}">${u.status === 'restricted' ? 'On hold' : 'Face re-check'}: ${u.reverify_reason}</span>` : ''}</div>
       </a>`;
   })}</div>` : html`<div class="card">${empty(filter === 'pending' ? 'No verifications waiting. Nice!' : 'Nothing here', 'shield')}</div>`}</div>`);
   box.onclick = (e) => { const f = e.target.closest('[data-f]'); if (f) kyc(box, [], actions, f.dataset.f); };
@@ -239,6 +241,8 @@ async function kycReview(box, id, actions) {
       ${u.kyc_submitted_at ? html`<span class="chip">Submitted ${dateTime(u.kyc_submitted_at)}</span>` : ''}</div>
       ${u.kyc_note ? html`<div class="note-bar mt-s">${icon('shield')}<span>${u.kyc_note}</span></div>` : ''}</div></div></div>
 
+    ${u.reverify_reason ? html`<div class="note-bar ${u.status === 'restricted' ? 'warn' : ''}">${icon('shield')}<span><b>${u.status === 'restricted' ? 'Account on hold' : 'Security face re-check pending'}:</b> ${u.reverify_reason}${u.reverify_fails ? ` · ${u.reverify_fails} failed tries` : ''}</span>
+      <button class="btn sm" id="k-clear">${u.status === 'restricted' ? 'Lift hold' : 'Skip check'}</button></div>` : ''}
     <div class="kyc-images">${img('id_front', 'ID card · front')}${img('id_back', 'ID card · back')}${img('face', 'Live face')}</div>
 
     <div class="grid g2">
@@ -261,6 +265,10 @@ async function kycReview(box, id, actions) {
   </div>`);
 
   const reload = () => kycReview(box, id, actions);
+  $('#k-clear', box)?.addEventListener('click', async () => {
+    if (!await confirmDialog('Clear the security check?', `${u.name} will be able to use the app again without the face re-check. Only do this if you are sure it is really them.`, { okLabel: 'Clear' })) return;
+    await api.post(`/admin/kyc/${id}/clear-reverify`); toast('Cleared'); reload();
+  });
   $('#k-ok', box).onclick = async (e) => {
     if (!await confirmDialog(`Approve ${u.name}?`, 'They will get an email and can open the dashboard.', { okLabel: 'Approve' })) return;
     busy(e.currentTarget, async () => { await api.post(`/admin/kyc/${id}/approve`); toast('Verification approved'); reload(); });
@@ -509,6 +517,11 @@ async function settings(box, _sub, actions) {
         ${Object.keys(METHOD_NAMES).map((t) => html`<div class="list-item">${methodLogo(t, s.method_logos)}<div class="grow t">${METHOD_NAMES[t]}</div>
           <label class="btn ghost sm">Upload<input type="file" class="hidden" accept="image/png,image/jpeg,image/svg+xml,image/webp" data-logo="${t}"></label></div>`)}
         <p class="faint" style="margin:8px 16px 14px;font-size:12px">PNG, JPG or SVG, up to 200 KB.</p></div>
+      <div class="item-card"><div class="card-head"><h3>${icon('bell')} Push notifications</h3><span class="chip ${s.push_enabled ? 'up' : 'warn'}">${s.push_enabled ? 'Connected' : 'Not set up'}</span></div>
+        <p class="faint" style="margin:0;font-size:13px">${s.push_enabled ? 'Phones with the Android app get every notification as a push message.' : 'Add the FCM_SERVICE_ACCOUNT environment variable (Firebase) to send push messages to the Android app. Email and in-app notices work without it.'}</p></div>
+      ${state.me.role === 'super_admin' ? html`<div class="item-card"><div class="card-head"><h3>${icon('download')} Backup</h3></div>
+        <p class="faint" style="margin:0;font-size:13px">Download the whole database as a compressed file. Keep it somewhere private. KYC files stay encrypted inside.</p>
+        <div><a class="btn ghost" href="/api/admin/backup" download>${icon('download')} Download backup</a></div></div>` : ''}
       <div class="item-card"><div class="card-head"><h3>${icon('bell')} Notice to everyone</h3></div><form class="form" id="bc">
         ${field({ name: 'title', label: 'Title', required: true })}${field({ name: 'body', label: 'Message', type: 'textarea', required: true })}
         <div><button class="btn" type="submit">Send in-app notice</button></div></form></div>
@@ -534,7 +547,7 @@ async function settings(box, _sub, actions) {
 // ---------- Logs ----------
 async function logs(box, _sub, actions, kind = 'audit', pageNo = 1) {
   mount(actions, '');
-  const d = await api.get(`/admin/${kind}?page=${pageNo}`, { fresh: true });
+  const d = await api.get(kind === 'security' ? `/admin/kyc/events/all?page=${pageNo}` : `/admin/${kind}?page=${pageNo}`, { fresh: true });
   const item = {
     audit: (r) => html`<div class="list-item"><span class="dot-ic brand sm">${icon('edit')}</span><div class="grow"><div class="t" style="font-size:13px">${r.actor_name || 'System'} <span class="chip">${r.action.replace(/_/g, ' ')}</span> ${r.entity ? html`<span class="faint">${r.entity} ${r.entity_id || ''}</span>` : ''}</div>
       <div class="s ellipsis" title="${r.details ? JSON.stringify(r.details) : ''}">${dateTime(r.created_at)}${r.details ? ` · ${JSON.stringify(r.details).slice(0, 140)}` : ''}</div></div></div>`,
@@ -542,8 +555,10 @@ async function logs(box, _sub, actions, kind = 'audit', pageNo = 1) {
       <div class="s ellipsis" title="${r.last_error || ''}">${r.to_email} · ${dateTime(r.created_at)} · ${r.status}${r.attempts > 1 ? ` ×${r.attempts}` : ''}${r.last_error ? ` · ${r.last_error}` : ''}</div></div></div>`,
     logins: (r) => html`<div class="list-item"><span class="dot-ic ${r.success ? 'up' : 'down'} sm">${icon(r.success ? 'check' : 'x')}</span><div class="grow"><div class="t" style="font-size:13px">${r.name || r.email || 'Unknown'} <span class="chip ${r.success ? 'up' : 'down'}">${r.success ? 'Success' : 'Failed'}</span></div>
       <div class="s ellipsis" title="${r.user_agent || ''}">${dateTime(r.created_at)} · ${r.ip} · ${r.user_agent || ''}</div></div></div>`,
+    security: (r) => html`<a class="list-item link" href="#/admin/kyc/${r.user_id}"><span class="dot-ic ${/passed|approved|matched|uploaded|issued|ok/.test(r.result || '') ? 'up' : /fail|mismatch|locked|rejected/.test(r.result || '') ? 'down' : 'warn'} sm">${icon('shield')}</span><div class="grow"><div class="t" style="font-size:13px">${r.name} <span class="chip">${r.kind.replace(/_/g, ' ')}</span> <span class="faint">${r.result || ''}</span></div>
+      <div class="s ellipsis">${dateTime(r.created_at)} · ${r.ip || ''}${r.detail?.reason ? ` · ${r.detail.reason}` : ''}${r.detail?.distance != null ? ` · distance ${Number(r.detail.distance).toFixed(3)}` : ''} · ${r.user_agent || ''}</div></div></a>`,
   }[kind];
-  mount(box, html`<div class="stack"><div class="toolbar">${seg([['audit', 'Admin activity'], ['emails', 'Email log'], ['logins', 'Logins']], kind, 'data-log')}</div>
+  mount(box, html`<div class="stack"><div class="toolbar">${seg([['audit', 'Admin activity'], ['security', 'Security & KYC'], ['emails', 'Email log'], ['logins', 'Logins']], kind, 'data-log')}</div>
     <div class="card pad-0">${d.rows.length ? html`${d.rows.map(item)}
     <div class="row between" style="padding:12px 16px"><span class="faint">Page ${pageNo}</span><span class="row">
       <button class="btn ghost sm" data-pg="${pageNo - 1}" ${pageNo <= 1 ? raw('disabled') : ''}>Newer</button>

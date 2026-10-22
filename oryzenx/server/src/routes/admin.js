@@ -43,7 +43,7 @@ router.get('/overview', ah(async (_req, res) => {
   const [users, kyc, pay, sched, emails, trades, logins] = await Promise.all([
     one(`SELECT SUM(status IN ('active','restricted')) AS active, SUM(status = 'pending') AS pending,
                 SUM(status = 'disabled') AS disabled, COUNT(*) AS total FROM users`),
-    one("SELECT SUM(kyc_status IN ('submitted','review')) AS pending, SUM(kyc_status = 'review') AS review FROM users"),
+    one("SELECT SUM(kyc_status IN ('submitted','review')) AS pending, SUM(kyc_status = 'review') AS review, SUM(reverify_reason IS NOT NULL AND status = 'restricted') AS held FROM users"),
     one("SELECT SUM(status = 'paid') AS paid, SUM(status = 'pending') AS pending, COALESCE(SUM(IF(status = 'pending', amount, 0)), 0) AS due FROM payments WHERE month = ?", [m]),
     one('SELECT pay_date FROM payment_schedule WHERE month = ?', [m]),
     one("SELECT SUM(status = 'failed') AS failed, SUM(status = 'queued') AS queued FROM email_queue WHERE created_at >= NOW() - INTERVAL 7 DAY"),
@@ -55,7 +55,7 @@ router.get('/overview', ah(async (_req, res) => {
     month: m,
     pay_date: sched?.pay_date || null,
     users: { active: n(users.active), pending: n(users.pending), disabled: n(users.disabled), total: n(users.total) },
-    kyc: { pending: n(kyc.pending), review: n(kyc.review) },
+    kyc: { pending: n(kyc.pending), review: n(kyc.review), held: n(kyc.held) },
     payments: { paid: n(pay.paid), pending: n(pay.pending), due: n(pay.due) },
     emails: { failed: n(emails.failed), queued: n(emails.queued) },
     trades_today: { count: n(trades.n), net: n(trades.net) },
@@ -260,6 +260,7 @@ router.get('/settings', ah(async (_req, res) => {
     email_toggles: await getSetting('email_toggles', {}),
     email_types: EMAIL_TYPES,
     method_logos: await getSetting('method_logos', {}),
+    push_enabled: require('../lib/push').enabled(),
   });
 }));
 
@@ -398,6 +399,23 @@ router.post('/payments/:id/unpaid', ah(async (req, res) => {
   await query("UPDATE payments SET status = 'pending', method = NULL, paid_at = NULL, marked_by = NULL WHERE id = ?", [p.id]);
   await audit(req, 'payment_unpaid', 'payment', p.id, { before: p });
   res.json({ ok: true });
+}));
+
+// ---------- Backup ----------
+
+// Full database export (gzipped JSON) for safekeeping. Super Admin only. KYC files stay encrypted.
+router.get('/backup', requireSuperAdmin, ah(async (req, res) => {
+  const zlib = require('zlib');
+  const tables = (await query('SHOW TABLES')).map((r) => Object.values(r)[0]);
+  const dump = { app: 'OryzenX BD', created_at: new Date().toISOString(), tables: {} };
+  for (const t of tables) dump.tables[t] = await query(`SELECT * FROM \`${t}\``);
+  const json = JSON.stringify(dump, (_k, v) => (v && v.type === 'Buffer' && Array.isArray(v.data) ? { $b64: Buffer.from(v.data).toString('base64') } : v));
+  await audit(req, 'backup_download', 'database', null, { tables: tables.length });
+  res.set({
+    'Content-Type': 'application/gzip',
+    'Content-Disposition': `attachment; filename="oryzenx-backup-${new Date().toISOString().slice(0, 10)}.json.gz"`,
+  });
+  res.send(zlib.gzipSync(json));
 }));
 
 // ---------- Notifications and logs ----------

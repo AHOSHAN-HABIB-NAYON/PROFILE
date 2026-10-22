@@ -27,6 +27,7 @@ function stageOf(u) {
     if (u.kyc_status === 'none' || u.kyc_status === 'resubmit') return 'kyc';
     if (u.kyc_status === 'submitted' || u.kyc_status === 'review') return 'kyc_pending';
     if (u.kyc_status === 'rejected') return 'kyc_rejected';
+    if (u.reverify_reason) return u.status === 'restricted' ? 'reverify_locked' : 'reverify';
   }
   if (u.status === 'pending') return 'pending_approval';
   if (!u.privacy_accepted_at) return 'privacy';
@@ -94,6 +95,7 @@ function privateUser(u) {
     email_verified: !!u.email_verified_at, privacy_accepted_at: u.privacy_accepted_at,
     reminder_emails: !!u.reminder_emails, has_password: !!u.password_hash, google_linked: !!u.google_sub,
     kyc_status: u.kyc_status, kyc_note: u.kyc_note, kyc_fail_count: u.kyc_fail_count, kyc_consent_at: u.kyc_consent_at,
+    reverify_reason: u.reverify_reason, totp_enabled: !!u.totp_enabled,
   };
 }
 

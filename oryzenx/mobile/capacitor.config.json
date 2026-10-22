@@ -3,10 +3,16 @@
   "appName": "OryzenX BD",
   "webDir": "www",
   "server": {
-    "url": "https://your-domain.com",
-    "cleartext": false
+    "url": "https://bd.oryzenx.com",
+    "cleartext": false,
+    "androidScheme": "https"
   },
   "android": {
-    "backgroundColor": "#0b0e11"
+    "backgroundColor": "#0b0e11",
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "PushNotifications": { "presentationOptions": ["badge", "sound", "alert"] }
   }
 }

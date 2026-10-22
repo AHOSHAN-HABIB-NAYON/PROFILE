@@ -247,3 +247,25 @@ CREATE TABLE IF NOT EXISTS kyc_events (
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   INDEX (user_id, created_at)
 );
+
+-- Devices a member has signed in from (for "new device" re-verification).
+CREATE TABLE IF NOT EXISTS devices (
+  user_id    INT UNSIGNED NOT NULL,
+  device_id  CHAR(64) NOT NULL,            -- sha256 of the random id the app keeps
+  user_agent VARCHAR(255) NULL,
+  last_ip    VARCHAR(64) NULL,
+  first_seen DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  last_seen  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, device_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Firebase Cloud Messaging tokens for push notifications (Android app).
+CREATE TABLE IF NOT EXISTS push_tokens (
+  token      VARCHAR(255) PRIMARY KEY,
+  user_id    INT UNSIGNED NOT NULL,
+  platform   VARCHAR(20) NOT NULL DEFAULT 'android',
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX (user_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
