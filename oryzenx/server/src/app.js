@@ -9,7 +9,11 @@ const { loadUser } = require('./lib/auth');
 const { HttpError } = require('./lib/util');
 const { ROOT: UPLOADS } = require('./lib/uploads');
 
-const WEB = path.join(__dirname, '..', '..', 'web');
+const fs = require('fs');
+
+// The web app sits next to src/ in the upload zip, or one level up in the repository.
+const WEB = [path.join(__dirname, '..', 'web'), path.join(__dirname, '..', '..', 'web')]
+  .find((p) => fs.existsSync(path.join(p, 'index.html')));
 
 function createApp() {
   const app = express();
