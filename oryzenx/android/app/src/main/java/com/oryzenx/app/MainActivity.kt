@@ -25,13 +25,12 @@ import kotlinx.coroutines.launch
 import java.time.ZoneId
 
 class MainActivity : ComponentActivity() {
-    private var ready = false
     private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
-        splash.setKeepOnScreenCondition { !ready }
+        splash.setKeepOnScreenCondition { !AppState.ready }
         enableEdgeToEdge()
         preferHighRefreshRate()
         val app = application as OryzenApp
@@ -50,13 +49,13 @@ class MainActivity : ComponentActivity() {
                     PushRegistrar.register(this@MainActivity)
                 }
             }
-            ready = true
+            AppState.ready = true
         }
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
         setContent {
-            OryzenTheme(AppState.theme) { AppRoot() }
+            OryzenTheme(AppState.theme) { if (AppState.ready) AppRoot() }
         }
     }
 

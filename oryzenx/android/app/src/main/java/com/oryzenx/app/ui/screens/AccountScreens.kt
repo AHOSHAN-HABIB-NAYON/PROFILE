@@ -186,10 +186,11 @@ fun SwitchRow(label: String, desc: String? = null, checked: Boolean, enabled: Bo
 @Composable
 fun SelectField(label: String, options: List<Pair<String, String>>, value: String, error: String? = null, onSelect: (String) -> Unit) {
     var open by remember { mutableStateOf(false) }
+    val supporting: (@Composable () -> Unit)? = if (error != null) { { Text(error) } } else null
     ExposedDropdownMenuBox(expanded = open, onExpandedChange = { open = it }) {
         OutlinedTextField(
             value = options.firstOrNull { it.first == value }?.second ?: "", onValueChange = {}, readOnly = true, label = { Text(label) },
-            placeholder = { Text(t("select")) }, isError = error != null, supportingText = error?.let { { Text(it) } },
+            placeholder = { Text(t("select")) }, isError = error != null, supportingText = supporting,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(open) },
             modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
         )
@@ -572,6 +573,17 @@ fun ProfileScreen(nav: NavHostController) {
 
 // ------------------------------------------------------------------ Verification
 @Composable
+private fun VerificationStep(done: Boolean, title: String, desc: String, state: String? = null) {
+    val (icon, tint) = when {
+        done -> Icons.Default.CheckCircle to Ox.colors.gain
+        state == "pending" -> Icons.Default.HourglassTop to Ox.colors.warn
+        state == "rejected" -> Icons.Default.Error to Ox.colors.loss
+        else -> Icons.Default.Warning to Ox.colors.text2
+    }
+    ListRow(title, desc, leading = { IconBadge(icon, tint) })
+}
+
+@Composable
 fun VerificationScreen(nav: NavHostController) {
     val scope = rememberCoroutineScope()
     val ctx = LocalContext.current
@@ -580,19 +592,9 @@ fun VerificationScreen(nav: NavHostController) {
     Screen(t("verification_status"), nav, back = true) {
         Box {
             LoadedColumn(l) { v ->
-                @Composable
-                fun step(done: Boolean, title: String, desc: String, state: String? = null) {
-                    val (icon, tint) = when {
-                        done -> Icons.Default.CheckCircle to Ox.colors.gain
-                        state == "pending" -> Icons.Default.HourglassTop to Ox.colors.warn
-                        state == "rejected" -> Icons.Default.Error to Ox.colors.loss
-                        else -> Icons.Default.Warning to Ox.colors.text2
-                    }
-                    ListRow(title, desc, leading = { IconBadge(icon, tint) })
-                }
                 OxCard(title = t("verification_steps"), padding = 0.dp) {
-                    step(v.bool("email_verified"), t("step_email"), if (v.bool("email_verified")) t("email_verified_on", "date" to Fmt.date(v.str("email_verified_at"))) else t("step_email_todo"))
-                    if (v.bool("identity_required")) step(v.str("identity_status") == "approved", t("step_identity"), t("identity_" + v.str("identity_status")), v.str("identity_status"))
+                    VerificationStep(v.bool("email_verified"), t("step_email"), if (v.bool("email_verified")) t("email_verified_on", "date" to Fmt.date(v.str("email_verified_at"))) else t("step_email_todo"))
+                    if (v.bool("identity_required")) VerificationStep(v.str("identity_status") == "approved", t("step_identity"), t("identity_" + v.str("identity_status")), v.str("identity_status"))
                 }
                 val latest = v.obj("latest_submission")
                 if (latest.str("status") == "rejected" && latest.str("user_message") != null) Banner(t("rejected_reason") + ": " + latest.str("user_message"), "err", Icons.Default.Error)
@@ -795,6 +797,10 @@ fun AppearanceScreen(nav: NavHostController) {
 
 // ------------------------------------------------------------------ Notification settings
 @Composable
+private fun PrefSwitch(prefs: Map<String, Boolean>, onToggle: (String, Boolean) -> Unit, key: String, label: String, desc: String? = null) =
+    SwitchRow(label, desc, prefs[key] == true) { onToggle(key, it) }
+
+@Composable
 fun NotificationSettingsScreen(nav: NavHostController) {
     val scope = rememberCoroutineScope()
     val snack = rememberSnack()
@@ -811,27 +817,26 @@ fun NotificationSettingsScreen(nav: NavHostController) {
             .onSuccess { snack.showSnackbar(t("saved")) }
             .onFailure { if (value is Boolean) prefs[key] = !value; snack.showSnackbar(errText(it)) }
     }
-    @Composable
-    fun sw(key: String, label: String, desc: String? = null) = SwitchRow(label, desc, prefs[key] == true) { prefs[key] = it; save(key, it) }
+    val onToggle: (String, Boolean) -> Unit = { key, value -> prefs[key] = value; save(key, value) }
 
     Screen(t("notification_settings"), nav, back = true) {
         Box {
             LoadedColumn(l) { _ ->
                 OxCard(title = t("email_notifications")) {
-                    sw("email_pnl", t("pref_email_pnl"), t("pref_email_pnl_desc"))
-                    sw("email_trades", t("pref_email_trades"))
-                    sw("email_salary", t("pref_email_salary"))
-                    sw("email_loans", t("pref_email_loans"))
-                    sw("email_portfolio_threshold", t("pref_email_threshold"), t("pref_email_threshold_desc"))
+                    PrefSwitch(prefs, onToggle, "email_pnl", t("pref_email_pnl"), t("pref_email_pnl_desc"))
+                    PrefSwitch(prefs, onToggle, "email_trades", t("pref_email_trades"))
+                    PrefSwitch(prefs, onToggle, "email_salary", t("pref_email_salary"))
+                    PrefSwitch(prefs, onToggle, "email_loans", t("pref_email_loans"))
+                    PrefSwitch(prefs, onToggle, "email_portfolio_threshold", t("pref_email_threshold"), t("pref_email_threshold_desc"))
                     SelectField(t("threshold"), listOf("3", "5", "10", "20").map { it to Fmt.pct(it) }, threshold) { threshold = it; save("threshold_pct", it) }
-                    sw("email_reminders", t("pref_email_reminders"), t("pref_email_reminders_desc"))
+                    PrefSwitch(prefs, onToggle, "email_reminders", t("pref_email_reminders"), t("pref_email_reminders_desc"))
                     SwitchRow(t("pref_security"), t("pref_security_desc"), checked = true, enabled = false) {}
                 }
                 OxCard(title = t("app_notifications")) {
-                    sw("push_enabled", t("pref_push_enabled"), t("pref_push_desc"))
-                    sw("push_trades", t("pref_push_trades"))
-                    sw("push_salary", t("pref_push_salary"))
-                    sw("push_security", t("pref_push_security"))
+                    PrefSwitch(prefs, onToggle, "push_enabled", t("pref_push_enabled"), t("pref_push_desc"))
+                    PrefSwitch(prefs, onToggle, "push_trades", t("pref_push_trades"))
+                    PrefSwitch(prefs, onToggle, "push_salary", t("pref_push_salary"))
+                    PrefSwitch(prefs, onToggle, "push_security", t("pref_push_security"))
                     if (!BuildConfig.FIREBASE_CONFIGURED) Banner(t("push_not_configured").takeIf { I18n.has("push_not_configured") } ?: t("pref_push_desc"), "warn")
                 }
             }

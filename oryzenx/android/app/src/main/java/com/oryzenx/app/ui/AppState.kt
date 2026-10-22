@@ -12,4 +12,6 @@ object AppState {
     var theme by mutableStateOf("light")
     var unread by mutableStateOf(0)
     var pendingDeepLink by mutableStateOf<String?>(null)
+    /** True once startup (config + saved session) has finished; the UI is built only after this. */
+    var ready by mutableStateOf(false)
 }
