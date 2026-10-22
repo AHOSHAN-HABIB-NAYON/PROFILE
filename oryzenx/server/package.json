@@ -1,0 +1,32 @@
+{
+  "name": "oryzenx-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OryzenX BD - private investment, trading and loan monitor API",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "migrate": "node src/migrate.js",
+    "create-admin": "node src/createAdmin.js",
+    "seed-demo": "node src/seedDemo.js",
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "compression": "^1.8.2",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^18.0.8",
+    "express": "^4.22.3",
+    "express-rate-limit": "^8.7.1",
+    "google-auth-library": "^11.3.1",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.24.6",
+    "nodemailer": "^10.2.1"
+  }
+}
