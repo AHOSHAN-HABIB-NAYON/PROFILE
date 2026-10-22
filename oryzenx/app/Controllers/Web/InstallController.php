@@ -61,7 +61,11 @@ final class InstallController
         foreach (['pdo_mysql', 'mbstring', 'openssl', 'json'] as $e) {
             $add("PHP extension: $e", extension_loaded($e), extension_loaded($e) ? 'loaded' : 'missing');
         }
-        foreach (['curl', 'gd', 'fileinfo', 'sodium'] as $e) {
+        // Secret encryption works with libsodium or, when it is absent, OpenSSL AES-256-GCM (see Security::encrypt).
+        $sodium = function_exists('sodium_crypto_secretbox');
+        $gcm = function_exists('openssl_get_cipher_methods') && in_array('aes-256-gcm', array_map('strtolower', openssl_get_cipher_methods()), true);
+        $add('Encryption for stored secrets', $sodium || $gcm, $sodium ? 'sodium' : ($gcm ? 'OpenSSL AES-256-GCM' : 'unavailable'));
+        foreach (['curl', 'gd', 'fileinfo'] as $e) {
             $add("PHP extension: $e (recommended)", extension_loaded($e), extension_loaded($e) ? 'loaded' : 'missing', false);
         }
         $add('PHPMailer installed (composer)', class_exists(\PHPMailer\PHPMailer\PHPMailer::class), class_exists(\PHPMailer\PHPMailer\PHPMailer::class) ? 'found' : 'run composer install --no-dev, or upload the release package that includes vendor/', false);
