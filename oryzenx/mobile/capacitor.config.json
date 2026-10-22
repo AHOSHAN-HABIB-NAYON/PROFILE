@@ -1,0 +1,12 @@
+{
+  "appId": "bd.oryzenx.app",
+  "appName": "OryzenX BD",
+  "webDir": "www",
+  "server": {
+    "url": "https://your-domain.com",
+    "cleartext": false
+  },
+  "android": {
+    "backgroundColor": "#0b0e11"
+  }
+}
