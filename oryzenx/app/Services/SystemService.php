@@ -10,6 +10,9 @@ use OryzenX\Core\Migrator;
 /** Health diagnostics and database backups (SQL dump written to storage/backups, outside the web root). */
 final class SystemService
 {
+    /** Statement terminator used in backups (never appears inside quoted data, which escapes newlines in context). */
+    public const END = ";\n-- @@OX-END@@\n";
+
     public function __construct(
         private Database $db,
         private MarketService $market,
@@ -89,28 +92,28 @@ final class SystemService
         if ($gz === false) {
             throw new \RuntimeException('Cannot write backup');
         }
-        gzwrite($gz, "-- OryzenX backup " . gmdate('c') . "\nSET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS=0;\n");
+        gzwrite($gz, "-- OryzenX backup " . gmdate('c') . "\nSET NAMES utf8mb4" . self::END . "SET FOREIGN_KEY_CHECKS=0" . self::END);
         $pdo = $this->db->pdo();
         foreach ($this->db->all('SHOW FULL TABLES WHERE Table_type = "BASE TABLE"') as $row) {
             $table = (string) array_values($row)[0];
             Database::assertIdent($table);
             $create = $this->db->one("SHOW CREATE TABLE `$table`");
-            gzwrite($gz, "\nDROP TABLE IF EXISTS `$table`;\n" . array_values($create)[1] . ";\n");
+            gzwrite($gz, "\nDROP TABLE IF EXISTS `$table`" . self::END . array_values($create)[1] . self::END);
             $stmt = $pdo->query("SELECT * FROM `$table`", \PDO::FETCH_ASSOC);
             $batch = [];
             foreach ($stmt as $r) {
                 $vals = array_map(fn ($v) => $v === null ? 'NULL' : $pdo->quote((string) $v), $r);
                 $batch[] = '(' . implode(',', $vals) . ')';
                 if (count($batch) >= 200) {
-                    gzwrite($gz, "INSERT INTO `$table` VALUES " . implode(",\n", $batch) . ";\n");
+                    gzwrite($gz, "INSERT INTO `$table` VALUES " . implode(",\n", $batch) . self::END);
                     $batch = [];
                 }
             }
             if ($batch) {
-                gzwrite($gz, "INSERT INTO `$table` VALUES " . implode(",\n", $batch) . ";\n");
+                gzwrite($gz, "INSERT INTO `$table` VALUES " . implode(",\n", $batch) . self::END);
             }
         }
-        gzwrite($gz, "SET FOREIGN_KEY_CHECKS=1;\n");
+        gzwrite($gz, "SET FOREIGN_KEY_CHECKS=1" . self::END);
         gzclose($gz);
         $size = filesize($dir . '/' . $name);
         $this->audit->log($actorId, 'system.backup_created', 'backup', $name, ['bytes' => $size]);

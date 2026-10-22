@@ -159,7 +159,7 @@
     var sym = (a.symbol || "?");
     var node = h("span", { class: "coin-logo" + (size === "sm" ? " sm" : ""), style: { background: a.color || "var(--primary)" }, "aria-hidden": "true" });
     if (a.logo_url) node.appendChild(h("img", { src: a.logo_url, alt: "", loading: "lazy", width: 40, height: 40 }));
-    else node.textContent = sym.slice(0, sym.length > 3 ? 1 : 2);
+    else node.textContent = sym.slice(0, 1);
     return node;
   };
 

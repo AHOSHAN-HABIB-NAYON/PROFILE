@@ -306,7 +306,7 @@
   function holdingRow(x) {
     return h("li", h("a", { class: "list-item", href: "#/asset/" + x.asset_id },
       OX.coinLogo(x),
-      h("div.li-main", h("span.li-title", x.symbol + " · " + x.name), h("span.li-sub.num", f.qty(x.quantity) + " " + x.symbol + " · " + f.price(x.current_price, x.price_decimals))),
+      h("div.li-main", h("span.li-title", x.symbol), h("span.li-sub.num", f.qty(x.quantity) + " · " + f.price(x.current_price, x.price_decimals))),
       h("div.li-end", h("span.li-title.num", f.usd(x.market_value_usd)), h("span", { class: "li-sub num " + f.cls(x.unrealized_pnl_usd) }, f.signedUsd(x.unrealized_pnl_usd) + (x.return_pct !== null ? " · " + f.pct(x.return_pct, true) : ""))),
       icon("chevron-right", "chev")));
   }
@@ -730,12 +730,12 @@
       function build() {
         var m = methods.find(function (x) { return String(x.id) === sel.value; });
         var fields = m.fields.map(function (fd) {
-          return { name: fd.key, label: fd.label, type: fd.type === "select" ? "select" : "text", required: !!fd.required, options: (fd.options || []).map(function (o) { return [o, o]; }), placeholder: fd.type === "select" ? t("select") : undefined, pattern: fd.pattern ? fd.pattern.replace(/^\^|\$$/g, "") : undefined, error: t("field_invalid") };
+          return { name: fd.key, label: t("pm_field_" + fd.key) !== "pm_field_" + fd.key ? t("pm_field_" + fd.key) : fd.label, type: fd.type === "select" ? "select" : "text", required: !!fd.required, options: (fd.options || []).map(function (o) { return [o, o]; }), placeholder: fd.type === "select" ? t("select") : undefined, pattern: fd.pattern ? fd.pattern.replace(/^\^|\$$/g, "") : undefined, error: t("field_invalid") };
         });
         var form = OX.form(fields, { submitText: t("save"), onSubmit: function (vals) {
           return api.post("/api/payment-details", { payment_method_id: +m.id, details: vals }).then(function () { OX.toast(t("payment_saved")); s.close(); reload(); });
         } });
-        OX.clear(holder).appendChild(h("div.stack", m.instructions ? h("p.subtle.small", m.instructions) : null, form, h("p.subtle.xs", t("payment_security_note"))));
+        OX.clear(holder).appendChild(h("div.stack", m.instructions ? h("p.subtle.small", OX.locale !== "en" && t("pm_instr_" + m.code) !== "pm_instr_" + m.code ? t("pm_instr_" + m.code) : m.instructions) : null, form, h("p.subtle.xs", t("payment_security_note"))));
       }
       sel.onchange = build;
       build();
