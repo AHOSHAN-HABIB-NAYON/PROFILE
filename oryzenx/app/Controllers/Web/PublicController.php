@@ -7,11 +7,13 @@ use OryzenX\Controllers\Controller;
 use OryzenX\Core\Config;
 use OryzenX\Core\HttpException;
 use OryzenX\Core\I18n;
+use OryzenX\Core\RateLimiter;
 use OryzenX\Core\Request;
 use OryzenX\Core\Response;
 use OryzenX\Core\View;
 use OryzenX\Services\AuthService;
 use OryzenX\Services\ContentService;
+use OryzenX\Services\MarketService;
 use OryzenX\Services\SettingsService;
 use OryzenX\Services\SupportService;
 
@@ -21,7 +23,9 @@ final class PublicController extends Controller
         private ContentService $content,
         private SettingsService $settings,
         private SupportService $support,
-        private AuthService $auth
+        private AuthService $auth,
+        private MarketService $market,
+        private RateLimiter $limiter
     ) {
     }
 
@@ -62,6 +66,33 @@ final class PublicController extends Controller
         $res->header('Cache-Control', 'no-cache');
         $res->header('Vary', 'Cookie');
         return $this->withLangCookie($req, $res, $locale);
+    }
+
+    /**
+     * Public live prices for the landing page. Only market data (no account data). Refreshes from the
+     * provider at most once per poll interval for all visitors together, and is rate limited per IP.
+     */
+    public function markets(Request $req): Response
+    {
+        $this->limiter->hit('public_markets', $req->ip(), 30, 60);
+        try {
+            $this->market->ensureFresh();
+        } catch (\Throwable $e) {
+            // provider errors are recorded by MarketService; last saved prices are still returned below
+        }
+        $status = $this->market->status();
+        $rows = [];
+        foreach ($this->market->latest() as $a) {
+            if (!$a['is_active']) {
+                continue;
+            }
+            $rows[] = array_intersect_key($a, array_flip(['symbol', 'name', 'color', 'logo_url', 'price', 'price_decimals', 'change_24h_pct', 'updated_at', 'stale', 'simulated']));
+        }
+        return Response::ok($rows, [
+            'provider' => $status['provider_label'],
+            'last_success_at' => $status['last_success_at'],
+            'poll_seconds' => max(30, (int) $status['poll_seconds']),
+        ])->header('Cache-Control', 'public, max-age=20');
     }
 
     public function legal(Request $req): Response

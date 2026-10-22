@@ -9,6 +9,7 @@ $r->get('/robots.txt', [P::class, 'robots']);
 $r->get('/sitemap.xml', [P::class, 'sitemap']);
 $r->get('/.well-known/assetlinks.json', [P::class, 'assetLinks']);
 $r->get('/health', [P::class, 'health']);
+$r->get('/api/public/markets', [P::class, 'markets']);
 $r->get('/verify-email', [P::class, 'verifyEmail']);
 $r->get('/reset-password', [P::class, 'resetPassword']);
 

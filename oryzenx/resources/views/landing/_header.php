@@ -12,6 +12,7 @@ $other = $locale === 'bn' ? 'en' : 'bn';
     <nav class="primary-nav" id="primary-nav" aria-label="<?= $e($t['nav_menu']) ?>" data-nav>
       <ul>
         <li><a href="<?= $e($anchor('home')) ?>"><?= $e($t['nav_home']) ?></a></li>
+        <li><a href="<?= $e($anchor('markets')) ?>"><?= $e($t['nav_markets']) ?></a></li>
         <li><a href="<?= $e($anchor('features')) ?>"><?= $e($t['nav_features']) ?></a></li>
         <li><a href="<?= $e($anchor('how')) ?>"><?= $e($t['nav_how']) ?></a></li>
         <li><a href="<?= $e($anchor('security')) ?>"><?= $e($t['nav_security']) ?></a></li>

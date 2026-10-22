@@ -42,6 +42,84 @@
     new IntersectionObserver(function (entries) { header.classList.toggle("scrolled", !entries[0].isIntersecting); }).observe(sentinel);
   }
 
+  // Live market prices (public endpoint, market data only). Refreshes while the page is visible.
+  (function () {
+    var box = document.querySelector("[data-markets]");
+    if (!box) return;
+    var list = box.querySelector("[data-markets-list]");
+    var meta = box.querySelector("[data-markets-meta]");
+    var d = box.dataset;
+    var loc = d.locale === "bn" ? "bn-BD" : "en-US";
+    var last = {};
+    var timer = null;
+    var poll = 60000;
+    function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+    function fmtPrice(v, dec) {
+      var n = Number(v);
+      var max = n >= 1 ? 2 : Math.min(Math.max(dec || 8, 4), 10);
+      return "$" + n.toLocaleString(loc, { minimumFractionDigits: n >= 1 ? 2 : 4, maximumFractionDigits: max });
+    }
+    function fmtPct(v) {
+      var n = Number(v);
+      return (n > 0 ? "+" : n < 0 ? "−" : "") + Math.abs(n).toLocaleString(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "%";
+    }
+    function ago(ts) {
+      if (!ts) return "";
+      var mins = Math.floor((Date.now() - Date.parse(ts.replace(" ", "T") + "Z")) / 60000);
+      if (mins < 1) return d.msgJustNow;
+      return d.msgMinAgo.replace(":n", mins.toLocaleString(loc));
+    }
+    function render(rows, m) {
+      list.textContent = "";
+      var simulated = false, newest = null;
+      rows.forEach(function (a) {
+        var li = el("li", "market-row");
+        var asset = el("span", "market-asset");
+        var badge;
+        if (a.logo_url) { badge = el("img", "coin"); badge.src = a.logo_url; badge.alt = ""; badge.width = 32; badge.height = 32; }
+        else { badge = el("span", "coin", (a.symbol || "?").charAt(0)); badge.style.background = a.color || "#64748b"; badge.setAttribute("aria-hidden", "true"); }
+        var name = el("span", "market-name");
+        name.appendChild(el("strong", null, a.symbol));
+        name.appendChild(el("small", null, a.name));
+        asset.appendChild(badge); asset.appendChild(name);
+        var price = el("span", "market-price", a.price != null ? fmtPrice(a.price, a.price_decimals) : d.msgNoPrice);
+        if (a.price != null && a.stale) price.appendChild(el("span", "market-flag", d.msgStale));
+        var chg = a.change_24h_pct;
+        var change = el("span", "market-change " + (chg == null ? "flat" : Number(chg) > 0 ? "up" : Number(chg) < 0 ? "down" : "flat"), chg == null ? "—" : fmtPct(chg));
+        li.appendChild(asset); li.appendChild(price); li.appendChild(change);
+        var prev = last[a.symbol];
+        if (prev != null && a.price != null && prev !== a.price) li.classList.add(Number(a.price) > Number(prev) ? "flash-up" : "flash-down");
+        if (a.price != null) last[a.symbol] = a.price;
+        if (a.simulated) simulated = true;
+        if (a.updated_at && (!newest || a.updated_at > newest)) newest = a.updated_at;
+        list.appendChild(li);
+      });
+      list.setAttribute("aria-busy", "false");
+      var parts = [];
+      if (newest) parts.push(d.msgUpdated.replace(":time", ago(newest)));
+      if (m && m.provider) parts.push(d.msgSource.replace(":provider", m.provider));
+      meta.className = "markets-meta" + (simulated ? " warn" : "");
+      meta.textContent = (simulated ? d.msgSimulated + " " : "") + parts.join(" · ");
+      if (!rows.length || !newest) { meta.className = "markets-meta warn"; meta.textContent = d.msgUnavailable; }
+    }
+    function load() {
+      fetch(d.endpoint, { headers: { Accept: "application/json" }, credentials: "omit" })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (!j || !j.ok) throw new Error("bad");
+          if (j.meta && j.meta.poll_seconds) poll = Math.max(30, j.meta.poll_seconds) * 1000;
+          render(j.data || [], j.meta);
+        })
+        .catch(function () {
+          if (!Object.keys(last).length) { list.setAttribute("aria-busy", "false"); meta.className = "markets-meta warn"; meta.textContent = d.msgUnavailable; }
+        })
+        .finally(schedule);
+    }
+    function schedule() { clearTimeout(timer); if (document.visibilityState === "visible") timer = setTimeout(load, poll); }
+    document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") load(); else clearTimeout(timer); });
+    load();
+  })();
+
   // Support form: native constraint validation + server validation, rate limit and spam handling
   var form = document.querySelector("[data-support-form]");
   if (!form) return;

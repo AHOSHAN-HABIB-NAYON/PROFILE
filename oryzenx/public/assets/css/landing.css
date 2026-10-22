@@ -149,3 +149,35 @@ p { margin: 0; }
 .site-footer a:hover { color: var(--text); }
 .footer-lang a[aria-current] { color: var(--primary); font-weight: 600; }
 .footer-bottom { margin-top: var(--s-10); padding-top: var(--s-5); border-top: 1px solid var(--border); }
+
+/* Live market prices */
+.markets-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--r-lg); padding: var(--s-2) var(--s-5) var(--s-4); max-width: 760px; margin-inline: auto; }
+.markets-head, .market-row { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, .8fr); align-items: center; gap: var(--s-3); }
+.markets-head { padding: var(--s-3) 0; font-size: var(--fs-xs); color: var(--text-3); text-transform: uppercase; letter-spacing: .04em; }
+.markets-head span:not(:first-child), .market-row > :not(:first-child) { text-align: end; justify-self: end; }
+.markets-list { list-style: none; margin: 0; padding: 0; }
+.market-row { min-height: 60px; border-top: 1px solid var(--border); }
+.market-asset { display: flex; align-items: center; gap: var(--s-3); min-width: 0; }
+.market-asset .coin { flex: none; }
+.market-asset img.coin { object-fit: contain; background: #fff; }
+.market-name { display: grid; min-width: 0; }
+.market-name strong { font-weight: 650; }
+.market-name small { color: var(--text-3); font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.market-price { font-weight: 650; font-variant-numeric: tabular-nums; }
+.market-change { font-weight: 600; font-variant-numeric: tabular-nums; font-size: var(--fs-sm); padding: 3px 8px; border-radius: var(--r-pill); }
+.market-change.up { color: var(--gain); background: var(--gain-soft); }
+.market-change.down { color: var(--loss); background: var(--loss-soft); }
+.market-change.flat { color: var(--text-3); }
+.market-flag { display: block; font-size: var(--fs-xs); color: var(--warn, #b45309); font-weight: 500; }
+.market-row.flash-up .market-price { animation: flash-up 1s var(--ease); }
+.market-row.flash-down .market-price { animation: flash-down 1s var(--ease); }
+@keyframes flash-up { from { color: var(--gain); } }
+@keyframes flash-down { from { color: var(--loss); } }
+.skeleton-dot { background: var(--surface-3); }
+.market-row.is-loading .skeleton-line { justify-self: end; width: 70%; }
+.market-row.is-loading .skeleton-line:first-of-type { justify-self: start; }
+.markets-meta { margin: var(--s-3) 0 0; font-size: var(--fs-xs); color: var(--text-3); }
+.markets-meta.warn { color: var(--warn, #b45309); }
+.markets-note { text-align: center; margin-top: var(--s-3); font-size: var(--fs-xs); color: var(--text-3); }
+@media (max-width: 420px) { .markets-card { padding-inline: var(--s-3); } .market-name small { display: none; } }
+@media (prefers-reduced-motion: reduce) { .market-row.flash-up .market-price, .market-row.flash-down .market-price { animation: none; } }

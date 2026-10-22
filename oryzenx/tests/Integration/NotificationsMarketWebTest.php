@@ -254,6 +254,31 @@ final class NotificationsMarketWebTest extends IntegrationTestCase
     }
 
     // ------------------------------------------------------------ public website
+    public function testPublicMarketPricesShowLivePricesOnlyAndAreRateLimited(): void
+    {
+        $this->useFixedPrices(['SOL' => '120.5', 'ETH' => '3000']);
+        $res = $this->handle($this->request('GET', '/api/public/markets'));
+        $this->assertSame(200, $res->status);
+        $body = json_decode($res->body, true);
+        $this->assertTrue($body['ok']);
+        $sol = array_values(array_filter($body['data'], fn ($a) => $a['symbol'] === 'SOL'))[0];
+        $this->assertSame('120.5', $sol['price']);
+        $this->assertFalse($sol['simulated']);
+        $allowed = ['symbol', 'name', 'color', 'logo_url', 'price', 'price_decimals', 'change_24h_pct', 'updated_at', 'stale', 'simulated'];
+        foreach ($body['data'] as $row) {
+            $this->assertSame([], array_diff(array_keys($row), $allowed), 'public markets must expose market data only');
+        }
+        // an asset without a provider price is reported as missing, never invented
+        $xrp = array_values(array_filter($body['data'], fn ($a) => $a['symbol'] === 'XRP'))[0];
+        $this->assertNull($xrp['price']);
+        // landing page contains the live section
+        $this->assertStringContainsString('id="markets"', $this->handle($this->request('GET', '/?lang=en'))->body);
+        for ($i = 0; $i < 30; $i++) {
+            $this->handle($this->request('GET', '/api/public/markets'));
+        }
+        $this->assertSame(429, $this->handle($this->request('GET', '/api/public/markets'))->status);
+    }
+
     public function testLandingPageInBothLanguagesWithoutMixing(): void
     {
         $en = $this->handle($this->request('GET', '/?lang=en'));

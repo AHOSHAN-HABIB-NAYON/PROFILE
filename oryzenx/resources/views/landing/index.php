@@ -90,6 +90,37 @@ $base = rtrim($canonical, '/');
     </div>
   </section>
 
+  <section class="section section-alt" id="markets" aria-labelledby="markets-title">
+    <div class="container">
+      <div class="section-head">
+        <h2 id="markets-title"><span class="pill-live"><span class="dot"></span>LIVE</span> <?= $e($t['markets_title']) ?></h2>
+        <p class="lead"><?= $e($t['markets_lead']) ?></p>
+      </div>
+      <div class="markets-card" data-markets
+        data-endpoint="<?= $e(View::url('api/public/markets')) ?>"
+        data-locale="<?= $e($locale) ?>"
+        data-msg-unavailable="<?= $e($t['markets_unavailable']) ?>"
+        data-msg-no-price="<?= $e($t['markets_no_price']) ?>"
+        data-msg-stale="<?= $e($t['markets_stale']) ?>"
+        data-msg-simulated="<?= $e($t['markets_simulated']) ?>"
+        data-msg-updated="<?= $e($t['markets_updated']) ?>"
+        data-msg-source="<?= $e($t['markets_source']) ?>"
+        data-msg-just-now="<?= $e($t['markets_just_now']) ?>"
+        data-msg-min-ago="<?= $e($t['markets_min_ago']) ?>">
+        <div class="markets-head" aria-hidden="true">
+          <span><?= $e($t['markets_col_asset']) ?></span><span><?= $e($t['markets_col_price']) ?></span><span><?= $e($t['markets_col_change']) ?></span>
+        </div>
+        <ul class="markets-list" data-markets-list aria-live="polite" aria-busy="true">
+          <?php for ($i = 0; $i < 6; $i++): ?>
+          <li class="market-row is-loading"><span class="coin skeleton-dot"></span><span class="skeleton-line w-40"></span><span class="skeleton-line w-30"></span></li>
+          <?php endfor; ?>
+        </ul>
+        <p class="markets-meta" data-markets-meta><?= $e($t['markets_loading']) ?></p>
+      </div>
+      <p class="markets-note"><?= $e($t['markets_note']) ?></p>
+    </div>
+  </section>
+
   <section class="section" id="features" aria-labelledby="features-title">
     <div class="container">
       <div class="section-head">
