@@ -1,0 +1,33 @@
+{
+    "name": "oryzenx/investment-monitor",
+    "description": "OryzenX Investment Monitor - PHP/MySQL backend, web apps and API",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.1",
+        "ext-pdo": "*",
+        "ext-json": "*",
+        "ext-mbstring": "*",
+        "ext-openssl": "*",
+        "phpmailer/phpmailer": "^6.9"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5"
+    },
+    "suggest": {
+        "ext-sodium": "Encrypts stored secrets (SMTP password, API keys). Bundled with PHP 7.2+.",
+        "ext-gd": "Image resizing/compression for uploads",
+        "ext-bcmath": "Faster decimal arithmetic (a pure-PHP fallback is included)",
+        "ext-curl": "Market data, Google sign-in verification and FCM"
+    },
+    "autoload": {
+        "psr-4": { "OryzenX\\": "app/" }
+    },
+    "autoload-dev": {
+        "psr-4": { "OryzenX\\Tests\\": "tests/" }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "config": { "optimize-autoloader": true, "sort-packages": true }
+}

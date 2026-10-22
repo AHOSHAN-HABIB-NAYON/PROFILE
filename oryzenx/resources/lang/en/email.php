@@ -1,0 +1,23 @@
+<?php
+return [
+    'greeting' => 'Hello :name,',
+    'signoff' => 'The OryzenX team',
+    'footer_auto' => 'This is an automated message from :site. Please do not reply with passwords or sensitive information.',
+    'footer_prefs' => 'You can change optional email notifications in the app under Settings → Notifications.',
+    'open_app' => 'Open OryzenX',
+    'verify_subject' => 'Confirm your email address',
+    'verify_intro' => 'Use this code to confirm your email address in the app:',
+    'verify_or_link' => 'Or confirm by opening this link:',
+    'verify_button' => 'Confirm email',
+    'verify_expiry' => 'The code and link expire in :hours hours. If you did not create an account, you can ignore this email.',
+    'reset_subject' => 'Reset your password',
+    'reset_intro' => 'We received a request to reset the password for your account (request from IP :ip).',
+    'reset_button' => 'Choose a new password',
+    'reset_expiry' => 'This link expires in :minutes minutes and can be used once. If you did not request a reset, ignore this email — your password will not change.',
+    'pnl_note' => 'This is a realized result: it was recorded from a completed sale or a closed trade.',
+    'threshold_note' => 'This is a market valuation change only. Nothing has been bought, sold or paid out.',
+    'security_note' => 'If you did not do this, change your password immediately and contact support.',
+    'test_subject' => 'OryzenX SMTP test',
+    'test_body' => 'This test message confirms that OryzenX can send email through the configured SMTP server. Sent at :time.',
+    'support_subject' => 'New support request #:ticket',
+];
