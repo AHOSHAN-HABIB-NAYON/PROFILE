@@ -7,5 +7,6 @@ run('gen-i18n-contract.mjs', '--check');
 run('build-icons.mjs', '--check');
 run('build-flags.mjs', '--check');
 run('sync-shared.mjs', '--check');
+run('build-countries.mjs', '--check');
 run('check-i18n.mjs');
 run('check-permissions.mjs');

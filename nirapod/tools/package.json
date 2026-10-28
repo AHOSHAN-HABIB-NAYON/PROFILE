@@ -6,6 +6,7 @@
   "scripts": {
     "tokens": "node gen-tokens.mjs",
     "nav": "node gen-nav.mjs",
+    "countries": "node build-countries.mjs",
     "i18n": "node gen-i18n-contract.mjs",
     "icons": "node build-icons.mjs",
     "flags": "node build-flags.mjs",

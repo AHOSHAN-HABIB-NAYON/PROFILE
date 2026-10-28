@@ -244,6 +244,25 @@ paths:
       x-phase: 1
       responses:
         '204': { description: Removed }
+  /me/consents:
+    post:
+      tags: [me]
+      x-phase: 1
+      summary: Store a consent record (child consent screen, background-location disclosure, 18+ terms, AI notice)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, version, granted]
+              properties:
+                type: { enum: [age_18_terms_privacy, child_location_sharing, adult_location_sharing, background_location_disclosure, ai_chat_notice, email_marketing] }
+                version: { type: string, example: '2026-10' }
+                granted: { type: boolean }
+                details: { type: object, description: 'e.g. { "shown_member_ids": [...] } - never coordinates' }
+      responses:
+        '201': { description: Stored }
   /me/fcm-token:
     put:
       tags: [me]
@@ -269,7 +288,8 @@ paths:
   /families/{familyId}:
     get:
       tags: [family]
-      x-phase: 2
+      x-phase: 1
+      description: Phase 1 returns members with name, avatar, role, relationship (used by the child consent screen). No locations.
       parameters: [ { $ref: '#/components/parameters/familyId' } ]
       responses:
         '200': { description: Family with members (visibility rules applied), content: { application/json: { schema: { $ref: '#/components/schemas/Family' } } } }
