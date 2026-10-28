@@ -120,8 +120,63 @@ abstract final class AppIcons {
   ];
 }
 
+/// Brand artwork (logo system and illustrations). Vector only; see docs/ui-board/brand-sheet.html.
 abstract final class BrandAssets {
+  /// Google "G" for Continue with Google (brand guidelines: do not recolor).
   static const googleG = 'assets/brand/google-g.svg';
+  /// "Who are you?" card: child with a family code.
+  static const illustrationChild = 'assets/brand/illustration-child.svg';
+  /// "Who are you?" card: other family member (invitation).
+  static const illustrationMember = 'assets/brand/illustration-member.svg';
+  /// "Who are you?" card: parent / guardian at home.
+  static const illustrationParent = 'assets/brand/illustration-parent.svg';
+  /// "Who are you?" card: probashi living abroad (plane).
+  static const illustrationProbashi = 'assets/brand/illustration-probashi.svg';
+  /// Welcome background: family walking in a soft green landscape (360x200).
+  static const illustrationWelcome = 'assets/brand/illustration-welcome.svg';
+  /// Simplified app tile for 16-32px (wider gaps, bigger heads).
+  static const logoAppSmall = 'assets/brand/logo-app-small.svg';
+  /// App tile: emerald rounded square with the white pin. 40dp in the Home header.
   static const logoApp = 'assets/brand/logo-app.svg';
+  /// Horizontal lockup for dark surfaces.
+  static const logoLockupDark = 'assets/brand/logo-lockup-dark.svg';
+  /// Stacked lockup with the slogan (dark surfaces).
+  static const logoLockupStackedDark = 'assets/brand/logo-lockup-stacked-dark.svg';
+  /// Stacked lockup with the slogan (light surfaces).
+  static const logoLockupStacked = 'assets/brand/logo-lockup-stacked.svg';
+  /// Horizontal lockup: mark + Nirapod + Live Family Locator (light surfaces).
+  static const logoLockup = 'assets/brand/logo-lockup.svg';
+  /// Single-colour stroke version (currentColor); paths are named for the draw-on.
+  static const logoMarkLine = 'assets/brand/logo-mark-line.svg';
+  /// Map-pin badge with the family (two adults + child). Use on light or dark surfaces.
   static const logoMark = 'assets/brand/logo-mark.svg';
+  /// Single-colour knockout mark simplified for small sizes.
+  static const logoMonoSmall = 'assets/brand/logo-mono-small.svg';
+  /// Single-colour knockout mark (currentColor): themed icons, print, watermarks.
+  static const logoMono = 'assets/brand/logo-mono.svg';
+  /// "Nirapod" wordmark for dark surfaces.
+  static const logoWordmarkDark = 'assets/brand/logo-wordmark-dark.svg';
+  /// "Nirapod" wordmark for light surfaces (Noto Sans outlines).
+  static const logoWordmark = 'assets/brand/logo-wordmark.svg';
+
+  static const all = <String>[
+    googleG,
+    illustrationChild,
+    illustrationMember,
+    illustrationParent,
+    illustrationProbashi,
+    illustrationWelcome,
+    logoAppSmall,
+    logoApp,
+    logoLockupDark,
+    logoLockupStackedDark,
+    logoLockupStacked,
+    logoLockup,
+    logoMarkLine,
+    logoMark,
+    logoMonoSmall,
+    logoMono,
+    logoWordmarkDark,
+    logoWordmark,
+  ];
 }

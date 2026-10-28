@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dark app background (tokens: dark.background). Must equal the Flutter splash background (no flash between native splash and first frame). -->
+<resources>
+    <color name="nirapod_window_bg">#FF0B1512</color>
+    <color name="nirapod_brand">#FF059669</color>
+</resources>
