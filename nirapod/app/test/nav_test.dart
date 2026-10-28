@@ -59,7 +59,7 @@ void main() {
   testWidgets('app boots: splash -> welcome after 600 ms', (t) async {
     await t.pumpWidget(ProviderScope(overrides: await overrides(), child: const NirapodApp()));
     await t.pump();
-    expect(find.bySemanticsLabel('Nirapod'), findsOneWidget);
+    expect(find.bySemanticsLabel(RegExp(r'^Nirapod')), findsOneWidget);
     await t.pump(const Duration(milliseconds: 650));
     await t.pump(const Duration(milliseconds: 300));
     expect(find.text('Get Started'), findsOneWidget);

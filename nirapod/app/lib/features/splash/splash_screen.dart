@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
+import '../../core/i18n/locale_controller.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -29,10 +32,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _decide() async {
-    final results = await Future.wait<Object?>([
-      Future<void>.delayed(Motion.splash),
-      _restore(),
-    ]);
+    final results = await Future.wait<Object?>([Future<void>.delayed(Motion.splash), _restore()]);
     if (!mounted) return;
     final progress = ref.read(onboardingProgressProvider);
     final target = splashDestination(
@@ -52,8 +52,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   @override
+  // SplashBrand is the whole body (no AppBar/SafeArea) so its centre matches the native splash, and it
+  // paints its own background from the system brightness, so there is no colour flash.
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: context.colors.background,
-        body: const Center(child: SplashBrand()),
-      );
+    backgroundColor: context.colors.background,
+    body: SplashBrand(tagline: ref.watch(screenStringsProvider('splash')).t('common.tagline')),
+  );
 }

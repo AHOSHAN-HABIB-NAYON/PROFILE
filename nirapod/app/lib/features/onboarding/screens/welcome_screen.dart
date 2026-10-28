@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
+import '../../../core/icons/app_icons.g.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -31,7 +35,23 @@ class WelcomeScreen extends ConsumerWidget {
               label: s.t('welcome.illustration_a11y'),
               image: true,
               excludeSemantics: true,
-              child: const WelcomeBackdrop(),
+              child: Stack(
+                children: [
+                  const Positioned.fill(child: WelcomeBackdrop()),
+                  // Brand illustration (Design): family in a green landscape, anchored to the bottom.
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Opacity(
+                      opacity: Theme.of(context).brightness == Brightness.dark ? 0.55 : 1,
+                      child: SvgPicture.asset(
+                        BrandAssets.illustrationWelcome,
+                        width: double.infinity,
+                        fit: BoxFit.fitWidth,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           SafeArea(
@@ -60,11 +80,19 @@ class WelcomeScreen extends ConsumerWidget {
                               child: Text(s.t('common.app_name'), style: t.displaySmall, textAlign: TextAlign.center),
                             ),
                             const SizedBox(height: Space.xxs),
-                            Text(s.t('common.tagline'), style: t.titleMedium!.copyWith(color: c.primaryText), textAlign: TextAlign.center),
+                            Text(
+                              s.t('common.tagline'),
+                              style: t.titleMedium!.copyWith(color: c.primaryText),
+                              textAlign: TextAlign.center,
+                            ),
                             const SizedBox(height: Space.md),
                             ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 340),
-                              child: Text(s.t('common.promise'), style: t.bodyLarge!.copyWith(color: c.muted), textAlign: TextAlign.center),
+                              child: Text(
+                                s.t('common.promise'),
+                                style: t.bodyLarge!.copyWith(color: c.muted),
+                                textAlign: TextAlign.center,
+                              ),
                             ),
                             const SizedBox(height: Space.xl),
                           ],
@@ -74,7 +102,12 @@ class WelcomeScreen extends ConsumerWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(Space.screenHorizontal, Space.xs, Space.screenHorizontal, Space.lg),
+                  padding: const EdgeInsets.fromLTRB(
+                    Space.screenHorizontal,
+                    Space.xs,
+                    Space.screenHorizontal,
+                    Space.lg,
+                  ),
                   child: SizedBox(
                     width: double.infinity,
                     child: AppButton(

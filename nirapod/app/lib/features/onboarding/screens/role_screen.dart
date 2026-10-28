@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -29,10 +30,10 @@ class _RoleScreenState extends ConsumerState<RoleScreen> {
   late RoleChoice? _selected = ref.read(onboardingProgressProvider).role;
 
   static const _cards = [
-    (RoleChoice.parent, AppIcons.shieldCheck, 'role.parent', 'role.parent_desc'),
-    (RoleChoice.child, AppIcons.user, 'role.child', 'role.child_desc'),
-    (RoleChoice.probashi, AppIcons.globe, 'role.probashi', 'role.probashi_desc'),
-    (RoleChoice.member, AppIcons.users, 'role.member', 'role.member_desc'),
+    (RoleChoice.parent, BrandAssets.illustrationParent, 'role.parent', 'role.parent_desc'),
+    (RoleChoice.child, BrandAssets.illustrationChild, 'role.child', 'role.child_desc'),
+    (RoleChoice.probashi, BrandAssets.illustrationProbashi, 'role.probashi', 'role.probashi_desc'),
+    (RoleChoice.member, BrandAssets.illustrationMember, 'role.member', 'role.member_desc'),
   ];
 
   Future<void> _choose(RoleChoice role) async {
@@ -68,48 +69,53 @@ class _RoleScreenState extends ConsumerState<RoleScreen> {
                     const SizedBox(height: Space.xxs),
                     Text(s.t('role.subtitle'), style: t.bodyLarge!.copyWith(color: c.muted)),
                     const SizedBox(height: Space.xl),
-                    LayoutBuilder(builder: (context, box) {
-                      final columns = box.maxWidth / scale >= 280 ? 2 : 1;
-                      final cards = [
-                        for (final (role, icon, title, desc) in _cards)
-                          _RoleCard(
-                            key: Key('role_${role.name}'),
-                            icon: icon,
-                            title: s.t(title),
-                            description: s.t(desc),
-                            selected: _selected == role,
-                            onTap: () => _choose(role),
-                          ),
-                      ];
-                      return Semantics(
-                        label: s.t('role.cards_a11y'),
-                        container: true,
-                        child: Column(
-                          children: [
-                            for (var i = 0; i < cards.length; i += columns) ...[
-                              if (i > 0) const SizedBox(height: Space.sm),
-                              IntrinsicHeight(
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    for (var j = i; j < i + columns && j < cards.length; j++) ...[
-                                      if (j > i) const SizedBox(width: Space.sm),
-                                      Expanded(child: cards[j]),
+                    LayoutBuilder(
+                      builder: (context, box) {
+                        final columns = box.maxWidth / scale >= 280 ? 2 : 1;
+                        final cards = [
+                          for (final (role, icon, title, desc) in _cards)
+                            _RoleCard(
+                              key: Key('role_${role.name}'),
+                              icon: icon,
+                              title: s.t(title),
+                              description: s.t(desc),
+                              selected: _selected == role,
+                              onTap: () => _choose(role),
+                            ),
+                        ];
+                        return Semantics(
+                          label: s.t('role.cards_a11y'),
+                          container: true,
+                          child: Column(
+                            children: [
+                              for (var i = 0; i < cards.length; i += columns) ...[
+                                if (i > 0) const SizedBox(height: Space.sm),
+                                IntrinsicHeight(
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                                    children: [
+                                      for (var j = i; j < i + columns && j < cards.length; j++) ...[
+                                        if (j > i) const SizedBox(width: Space.sm),
+                                        Expanded(child: cards[j]),
+                                      ],
                                     ],
-                                  ],
+                                  ),
                                 ),
-                              ),
+                              ],
                             ],
-                          ],
-                        ),
-                      );
-                    }),
+                          ),
+                        );
+                      },
+                    ),
                     const SizedBox(height: Space.lg),
-                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      AppIcon(AppIcons.info, size: 20, color: c.muted),
-                      const SizedBox(width: Space.xs),
-                      Expanded(child: Text(s.t('role.note'), style: t.bodySmall)),
-                    ]),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppIcon(AppIcons.info, size: 20, color: c.muted),
+                        const SizedBox(width: Space.xs),
+                        Expanded(child: Text(s.t('role.note'), style: t.bodySmall)),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -133,7 +139,14 @@ class _RoleScreenState extends ConsumerState<RoleScreen> {
 }
 
 class _RoleCard extends StatelessWidget {
-  const _RoleCard({super.key, required this.icon, required this.title, required this.description, required this.selected, required this.onTap});
+  const _RoleCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.selected,
+    required this.onTap,
+  });
   final String icon;
   final String title;
   final String description;
@@ -164,27 +177,24 @@ class _RoleCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(color: c.primary.withValues(alpha: 0.12), shape: BoxShape.circle),
-                  child: AppIcon(icon, size: 26, color: c.primaryText),
-                ),
-                const Spacer(),
-                AnimatedOpacity(
-                  duration: d,
-                  opacity: selected ? 1 : 0,
-                  child: Container(
-                    width: 24,
-                    height: 24,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(color: c.primaryFill, shape: BoxShape.circle),
-                    child: AppIcon(AppIcons.check, size: 16, color: c.onPrimaryFill),
+              Row(
+                children: [
+                  // Original brand illustration (Design), decorative.
+                  SvgPicture.asset(icon, width: 64, height: 64, excludeFromSemantics: true),
+                  const Spacer(),
+                  AnimatedOpacity(
+                    duration: d,
+                    opacity: selected ? 1 : 0,
+                    child: Container(
+                      width: 24,
+                      height: 24,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(color: c.primaryFill, shape: BoxShape.circle),
+                      child: AppIcon(AppIcons.check, size: 16, color: c.onPrimaryFill),
+                    ),
                   ),
-                ),
-              ]),
+                ],
+              ),
               const SizedBox(height: Space.sm),
               Text(title, style: t.titleMedium),
               const SizedBox(height: Space.xxs),
