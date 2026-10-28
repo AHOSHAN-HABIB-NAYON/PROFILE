@@ -1,0 +1,135 @@
+// Transactional email templates: responsive HTML + plain text, English and Bengali.
+// The language is the user's saved language; anything else falls back to English (never mixed).
+// Bengali strings need native-speaker review before release (same rule as the app strings).
+
+export const TEMPLATE_LANGUAGES = ['en', 'bn'];
+
+const T = {
+  en: {
+    dir: 'ltr',
+    footer: 'You received this email because of your Nirapod account. If this was not you, you can ignore it.',
+    verify_email: {
+      subject: 'Your Nirapod verification code',
+      heading: 'Verify your email',
+      intro: 'Enter this code in the app to finish creating your account:',
+      note: 'The code expires in 10 minutes. Never share it with anyone, including Nirapod support.',
+    },
+    reset_password: {
+      subject: 'Your Nirapod password reset code',
+      heading: 'Reset your password',
+      intro: 'Enter this code in the app to choose a new password:',
+      note: 'The code expires in 10 minutes. If you did not ask to reset your password, you can ignore this email.',
+    },
+    welcome: {
+      subject: 'Welcome to Nirapod',
+      heading: 'Welcome to Nirapod',
+      intro: 'Your account is ready. Create your family circle and invite the people you care about.',
+      note: 'Nirapod never hides tracking: everyone in your family can always see when location sharing is on.',
+    },
+    new_device_login: {
+      subject: 'New sign-in to your Nirapod account',
+      heading: 'New sign-in',
+      intro: 'Your account was just used to sign in on a new device:',
+      note: 'If this was not you, reset your password and sign out other devices in Profile > Devices and sessions.',
+      device: 'Device',
+      time: 'Time',
+      unknownDevice: 'Unknown device',
+    },
+  },
+  bn: {
+    dir: 'ltr',
+    footer: 'আপনার Nirapod অ্যাকাউন্টের কারণে আপনি এই ইমেইলটি পেয়েছেন। এটি আপনি না হলে ইমেইলটি উপেক্ষা করুন।',
+    verify_email: {
+      subject: 'আপনার Nirapod যাচাই কোড',
+      heading: 'আপনার ইমেইল যাচাই করুন',
+      intro: 'অ্যাকাউন্ট তৈরি শেষ করতে অ্যাপে এই কোডটি লিখুন:',
+      note: 'কোডটির মেয়াদ ১০ মিনিট। Nirapod সাপোর্টসহ কাউকে এই কোড দেবেন না।',
+    },
+    reset_password: {
+      subject: 'আপনার Nirapod পাসওয়ার্ড রিসেট কোড',
+      heading: 'পাসওয়ার্ড রিসেট করুন',
+      intro: 'নতুন পাসওয়ার্ড বেছে নিতে অ্যাপে এই কোডটি লিখুন:',
+      note: 'কোডটির মেয়াদ ১০ মিনিট। আপনি পাসওয়ার্ড রিসেট করতে না চাইলে এই ইমেইলটি উপেক্ষা করুন।',
+    },
+    welcome: {
+      subject: 'Nirapod-এ স্বাগতম',
+      heading: 'Nirapod-এ স্বাগতম',
+      intro: 'আপনার অ্যাকাউন্ট প্রস্তুত। আপনার পরিবারের সার্কেল তৈরি করুন এবং প্রিয়জনদের আমন্ত্রণ জানান।',
+      note: 'Nirapod কখনো লুকিয়ে ট্র্যাক করে না: লোকেশন শেয়ারিং চালু থাকলে পরিবারের সবাই তা সবসময় দেখতে পায়।',
+    },
+    new_device_login: {
+      subject: 'আপনার Nirapod অ্যাকাউন্টে নতুন সাইন-ইন',
+      heading: 'নতুন সাইন-ইন',
+      intro: 'এইমাত্র একটি নতুন ডিভাইসে আপনার অ্যাকাউন্টে সাইন-ইন করা হয়েছে:',
+      note: 'এটি আপনি না হলে পাসওয়ার্ড রিসেট করুন এবং প্রোফাইল > ডিভাইস ও সেশন থেকে অন্য ডিভাইসগুলো সাইন-আউট করুন।',
+      device: 'ডিভাইস',
+      time: 'সময়',
+      unknownDevice: 'অজানা ডিভাইস',
+    },
+  },
+};
+
+const esc = (s) =>
+  String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+export const pickLanguage = (lang) => (TEMPLATE_LANGUAGES.includes(lang) ? lang : 'en');
+
+function layout({ lang, dir, heading, bodyHtml, footer }) {
+  const font = lang === 'bn' ? "'Noto Sans Bengali','Noto Sans',Arial,sans-serif" : "'Noto Sans',Arial,sans-serif";
+  return `<!doctype html>
+<html lang="${lang}" dir="${dir}">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark"><title>${esc(heading)}</title>
+<style>
+@media (max-width:600px){.card{padding:24px 20px!important}.code{font-size:28px!important;letter-spacing:6px!important}}
+@media (prefers-color-scheme:dark){body,.bg{background:#0B1512!important}.card{background:#121F1B!important;border-color:#20322D!important}
+.t{color:#E8F1EE!important}.m{color:#8FA39D!important}.code{background:#0B1512!important;color:#34D399!important}}
+</style></head>
+<body style="margin:0;padding:0;background:#F6F8F7;">
+<table role="presentation" class="bg" width="100%" cellpadding="0" cellspacing="0" style="background:#F6F8F7;">
+<tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+<tr><td style="padding:0 4px 16px;font-family:${font};font-size:20px;font-weight:700;color:#047857;">Nirapod</td></tr>
+<tr><td class="card" style="background:#FFFFFF;border:1px solid #E5EAE8;border-radius:16px;padding:32px;font-family:${font};">
+<h1 class="t" style="margin:0 0 12px;font-size:22px;line-height:1.4;color:#0F2A24;">${esc(heading)}</h1>
+${bodyHtml}
+</td></tr>
+<tr><td class="m" style="padding:16px 4px;font-family:${font};font-size:12px;line-height:1.6;color:#5B6C67;">${esc(footer)}</td></tr>
+</table></td></tr></table></body></html>`;
+}
+
+const p = (s) => `<p class="t" style="margin:0 0 16px;font-size:15px;line-height:1.7;color:#0F2A24;">${esc(s)}</p>`;
+const muted = (s) => `<p class="m" style="margin:16px 0 0;font-size:13px;line-height:1.6;color:#5B6C67;">${esc(s)}</p>`;
+// Code digits stay left-to-right in every language.
+const codeBlock = (code) =>
+  `<p dir="ltr" class="code" style="margin:8px 0;padding:16px;background:#F6F8F7;border-radius:12px;text-align:center;font-family:'Noto Sans Mono',Consolas,monospace;font-size:32px;letter-spacing:8px;font-weight:700;color:#047857;">${esc(code)}</p>`;
+
+/**
+ * @param {'verify_email'|'reset_password'|'welcome'|'new_device_login'} template
+ * @returns {{subject: string, html: string, text: string, language: string}}
+ */
+export function render(template, language, vars = {}) {
+  const lang = pickLanguage(language);
+  const L = T[lang];
+  const t = L[template];
+  if (!t) throw new Error(`Unknown email template ${template}`);
+  let bodyHtml;
+  let text;
+  if (template === 'verify_email' || template === 'reset_password') {
+    bodyHtml = p(t.intro) + codeBlock(vars.code) + muted(t.note);
+    text = `${t.heading}\n\n${t.intro}\n\n    ${vars.code}\n\n${t.note}`;
+  } else if (template === 'new_device_login') {
+    const device = vars.device || t.unknownDevice;
+    bodyHtml = p(t.intro) + p(`${t.device}: ${device}`) + p(`${t.time}: ${vars.time}`) + muted(t.note);
+    text = `${t.heading}\n\n${t.intro}\n${t.device}: ${device}\n${t.time}: ${vars.time}\n\n${t.note}`;
+  } else {
+    bodyHtml = p(t.intro) + muted(t.note);
+    text = `${t.heading}\n\n${t.intro}\n\n${t.note}`;
+  }
+  return {
+    subject: t.subject,
+    html: layout({ lang, dir: L.dir, heading: t.heading, bodyHtml, footer: L.footer }),
+    text: `${text}\n\n--\n${L.footer}\n`,
+    language: lang,
+  };
+}

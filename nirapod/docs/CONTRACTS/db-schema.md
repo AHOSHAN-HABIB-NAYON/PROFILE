@@ -7,7 +7,7 @@ Source of truth: `server/migrations/` (knex). Run `npm run migrate` then `npm ru
 
 | Group | Tables |
 |---|---|
-| Identity and auth | `users`, `sessions` (one per device; rotating refresh token hash, FCM token), `email_codes`, `admin_users`, `agents` |
+| Identity and auth | `users`, `sessions` (one per device; stable uuid = JWT `sid`, CURRENT refresh token hash, FCM token), `refresh_token_history` (retired refresh-token hashes for reuse detection; pruned after 30 days), `email_codes` (HMAC of the code, attempts, lock), `admin_users`, `agents` |
 | Family | `families`, `family_members` (role, overseas flag, adult `sharing_status`, daily summary), `consents`, `child_devices`, `join_codes`, `invites`, `emergency_contacts` |
 | **Location (no admin access)** | `locations`, `places` (radius CHECK 100-300 m), `trips`, `timeline_events`, `nearby_cache`, `sos_events` |
 | SOS delivery | `sos_deliveries` (per recipient: queued, sent, delivered, seen, responded, failed) |
@@ -22,4 +22,7 @@ Source of truth: `server/migrations/` (knex). Run `npm run migrate` then `npm ru
 - Children: `auth_provider = 'device'`, no email or password; the session is bound to `child_devices.device_id`.
 - Plan limits are read from `plans` (+ per-family overrides later) and enforced in the API, never only in the app.
 - Deleting a user cascades to sessions, codes, memberships, consents, locations, notifications; chat rows are purged by the retention jobs (7 days).
-- The admin MySQL user is granted every table EXCEPT the location group (`tools/sql/admin-grants.sql`).
+- The admin MySQL user is granted every table EXCEPT the location group (`tools/sql/admin-grants.sql`); `refresh_token_history` is DELETE-only.
+- Refresh rotation: `/auth/refresh` moves the old hash to `refresh_token_history`. A hash found there (a replayed, rotated token) revokes every session with the same `rotation_family`.
+- No table stores an IP address. Codes (email and family codes) are never logged; email codes are stored only as an HMAC.
+- Profile photos are files under `UPLOAD_DIR/avatars/` (random uuid names); `users.avatar_url` / `avatar_thumb_url` hold `/media/avatars/<uuid>.jpg` (or a Google `https://` URL), made absolute with `PUBLIC_BASE_URL` in API responses.

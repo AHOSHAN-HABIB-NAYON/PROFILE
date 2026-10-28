@@ -35,11 +35,20 @@ const schema = z.object({
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().default(60_000),
   RATE_LIMIT_MAX: z.coerce.number().int().default(120),
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().default(10),
+  // /auth/refresh has its own, more generous per-IP limiter (apps refresh every 15 minutes per device).
+  REFRESH_RATE_LIMIT_MAX: z.coerce.number().int().default(30),
+  // bcrypt work factor. 12 is required in production; tests may lower it for speed.
+  BCRYPT_COST: z.coerce.number().int().min(4).max(15).default(12),
+  // Version string stored with the 18+/Terms/Privacy consent.
+  TERMS_VERSION: z.string().min(1).max(20).default('2026-10'),
+  // Profile photos (re-encoded, metadata-free) are written here and served read-only at /media/avatars/.
+  UPLOAD_DIR: z.string().min(1).default('./uploads'),
 
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().optional(),
   SMTP_USER: z.string().optional(),
   SMTP_PASSWORD: z.string().optional(),
+  SMTP_SECURE: bool.default(false),
   MAIL_FROM: z.string().optional(),
 
   FCM_SERVICE_ACCOUNT_JSON_PATH: z.string().optional(),
@@ -60,6 +69,7 @@ export function loadConfig(env = process.env) {
       (k) => !cfg[k],
     );
     if (missing.length) throw new Error(`Missing required production settings: ${missing.join(', ')}`);
+    if (cfg.BCRYPT_COST < 12) throw new Error('BCRYPT_COST must be at least 12 in production');
     cfg.FORCE_HTTPS = true;
   }
   cfg.corsOrigins = cfg.CORS_ALLOWED_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean);
