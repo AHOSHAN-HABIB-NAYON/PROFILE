@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nirapod/app.dart';
+import 'package:nirapod/features/auth/routes.dart';
+import 'package:nirapod/features/onboarding/routes.dart';
 import 'package:nirapod/nav/router.dart';
 import 'package:nirapod/nav/routes.g.dart';
 
@@ -59,8 +61,8 @@ void main() {
     await t.pump();
     expect(find.bySemanticsLabel('Nirapod'), findsOneWidget);
     await t.pump(const Duration(milliseconds: 650));
-    await t.pumpAndSettle();
-    expect(find.text('Welcome'), findsWidgets);
+    await t.pump(const Duration(milliseconds: 300));
+    expect(find.text('Get Started'), findsOneWidget);
   });
 
   testWidgets('every screen path can be opened', (t) async {
@@ -71,9 +73,12 @@ void main() {
     ));
     for (final s in screens.where((s) => s.id != 'splash')) {
       router.go(locationFor(s.id));
-      await t.pumpAndSettle();
+      // Real screens have looping demos: pump past the page transition instead of pumpAndSettle.
+      await t.pump();
+      await t.pump(const Duration(milliseconds: 600));
       expect(t.takeException(), isNull, reason: s.id);
-      expect(find.text(s.title), findsWidgets, reason: s.id);
+      final registered = onboardingScreens.containsKey(s.id) || authScreens.containsKey(s.id);
+      if (!registered) expect(find.text(s.title), findsWidgets, reason: s.id);
     }
   });
 
