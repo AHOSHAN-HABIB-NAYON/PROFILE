@@ -1,47 +1,59 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/icons/app_icons.g.dart';
 import '../../core/motion/motion.dart';
+import '../../core/session/session.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/brand/splash_brand.dart';
+import '../../nav/router.dart';
+import '../onboarding/onboarding_flow.dart';
 
-/// Splash (600 ms). Phase 0 always continues to Welcome; Phase 1 adds the session / onboarding checks.
-class SplashScreen extends StatefulWidget {
+/// Splash (at least 600 ms). Restores the session while the brand is shown, then follows
+/// [splashDestination]. Visual: [SplashBrand] centred on the theme background, continuing the native
+/// Android splash without a jump.
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
-  Timer? _t;
-
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _t = Timer(Motion.splash, () {
-      if (mounted) context.go('/welcome');
-    });
+    unawaited(_decide());
   }
 
-  @override
-  void dispose() {
-    _t?.cancel();
-    super.dispose();
+  Future<void> _decide() async {
+    final results = await Future.wait<Object?>([
+      Future<void>.delayed(Motion.splash),
+      _restore(),
+    ]);
+    if (!mounted) return;
+    final progress = ref.read(onboardingProgressProvider);
+    final target = splashDestination(
+      session: results[1]! as SessionState,
+      onboardingDone: progress.done,
+      role: progress.role,
+    );
+    context.go(locationFor(target));
+  }
+
+  Future<SessionState> _restore() async {
+    try {
+      return await ref.read(sessionControllerProvider.notifier).restore();
+    } catch (_) {
+      return const SignedOut();
+    }
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: context.colors.background,
-        body: Center(
-          child: Semantics(
-            label: 'Nirapod',
-            image: true,
-            child: SvgPicture.asset(BrandAssets.logoApp, width: 96, height: 96),
-          ),
-        ),
+        body: const Center(child: SplashBrand()),
       );
 }

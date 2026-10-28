@@ -432,6 +432,10 @@
       "placeholders": [],
       "en": "Nirapod logo"
     },
+    "welcome.illustration_a11y": {
+      "placeholders": [],
+      "en": "A family standing together on a green hill"
+    },
     "perm.step": {
       "placeholders": [
         "current",
@@ -535,6 +539,38 @@
       "placeholders": [],
       "en": "Continue"
     },
+    "perm.demo_a11y_notifications": {
+      "placeholders": [],
+      "en": "Animation: family alerts arriving on a phone lock screen"
+    },
+    "perm.demo_a11y_how": {
+      "placeholders": [],
+      "en": "Animation: a child walks from home to school and the parent gets an alert"
+    },
+    "perm.demo_a11y_location": {
+      "placeholders": [],
+      "en": "Animation: a map with your location and your family nearby"
+    },
+    "perm.demo_app": {
+      "placeholders": [],
+      "en": "Nirapod"
+    },
+    "perm.loc_you": {
+      "placeholders": [],
+      "en": "You"
+    },
+    "perm.already_allowed": {
+      "placeholders": [],
+      "en": "Already allowed"
+    },
+    "perm.denied_notif": {
+      "placeholders": [],
+      "en": "Notifications are off, so you may miss arrival and SOS alerts. You can turn them on in Settings."
+    },
+    "perm.denied_location": {
+      "placeholders": [],
+      "en": "Location is off, so your family cannot see where you are. You can turn it on in Settings."
+    },
     "role.title": {
       "placeholders": [],
       "en": "Who are you?"
@@ -586,6 +622,10 @@
     "role.log_in": {
       "placeholders": [],
       "en": "Log in"
+    },
+    "role.cards_a11y": {
+      "placeholders": [],
+      "en": "Choose one of four options"
     },
     "auth.login_parent": {
       "placeholders": [],
@@ -1144,6 +1184,86 @@
     "childperm.allset_body": {
       "placeholders": [],
       "en": "Your family can now see that you are safe."
+    },
+    "childperm.bg_demo_a11y": {
+      "placeholders": [],
+      "en": "Animation: the phone screen turns off and location sharing keeps working"
+    },
+    "childperm.bg_disclosure_title": {
+      "placeholders": [],
+      "en": "Why Nirapod needs your location all the time"
+    },
+    "childperm.bg_denied": {
+      "placeholders": [],
+      "en": "Background location is off. Open Settings, tap Location and choose \"Allow all the time\"."
+    },
+    "childperm.bg_granted": {
+      "placeholders": [],
+      "en": "Location is allowed all the time."
+    },
+    "childperm.battery_demo_a11y": {
+      "placeholders": [],
+      "en": "Animation: battery saver is set to no restrictions so sharing keeps running"
+    },
+    "childperm.battery_restricted": {
+      "placeholders": [],
+      "en": "Restricted"
+    },
+    "childperm.battery_unrestricted": {
+      "placeholders": [],
+      "en": "No restrictions"
+    },
+    "childperm.battery_steps": {
+      "placeholders": [],
+      "en": "Steps for your phone"
+    },
+    "childperm.brand_name_xiaomi": {
+      "placeholders": [],
+      "en": "Xiaomi"
+    },
+    "childperm.brand_name_oppo": {
+      "placeholders": [],
+      "en": "Oppo"
+    },
+    "childperm.brand_name_vivo": {
+      "placeholders": [],
+      "en": "Vivo"
+    },
+    "childperm.brand_name_realme": {
+      "placeholders": [],
+      "en": "Realme"
+    },
+    "childperm.brand_name_samsung": {
+      "placeholders": [],
+      "en": "Samsung"
+    },
+    "childperm.brand_name_other": {
+      "placeholders": [],
+      "en": "Others"
+    },
+    "childperm.consent_error": {
+      "placeholders": [],
+      "en": "We could not load your family. Please try again."
+    },
+    "childperm.consent_offline": {
+      "placeholders": [],
+      "en": "You are offline. Connect to the internet and try again."
+    },
+    "childperm.consent_save_error": {
+      "placeholders": [],
+      "en": "We could not save your answer. Please try again."
+    },
+    "childperm.consent_empty": {
+      "placeholders": [],
+      "en": "No adults have joined your family yet. They will appear here when they join."
+    },
+    "childperm.role_parent": {
+      "placeholders": [],
+      "en": "Parent"
+    },
+    "childperm.role_guardian": {
+      "placeholders": [],
+      "en": "Guardian"
     },
     "code.title": {
       "placeholders": [],
