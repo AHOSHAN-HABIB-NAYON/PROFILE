@@ -91,6 +91,13 @@ jobs:
           echo "Merged manifest: $MERGED"
           test -n "$MERGED"
           node ../tools/check-permissions.mjs android/app/src/main/AndroidManifest.xml "$MERGED"
+      - name: Build installable APK (for testing on a phone)
+        run: flutter build apk --release --dart-define=APP_VERSION=0.1.0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nirapod-apk
+          path: nirapod/app/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         with:
           name: nirapod-release-aab
