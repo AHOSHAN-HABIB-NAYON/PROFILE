@@ -12,6 +12,8 @@ CREATE USER IF NOT EXISTS 'nirapod_admin'@'localhost' IDENTIFIED BY 'CHANGE_ME';
 GRANT SELECT, INSERT, UPDATE, DELETE ON nirapod.users TO 'nirapod_admin'@'localhost';
 GRANT SELECT, INSERT, UPDATE, DELETE ON nirapod.sessions TO 'nirapod_admin'@'localhost';
 GRANT SELECT, INSERT, UPDATE, DELETE ON nirapod.email_codes TO 'nirapod_admin'@'localhost';
+-- Retired refresh-token hashes (reuse detection). Admin never reads them; DELETE only, for account deletion.
+GRANT DELETE ON nirapod.refresh_token_history TO 'nirapod_admin'@'localhost';
 GRANT SELECT, INSERT, UPDATE, DELETE ON nirapod.admin_users TO 'nirapod_admin'@'localhost';
 GRANT SELECT, INSERT, UPDATE, DELETE ON nirapod.families TO 'nirapod_admin'@'localhost';
 GRANT SELECT, INSERT, UPDATE, DELETE ON nirapod.family_members TO 'nirapod_admin'@'localhost';

@@ -1,7 +1,6 @@
--- Nirapod MySQL schema (generated from migrations with: mysqldump --no-data). Source of truth: server/migrations/.
+-- Nirapod MySQL schema (generated from migrations with: mysqldump --no-data --compact, knex_* tables and /*!...*/ lines removed). Source of truth: server/migrations/
 -- Location-bearing tables (no admin grants): locations, places, trips, sos_events, timeline_events, nearby_cache.
 /*M!999999\- enable the sandbox mode */ 
-
 CREATE TABLE `abuse_reports` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `reporter_user_id` bigint(20) unsigned NOT NULL,
@@ -422,16 +421,6 @@ CREATE TABLE `kb_articles` (
   KEY `kb_articles_updated_by_admin_id_foreign` (`updated_by_admin_id`),
   CONSTRAINT `kb_articles_updated_by_admin_id_foreign` FOREIGN KEY (`updated_by_admin_id`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) DEFAULT NULL,
-  `batch` int(11) DEFAULT NULL,
-  `migration_time` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-  `index` int(10) unsigned NOT NULL AUTO_INCREMENT,
-  `is_locked` int(11) DEFAULT NULL,
-  PRIMARY KEY (`index`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 CREATE TABLE `locations` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `family_id` bigint(20) unsigned NOT NULL,
@@ -580,6 +569,16 @@ CREATE TABLE `redemptions` (
   CONSTRAINT `redemptions_redeem_code_id_foreign` FOREIGN KEY (`redeem_code_id`) REFERENCES `redeem_codes` (`id`),
   CONSTRAINT `redemptions_subscription_id_foreign` FOREIGN KEY (`subscription_id`) REFERENCES `subscriptions` (`id`) ON DELETE SET NULL,
   CONSTRAINT `redemptions_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+CREATE TABLE `refresh_token_history` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `session_id` bigint(20) unsigned NOT NULL,
+  `token_hash` varchar(64) NOT NULL,
+  `retired_at` datetime(3) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `refresh_token_history_token_hash_unique` (`token_hash`),
+  KEY `refresh_token_history_session_id_retired_at_index` (`session_id`,`retired_at`),
+  CONSTRAINT `refresh_token_history_session_id_foreign` FOREIGN KEY (`session_id`) REFERENCES `sessions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 CREATE TABLE `sessions` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -759,5 +758,3 @@ CREATE TABLE `users` (
   UNIQUE KEY `users_email_unique` (`email`),
   UNIQUE KEY `users_google_sub_unique` (`google_sub`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-
