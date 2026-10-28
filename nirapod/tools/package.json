@@ -1,0 +1,18 @@
+{
+  "name": "nirapod-tools",
+  "private": true,
+  "type": "module",
+  "description": "Build-time tools: tokens, icons, flags, i18n checks, permission checks",
+  "scripts": {
+    "tokens": "node gen-tokens.mjs",
+    "nav": "node gen-nav.mjs",
+    "icons": "node build-icons.mjs",
+    "flags": "node build-flags.mjs",
+    "sync": "node sync-shared.mjs",
+    "check": "node check-all.mjs"
+  },
+  "devDependencies": {
+    "flag-icons": "^7.6.0",
+    "svgo": "^4.1.0"
+  }
+}

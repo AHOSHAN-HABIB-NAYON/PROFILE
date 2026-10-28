@@ -1,0 +1,126 @@
+{
+  "$schema_note": "Single source of truth for design tokens. tools/gen-tokens.mjs generates app/lib/core/theme/tokens.g.dart and shared/web/tokens.css. Do not edit generated files.",
+  "version": 1,
+  "color": {
+    "light": {
+      "background": "#F6F8F7",
+      "surface": "#FFFFFF",
+      "border": "#E5EAE8",
+      "text": "#0F2A24",
+      "muted": "#6B7C77"
+    },
+    "dark": {
+      "background": "#0B1512",
+      "surface": "#121F1B",
+      "border": "#20322D",
+      "text": "#E8F1EE",
+      "muted": "#8FA39D"
+    },
+    "shared": {
+      "primary": "#059669",
+      "primaryPressed": "#047857",
+      "onPrimary": "#FFFFFF",
+      "accent": "#14B8A6",
+      "danger": "#DC2626",
+      "onDanger": "#FFFFFF",
+      "warning": "#D97706",
+      "success": "#16A34A",
+      "trustLive": "#16A34A",
+      "trustRecent": "#D97706",
+      "trustStale": "#6B7C77",
+      "trustUnavailable": "#6B7C77"
+    },
+    "accessible_text": {
+      "_note": "AA (>=4.5:1) variants for normal-size TEXT and filled-button labels. Brand colors above stay for fills of icons, rings, indicators, map accents and large text. See DECISIONS.md D-004.",
+      "light": {
+        "mutedText": "#5B6C67",
+        "primaryText": "#047857",
+        "primaryFill": "#047857",
+        "primaryFillPressed": "#065F46",
+        "warningText": "#B45309",
+        "successText": "#15803D",
+        "dangerText": "#B91C1C"
+      },
+      "dark": {
+        "mutedText": "#8FA39D",
+        "primaryText": "#34D399",
+        "primaryFill": "#10B981",
+        "primaryFillPressed": "#34D399",
+        "onPrimaryFill": "#0B1512",
+        "warningText": "#FBBF24",
+        "successText": "#4ADE80",
+        "dangerText": "#F87171"
+      }
+    },
+    "usage_rules": [
+      "danger (#DC2626) is used ONLY for SOS and destructive/danger actions",
+      "status is never conveyed by color alone: always icon + text"
+    ]
+  },
+  "typography": {
+    "families": {
+      "latin": "Noto Sans",
+      "bengali": "Noto Sans Bengali",
+      "arabic": "Noto Sans Arabic",
+      "urdu": "Noto Nastaliq Urdu",
+      "devanagari": "Noto Sans Devanagari"
+    },
+    "scale": {
+      "display": { "size": 28, "weight": 700, "lineHeight": 1.25, "lineHeightBengali": 1.45 },
+      "title":   { "size": 22, "weight": 600, "lineHeight": 1.3,  "lineHeightBengali": 1.5 },
+      "subtitle":{ "size": 17, "weight": 600, "lineHeight": 1.35, "lineHeightBengali": 1.55 },
+      "body":    { "size": 15, "weight": 400, "lineHeight": 1.45, "lineHeightBengali": 1.65 },
+      "caption": { "size": 14, "weight": 400, "lineHeight": 1.4,  "lineHeightBengali": 1.6 }
+    },
+    "rules": ["minimum body text 14sp", "titles 22-24sp semibold"]
+  },
+  "space": { "unit": 4, "xxs": 4, "xs": 8, "sm": 12, "md": 16, "lg": 20, "xl": 24, "xxl": 32, "xxxl": 48, "screenHorizontal": 20 },
+  "radius": { "input": 12, "inputLarge": 14, "card": 16, "cardLarge": 20, "buttonLarge": 18, "pill": 999, "languagePill": 18 },
+  "size": {
+    "minTouchTarget": 48,
+    "headerButton": 44,
+    "headerHeight": 64,
+    "logoHeader": 40,
+    "languagePillHeight": 36,
+    "primaryButtonHeight": 56,
+    "bottomSheetRow": 56,
+    "profileRowHeight": 96,
+    "profileAvatar": 64,
+    "profileSetupAvatar": 112,
+    "iconGrid": 24,
+    "iconStroke": 1.75
+  },
+  "elevation": {
+    "level1": { "y": 1, "blur": 3, "opacityLight": 0.06, "opacityDark": 0.30 },
+    "level2": { "y": 4, "blur": 12, "opacityLight": 0.08, "opacityDark": 0.40 },
+    "rule": "max 2 elevation levels"
+  },
+  "motion": {
+    "themeToggleMorphMs": 450,
+    "themeCrossFadeMs": 250,
+    "languageSheetMs": 280,
+    "languageRowStaggerMs": 30,
+    "languageApplyFadeMs": 250,
+    "bellSwingMs": 700,
+    "bellSwingDeg": 18,
+    "badgePopMs": 280,
+    "navIconMorphMs": 220,
+    "navIndicatorMs": 260,
+    "buttonPressInMs": 90,
+    "buttonPressOutMs": 140,
+    "buttonPressScale": 0.97,
+    "pageTransitionMs": 240,
+    "avatarPulseMs": 2400,
+    "avatarPulseScale": 1.06,
+    "greetingCrossFadeMs": 300,
+    "successCheckMs": 420,
+    "shimmerMs": 1200,
+    "welcomeLogoDrawMs": 900,
+    "confettiMs": 1500,
+    "splashMs": 600,
+    "sosCountdownS": 5,
+    "reducedMotionMaxMs": 120,
+    "frameBudgetMs": 6.9
+  },
+  "breakpoints_dp": [[320, 640], [360, 800], [412, 915]]
+}

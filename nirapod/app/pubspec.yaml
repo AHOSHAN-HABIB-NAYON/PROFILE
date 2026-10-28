@@ -1,0 +1,62 @@
+name: nirapod
+description: "Nirapod: Live Family Locator"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.7
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  go_router: ^18.1.1
+  flutter_riverpod: ^3.4.3
+  dio: ^5.11.1
+  flutter_secure_storage: ^11.2.0
+  shared_preferences: ^2.5.6
+  flutter_svg: ^2.3.0
+  timezone: ^0.11.2
+  flutter_timezone: ^5.1.1
+  flutter_displaymode: ^0.7.0
+  connectivity_plus: ^7.3.2
+  intl: ^0.20.3
+  flutter_localizations:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true  # framework widgets only; our own UI uses SVG icons (test enforces no Icons.*)
+  assets:
+    - assets/i18n/
+    - assets/tz/
+    - assets/icons/
+    - assets/brand/
+    - assets/flags/1x1/
+    - assets/flags/4x3/
+  fonts:
+    - family: Noto Sans
+      fonts:
+        - asset: assets/fonts/NotoSans-VF.ttf
+    - family: Noto Sans Bengali
+      fonts:
+        - asset: assets/fonts/NotoSansBengali-VF.ttf
+    - family: Noto Sans Arabic
+      fonts:
+        - asset: assets/fonts/NotoSansArabic-VF.ttf
+    - family: Noto Nastaliq Urdu
+      fonts:
+        - asset: assets/fonts/NotoNastaliqUrdu-VF.ttf
+    - family: Noto Sans Devanagari
+      fonts:
+        - asset: assets/fonts/NotoSansDevanagari-VF.ttf

@@ -1,0 +1,746 @@
+openapi: 3.1.0
+info:
+  title: Nirapod API
+  version: 0.1.0
+  description: |
+    Contract for the Nirapod Android app, admin panel and landing page. All endpoints live under /api/v1.
+    Phase 0 implements: GET /health, GET /app-config. Every other path is the agreed contract that later phases
+    implement (marked with x-phase). Errors always use the Error schema with a code from error-codes.md.
+
+    Hard rules reflected here:
+    - Admin endpoints (/admin/*) never return coordinates, routes, place names or visited places.
+    - Location endpoints are family-scoped and require consent (adult-to-adult visibility only after acceptance).
+    - Every auth/code endpoint is rate limited; login locks for 15 minutes after 5 failures.
+    - Plan limits are enforced on the server; live location and SOS are never limited by plan.
+servers:
+  - url: https://api.nirapod.app/api/v1
+security:
+  - bearer: []
+
+tags:
+  - name: system
+  - name: auth
+  - name: me
+  - name: family
+  - name: location
+  - name: places
+  - name: sos
+  - name: notifications
+  - name: plans
+  - name: chat
+  - name: admin
+
+paths:
+  /health:
+    get:
+      tags: [system]
+      security: []
+      x-phase: 0
+      summary: Liveness and DB status
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Health' } } } }
+        '503': { description: Degraded (DB down), content: { application/json: { schema: { $ref: '#/components/schemas/Health' } } } }
+  /app-config:
+    get:
+      tags: [system]
+      security: []
+      x-phase: 0
+      summary: Public settings - force update, feature switches, enabled languages, banner switches
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AppConfig' } } } }
+  /geo/hint:
+    get:
+      tags: [system]
+      security: []
+      x-phase: 1
+      summary: Optional country hint from a LOCAL GeoIP database. The IP is never stored or sent to third parties.
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: object, properties: { country_iso2: { type: [string, 'null'] } } } } } }
+
+  /auth/register:
+    post:
+      tags: [auth]
+      security: []
+      x-phase: 1
+      x-rate-limit: auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, adult_and_terms_confirmed, language]
+              properties:
+                email: { type: string, format: email, maxLength: 254 }
+                password: { type: string, minLength: 8, maxLength: 128, description: 'at least one letter and one number; not in the common-password list' }
+                adult_and_terms_confirmed: { type: boolean, const: true }
+                language: { $ref: '#/components/schemas/LanguageCode' }
+      responses:
+        '201': { description: Verification code sent, content: { application/json: { schema: { type: object, properties: { verification_id: { type: string } } } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '409': { $ref: '#/components/responses/Error' }
+  /auth/verify-email:
+    post:
+      tags: [auth]
+      security: []
+      x-phase: 1
+      x-rate-limit: code
+      description: 6-digit code, 10-minute expiry, 5 wrong attempts then a 15-minute lock.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [email, code], properties: { email: { type: string }, code: { type: string, pattern: '^[0-9]{6}$' }, device: { $ref: '#/components/schemas/DeviceInfo' } } } } }
+      responses:
+        '200': { description: Verified and signed in, content: { application/json: { schema: { $ref: '#/components/schemas/Session' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '410': { $ref: '#/components/responses/Error' }
+        '423': { $ref: '#/components/responses/Error' }
+  /auth/resend-code:
+    post:
+      tags: [auth]
+      security: []
+      x-phase: 1
+      description: Allowed 30 s after the last send, max 5 per hour. Always 202 (no account enumeration).
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [email, purpose], properties: { email: { type: string }, purpose: { enum: [verify_email, reset_password] } } } } } }
+      responses:
+        '202': { description: Accepted }
+        '429': { $ref: '#/components/responses/Error' }
+  /auth/login:
+    post:
+      tags: [auth]
+      security: []
+      x-phase: 1
+      x-rate-limit: auth
+      description: After 5 failed attempts the account is locked for 15 minutes (server-enforced, AUTH_LOCKED).
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [email, password], properties: { email: { type: string }, password: { type: string }, device: { $ref: '#/components/schemas/DeviceInfo' } } } } } }
+      responses:
+        '200': { description: Signed in, content: { application/json: { schema: { $ref: '#/components/schemas/Session' } } } }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '423': { $ref: '#/components/responses/Error' }
+  /auth/google:
+    post:
+      tags: [auth]
+      security: []
+      x-phase: 1
+      description: |
+        Server verifies the Google ID token (audience = our client ids) and requires email_verified = true.
+        Links to an existing account with the same verified email, or creates one. New accounts must send
+        adult_and_terms_confirmed=true (from the "Before we continue" sheet); otherwise 403 CONSENT_REQUIRED with details.needs=age_terms.
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [id_token], properties: { id_token: { type: string }, adult_and_terms_confirmed: { type: boolean }, language: { $ref: '#/components/schemas/LanguageCode' }, device: { $ref: '#/components/schemas/DeviceInfo' } } } } } }
+      responses:
+        '200': { description: Signed in, content: { application/json: { schema: { allOf: [ { $ref: '#/components/schemas/Session' }, { type: object, properties: { is_new_account: { type: boolean } } } ] } } } }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+  /auth/child:
+    post:
+      tags: [auth]
+      security: []
+      x-phase: 1
+      x-rate-limit: code
+      description: Child joins with a 6-character family code (uppercase letters and digits, no ambiguous characters). Session is bound to this device.
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [code, first_name, device], properties: { code: { type: string, pattern: '^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$' }, first_name: { type: string, minLength: 1, maxLength: 60 }, device: { $ref: '#/components/schemas/DeviceInfo' }, timezone: { type: string }, country_iso2: { type: string } } } } } }
+      responses:
+        '200': { description: Child session, content: { application/json: { schema: { $ref: '#/components/schemas/Session' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '410': { $ref: '#/components/responses/Error' }
+  /auth/refresh:
+    post:
+      tags: [auth]
+      security: []
+      x-phase: 1
+      description: Rotating refresh token. Re-use of an old refresh token revokes the whole session family.
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [refresh_token], properties: { refresh_token: { type: string } } } } } }
+      responses:
+        '200': { description: New pair, content: { application/json: { schema: { $ref: '#/components/schemas/TokenPair' } } } }
+        '401': { $ref: '#/components/responses/Error' }
+  /auth/forgot:
+    post:
+      tags: [auth]
+      security: []
+      x-phase: 1
+      x-rate-limit: auth
+      description: Always 202 "If this email exists, we sent a code" (no account enumeration).
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [email], properties: { email: { type: string } } } } } }
+      responses:
+        '202': { description: Accepted }
+  /auth/reset:
+    post:
+      tags: [auth]
+      security: []
+      x-phase: 1
+      x-rate-limit: code
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [email, code, new_password], properties: { email: { type: string }, code: { type: string, pattern: '^[0-9]{6}$' }, new_password: { type: string, minLength: 8 } } } } } }
+      responses:
+        '204': { description: Password changed; all other sessions revoked }
+        '400': { $ref: '#/components/responses/Error' }
+  /auth/logout:
+    post:
+      tags: [auth]
+      x-phase: 1
+      description: Revokes the refresh token and removes this device's FCM token.
+      responses:
+        '204': { description: Signed out }
+  /auth/sessions:
+    get:
+      tags: [auth]
+      x-phase: 1
+      responses:
+        '200': { description: Sessions, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/SessionInfo' } } } } }
+  /auth/sessions/{sessionId}:
+    delete:
+      tags: [auth]
+      x-phase: 1
+      summary: Remote sign-out
+      parameters: [ { name: sessionId, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses:
+        '204': { description: Revoked }
+
+  /me:
+    get:
+      tags: [me]
+      x-phase: 1
+      responses:
+        '200': { description: Current user, content: { application/json: { schema: { $ref: '#/components/schemas/Me' } } } }
+    delete:
+      tags: [me]
+      x-phase: 7
+      summary: Delete my account and data (owner must transfer or delete the family first)
+      responses:
+        '202': { description: Deletion request created (data_requests) }
+  /me/profile:
+    patch:
+      tags: [me]
+      x-phase: 1
+      description: Server validates timezone against the IANA list and country_iso2 against ISO 3166.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, minLength: 1, maxLength: 60 }
+                country_iso2: { type: string, pattern: '^[A-Z]{2}$' }
+                timezone: { type: string, example: Asia/Dhaka }
+                tz_auto: { type: boolean }
+                detected_source: { enum: [timezone, locale, ip, manual] }
+                language: { $ref: '#/components/schemas/LanguageCode' }
+      responses:
+        '200': { description: Updated, content: { application/json: { schema: { $ref: '#/components/schemas/Me' } } } }
+        '400': { $ref: '#/components/responses/Error' }
+  /me/photo:
+    post:
+      tags: [me]
+      x-phase: 1
+      x-rate-limit: '10 per hour'
+      description: JPEG/PNG/WebP/HEIC, max 10 MB. Server checks magic bytes, re-encodes to 512x512 + 128x128, strips metadata, random filenames.
+      requestBody: { required: true, content: { multipart/form-data: { schema: { type: object, properties: { photo: { type: string, format: binary } } } } } }
+      responses:
+        '200': { description: Stored, content: { application/json: { schema: { type: object, properties: { avatar_url: { type: string }, avatar_thumb_url: { type: string } } } } } }
+        '413': { $ref: '#/components/responses/Error' }
+        '415': { $ref: '#/components/responses/Error' }
+    delete:
+      tags: [me]
+      x-phase: 1
+      responses:
+        '204': { description: Removed }
+  /me/fcm-token:
+    put:
+      tags: [me]
+      x-phase: 5
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [token], properties: { token: { type: string } } } } } }
+      responses:
+        '204': { description: Saved for this session }
+  /me/export:
+    post:
+      tags: [me]
+      x-phase: 7
+      responses:
+        '202': { description: Export request created (data_requests) }
+
+  /families:
+    post:
+      tags: [family]
+      x-phase: 1
+      summary: Create a family (caller becomes owner/parent)
+      requestBody: { content: { application/json: { schema: { type: object, properties: { name: { type: string } } } } } }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/Family' } } } }
+  /families/{familyId}:
+    get:
+      tags: [family]
+      x-phase: 2
+      parameters: [ { $ref: '#/components/parameters/familyId' } ]
+      responses:
+        '200': { description: Family with members (visibility rules applied), content: { application/json: { schema: { $ref: '#/components/schemas/Family' } } } }
+  /families/{familyId}/child-code:
+    post:
+      tags: [family]
+      x-phase: 1
+      summary: Generate/regenerate the child code (24 h, single use). Old code is revoked.
+      parameters: [ { $ref: '#/components/parameters/familyId' } ]
+      responses:
+        '201': { description: Code, content: { application/json: { schema: { type: object, properties: { code: { type: string }, expires_at: { type: string, format: date-time }, join_url: { type: string, example: 'https://nirapod.app/join?code=K7Q2MX' } } } } } }
+        '402': { $ref: '#/components/responses/Error' }
+  /families/{familyId}/invites:
+    post:
+      tags: [family]
+      x-phase: 2
+      summary: Invite an adult by email or 6-character code (guardian, optional overseas flag)
+      parameters: [ { $ref: '#/components/parameters/familyId' } ]
+      requestBody: { content: { application/json: { schema: { type: object, properties: { email: { type: string }, role: { enum: [parent, guardian] }, is_overseas: { type: boolean }, timezone: { type: string } } } } } }
+      responses:
+        '201': { description: Invite created }
+        '402': { $ref: '#/components/responses/Error' }
+  /invites/accept:
+    post:
+      tags: [family]
+      x-phase: 1
+      x-rate-limit: code
+      requestBody: { content: { application/json: { schema: { type: object, required: [code], properties: { code: { type: string } } } } } }
+      responses:
+        '200': { description: Joined as guardian/parent; sharing starts as pending until the adult accepts }
+  /families/{familyId}/members/{memberId}:
+    patch:
+      tags: [family]
+      x-phase: 2
+      summary: Change sharing (adult pauses/stops own sharing; accept consent), relationship, overseas flag
+      parameters: [ { $ref: '#/components/parameters/familyId' }, { $ref: '#/components/parameters/memberId' } ]
+      requestBody: { content: { application/json: { schema: { type: object, properties: { sharing_status: { enum: [active, paused, stopped] }, relationship: { type: string }, daily_summary_enabled: { type: boolean }, daily_summary_time: { type: string, pattern: '^[0-2][0-9]:[0-5][0-9]$' } } } } } }
+      responses:
+        '200': { description: Updated }
+    delete:
+      tags: [family]
+      x-phase: 2
+      summary: Remove a member / child device, or leave the family
+      parameters: [ { $ref: '#/components/parameters/familyId' }, { $ref: '#/components/parameters/memberId' } ]
+      responses:
+        '204': { description: Removed }
+  /families/{familyId}/transfer:
+    post:
+      tags: [family]
+      x-phase: 2
+      parameters: [ { $ref: '#/components/parameters/familyId' } ]
+      requestBody: { content: { application/json: { schema: { type: object, required: [new_owner_member_id], properties: { new_owner_member_id: { type: string } } } } } }
+      responses:
+        '200': { description: Ownership transferred }
+
+  /locations:
+    post:
+      tags: [location]
+      x-phase: 3
+      summary: Batch upload from a device (offline queue). Coordinates are never logged.
+      requestBody: { content: { application/json: { schema: { type: object, required: [points], properties: { points: { type: array, maxItems: 200, items: { $ref: '#/components/schemas/LocationPoint' } }, device_state: { $ref: '#/components/schemas/DeviceDiagnostics' } } } } } }
+      responses:
+        '202': { description: Accepted }
+  /families/{familyId}/live:
+    get:
+      tags: [location]
+      x-phase: 2
+      summary: Latest position per visible member with trust inputs (exact last update, accuracy, reason if unavailable)
+      parameters: [ { $ref: '#/components/parameters/familyId' } ]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/MemberLocation' } } } } }
+  /families/{familyId}/members/{memberId}/route:
+    get:
+      tags: [location]
+      x-phase: 3
+      summary: Route for one day (limited by plan history_days)
+      parameters: [ { $ref: '#/components/parameters/familyId' }, { $ref: '#/components/parameters/memberId' }, { name: date, in: query, required: true, schema: { type: string, format: date } } ]
+      responses:
+        '200': { description: Points for the day }
+        '402': { $ref: '#/components/responses/Error' }
+  /families/{familyId}/timeline:
+    get:
+      tags: [location]
+      x-phase: 3
+      parameters: [ { $ref: '#/components/parameters/familyId' }, { name: before, in: query, schema: { type: string, format: date-time } } ]
+      responses:
+        '200': { description: Arrivals, departures, SOS, battery and offline events }
+  /families/{familyId}/members/{memberId}/request-update:
+    post:
+      tags: [location]
+      x-phase: 2
+      x-rate-limit: '1 per 2 minutes per member'
+      summary: High-priority push wakes the child's service; the child sees "<name> requested your location"
+      parameters: [ { $ref: '#/components/parameters/familyId' }, { $ref: '#/components/parameters/memberId' } ]
+      responses:
+        '202': { description: Requested }
+  /nearby:
+    get:
+      tags: [location]
+      x-phase: 2
+      summary: Nearby places via Places API (New), cached per grid cell for 24 h, per-user and daily caps, admin switch
+      parameters: [ { name: lat, in: query, required: true, schema: { type: number } }, { name: lng, in: query, required: true, schema: { type: number } }, { name: categories, in: query, schema: { type: string, example: 'school,hospital,police,pharmacy,mosque,store' } } ]
+      responses:
+        '200': { description: Places with distance }
+        '503': { $ref: '#/components/responses/Error' }
+
+  /families/{familyId}/places:
+    get:
+      tags: [places]
+      x-phase: 4
+      parameters: [ { $ref: '#/components/parameters/familyId' } ]
+      responses:
+        '200': { description: Places, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Place' } } } } }
+    post:
+      tags: [places]
+      x-phase: 4
+      parameters: [ { $ref: '#/components/parameters/familyId' } ]
+      requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/Place' } } } }
+      responses:
+        '201': { description: Created }
+        '402': { $ref: '#/components/responses/Error' }
+  /families/{familyId}/places/{placeId}:
+    patch:
+      tags: [places]
+      x-phase: 4
+      parameters: [ { $ref: '#/components/parameters/familyId' }, { name: placeId, in: path, required: true, schema: { type: string } } ]
+      responses: { '200': { description: Updated } }
+    delete:
+      tags: [places]
+      x-phase: 4
+      parameters: [ { $ref: '#/components/parameters/familyId' }, { name: placeId, in: path, required: true, schema: { type: string } } ]
+      responses: { '204': { description: Deleted } }
+
+  /sos:
+    post:
+      tags: [sos]
+      x-phase: 4
+      summary: Start SOS after the 5-second countdown. Never blocked by plan.
+      requestBody: { content: { application/json: { schema: { type: object, required: [trigger], properties: { trigger: { enum: [button, shake] }, point: { $ref: '#/components/schemas/LocationPoint' } } } } } }
+      responses:
+        '201': { description: SOS event with per-recipient deliveries, content: { application/json: { schema: { $ref: '#/components/schemas/SosEvent' } } } }
+  /sos/{sosId}:
+    get:
+      tags: [sos]
+      x-phase: 4
+      parameters: [ { name: sosId, in: path, required: true, schema: { type: string } } ]
+      responses: { '200': { description: Status, content: { application/json: { schema: { $ref: '#/components/schemas/SosEvent' } } } } }
+  /sos/{sosId}/respond:
+    post:
+      tags: [sos]
+      x-phase: 4
+      parameters: [ { name: sosId, in: path, required: true, schema: { type: string } } ]
+      responses: { '204': { description: Marked responded } }
+  /sos/{sosId}/resolve:
+    post:
+      tags: [sos]
+      x-phase: 4
+      parameters: [ { name: sosId, in: path, required: true, schema: { type: string } } ]
+      responses: { '204': { description: Resolved } }
+  /safe-arrival:
+    post:
+      tags: [sos]
+      x-phase: 4
+      summary: '"I arrived safely": name, time and place to the family'
+      responses: { '202': { description: Sent } }
+  /trips:
+    post:
+      tags: [sos]
+      x-phase: 4
+      summary: Safe walk home (Heading home) with expected arrival time
+      requestBody: { content: { application/json: { schema: { type: object, required: [expected_arrival_at], properties: { expected_arrival_at: { type: string, format: date-time }, destination_place_id: { type: string } } } } } }
+      responses: { '201': { description: Trip started } }
+  /trips/{tripId}:
+    patch:
+      tags: [sos]
+      x-phase: 4
+      parameters: [ { name: tripId, in: path, required: true, schema: { type: string } } ]
+      requestBody: { content: { application/json: { schema: { type: object, properties: { status: { enum: [arrived, cancelled] } } } } } }
+      responses: { '200': { description: Updated } }
+
+  /notifications:
+    get:
+      tags: [notifications]
+      x-phase: 5
+      parameters: [ { name: category, in: query, schema: { enum: [safety, family, account] } }, { name: before, in: query, schema: { type: string, format: date-time } } ]
+      responses: { '200': { description: Alerts list with unread count } }
+  /notifications/read:
+    post:
+      tags: [notifications]
+      x-phase: 5
+      responses: { '204': { description: Marked read } }
+  /notification-settings:
+    get: { tags: [notifications], x-phase: 5, responses: { '200': { description: Per-type push and email toggles } } }
+    patch: { tags: [notifications], x-phase: 5, responses: { '200': { description: Updated } } }
+
+  /plans:
+    get:
+      tags: [plans]
+      security: []
+      x-phase: 6
+      summary: Active plans with prices for the caller's country (from the saved country or ?country=)
+      parameters: [ { name: country, in: query, schema: { type: string } } ]
+      responses: { '200': { description: Plans, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Plan' } } } } } }
+  /families/{familyId}/subscription:
+    get:
+      tags: [plans]
+      x-phase: 6
+      parameters: [ { $ref: '#/components/parameters/familyId' } ]
+      responses: { '200': { description: Current plan, expiry, limits and usage, gift banner if any } }
+  /billing/play/verify:
+    post:
+      tags: [plans]
+      x-phase: 6
+      summary: Verify a Google Play purchase token server-side (Play Developer API)
+      requestBody: { content: { application/json: { schema: { type: object, required: [purchase_token, product_id, family_id], properties: { purchase_token: { type: string }, product_id: { type: string }, family_id: { type: string } } } } } }
+      responses: { '200': { description: Subscription activated for the whole family } }
+  /billing/play/rtdn:
+    post:
+      tags: [plans]
+      security: []
+      x-phase: 6
+      summary: Real-time developer notifications (Pub/Sub push, verified) for renew/cancel/refund/grace
+      responses: { '204': { description: Processed } }
+  /redeem:
+    post:
+      tags: [plans]
+      x-phase: 6
+      x-rate-limit: code
+      requestBody: { content: { application/json: { schema: { type: object, required: [code, family_id], properties: { code: { type: string }, family_id: { type: string } } } } } }
+      responses:
+        '200': { description: Redeemed; gift info if present }
+        '400': { $ref: '#/components/responses/Error' }
+        '410': { $ref: '#/components/responses/Error' }
+
+  /chat/conversations:
+    post:
+      tags: [chat]
+      x-phase: 7
+      summary: Start (or resume the open) conversation. Adults only; child sessions get FORBIDDEN.
+      responses: { '201': { description: Conversation } }
+  /chat/conversations/{conversationId}/messages:
+    get:
+      tags: [chat]
+      x-phase: 7
+      parameters: [ { name: conversationId, in: path, required: true, schema: { type: string } } ]
+      responses: { '200': { description: Messages (closed conversations return 404 to the user) } }
+    post:
+      tags: [chat]
+      x-phase: 7
+      x-rate-limit: chat
+      parameters: [ { name: conversationId, in: path, required: true, schema: { type: string } } ]
+      requestBody: { content: { multipart/form-data: { schema: { type: object, properties: { body: { type: string, maxLength: 2000 }, image: { type: string, format: binary } } } } } }
+      responses: { '201': { description: Message stored } }
+  /chat/conversations/{conversationId}/escalate:
+    post: { tags: [chat], x-phase: 7, parameters: [ { name: conversationId, in: path, required: true, schema: { type: string } } ], responses: { '204': { description: Marked needs human } } }
+  /chat/conversations/{conversationId}/close:
+    post: { tags: [chat], x-phase: 7, parameters: [ { name: conversationId, in: path, required: true, schema: { type: string } } ], responses: { '204': { description: Closed; disappears from the user side } } }
+  /chat/conversations/{conversationId}/rating:
+    post: { tags: [chat], x-phase: 7, parameters: [ { name: conversationId, in: path, required: true, schema: { type: string } } ], responses: { '204': { description: Rated } } }
+
+  /abuse-reports:
+    post:
+      tags: [me]
+      x-phase: 2
+      requestBody: { content: { application/json: { schema: { type: object, required: [category], properties: { category: { enum: [covert_tracking, harassment, unwanted_sharing, other] }, details: { type: string, maxLength: 2000 }, reported_member_id: { type: string } } } } } }
+      responses: { '201': { description: Report created } }
+
+  /admin/*:
+    get:
+      tags: [admin]
+      x-phase: 8
+      summary: Admin panel API (session cookie + CSRF token + 2FA). Detailed in Phase 8.
+      description: |
+        Served with the admin DB user, which has NO grants on locations, places, trips, sos_events,
+        timeline_events or nearby_cache. Customer context returns diagnostics only (no coordinates,
+        routes, place names or last known position). Every write is audit-logged with the agent name.
+      responses: { '200': { description: OK } }
+
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer, bearerFormat: JWT, description: 'Short-lived access token (15 min). Refresh with /auth/refresh.' }
+  parameters:
+    familyId: { name: familyId, in: path, required: true, schema: { type: string, format: uuid } }
+    memberId: { name: memberId, in: path, required: true, schema: { type: string, format: uuid } }
+  responses:
+    Error:
+      description: Error
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, requestId]
+          properties:
+            code: { type: string, description: 'See error-codes.md', example: AUTH_INVALID_CREDENTIALS }
+            message: { type: string }
+            requestId: { type: string }
+            details: { type: object }
+    Health:
+      type: object
+      properties:
+        status: { enum: [ok, degraded] }
+        version: { type: string }
+        db: { enum: [ok, down] }
+        uptime_s: { type: integer }
+        time: { type: string, format: date-time }
+    LanguageCode: { enum: [en, bn, hi, ur, ar, es, id, ms] }
+    AppConfig:
+      type: object
+      properties:
+        min_version: { type: string }
+        latest_version: { type: string }
+        update_message: { type: object, additionalProperties: { type: string } }
+        play_store_url: { type: string }
+        languages_enabled: { type: object, additionalProperties: { type: boolean } }
+        free_plan_enabled: { type: boolean }
+        trial_days: { type: integer }
+        whatsapp_number: { type: string }
+        payment_banner_enabled: { type: boolean, default: false }
+        payment_banner_show_logos: { type: boolean, default: false }
+        payment_banner_countries: { type: array, items: { type: string } }
+        payment_banner_text: { type: object, additionalProperties: { type: string } }
+        nearby_places_enabled: { type: boolean }
+        live_chat_human_for: { enum: [all, premium] }
+    DeviceInfo:
+      type: object
+      properties:
+        device_id: { type: string, maxLength: 64 }
+        model: { type: string }
+        manufacturer: { type: string }
+        os_version: { type: string }
+        app_version: { type: string }
+    TokenPair:
+      type: object
+      required: [access_token, refresh_token, expires_in]
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string }
+        expires_in: { type: integer, example: 900 }
+    Session:
+      allOf:
+        - $ref: '#/components/schemas/TokenPair'
+        - type: object
+          properties:
+            user: { $ref: '#/components/schemas/Me' }
+            needs_profile_setup: { type: boolean }
+    SessionInfo:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        device_model: { type: string }
+        app_version: { type: string }
+        last_used_at: { type: string, format: date-time }
+        current: { type: boolean }
+    Me:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: [string, 'null'] }
+        email_verified: { type: boolean }
+        auth_provider: { enum: [email, google, device] }
+        name: { type: [string, 'null'] }
+        avatar_url: { type: [string, 'null'] }
+        avatar_thumb_url: { type: [string, 'null'] }
+        country_iso2: { type: [string, 'null'] }
+        timezone: { type: [string, 'null'] }
+        tz_auto: { type: boolean }
+        detected_source: { enum: [timezone, locale, ip, manual, null] }
+        language: { $ref: '#/components/schemas/LanguageCode' }
+        role: { enum: [parent, guardian, child, null], description: 'Decided by the server from family membership' }
+        is_overseas: { type: boolean }
+        family_id: { type: [string, 'null'] }
+    Family:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: [string, 'null'] }
+        owner_member_id: { type: string }
+        plan: { type: string }
+        members: { type: array, items: { $ref: '#/components/schemas/Member' } }
+    Member:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        avatar_thumb_url: { type: [string, 'null'] }
+        role: { enum: [parent, guardian, child] }
+        relationship: { type: [string, 'null'] }
+        is_overseas: { type: boolean }
+        timezone: { type: [string, 'null'], description: 'Used to show each member''s own local time' }
+        country_iso2: { type: [string, 'null'] }
+        sharing_status: { enum: [pending, active, paused, stopped] }
+    LocationPoint:
+      type: object
+      required: [recorded_at, lat, lng, accuracy_m]
+      properties:
+        recorded_at: { type: string, format: date-time }
+        lat: { type: number, minimum: -90, maximum: 90 }
+        lng: { type: number, minimum: -180, maximum: 180 }
+        accuracy_m: { type: number, minimum: 0 }
+        speed_mps: { type: number }
+        heading_deg: { type: number }
+        battery_pct: { type: integer, minimum: 0, maximum: 100 }
+        is_moving: { type: boolean }
+    DeviceDiagnostics:
+      type: object
+      properties:
+        notifications_allowed: { type: boolean }
+        location_allowed: { type: boolean }
+        background_allowed: { type: boolean }
+        battery_optimization_on: { type: boolean }
+        location_services_on: { type: boolean }
+        battery_saver_on: { type: boolean }
+    MemberLocation:
+      type: object
+      properties:
+        member_id: { type: string }
+        point: { oneOf: [ { $ref: '#/components/schemas/LocationPoint' }, { type: 'null' } ] }
+        place_name: { type: [string, 'null'] }
+        battery_pct: { type: [integer, 'null'] }
+        online: { type: boolean }
+        unavailable_reason: { enum: [phone_off, location_off, permission_removed, battery_saver, no_network, null] }
+    Place:
+      type: object
+      required: [name, type, lat, lng, radius_m]
+      properties:
+        id: { type: string }
+        name: { type: string, maxLength: 80 }
+        type: { enum: [home, school, coaching, custom] }
+        lat: { type: number }
+        lng: { type: number }
+        radius_m: { type: integer, minimum: 100, maximum: 300 }
+        applies_to: { type: [array, 'null'], items: { type: string }, description: 'member ids; null = all children' }
+    SosEvent:
+      type: object
+      properties:
+        id: { type: string }
+        status: { enum: [sending, active, resolved, cancelled] }
+        started_at: { type: string, format: date-time }
+        deliveries:
+          type: array
+          items:
+            type: object
+            properties:
+              recipient_name: { type: string }
+              channel: { enum: [push, email, socket] }
+              status: { enum: [queued, sent, delivered, seen, responded, failed] }
+    Plan:
+      type: object
+      properties:
+        code: { type: string }
+        name: { type: string }
+        max_children: { type: [integer, 'null'] }
+        max_members: { type: [integer, 'null'] }
+        max_places: { type: [integer, 'null'] }
+        history_days: { type: integer }
+        features: { type: array, items: { type: string } }
+        is_popular: { type: boolean }
+        trial_days: { type: integer }
+        prices:
+          type: array
+          items:
+            type: object
+            properties:
+              period: { enum: [monthly, yearly, one_time, multi_year] }
+              duration_months: { type: integer }
+              currency: { type: string }
+              amount_minor: { type: integer }
+              per_month_minor: { type: integer }
+              play_product_id: { type: string }
+              play_base_plan_id: { type: string }

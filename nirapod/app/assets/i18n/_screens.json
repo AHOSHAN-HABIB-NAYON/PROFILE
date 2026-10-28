@@ -1,0 +1,50 @@
+{
+  "_default": [
+    "common",
+    "nav",
+    "state",
+    "trust",
+    "err",
+    "a11y",
+    "lang"
+  ],
+  "splash": [
+    "common"
+  ],
+  "welcome": [
+    "common",
+    "welcome",
+    "lang",
+    "a11y"
+  ],
+  "home": [
+    "common",
+    "nav",
+    "state",
+    "trust",
+    "err",
+    "a11y",
+    "lang",
+    "greeting",
+    "time",
+    "dialog"
+  ],
+  "child_home": [
+    "common",
+    "state",
+    "trust",
+    "err",
+    "a11y",
+    "lang",
+    "greeting",
+    "time",
+    "dialog"
+  ],
+  "placeholder": [
+    "common",
+    "nav"
+  ],
+  "language_sheet": [
+    "lang"
+  ]
+}

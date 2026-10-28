@@ -1,0 +1,13 @@
+{
+  "default": "en",
+  "languages": [
+    { "code": "en", "nativeName": "English",          "englishName": "English",    "rtl": false, "flag": "gb", "script": "latin",      "fontFamily": "Noto Sans",            "numerals": "latn" },
+    { "code": "bn", "nativeName": "বাংলা",             "englishName": "Bengali",    "rtl": false, "flag": "bd", "script": "bengali",    "fontFamily": "Noto Sans Bengali",    "numerals": "beng" },
+    { "code": "hi", "nativeName": "हिन्दी",             "englishName": "Hindi",      "rtl": false, "flag": "in", "script": "devanagari", "fontFamily": "Noto Sans Devanagari", "numerals": "latn" },
+    { "code": "ur", "nativeName": "اردو",              "englishName": "Urdu",       "rtl": true,  "flag": "pk", "script": "urdu",       "fontFamily": "Noto Nastaliq Urdu",   "numerals": "arabext" },
+    { "code": "ar", "nativeName": "العربية",           "englishName": "Arabic",     "rtl": true,  "flag": "sa", "script": "arabic",     "fontFamily": "Noto Sans Arabic",     "numerals": "arab" },
+    { "code": "es", "nativeName": "Español",          "englishName": "Spanish",    "rtl": false, "flag": "es", "script": "latin",      "fontFamily": "Noto Sans",            "numerals": "latn" },
+    { "code": "id", "nativeName": "Bahasa Indonesia", "englishName": "Indonesian", "rtl": false, "flag": "id", "script": "latin",      "fontFamily": "Noto Sans",            "numerals": "latn" },
+    { "code": "ms", "nativeName": "Bahasa Melayu",    "englishName": "Malay",      "rtl": false, "flag": "my", "script": "latin",      "fontFamily": "Noto Sans",            "numerals": "latn" }
+  ]
+}

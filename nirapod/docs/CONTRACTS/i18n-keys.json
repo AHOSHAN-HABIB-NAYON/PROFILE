@@ -1,0 +1,351 @@
+{
+  "_rules": [
+    "Keys are 'namespace.key'. English (en.json) is the canonical key list and must contain every key below.",
+    "en and bn must be 100% complete. hi, ur, ar, es, id, ms may be partial.",
+    "NO MIXING: a screen declares its namespaces (screens map). If the selected language is missing ANY key in those namespaces, the whole screen renders in English (layout direction still follows the selected language).",
+    "Placeholders ({name}) must match exactly across all languages.",
+    "Malay (ms) and Indonesian (id) are separate files and must never be copied from each other.",
+    "Keys are added per phase; tools/check-i18n.mjs enforces these rules in CI."
+  ],
+  "screens": {
+    "_default": [
+      "common",
+      "nav",
+      "state",
+      "trust",
+      "err",
+      "a11y",
+      "lang"
+    ],
+    "splash": [
+      "common"
+    ],
+    "welcome": [
+      "common",
+      "welcome",
+      "lang",
+      "a11y"
+    ],
+    "home": [
+      "common",
+      "nav",
+      "state",
+      "trust",
+      "err",
+      "a11y",
+      "lang",
+      "greeting",
+      "time",
+      "dialog"
+    ],
+    "child_home": [
+      "common",
+      "state",
+      "trust",
+      "err",
+      "a11y",
+      "lang",
+      "greeting",
+      "time",
+      "dialog"
+    ],
+    "placeholder": [
+      "common",
+      "nav"
+    ],
+    "language_sheet": [
+      "lang"
+    ]
+  },
+  "keys": {
+    "common.app_name": {
+      "placeholders": [],
+      "en": "Nirapod"
+    },
+    "common.tagline": {
+      "placeholders": [],
+      "en": "Live Family Locator"
+    },
+    "common.promise": {
+      "placeholders": [],
+      "en": "See where your family is, know when they arrive, and get SOS alerts instantly."
+    },
+    "common.continue": {
+      "placeholders": [],
+      "en": "Continue"
+    },
+    "common.not_now": {
+      "placeholders": [],
+      "en": "Not now"
+    },
+    "common.retry": {
+      "placeholders": [],
+      "en": "Try again"
+    },
+    "common.open_settings": {
+      "placeholders": [],
+      "en": "Open Settings"
+    },
+    "common.cancel": {
+      "placeholders": [],
+      "en": "Cancel"
+    },
+    "common.save": {
+      "placeholders": [],
+      "en": "Save"
+    },
+    "common.close": {
+      "placeholders": [],
+      "en": "Close"
+    },
+    "common.back": {
+      "placeholders": [],
+      "en": "Back"
+    },
+    "common.done": {
+      "placeholders": [],
+      "en": "Done"
+    },
+    "common.stay": {
+      "placeholders": [],
+      "en": "Stay"
+    },
+    "common.exit": {
+      "placeholders": [],
+      "en": "Exit"
+    },
+    "common.change": {
+      "placeholders": [],
+      "en": "Change"
+    },
+    "common.loading": {
+      "placeholders": [],
+      "en": "Loading…"
+    },
+    "common.coming_soon": {
+      "placeholders": [],
+      "en": "This screen arrives in a later phase."
+    },
+    "lang.sheet_title": {
+      "placeholders": [],
+      "en": "Language"
+    },
+    "greeting.morning": {
+      "placeholders": [],
+      "en": "Good morning,"
+    },
+    "greeting.afternoon": {
+      "placeholders": [],
+      "en": "Good afternoon,"
+    },
+    "greeting.evening": {
+      "placeholders": [],
+      "en": "Good evening,"
+    },
+    "greeting.night": {
+      "placeholders": [],
+      "en": "Good night,"
+    },
+    "nav.home": {
+      "placeholders": [],
+      "en": "Home"
+    },
+    "nav.map": {
+      "placeholders": [],
+      "en": "Map"
+    },
+    "nav.history": {
+      "placeholders": [],
+      "en": "History"
+    },
+    "nav.premium": {
+      "placeholders": [],
+      "en": "Premium"
+    },
+    "nav.settings": {
+      "placeholders": [],
+      "en": "Settings"
+    },
+    "state.loading": {
+      "placeholders": [],
+      "en": "Loading"
+    },
+    "state.empty_title": {
+      "placeholders": [],
+      "en": "Nothing here yet"
+    },
+    "state.empty_body": {
+      "placeholders": [],
+      "en": "When there is something to show, it will appear here."
+    },
+    "state.offline_banner": {
+      "placeholders": [],
+      "en": "You're offline. Showing saved data."
+    },
+    "state.permission_title": {
+      "placeholders": [],
+      "en": "Permission needed"
+    },
+    "state.permission_body": {
+      "placeholders": [
+        "permission"
+      ],
+      "en": "Turn on {permission} in Settings to use this."
+    },
+    "state.error_title": {
+      "placeholders": [],
+      "en": "Something went wrong"
+    },
+    "state.error_body": {
+      "placeholders": [],
+      "en": "Please try again."
+    },
+    "state.success_title": {
+      "placeholders": [],
+      "en": "All done"
+    },
+    "state.stale_banner": {
+      "placeholders": [
+        "time"
+      ],
+      "en": "Last updated {time}. This may not be current."
+    },
+    "state.limit_title": {
+      "placeholders": [],
+      "en": "Plan limit reached"
+    },
+    "state.limit_body": {
+      "placeholders": [],
+      "en": "Upgrade to add more. Live location and SOS always stay free."
+    },
+    "state.limit_cta": {
+      "placeholders": [],
+      "en": "See plans"
+    },
+    "trust.live": {
+      "placeholders": [],
+      "en": "Live"
+    },
+    "trust.recent": {
+      "placeholders": [],
+      "en": "Recent"
+    },
+    "trust.stale": {
+      "placeholders": [],
+      "en": "Stale"
+    },
+    "trust.unavailable": {
+      "placeholders": [],
+      "en": "Unavailable"
+    },
+    "trust.updated_at": {
+      "placeholders": [
+        "time"
+      ],
+      "en": "Updated {time}"
+    },
+    "trust.reason_phone_off": {
+      "placeholders": [],
+      "en": "Phone may be off"
+    },
+    "trust.reason_location_off": {
+      "placeholders": [],
+      "en": "Location is turned off"
+    },
+    "trust.reason_permission_removed": {
+      "placeholders": [],
+      "en": "Location permission was removed"
+    },
+    "trust.reason_battery_saver": {
+      "placeholders": [],
+      "en": "Battery saver is limiting updates"
+    },
+    "trust.reason_no_network": {
+      "placeholders": [],
+      "en": "No internet connection"
+    },
+    "trust.reason_unknown": {
+      "placeholders": [],
+      "en": "Reason unknown"
+    },
+    "time.tooltip": {
+      "placeholders": [
+        "date",
+        "zone",
+        "offset"
+      ],
+      "en": "{date} · {zone} (UTC{offset})"
+    },
+    "a11y.theme_toggle_off": {
+      "placeholders": [],
+      "en": "Dark mode toggle, currently off"
+    },
+    "a11y.theme_toggle_on": {
+      "placeholders": [],
+      "en": "Dark mode toggle, currently on"
+    },
+    "a11y.language_button": {
+      "placeholders": [
+        "language"
+      ],
+      "en": "Language, {language}"
+    },
+    "a11y.notifications": {
+      "placeholders": [
+        "count"
+      ],
+      "en": "Notifications, {count} unread"
+    },
+    "a11y.open_profile": {
+      "placeholders": [],
+      "en": "Open profile"
+    },
+    "a11y.local_time": {
+      "placeholders": [
+        "country",
+        "time"
+      ],
+      "en": "Local time in {country}, {time}"
+    },
+    "err.network": {
+      "placeholders": [],
+      "en": "Check your internet connection"
+    },
+    "err.server": {
+      "placeholders": [],
+      "en": "Something went wrong on our side. Please try again."
+    },
+    "err.rate_limited": {
+      "placeholders": [],
+      "en": "Too many attempts. Please wait and try again."
+    },
+    "err.session_expired": {
+      "placeholders": [],
+      "en": "Your session has ended. Please log in again."
+    },
+    "err.validation": {
+      "placeholders": [],
+      "en": "Please check the highlighted fields."
+    },
+    "err.unknown": {
+      "placeholders": [],
+      "en": "Something went wrong. Please try again."
+    },
+    "dialog.exit_title": {
+      "placeholders": [],
+      "en": "Exit app?"
+    },
+    "dialog.exit_body": {
+      "placeholders": [],
+      "en": "You can open Nirapod again anytime."
+    },
+    "dialog.exit_body_child": {
+      "placeholders": [],
+      "en": "Location sharing keeps running."
+    },
+    "welcome.get_started": {
+      "placeholders": [],
+      "en": "Get Started"
+    }
+  }
+}

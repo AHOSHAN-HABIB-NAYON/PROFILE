@@ -1,0 +1,1866 @@
+{
+  "_rules": [
+    "Every visible button has an action and destination here.",
+    "to: <screen id> | sheet:<id> | dialog:<id> | back | close | system:<what> | action:<what>",
+    "languageSelector: true ONLY for Welcome, every login page, child code entry, Register, Email verification, the Forgot-password flow, Home and Child home.",
+    "Adult bottom bar (shell=adult): Home, Map, History, Premium, Settings. Child has no bottom bar.",
+    "Generated from this file: docs/CONTRACTS/NAVIGATION_MAP.md and app/lib/nav/routes.g.dart (tools/gen-nav.mjs)."
+  ],
+  "adultTabs": [
+    "home",
+    "map",
+    "history",
+    "premium",
+    "settings"
+  ],
+  "screens": [
+    {
+      "id": "splash",
+      "path": "/",
+      "title": "Splash",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member",
+        "child"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [],
+      "notes": "600 ms. Valid session -> home or child_home. Else onboarding done on this device -> remembered login. Else welcome."
+    },
+    {
+      "id": "welcome",
+      "path": "/welcome",
+      "title": "Welcome",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member",
+        "child"
+      ],
+      "languageSelector": true,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Language pill",
+          "to": "sheet:language"
+        },
+        {
+          "label": "Get Started",
+          "to": "perm_notifications"
+        }
+      ]
+    },
+    {
+      "id": "perm_notifications",
+      "path": "/onboarding/notifications",
+      "title": "Permission 1: Notifications",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member",
+        "child"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Continue",
+          "to": "system:POST_NOTIFICATIONS dialog",
+          "note": "then perm_how_location"
+        },
+        {
+          "label": "Not now",
+          "to": "perm_how_location"
+        },
+        {
+          "label": "Open Settings",
+          "to": "system:app notification settings",
+          "note": "shown after denial"
+        }
+      ]
+    },
+    {
+      "id": "perm_how_location",
+      "path": "/onboarding/how-location-works",
+      "title": "Permission 2: How location works",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member",
+        "child"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Continue",
+          "to": "perm_location"
+        },
+        {
+          "label": "Not now",
+          "to": "perm_location"
+        }
+      ]
+    },
+    {
+      "id": "perm_location",
+      "path": "/onboarding/location",
+      "title": "Permission 3: Location while using the app",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member",
+        "child"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Continue",
+          "to": "system:ACCESS_FINE_LOCATION dialog",
+          "note": "then role"
+        },
+        {
+          "label": "Not now",
+          "to": "role"
+        },
+        {
+          "label": "Open Settings",
+          "to": "system:app settings",
+          "note": "shown after denial"
+        }
+      ]
+    },
+    {
+      "id": "role",
+      "path": "/role",
+      "title": "Who are you?",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member",
+        "child"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Parent / Guardian",
+          "to": "login_parent"
+        },
+        {
+          "label": "Child",
+          "to": "child_code"
+        },
+        {
+          "label": "Probashi (overseas)",
+          "to": "login_probashi"
+        },
+        {
+          "label": "Other family member",
+          "to": "login_member"
+        }
+      ]
+    },
+    {
+      "id": "login_parent",
+      "path": "/login/parent",
+      "title": "Parent login",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member",
+        "child"
+      ],
+      "languageSelector": true,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Language pill",
+          "to": "sheet:language"
+        },
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Log in",
+          "to": "home",
+          "note": "server decides the real role; child accounts go to child_home"
+        },
+        {
+          "label": "Forgot password?",
+          "to": "forgot_email"
+        },
+        {
+          "label": "Continue with Google",
+          "to": "action:google_sign_in",
+          "note": "new account -> sheet:google_terms -> profile_setup; existing -> home"
+        },
+        {
+          "label": "Create account",
+          "to": "register"
+        },
+        {
+          "label": "Change role",
+          "to": "role"
+        }
+      ]
+    },
+    {
+      "id": "login_probashi",
+      "path": "/login/probashi",
+      "title": "Probashi login",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member",
+        "child"
+      ],
+      "languageSelector": true,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Language pill",
+          "to": "sheet:language"
+        },
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Log in",
+          "to": "home",
+          "note": "server decides the real role; child accounts go to child_home"
+        },
+        {
+          "label": "Forgot password?",
+          "to": "forgot_email"
+        },
+        {
+          "label": "Continue with Google",
+          "to": "action:google_sign_in",
+          "note": "new account -> sheet:google_terms -> profile_setup; existing -> home"
+        },
+        {
+          "label": "Create account",
+          "to": "register"
+        },
+        {
+          "label": "Change role",
+          "to": "role"
+        }
+      ]
+    },
+    {
+      "id": "login_member",
+      "path": "/login/member",
+      "title": "Other family member login",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member",
+        "child"
+      ],
+      "languageSelector": true,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Language pill",
+          "to": "sheet:language"
+        },
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Log in",
+          "to": "home",
+          "note": "server decides the real role; child accounts go to child_home"
+        },
+        {
+          "label": "Forgot password?",
+          "to": "forgot_email"
+        },
+        {
+          "label": "Continue with Google",
+          "to": "action:google_sign_in",
+          "note": "new account -> sheet:google_terms -> profile_setup; existing -> home"
+        },
+        {
+          "label": "Create account",
+          "to": "register"
+        },
+        {
+          "label": "Change role",
+          "to": "role"
+        }
+      ],
+      "notes": "Includes the invite code field; joins as guardian."
+    },
+    {
+      "id": "child_code",
+      "path": "/login/child",
+      "title": "Child code entry",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member",
+        "child"
+      ],
+      "languageSelector": true,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Language pill",
+          "to": "sheet:language"
+        },
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Add photo",
+          "to": "sheet:photo_source"
+        },
+        {
+          "label": "Join",
+          "to": "child_perm_background"
+        }
+      ]
+    },
+    {
+      "id": "register",
+      "path": "/register",
+      "title": "Register",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member",
+        "child"
+      ],
+      "languageSelector": true,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Language pill",
+          "to": "sheet:language"
+        },
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Terms",
+          "to": "legal_terms"
+        },
+        {
+          "label": "Privacy Policy",
+          "to": "legal_privacy"
+        },
+        {
+          "label": "Create account",
+          "to": "verify_email"
+        },
+        {
+          "label": "Log in",
+          "to": "back",
+          "note": "returns to the login page it came from"
+        }
+      ]
+    },
+    {
+      "id": "verify_email",
+      "path": "/register/verify",
+      "title": "Email verification",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member",
+        "child"
+      ],
+      "languageSelector": true,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Language pill",
+          "to": "sheet:language"
+        },
+        {
+          "label": "Resend code",
+          "to": "action:resend_code",
+          "note": "after 30 s, max 5 per hour"
+        },
+        {
+          "label": "Change email",
+          "to": "register"
+        },
+        {
+          "label": "(auto on 6th digit) Verify",
+          "to": "profile_setup"
+        }
+      ]
+    },
+    {
+      "id": "forgot_email",
+      "path": "/forgot",
+      "title": "Forgot password: email",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member",
+        "child"
+      ],
+      "languageSelector": true,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Language pill",
+          "to": "sheet:language"
+        },
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Send code",
+          "to": "forgot_code"
+        }
+      ]
+    },
+    {
+      "id": "forgot_code",
+      "path": "/forgot/code",
+      "title": "Forgot password: code",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member",
+        "child"
+      ],
+      "languageSelector": true,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Language pill",
+          "to": "sheet:language"
+        },
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Resend code",
+          "to": "action:resend_code"
+        },
+        {
+          "label": "(auto on 6th digit) Continue",
+          "to": "forgot_new"
+        }
+      ]
+    },
+    {
+      "id": "forgot_new",
+      "path": "/forgot/new-password",
+      "title": "Forgot password: new password",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member",
+        "child"
+      ],
+      "languageSelector": true,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Language pill",
+          "to": "sheet:language"
+        },
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Save password",
+          "to": "forgot_done"
+        }
+      ]
+    },
+    {
+      "id": "forgot_done",
+      "path": "/forgot/done",
+      "title": "Forgot password: success",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member",
+        "child"
+      ],
+      "languageSelector": true,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Language pill",
+          "to": "sheet:language"
+        },
+        {
+          "label": "Back to log in",
+          "to": "action:return_to_login"
+        }
+      ]
+    },
+    {
+      "id": "profile_setup",
+      "path": "/profile-setup",
+      "title": "Complete your profile",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Avatar",
+          "to": "sheet:photo_source"
+        },
+        {
+          "label": "Country row",
+          "to": "sheet:country_picker"
+        },
+        {
+          "label": "Time zone row",
+          "to": "sheet:timezone_picker"
+        },
+        {
+          "label": "Update automatically when I travel",
+          "to": "action:toggle tz_auto"
+        },
+        {
+          "label": "Skip photo for now",
+          "to": "action:skip_photo"
+        },
+        {
+          "label": "Continue",
+          "to": "home",
+          "note": "parent: creates family + child code first; probashi: create or join family circle"
+        }
+      ]
+    },
+    {
+      "id": "child_perm_background",
+      "path": "/child/onboarding/background",
+      "title": "Child: background location",
+      "phase": 1,
+      "roles": [
+        "child"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Continue",
+          "to": "system:ACCESS_BACKGROUND_LOCATION settings",
+          "note": "prominent disclosure first; then child_perm_battery"
+        },
+        {
+          "label": "Not now",
+          "to": "child_perm_battery"
+        }
+      ]
+    },
+    {
+      "id": "child_perm_battery",
+      "path": "/child/onboarding/battery",
+      "title": "Child: battery",
+      "phase": 1,
+      "roles": [
+        "child"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Brand guide chips",
+          "to": "action:show brand guide"
+        },
+        {
+          "label": "Open battery settings",
+          "to": "system:battery optimization settings intent"
+        },
+        {
+          "label": "Continue",
+          "to": "child_consent"
+        }
+      ]
+    },
+    {
+      "id": "child_consent",
+      "path": "/child/onboarding/consent",
+      "title": "Child: consent",
+      "phase": 1,
+      "roles": [
+        "child"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "I understand",
+          "to": "child_all_set",
+          "note": "stores the consent record"
+        }
+      ]
+    },
+    {
+      "id": "child_all_set",
+      "path": "/child/onboarding/done",
+      "title": "You're all set",
+      "phase": 1,
+      "roles": [
+        "child"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Continue",
+          "to": "child_home"
+        }
+      ]
+    },
+    {
+      "id": "home",
+      "path": "/home",
+      "title": "Home",
+      "phase": 2,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": true,
+      "shell": "adult",
+      "buttons": [
+        {
+          "label": "Theme toggle",
+          "to": "action:toggle theme"
+        },
+        {
+          "label": "Language flag",
+          "to": "sheet:language"
+        },
+        {
+          "label": "Bell",
+          "to": "alerts"
+        },
+        {
+          "label": "Profile row",
+          "to": "profile"
+        },
+        {
+          "label": "Member card",
+          "to": "member"
+        },
+        {
+          "label": "Places",
+          "to": "places"
+        },
+        {
+          "label": "Alerts",
+          "to": "alerts"
+        },
+        {
+          "label": "Safe walk",
+          "to": "safe_walk"
+        },
+        {
+          "label": "Live chat",
+          "to": "chat"
+        },
+        {
+          "label": "Family",
+          "to": "family"
+        },
+        {
+          "label": "Create your family / Join with invite / Enter invite code",
+          "to": "family",
+          "note": "empty state by role"
+        },
+        {
+          "label": "System Back",
+          "to": "dialog:exit_app"
+        }
+      ]
+    },
+    {
+      "id": "map",
+      "path": "/map",
+      "title": "Map",
+      "phase": 2,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": "adult",
+      "buttons": [
+        {
+          "label": "Layers",
+          "to": "sheet:map_layers"
+        },
+        {
+          "label": "Recenter",
+          "to": "action:recenter"
+        },
+        {
+          "label": "Compass",
+          "to": "action:reset north"
+        },
+        {
+          "label": "Follow member",
+          "to": "action:follow"
+        },
+        {
+          "label": "Show everyone",
+          "to": "action:fit all"
+        },
+        {
+          "label": "Avatar marker",
+          "to": "member"
+        },
+        {
+          "label": "Nearby place",
+          "to": "sheet:nearby_places"
+        }
+      ]
+    },
+    {
+      "id": "history",
+      "path": "/history",
+      "title": "History",
+      "phase": 3,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": "adult",
+      "buttons": [
+        {
+          "label": "Timeline / Routes segment",
+          "to": "action:switch segment"
+        },
+        {
+          "label": "Day picker",
+          "to": "action:pick day"
+        },
+        {
+          "label": "Timeline item",
+          "to": "member"
+        },
+        {
+          "label": "Filter chips Safety / Family / Account",
+          "to": "action:filter"
+        }
+      ]
+    },
+    {
+      "id": "premium",
+      "path": "/premium",
+      "title": "Premium",
+      "phase": 6,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": "adult",
+      "buttons": [
+        {
+          "label": "Monthly / Yearly",
+          "to": "action:switch period"
+        },
+        {
+          "label": "Buy with Google Play",
+          "to": "system:Play Billing flow"
+        },
+        {
+          "label": "Redeem code",
+          "to": "action:redeem"
+        },
+        {
+          "label": "Support banner",
+          "to": "system:WhatsApp (wa.me) or web fallback"
+        },
+        {
+          "label": "Priority Support",
+          "to": "chat",
+          "note": "flagged priority"
+        }
+      ]
+    },
+    {
+      "id": "settings",
+      "path": "/settings",
+      "title": "Settings",
+      "phase": 7,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": "adult",
+      "buttons": [
+        {
+          "label": "Appearance",
+          "to": "action:toggle theme"
+        },
+        {
+          "label": "Profile",
+          "to": "profile"
+        },
+        {
+          "label": "Notifications and email",
+          "to": "settings_notifications"
+        },
+        {
+          "label": "Family",
+          "to": "family"
+        },
+        {
+          "label": "Emergency contacts",
+          "to": "emergency_contacts"
+        },
+        {
+          "label": "Help / FAQ",
+          "to": "help"
+        },
+        {
+          "label": "Live chat",
+          "to": "chat"
+        },
+        {
+          "label": "Report misuse",
+          "to": "report_misuse"
+        },
+        {
+          "label": "Rate us",
+          "to": "system:Play In-App Review"
+        },
+        {
+          "label": "Privacy Policy",
+          "to": "legal_privacy"
+        },
+        {
+          "label": "Terms",
+          "to": "legal_terms"
+        },
+        {
+          "label": "Download my data",
+          "to": "data_export"
+        },
+        {
+          "label": "Delete my account and data",
+          "to": "delete_account"
+        }
+      ],
+      "notes": "No map options and no language row."
+    },
+    {
+      "id": "alerts",
+      "path": "/alerts",
+      "title": "Alerts",
+      "phase": 5,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Filter Safety / Family / Account",
+          "to": "action:filter"
+        },
+        {
+          "label": "Alert",
+          "to": "member"
+        }
+      ]
+    },
+    {
+      "id": "profile",
+      "path": "/profile",
+      "title": "Profile",
+      "phase": 2,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Change photo",
+          "to": "sheet:photo_source"
+        },
+        {
+          "label": "Country",
+          "to": "sheet:country_picker"
+        },
+        {
+          "label": "Time zone",
+          "to": "sheet:timezone_picker"
+        },
+        {
+          "label": "Change password",
+          "to": "change_password",
+          "note": "email accounts only"
+        },
+        {
+          "label": "Devices and sessions",
+          "to": "sessions"
+        },
+        {
+          "label": "Download my data",
+          "to": "data_export"
+        },
+        {
+          "label": "Delete my account and data",
+          "to": "delete_account"
+        },
+        {
+          "label": "Log out",
+          "to": "sheet:logout"
+        }
+      ]
+    },
+    {
+      "id": "change_password",
+      "path": "/profile/password",
+      "title": "Change password",
+      "phase": 2,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Save",
+          "to": "back"
+        }
+      ]
+    },
+    {
+      "id": "sessions",
+      "path": "/profile/sessions",
+      "title": "Devices and sessions",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Sign out device",
+          "to": "action:revoke session"
+        }
+      ]
+    },
+    {
+      "id": "data_export",
+      "path": "/profile/export",
+      "title": "Download my data",
+      "phase": 7,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Request export",
+          "to": "action:create data_request"
+        }
+      ]
+    },
+    {
+      "id": "delete_account",
+      "path": "/profile/delete",
+      "title": "Delete my account and data",
+      "phase": 7,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Delete",
+          "to": "dialog:confirm_delete",
+          "note": "owner: transfer-or-delete flow first"
+        }
+      ]
+    },
+    {
+      "id": "member",
+      "path": "/member/:id",
+      "title": "Member",
+      "phase": 2,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Call",
+          "to": "system:dialer intent"
+        },
+        {
+          "label": "Where are you?",
+          "to": "action:send message"
+        },
+        {
+          "label": "Request update now",
+          "to": "action:request update"
+        },
+        {
+          "label": "Day picker",
+          "to": "action:pick day"
+        },
+        {
+          "label": "Safe walk view",
+          "to": "safe_walk"
+        },
+        {
+          "label": "Remove member",
+          "to": "dialog:confirm_remove"
+        },
+        {
+          "label": "Re-link child device",
+          "to": "child_code_generate"
+        }
+      ]
+    },
+    {
+      "id": "family",
+      "path": "/family",
+      "title": "Family",
+      "phase": 2,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Generate child code",
+          "to": "child_code_generate"
+        },
+        {
+          "label": "Invite adult",
+          "to": "invite"
+        },
+        {
+          "label": "Member row",
+          "to": "member"
+        },
+        {
+          "label": "Sharing consent / pause",
+          "to": "action:toggle sharing"
+        },
+        {
+          "label": "Transfer ownership",
+          "to": "dialog:transfer_owner"
+        },
+        {
+          "label": "Leave family",
+          "to": "dialog:confirm_leave"
+        }
+      ]
+    },
+    {
+      "id": "invite",
+      "path": "/family/invite",
+      "title": "Invite guardian",
+      "phase": 2,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Send email invite",
+          "to": "action:send invite"
+        },
+        {
+          "label": "Share code",
+          "to": "system:share sheet"
+        }
+      ]
+    },
+    {
+      "id": "child_code_generate",
+      "path": "/family/child-code",
+      "title": "Child code",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Regenerate",
+          "to": "action:regenerate code"
+        },
+        {
+          "label": "Share link",
+          "to": "system:share sheet"
+        }
+      ]
+    },
+    {
+      "id": "emergency_contacts",
+      "path": "/family/emergency-contacts",
+      "title": "Emergency contacts",
+      "phase": 4,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Add contact",
+          "to": "action:add contact"
+        }
+      ]
+    },
+    {
+      "id": "places",
+      "path": "/places",
+      "title": "Places",
+      "phase": 4,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Add place",
+          "to": "place_edit"
+        },
+        {
+          "label": "Place row",
+          "to": "place_edit"
+        },
+        {
+          "label": "Upsell (limit)",
+          "to": "premium"
+        }
+      ]
+    },
+    {
+      "id": "place_edit",
+      "path": "/places/edit",
+      "title": "Add / edit place",
+      "phase": 4,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Save",
+          "to": "back"
+        },
+        {
+          "label": "Delete",
+          "to": "dialog:confirm_delete_place"
+        }
+      ]
+    },
+    {
+      "id": "safe_walk",
+      "path": "/safe-walk",
+      "title": "Safe walk (parent view)",
+      "phase": 4,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Call",
+          "to": "system:dialer intent"
+        }
+      ]
+    },
+    {
+      "id": "chat",
+      "path": "/chat",
+      "title": "Live chat",
+      "phase": 7,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Quick reply chips",
+          "to": "action:send chip"
+        },
+        {
+          "label": "Attach image",
+          "to": "system:photo picker"
+        },
+        {
+          "label": "Talk to a person",
+          "to": "action:escalate"
+        },
+        {
+          "label": "Thumbs up / down",
+          "to": "action:rate"
+        }
+      ]
+    },
+    {
+      "id": "settings_notifications",
+      "path": "/settings/notifications",
+      "title": "Notifications and email",
+      "phase": 5,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Per-type toggles",
+          "to": "action:toggle"
+        }
+      ]
+    },
+    {
+      "id": "help",
+      "path": "/settings/help",
+      "title": "Help and FAQ",
+      "phase": 7,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Live chat",
+          "to": "chat"
+        }
+      ]
+    },
+    {
+      "id": "report_misuse",
+      "path": "/settings/report-misuse",
+      "title": "Report misuse",
+      "phase": 2,
+      "roles": [
+        "parent",
+        "probashi",
+        "member"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        },
+        {
+          "label": "Send report",
+          "to": "action:create abuse_report"
+        }
+      ]
+    },
+    {
+      "id": "legal_privacy",
+      "path": "/legal/privacy",
+      "title": "Privacy Policy",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member",
+        "child"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        }
+      ],
+      "notes": "In-app web view of the public URL."
+    },
+    {
+      "id": "legal_terms",
+      "path": "/legal/terms",
+      "title": "Terms",
+      "phase": 1,
+      "roles": [
+        "parent",
+        "probashi",
+        "member",
+        "child"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        }
+      ],
+      "notes": "In-app web view of the public URL."
+    },
+    {
+      "id": "update_required",
+      "path": "/update-required",
+      "title": "Update required",
+      "phase": 7,
+      "roles": [
+        "parent",
+        "probashi",
+        "member",
+        "child"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Update",
+          "to": "system:Play Store listing"
+        }
+      ],
+      "notes": "Blocking when app version < min_version."
+    },
+    {
+      "id": "child_home",
+      "path": "/child",
+      "title": "Child home",
+      "phase": 4,
+      "roles": [
+        "child"
+      ],
+      "languageSelector": true,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Theme toggle",
+          "to": "action:toggle theme"
+        },
+        {
+          "label": "Language flag",
+          "to": "sheet:language"
+        },
+        {
+          "label": "SOS",
+          "to": "child_sos"
+        },
+        {
+          "label": "I arrived safely",
+          "to": "action:send safe arrival"
+        },
+        {
+          "label": "Heading home",
+          "to": "child_safe_walk"
+        },
+        {
+          "label": "Who can see me",
+          "to": "who_can_see_me"
+        },
+        {
+          "label": "Nearby chip",
+          "to": "action:show place on mini map"
+        },
+        {
+          "label": "Help",
+          "to": "action:show 'Ask your parent for help'"
+        },
+        {
+          "label": "System Back",
+          "to": "dialog:exit_app_child"
+        }
+      ],
+      "notes": "No bottom bar, no bell, no log out."
+    },
+    {
+      "id": "who_can_see_me",
+      "path": "/child/who-can-see-me",
+      "title": "Who can see me",
+      "phase": 4,
+      "roles": [
+        "child"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Back",
+          "to": "back"
+        }
+      ]
+    },
+    {
+      "id": "child_sos",
+      "path": "/child/sos",
+      "title": "SOS",
+      "phase": 4,
+      "roles": [
+        "child"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Cancel SOS",
+          "to": "action:cancel",
+          "note": "during the 5 s countdown"
+        },
+        {
+          "label": "Call emergency number",
+          "to": "system:dialer intent",
+          "note": "number from emergency_numbers by country"
+        },
+        {
+          "label": "Done",
+          "to": "child_home"
+        }
+      ]
+    },
+    {
+      "id": "child_safe_walk",
+      "path": "/child/heading-home",
+      "title": "Heading home",
+      "phase": 4,
+      "roles": [
+        "child"
+      ],
+      "languageSelector": false,
+      "shell": null,
+      "buttons": [
+        {
+          "label": "Pick expected time",
+          "to": "action:pick time"
+        },
+        {
+          "label": "Start",
+          "to": "action:start trip"
+        },
+        {
+          "label": "I arrived",
+          "to": "action:end trip"
+        },
+        {
+          "label": "Back",
+          "to": "back"
+        }
+      ]
+    }
+  ],
+  "overlays": [
+    {
+      "id": "language",
+      "kind": "sheet",
+      "title": "Language",
+      "buttons": [
+        {
+          "label": "Language row (enabled languages only)",
+          "to": "action:apply language, 250 ms cross-fade, close"
+        }
+      ]
+    },
+    {
+      "id": "photo_source",
+      "kind": "sheet",
+      "title": "Profile photo",
+      "buttons": [
+        {
+          "label": "Take photo",
+          "to": "system:camera intent"
+        },
+        {
+          "label": "Choose from gallery",
+          "to": "system:photo picker"
+        },
+        {
+          "label": "Use Google photo",
+          "to": "action:use google photo",
+          "note": "only when available"
+        },
+        {
+          "label": "Remove photo",
+          "to": "action:remove photo"
+        }
+      ]
+    },
+    {
+      "id": "google_terms",
+      "kind": "sheet",
+      "title": "Before we continue",
+      "buttons": [
+        {
+          "label": "I am 18 or older ... checkbox",
+          "to": "action:toggle"
+        },
+        {
+          "label": "Continue",
+          "to": "profile_setup"
+        },
+        {
+          "label": "Terms",
+          "to": "legal_terms"
+        },
+        {
+          "label": "Privacy Policy",
+          "to": "legal_privacy"
+        }
+      ]
+    },
+    {
+      "id": "country_picker",
+      "kind": "sheet",
+      "title": "Country",
+      "buttons": [
+        {
+          "label": "Search",
+          "to": "action:filter"
+        },
+        {
+          "label": "Country row",
+          "to": "action:save country"
+        }
+      ]
+    },
+    {
+      "id": "timezone_picker",
+      "kind": "sheet",
+      "title": "Time zone",
+      "buttons": [
+        {
+          "label": "Search",
+          "to": "action:filter"
+        },
+        {
+          "label": "Zone row",
+          "to": "action:save zone"
+        }
+      ]
+    },
+    {
+      "id": "logout",
+      "kind": "sheet",
+      "title": "Log out?",
+      "buttons": [
+        {
+          "label": "Stay",
+          "to": "close",
+          "note": "primary, default focus"
+        },
+        {
+          "label": "Log out",
+          "to": "welcome",
+          "note": "revokes refresh token + FCM token, clears cache"
+        }
+      ]
+    },
+    {
+      "id": "exit_app",
+      "kind": "dialog",
+      "title": "Exit app?",
+      "buttons": [
+        {
+          "label": "Stay",
+          "to": "close"
+        },
+        {
+          "label": "Exit",
+          "to": "system:close app"
+        }
+      ]
+    },
+    {
+      "id": "exit_app_child",
+      "kind": "dialog",
+      "title": "Exit app? (Location sharing keeps running)",
+      "buttons": [
+        {
+          "label": "Stay",
+          "to": "close"
+        },
+        {
+          "label": "Exit",
+          "to": "system:close app"
+        }
+      ]
+    },
+    {
+      "id": "map_layers",
+      "kind": "sheet",
+      "title": "Map layers",
+      "buttons": [
+        {
+          "label": "Normal / Satellite / Hybrid / Terrain",
+          "to": "action:set map type"
+        },
+        {
+          "label": "3D view",
+          "to": "action:toggle 3D"
+        },
+        {
+          "label": "Nearby places / Places / Route trail / Accuracy circles / Labels",
+          "to": "action:toggle layer"
+        }
+      ]
+    },
+    {
+      "id": "nearby_places",
+      "kind": "sheet",
+      "title": "Nearby places",
+      "buttons": [
+        {
+          "label": "Category chips",
+          "to": "action:filter"
+        },
+        {
+          "label": "Place row",
+          "to": "action:fly to place"
+        }
+      ]
+    },
+    {
+      "id": "tz_travel_prompt",
+      "kind": "sheet",
+      "title": "It looks like you're in <Country> now. Update?",
+      "buttons": [
+        {
+          "label": "Update",
+          "to": "action:save country"
+        },
+        {
+          "label": "Keep",
+          "to": "close"
+        }
+      ]
+    },
+    {
+      "id": "confirm_delete",
+      "kind": "dialog",
+      "title": "Delete account?",
+      "buttons": [
+        {
+          "label": "Cancel",
+          "to": "close"
+        },
+        {
+          "label": "Delete",
+          "to": "welcome"
+        }
+      ]
+    },
+    {
+      "id": "confirm_remove",
+      "kind": "dialog",
+      "title": "Remove member?",
+      "buttons": [
+        {
+          "label": "Cancel",
+          "to": "close"
+        },
+        {
+          "label": "Remove",
+          "to": "family"
+        }
+      ]
+    },
+    {
+      "id": "confirm_leave",
+      "kind": "dialog",
+      "title": "Leave family?",
+      "buttons": [
+        {
+          "label": "Cancel",
+          "to": "close"
+        },
+        {
+          "label": "Leave",
+          "to": "home"
+        }
+      ]
+    },
+    {
+      "id": "transfer_owner",
+      "kind": "dialog",
+      "title": "Transfer ownership",
+      "buttons": [
+        {
+          "label": "Cancel",
+          "to": "close"
+        },
+        {
+          "label": "Transfer",
+          "to": "family"
+        }
+      ]
+    },
+    {
+      "id": "confirm_delete_place",
+      "kind": "dialog",
+      "title": "Delete place?",
+      "buttons": [
+        {
+          "label": "Cancel",
+          "to": "close"
+        },
+        {
+          "label": "Delete",
+          "to": "places"
+        }
+      ]
+    }
+  ]
+}
