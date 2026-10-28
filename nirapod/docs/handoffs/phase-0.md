@@ -32,4 +32,4 @@ Roles ran one after another in one session (ASSUMPTIONS A-024). Each handoff: ta
   by the admin DB user, logs scrubbed.
 - Found and fixed during review: (1) a race where a second 401 after a finished refresh would refresh again with a
   rotated token; (2) brand colors failing WCAG AA for text; (3) JSON settings parsed twice on MariaDB.
-- **Phase 0 sign-off:** granted, conditional on the first green CI run (AAB build).
+- **Phase 0 sign-off:** granted, granted; first CI run green (AAB built, merged manifest permissions ok).

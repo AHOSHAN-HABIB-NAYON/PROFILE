@@ -33,7 +33,7 @@
 ## Not verified here (and why)
 
 - **Android app bundle build:** the sandbox network blocks the Android SDK download, so `flutter build appbundle`
-  runs only in GitHub Actions. The first CI run on this branch is the check. (A-025)
+  runs only in GitHub Actions. CI run 40737190846 built it successfully and the merged-manifest permission check passed. (A-025)
 - **Animation profiling numbers (60 Hz and 120/144 Hz phones):** needs real devices. Phase 0 ships only the bottom
   bar morph, press scale, page fade and shimmer, all time-based and inside RepaintBoundary. Numbers will be measured
   and reported from Phase 1, when the animated screens exist.
@@ -49,7 +49,7 @@
 | /docs/CONTRACTS: design tokens | verified |
 | /docs/CONTRACTS: WebSocket event formats | done |
 | NAVIGATION_MAP.md | verified |
-| CI builds the Android app bundle and runs tests | done (first CI run pending) |
+| CI builds the Android app bundle and runs tests | verified (CI run 40737190846: all 3 jobs green, AAB artifact uploaded) |
 | Env/config management | verified |
 | DB migrations and seed data | verified |
 | Design tokens and theming | verified |

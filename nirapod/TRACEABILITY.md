@@ -11,7 +11,7 @@ Maps each requirement of the spec to code, tests and status: **not started**, **
 | P0-05 | Phase 0 | /docs/CONTRACTS: design tokens | docs/CONTRACTS/design-tokens.json -> tokens.g.dart, tokens.css | check-all (drift), contrast_test.dart | **verified** |
 | P0-06 | Phase 0 | /docs/CONTRACTS: WebSocket event formats | docs/CONTRACTS/websocket-events.md | manual review (implemented Phase 2/7) | **done** |
 | P0-07 | Phase 0 | NAVIGATION_MAP.md, every button has action + destination | docs/CONTRACTS/navigation.json -> NAVIGATION_MAP.md, app/lib/nav/routes.g.dart | gen-nav.mjs validation, app/test/nav_test.dart | **verified** |
-| P0-08 | Phase 0 | CI builds the Android app bundle and runs tests | .github/workflows/nirapod-ci.yml | first CI run on push (AAB cannot build in sandbox, A-025) | **done** |
+| P0-08 | Phase 0 | CI builds the Android app bundle and runs tests | .github/workflows/nirapod-ci.yml | CI run 40737190846 green (release AAB + merged-manifest permission check) | **verified** |
 | P0-09 | Phase 0 | Env/config management | server/src/config.js, server/.env.example, app/lib/core/config/env.dart | server/test/config.test.js | **verified** |
 | P0-10 | Phase 0 | DB migrations and seed data | server/migrations, server/src/db/seed*.js, scripts/ | schema.test.js (rollback, idempotent seed) | **verified** |
 | P0-11 | Phase 0 | Design tokens and theming (light default, dark equal, 250 ms cross-fade, remembered) | app/lib/core/theme/* | contrast_test.dart, nav_test.dart (remembered dark) | **verified** |
@@ -27,10 +27,10 @@ Maps each requirement of the spec to code, tests and status: **not started**, **
 | P0-21 | Phase 0 | Logging without PII | server/src/logger.js, app/lib/core/log/log.dart | server/test/logger.test.js, app/test/log_test.dart | **verified** |
 | P0-22 | Phase 0 | Health endpoint | server/src/routes/health.js | server/test/api.test.js | **verified** |
 | P0-23 | Phase 0 | README with setup | README.md | manual | **done** |
-| AR-01 | Absolute rules | No hidden app, covert tracking, call/SMS/contacts, audio, accessibility abuse, ad SDKs, data selling | manifest (no such permissions), AD_ID removed | check-permissions.mjs (CI, merged manifest) | **done** |
+| AR-01 | Absolute rules | No hidden app, covert tracking, call/SMS/contacts, audio, accessibility abuse, ad SDKs, data selling | manifest (no such permissions), AD_ID removed | check-permissions.mjs (CI, merged manifest, green) | **verified** |
 | AR-02 | Absolute rules | Admins/support/AI never see location | admin DB user without location grants (D-003) | schema.test.js (grants + admin code scan) | **verified** |
 | AR-03 | Absolute rules | Never show old/estimated position as live | app/lib/core/trust/trust.dart | trust_test.dart | **verified** |
-| AR-04 | Absolute rules | Only PERMISSIONS list | tools/check-permissions.mjs | CI | **done** |
+| AR-04 | Absolute rules | Only PERMISSIONS list | tools/check-permissions.mjs | CI merged-manifest check (green) | **verified** |
 | ST-01 | Stack | Node + Express + MySQL, helmet, CORS allow-list, rate limit, versioning, error codes, migrations, seed | server/ | api.test.js | **verified** |
 | ST-02 | Stack | JWT short access + rotating refresh, bcrypt, parameterized queries, input validation | sessions table + contract | Phase 1 | **not started** |
 | ST-03 | Stack | Socket.IO realtime, FCM, SMTP email, SPF/DKIM/DMARC doc | contracts only | Phase 2/5 | **not started** |
@@ -75,4 +75,4 @@ Maps each requirement of the spec to code, tests and status: **not started**, **
 | EC-02 | Edge cases | Long/RTL/emoji names, no photo, upload failures, denied camera, unsupported device language, resume after days, manual zone while auto ON, weak GPS | fontFallback, languageFor fallback | Phase 1-3 | **not started** |
 | P9 | Phase 9 | Testing and release pack | - | - | **not started** |
 
-Totals: 34 verified, 18 done, 18 not started (later phases).
+Totals: 37 verified, 15 done, 18 not started (later phases).
