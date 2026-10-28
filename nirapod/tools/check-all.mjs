@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 const run = (f, ...a) => execFileSync(process.execPath, [f, ...a], { stdio: 'inherit', cwd: new URL('.', import.meta.url) });
 run('gen-tokens.mjs', '--check');
 run('gen-nav.mjs', '--check');
+run('gen-i18n-contract.mjs', '--check');
 run('build-icons.mjs', '--check');
 run('build-flags.mjs', '--check');
 run('sync-shared.mjs', '--check');

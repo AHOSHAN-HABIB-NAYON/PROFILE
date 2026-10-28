@@ -17,6 +17,87 @@
     "lang",
     "a11y"
   ],
+  "permissions": [
+    "common",
+    "perm"
+  ],
+  "role": [
+    "common",
+    "role"
+  ],
+  "login": [
+    "common",
+    "auth",
+    "lang",
+    "err",
+    "a11y"
+  ],
+  "register": [
+    "common",
+    "auth",
+    "lang",
+    "err",
+    "a11y"
+  ],
+  "verify_email": [
+    "common",
+    "verify",
+    "lang",
+    "err",
+    "a11y"
+  ],
+  "forgot": [
+    "common",
+    "forgot",
+    "auth",
+    "verify",
+    "lang",
+    "err",
+    "a11y"
+  ],
+  "google_terms": [
+    "common",
+    "google",
+    "auth"
+  ],
+  "child_code": [
+    "common",
+    "child",
+    "verify",
+    "lang",
+    "err",
+    "a11y"
+  ],
+  "profile_setup": [
+    "common",
+    "profile",
+    "state",
+    "err",
+    "a11y"
+  ],
+  "child_onboarding": [
+    "common",
+    "childperm",
+    "perm"
+  ],
+  "child_code_generate": [
+    "common",
+    "code",
+    "state",
+    "err"
+  ],
+  "sessions": [
+    "common",
+    "sessions",
+    "state",
+    "err"
+  ],
+  "legal": [
+    "common",
+    "legal",
+    "state",
+    "err"
+  ],
   "home": [
     "common",
     "nav",

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/motion/motion.dart';
+import '../features/auth/routes.dart';
+import '../features/onboarding/routes.dart';
 import '../features/splash/splash_screen.dart';
 import 'adult_shell.dart';
 import 'nav_types.dart';
@@ -14,12 +16,14 @@ OverlaySpec overlayById(String id) => overlays.firstWhere((o) => o.id == id);
 /// Concrete path for a screen (fills `:id` params with a demo value in the skeleton).
 String locationFor(String id, {String param = 'demo'}) => screenById(id).path.replaceAll(RegExp(r':\w+'), param);
 
-/// Builds a screen by id. Phase 0: every screen is a placeholder except splash.
-/// Later phases replace entries here with real screens.
-Widget buildScreen(String id, GoRouterState state) => switch (id) {
-      'splash' => const SplashScreen(),
-      _ => PlaceholderScreen(spec: screenById(id)),
-    };
+/// Builds a screen by id. Each feature registers its screens in its own routes.dart map;
+/// anything not registered yet is a walkable placeholder.
+Widget buildScreen(String id, GoRouterState state) {
+  final builder = onboardingScreens[id] ?? authScreens[id];
+  if (builder != null) return builder(state);
+  if (id == 'splash') return const SplashScreen();
+  return PlaceholderScreen(spec: screenById(id));
+}
 
 CustomTransitionPage<void> _page(String id, GoRouterState state) => CustomTransitionPage<void>(
       key: state.pageKey,

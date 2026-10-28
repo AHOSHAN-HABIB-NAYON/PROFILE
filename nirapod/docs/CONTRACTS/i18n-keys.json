@@ -5,7 +5,7 @@
     "NO MIXING: a screen declares its namespaces (screens map). If the selected language is missing ANY key in those namespaces, the whole screen renders in English (layout direction still follows the selected language).",
     "Placeholders ({name}) must match exactly across all languages.",
     "Malay (ms) and Indonesian (id) are separate files and must never be copied from each other.",
-    "Keys are added per phase; tools/check-i18n.mjs enforces these rules in CI."
+    "Edit shared/i18n/*.json and SCREENS in tools/gen-i18n-contract.mjs, then run npm run i18n. CI checks drift."
   ],
   "screens": {
     "_default": [
@@ -25,6 +25,87 @@
       "welcome",
       "lang",
       "a11y"
+    ],
+    "permissions": [
+      "common",
+      "perm"
+    ],
+    "role": [
+      "common",
+      "role"
+    ],
+    "login": [
+      "common",
+      "auth",
+      "lang",
+      "err",
+      "a11y"
+    ],
+    "register": [
+      "common",
+      "auth",
+      "lang",
+      "err",
+      "a11y"
+    ],
+    "verify_email": [
+      "common",
+      "verify",
+      "lang",
+      "err",
+      "a11y"
+    ],
+    "forgot": [
+      "common",
+      "forgot",
+      "auth",
+      "verify",
+      "lang",
+      "err",
+      "a11y"
+    ],
+    "google_terms": [
+      "common",
+      "google",
+      "auth"
+    ],
+    "child_code": [
+      "common",
+      "child",
+      "verify",
+      "lang",
+      "err",
+      "a11y"
+    ],
+    "profile_setup": [
+      "common",
+      "profile",
+      "state",
+      "err",
+      "a11y"
+    ],
+    "child_onboarding": [
+      "common",
+      "childperm",
+      "perm"
+    ],
+    "child_code_generate": [
+      "common",
+      "code",
+      "state",
+      "err"
+    ],
+    "sessions": [
+      "common",
+      "sessions",
+      "state",
+      "err"
+    ],
+    "legal": [
+      "common",
+      "legal",
+      "state",
+      "err"
     ],
     "home": [
       "common",
@@ -346,6 +427,771 @@
     "welcome.get_started": {
       "placeholders": [],
       "en": "Get Started"
+    },
+    "welcome.title_a11y": {
+      "placeholders": [],
+      "en": "Nirapod logo"
+    },
+    "perm.step": {
+      "placeholders": [
+        "current",
+        "total"
+      ],
+      "en": "Step {current} of {total}"
+    },
+    "perm.notif_title": {
+      "placeholders": [],
+      "en": "Get real-time notifications"
+    },
+    "perm.notif_body": {
+      "placeholders": [],
+      "en": "Know when your loved ones reach school, home or any safe place."
+    },
+    "perm.demo_arrived": {
+      "placeholders": [],
+      "en": "Rafi reached School"
+    },
+    "perm.demo_message": {
+      "placeholders": [],
+      "en": "Mom: Where are you?"
+    },
+    "perm.demo_sos": {
+      "placeholders": [],
+      "en": "SOS alert from Rafi"
+    },
+    "perm.demo_now": {
+      "placeholders": [],
+      "en": "now"
+    },
+    "perm.demo_ago": {
+      "placeholders": [
+        "minutes"
+      ],
+      "en": "{minutes} min ago"
+    },
+    "perm.how_title": {
+      "placeholders": [],
+      "en": "How location works"
+    },
+    "perm.how_body": {
+      "placeholders": [],
+      "en": "Your family sees where you are and gets an alert when you arrive or leave a place."
+    },
+    "perm.how_school": {
+      "placeholders": [],
+      "en": "School"
+    },
+    "perm.how_home": {
+      "placeholders": [],
+      "en": "Home"
+    },
+    "perm.how_sharing_on": {
+      "placeholders": [],
+      "en": "Location sharing is on"
+    },
+    "perm.how_who": {
+      "placeholders": [],
+      "en": "Only members of your family circle can see it."
+    },
+    "perm.how_stop": {
+      "placeholders": [],
+      "en": "Adults can pause sharing any time. A parent can stop a child's sharing from the app."
+    },
+    "perm.how_point_live": {
+      "placeholders": [],
+      "en": "Real-time location updates"
+    },
+    "perm.how_point_alerts": {
+      "placeholders": [],
+      "en": "Alerts when they arrive or leave"
+    },
+    "perm.how_point_control": {
+      "placeholders": [],
+      "en": "You control who sees it"
+    },
+    "perm.loc_title": {
+      "placeholders": [],
+      "en": "Share your location with family"
+    },
+    "perm.loc_body": {
+      "placeholders": [],
+      "en": "See your family on the map and how far away they are. We only use your location while the app is open."
+    },
+    "perm.loc_distance": {
+      "placeholders": [
+        "distance"
+      ],
+      "en": "{distance} away"
+    },
+    "perm.denied_title": {
+      "placeholders": [],
+      "en": "Permission is off"
+    },
+    "perm.denied_body": {
+      "placeholders": [],
+      "en": "You can turn it on any time in Settings. Nirapod works better with it."
+    },
+    "perm.allow": {
+      "placeholders": [],
+      "en": "Continue"
+    },
+    "role.title": {
+      "placeholders": [],
+      "en": "Who are you?"
+    },
+    "role.subtitle": {
+      "placeholders": [],
+      "en": "Choose how you will use Nirapod."
+    },
+    "role.parent": {
+      "placeholders": [],
+      "en": "Parent / Guardian"
+    },
+    "role.parent_desc": {
+      "placeholders": [],
+      "en": "I want to see my family"
+    },
+    "role.child": {
+      "placeholders": [],
+      "en": "Child"
+    },
+    "role.child_desc": {
+      "placeholders": [],
+      "en": "I have a family code"
+    },
+    "role.probashi": {
+      "placeholders": [],
+      "en": "Probashi"
+    },
+    "role.probashi_desc": {
+      "placeholders": [],
+      "en": "I live abroad and want to look after my family"
+    },
+    "role.member": {
+      "placeholders": [],
+      "en": "Other family member"
+    },
+    "role.member_desc": {
+      "placeholders": [],
+      "en": "I was invited"
+    },
+    "role.note": {
+      "placeholders": [],
+      "en": "Your account decides your final role after you sign in."
+    },
+    "role.already": {
+      "placeholders": [],
+      "en": "Already have an account?"
+    },
+    "role.log_in": {
+      "placeholders": [],
+      "en": "Log in"
+    },
+    "auth.login_parent": {
+      "placeholders": [],
+      "en": "Parent login"
+    },
+    "auth.login_probashi": {
+      "placeholders": [],
+      "en": "Probashi login"
+    },
+    "auth.login_member": {
+      "placeholders": [],
+      "en": "Family member login"
+    },
+    "auth.welcome_back": {
+      "placeholders": [],
+      "en": "Welcome back"
+    },
+    "auth.tab_email": {
+      "placeholders": [],
+      "en": "Email & Password"
+    },
+    "auth.email": {
+      "placeholders": [],
+      "en": "Email address"
+    },
+    "auth.email_hint": {
+      "placeholders": [],
+      "en": "you@example.com"
+    },
+    "auth.password": {
+      "placeholders": [],
+      "en": "Password"
+    },
+    "auth.show_password": {
+      "placeholders": [],
+      "en": "Show password"
+    },
+    "auth.hide_password": {
+      "placeholders": [],
+      "en": "Hide password"
+    },
+    "auth.forgot": {
+      "placeholders": [],
+      "en": "Forgot password?"
+    },
+    "auth.log_in": {
+      "placeholders": [],
+      "en": "Log in"
+    },
+    "auth.or": {
+      "placeholders": [],
+      "en": "or"
+    },
+    "auth.google": {
+      "placeholders": [],
+      "en": "Continue with Google"
+    },
+    "auth.new_here": {
+      "placeholders": [],
+      "en": "New here?"
+    },
+    "auth.create_account": {
+      "placeholders": [],
+      "en": "Create account"
+    },
+    "auth.change_role": {
+      "placeholders": [],
+      "en": "Change role"
+    },
+    "auth.invite_code": {
+      "placeholders": [],
+      "en": "Invite code"
+    },
+    "auth.invite_code_hint": {
+      "placeholders": [],
+      "en": "6-character code (optional)"
+    },
+    "auth.err_invalid": {
+      "placeholders": [],
+      "en": "Email or password is incorrect"
+    },
+    "auth.err_locked": {
+      "placeholders": [],
+      "en": "Too many attempts. Try again in 15 minutes."
+    },
+    "auth.err_email": {
+      "placeholders": [],
+      "en": "Enter a valid email address"
+    },
+    "auth.err_required": {
+      "placeholders": [],
+      "en": "This field is required"
+    },
+    "auth.err_google": {
+      "placeholders": [],
+      "en": "Google sign-in did not finish. Please try again."
+    },
+    "auth.err_google_unverified": {
+      "placeholders": [],
+      "en": "This Google account's email is not verified."
+    },
+    "auth.err_not_verified": {
+      "placeholders": [],
+      "en": "Please verify your email first."
+    },
+    "auth.register_title": {
+      "placeholders": [],
+      "en": "Create your account"
+    },
+    "auth.confirm_password": {
+      "placeholders": [],
+      "en": "Confirm password"
+    },
+    "auth.err_mismatch": {
+      "placeholders": [],
+      "en": "Passwords do not match"
+    },
+    "auth.err_email_taken": {
+      "placeholders": [],
+      "en": "An account with this email already exists. Try logging in."
+    },
+    "auth.rule_length": {
+      "placeholders": [],
+      "en": "At least 8 characters"
+    },
+    "auth.rule_letter_number": {
+      "placeholders": [],
+      "en": "At least one letter and one number"
+    },
+    "auth.rule_common": {
+      "placeholders": [],
+      "en": "Not a common password"
+    },
+    "auth.strength": {
+      "placeholders": [
+        "level"
+      ],
+      "en": "Password strength: {level}"
+    },
+    "auth.strength_weak": {
+      "placeholders": [],
+      "en": "Weak"
+    },
+    "auth.strength_fair": {
+      "placeholders": [],
+      "en": "Fair"
+    },
+    "auth.strength_good": {
+      "placeholders": [],
+      "en": "Good"
+    },
+    "auth.strength_strong": {
+      "placeholders": [],
+      "en": "Strong"
+    },
+    "auth.age_terms": {
+      "placeholders": [],
+      "en": "I am 18 or older and I agree to the Terms and Privacy Policy"
+    },
+    "auth.terms": {
+      "placeholders": [],
+      "en": "Terms"
+    },
+    "auth.privacy": {
+      "placeholders": [],
+      "en": "Privacy Policy"
+    },
+    "auth.err_age_terms": {
+      "placeholders": [],
+      "en": "Please confirm to continue"
+    },
+    "auth.have_account": {
+      "placeholders": [],
+      "en": "Already have an account?"
+    },
+    "verify.title": {
+      "placeholders": [],
+      "en": "Verify your email"
+    },
+    "verify.body": {
+      "placeholders": [
+        "email"
+      ],
+      "en": "We sent a 6-digit code to {email}. It expires in 10 minutes."
+    },
+    "verify.code_label": {
+      "placeholders": [],
+      "en": "Verification code"
+    },
+    "verify.digit": {
+      "placeholders": [
+        "n"
+      ],
+      "en": "Digit {n} of 6"
+    },
+    "verify.resend": {
+      "placeholders": [],
+      "en": "Resend code"
+    },
+    "verify.resend_in": {
+      "placeholders": [
+        "seconds"
+      ],
+      "en": "Resend code in {seconds} s"
+    },
+    "verify.resent": {
+      "placeholders": [],
+      "en": "A new code is on its way."
+    },
+    "verify.change_email": {
+      "placeholders": [],
+      "en": "Change email"
+    },
+    "verify.err_wrong": {
+      "placeholders": [
+        "left"
+      ],
+      "en": "That code is not right. {left} tries left."
+    },
+    "verify.err_expired": {
+      "placeholders": [],
+      "en": "This code has expired. Send a new one."
+    },
+    "verify.err_locked": {
+      "placeholders": [],
+      "en": "Too many wrong codes. Try again in 15 minutes."
+    },
+    "verify.err_resend_limit": {
+      "placeholders": [],
+      "en": "You can request up to 5 codes per hour."
+    },
+    "verify.verified": {
+      "placeholders": [],
+      "en": "Email verified"
+    },
+    "forgot.title": {
+      "placeholders": [],
+      "en": "Reset your password"
+    },
+    "forgot.email_body": {
+      "placeholders": [],
+      "en": "Enter your account email. We will send you a 6-digit code."
+    },
+    "forgot.send": {
+      "placeholders": [],
+      "en": "Send code"
+    },
+    "forgot.sent": {
+      "placeholders": [],
+      "en": "If this email exists, we sent a code."
+    },
+    "forgot.code_title": {
+      "placeholders": [],
+      "en": "Enter the code"
+    },
+    "forgot.code_body": {
+      "placeholders": [],
+      "en": "Enter the 6-digit code from the email."
+    },
+    "forgot.new_title": {
+      "placeholders": [],
+      "en": "Set a new password"
+    },
+    "forgot.new_password": {
+      "placeholders": [],
+      "en": "New password"
+    },
+    "forgot.save": {
+      "placeholders": [],
+      "en": "Save password"
+    },
+    "forgot.done_title": {
+      "placeholders": [],
+      "en": "Password changed"
+    },
+    "forgot.done_body": {
+      "placeholders": [],
+      "en": "You can now log in with your new password. Other devices were signed out."
+    },
+    "forgot.back_to_login": {
+      "placeholders": [],
+      "en": "Back to log in"
+    },
+    "google.sheet_title": {
+      "placeholders": [],
+      "en": "Before we continue"
+    },
+    "google.sheet_body": {
+      "placeholders": [],
+      "en": "Nirapod is for adults managing their family. Please confirm:"
+    },
+    "child.code_title": {
+      "placeholders": [],
+      "en": "Enter your family code"
+    },
+    "child.code_body": {
+      "placeholders": [],
+      "en": "Ask your parent for the 6-character code in their Nirapod app."
+    },
+    "child.first_name": {
+      "placeholders": [],
+      "en": "Your first name"
+    },
+    "child.first_name_hint": {
+      "placeholders": [],
+      "en": "Optional"
+    },
+    "child.add_photo": {
+      "placeholders": [],
+      "en": "Add a photo (optional)"
+    },
+    "child.join": {
+      "placeholders": [],
+      "en": "Join my family"
+    },
+    "child.remember": {
+      "placeholders": [],
+      "en": "Remember me on this phone"
+    },
+    "child.err_code": {
+      "placeholders": [],
+      "en": "This code is not valid. Check it with your parent."
+    },
+    "child.err_expired": {
+      "placeholders": [],
+      "en": "This code has expired. Ask your parent for a new one."
+    },
+    "child.footer": {
+      "placeholders": [],
+      "en": "Stay safe, always"
+    },
+    "profile.setup_title": {
+      "placeholders": [],
+      "en": "Complete your profile"
+    },
+    "profile.setup_subtitle": {
+      "placeholders": [],
+      "en": "This helps your family recognise you and see your local time."
+    },
+    "profile.change_photo": {
+      "placeholders": [],
+      "en": "Change photo"
+    },
+    "profile.full_name": {
+      "placeholders": [],
+      "en": "Full name"
+    },
+    "profile.err_name": {
+      "placeholders": [],
+      "en": "Enter your name (1-60 characters)"
+    },
+    "profile.country": {
+      "placeholders": [],
+      "en": "Country"
+    },
+    "profile.timezone": {
+      "placeholders": [],
+      "en": "Time zone"
+    },
+    "profile.set_country": {
+      "placeholders": [],
+      "en": "Set your country"
+    },
+    "profile.detected": {
+      "placeholders": [],
+      "en": "Detected automatically"
+    },
+    "profile.tz_auto": {
+      "placeholders": [],
+      "en": "Update automatically when I travel"
+    },
+    "profile.tz_auto_body": {
+      "placeholders": [],
+      "en": "Keeps your clock and greeting right in any country."
+    },
+    "profile.skip_photo": {
+      "placeholders": [],
+      "en": "Skip photo for now"
+    },
+    "profile.photo_title": {
+      "placeholders": [],
+      "en": "Profile photo"
+    },
+    "profile.photo_take": {
+      "placeholders": [],
+      "en": "Take photo"
+    },
+    "profile.photo_gallery": {
+      "placeholders": [],
+      "en": "Choose from gallery"
+    },
+    "profile.photo_google": {
+      "placeholders": [],
+      "en": "Use Google photo"
+    },
+    "profile.photo_remove": {
+      "placeholders": [],
+      "en": "Remove photo"
+    },
+    "profile.photo_crop": {
+      "placeholders": [],
+      "en": "Move and zoom"
+    },
+    "profile.photo_use": {
+      "placeholders": [],
+      "en": "Use photo"
+    },
+    "profile.photo_too_big": {
+      "placeholders": [],
+      "en": "This photo is larger than 10 MB. Choose a smaller one."
+    },
+    "profile.photo_type": {
+      "placeholders": [],
+      "en": "Use a JPEG, PNG, WebP or HEIC photo."
+    },
+    "profile.uploading": {
+      "placeholders": [
+        "percent"
+      ],
+      "en": "Uploading photo… {percent}%"
+    },
+    "profile.upload_failed": {
+      "placeholders": [],
+      "en": "Photo not uploaded yet. We will keep trying."
+    },
+    "profile.country_search": {
+      "placeholders": [],
+      "en": "Search country"
+    },
+    "profile.tz_search": {
+      "placeholders": [],
+      "en": "Search city or time zone"
+    },
+    "profile.tz_confirm": {
+      "placeholders": [],
+      "en": "This country has more than one time zone. Please pick yours."
+    },
+    "profile.no_results": {
+      "placeholders": [],
+      "en": "No results"
+    },
+    "profile.travel_prompt": {
+      "placeholders": [
+        "country"
+      ],
+      "en": "It looks like you're in {country} now. Update?"
+    },
+    "profile.update": {
+      "placeholders": [],
+      "en": "Update"
+    },
+    "profile.keep": {
+      "placeholders": [],
+      "en": "Keep"
+    },
+    "profile.saved_offline": {
+      "placeholders": [],
+      "en": "Saved on this phone. It will sync when you are online."
+    },
+    "profile.probashi_title": {
+      "placeholders": [],
+      "en": "Your family circle"
+    },
+    "profile.probashi_create": {
+      "placeholders": [],
+      "en": "Create my family circle"
+    },
+    "profile.probashi_join": {
+      "placeholders": [],
+      "en": "Join with invite code"
+    },
+    "profile.probashi_gift": {
+      "placeholders": [],
+      "en": "Buying for your family back home? Everyone in your family circle gets Premium."
+    },
+    "childperm.bg_title": {
+      "placeholders": [],
+      "en": "Keep sharing when the screen is off"
+    },
+    "childperm.bg_disclosure": {
+      "placeholders": [],
+      "en": "Nirapod collects your location to share it with your family, alert them when you arrive at or leave places, and send SOS, even when the app is closed or not in use. Only your family circle can see it. It is never sold or used for ads."
+    },
+    "childperm.bg_hint": {
+      "placeholders": [],
+      "en": "On the next screen choose \"Allow all the time\"."
+    },
+    "childperm.bg_screen_off": {
+      "placeholders": [],
+      "en": "Screen off"
+    },
+    "childperm.battery_title": {
+      "placeholders": [],
+      "en": "Don't let the battery saver stop sharing"
+    },
+    "childperm.battery_body": {
+      "placeholders": [],
+      "en": "Some phones stop apps in the background. Set Nirapod to \"No restrictions\"."
+    },
+    "childperm.battery_open": {
+      "placeholders": [],
+      "en": "Open battery settings"
+    },
+    "childperm.battery_pick": {
+      "placeholders": [],
+      "en": "Your phone brand"
+    },
+    "childperm.brand_xiaomi": {
+      "placeholders": [],
+      "en": "Settings > Apps > Nirapod > Battery saver > No restrictions. Also turn on Autostart."
+    },
+    "childperm.brand_oppo": {
+      "placeholders": [],
+      "en": "Settings > Battery > App battery management > Nirapod > Allow background activity."
+    },
+    "childperm.brand_vivo": {
+      "placeholders": [],
+      "en": "Settings > Battery > Background power consumption > Nirapod > Allow."
+    },
+    "childperm.brand_realme": {
+      "placeholders": [],
+      "en": "Settings > Battery > App battery management > Nirapod > Allow background activity and Auto launch."
+    },
+    "childperm.brand_samsung": {
+      "placeholders": [],
+      "en": "Settings > Apps > Nirapod > Battery > Unrestricted. Remove Nirapod from Sleeping apps."
+    },
+    "childperm.brand_other": {
+      "placeholders": [],
+      "en": "Settings > Apps > Nirapod > Battery > Unrestricted (or \"Don't optimize\")."
+    },
+    "childperm.consent_title": {
+      "placeholders": [],
+      "en": "Who can see your location"
+    },
+    "childperm.consent_shared": {
+      "placeholders": [],
+      "en": "What is shared: your location, battery level, and when you arrive at or leave places."
+    },
+    "childperm.consent_who": {
+      "placeholders": [],
+      "en": "These family members can see it:"
+    },
+    "childperm.consent_visible": {
+      "placeholders": [],
+      "en": "You will always see a \"Location sharing is on\" notice."
+    },
+    "childperm.consent_ok": {
+      "placeholders": [],
+      "en": "I understand"
+    },
+    "childperm.allset_title": {
+      "placeholders": [],
+      "en": "You're all set"
+    },
+    "childperm.allset_body": {
+      "placeholders": [],
+      "en": "Your family can now see that you are safe."
+    },
+    "code.title": {
+      "placeholders": [],
+      "en": "Child code"
+    },
+    "code.body": {
+      "placeholders": [],
+      "en": "On your child's phone, open Nirapod, choose Child and enter this code."
+    },
+    "code.expires": {
+      "placeholders": [
+        "hours"
+      ],
+      "en": "Expires in {hours} h · single use"
+    },
+    "code.regenerate": {
+      "placeholders": [],
+      "en": "New code"
+    },
+    "code.share": {
+      "placeholders": [],
+      "en": "Share link"
+    },
+    "code.copied": {
+      "placeholders": [],
+      "en": "Code copied"
+    },
+    "sessions.title": {
+      "placeholders": [],
+      "en": "Devices and sessions"
+    },
+    "sessions.this_device": {
+      "placeholders": [],
+      "en": "This device"
+    },
+    "sessions.last_used": {
+      "placeholders": [
+        "time"
+      ],
+      "en": "Last used {time}"
+    },
+    "sessions.sign_out": {
+      "placeholders": [],
+      "en": "Sign out"
+    },
+    "legal.loading": {
+      "placeholders": [],
+      "en": "Opening…"
     }
   }
 }

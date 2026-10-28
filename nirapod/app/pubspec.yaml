@@ -23,6 +23,13 @@ dependencies:
   intl: ^0.20.3
   flutter_localizations:
     sdk: flutter
+  google_sign_in: ^7.2.0
+  image_picker: ^1.2.4
+  flutter_image_compress: ^2.5.1
+  permission_handler: ^13.0.2
+  android_intent_plus: ^6.1.0
+  image: ^4.12.0
+  crypto: ^3.0.8
 
 dev_dependencies:
   flutter_test:
@@ -34,6 +41,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_native_splash: ^2.4.8
 
 flutter:
   uses-material-design: true  # framework widgets only; our own UI uses SVG icons (test enforces no Icons.*)
