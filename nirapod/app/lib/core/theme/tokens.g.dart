@@ -14,6 +14,7 @@ abstract final class LightColors {
   static const warningText = Color(0xFFB45309);
   static const successText = Color(0xFF15803D);
   static const dangerText = Color(0xFFB91C1C);
+  static const inputBorder = Color(0xFF7F8F8A);
 }
 
 abstract final class DarkColors {
@@ -30,6 +31,7 @@ abstract final class DarkColors {
   static const warningText = Color(0xFFFBBF24);
   static const successText = Color(0xFF4ADE80);
   static const dangerText = Color(0xFFF87171);
+  static const inputBorder = Color(0xFF61766F);
 }
 
 abstract final class BrandColors {

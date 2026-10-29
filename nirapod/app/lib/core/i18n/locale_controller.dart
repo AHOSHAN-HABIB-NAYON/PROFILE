@@ -30,6 +30,9 @@ class EnabledLanguages extends Notifier<Set<String>> {
   void apply(Map<String, dynamic> languagesEnabled) {
     final on = languagesEnabled.entries.where((e) => e.value == true).map((e) => e.key).where(isSupportedLanguage).toSet();
     state = {'en', ...on}; // English can never be disabled
+    // A saved language the admin has since disabled falls back to English.
+    final current = ref.read(languageProvider);
+    if (!state.contains(current.code)) ref.read(languageProvider.notifier).select('en');
   }
 }
 

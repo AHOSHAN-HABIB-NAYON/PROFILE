@@ -31,7 +31,7 @@
       "trustUnavailable": "#6B7C77"
     },
     "accessible_text": {
-      "_note": "AA (>=4.5:1) variants for normal-size TEXT and filled-button labels. Brand colors above stay for fills of icons, rings, indicators, map accents and large text. See DECISIONS.md D-004.",
+      "_note": "AA (>=4.5:1) variants for normal-size TEXT and filled-button labels. Brand colors above stay for fills of icons, rings, indicators, map accents and large text. See DECISIONS.md D-004. inputBorder: form field outlines at >=3:1 against surface and background (WCAG 1.4.11).",
       "light": {
         "mutedText": "#5B6C67",
         "primaryText": "#047857",
@@ -39,7 +39,8 @@
         "primaryFillPressed": "#065F46",
         "warningText": "#B45309",
         "successText": "#15803D",
-        "dangerText": "#B91C1C"
+        "dangerText": "#B91C1C",
+        "inputBorder": "#7F8F8A"
       },
       "dark": {
         "mutedText": "#8FA39D",
@@ -49,7 +50,8 @@
         "onPrimaryFill": "#0B1512",
         "warningText": "#FBBF24",
         "successText": "#4ADE80",
-        "dangerText": "#F87171"
+        "dangerText": "#F87171",
+        "inputBorder": "#61766F"
       }
     },
     "usage_rules": [
@@ -66,16 +68,63 @@
       "devanagari": "Noto Sans Devanagari"
     },
     "scale": {
-      "display": { "size": 28, "weight": 700, "lineHeight": 1.25, "lineHeightBengali": 1.45 },
-      "title":   { "size": 22, "weight": 600, "lineHeight": 1.3,  "lineHeightBengali": 1.5 },
-      "subtitle":{ "size": 17, "weight": 600, "lineHeight": 1.35, "lineHeightBengali": 1.55 },
-      "body":    { "size": 15, "weight": 400, "lineHeight": 1.45, "lineHeightBengali": 1.65 },
-      "caption": { "size": 14, "weight": 400, "lineHeight": 1.4,  "lineHeightBengali": 1.6 }
+      "display": {
+        "size": 28,
+        "weight": 700,
+        "lineHeight": 1.25,
+        "lineHeightBengali": 1.45
+      },
+      "title": {
+        "size": 22,
+        "weight": 600,
+        "lineHeight": 1.3,
+        "lineHeightBengali": 1.5
+      },
+      "subtitle": {
+        "size": 17,
+        "weight": 600,
+        "lineHeight": 1.35,
+        "lineHeightBengali": 1.55
+      },
+      "body": {
+        "size": 15,
+        "weight": 400,
+        "lineHeight": 1.45,
+        "lineHeightBengali": 1.65
+      },
+      "caption": {
+        "size": 14,
+        "weight": 400,
+        "lineHeight": 1.4,
+        "lineHeightBengali": 1.6
+      }
     },
-    "rules": ["minimum body text 14sp", "titles 22-24sp semibold"]
+    "rules": [
+      "minimum body text 14sp",
+      "titles 22-24sp semibold"
+    ]
   },
-  "space": { "unit": 4, "xxs": 4, "xs": 8, "sm": 12, "md": 16, "lg": 20, "xl": 24, "xxl": 32, "xxxl": 48, "screenHorizontal": 20 },
-  "radius": { "input": 12, "inputLarge": 14, "card": 16, "cardLarge": 20, "buttonLarge": 18, "pill": 999, "languagePill": 18 },
+  "space": {
+    "unit": 4,
+    "xxs": 4,
+    "xs": 8,
+    "sm": 12,
+    "md": 16,
+    "lg": 20,
+    "xl": 24,
+    "xxl": 32,
+    "xxxl": 48,
+    "screenHorizontal": 20
+  },
+  "radius": {
+    "input": 12,
+    "inputLarge": 14,
+    "card": 16,
+    "cardLarge": 20,
+    "buttonLarge": 18,
+    "pill": 999,
+    "languagePill": 18
+  },
   "size": {
     "minTouchTarget": 48,
     "headerButton": 44,
@@ -91,8 +140,18 @@
     "iconStroke": 1.75
   },
   "elevation": {
-    "level1": { "y": 1, "blur": 3, "opacityLight": 0.06, "opacityDark": 0.30 },
-    "level2": { "y": 4, "blur": 12, "opacityLight": 0.08, "opacityDark": 0.40 },
+    "level1": {
+      "y": 1,
+      "blur": 3,
+      "opacityLight": 0.06,
+      "opacityDark": 0.3
+    },
+    "level2": {
+      "y": 4,
+      "blur": 12,
+      "opacityLight": 0.08,
+      "opacityDark": 0.4
+    },
     "rule": "max 2 elevation levels"
   },
   "motion": {
@@ -122,5 +181,18 @@
     "reducedMotionMaxMs": 120,
     "frameBudgetMs": 6.9
   },
-  "breakpoints_dp": [[320, 640], [360, 800], [412, 915]]
+  "breakpoints_dp": [
+    [
+      320,
+      640
+    ],
+    [
+      360,
+      800
+    ],
+    [
+      412,
+      915
+    ]
+  ]
 }

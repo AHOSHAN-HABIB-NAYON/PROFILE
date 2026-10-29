@@ -7,11 +7,13 @@
 -- timeline_events, nearby_cache. Keep in sync with LOCATION_TABLES in
 -- server/migrations/20261028_0001_initial_schema.js (a test checks this file).
 
+-- email_codes: 6-digit codes could be brute-forced from their hashes, so admin gets no access at all.
+-- DENY: email_codes
+
 CREATE USER IF NOT EXISTS 'nirapod_admin'@'localhost' IDENTIFIED BY 'CHANGE_ME';
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON nirapod.users TO 'nirapod_admin'@'localhost';
 GRANT SELECT, INSERT, UPDATE, DELETE ON nirapod.sessions TO 'nirapod_admin'@'localhost';
-GRANT SELECT, INSERT, UPDATE, DELETE ON nirapod.email_codes TO 'nirapod_admin'@'localhost';
 -- Retired refresh-token hashes (reuse detection). Admin never reads them; DELETE only, for account deletion.
 GRANT DELETE ON nirapod.refresh_token_history TO 'nirapod_admin'@'localhost';
 GRANT SELECT, INSERT, UPDATE, DELETE ON nirapod.admin_users TO 'nirapod_admin'@'localhost';
@@ -41,7 +43,8 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON nirapod.emergency_numbers TO 'nirapod_ad
 GRANT SELECT, INSERT, UPDATE ON nirapod.app_settings TO 'nirapod_admin'@'localhost';
 GRANT SELECT, INSERT, UPDATE, DELETE ON nirapod.changelog TO 'nirapod_admin'@'localhost';
 GRANT SELECT, INSERT ON nirapod.audit_logs TO 'nirapod_admin'@'localhost';
-GRANT SELECT, INSERT ON nirapod.notifications TO 'nirapod_admin'@'localhost';
+-- notifications.params can contain place names ("Rafi reached School"): admin reads only safe columns.
+GRANT SELECT (id, user_id, family_id, category, type, title_key, read_at, created_at), INSERT ON nirapod.notifications TO 'nirapod_admin'@'localhost';
 GRANT SELECT ON nirapod.email_logs TO 'nirapod_admin'@'localhost';
 GRANT SELECT, UPDATE ON nirapod.abuse_reports TO 'nirapod_admin'@'localhost';
 GRANT SELECT, INSERT, UPDATE ON nirapod.data_requests TO 'nirapod_admin'@'localhost';

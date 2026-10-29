@@ -57,3 +57,34 @@ from admin.
 ### D-011 Server stack details
 Express 4, knex migrations (`server/migrations`), mysql2, zod config validation, helmet (CSP, no `x-powered-by`),
 CORS allow-list on `/api` only, express-rate-limit (general + stricter auth limiter), node's built-in test runner.
+
+### D-012 Phase 1 backend choices (from the Backend handoff)
+- One session row per device for its whole life (`sid` in the JWT); old refresh hashes go to `refresh_token_history`
+  (pruned after 30 days). Reuse of an old token, including two refreshes racing, revokes the whole rotation family.
+- Child sessions are bound to `x-device-id`; a mismatch on refresh is rejected without revoking the session.
+- Email/OTP and join codes are stored as HMAC keyed by MASTER_KEY (fallback: JWT secret outside production).
+- The resend throttle lives in process memory (enough for one Hostinger instance; several instances need a shared store).
+  Database-side limits are always enforced too.
+- `max_members` counts adults only. Every adult, including the family creator, starts with sharing `pending`;
+  children start `active`.
+- Linking Google to an account whose email was never verified removes that account's password and sessions.
+- HEIC uploads are rejected by the server (the bundled sharp cannot decode them); the app converts to JPEG first.
+- Accepted spec trade-offs: register returns 409 for an existing email, and the login lockout shows that an account
+  exists. Forgot and resend never reveal it.
+
+### D-013 QA Phase 0 audit fixes (Lead)
+- TRUST_PROXY defaults to true in production (HTTPS terminates at the proxy; otherwise redirect loops and one shared
+  rate-limit IP).
+- The log sanitizer normalises camelCase keys. Database errors log only code, errno and sqlState (SQL text carries
+  values). Coordinate scrubbing also catches short pairs and `lat=` labels.
+- Admin DB: no access to `email_codes` (`-- DENY:` line, test-enforced); `notifications` is readable only without
+  `params` (which may hold place names).
+- A client `x-request-id` is accepted only if it matches `[A-Za-z0-9._-]{1,64}`.
+- App: tokens are cleared only when the server rejects the refresh token; offline keeps the session (a child phone
+  must stay signed in). `x-device-id` is sent on every request.
+- New token `inputBorder` (light #7F8F8A, dark #61766F) gives field outlines >= 3:1 (WCAG 1.4.11).
+- AuthScaffold header grows with its text; the back label is translated.
+- A saved language that admin later disables falls back to English.
+- Exception to "never show Bengali when English is selected": the Language sheet lists each language by its
+  native name (e.g. "বাংলা (Bengali)"), as the spec requires for that sheet.
+- Not changed (minor, recorded): the public health endpoint shows version/uptime; CI actions are pinned by tag.

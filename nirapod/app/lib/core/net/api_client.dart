@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 
 import '../config/env.dart';
 import 'api_error.dart';
+import 'device_id.dart';
 import 'token_store.dart';
 
 /// HTTP client for /api/v1 with short-lived access tokens and rotating refresh tokens.
@@ -11,7 +12,10 @@ import 'token_store.dart';
 /// - Adds `Authorization: Bearer <access>` to every request.
 /// - On 401 AUTH_TOKEN_EXPIRED it refreshes ONCE (concurrent requests share one refresh), stores the
 ///   rotated pair and retries the original request.
-/// - If refresh fails the tokens are cleared and [onSessionExpired] runs (app returns to Login).
+/// - Only when the server REJECTS the refresh token (401/403) are the tokens cleared and
+///   [onSessionExpired] run. Offline, timeouts and 5xx keep the tokens (a child phone that loses signal
+///   must stay signed in) and surface as a network/server error.
+/// - Sends `x-device-id` on every request (child sessions are bound to it).
 class ApiClient {
   ApiClient({
     required this.tokens,
@@ -19,6 +23,7 @@ class ApiClient {
     HttpClientAdapter? adapter,
     this.onSessionExpired,
     this.appVersion = Env.appVersion,
+    this.deviceIds,
   }) : dio = Dio(BaseOptions(
           baseUrl: baseUrl,
           connectTimeout: const Duration(seconds: 10),
@@ -33,33 +38,45 @@ class ApiClient {
   final TokenStore tokens;
   final void Function()? onSessionExpired;
   final String appVersion;
-  Completer<Tokens?>? _refreshing;
+  final DeviceIdStore? deviceIds;
+  Completer<_RefreshResult>? _refreshing;
 
   static const refreshPath = '/auth/refresh';
 
-  Future<Tokens?> _refresh() {
+  Future<_RefreshResult> _refresh() {
     final pending = _refreshing;
     if (pending != null) return pending.future;
-    final c = Completer<Tokens?>();
+    final c = Completer<_RefreshResult>();
     _refreshing = c;
     () async {
       try {
         final current = await tokens.read();
         if (current == null) {
-          c.complete(null);
+          c.complete(const _RefreshResult.rejected());
           return;
         }
         // Separate Dio without the auth interceptor, so refresh can never loop.
         final plain = Dio(dio.options.copyWith())..httpClientAdapter = dio.httpClientAdapter;
-        final res = await plain.post<Map<String, dynamic>>(refreshPath, data: {'refresh_token': current.refresh});
+        final deviceId = await deviceIds?.get();
+        final res = await plain.post<Map<String, dynamic>>(
+          refreshPath,
+          data: {'refresh_token': current.refresh},
+          options: Options(headers: {'x-device-id': ?deviceId}),
+        );
         final data = res.data!;
         final next = Tokens(access: data['access_token'] as String, refresh: data['refresh_token'] as String);
         await tokens.write(next);
-        c.complete(next);
-      } catch (_) {
-        await tokens.clear();
-        onSessionExpired?.call();
-        c.complete(null);
+        c.complete(_RefreshResult.ok(next));
+      } catch (e) {
+        final status = e is DioException ? e.response?.statusCode : null;
+        if (status == 401 || status == 403) {
+          await tokens.clear();
+          onSessionExpired?.call();
+          c.complete(const _RefreshResult.rejected());
+        } else {
+          // Offline / timeout / server error: keep the tokens, report the real problem.
+          c.complete(_RefreshResult.failed(ApiError.from(e)));
+        }
       } finally {
         _refreshing = null;
       }
@@ -90,6 +107,8 @@ class _AuthInterceptor extends Interceptor {
     final t = await client.tokens.read();
     if (t != null) options.headers['authorization'] = 'Bearer ${t.access}';
     options.headers['x-app-version'] = client.appVersion;
+    final deviceId = await client.deviceIds?.get();
+    if (deviceId != null) options.headers['x-device-id'] = deviceId;
     handler.next(options);
   }
 
@@ -106,12 +125,13 @@ class _AuthInterceptor extends Interceptor {
     // If another request already rotated the tokens, just retry with the new access token.
     final sent = err.requestOptions.headers['authorization'];
     final stored = await client.tokens.read();
-    final fresh = (stored != null && sent != 'Bearer ${stored.access}') ? stored : await client._refresh();
+    final result = (stored != null && sent != 'Bearer ${stored.access}') ? _RefreshResult.ok(stored) : await client._refresh();
+    final fresh = result.tokens;
     if (fresh == null) {
       return handler.reject(DioException(
         requestOptions: err.requestOptions,
         response: err.response,
-        error: ApiError(ApiErrorKind.sessionExpired, code: 'AUTH_REFRESH_INVALID', status: 401),
+        error: result.error ?? ApiError(ApiErrorKind.sessionExpired, code: 'AUTH_REFRESH_INVALID', status: 401),
       ));
     }
     final opts = err.requestOptions
@@ -123,4 +143,14 @@ class _AuthInterceptor extends Interceptor {
       handler.next(e);
     }
   }
+}
+
+class _RefreshResult {
+  const _RefreshResult.ok(Tokens this.tokens) : error = null;
+  const _RefreshResult.rejected()
+      : tokens = null,
+        error = null;
+  const _RefreshResult.failed(ApiError this.error) : tokens = null;
+  final Tokens? tokens;
+  final ApiError? error;
 }

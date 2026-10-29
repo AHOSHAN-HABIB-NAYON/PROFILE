@@ -74,10 +74,13 @@ test('place radius is limited to 100-300 m by the database', async () => {
 test('admin DB grants never include location tables and cover every other table', async () => {
   const sql = fs.readFileSync(path.resolve(here, '../../tools/sql/admin-grants.sql'), 'utf8');
   const granted = new Set([...sql.matchAll(/^GRANT [^;]* ON nirapod\.(\w+) TO/gm)].map((m) => m[1]));
+  const denied = new Set((sql.match(/^-- DENY[^:]*:\s*(.*)$/m)?.[1] ?? '').split(/[,\s]+/).map((x) => x.replace(/\(.*$/, '')).filter(Boolean));
+  for (const t of denied) assert.ok(!granted.has(t), `${t} is listed as denied but also granted`);
+  assert.ok(denied.has('email_codes'), 'email_codes must never be readable by admin');
   for (const t of LOCATION_TABLES) assert.ok(!granted.has(t), `admin must not be granted ${t}`);
   const all = (await tables()).filter((t) => !t.startsWith('knex_'));
   for (const t of all) {
-    if (!LOCATION_TABLES.includes(t)) assert.ok(granted.has(t), `admin-grants.sql has no decision for ${t}`);
+    if (!LOCATION_TABLES.includes(t) && !denied.has(t)) assert.ok(granted.has(t), `admin-grants.sql has no decision for ${t}`);
   }
 });
 

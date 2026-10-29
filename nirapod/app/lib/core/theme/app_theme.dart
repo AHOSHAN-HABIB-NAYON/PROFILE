@@ -9,6 +9,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.background,
     required this.surface,
     required this.border,
+    required this.inputBorder,
     required this.text,
     required this.muted,
     required this.primary,
@@ -26,7 +27,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.successText,
   });
 
-  final Color background, surface, border, text, muted;
+  final Color background, surface, border, inputBorder, text, muted;
   final Color primary, primaryText, primaryFill, primaryFillPressed, onPrimaryFill, accent;
   final Color danger, dangerText, onDanger, warning, warningText, success, successText;
 
@@ -34,6 +35,7 @@ class AppColors extends ThemeExtension<AppColors> {
     background: LightColors.background,
     surface: LightColors.surface,
     border: LightColors.border,
+    inputBorder: LightColors.inputBorder,
     text: LightColors.text,
     muted: LightColors.mutedText,
     primary: BrandColors.primary,
@@ -55,6 +57,7 @@ class AppColors extends ThemeExtension<AppColors> {
     background: DarkColors.background,
     surface: DarkColors.surface,
     border: DarkColors.border,
+    inputBorder: DarkColors.inputBorder,
     text: DarkColors.text,
     muted: DarkColors.mutedText,
     primary: BrandColors.primary,
@@ -83,6 +86,7 @@ class AppColors extends ThemeExtension<AppColors> {
       background: l(background, other.background),
       surface: l(surface, other.surface),
       border: l(border, other.border),
+      inputBorder: l(inputBorder, other.inputBorder),
       text: l(text, other.text),
       muted: l(muted, other.muted),
       primary: l(primary, other.primary),
@@ -183,8 +187,8 @@ ThemeData buildTheme({required Brightness brightness, required String script}) {
       filled: true,
       fillColor: c.surface,
       contentPadding: const EdgeInsets.symmetric(horizontal: Space.md, vertical: Space.sm),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(Radii.input), borderSide: BorderSide(color: c.border)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(Radii.input), borderSide: BorderSide(color: c.border)),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(Radii.input), borderSide: BorderSide(color: c.inputBorder)),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(Radii.input), borderSide: BorderSide(color: c.inputBorder)),
       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(Radii.input), borderSide: BorderSide(color: c.primary, width: 2)),
       errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(Radii.input), borderSide: BorderSide(color: c.danger)),
     ),
