@@ -7,6 +7,8 @@ export const PUBLIC_SETTING_KEYS = [
   'min_version', 'latest_version', 'update_message', 'play_store_url', 'languages_enabled',
   'free_plan_enabled', 'trial_days', 'whatsapp_number', 'payment_banner_enabled', 'payment_banner_show_logos',
   'payment_banner_countries', 'payment_banner_text', 'nearby_places_enabled', 'live_chat_human_for',
+  // Firebase client config (public identifiers, not secrets); set in admin.
+  'firebase_android',
 ];
 
 export function appConfigRouter({ db }) {

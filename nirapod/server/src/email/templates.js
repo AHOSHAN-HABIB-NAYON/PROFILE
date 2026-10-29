@@ -1,8 +1,8 @@
-// Transactional email templates: responsive HTML + plain text, English and Bengali.
+// Transactional email templates: responsive HTML + plain text, English, Bengali and Malay.
 // The language is the user's saved language; anything else falls back to English (never mixed).
 // Bengali strings need native-speaker review before release (same rule as the app strings).
 
-export const TEMPLATE_LANGUAGES = ['en', 'bn'];
+export const TEMPLATE_LANGUAGES = ['en', 'bn', 'ms'];
 
 const T = {
   en: {
@@ -99,6 +99,55 @@ const T = {
   },
 };
 
+// Phase 5 templates (generic: subject / heading / intro / note, {placeholders}, optional lines and button).
+const GENERIC = {
+  en: {
+    sos_summary: { subject: 'SOS from {name} has ended', heading: 'SOS ended', intro: 'The SOS {name} sent at {started} ended at {ended}.', note: 'See the full timeline in History.' },
+    family_joined: { subject: '{name} joined your Nirapod family', heading: 'New family member', intro: '{name} joined your family circle as {role}.', note: 'You can manage members in Settings > Family.' },
+    subscription: { subject: 'Nirapod {plan}: {status}', heading: 'Your plan', intro: '{message}', note: 'Live location and SOS always stay free.' },
+    gift_received: { subject: 'A gift for your family: Nirapod {plan}', heading: 'A gift for your family', intro: '{from} gave your family Nirapod {plan} for {duration}.', note: '{message}' },
+    gift_redeemed: { subject: 'Your Nirapod gift was activated', heading: 'Your gift arrived', intro: '{family} is now on Nirapod {plan} thanks to you.', note: 'Thank you for keeping your family safe.' },
+    daily_summary: { subject: 'Your family today', heading: 'Daily family summary', intro: 'Here is how your family is doing ({date}).', note: 'Open Nirapod for live locations. You can turn this email off in Settings.' },
+    chat_inactivity: { subject: 'Are you still there?', heading: 'Your support chat', intro: 'We have not heard from you for a few minutes. Reply in the app or the chat will close soon.', note: 'You can always start a new chat.' },
+    announcement: { subject: '{title}', heading: '{title}', intro: '{body}', note: 'You can turn announcements off in Settings > Notifications and email.' },
+    support_new_chat: { subject: 'New support chat{urgent}', heading: 'New support chat', intro: 'A user started a chat ({status}). Open the admin panel to read it.', note: 'This email contains no chat content or location data.' },
+  },
+  bn: {
+    sos_summary: { subject: '{name}-এর SOS শেষ হয়েছে', heading: 'SOS শেষ', intro: '{name} {started}-এ যে SOS পাঠিয়েছিল তা {ended}-এ শেষ হয়েছে।', note: 'পুরো বিবরণ History-তে দেখুন।' },
+    family_joined: { subject: '{name} আপনার Nirapod পরিবারে যোগ দিয়েছে', heading: 'নতুন সদস্য', intro: '{name} {role} হিসেবে আপনার পরিবারে যোগ দিয়েছে।', note: 'সেটিংস > পরিবার থেকে সদস্যদের পরিচালনা করুন।' },
+    subscription: { subject: 'Nirapod {plan}: {status}', heading: 'আপনার প্ল্যান', intro: '{message}', note: 'লাইভ লোকেশন ও SOS সবসময় ফ্রি।' },
+    gift_received: { subject: 'আপনার পরিবারের জন্য উপহার: Nirapod {plan}', heading: 'পরিবারের জন্য উপহার', intro: '{from} আপনার পরিবারকে {duration}-এর জন্য Nirapod {plan} উপহার দিয়েছেন।', note: '{message}' },
+    gift_redeemed: { subject: 'আপনার Nirapod উপহার চালু হয়েছে', heading: 'উপহার পৌঁছেছে', intro: 'আপনার জন্য {family} এখন Nirapod {plan} ব্যবহার করছে।', note: 'পরিবারকে নিরাপদ রাখার জন্য ধন্যবাদ।' },
+    daily_summary: { subject: 'আজ আপনার পরিবার', heading: 'পরিবারের দৈনিক সারাংশ', intro: 'আপনার পরিবার কেমন আছে ({date})।', note: 'লাইভ অবস্থান দেখতে Nirapod খুলুন। সেটিংস থেকে এই ইমেইল বন্ধ করা যায়।' },
+    chat_inactivity: { subject: 'আপনি কি এখনো আছেন?', heading: 'আপনার সাপোর্ট চ্যাট', intro: 'কয়েক মিনিট আপনার কোনো উত্তর পাইনি। অ্যাপে উত্তর দিন, নাহলে চ্যাটটি শিগগির বন্ধ হবে।', note: 'আপনি যেকোনো সময় নতুন চ্যাট শুরু করতে পারেন।' },
+    announcement: { subject: '{title}', heading: '{title}', intro: '{body}', note: 'সেটিংস > নোটিফিকেশন ও ইমেইল থেকে ঘোষণা বন্ধ করা যায়।' },
+    support_new_chat: { subject: 'নতুন সাপোর্ট চ্যাট{urgent}', heading: 'নতুন সাপোর্ট চ্যাট', intro: 'একজন ব্যবহারকারী চ্যাট শুরু করেছেন ({status})। পড়তে অ্যাডমিন প্যানেল খুলুন।', note: 'এই ইমেইলে চ্যাটের লেখা বা অবস্থান নেই।' },
+  },
+  ms: {
+    dir: 'ltr',
+    footer: 'Anda menerima e-mel ini kerana akaun Nirapod anda. Jika ini bukan anda, abaikan sahaja.',
+    verify_email: { subject: 'Kod pengesahan Nirapod anda', heading: 'Sahkan e-mel anda', intro: 'Masukkan kod ini dalam aplikasi untuk melengkapkan akaun anda:', note: 'Kod tamat tempoh dalam 10 minit. Jangan kongsi dengan sesiapa, termasuk sokongan Nirapod.' },
+    reset_password: { subject: 'Kod tetapan semula kata laluan Nirapod', heading: 'Tetapkan semula kata laluan', intro: 'Masukkan kod ini dalam aplikasi untuk memilih kata laluan baharu:', note: 'Kod tamat tempoh dalam 10 minit. Jika anda tidak memintanya, abaikan e-mel ini.' },
+    welcome: { subject: 'Selamat datang ke Nirapod', heading: 'Selamat datang ke Nirapod', intro: 'Akaun anda sudah sedia. Cipta bulatan keluarga anda dan jemput orang tersayang.', note: 'Nirapod tidak pernah menjejak secara tersembunyi: semua ahli keluarga sentiasa nampak bila perkongsian lokasi aktif.' },
+    new_device_login: { subject: 'Log masuk baharu ke akaun Nirapod anda', heading: 'Log masuk baharu', intro: 'Akaun anda baru sahaja digunakan untuk log masuk pada peranti baharu:', note: 'Jika ini bukan anda, tetapkan semula kata laluan dan log keluar peranti lain di Profil > Peranti dan sesi.', device: 'Peranti', time: 'Masa', unknownDevice: 'Peranti tidak diketahui' },
+    sos_alert: { subject: 'SOS daripada {name}', heading: '{name} perlukan bantuan', intro: '{name} menekan SOS dalam Nirapod pada {time}.', map: 'Buka lokasi pada peta', noMap: 'Lokasi tidak tersedia semasa SOS dihantar. Buka Nirapod untuk melihat kedudukan terkini.', emergency: 'Nombor kecemasan: {numbers}', note: 'Hubungi {name} atau perkhidmatan kecemasan sekarang. Buka Nirapod untuk melihat lokasi langsung.' },
+    family_invite: { subject: 'Anda dijemput ke keluarga Nirapod', heading: 'Sertai keluarga anda di Nirapod', intro: '{inviter} menjemput anda ke bulatan keluarga mereka. Pasang Nirapod, log masuk dengan e-mel ini dan masukkan kod ini:', note: 'Kod tamat tempoh dalam 7 hari. Lokasi anda dikongsi hanya selepas anda bersetuju dalam aplikasi, dan boleh dijeda bila-bila masa.' },
+    sos_summary: { subject: 'SOS daripada {name} telah tamat', heading: 'SOS tamat', intro: 'SOS yang dihantar oleh {name} pada {started} tamat pada {ended}.', note: 'Lihat garis masa penuh dalam Sejarah.' },
+    family_joined: { subject: '{name} menyertai keluarga Nirapod anda', heading: 'Ahli keluarga baharu', intro: '{name} menyertai bulatan keluarga anda sebagai {role}.', note: 'Urus ahli di Tetapan > Keluarga.' },
+    subscription: { subject: 'Nirapod {plan}: {status}', heading: 'Pelan anda', intro: '{message}', note: 'Lokasi langsung dan SOS sentiasa percuma.' },
+    gift_received: { subject: 'Hadiah untuk keluarga anda: Nirapod {plan}', heading: 'Hadiah untuk keluarga anda', intro: '{from} menghadiahkan Nirapod {plan} kepada keluarga anda selama {duration}.', note: '{message}' },
+    gift_redeemed: { subject: 'Hadiah Nirapod anda telah diaktifkan', heading: 'Hadiah anda telah sampai', intro: '{family} kini menggunakan Nirapod {plan} terima kasih kepada anda.', note: 'Terima kasih kerana menjaga keselamatan keluarga anda.' },
+    daily_summary: { subject: 'Keluarga anda hari ini', heading: 'Ringkasan harian keluarga', intro: 'Beginilah keadaan keluarga anda ({date}).', note: 'Buka Nirapod untuk lokasi langsung. Anda boleh mematikan e-mel ini dalam Tetapan.' },
+    chat_inactivity: { subject: 'Anda masih di sana?', heading: 'Sembang sokongan anda', intro: 'Kami tidak mendengar daripada anda beberapa minit. Balas dalam aplikasi atau sembang akan ditutup.', note: 'Anda boleh memulakan sembang baharu bila-bila masa.' },
+    announcement: { subject: '{title}', heading: '{title}', intro: '{body}', note: 'Matikan pengumuman di Tetapan > Pemberitahuan dan e-mel.' },
+    support_new_chat: { subject: 'Sembang sokongan baharu{urgent}', heading: 'Sembang sokongan baharu', intro: 'Pengguna memulakan sembang ({status}). Buka panel admin untuk membacanya.', note: 'E-mel ini tidak mengandungi isi sembang atau data lokasi.' },
+  },
+};
+T.ms = GENERIC.ms;
+Object.assign(T.en, GENERIC.en);
+Object.assign(T.bn, GENERIC.bn);
+export const GENERIC_TEMPLATES = Object.keys(GENERIC.en);
+
 const esc = (s) =>
   String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
@@ -145,7 +194,26 @@ export function render(template, language, vars = {}) {
   if (!t) throw new Error(`Unknown email template ${template}`);
   let bodyHtml;
   let text;
-  const fill = (str) => String(str).replaceAll('{name}', vars.name || '').replaceAll('{time}', vars.time || '').replaceAll('{numbers}', vars.emergency || '');
+  const fill = (str) => String(str ?? '').replace(/\{(\w+)\}/g, (m, k) => {
+    if (k === 'numbers') return vars.emergency ?? '';
+    const v = vars[k];
+    return v == null ? '' : String(v);
+  });
+  if (GENERIC_TEMPLATES.includes(template)) {
+    const lines = Array.isArray(vars.lines) ? vars.lines.filter(Boolean) : [];
+    const list = lines.length
+      ? `<ul class="t" style="margin:0 0 16px;padding-left:20px;font-size:15px;line-height:1.7;color:#0F2A24;">${lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>`
+      : '';
+    const note = fill(t.note).trim();
+    bodyHtml = p(fill(t.intro)) + list + (note ? muted(note) : '');
+    text = `${fill(t.heading)}\n\n${fill(t.intro)}\n${lines.map((l) => `- ${l}`).join('\n')}\n\n${note}`;
+    return {
+      subject: fill(t.subject),
+      html: layout({ lang, dir: L.dir, heading: fill(t.heading), bodyHtml, footer: L.footer }),
+      text: `${text}\n\n--\n${L.footer}\n`,
+      language: lang,
+    };
+  }
   if (template === 'sos_alert') {
     const button = vars.map_url
       ? `<p style="margin:8px 0 16px;"><a href="${esc(vars.map_url)}" style="display:inline-block;padding:14px 22px;background:#DC2626;color:#FFFFFF;border-radius:12px;font-weight:700;text-decoration:none;">${esc(t.map)}</a></p>`

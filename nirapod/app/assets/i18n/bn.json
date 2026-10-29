@@ -613,5 +613,9 @@
   "tracking.shake_cancel": "বাতিল",
   "tracking.sos_sent_title": "পরিবারকে SOS পাঠানো হয়েছে",
   "tracking.sos_sent_body": "তোমার পরিবার দেখতে পাচ্ছে তুমি কোথায় আছ।",
-  "tracking.sos_failed": "SOS এখনো পাঠানো যায়নি। আবার চেষ্টা করা হচ্ছে…"
+  "tracking.sos_failed": "SOS এখনো পাঠানো যায়নি। আবার চেষ্টা করা হচ্ছে…",
+  "notif.family_joined": "{name} আপনার পরিবারে যোগ দিয়েছে",
+  "email.summary_line": "{name}: সর্বশেষ আপডেট {time}, ব্যাটারি {battery}%",
+  "email.summary_line_none": "{name}: আজ কোনো লোকেশন আপডেট নেই",
+  "email.summary_events": "আজ {count}টি সতর্কতা"
 }

@@ -87,7 +87,8 @@ test('email templates: en and bn, HTML + text, code shown, values escaped, fallb
   }
   assert.match(render('verify_email', 'bn', { code: '1' }).subject, /[ঀ-৿]/, 'Bengali subject');
   assert.doesNotMatch(render('verify_email', 'en', { code: '1' }).html, /[ঀ-৿]/, 'no Bengali in English mail');
-  assert.equal(pickLanguage('ms'), 'en');
+  assert.equal(pickLanguage('ms'), 'ms'); // Malay emails exist (Phase 5)
+  assert.equal(pickLanguage('xx'), 'en');
   assert.equal(render('welcome', 'ar').language, 'en');
   assert.doesNotMatch(render('welcome', 'ar').html, /[ঀ-৿]/);
 });

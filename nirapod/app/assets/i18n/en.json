@@ -613,5 +613,9 @@
   "tracking.shake_cancel": "Cancel",
   "tracking.sos_sent_title": "SOS sent to your family",
   "tracking.sos_sent_body": "Your family can see where you are.",
-  "tracking.sos_failed": "SOS could not be sent yet. Trying again…"
+  "tracking.sos_failed": "SOS could not be sent yet. Trying again…",
+  "notif.family_joined": "{name} joined your family",
+  "email.summary_line": "{name}: last update {time}, battery {battery}%",
+  "email.summary_line_none": "{name}: no location update today",
+  "email.summary_events": "{count} alerts today"
 }

@@ -18,6 +18,9 @@ import { locationsRouter } from './routes/locations.js';
 import { nearbyRouter, googlePlacesFetcher } from './routes/nearby.js';
 import { placesRouter } from './routes/places.js';
 import { safetyRouter } from './routes/safety.js';
+import { notificationsRouter } from './routes/notifications.js';
+import { createPusher } from './push/fcm.js';
+import { getSecret } from './settings.js';
 import { createRealtimeHub } from './realtime.js';
 import { geoRouter, createGeoLookup } from './geo/hint.js';
 import { systemClock } from './clock.js';
@@ -42,7 +45,7 @@ let ephemeralSecret;
  *   clock?: {now: () => Date}, mailTransport?: object, googleVerifier?: Function, geoLookup?: Function}} deps
  *   mailTransport, googleVerifier and geoLookup are injectable for tests.
  */
-export function createApp({ cfg, db, logger, clock = systemClock, mailTransport, googleVerifier, geoLookup, placesFetcher, realtime }) {
+export function createApp({ cfg, db, logger, clock = systemClock, mailTransport, googleVerifier, geoLookup, placesFetcher, realtime, fcmTransport, pusher }) {
   const app = express();
   let secret = cfg.JWT_ACCESS_SECRET;
   if (!secret) {
@@ -61,8 +64,10 @@ export function createApp({ cfg, db, logger, clock = systemClock, mailTransport,
     google: googleVerifier ?? createGoogleVerifier(cfg.GOOGLE_OAUTH_CLIENT_IDS),
     requireAuth: requireAuth({ tokens, sessions, clock }),
     realtime: realtime ?? createRealtimeHub(),
-    placesFetcher: placesFetcher ?? googlePlacesFetcher(cfg.GOOGLE_PLACES_API_KEY),
+    // Places API key: admin setting (encrypted) first, then env.
+    placesFetcher: placesFetcher ?? googlePlacesFetcher(async () => (await getSecret(db, cfg, 'google_places_api_key')) || cfg.GOOGLE_PLACES_API_KEY),
   };
+  ctx.pusher = pusher ?? createPusher({ db, cfg, logger, clock, transport: fcmTransport });
   app.locals.ctx = ctx;
   app.disable('x-powered-by');
   if (cfg.TRUST_PROXY) app.set('trust proxy', 1);
@@ -145,6 +150,7 @@ export function createApp({ cfg, db, logger, clock = systemClock, mailTransport,
   v1.use(nearbyRouter(ctx));
   v1.use(placesRouter(ctx));
   v1.use(safetyRouter(ctx));
+  v1.use(notificationsRouter(ctx));
   v1.use((req, res, next) => next(new ApiError('NOT_FOUND')));
 
   app.use('/api/v1', apiLimiter, v1);

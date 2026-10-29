@@ -31,8 +31,10 @@ export function haversineM(a, b) {
 }
 
 /** Default fetcher: Places API (New). Returns [{id, name, lat, lng, address}]. */
-export function googlePlacesFetcher(apiKey) {
+/** `apiKey` may be a string or an async getter (admin-set key, read at call time). */
+export function googlePlacesFetcher(keyOrGetter) {
   return async ({ lat, lng, types, language }) => {
+    const apiKey = typeof keyOrGetter === 'function' ? await keyOrGetter() : keyOrGetter;
     if (!apiKey) throw new ApiError('FEATURE_DISABLED', { details: { reason: 'not_configured' } });
     const res = await fetch('https://places.googleapis.com/v1/places:searchNearby', {
       method: 'POST',

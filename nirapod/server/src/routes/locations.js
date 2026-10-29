@@ -210,6 +210,8 @@ export function locationsRouter(ctx) {
       title_key: 'notif.update_requested', params: JSON.stringify({ by_name: byName }), created_at: now,
     });
     realtime.emitToUsers([m.uuid], 'update.requested', { by_name: byName }, now);
+    // Wake the child phone even when the app is closed (FCM data message -> native service).
+    try { await ctx.pusher?.wakeUsers([m.user_id], { type: 'update_requested', by_name: byName }); } catch { /* push optional */ }
     await audit(db, { actorId: req.user.id, action: 'location.update_requested', targetType: 'family', targetId: f.id, now });
     res.status(202).json({ requested: true });
   }));

@@ -673,6 +673,73 @@ paths:
         routes, place names or last known position). Every write is audit-logged with the agent name.
       responses: { '200': { description: OK } }
 
+  # ---------------- Phase 4: places and safety ----------------
+  /families/{familyId}/places:
+    x-phase: 4
+    get: { summary: Places (child sees the ones that apply to them), tags: [places], responses: { '200': { description: '{places[], max_places, plan}' } } }
+    post: { summary: Add a place (adults; plan limit -> 402 PLAN_LIMIT_REACHED), tags: [places], responses: { '201': { description: Place } } }
+  /families/{familyId}/places/{placeId}:
+    x-phase: 4
+    patch: { summary: Edit a place (moving it resets the inside/outside state), tags: [places], responses: { '200': { description: Place } } }
+    delete: { summary: Delete a place, tags: [places], responses: { '204': { description: Deleted } } }
+  /families/{familyId}/emergency-contacts:
+    x-phase: 4
+    get: { summary: Emergency contacts (email only), tags: [safety], responses: { '200': { description: list } } }
+    post: { summary: Add a contact (max 5), tags: [safety], responses: { '201': { description: contact } } }
+  /families/{familyId}/emergency-contacts/{contactId}:
+    x-phase: 4
+    delete: { summary: Remove a contact, tags: [safety], responses: { '204': { description: Deleted } } }
+  /emergency-numbers:
+    x-phase: 4
+    get: { summary: Emergency service numbers for a country (admin-editable table), tags: [safety], responses: { '200': { description: '{country, numbers[]}' } } }
+  /sos:
+    x-phase: 4
+    post: { summary: Send SOS (user token or Device key for shake-to-SOS); one open SOS per person, tags: [safety], responses: { '201': { description: SOS with deliveries }, '200': { description: Already open } } }
+  /sos/{sosId}:
+    x-phase: 4
+    get: { summary: SOS with per-recipient delivery status (sender and family adults), tags: [safety], responses: { '200': { description: SOS } } }
+  /sos/{sosId}/ack:
+    x-phase: 4
+    post: { summary: 'Recipient reports delivered / seen / responded (forward only)', tags: [safety], responses: { '200': { description: SOS } } }
+  /sos/{sosId}/resolve:
+    x-phase: 4
+    post: { summary: End the SOS (sender or an adult), tags: [safety], responses: { '200': { description: SOS } } }
+  /families/{familyId}/sos:
+    x-phase: 4
+    get: { summary: Open SOS events (adults see all; a child sees their own), tags: [safety], responses: { '200': { description: list } } }
+  /safe-arrival:
+    x-phase: 4
+    post: { summary: '"I arrived safely" (names the place the sender is at)', tags: [safety], responses: { '201': { description: '{sent, place, at}' } } }
+  /trips:
+    x-phase: 4
+    post: { summary: 'Start a safe walk {minutes | expected_arrival_at, destination_place_id?}', tags: [safety], responses: { '201': { description: Trip } } }
+  /trips/active:
+    x-phase: 4
+    get: { summary: My active safe walk or null, tags: [safety], responses: { '200': { description: Trip or null } } }
+  /families/{familyId}/trips:
+    x-phase: 4
+    get: { summary: Active safe walks (adults all; child own), tags: [safety], responses: { '200': { description: list } } }
+  /trips/{tripId}/arrive:
+    x-phase: 4
+    post: { summary: I arrived (walker only), tags: [safety], responses: { '200': { description: Trip } } }
+  /trips/{tripId}/cancel:
+    x-phase: 4
+    post: { summary: End a safe walk (walker or adult), tags: [safety], responses: { '200': { description: Trip } } }
+  # ---------------- Phase 5: notifications ----------------
+  /notifications:
+    x-phase: 5
+    get: { summary: 'Alerts list (bell) with category filter and unread count', tags: [notifications], responses: { '200': { description: '{unread, items[]}' } } }
+  /notifications/read:
+    x-phase: 5
+    post: { summary: 'Mark read {ids[] | all}', tags: [notifications], responses: { '200': { description: '{updated}' } } }
+  /me/push-token:
+    x-phase: 5
+    post: { summary: 'Set (or clear with null) the FCM token of this session', tags: [notifications], responses: { '204': { description: Saved } } }
+  /me/notification-prefs:
+    x-phase: 5
+    get: { summary: Push categories and email types on/off, daily summary hour, tags: [notifications], responses: { '200': { description: prefs } } }
+    patch: { summary: Change preferences (safety push is always on), tags: [notifications], responses: { '200': { description: prefs } } }
+
 components:
   securitySchemes:
     bearer: { type: http, scheme: bearer, bearerFormat: JWT, description: 'Short-lived access token (15 min). Refresh with /auth/refresh.' }
@@ -722,6 +789,10 @@ components:
         payment_banner_text: { type: object, additionalProperties: { type: string } }
         nearby_places_enabled: { type: boolean }
         live_chat_human_for: { enum: [all, premium] }
+        firebase_android:
+          type: object
+          description: Firebase client identifiers (public), set in admin. The app initializes FCM with these at runtime.
+          properties: { api_key: { type: string }, app_id: { type: string }, project_id: { type: string }, sender_id: { type: string } }
     DeviceInfo:
       type: object
       properties:

@@ -26,6 +26,15 @@ export async function raiseAlert(ctx, { familyId, subject, type, data = {}, now,
     })));
   }
   realtime?.emitToUsers(adults.map((a) => a.uuid), 'notification.new', { category, type, title_key: `notif.${type}`, params: { name: subject.name || '', ...data } }, now);
+  // Push (Phase 5). Never blocks or fails the request: errors are logged without content.
+  try {
+    await ctx.pusher?.notifyUsers(adults.map((a) => a.id), {
+      category, type, titleKey: `notif.${type}`, params: { name: subject.name || '', ...data },
+      highPriority: type === 'sos', data: data.sos_id ? { sos_id: data.sos_id } : {},
+    });
+  } catch (e) {
+    ctx.logger?.warn({ err: e, type }, 'push failed');
+  }
   return adults;
 }
 

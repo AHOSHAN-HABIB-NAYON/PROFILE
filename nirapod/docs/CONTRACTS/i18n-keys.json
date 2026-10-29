@@ -2887,6 +2887,32 @@
     "tracking.sos_failed": {
       "placeholders": [],
       "en": "SOS could not be sent yet. Trying again…"
+    },
+    "notif.family_joined": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "{name} joined your family"
+    },
+    "email.summary_line": {
+      "placeholders": [
+        "name",
+        "time",
+        "battery"
+      ],
+      "en": "{name}: last update {time}, battery {battery}%"
+    },
+    "email.summary_line_none": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "{name}: no location update today"
+    },
+    "email.summary_events": {
+      "placeholders": [
+        "count"
+      ],
+      "en": "{count} alerts today"
     }
   }
 }

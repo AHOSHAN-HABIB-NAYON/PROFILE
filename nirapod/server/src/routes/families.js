@@ -1,5 +1,6 @@
 // /families, /families/{id}, /families/{id}/child-code, /invites/accept. No location data here.
 import { Router } from 'express';
+import { notifyFamilyJoined } from '../family/joined.js';
 import crypto from 'node:crypto';
 import { z } from 'zod';
 import { ApiError } from '../errors.js';
@@ -115,6 +116,7 @@ export function familiesRouter(ctx) {
       await audit(trx, { actorId: req.user.id, action: 'family.invite_accepted', targetType: 'family', targetId: inv.family_id, now });
       return { family: await trx('families').where({ id: inv.family_id }).first(), role: inv.role };
     });
+    await notifyFamilyJoined(ctx, { familyId: out.family.id, userId: req.user.id, role: out.role });
     res.json({ role: out.role, sharing_status: 'pending', family: await presentFamily(db, cfg, out.family, now) });
   }));
 

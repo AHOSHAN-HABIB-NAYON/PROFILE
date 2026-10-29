@@ -20,6 +20,9 @@ export const ALLOWED = new Set([
   // listed in DECISIONS.md D-008. Anything else fails the build.
   'com.android.vending.BILLING',
   'com.google.android.c2dm.permission.RECEIVE',
+  // Normal (install-time, never shown) permission that the FCM SDK needs to finish handling a push while the
+  // phone sleeps; the spec mandates FCM for SOS. DECISIONS.md D-015. The app itself never takes wake locks.
+  'android.permission.WAKE_LOCK',
 ]);
 // Note: com.google.android.gms.permission.AD_ID is NOT allowed (no ad/tracking); the manifest removes it.
 const ALLOWED_SUFFIX = ['.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION']; // app-private signature permission from AndroidX

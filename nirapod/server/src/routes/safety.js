@@ -13,6 +13,7 @@ import { finishTrip, placesFor } from '../tracking/fences.js';
 import { distanceM } from '../safety/geo.js';
 import { deviceOrUserAuth } from './locations.js';
 import { formatLocalTime } from '../tz/index.js';
+import { emailAllowed } from './notifications.js';
 
 const iso = (d) => (d ? new Date(d).toISOString() : null);
 const num = (v) => (v == null ? null : Number(v));
@@ -167,6 +168,18 @@ export function safetyRouter(ctx) {
       const by = req.user.id === ev.user_id ? null : req.user.name;
       await raiseAlert(ctx, { familyId: ev.family_id, subject, type: 'sos_resolved', category: 'safety', now, data: { sos_id: ev.uuid, by_name: by } });
       await notifySosChange(await db('sos_events').where({ id: ev.id }).first(), now);
+      // SOS summary email to the adults who allow it.
+      const adultsAll = await familyAdults(db, ev.family_id);
+      const users = adultsAll.length ? await db('users').whereIn('id', adultsAll.map((a) => a.id)).select('id', 'email', 'language', 'timezone') : [];
+      for (const u of users) {
+        if (!(await emailAllowed(db, u.id, 'sos_summary'))) continue;
+        const zone = u.timezone || 'UTC';
+        await mailer.send('sos_summary', u, {
+          name: subject?.name || '',
+          started: formatLocalTime(new Date(ev.started_at), zone, { language: 'en' }),
+          ended: formatLocalTime(now, zone, { language: 'en' }),
+        });
+      }
     }
     res.json(await presentSos(await db('sos_events').where({ id: ev.id }).first()));
   }));

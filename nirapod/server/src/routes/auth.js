@@ -1,5 +1,7 @@
 // /auth/*: register, verify email, resend code, login, Google, child code, refresh, forgot/reset, logout, sessions.
 import { Router } from 'express';
+import { notifyFamilyJoined } from '../family/joined.js';
+import { emailAllowed } from './notifications.js';
 import crypto from 'node:crypto';
 import { z } from 'zod';
 import { ApiError } from '../errors.js';
@@ -39,7 +41,7 @@ export function authRouter(ctx) {
     const { tokens, session, isNewDevice } = await sessions.create(fresh, dev, { isChildDevice });
     await db('users').where({ id: user.id }).update({ last_login_at: clock.now() });
     await audit(db, { actorId: user.id, action, targetType: 'session', targetId: session.uuid, now: clock.now() });
-    if (!isChildDevice && isNewDevice && Number(priorSessions.n) > 0) await mailer.sendNewDeviceLogin(fresh, dev);
+    if (!isChildDevice && isNewDevice && Number(priorSessions.n) > 0 && await emailAllowed(db, fresh.id, 'new_device_login')) await mailer.sendNewDeviceLogin(fresh, dev);
     return {
       ...tokens,
       session_id: session.uuid,
@@ -247,8 +249,9 @@ export function authRouter(ctx) {
         last_seen_at: now, created_at: now,
       });
       await audit(trx, { actorId: userId, action: 'auth.child_join', targetType: 'session', targetId: s.session.uuid, now });
-      return { user, s };
+      return { user, s, familyId: jc.family_id };
     });
+    await notifyFamilyJoined(ctx, { familyId: result.familyId, userId: result.user.id, role: 'child' });
     res.json({
       ...result.s.tokens,
       session_id: result.s.session.uuid,

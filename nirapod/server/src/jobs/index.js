@@ -4,6 +4,10 @@
 import { raiseAlert } from '../tracking/alerts.js';
 import { familyPlan } from '../users/presenter.js';
 import { stayedWithin } from '../safety/geo.js';
+import { partsIn as inZone, formatLocalTime } from '../tz/index.js';
+import { visibleMembers } from '../family/visibility.js';
+import { emailAllowed } from '../routes/notifications.js';
+import { t } from '../push/strings.js';
 
 export const OFFLINE_AFTER_MS = 15 * 60_000;
 
@@ -95,7 +99,41 @@ export async function watchTrips(ctx) {
   return n;
 }
 
+/** Daily family summary email at each adult's chosen local hour (once per local day). */
+export async function sendDailySummaries(ctx) {
+  const { db, clock, mailer } = ctx;
+  const now = clock.now();
+  const users = await db('users as u').join('family_members as m', 'm.user_id', 'u.id')
+    .whereNotNull('u.daily_summary_hour').whereNull('m.left_at').whereIn('m.role', ['parent', 'guardian']).where('u.status', 'active')
+    .whereNotNull('u.email').select('u.id', 'u.email', 'u.language', 'u.timezone', 'u.daily_summary_hour', 'u.daily_summary_sent_on', 'm.family_id');
+  let n = 0;
+  for (const u of users) {
+    const zone = u.timezone || 'UTC';
+    const local = inZone(now, zone);
+    const day = `${local.year}-${String(local.month).padStart(2, '0')}-${String(local.day).padStart(2, '0')}`;
+    const sent = u.daily_summary_sent_on ? new Date(u.daily_summary_sent_on).toISOString().slice(0, 10) : null;
+    if (local.hour !== u.daily_summary_hour || sent === day) continue;
+    if (!(await emailAllowed(db, u.id, 'daily_summary'))) continue;
+    const members = (await visibleMembers(db, u.family_id, u.id)).filter((m) => m.user_id !== u.id);
+    const since = new Date(now.getTime() - 24 * 3600_000);
+    const lines = [];
+    for (const m of members) {
+      const last = await db('locations').where({ user_id: m.user_id }).where('recorded_at', '>=', since).orderBy('recorded_at', 'desc').first('recorded_at', 'battery_pct');
+      lines.push(last
+        ? t(u.language, 'email.summary_line', { name: m.name, time: formatLocalTime(new Date(last.recorded_at), zone, { language: 'en' }), battery: last.battery_pct ?? '—' })
+        : t(u.language, 'email.summary_line_none', { name: m.name }));
+    }
+    const events = Number((await db('timeline_events').where({ family_id: u.family_id }).where('occurred_at', '>=', since).count({ n: '*' }).first()).n);
+    lines.push(t(u.language, 'email.summary_events', { count: events }));
+    await mailer.send('daily_summary', u, { date: day, lines });
+    await db('users').where({ id: u.id }).update({ daily_summary_sent_on: day });
+    n += 1;
+  }
+  return n;
+}
+
 export const JOBS = {
+  daily_summary: { everyMs: 10 * 60_000, run: sendDailySummaries },
   trips_watch: { everyMs: 60_000, run: watchTrips },
   stale_devices: { everyMs: 60_000, run: detectStaleDevices },
   location_retention: { everyMs: 6 * 3600_000, run: purgeLocationHistory },
