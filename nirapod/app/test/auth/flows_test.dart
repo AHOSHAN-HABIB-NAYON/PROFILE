@@ -209,7 +209,7 @@ void main() {
       final (env, router) = await open(t, (r) {
         if (r.path == '/me/profile') return (200, echo(r));
         if (r.path == '/families') return (201, {'id': 'f1'});
-        if (r.path == '/families/f1/child-code') return (201, {'code': 'K7Q2MX', 'expires_at': DateTime.now().add(const Duration(hours: 24)).toUtc().toIso8601String(), 'join_url': 'https://nirapod.app/join?code=K7Q2MX'});
+        if (r.path == '/families/f1/child-code') return (201, {'code': 'K7Q2MX', 'expires_at': DateTime.now().add(const Duration(hours: 24)).toUtc().toIso8601String(), 'join_url': 'https://family-track.webtecit.com/join?code=K7Q2MX'});
         return (404, apiErr('NOT_FOUND'));
       });
       expect(find.text('Bangladesh'), findsOneWidget);

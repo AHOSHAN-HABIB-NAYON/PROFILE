@@ -208,7 +208,7 @@ void main() {
       final router = await pumpApp(t, o, 'register');
       await tapLabel(t, en.t('auth.terms'));
       await t.pumpAndSettle();
-      expect(env.opened.single.toString(), 'https://nirapod.app/terms');
+      expect(env.opened.single.toString(), 'https://family-track.webtecit.com/terms');
       expect(pathOf(router), '/register');
     });
   });
