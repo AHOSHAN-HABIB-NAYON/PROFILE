@@ -96,7 +96,7 @@ void main() {
   testWidgets('member cards show trust labels with text, battery and online state', (t) async {
     setScreen(t, const Size(412, 915));
     await pump(t, const HomeScreen(), await phase2Overrides());
-    await t.scrollUntilVisible(find.text('Mina'), 300);
+    await t.scrollUntilVisible(find.textContaining('Mina', findRichText: true), 300);
     expect(find.text('Live'), findsWidgets);
     expect(find.text('Stale'), findsWidgets);
     expect(find.text('78%'), findsOneWidget);

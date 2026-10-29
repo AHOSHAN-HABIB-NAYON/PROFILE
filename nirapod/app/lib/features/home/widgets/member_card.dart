@@ -69,69 +69,107 @@ class MemberCard extends StatelessWidget {
     };
     final subtitle = [member.relationship ?? role, if (live?.placeName != null) live!.placeName!].join(' · ');
     final memberTime = member.timezone == null ? null : formatLocalTime(now, member.timezone!, language: language, use24h: use24h);
-    return Card(
-      child: InkWell(
-        onTap: onTap,
+    final online = live?.online ?? false;
+    final low = (live?.batteryPct ?? 100) <= 20;
+    return Container(
+      decoration: BoxDecoration(
+        color: c.surface,
         borderRadius: BorderRadius.circular(Radii.card),
-        child: Padding(
-          padding: const EdgeInsets.all(Space.sm),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            RingAvatar(
-              size: 52,
-              url: member.avatarThumbUrl,
-              initials: initialsOf(member.name),
-              ringColor: trust == Trust.live ? c.success : (trust == Trust.recent ? c.warning : c.border),
-            ),
-            const SizedBox(width: Space.sm),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(isMe ? '${member.name} (${s.t('home.you')})' : member.name, style: t.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
-                Text(subtitle, style: t.bodySmall, maxLines: 2),
-                const SizedBox(height: Space.xxs),
-                if (sharingOff)
-                  Row(children: [
-                    AppIcon(AppIcons.lock, size: 14, color: c.muted),
-                    const SizedBox(width: 4),
-                    Flexible(child: Text(s.t('member.sharing_off', {'name': member.name}), style: t.bodySmall)),
-                  ])
-                else if (live?.point == null && reason == null)
-                  Text(s.t('home.no_location'), style: t.bodySmall)
-                else
-                  TrustLabel(trust: trust, strings: s, updatedAt: updated, reason: reason),
-                const SizedBox(height: Space.xxs),
-                Wrap(spacing: Space.sm, runSpacing: 2, crossAxisAlignment: WrapCrossAlignment.center, children: [
-                  if (live?.batteryPct != null)
-                    Semantics(
-                      label: s.t('home.battery', {'pct': live!.batteryPct!}),
-                      excludeSemantics: true,
+        border: Border.all(color: c.border.withValues(alpha: 0.6)),
+        boxShadow: [BoxShadow(color: c.primary.withValues(alpha: 0.06), blurRadius: 12, offset: const Offset(0, 4))],
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(Radii.card),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Space.sm, vertical: Space.sm),
+            child: Row(children: [
+              // Photo with a ring for trust and a small dot for online.
+              Stack(clipBehavior: Clip.none, children: [
+                RingAvatar(
+                  size: 50,
+                  url: member.avatarThumbUrl,
+                  initials: initialsOf(member.name),
+                  ringColor: trust == Trust.live ? c.success : (trust == Trust.recent ? c.warning : c.border),
+                ),
+                PositionedDirectional(
+                  end: 1,
+                  bottom: 1,
+                  child: Container(
+                    width: 13,
+                    height: 13,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: online ? c.success : c.surface,
+                      border: Border.all(color: online ? c.surface : c.muted, width: 2),
+                    ),
+                  ),
+                ),
+              ]),
+              const SizedBox(width: Space.sm),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text.rich(
+                    TextSpan(children: [
+                      TextSpan(text: isMe ? '${member.name} (${s.t('home.you')})' : member.name, style: t.titleMedium),
+                      TextSpan(text: '  $subtitle', style: t.bodySmall),
+                    ]),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  if (sharingOff)
+                    Row(children: [
+                      AppIcon(AppIcons.lock, size: 14, color: c.muted),
+                      const SizedBox(width: 4),
+                      Flexible(child: Text(s.t('member.sharing_off', {'name': member.name}), style: t.bodySmall)),
+                    ])
+                  else if (live?.point == null && reason == null)
+                    Text(s.t('home.no_location'), style: t.bodySmall)
+                  else
+                    TrustLabel(trust: trust, strings: s, updatedAt: updated, reason: reason),
+                  if (showLocalTime && memberTime != null && !isMe)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(s.t('home.local_time_for', {'time': memberTime, 'name': member.name}), style: t.bodySmall),
+                    ),
+                ]),
+              ),
+              const SizedBox(width: Space.xs),
+              // Battery chip + online word on the end side.
+              // Capped width: at very large text sizes it shrinks instead of pushing the name out.
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 84),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: AlignmentDirectional.centerEnd,
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
+                if (live?.batteryPct != null)
+                  Semantics(
+                    label: s.t('home.battery', {'pct': live!.batteryPct!}),
+                    excludeSemantics: true,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: (low ? c.danger : c.success).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(Radii.pill),
+                      ),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        AppIcon(AppIcons.battery, size: 18, color: live!.batteryPct! <= 20 ? c.dangerText : c.successText),
+                        AppIcon(AppIcons.battery, size: 16, color: low ? c.dangerText : c.successText),
                         const SizedBox(width: 2),
-                        Flexible(child: Text('${live!.batteryPct}%', style: t.labelMedium)),
+                        Text('${live!.batteryPct}%', style: t.labelMedium!.copyWith(color: low ? c.dangerText : c.successText)),
                       ]),
                     ),
-                  Row(mainAxisSize: MainAxisSize.min, children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: (live?.online ?? false) ? c.success : Colors.transparent,
-                        border: Border.all(color: (live?.online ?? false) ? c.success : c.muted, width: 1.5),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Flexible(child: Text((live?.online ?? false) ? s.t('home.online') : s.t('home.offline'), style: t.labelMedium)),
-                  ]),
-                ]),
-                if (showLocalTime && memberTime != null && !isMe)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(s.t('home.local_time_for', {'time': memberTime, 'name': member.name}), style: t.bodySmall),
                   ),
-              ]),
-            ),
-          ]),
+                const SizedBox(height: 4),
+                Text(online ? s.t('home.online') : s.t('home.offline'), style: t.bodySmall),
+                  ]),
+                ),
+              ),
+            ]),
+          ),
         ),
       ),
     );
