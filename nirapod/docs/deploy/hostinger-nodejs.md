@@ -32,10 +32,19 @@ hPanel → Domains → Subdomains → create `family-track` on `webtecit.com`. E
 | UPLOAD_DIR | `/home/<you>/nirapod-uploads` (outside the app folder, so updates keep photos) |
 | SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASSWORD / MAIL_FROM | Hostinger email account (e.g. smtp.hostinger.com, 465, SMTP_SECURE=true) |
 | GOOGLE_OAUTH_CLIENT_IDS | Google sign-in client id (optional at first) |
-| GOOGLE_PLACES_API_KEY | Places API key (optional: nearby places) |
+| GOOGLE_PLACES_API_KEY | Places API key (optional; can also be set in the admin panel) |
+| ADMIN_SETUP_KEY | a random 12+ character key, only to create the first admin (remove after) |
 
 Start (or restart) the app. On first start it **creates all tables and default settings automatically**.
 Check: open `https://family-track.webtecit.com/api/v1/health` → `{"status":"ok","db":"ok",...}`.
+
+## 4b. Admin panel (first time)
+1. Open `https://family-track.webtecit.com/admin/` → "Create the first admin": enter the ADMIN_SETUP_KEY, your name, email and a strong password.
+2. Sign in → My profile → set up two-factor sign-in (Google Authenticator) → enter the code.
+3. Delete ADMIN_SETUP_KEY from the environment variables and restart.
+4. API keys page: paste the Firebase service account JSON + Firebase Android ids, Play service account JSON, RTDN token, Places key.
+   AI assistant page: OpenAI key and model. App settings page: support emails, legal email, WhatsApp number, versions.
+   (Only the Google Maps key is not here: it is built into the app, see the MAPS_API_KEY GitHub secret.)
 
 ## 5. Scheduled jobs
 The server runs its jobs (offline detection every minute, history cleanup) while it is running. If Hostinger
