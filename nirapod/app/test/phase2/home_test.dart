@@ -143,11 +143,11 @@ void main() {
     });
   }
 
-  testWidgets('map: layer choices are remembered; satellite by default', (t) async {
+  testWidgets('map: layer choices are remembered; road map by default', (t) async {
     final o = await phase2Overrides();
     await pump(t, const MapScreen(), o);
     final container = ProviderScope.containerOf(t.element(find.byType(MapScreen)));
-    expect(container.read(mapPrefsProvider).kind, MapKind.satellite);
+    expect(container.read(mapPrefsProvider).kind, MapKind.normal);
     await t.tap(find.bySemanticsLabel('Map layers'));
     await t.pumpAndSettle();
     await t.tap(find.text('Terrain'));

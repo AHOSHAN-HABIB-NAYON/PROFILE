@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +21,9 @@ import '../../core/widgets/fields.dart';
 import '../../nav/router.dart';
 import '../family/data/family_models.dart';
 import '../family/data/family_repo.dart';
-import '../map/map_screen.dart' show myPositionProvider;
+import '../../core/session/session.dart';
+import '../auth/profile/countries.dart';
+import '../map/map_screen.dart' show formatDistance, myPositionProvider;
 import '../safety/data/safety_repo.dart';
 
 String placeTypeLabel(Strings s, String type) => s.t('places.type_${const {'home', 'school', 'coaching'}.contains(type) ? type : 'custom'}');
@@ -45,40 +49,63 @@ final pickerMapBuilderProvider = Provider<PickerMapBuilder>((ref) => (lat, lng, 
 
 /// One place found by search.
 class PlaceHit {
-  const PlaceHit(this.label, this.lat, this.lng);
+  const PlaceHit(this.label, this.lat, this.lng, {this.distanceM});
   final String label;
   final double lat;
   final double lng;
+
+  /// Distance from where the map is now, when known.
+  final int? distanceM;
 }
 
-typedef PlaceSearch = Future<List<PlaceHit>> Function(String query);
+typedef PlaceSearch = Future<List<PlaceHit>> Function(String query, {double? nearLat, double? nearLng, String? country});
 
 /// Search by name or address with the phone's own geocoder (no extra key or billing).
-/// Only the typed text is sent; the user's own position is not.
-final placeSearchProvider = Provider<PlaceSearch>((ref) => (q) async {
+/// Only the typed text is sent; the user's own position is not. Results are sorted
+/// nearest-first from where the map is, and the user's country is tried too.
+final placeSearchProvider = Provider<PlaceSearch>((ref) => (q, {nearLat, nearLng, country}) async {
       final g = geo.Geocoding();
-      try {
-        final found = await g.locationFromAddress(q);
-        final hits = <PlaceHit>[];
-        for (final l in found.take(5)) {
-          var label = q;
-          try {
-            final pm = (await g.placemarkFromCoordinates(l.latitude, l.longitude)).firstOrNull;
-            if (pm != null) {
-              label = [pm.name, pm.subLocality, pm.locality, pm.country]
-                  .whereType<String>()
-                  .where((x) => x.trim().isNotEmpty)
-                  .toSet()
-                  .join(', ');
-            }
-          } catch (_) {}
-          hits.add(PlaceHit(label.isEmpty ? q : label, l.latitude, l.longitude));
-        }
-        return hits;
-      } catch (_) {
-        return const [];
+      final queries = [q, if (country != null && !q.contains(',')) '$q, $country'];
+      final seen = <String>{};
+      final found = <(double, double, int?)>[];
+      for (final query in queries) {
+        try {
+          for (final l in await g.locationFromAddress(query)) {
+            if (!seen.add('${l.latitude.toStringAsFixed(4)},${l.longitude.toStringAsFixed(4)}')) continue;
+            final d = nearLat == null || nearLng == null ? null : metersBetween(nearLat, nearLng, l.latitude, l.longitude).round();
+            found.add((l.latitude, l.longitude, d));
+          }
+        } catch (_) {}
       }
+      found.sort((a, b) => (a.$3 ?? 0).compareTo(b.$3 ?? 0));
+      final hits = <PlaceHit>[];
+      for (final f in found.take(6)) {
+        var label = q;
+        try {
+          final pm = (await g.placemarkFromCoordinates(f.$1, f.$2)).firstOrNull;
+          if (pm != null) {
+            label = [pm.name, pm.street, pm.subLocality, pm.locality, pm.subAdministrativeArea, pm.country]
+                .whereType<String>()
+                .map((x) => x.trim())
+                .where((x) => x.isNotEmpty && !RegExp(r'^[0-9A-Z+]{4,}\+').hasMatch(x))
+                .toSet()
+                .join(', ');
+          }
+        } catch (_) {}
+        hits.add(PlaceHit(label.isEmpty ? q : label, f.$1, f.$2, distanceM: f.$3));
+      }
+      return hits;
     });
+
+/// Straight-line distance in meters.
+double metersBetween(double lat1, double lng1, double lat2, double lng2) {
+  const r = 6371000.0;
+  double rad(double d) => d * math.pi / 180;
+  final dLat = rad(lat2 - lat1);
+  final dLng = rad(lng2 - lng1);
+  final a = math.sin(dLat / 2) * math.sin(dLat / 2) + math.cos(rad(lat1)) * math.cos(rad(lat2)) * math.sin(dLng / 2) * math.sin(dLng / 2);
+  return 2 * r * math.asin(math.sqrt(a));
+}
 
 class _GooglePickerMap extends StatefulWidget {
   const _GooglePickerMap({required this.lat, required this.lng, required this.radiusM, required this.onCenter, this.mapTypeLabel});
@@ -94,7 +121,7 @@ class _GooglePickerMap extends StatefulWidget {
 class _GooglePickerMapState extends State<_GooglePickerMap> {
   late LatLng _center = LatLng(widget.lat, widget.lng);
   GoogleMapController? _map;
-  bool _satellite = true;
+  bool _satellite = false;
 
   @override
   void didUpdateWidget(covariant _GooglePickerMap old) {
@@ -349,7 +376,18 @@ class _PlaceEditScreenState extends ConsumerState<PlaceEditScreen> {
       _searching = true;
       _hits = null;
     });
-    final hits = await ref.read(placeSearchProvider)(q);
+    final user = switch (ref.read(sessionControllerProvider)) {
+      SignedIn(:final user) => user,
+      _ => null,
+    };
+    final cc = user?.countryIso2;
+    final names = await ref.read(countryNamesProvider.future).catchError((_) => CountryNames(const {}));
+    final hits = await ref.read(placeSearchProvider)(
+      q,
+      nearLat: _lat ?? _shownLat,
+      nearLng: _lng ?? _shownLng,
+      country: cc == null || !names.has(cc) ? null : names.name(cc, 'en'),
+    );
     if (!mounted) return;
     setState(() {
       _searching = false;
@@ -492,6 +530,12 @@ class _PlaceEditScreenState extends ConsumerState<PlaceEditScreen> {
                                 dense: true,
                                 leading: AppIcon(AppIcons.locationPin, size: 20, color: c.primaryText),
                                 title: Text(h.label, maxLines: 2, overflow: TextOverflow.ellipsis),
+                                trailing: h.distanceM == null
+                                    ? null
+                                    : Text(
+                                        formatDistance(h.distanceM!, ref.watch(screenStringsProvider('map')), ref.watch(languageProvider).numerals),
+                                        style: t.bodySmall,
+                                      ),
                                 onTap: () => _pick(h),
                               ),
                           ]),

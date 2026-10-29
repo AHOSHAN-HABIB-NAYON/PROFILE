@@ -14,7 +14,7 @@ Built by the Lead alone (no extra agents, to save usage).
   row (greeting and live local time from the saved zone, minute-aligned, flag + localized country, long-press
   tooltip, pulsing ring while sharing), consent card, overseas "Family status", map preview, quick actions, member
   cards (trust label with exact time, battery, online, each member's local time), empty states by role; Map tab
-  (satellite default, layers sheet with type / 3D / nearby / places / trail / accuracy / labels remembered per
+  (road map default (owner request; was satellite), layers sheet with type / 3D / nearby / places / trail / accuracy / labels remembered per
   device, recenter, reset north, follow member, show everyone, avatar markers, accuracy circles, dark style,
   nearby list with categories and distance); member page; family management; invite sheet with share; misuse
   report; profile page with Stay / Log out sheet; Exit dialog on Back at Home.

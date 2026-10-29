@@ -7,7 +7,7 @@ enum MapKind { normal, satellite, hybrid, terrain }
 /// Map options live inside the map (never in Settings) and are remembered per device.
 class MapPrefs {
   const MapPrefs({
-    this.kind = MapKind.satellite,
+    this.kind = MapKind.normal,
     this.threeD = false,
     this.nearby = true,
     this.places = true,
@@ -42,14 +42,14 @@ class MapPrefs {
     if (p.length != 7) return const MapPrefs();
     bool b(int i) => p[i] == 'true';
     return MapPrefs(
-      kind: MapKind.values.firstWhere((k) => k.name == p[0], orElse: () => MapKind.satellite),
+      kind: MapKind.values.firstWhere((k) => k.name == p[0], orElse: () => MapKind.normal),
       threeD: b(1), nearby: b(2), places: b(3), trail: b(4), accuracy: b(5), labels: b(6),
     );
   }
 }
 
 class MapPrefsController extends Notifier<MapPrefs> {
-  static const key = 'map_prefs';
+  static const key = 'map_prefs_v2';
 
   @override
   MapPrefs build() => MapPrefs.decode(ref.read(prefsProvider).getString(key));

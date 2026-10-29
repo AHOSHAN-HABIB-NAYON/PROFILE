@@ -147,9 +147,10 @@ void main() {
 
   testWidgets('new place: search finds a place, picking it fills the name', (t) async {
     final queries = <String>[];
-    await pumpRouted(t, 'place_edit', user: parent, search: (q) async {
+    await pumpRouted(t, 'place_edit', user: parent, search: (q, {nearLat, nearLng, country}) async {
       queries.add(q);
-      return q == 'zzz' ? const <PlaceHit>[] : const [PlaceHit('Jhinia High School, Jhenaidah, Bangladesh', 23.5, 89.1)];
+      expect(nearLat, isNotNull);
+      return q == 'zzz' ? const <PlaceHit>[] : const [PlaceHit('Jhinia High School, Jhenaidah, Bangladesh', 23.5, 89.1, distanceM: 1200)];
     });
     await t.enterText(find.byKey(const Key('place_search')), 'zzz');
     await t.tap(find.byKey(const Key('place_search_go')));
@@ -158,6 +159,7 @@ void main() {
     await t.enterText(find.byKey(const Key('place_search')), 'Jhinia school');
     await t.tap(find.byKey(const Key('place_search_go')));
     await t.pump(const Duration(milliseconds: 100));
+    expect(find.text('1.2 km'), findsOneWidget);
     await t.tap(find.text('Jhinia High School, Jhenaidah, Bangladesh'));
     await t.pump(const Duration(milliseconds: 100));
     expect(queries, ['zzz', 'Jhinia school']);
