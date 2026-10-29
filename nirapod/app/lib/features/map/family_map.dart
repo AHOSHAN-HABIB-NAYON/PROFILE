@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -43,7 +46,15 @@ class FamilyMapData {
     this.places = const [],
     this.onLongPress,
     this.onPlaceTap,
+    this.embedded = false,
+    this.connectFromId,
   });
+
+  /// The map sits inside a scrolling page (e.g. History > Routes): it takes drags and pinches first.
+  final bool embedded;
+
+  /// Draw a line with the distance from this member (usually "you") to every other member on the map.
+  final String? connectFromId;
 
   /// Saved places, shown when the "My places" layer is on.
   final List<MapPlace> places;
@@ -94,14 +105,73 @@ class GoogleFamilyMap extends StatefulWidget {
   State<GoogleFamilyMap> createState() => _GoogleFamilyMapState();
 }
 
-class _GoogleFamilyMapState extends State<GoogleFamilyMap> implements FamilyMapController {
+class _GoogleFamilyMapState extends State<GoogleFamilyMap> with SingleTickerProviderStateMixin implements FamilyMapController {
   GoogleMapController? _map;
   final _icons = <String, BitmapDescriptor>{};
+  final _labels = <String, BitmapDescriptor>{};
+
+  // Live animation: markers glide from where they were to the new position instead of jumping.
+  late final AnimationController _move = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
+    ..addListener(() => setState(() {}));
+  Map<String, LatLng> _from = {};
+  Map<String, LatLng> _to = {};
+  String _fittedIds = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _to = {for (final p in widget.data.pins) p.id: LatLng(p.lat, p.lng)};
+    _from = Map.of(_to);
+  }
+
+  @override
+  void dispose() {
+    _move.dispose();
+    super.dispose();
+  }
+
+  /// Where each marker is drawn right now (mid-animation positions while moving).
+  LatLng _shown(MapPin p) {
+    final to = _to[p.id] ?? LatLng(p.lat, p.lng);
+    final from = _from[p.id];
+    if (from == null || !_move.isAnimating) return to;
+    final k = Curves.easeInOut.transform(_move.value);
+    return LatLng(from.latitude + (to.latitude - from.latitude) * k, from.longitude + (to.longitude - from.longitude) * k);
+  }
 
   @override
   void didUpdateWidget(GoogleFamilyMap old) {
     super.didUpdateWidget(old);
+    final next = {for (final p in widget.data.pins) p.id: LatLng(p.lat, p.lng)};
+    final moved = next.entries.any((e) => _to[e.key] != null && _to[e.key] != e.value);
+    _from = {for (final p in widget.data.pins) p.id: _shown(p)};
+    _to = next;
+    if (moved) _move.forward(from: 0);
     _ensureIcons();
+    _autoFit();
+    final t = widget.data.trail, o = old.data.trail;
+    if (t.length > 1 && (t.length != o.length || t.first != o.first || t.last != o.last)) {
+      fitAll([for (final p in t) MapPin(id: '', name: '', lat: p.$1, lng: p.$2, accuracyM: 0, trust: Trust.live)]);
+    }
+  }
+
+  /// Small embedded maps (Home preview) always show everyone; refit when people appear or leave.
+  void _autoFit() {
+    final d = widget.data;
+    if (!d.compact || _map == null) return;
+    final ids = (d.pins.map((p) => p.id).toList()..sort()).join(',');
+    if (ids == _fittedIds || d.pins.isEmpty) return;
+    _fittedIds = ids;
+    fitAll(d.pins);
+  }
+
+  Future<BitmapDescriptor?> _label(String text) async {
+    final hit = _labels[text];
+    if (hit != null) return hit;
+    final c = context.colors;
+    _labels[text] = await _distanceLabel(text, c.surface, c.primaryText);
+    if (mounted) setState(() {});
+    return _labels[text];
   }
 
   @override
@@ -116,7 +186,7 @@ class _GoogleFamilyMapState extends State<GoogleFamilyMap> implements FamilyMapC
       final key = '${p.id}|${p.trust.name}|${p.name}';
       if (_icons.containsKey(key)) continue;
       final ring = switch (p.trust) { Trust.live => c.success, Trust.recent => c.warning, _ => c.muted };
-      _icons[key] = await _avatarMarker(initialsOf(p.name), c.primary, c.accent, ring);
+      _icons[key] = await _avatarMarker(initialsOf(p.name), c.primary, c.accent, ring, size: widget.data.compact ? 30 : 44);
       if (mounted) setState(() {});
     }
   }
@@ -141,6 +211,7 @@ class _GoogleFamilyMapState extends State<GoogleFamilyMap> implements FamilyMapC
           ? (dark ? (d.prefs.labels ? darkMapStyle : darkMapStyleNoLabels) : (d.prefs.labels ? null : lightMapStyleNoLabels))
           : null,
       buildingsEnabled: d.prefs.threeD,
+      gestureRecognizers: d.embedded ? {Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer())} : const {},
       tiltGesturesEnabled: !d.compact,
       rotateGesturesEnabled: !d.compact,
       scrollGesturesEnabled: !d.compact,
@@ -157,6 +228,7 @@ class _GoogleFamilyMapState extends State<GoogleFamilyMap> implements FamilyMapC
         if (d.trail.length > 1) {
           fitAll([for (final p in d.trail) MapPin(id: '', name: '', lat: p.$1, lng: p.$2, accuracyM: 0, trust: Trust.live)]);
         } else if (d.pins.isNotEmpty) {
+          _fittedIds = (d.pins.map((p) => p.id).toList()..sort()).join(',');
           fitAll(d.pins);
         }
       },
@@ -170,10 +242,21 @@ class _GoogleFamilyMapState extends State<GoogleFamilyMap> implements FamilyMapC
               icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
               infoWindow: InfoWindow(title: pl.name, onTap: d.onPlaceTap == null ? null : () => d.onPlaceTap!(pl.id)),
             ),
+        for (final (id, at, text) in _connectors())
+          if (_labels[text] != null)
+            Marker(
+              markerId: MarkerId('d:$id'),
+              position: at,
+              icon: _labels[text]!,
+              anchor: const Offset(0.5, 0.5),
+              zIndexInt: 1,
+              consumeTapEvents: true,
+            ),
         for (final p in d.pins)
           Marker(
             markerId: MarkerId('m:${p.id}'),
-            position: LatLng(p.lat, p.lng),
+            position: _shown(p),
+            zIndexInt: 2,
             icon: _icons['${p.id}|${p.trust.name}|${p.name}'] ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
             anchor: const Offset(0.5, 0.5),
             infoWindow: InfoWindow(title: p.name),
@@ -189,6 +272,17 @@ class _GoogleFamilyMapState extends State<GoogleFamilyMap> implements FamilyMapC
             ),
       },
       polylines: {
+        if (_from0 != null)
+          for (final p in d.pins)
+            if (p.id != _from0!.id)
+              Polyline(
+                polylineId: PolylineId('c:${p.id}'),
+                points: [_shown(_from0!), _shown(p)],
+                color: c.primary.withValues(alpha: 0.8),
+                width: d.compact ? 2 : 3,
+                geodesic: true,
+                patterns: [PatternItem.dash(18), PatternItem.gap(10)],
+              ),
         if (d.trail.length > 1)
           Polyline(
             polylineId: const PolylineId('trail'),
@@ -215,7 +309,7 @@ class _GoogleFamilyMapState extends State<GoogleFamilyMap> implements FamilyMapC
           for (final p in d.pins)
             Circle(
               circleId: CircleId('a:${p.id}'),
-              center: LatLng(p.lat, p.lng),
+              center: _shown(p),
               radius: p.accuracyM.clamp(5, 2000).toDouble(),
               fillColor: c.primary.withValues(alpha: 0.12),
               strokeColor: c.primary.withValues(alpha: 0.5),
@@ -223,6 +317,39 @@ class _GoogleFamilyMapState extends State<GoogleFamilyMap> implements FamilyMapC
             ),
       },
     );
+  }
+
+  /// The member lines start from ("you" when on the map, otherwise nobody).
+  MapPin? get _from0 {
+    final id = widget.data.connectFromId;
+    if (id == null || widget.data.pins.length < 2) return null;
+    return widget.data.pins.where((p) => p.id == id).firstOrNull;
+  }
+
+  /// (id, midpoint, distance text) for every line.
+  List<(String, LatLng, String)> _connectors() {
+    final a = _from0;
+    if (a == null) return const [];
+    final out = <(String, LatLng, String)>[];
+    final pa = _shown(a);
+    for (final p in widget.data.pins) {
+      if (p.id == a.id) continue;
+      final pb = _shown(p);
+      final m = _meters(pa, pb);
+      final text = m < 1000 ? '${m.round()} m' : '${(m / 1000).toStringAsFixed(m < 10000 ? 1 : 0)} km';
+      out.add((p.id, LatLng((pa.latitude + pb.latitude) / 2, (pa.longitude + pb.longitude) / 2), text));
+      if (!_labels.containsKey(text)) _label(text);
+    }
+    return out;
+  }
+
+  static double _meters(LatLng a, LatLng b) {
+    const r = 6371000.0;
+    double rad(double d) => d * math.pi / 180;
+    final dLat = rad(b.latitude - a.latitude);
+    final dLng = rad(b.longitude - a.longitude);
+    final h = math.sin(dLat / 2) * math.sin(dLat / 2) + math.cos(rad(a.latitude)) * math.cos(rad(b.latitude)) * math.sin(dLng / 2) * math.sin(dLng / 2);
+    return 2 * r * math.asin(math.sqrt(h));
   }
 
   @override
@@ -256,26 +383,46 @@ class _GoogleFamilyMapState extends State<GoogleFamilyMap> implements FamilyMapC
 }
 
 /// Circular avatar marker (gradient with initials, coloured status ring) drawn once per member/state.
-Future<BitmapDescriptor> _avatarMarker(String initials, Color a, Color b, Color ring) async {
-  const size = 96.0;
+Future<BitmapDescriptor> _avatarMarker(String initials, Color a, Color b, Color ring, {double size = 44}) async {
+  final shown = size;
+  const px = 96.0;
   final rec = ui.PictureRecorder();
   final canvas = Canvas(rec);
-  const center = Offset(size / 2, size / 2);
-  canvas.drawCircle(center, size / 2, Paint()..color = Colors.white);
-  canvas.drawCircle(center, size / 2 - 4, Paint()..color = ring);
+  const center = Offset(px / 2, px / 2);
+  canvas.drawCircle(center, px / 2, Paint()..color = Colors.white);
+  canvas.drawCircle(center, px / 2 - 4, Paint()..color = ring);
   canvas.drawCircle(
     center,
-    size / 2 - 10,
-    Paint()..shader = ui.Gradient.linear(Offset.zero, const Offset(size, size), [a, b]),
+    px / 2 - 10,
+    Paint()..shader = ui.Gradient.linear(Offset.zero, const Offset(px, px), [a, b]),
   );
   final tp = TextPainter(
     text: TextSpan(text: initials, style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w700)),
     textDirection: TextDirection.ltr,
   )..layout();
   tp.paint(canvas, center - Offset(tp.width / 2, tp.height / 2));
-  final img = await rec.endRecording().toImage(size.toInt(), size.toInt());
+  final img = await rec.endRecording().toImage(px.toInt(), px.toInt());
   final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
-  return BitmapDescriptor.bytes(bytes!.buffer.asUint8List(), width: 44, height: 44);
+  return BitmapDescriptor.bytes(bytes!.buffer.asUint8List(), width: shown, height: shown);
+}
+
+/// White pill with the distance, drawn in the middle of a member line.
+Future<BitmapDescriptor> _distanceLabel(String text, Color bg, Color fg) async {
+  final tp = TextPainter(
+    text: TextSpan(text: text, style: TextStyle(color: fg, fontSize: 30, fontWeight: FontWeight.w700)),
+    textDirection: TextDirection.ltr,
+  )..layout();
+  final w = tp.width + 36, h = tp.height + 16;
+  final rec = ui.PictureRecorder();
+  final canvas = Canvas(rec);
+  final r = RRect.fromRectAndRadius(Rect.fromLTWH(2, 2, w - 4, h - 4), Radius.circular(h / 2));
+  canvas.drawRRect(r.shift(const Offset(0, 2)), Paint()..color = const Color(0x33000000));
+  canvas.drawRRect(r, Paint()..color = bg);
+  canvas.drawRRect(r, Paint()..color = fg..style = PaintingStyle.stroke..strokeWidth = 3);
+  tp.paint(canvas, Offset((w - tp.width) / 2, (h - tp.height) / 2));
+  final img = await rec.endRecording().toImage(w.ceil(), h.ceil());
+  final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
+  return BitmapDescriptor.bytes(bytes!.buffer.asUint8List(), width: w / 3, height: h / 3);
 }
 
 /// A FamilyMapView that reads the builder from providers.

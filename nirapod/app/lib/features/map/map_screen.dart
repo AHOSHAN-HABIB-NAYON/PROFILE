@@ -122,6 +122,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 nearby: nearby,
                 prefs: prefs,
                 places: places,
+                connectFromId: user?.id,
                 onLongPress: adult ? _addPlaceAt : null,
                 onPlaceTap: (id) => context.push('${locationFor('place_edit')}?id=$id'),
               ),

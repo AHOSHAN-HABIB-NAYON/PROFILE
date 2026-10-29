@@ -206,7 +206,7 @@ class _FamilyBody extends ConsumerWidget {
                 height: 168,
                 child: AbsorbPointer(
                   child: FamilyMapView(
-                    data: FamilyMapData(pins: pins, prefs: const MapPrefs(kind: MapKind.normal), compact: true),
+                    data: FamilyMapData(pins: pins, prefs: const MapPrefs(kind: MapKind.normal), compact: true, connectFromId: user.id),
                     onReady: (_) {},
                     onPinTap: (_) {},
                   ),

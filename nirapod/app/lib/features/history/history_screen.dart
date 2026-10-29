@@ -283,9 +283,10 @@ class _RoutesState extends ConsumerState<_Routes> {
             ClipRRect(
               borderRadius: BorderRadius.circular(Radii.cardLarge),
               child: SizedBox(
-                height: 280,
+                height: 340,
                 child: FamilyMapView(
                   data: FamilyMapData(
+                    embedded: true,
                     prefs: ref.watch(mapPrefsProvider),
                     trail: [for (final p in value.points) (p.lat, p.lng)],
                     pins: [
