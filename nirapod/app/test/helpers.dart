@@ -1,3 +1,4 @@
+import 'package:nirapod/features/premium/billing.dart';
 import 'package:nirapod/core/push/push_service.dart';
 import 'package:nirapod/features/auth/legal/legal_screen.dart';
 import 'package:flutter/material.dart';
@@ -31,6 +32,7 @@ Future<List<Override>> overrides({Map<String, Object> prefs = const {}, bool leg
     // Platform views (Google Maps) do not run in widget tests.
     trackingBridgeProvider.overrideWithValue(NoopTrackingBridge()),
     pushServiceProvider.overrideWithValue(NoopPushService()),
+    playBillingProvider.overrideWithValue(NoopPlayBilling()),
     familyMapBuilderProvider.overrideWithValue((data, onReady, onPinTap) => const ColoredBox(color: Color(0xFFDDE7E3))),
     if (legalView) legalViewProvider.overrideWithValue((uri) => const SizedBox(key: Key('legal_view'))),
   ];

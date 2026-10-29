@@ -227,6 +227,13 @@
       "econ",
       "dialog"
     ],
+    "premium": [
+      "common",
+      "state",
+      "err",
+      "a11y",
+      "prem"
+    ],
     "notifications": [
       "common",
       "state",
@@ -3127,6 +3134,195 @@
         "plan"
       ],
       "en": "A gift from {from}: {plan}"
+    },
+    "prem.title": {
+      "placeholders": [],
+      "en": "Premium"
+    },
+    "prem.subtitle": {
+      "placeholders": [],
+      "en": "One plan for the whole family. Live location and SOS are always free."
+    },
+    "prem.monthly": {
+      "placeholders": [],
+      "en": "Monthly"
+    },
+    "prem.yearly": {
+      "placeholders": [],
+      "en": "Yearly"
+    },
+    "prem.save": {
+      "placeholders": [
+        "pct"
+      ],
+      "en": "Save {pct}%"
+    },
+    "prem.popular": {
+      "placeholders": [],
+      "en": "Most popular"
+    },
+    "prem.per_month": {
+      "placeholders": [
+        "price"
+      ],
+      "en": "{price} / month"
+    },
+    "prem.per_year": {
+      "placeholders": [
+        "price"
+      ],
+      "en": "{price} / year"
+    },
+    "prem.free_price": {
+      "placeholders": [],
+      "en": "Free"
+    },
+    "prem.children": {
+      "placeholders": [
+        "count"
+      ],
+      "en": "Children: {count}"
+    },
+    "prem.members": {
+      "placeholders": [
+        "count"
+      ],
+      "en": "Adults: {count}"
+    },
+    "prem.places": {
+      "placeholders": [
+        "count"
+      ],
+      "en": "Places: {count}"
+    },
+    "prem.places_unlimited": {
+      "placeholders": [],
+      "en": "Unlimited places"
+    },
+    "prem.history": {
+      "placeholders": [
+        "days"
+      ],
+      "en": "History: {days} days"
+    },
+    "prem.priority": {
+      "placeholders": [],
+      "en": "Priority support"
+    },
+    "prem.reports": {
+      "placeholders": [],
+      "en": "Email reports"
+    },
+    "prem.sos_free": {
+      "placeholders": [],
+      "en": "Live map and SOS"
+    },
+    "prem.trial_cta": {
+      "placeholders": [
+        "days"
+      ],
+      "en": "Start {days}-day free trial"
+    },
+    "prem.buy": {
+      "placeholders": [],
+      "en": "Buy with Google Play"
+    },
+    "prem.current": {
+      "placeholders": [
+        "plan"
+      ],
+      "en": "Your plan: {plan}"
+    },
+    "prem.until": {
+      "placeholders": [
+        "date"
+      ],
+      "en": "Active until {date}"
+    },
+    "prem.trial_until": {
+      "placeholders": [
+        "date"
+      ],
+      "en": "Trial until {date}"
+    },
+    "prem.current_badge": {
+      "placeholders": [],
+      "en": "Current plan"
+    },
+    "prem.compare": {
+      "placeholders": [],
+      "en": "Compare plans"
+    },
+    "prem.feature": {
+      "placeholders": [],
+      "en": "Feature"
+    },
+    "prem.redeem": {
+      "placeholders": [],
+      "en": "Have a code?"
+    },
+    "prem.redeem_hint": {
+      "placeholders": [],
+      "en": "Enter redeem code"
+    },
+    "prem.redeem_cta": {
+      "placeholders": [],
+      "en": "Redeem"
+    },
+    "prem.redeem_ok": {
+      "placeholders": [
+        "plan"
+      ],
+      "en": "{plan} is now active for your family."
+    },
+    "prem.redeem_bad": {
+      "placeholders": [],
+      "en": "This code is not valid or was already used."
+    },
+    "prem.gift": {
+      "placeholders": [
+        "from",
+        "plan"
+      ],
+      "en": "A gift from {from}: {plan}"
+    },
+    "prem.support_title": {
+      "placeholders": [],
+      "en": "Pay locally"
+    },
+    "prem.priority_cta": {
+      "placeholders": [],
+      "en": "Priority Support"
+    },
+    "prem.child_note": {
+      "placeholders": [],
+      "en": "Ask your parent to manage the plan."
+    },
+    "prem.store_unavailable": {
+      "placeholders": [],
+      "en": "Google Play is not available on this phone. You can use a redeem code instead."
+    },
+    "prem.buy_pending": {
+      "placeholders": [],
+      "en": "Finishing your purchase…"
+    },
+    "prem.buy_ok": {
+      "placeholders": [
+        "plan"
+      ],
+      "en": "Thank you! {plan} is active for your whole family."
+    },
+    "prem.buy_failed": {
+      "placeholders": [],
+      "en": "The purchase could not be completed. You were not charged twice; try again."
+    },
+    "prem.gift_family": {
+      "placeholders": [],
+      "en": "Gift Premium to your family"
+    },
+    "prem.gift_family_body": {
+      "placeholders": [],
+      "en": "Join the family as a guardian and buy here, or ask us on WhatsApp for a redeem code."
     }
   }
 }

@@ -40,6 +40,7 @@ export const SCREENS = {
   sos: ['common', 'state', 'err', 'a11y', 'sos', 'time', 'trust'],
   safe_walk: ['common', 'state', 'err', 'a11y', 'walk', 'time', 'trust', 'home'],
   emergency_contacts: ['common', 'state', 'err', 'a11y', 'econ', 'dialog'],
+  premium: ['common', 'state', 'err', 'a11y', 'prem'],
   notifications: ['common', 'state', 'err', 'a11y', 'alerts', 'notif', 'notifset', 'history', 'time', 'permneed'],
   placeholder: ['common', 'nav'],
   language_sheet: ['lang'],

@@ -218,6 +218,13 @@
     "econ",
     "dialog"
   ],
+  "premium": [
+    "common",
+    "state",
+    "err",
+    "a11y",
+    "prem"
+  ],
   "notifications": [
     "common",
     "state",

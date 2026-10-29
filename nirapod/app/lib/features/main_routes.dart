@@ -10,6 +10,7 @@ import 'home/home_screen.dart';
 import 'map/map_screen.dart';
 import 'me/me_screen.dart';
 import 'places/places_screen.dart';
+import 'premium/premium_screen.dart';
 import 'safety/safe_walk_screens.dart';
 import 'safety/sos_screens.dart';
 
@@ -23,6 +24,8 @@ final mainScreens = <String, Widget Function(GoRouterState state)>{
   'invite': (_) => const FamilyScreen(),
   'member': (st) => MemberScreen(memberId: st.pathParameters['id'] ?? ''),
   'report_misuse': (_) => const ReportMisuseScreen(),
+  // Phase 6.
+  'premium': (_) => const PremiumScreen(),
   // Phase 5: notifications.
   'alerts': (_) => const AlertsScreen(),
   'settings_notifications': (_) => const NotificationSettingsScreen(),

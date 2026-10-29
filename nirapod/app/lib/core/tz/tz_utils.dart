@@ -175,3 +175,10 @@ Duration untilNextMinute(DateTime now) {
   final next = DateTime(now.year, now.month, now.day, now.hour, now.minute).add(const Duration(minutes: 1));
   return next.difference(now);
 }
+
+/// "29 Oct 2026" in the given zone (digits stay Latin; month names in English for now).
+String formatLocalDate(DateTime instant, String zone) {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  final l = inZone(instant, zone);
+  return '${l.day} ${months[l.month - 1]} ${l.year}';
+}

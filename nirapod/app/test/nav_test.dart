@@ -91,7 +91,10 @@ void main() {
     ));
     await t.pumpAndSettle();
     await t.tap(find.text('Premium').last);
-    await t.pumpAndSettle();
+    // Premium loads plans from the server (shimmer while loading), so pump fixed frames instead of settling.
+    for (var i = 0; i < 6; i++) {
+      await t.pump(const Duration(milliseconds: 100));
+    }
     expect(router.routerDelegate.currentConfiguration.uri.path, '/premium');
   });
 
