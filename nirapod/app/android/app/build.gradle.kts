@@ -8,7 +8,8 @@ plugins {
 
 android {
     namespace = "app.nirapod.family"
-    compileSdk = flutter.compileSdkVersion
+    // permission_handler_android needs compileSdk 37; targetSdk (runtime behaviour) stays 36.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
