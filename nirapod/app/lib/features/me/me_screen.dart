@@ -60,7 +60,7 @@ class MeScreen extends ConsumerWidget {
         if (u.email != null)
           row(AppIcons.mail, s.t('me.email'), sub: '${u.email}${u.emailVerified ? '  ·  ${s.t('me.verified')}' : ''}'),
         row(AppIcons.lock, s.t('me.sign_in_method'), sub: u.authProvider == 'google' ? s.t('me.method_google') : s.t('me.method_email')),
-        if (u.authProvider == 'email') row(AppIcons.lock, s.t('me.change_password'), onTap: () => context.push(locationFor('forgot_email'))),
+        if (u.authProvider == 'email') row(AppIcons.lock, s.t('me.change_password'), onTap: () => context.push(locationFor('change_password'))),
         row(AppIcons.settings, s.t('me.devices'), onTap: () => context.push(locationFor('sessions'))),
         row(AppIcons.history, s.t('me.download'), onTap: () => context.push(locationFor('data_export'))),
         row(AppIcons.alertCircle, s.t('me.delete'), color: c.dangerText, onTap: () => context.push(locationFor('delete_account'))),

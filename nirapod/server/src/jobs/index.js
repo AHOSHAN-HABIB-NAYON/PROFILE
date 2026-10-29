@@ -8,7 +8,7 @@ import { partsIn as inZone, formatLocalTime } from '../tz/index.js';
 import { visibleMembers } from '../family/visibility.js';
 import { emailAllowed } from '../routes/notifications.js';
 import { t } from '../push/strings.js';
-import { expireSubscriptions } from '../routes/billing.js';
+import { expireSubscriptions, remindExpiring } from '../routes/billing.js';
 import { purgeExports } from '../routes/data-rights.js';
 import { chatInactivity, chatRetention } from '../chat/service.js';
 
@@ -135,8 +135,22 @@ export async function sendDailySummaries(ctx) {
   return n;
 }
 
+/** Job: drop used/expired join codes and invites after 30 days, and expired nearby-places cache rows. */
+export async function cleanupCodesAndCache(ctx) {
+  const { db, clock } = ctx;
+  const now = clock.now();
+  const old = new Date(now.getTime() - 30 * 24 * 3600_000);
+  let n = 0;
+  n += await db('join_codes').where((q) => q.whereNotNull('used_at').orWhereNotNull('revoked_at').orWhere('expires_at', '<', now)).where('created_at', '<', old).del();
+  n += await db('invites').where((q) => q.whereNotNull('accepted_at').orWhereNotNull('revoked_at').orWhere('expires_at', '<', now)).where('created_at', '<', old).del();
+  n += await db('nearby_cache').where('expires_at', '<', now).del();
+  return n;
+}
+
 export const JOBS = {
   subscriptions_expire: { everyMs: 10 * 60_000, run: expireSubscriptions },
+  subscriptions_remind: { everyMs: 3600_000, run: remindExpiring },
+  codes_and_cache_cleanup: { everyMs: 6 * 3600_000, run: cleanupCodesAndCache },
   daily_summary: { everyMs: 10 * 60_000, run: sendDailySummaries },
   trips_watch: { everyMs: 60_000, run: watchTrips },
   stale_devices: { everyMs: 60_000, run: detectStaleDevices },

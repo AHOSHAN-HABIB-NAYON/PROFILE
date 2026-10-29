@@ -9,6 +9,7 @@ import 'family/ui/member_screen.dart';
 import 'history/history_screen.dart';
 import 'home/home_screen.dart';
 import 'map/map_screen.dart';
+import 'me/change_password_screen.dart';
 import 'me/me_screen.dart';
 import 'places/places_screen.dart';
 import 'premium/premium_screen.dart';
@@ -22,6 +23,7 @@ final mainScreens = <String, Widget Function(GoRouterState state)>{
   'map': (_) => const MapScreen(),
   'history': (_) => const HistoryScreen(),
   'profile': (_) => const MeScreen(),
+  'change_password': (_) => const ChangePasswordScreen(),
   'family': (_) => const FamilyScreen(),
   'invite': (_) => const FamilyScreen(),
   'member': (st) => MemberScreen(memberId: st.pathParameters['id'] ?? ''),

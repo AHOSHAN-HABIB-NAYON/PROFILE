@@ -11,7 +11,12 @@ const pkgDir = path.dirname(require.resolve('flag-icons/package.json'));
 const codes = fs.readFileSync(path.join(ROOT, 'shared/tz/iso3166.tab'), 'utf8')
   .split('\n').filter((l) => l && !l.startsWith('#')).map((l) => l.split('\t')[0].toLowerCase());
 const langFlags = readJson('shared/i18n/languages.json').languages.map((l) => l.flag);
-const cfg = { multipass: true, plugins: ['preset-default', 'removeDimensions'] };
+// Flags are drawn small (24-40 dp) on a 640x480 viewBox: one decimal is visually lossless and halves the size.
+const cfg = {
+  multipass: true,
+  floatPrecision: 1,
+  plugins: [{ name: 'preset-default', params: { overrides: { convertPathData: { floatPrecision: 1 }, cleanupNumericValues: { floatPrecision: 1 } } } }, 'removeDimensions'],
+};
 
 const keep43 = new Set();
 const missing = [];

@@ -300,3 +300,22 @@ export async function expireSubscriptions(ctx) {
   }
   return ended.length;
 }
+
+/** Job: remind the family 3 days before a trial or a non-renewing plan ends (push + email, once). */
+export async function remindExpiring(ctx) {
+  const { db, clock } = ctx;
+  const now = clock.now();
+  const soon = new Date(now.getTime() + 3 * DAY);
+  const rows = await db('subscriptions as s').join('plans as p', 'p.id', 's.plan_id').whereIn('s.status', ['trial', 'active'])
+    .where('s.auto_renew', false).whereNull('s.reminder_sent_at').whereNotNull('s.expires_at').where('s.expires_at', '>', now).where('s.expires_at', '<=', soon)
+    .select('s.id', 's.family_id', 's.status', 's.expires_at', 'p.name');
+  for (const s of rows) {
+    const days = Math.max(1, Math.ceil((new Date(s.expires_at) - now) / DAY));
+    await db('subscriptions').where({ id: s.id }).update({ reminder_sent_at: now });
+    await notifyFamilySubscription(ctx, s.family_id, {
+      titleKey: s.status === 'trial' ? 'notif.trial_ending' : 'notif.plan_ending', params: { plan: s.name, days },
+      template: 'subscription', vars: { plan: s.name, status: s.status === 'trial' ? 'trial ends soon' : 'ends soon', message: `${s.name} ends in ${days} day(s). Renew to keep premium features; live location and SOS always stay free.` },
+    });
+  }
+  return rows.length;
+}

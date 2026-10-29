@@ -98,20 +98,34 @@ jobs:
             echo "$KEYSTORE_B64" | base64 -d > android/app/upload.jks
             printf "storeFile=upload.jks\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n" "$KEYSTORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD" > android/key.properties
           fi
-          flutter build appbundle --release --dart-define=APP_VERSION=0.1.0
+          flutter build appbundle --release --dart-define=APP_VERSION=0.1.0 --obfuscate --split-debug-info=build/symbols
       - name: Permission check on the merged release manifest
         run: |
           MERGED=$(find build/app/intermediates -path '*release*' -name AndroidManifest.xml | grep -i merged | head -1)
           echo "Merged manifest: $MERGED"
           test -n "$MERGED"
           node ../tools/check-permissions.mjs android/app/src/main/AndroidManifest.xml "$MERGED"
-      - name: Build installable APK (for testing on a phone)
-        run: flutter build apk --release --dart-define=APP_VERSION=0.1.0
+      - name: Build installable APKs (one per phone type, so each is small)
+        # Play delivers the right part of the AAB to each phone automatically; for direct installs we build
+        # one APK per CPU type instead of one big "universal" APK. Almost all phones today use arm64-v8a.
+        run: |
+          flutter build apk --release --split-per-abi --target-platform android-arm64,android-arm --dart-define=APP_VERSION=0.1.0 --obfuscate --split-debug-info=build/symbols
+          ls -la build/app/outputs/flutter-apk/
       - uses: actions/upload-artifact@v4
         with:
           name: nirapod-apk
-          path: nirapod/app/build/app/outputs/flutter-apk/app-release.apk
+          path: nirapod/app/build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
           retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nirapod-apk-old-phones-armv7
+          path: nirapod/app/build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nirapod-debug-symbols
+          path: nirapod/app/build/symbols
+          retention-days: 30
       - uses: actions/upload-artifact@v4
         with:
           name: nirapod-release-aab

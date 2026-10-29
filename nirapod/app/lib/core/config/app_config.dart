@@ -26,6 +26,8 @@ class AppConfig {
   String get whatsappNumber => raw['whatsapp_number'] as String? ?? '';
   bool get paymentBannerEnabled => raw['payment_banner_enabled'] == true;
   bool get paymentBannerShowLogos => raw['payment_banner_show_logos'] == true;
+  /// Admin-uploaded logos (bKash, Nagad...) for the scrolling strip, as server paths (/media/banner/...).
+  List<String> get paymentBannerLogos => ((raw['payment_banner_logos'] as List?) ?? const []).whereType<String>().toList();
   List<String> get paymentBannerCountries => ((raw['payment_banner_countries'] as List?) ?? const []).cast<String>();
   String paymentBannerText(String lang) {
     final m = raw['payment_banner_text'];

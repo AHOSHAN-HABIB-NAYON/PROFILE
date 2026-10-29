@@ -301,6 +301,22 @@ export function authRouter(ctx) {
     res.status(204).end();
   }));
 
+  // Change password while signed in (email accounts): current password required; other devices are signed out.
+  r.post('/auth/change-password', requireAuth, authLimit(), ah(async (req, res) => {
+    const b = parse(z.object({ current_password: z.string().max(200), new_password: password }), req.body);
+    const user = await db('users').where({ id: req.user.id }).first();
+    if (!user.password_hash) throw new ApiError('BAD_REQUEST', { message: 'This account signs in with Google.' });
+    if (!(await verifyPassword(b.current_password, user.password_hash, cfg.BCRYPT_COST))) {
+      throw new ApiError('AUTH_INVALID_CREDENTIALS', { message: 'The current password is not right.', details: { fields: { current_password: 'wrong' } } });
+    }
+    assertPasswordRules(b.new_password, 'new_password');
+    await db('users').where({ id: user.id }).update({ password_hash: await hashPassword(b.new_password, cfg.BCRYPT_COST) });
+    const others = await db('sessions').where({ user_id: user.id }).whereNull('revoked_at').whereNot({ id: req.session.id }).pluck('id');
+    for (const id of others) await sessions.revokeOne(id, 'password_changed');
+    await audit(db, { actorId: user.id, action: 'auth.password_changed', targetType: 'user', targetId: user.id, metadata: { sessions_revoked: others.length }, now: clock.now() });
+    res.json({ other_sessions_signed_out: others.length });
+  }));
+
   r.get('/auth/sessions', requireAuth, ah(async (req, res) => {
     res.set('cache-control', 'no-store').json(await sessions.list(req.user.id, req.session.id));
   }));

@@ -47,6 +47,7 @@ export const SCREENS = {
   delete_account: ['common', 'state', 'err', 'a11y', 'delacc', 'dialog', 'export', 'auth'],
   help: ['common', 'state', 'err', 'a11y', 'help', 'faq'],
   update: ['common', 'upd'],
+  change_password: ['common', 'state', 'err', 'a11y', 'auth', 'chpw'],
   chat: ['common', 'state', 'err', 'a11y', 'chat', 'time'],
   placeholder: ['common', 'nav'],
   language_sheet: ['lang'],

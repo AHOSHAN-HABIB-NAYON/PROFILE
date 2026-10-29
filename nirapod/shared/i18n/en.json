@@ -819,5 +819,16 @@
   "chat.image_gone": "Photo removed after 7 days",
   "chat.failed": "Not sent. Tap to try again.",
   "chat.priority": "Priority support",
-  "notif.chat_reply": "{name} replied to your support chat"
+  "notif.chat_reply": "{name} replied to your support chat",
+  "chpw.title": "Change password",
+  "chpw.intro": "Enter your current password, then choose a new one.",
+  "chpw.current": "Current password",
+  "chpw.new": "New password",
+  "chpw.save": "Save new password",
+  "chpw.done": "Password changed",
+  "chpw.wrong_current": "The current password is not right",
+  "chpw.need_current": "Enter your current password",
+  "chpw.others_signed_out": "Your other phones will be signed out for safety.",
+  "notif.trial_ending": "Your {plan} trial ends in {days} days",
+  "notif.plan_ending": "{plan} ends in {days} days. Renew to keep it."
 }

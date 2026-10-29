@@ -139,3 +139,5 @@ tr.click{cursor:pointer}tr.click:hover td{background:#F4FAF7}
 .conv .row>*,.ctx .row>*,.thread .head .row>*,.drawer .row>.pill,.row>.pill,.row>h2,.row>h3{flex:0 0 auto}
 .ctx .row{gap:6px}
 .row>button,.row>select.fit{flex:0 0 auto}
+.logo-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:10px;padding:4px 6px;flex:0 0 auto!important}
+.logo-chip img{display:block}

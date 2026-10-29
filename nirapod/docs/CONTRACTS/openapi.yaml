@@ -233,6 +233,16 @@ paths:
       responses:
         '204': { description: Signed out }
         '401': { $ref: '#/components/responses/Error' }
+  /auth/change-password:
+    post:
+      tags: [auth]
+      x-phase: 2
+      summary: Change password while signed in (email accounts); other sessions are signed out
+      requestBody: { required: true, content: { application/json: { schema: { type: object, required: [current_password, new_password], properties: { current_password: { type: string }, new_password: { type: string, minLength: 8 } } } } } }
+      responses:
+        '200': { description: Changed, content: { application/json: { schema: { type: object, properties: { other_sessions_signed_out: { type: integer } } } } } }
+        '400': { $ref: '#/components/responses/Error' }
+        '401': { $ref: '#/components/responses/Error' }
   /auth/sessions:
     get:
       tags: [auth]
@@ -807,6 +817,8 @@ components:
         payment_banner_show_logos: { type: boolean, default: false }
         payment_banner_countries: { type: array, items: { type: string } }
         payment_banner_text: { type: object, additionalProperties: { type: string } }
+        payment_banner_logos: { type: array, items: { type: string }, description: Admin-uploaded logo paths for the scrolling strip }
+        landing_ai_chat_enabled: { type: boolean, description: Landing page AI help chat switch }
         nearby_places_enabled: { type: boolean }
         live_chat_human_for: { enum: [all, premium] }
         firebase_android:

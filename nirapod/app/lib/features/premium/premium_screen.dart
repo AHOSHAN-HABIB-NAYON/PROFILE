@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/config/app_config.dart';
+import '../family/data/realtime.dart';
 import '../../core/i18n/locale_controller.dart';
 import '../../core/i18n/strings.dart';
 import '../../core/icons/app_icon.dart';
@@ -211,6 +212,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                     (cfg.paymentBannerCountries.isEmpty ? false : cfg.paymentBannerCountries.contains(value.country))) ...[
                   const SizedBox(height: Space.lg),
                   _SupportBanner(
+                    logos: cfg.paymentBannerShowLogos ? cfg.paymentBannerLogos : const [],
                     text: cfg.paymentBannerText(lang.code),
                     title: s.t('prem.support_title'),
                     onTap: () => _whatsapp(cfg.whatsappNumber, value.plans.where((p) => !p.isFree).firstOrNull?.name ?? 'Premium'),
@@ -422,7 +424,8 @@ class _GiftBanner extends StatelessWidget {
 }
 
 class _SupportBanner extends StatelessWidget {
-  const _SupportBanner({required this.text, required this.title, required this.onTap});
+  const _SupportBanner({required this.text, required this.title, required this.onTap, this.logos = const []});
+  final List<String> logos;
   final String text;
   final String title;
   final VoidCallback onTap;
@@ -440,7 +443,7 @@ class _SupportBanner extends StatelessWidget {
           key: const Key('support_banner'),
           borderRadius: BorderRadius.circular(Radii.cardLarge),
           onTap: onTap,
-          child: Padding(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [Padding(
             padding: const EdgeInsets.all(Space.md),
             child: Row(children: [
               Container(
@@ -466,7 +469,65 @@ class _SupportBanner extends StatelessWidget {
               ),
             ]),
           ),
+          if (logos.isNotEmpty)
+            Padding(padding: const EdgeInsets.fromLTRB(Space.md, 0, Space.md, Space.sm), child: _LogoStrip(logos: logos)),
+          ]),
         ),
+      ),
+    );
+  }
+}
+
+/// Slowly scrolling row of payment logos (loops; stands still with reduce-motion).
+class _LogoStrip extends StatefulWidget {
+  const _LogoStrip({required this.logos});
+  final List<String> logos;
+  @override
+  State<_LogoStrip> createState() => _LogoStripState();
+}
+
+class _LogoStripState extends State<_LogoStrip> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: Duration(seconds: 4 * widget.logos.length.clamp(2, 8)));
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _c.stop();
+    } else if (!_c.isAnimating) {
+      _c.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final row = Row(mainAxisSize: MainAxisSize.min, children: [
+      for (final u in widget.logos)
+        Container(
+          margin: const EdgeInsetsDirectional.only(end: Space.sm),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+          child: Image.network('${RealtimeClient.serverOrigin}$u', height: 22, fit: BoxFit.contain, errorBuilder: (_, _, _) => const SizedBox(width: 40, height: 22)),
+        ),
+    ]);
+    return SizedBox(
+      height: 34,
+      child: ClipRect(
+        child: LayoutBuilder(builder: (context, box) => AnimatedBuilder(
+              animation: _c,
+              builder: (context, child) => OverflowBox(
+                alignment: AlignmentDirectional.centerStart,
+                maxWidth: double.infinity,
+                child: FractionalTranslation(translation: Offset(-_c.value * 0.5, 0), child: child),
+              ),
+              child: RepaintBoundary(child: Row(mainAxisSize: MainAxisSize.min, children: [row, row])),
+            )),
       ),
     );
   }

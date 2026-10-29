@@ -275,6 +275,14 @@
     "common",
     "upd"
   ],
+  "change_password": [
+    "common",
+    "state",
+    "err",
+    "a11y",
+    "auth",
+    "chpw"
+  ],
   "chat": [
     "common",
     "state",

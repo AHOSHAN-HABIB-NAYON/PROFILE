@@ -164,15 +164,15 @@ setInterval(pollChats, 8000);
 // ---------- pages ----------
 const NAV = [
   ['Overview', [['dashboard', 'Dashboard'], ['chats', 'Live chat', 'chat-badge'], ['users', 'Users']]],
-  ['Business', [['plans', 'Plans and limits'], ['codes', 'Redeem codes'], ['grants', 'Grants'], ['campaigns', 'Campaigns']]],
+  ['Business', [['plans', 'Plans and limits'], ['codes', 'Redeem codes'], ['grants', 'Grants'], ['redemptions', 'Redemptions'], ['campaigns', 'Campaigns']]],
   ['Content', [['kb', 'Knowledge base'], ['canned', 'Canned replies'], ['changelog', 'Changelog'], ['emergency', 'Emergency numbers']]],
   ['Settings', [['appconfig', 'App settings'], ['keys', 'API keys'], ['ai', 'AI assistant']]],
   ['Safety', [['tickets', 'Tickets'], ['abuse', 'Abuse reports'], ['datareq', 'Data requests']]],
   ['System', [['admins', 'Admins and roles'], ['audit', 'Audit log'], ['health', 'System health'], ['profile', 'My profile']]],
 ];
 const ROLE_PAGES = {
-  support: ['dashboard', 'chats', 'users', 'grants', 'kb', 'canned', 'changelog', 'emergency', 'ai', 'tickets', 'abuse', 'datareq', 'campaigns', 'profile'],
-  finance: ['dashboard', 'users', 'plans', 'codes', 'grants', 'profile'],
+  support: ['dashboard', 'chats', 'users', 'grants', 'redemptions', 'kb', 'canned', 'changelog', 'emergency', 'ai', 'tickets', 'abuse', 'datareq', 'campaigns', 'profile'],
+  finance: ['dashboard', 'users', 'plans', 'codes', 'grants', 'redemptions', 'profile'],
 };
 const allowed = (p) => me?.role === 'super_admin' || (ROLE_PAGES[me?.role] || []).includes(p);
 
@@ -273,7 +273,16 @@ async function userDrawer(id) {
           await api(`/admin/devices/${x.id}/revoke`, { method: 'POST', body: { consent_note: note } }); toast('Phone removed'); d.remove(); userDrawer(id);
         }) }, 'Remove')]], fam.devices),
       h('h3', {}, 'Subscriptions'),
-      table([['Plan', (s) => s.plan], ['Status', (s) => s.status], ['Source', (s) => s.source], ['Expires', (s) => fmtDay(s.expires_at)]], fam.subscriptions),
+      table([['Plan', (s) => s.plan], ['Status', (s) => s.status], ['Source', (s) => s.source], ['Expires', (s) => fmtDay(s.expires_at)],
+        ['', (s) => (['active', 'trial', 'grace'].includes(s.status) && s.source !== 'play' ? h('button', { class: 'ghost sm', onclick: guard(async () => {
+          const reason = prompt('Why are you revoking this package? (saved in the audit log)');
+          if (!reason) return;
+          await api(`/admin/subscriptions/${s.id}/revoke`, { method: 'POST', body: { reason } }); toast('Package revoked'); d.remove(); userDrawer(id);
+        }) }, 'Revoke') : '')]], fam.subscriptions),
+      h('div', { class: 'row' }, h('button', { class: 'sec sm', onclick: guard(async () => {
+        if (!(await confirmBox('Cancel every open child code and invite of this family? The parent can make a new code in the app.'))) return;
+        const r = await api(`/admin/families/${fam.id}/reset-codes`, { method: 'POST' }); toast(`${r.revoked} code(s) cancelled`);
+      }) }, 'Reset family codes')),
       h('div', { class: 'sep' }),
       h('h3', {}, 'Grant a package'),
       form([
@@ -283,7 +292,16 @@ async function userDrawer(id) {
         { name: 'gift_from_name', label: 'Gift from (optional)', optional: true },
         { name: 'gift_message', label: 'Gift message (optional)', optional: true },
         { name: 'note', label: 'Internal note', optional: true },
-      ], { days: 30 }, async (v) => { await api(`/admin/families/${fam.id}/grant`, { method: 'POST', body: v }); toast('Package granted'); d.remove(); userDrawer(id); }, 'Grant'),
+      ], { days: 30 }, async (v) => {
+        try {
+          await api(`/admin/families/${fam.id}/grant`, { method: 'POST', body: v });
+        } catch (e) {
+          if (!e.details?.reused_payment_reference) throw e;
+          if (!(await confirmBox(`This payment reference was already used (${fmtDate(e.details.used_at)}). Grant anyway?`))) return;
+          await api(`/admin/families/${fam.id}/grant`, { method: 'POST', body: { ...v, confirm_reused: true } });
+        }
+        toast('Package granted'); d.remove(); userDrawer(id);
+      }, 'Grant'),
       h('h3', {}, 'Adjust free limits for this family'),
       form([
         { name: 'max_children', label: 'Max children', type: 'number', optional: true }, { name: 'max_members', label: 'Max members', type: 'number', optional: true },
@@ -345,7 +363,10 @@ async function pageChats() {
         h('div', { class: 'row' }, c.status !== 'closed' && c.status !== 'human' ? act('Join chat', 'join', '') : null, c.status === 'human' ? act('Hand back to AI', 'hand-back') : null,
           c.status !== 'closed' ? act('Close', 'close', 'danger') : null)),
       box,
-      h('div', { class: 'composer' }, text, h('div', { class: 'row' }, cannedSel, h('label', { class: 'check', for: 'asnote' }, note, 'Internal note'), h('button', { onclick: send, disabled: c.status === 'closed' }, 'Send'))));
+      h('div', { class: 'composer' }, text, h('div', { class: 'row' }, cannedSel,
+        h('button', { class: 'sec sm', disabled: c.status === 'closed', onclick: guard(async (e) => { e.target.disabled = true; try { text.value = (await api(`/admin/chats/${c.id}/suggest`, { method: 'POST' })).draft; } finally { e.target.disabled = false; } }) }, 'AI draft'),
+        h('button', { class: 'sec sm', title: `Translate the reply to ${lang}`, onclick: guard(async () => { if (text.value.trim()) text.value = (await api('/admin/translate', { method: 'POST', body: { text: text.value, to: lang } })).text; }) }, `Translate to ${lang}`),
+        h('label', { class: 'check', for: 'asnote' }, note, 'Internal note'), h('button', { onclick: send, disabled: c.status === 'closed' }, 'Send'))));
     box.scrollTop = box.scrollHeight;
     const ctxv = c.context || {};
     ctx.replaceChildren(h('h3', {}, 'Customer'), h('dl', {},
@@ -423,6 +444,11 @@ async function pageCodes() {
   load();
 }
 
+async function pageRedemptions() {
+  const rows = await api('/admin/redemptions');
+  shell('redemptions', 'Redemptions', table([['When', (r) => fmtDate(r.redeemed_at)], ['Code', (r) => h('span', { class: 'mono' }, `••••${r.code_last4}`)], ['Plan', (r) => r.plan], ['Days', (r) => r.duration_days], ['Batch', (r) => r.batch_name || '—'], ['Gift from', (r) => r.gift_from_name || '—'], ['By', (r) => r.email || '—'], ['Family', (r) => r.family || '—']], rows));
+}
+
 async function pageGrants() {
   const rows = await api('/admin/grants');
   shell('grants', 'Grants', h('div', {}, h('p', { class: 'muted' }, 'Grant a package from a user\'s page (Users → open a user → Grant a package).'),
@@ -485,6 +511,7 @@ async function pageAppConfig() {
     h('div', { class: 'card' }, h('h2', {}, 'Features'), form([
       { name: 'nearby_places_enabled', label: 'Nearby places on the map', type: 'checkbox' }, { name: 'nearby_places_daily_cap', label: 'Nearby places: daily request cap (all users)', type: 'number' },
       { name: 'nearby_places_per_user_daily', label: 'Nearby places: daily requests per user', type: 'number' },
+      { name: 'landing_ai_chat_enabled', label: 'AI help chat on the landing page', type: 'checkbox' },
       { name: 'trial_days', label: 'Trial days', type: 'number' }, { name: 'live_chat_human_for', label: 'People answer chats for', type: 'select', options: ['all', 'premium'] },
       { name: 'languages_enabled', label: 'Languages on/off (JSON)', type: 'json', hint: '{"en":true,"bn":true,"hi":true,"ur":true,"ar":true,"es":true,"id":true,"ms":true}' },
     ], s, save)),
@@ -492,6 +519,14 @@ async function pageAppConfig() {
       { name: 'support_emails', label: 'Support emails for new chats (comma separated)', type: 'list' }, { name: 'legal_request_email', label: 'Legal-request email' },
       { name: 'chat_inactivity_warn_minutes', label: 'Chat: warn after (minutes)', type: 'number' }, { name: 'chat_autoclose_minutes', label: 'Chat: close after a further (minutes)', type: 'number' },
     ], s, save)),
+    h('div', { class: 'card' }, h('h2', {}, 'Payment banner logos'), h('p', { class: 'muted' }, 'PNG/JPEG/WebP, shown as a scrolling strip when "Show bKash / Nagad logos" is on.'),
+      h('div', { class: 'row' }, (s.payment_banner_logos || []).map((u) => h('span', { class: 'logo-chip' }, h('img', { src: u, alt: '', height: 32 }),
+        h('button', { class: 'ghost sm', onclick: guard(async () => { await api(`/admin/banner-logos/${u.split('/').pop()}`, { method: 'DELETE' }); pageAppConfig(); }) }, 'Remove')))),
+      (() => { const fi = h('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp' }); return h('div', { class: 'row' }, fi, h('button', { class: 'sec', onclick: guard(async () => {
+        if (!fi.files?.[0]) return toast('Choose a logo first', true);
+        const fd = new FormData(); fd.append('logo', fi.files[0]);
+        await api('/admin/banner-logos', { method: 'POST', form: fd }); toast('Logo added'); pageAppConfig();
+      }) }, 'Upload logo')); })()),
     h('div', { class: 'card' }, h('h2', {}, 'Per-country free limits'), form([
       { name: 'country_overrides', label: 'Country overrides (JSON)', type: 'json', rows: 6, hint: '{"BD":{"free_limits":{"max_children":2}}}' },
     ], s, save))));
@@ -673,7 +708,7 @@ async function pageLogin() {
 
 // ---------- router ----------
 const PAGES = {
-  dashboard: pageDashboard, users: pageUsers, chats: pageChats, plans: pagePlans, codes: pageCodes, grants: pageGrants, campaigns: pageCampaigns,
+  dashboard: pageDashboard, users: pageUsers, chats: pageChats, plans: pagePlans, codes: pageCodes, grants: pageGrants, redemptions: pageRedemptions, campaigns: pageCampaigns,
   kb: pageKb, canned: pageCanned, changelog: pageChangelog, emergency: pageEmergency, appconfig: pageAppConfig, keys: pageKeys, ai: pageAi,
   tickets: pageTickets, abuse: pageAbuse, datareq: pageDataReq, admins: pageAdmins, audit: pageAudit, health: pageHealth, profile: pageProfile,
 };

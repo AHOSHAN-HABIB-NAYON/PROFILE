@@ -284,6 +284,14 @@
       "common",
       "upd"
     ],
+    "change_password": [
+      "common",
+      "state",
+      "err",
+      "a11y",
+      "auth",
+      "chpw"
+    ],
     "chat": [
       "common",
       "state",
@@ -3847,6 +3855,56 @@
         "name"
       ],
       "en": "{name} replied to your support chat"
+    },
+    "chpw.title": {
+      "placeholders": [],
+      "en": "Change password"
+    },
+    "chpw.intro": {
+      "placeholders": [],
+      "en": "Enter your current password, then choose a new one."
+    },
+    "chpw.current": {
+      "placeholders": [],
+      "en": "Current password"
+    },
+    "chpw.new": {
+      "placeholders": [],
+      "en": "New password"
+    },
+    "chpw.save": {
+      "placeholders": [],
+      "en": "Save new password"
+    },
+    "chpw.done": {
+      "placeholders": [],
+      "en": "Password changed"
+    },
+    "chpw.wrong_current": {
+      "placeholders": [],
+      "en": "The current password is not right"
+    },
+    "chpw.need_current": {
+      "placeholders": [],
+      "en": "Enter your current password"
+    },
+    "chpw.others_signed_out": {
+      "placeholders": [],
+      "en": "Your other phones will be signed out for safety."
+    },
+    "notif.trial_ending": {
+      "placeholders": [
+        "plan",
+        "days"
+      ],
+      "en": "Your {plan} trial ends in {days} days"
+    },
+    "notif.plan_ending": {
+      "placeholders": [
+        "plan",
+        "days"
+      ],
+      "en": "{plan} ends in {days} days. Renew to keep it."
     }
   }
 }

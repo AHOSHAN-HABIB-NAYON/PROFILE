@@ -79,3 +79,18 @@ footer{border-top:1px solid var(--border);padding:28px max(16px,calc((100vw - 11
 @media (max-width:900px){.hero{grid-template-columns:1fr}.phones{height:440px;max-width:420px;margin:0 auto;width:100%}.phone.front{right:10px}.phone.back{right:auto;left:0}.features .grid,.plans{grid-template-columns:1fr}.top nav{display:none}.local{flex-direction:column;align-items:flex-start}}
 @media (max-width:420px){.phone{width:200px;height:410px}.phone.back{display:none}.phone.front{right:50%;transform:translateX(50%) rotate(2deg)}}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+/* AI help widget (optional) */
+.aiw-fab{position:fixed;right:20px;bottom:20px;width:56px;height:56px;border-radius:50%;border:0;background:var(--primary-fill,#047857);color:#fff;box-shadow:0 10px 30px rgba(4,120,87,.35);cursor:pointer;display:grid;place-items:center;z-index:60}
+.aiw-panel{position:fixed;right:20px;bottom:88px;width:min(360px,calc(100vw - 32px));height:min(480px,calc(100vh - 120px));background:var(--surface,#fff);color:var(--text);border:1px solid var(--border);border-radius:18px;box-shadow:0 20px 50px rgba(0,0,0,.2);display:flex;flex-direction:column;overflow:hidden;z-index:61}
+.aiw-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--primary-fill,#047857);color:#fff}
+.aiw-x{background:none;border:0;color:#fff;font-size:22px;cursor:pointer;line-height:1}
+.aiw-log{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.aiw-m{max-width:85%;padding:8px 12px;border-radius:14px;font-size:14px;line-height:1.45;white-space:pre-wrap}
+.aiw-m.user{align-self:flex-end;background:var(--primary-fill,#047857);color:#fff}
+.aiw-m.ai{align-self:flex-start;background:var(--background);border:1px solid var(--border)}
+.aiw-m.err{color:#B91C1C}
+.aiw-note{margin:0;padding:6px 12px;font-size:11px;color:var(--muted-text)}
+.aiw-form{display:flex;gap:6px;padding:10px;border-top:1px solid var(--border)}
+.aiw-form input{flex:1;font:inherit;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--background);color:var(--text);min-width:0}
+.aiw-send{font:inherit;font-weight:700;border:0;border-radius:12px;padding:0 14px;background:var(--primary-fill,#047857);color:#fff;cursor:pointer}
+.aiw-send:disabled{opacity:.6}

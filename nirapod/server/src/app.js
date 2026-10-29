@@ -23,6 +23,7 @@ import { billingRouter } from './routes/billing.js';
 import { dataRightsRouter } from './routes/data-rights.js';
 import { chatRouter } from './routes/chat.js';
 import { adminRouter } from './routes/admin.js';
+import { publicAssistantRouter } from './routes/public-assistant.js';
 import { createPusher } from './push/fcm.js';
 import { getSecret } from './settings.js';
 import { createRealtimeHub } from './realtime.js';
@@ -161,6 +162,7 @@ export function createApp({ cfg, db, adminDb, logger, clock = systemClock, mailT
   v1.use(dataRightsRouter(ctx));
   v1.use(chatRouter(ctx));
   v1.use(adminRouter(ctx));
+  v1.use(publicAssistantRouter(ctx));
   v1.use((req, res, next) => next(new ApiError('NOT_FOUND')));
 
   app.use('/api/v1', apiLimiter, v1);
@@ -173,6 +175,11 @@ export function createApp({ cfg, db, adminDb, logger, clock = systemClock, mailT
   app.use('/media/avatars', express.static(avatars, {
     index: false, dotfiles: 'deny', redirect: false, fallthrough: false, immutable: true, maxAge: '30d',
     setHeaders: (res) => res.set({ 'x-content-type-options': 'nosniff', 'content-disposition': 'inline' }),
+  }));
+
+  app.use('/media/banner', express.static(path.resolve(cfg.UPLOAD_DIR, 'banner'), {
+    index: false, dotfiles: 'deny', redirect: false, fallthrough: false, maxAge: '7d',
+    setHeaders: (res) => res.set({ 'x-content-type-options': 'nosniff' }),
   }));
 
   // Admin panel and landing page are served by the same server.
