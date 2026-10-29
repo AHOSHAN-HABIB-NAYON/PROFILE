@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../family/data/sharing.dart';
 import '../../../core/i18n/locale_controller.dart';
 import '../../../core/i18n/strings.dart';
 import '../../../core/icons/app_icon.dart';
@@ -588,7 +589,11 @@ class ChildAllSetScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(Space.screenHorizontal, Space.xs, Space.screenHorizontal, Space.lg),
               child: SizedBox(
                 width: double.infinity,
-                child: AppButton(key: const Key('allset_continue'), label: s.t('common.continue'), large: true, onPressed: () => _goTo(context, 'child_home')),
+                child: AppButton(key: const Key('allset_continue'), label: s.t('common.continue'), large: true, onPressed: () {
+                  // Start the visible background sharing now that the permissions are settled.
+                  unawaited(ref.read(childTrackingProvider).ensureStarted());
+                  _goTo(context, 'child_home');
+                }),
               ),
             ),
           ]),

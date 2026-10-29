@@ -156,6 +156,19 @@
       "me",
       "dialog"
     ],
+    "history": [
+      "common",
+      "state",
+      "err",
+      "a11y",
+      "history",
+      "home",
+      "trust",
+      "map"
+    ],
+    "tracking": [
+      "tracking"
+    ],
     "child_home": [
       "common",
       "state",
@@ -2067,6 +2080,196 @@
         "by_name"
       ],
       "en": "{by_name} requested your location"
+    },
+    "tracking.sharing_title": {
+      "placeholders": [],
+      "en": "Location sharing is on"
+    },
+    "tracking.sharing_body": {
+      "placeholders": [],
+      "en": "Your family can see where you are."
+    },
+    "tracking.channel_sharing": {
+      "placeholders": [],
+      "en": "Location sharing"
+    },
+    "tracking.channel_requests": {
+      "placeholders": [],
+      "en": "Family requests"
+    },
+    "tracking.request_title": {
+      "placeholders": [],
+      "en": "%s requested your location"
+    },
+    "tracking.request_body": {
+      "placeholders": [],
+      "en": "Nirapod shared your current location."
+    },
+    "notif.battery_low": {
+      "placeholders": [
+        "name",
+        "battery_pct"
+      ],
+      "en": "{name}'s battery is low ({battery_pct}%)"
+    },
+    "notif.battery_critical": {
+      "placeholders": [
+        "name",
+        "battery_pct"
+      ],
+      "en": "{name}'s battery is almost empty ({battery_pct}%)"
+    },
+    "notif.offline": {
+      "placeholders": [
+        "name",
+        "minutes"
+      ],
+      "en": "{name} was last seen {minutes} min ago. The phone may be off or offline."
+    },
+    "notif.location_off": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "{name} turned location off"
+    },
+    "notif.permission_removed": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "{name} removed Nirapod's location permission"
+    },
+    "history.timeline": {
+      "placeholders": [],
+      "en": "Timeline"
+    },
+    "history.routes": {
+      "placeholders": [],
+      "en": "Routes"
+    },
+    "history.filter_all": {
+      "placeholders": [],
+      "en": "All"
+    },
+    "history.filter_safety": {
+      "placeholders": [],
+      "en": "Safety"
+    },
+    "history.filter_family": {
+      "placeholders": [],
+      "en": "Family"
+    },
+    "history.empty_title": {
+      "placeholders": [],
+      "en": "No events yet"
+    },
+    "history.empty_body": {
+      "placeholders": [],
+      "en": "Arrivals, departures and alerts appear here."
+    },
+    "history.ev_arrival": {
+      "placeholders": [
+        "name",
+        "place"
+      ],
+      "en": "{name} arrived at {place}"
+    },
+    "history.ev_departure": {
+      "placeholders": [
+        "name",
+        "place"
+      ],
+      "en": "{name} left {place}"
+    },
+    "history.ev_sos": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "SOS from {name}"
+    },
+    "history.ev_battery_low": {
+      "placeholders": [
+        "name",
+        "battery_pct"
+      ],
+      "en": "{name}'s battery was low ({battery_pct}%)"
+    },
+    "history.ev_battery_critical": {
+      "placeholders": [
+        "name",
+        "battery_pct"
+      ],
+      "en": "{name}'s battery was almost empty ({battery_pct}%)"
+    },
+    "history.ev_offline": {
+      "placeholders": [
+        "name",
+        "minutes"
+      ],
+      "en": "{name} was offline (no update for {minutes} min)"
+    },
+    "history.ev_location_off": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "{name} turned location off"
+    },
+    "history.ev_permission_removed": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "{name} removed the location permission"
+    },
+    "history.ev_update_requested": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "Location update requested for {name}"
+    },
+    "history.ev_other": {
+      "placeholders": [
+        "name",
+        "type"
+      ],
+      "en": "{name}: {type}"
+    },
+    "history.pick_member": {
+      "placeholders": [],
+      "en": "Member"
+    },
+    "history.pick_day": {
+      "placeholders": [],
+      "en": "Day"
+    },
+    "history.today": {
+      "placeholders": [],
+      "en": "Today"
+    },
+    "history.yesterday": {
+      "placeholders": [],
+      "en": "Yesterday"
+    },
+    "history.no_route": {
+      "placeholders": [],
+      "en": "No route for this day."
+    },
+    "history.points": {
+      "placeholders": [
+        "count"
+      ],
+      "en": "{count} location updates"
+    },
+    "history.limit": {
+      "placeholders": [
+        "days"
+      ],
+      "en": "Your plan keeps {days} days of history. Upgrade to see more."
+    },
+    "history.first_last": {
+      "placeholders": [
+        "start",
+        "end"
+      ],
+      "en": "{start} – {end}"
     }
   }
 }

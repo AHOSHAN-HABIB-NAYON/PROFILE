@@ -33,6 +33,8 @@ export const SCREENS = {
   family: ['common', 'state', 'err', 'a11y', 'family', 'home', 'dialog'],
   map: ['common', 'state', 'trust', 'err', 'a11y', 'map', 'home'],
   me: ['common', 'state', 'err', 'a11y', 'me', 'dialog'],
+  history: ['common', 'state', 'err', 'a11y', 'history', 'home', 'trust', 'map'],
+  tracking: ['tracking'],
   child_home: ['common', 'state', 'trust', 'err', 'a11y', 'lang', 'greeting', 'time', 'dialog', 'notif'],
   placeholder: ['common', 'nav'],
   language_sheet: ['lang'],

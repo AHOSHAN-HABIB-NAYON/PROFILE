@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import 'family/ui/family_screen.dart';
 import 'family/ui/member_screen.dart';
+import 'history/history_screen.dart';
 import 'home/home_screen.dart';
 import 'map/map_screen.dart';
 import 'me/me_screen.dart';
@@ -11,6 +12,7 @@ import 'me/me_screen.dart';
 final mainScreens = <String, Widget Function(GoRouterState state)>{
   'home': (_) => const HomeScreen(),
   'map': (_) => const MapScreen(),
+  'history': (_) => const HistoryScreen(),
   'profile': (_) => const MeScreen(),
   'family': (_) => const FamilyScreen(),
   'invite': (_) => const FamilyScreen(),

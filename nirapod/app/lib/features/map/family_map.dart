@@ -24,10 +24,13 @@ class MapPin {
 }
 
 class FamilyMapData {
-  const FamilyMapData({this.pins = const [], this.nearby = const [], this.prefs = const MapPrefs(), this.compact = false});
+  const FamilyMapData({this.pins = const [], this.nearby = const [], this.prefs = const MapPrefs(), this.compact = false, this.trail = const []});
   final List<MapPin> pins;
   final List<NearbyPlace> nearby;
   final MapPrefs prefs;
+
+  /// Route points (lat, lng) drawn as a line, e.g. History > Routes (always shown when not empty).
+  final List<(double, double)> trail;
 
   /// Home preview: no gestures, no controls.
   final bool compact;
@@ -125,7 +128,11 @@ class _GoogleFamilyMapState extends State<GoogleFamilyMap> implements FamilyMapC
       onMapCreated: (m) {
         _map = m;
         widget.onReady(this);
-        if (d.pins.isNotEmpty) fitAll(d.pins);
+        if (d.trail.length > 1) {
+          fitAll([for (final p in d.trail) MapPin(id: '', name: '', lat: p.$1, lng: p.$2, accuracyM: 0, trust: Trust.live)]);
+        } else if (d.pins.isNotEmpty) {
+          fitAll(d.pins);
+        }
       },
       markers: {
         for (final p in d.pins)
@@ -145,6 +152,18 @@ class _GoogleFamilyMapState extends State<GoogleFamilyMap> implements FamilyMapC
               icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
               infoWindow: InfoWindow(title: n.name, snippet: n.address),
             ),
+      },
+      polylines: {
+        if (d.trail.length > 1)
+          Polyline(
+            polylineId: const PolylineId('trail'),
+            points: [for (final p in d.trail) LatLng(p.$1, p.$2)],
+            color: c.accent,
+            width: 5,
+            jointType: JointType.round,
+            startCap: Cap.roundCap,
+            endCap: Cap.roundCap,
+          ),
       },
       circles: {
         if (d.prefs.accuracy)

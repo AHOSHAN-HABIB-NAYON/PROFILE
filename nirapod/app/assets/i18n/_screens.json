@@ -147,6 +147,19 @@
     "me",
     "dialog"
   ],
+  "history": [
+    "common",
+    "state",
+    "err",
+    "a11y",
+    "history",
+    "home",
+    "trust",
+    "map"
+  ],
+  "tracking": [
+    "tracking"
+  ],
   "child_home": [
     "common",
     "state",

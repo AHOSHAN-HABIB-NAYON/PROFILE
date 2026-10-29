@@ -22,6 +22,7 @@ import '../../nav/router.dart';
 import '../family/data/family_models.dart';
 import '../family/data/family_repo.dart';
 import '../family/data/realtime.dart';
+import '../family/data/sharing.dart';
 import '../map/family_map.dart';
 import '../map/map_prefs.dart';
 import 'widgets/dialogs.dart';
@@ -146,6 +147,12 @@ class _FamilyBody extends ConsumerWidget {
     final now = ref.watch(homeClockProvider)();
     final lang = ref.watch(languageProvider);
     final me = family.member(user.id);
+    // Adults who agreed share while the app is open; pausing or stopping ends it.
+    if (me != null && me.isAdult && me.sharingStatus == 'active') {
+      ref.read(adultSharingProvider).start();
+    } else {
+      ref.read(adultSharingProvider).stop();
+    }
     final use24h = MediaQuery.alwaysUse24HourFormatOf(context);
     final pins = pinsFor(family, live, now);
     final attention = family.members.where((m) {

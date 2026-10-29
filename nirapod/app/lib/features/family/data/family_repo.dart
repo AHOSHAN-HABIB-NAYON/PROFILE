@@ -1,3 +1,5 @@
+import '../../../core/net/retry.dart';
+
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,35 +26,43 @@ class FamilyRepo {
     return list.map((e) => MemberLive.fromJson((e as Map).cast<String, dynamic>())).toList();
   }
 
-  Future<Map<String, dynamic>> invite(String familyId, {String? email, String role = 'guardian', bool overseas = false}) =>
-      _api.post<Map<String, dynamic>>('/families/$familyId/invites', data: {
-        if (email != null && email.isNotEmpty) 'email': email,
-        'role': role,
-        'is_overseas': overseas,
-      });
+  Future<Map<String, dynamic>> invite(
+    String familyId, {
+    String? email,
+    String role = 'guardian',
+    bool overseas = false,
+  }) => _api.post<Map<String, dynamic>>(
+    '/families/$familyId/invites',
+    data: {if (email != null && email.isNotEmpty) 'email': email, 'role': role, 'is_overseas': overseas},
+  );
 
   Future<Family> patchMember(String familyId, String memberId, Map<String, dynamic> body) async =>
       Family.fromJson(await _api.patch<Map<String, dynamic>>('/families/$familyId/members/$memberId', data: body));
 
-  Future<void> removeMember(String familyId, String memberId) => _api.delete<dynamic>('/families/$familyId/members/$memberId');
+  Future<void> removeMember(String familyId, String memberId) =>
+      _api.delete<dynamic>('/families/$familyId/members/$memberId');
 
   Future<Family> transfer(String familyId, String newOwnerId) async => Family.fromJson(
-      await _api.post<Map<String, dynamic>>('/families/$familyId/transfer', data: {'new_owner_member_id': newOwnerId}));
+    await _api.post<Map<String, dynamic>>('/families/$familyId/transfer', data: {'new_owner_member_id': newOwnerId}),
+  );
 
   Future<void> requestUpdate(String familyId, String memberId) =>
       _api.post<dynamic>('/families/$familyId/members/$memberId/request-update', data: {});
 
-  Future<void> report(String category, {String? details}) => _api.post<dynamic>('/abuse-reports', data: {
-        'category': category,
-        if (details != null && details.trim().isNotEmpty) 'details': details.trim(),
-      });
+  Future<void> report(String category, {String? details}) => _api.post<dynamic>(
+    '/abuse-reports',
+    data: {'category': category, if (details != null && details.trim().isNotEmpty) 'details': details.trim()},
+  );
 
   Future<List<NearbyPlace>> nearby(double lat, double lng, {List<String>? categories}) async {
-    final j = await _api.get<Map<String, dynamic>>('/nearby', query: {
-      'lat': lat.toStringAsFixed(5),
-      'lng': lng.toStringAsFixed(5),
-      if (categories != null) 'categories': categories.join(','),
-    });
+    final j = await _api.get<Map<String, dynamic>>(
+      '/nearby',
+      query: {
+        'lat': lat.toStringAsFixed(5),
+        'lng': lng.toStringAsFixed(5),
+        if (categories != null) 'categories': categories.join(','),
+      },
+    );
     return ((j['places'] as List<dynamic>?) ?? const [])
         .map((e) => NearbyPlace.fromJson((e as Map).cast<String, dynamic>()))
         .toList();
@@ -68,7 +78,7 @@ final familyIdProvider = Provider<String?>((ref) {
 });
 
 /// The user's family (members, owner, plan). Refresh with ref.invalidate(familyProvider).
-final familyProvider = FutureProvider<Family?>((ref) async {
+final familyProvider = FutureProvider<Family?>(retry: retryNetworkOnly, (ref) async {
   final id = ref.watch(familyIdProvider);
   if (id == null) return null;
   return ref.watch(familyRepoProvider).get(id);
@@ -88,8 +98,9 @@ class LiveController extends AsyncNotifier<Map<String, MemberLive>> {
     return _load(id);
   }
 
-  Future<Map<String, MemberLive>> _load(String id) async =>
-      {for (final m in await ref.read(familyRepoProvider).live(id)) m.memberId: m};
+  Future<Map<String, MemberLive>> _load(String id) async => {
+    for (final m in await ref.read(familyRepoProvider).live(id)) m.memberId: m,
+  };
 
   Future<void> refresh() async {
     final id = ref.read(familyIdProvider);

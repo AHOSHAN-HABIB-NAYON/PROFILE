@@ -58,6 +58,8 @@ class Strings {
 
   bool get isFallback => language != requestedLanguage;
 
+  bool has(String key) => _table.containsKey(key);
+
   /// Looks up [key] and fills `{placeholders}`. A missing key returns the key itself in debug builds
   /// so it is easy to spot; tests assert no key is ever missing.
   String t(String key, [Map<String, Object> args = const {}]) {
