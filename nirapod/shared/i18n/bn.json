@@ -659,5 +659,9 @@
   "permneed.notif_body": "নোটিফিকেশন চালু থাকলেই SOS, পৌঁছানো আর ব্যাটারির সতর্কতা আপনার কাছে আসবে।",
   "permneed.allow": "অনুমতি দিন",
   "permneed.open_settings": "সেটিংস খুলুন",
-  "permneed.blocked": "সেটিংসে এটা বন্ধ করা আছে। সেটিংস > অনুমতি খুলে চালু করুন।"
+  "permneed.blocked": "সেটিংসে এটা বন্ধ করা আছে। সেটিংস > অনুমতি খুলে চালু করুন।",
+  "notif.trial_started": "{plan}-এর {days} দিনের ট্রায়াল শুরু হয়েছে",
+  "notif.plan_active": "আপনার পরিবারের জন্য {plan} চালু হয়েছে",
+  "notif.plan_ended": "{plan} শেষ হয়েছে। লাইভ লোকেশন ও SOS চালু থাকবে।",
+  "notif.gift_received": "{from}-এর উপহার: {plan}"
 }

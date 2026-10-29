@@ -659,5 +659,9 @@
   "permneed.notif_body": "SOS, arrival and battery alerts reach you only with notifications on.",
   "permneed.allow": "Allow",
   "permneed.open_settings": "Open Settings",
-  "permneed.blocked": "It was turned off in Settings. Open Settings > Permissions and allow it."
+  "permneed.blocked": "It was turned off in Settings. Open Settings > Permissions and allow it.",
+  "notif.trial_started": "Your {days}-day {plan} trial has started",
+  "notif.plan_active": "{plan} is active for your family",
+  "notif.plan_ended": "{plan} has ended. Live location and SOS keep working.",
+  "notif.gift_received": "A gift from {from}: {plan}"
 }

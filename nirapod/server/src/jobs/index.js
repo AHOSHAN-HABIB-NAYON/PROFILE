@@ -8,6 +8,7 @@ import { partsIn as inZone, formatLocalTime } from '../tz/index.js';
 import { visibleMembers } from '../family/visibility.js';
 import { emailAllowed } from '../routes/notifications.js';
 import { t } from '../push/strings.js';
+import { expireSubscriptions } from '../routes/billing.js';
 
 export const OFFLINE_AFTER_MS = 15 * 60_000;
 
@@ -133,6 +134,7 @@ export async function sendDailySummaries(ctx) {
 }
 
 export const JOBS = {
+  subscriptions_expire: { everyMs: 10 * 60_000, run: expireSubscriptions },
   daily_summary: { everyMs: 10 * 60_000, run: sendDailySummaries },
   trips_watch: { everyMs: 60_000, run: watchTrips },
   stale_devices: { everyMs: 60_000, run: detectStaleDevices },

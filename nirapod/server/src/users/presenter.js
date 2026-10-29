@@ -50,7 +50,34 @@ export async function familyPlan(db, familyId, now) {
     .where((q) => q.whereNull('s.expires_at').orWhere('s.expires_at', '>', now))
     .orderBy('s.id', 'desc')
     .first('p.*');
-  return sub ?? db('plans').where({ code: 'free' }).first();
+  if (sub) return sub;
+  // Free plan: limits come from app_settings.free_limits (admin-editable), per-country overrides win.
+  const free = await db('plans').where({ code: 'free' }).first();
+  if (!free) return free;
+  const rows = await db('app_settings').whereIn('key', ['free_limits', 'country_overrides', 'free_plan_enabled']).select('key', 'value');
+  const get = (k) => {
+    const r = rows.find((x) => x.key === k);
+    if (!r) return undefined;
+    return typeof r.value === 'string' ? JSON.parse(r.value) : r.value;
+  };
+  let limits = get('free_limits') || {};
+  const overrides = get('country_overrides') || {};
+  if (Object.keys(overrides).length) {
+    const owner = await db('families as f').join('users as u', 'u.id', 'f.owner_user_id').where('f.id', familyId).first('u.country_iso2');
+    const o = owner?.country_iso2 ? overrides[owner.country_iso2]?.free_limits : null;
+    if (o) limits = { ...limits, ...o };
+  }
+  const out = { ...free };
+  for (const k of ['max_children', 'max_members', 'max_places', 'history_days']) if (limits[k] !== undefined) out[k] = limits[k];
+  // Free plan switched off: the family must start a trial or buy (live map and SOS keep working).
+  if (get('free_plan_enabled') === false) {
+    out.code = 'none';
+    out.max_children = 0;
+    out.max_members = 1;
+    out.max_places = 0;
+    out.history_days = 1;
+  }
+  return out;
 }
 
 /** Family with members. Never includes locations. */

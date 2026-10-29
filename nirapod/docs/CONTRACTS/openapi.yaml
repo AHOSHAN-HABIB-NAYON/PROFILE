@@ -740,6 +740,26 @@ paths:
     get: { summary: Push categories and email types on/off, daily summary hour, tags: [notifications], responses: { '200': { description: prefs } } }
     patch: { summary: Change preferences (safety push is always on), tags: [notifications], responses: { '200': { description: prefs } } }
 
+  # ---------------- Phase 6: plans and payments ----------------
+  /plans:
+    x-phase: 6
+    get: { summary: 'Active plans with local prices (?country) + current family plan, trial use and gift banner when signed in', tags: [billing], security: [], responses: { '200': { description: '{country, plans[], current, gift}' } } }
+  /billing/trial:
+    x-phase: 6
+    post: { summary: 'Start the free trial once per family {plan_code}', tags: [billing], responses: { '201': { description: '{plan, status, expires_at}' }, '409': { description: Trial already used } } }
+  /billing/play/verify:
+    x-phase: 6
+    post: { summary: 'Verify a Google Play purchase server-side {product_id, purchase_token, kind} and grant the plan to the family', tags: [billing], responses: { '200': { description: '{plan, status, expires_at}' } } }
+  /billing/play/rtdn:
+    x-phase: 6
+    post: { summary: 'Play real-time developer notifications (Pub/Sub push, ?token= shared secret set in admin)', tags: [billing], security: [], responses: { '204': { description: Accepted } } }
+  /redeem:
+    x-phase: 6
+    post: { summary: 'Redeem a single-use code {code} (rate limited; gift message shown to the family)', tags: [billing], responses: { '200': { description: '{plan, expires_at, gift}' } } }
+  /changelog:
+    x-phase: 6
+    get: { summary: 'Published "App updates" for the landing page (?language)', tags: [content], security: [], responses: { '200': { description: list } } }
+
 components:
   securitySchemes:
     bearer: { type: http, scheme: bearer, bearerFormat: JWT, description: 'Short-lived access token (15 min). Refresh with /auth/refresh.' }

@@ -3101,6 +3101,32 @@
     "permneed.blocked": {
       "placeholders": [],
       "en": "It was turned off in Settings. Open Settings > Permissions and allow it."
+    },
+    "notif.trial_started": {
+      "placeholders": [
+        "days",
+        "plan"
+      ],
+      "en": "Your {days}-day {plan} trial has started"
+    },
+    "notif.plan_active": {
+      "placeholders": [
+        "plan"
+      ],
+      "en": "{plan} is active for your family"
+    },
+    "notif.plan_ended": {
+      "placeholders": [
+        "plan"
+      ],
+      "en": "{plan} has ended. Live location and SOS keep working."
+    },
+    "notif.gift_received": {
+      "placeholders": [
+        "from",
+        "plan"
+      ],
+      "en": "A gift from {from}: {plan}"
     }
   }
 }

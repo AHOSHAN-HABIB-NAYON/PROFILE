@@ -20,7 +20,6 @@ async function httpPost(url, { headers, body }) {
 
 export function createPusher({ db, cfg, logger, clock, transport = httpPost }) {
   let token = null; // { access, exp, project }
-
   async function serviceAccount() {
     const fromAdmin = await getSecret(db, cfg, 'fcm_service_account');
     let raw = fromAdmin;
