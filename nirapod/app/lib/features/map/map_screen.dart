@@ -20,7 +20,6 @@ import '../../core/theme/tokens.g.dart';
 import '../family/data/family_models.dart';
 import '../family/data/family_repo.dart';
 import '../home/home_screen.dart' show pinsFor;
-import '../home/widgets/header_buttons.dart';
 import '../home/widgets/profile_row.dart' show homeClockProvider;
 import 'family_map.dart';
 import 'map_prefs.dart';
@@ -69,7 +68,6 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   @override
   Widget build(BuildContext context) {
     final s = ref.watch(screenStringsProvider('map'));
-    final c = context.colors;
     final prefs = ref.watch(mapPrefsProvider);
     final family = ref.watch(familyProvider).value;
     final live = ref.watch(liveProvider).value ?? const {};
@@ -93,6 +91,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     });
     return Scaffold(
       body: Stack(
+        fit: StackFit.expand,
         children: [
           Positioned.fill(
             child: FamilyMapView(
@@ -108,53 +107,46 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ),
           ),
           // Own position needs location: ask on the map itself.
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(Space.sm, Space.sm, 64, 0),
-              child: PermissionNeededCard(permission: OnbPermission.locationWhenInUse, strings: s),
-            ),
+          PositionedDirectional(
+            top: MediaQuery.paddingOf(context).top + Space.sm,
+            start: Space.sm,
+            end: 72,
+            child: PermissionNeededCard(permission: OnbPermission.locationWhenInUse, strings: s),
           ),
-          SafeArea(
-            child: Align(
-              alignment: AlignmentDirectional.topEnd,
-              child: Padding(
-                padding: const EdgeInsets.all(Space.sm),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    HeaderCircle(
-                      label: s.t('map.layers'),
-                      onTap: () => _layers(context, s),
-                      child: AppIcon(AppIcons.layers, color: c.text),
-                    ),
-                    const SizedBox(height: Space.xs),
-                    HeaderCircle(
-                      label: s.t('map.compass'),
-                      onTap: () => _map?.resetNorth(),
-                      child: AppIcon(AppIcons.compass, color: c.text),
-                    ),
-                    const SizedBox(height: Space.xs),
-                    HeaderCircle(
-                      label: s.t('map.recenter'),
-                      onTap: () {
-                        setState(() => _follow = null);
-                        if (me != null) _map?.focus(me.latitude, me.longitude);
-                      },
-                      child: AppIcon(AppIcons.recenter, color: c.text),
-                    ),
-                    const SizedBox(height: Space.xs),
-                    HeaderCircle(
-                      label: s.t('map.show_all'),
-                      onTap: () {
-                        setState(() => _follow = null);
-                        _map?.fitAll(pins);
-                      },
-                      child: AppIcon(AppIcons.users, color: c.text),
-                    ),
-                  ],
+          // Map controls: two grouped cards on the right edge (like the system maps app).
+          PositionedDirectional(
+            top: MediaQuery.paddingOf(context).top + Space.sm,
+            end: Space.sm,
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [
+              MapControlGroup(children: [
+                MapControlButton(icon: AppIcons.layers, label: s.t('map.layers'), onTap: () => _layers(context, s)),
+                MapControlButton(icon: AppIcons.compass, label: s.t('map.compass'), onTap: () => _map?.resetNorth()),
+              ]),
+              const SizedBox(height: Space.sm),
+              MapControlGroup(children: [
+                MapControlButton(
+                  icon: AppIcons.recenter,
+                  label: s.t('map.recenter'),
+                  primary: true,
+                  onTap: () {
+                    setState(() => _follow = null);
+                    if (me != null) {
+                      _map?.focus(me.latitude, me.longitude);
+                    } else {
+                      ref.invalidate(myPositionProvider);
+                    }
+                  },
                 ),
-              ),
-            ),
+                MapControlButton(
+                  icon: AppIcons.users,
+                  label: s.t('map.show_all'),
+                  onTap: () {
+                    setState(() => _follow = null);
+                    _map?.fitAll(pins);
+                  },
+                ),
+              ]),
+            ]),
           ),
           if (_follow != null && family?.member(_follow!) != null)
             SafeArea(
@@ -172,17 +164,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ),
           if (prefs.nearby && me != null)
             _NearbySheet(position: me, strings: s, onTap: (p) => _map?.focus(p.lat, p.lng, zoom: 17)),
-          if (me == null)
+          if (me == null && (ref.watch(permissionStatusProvider(OnbPermission.locationWhenInUse)).value?.isGranted ?? false))
             SafeArea(
               child: Align(
                 alignment: Alignment.bottomCenter,
                 child: Padding(
-                  padding: const EdgeInsets.all(Space.md),
-                  child: Material(
-                    color: c.surface,
-                    borderRadius: BorderRadius.circular(Radii.card),
-                    child: Padding(padding: const EdgeInsets.all(Space.md), child: Text(s.t('map.permission'))),
-                  ),
+                  padding: const EdgeInsets.all(Space.sm),
+                  child: _LocationOffCard(strings: s, onRetry: () => ref.invalidate(myPositionProvider)),
                 ),
               ),
             ),
@@ -353,3 +341,118 @@ String? signedInUserId(WidgetRef ref) => switch (ref.watch(sessionControllerProv
   SignedIn(:final user) => user.id,
   _ => null,
 };
+
+/// Location permission is given but no position came back (GPS / location turned off): offer to turn it on.
+class _LocationOffCard extends StatefulWidget {
+  const _LocationOffCard({required this.strings, required this.onRetry});
+  final Strings strings;
+  final VoidCallback onRetry;
+  @override
+  State<_LocationOffCard> createState() => _LocationOffCardState();
+}
+
+class _LocationOffCardState extends State<_LocationOffCard> {
+  late final AppLifecycleListener _listener;
+
+  @override
+  void initState() {
+    super.initState();
+    _listener = AppLifecycleListener(onResume: widget.onRetry);
+  }
+
+  @override
+  void dispose() {
+    _listener.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.strings;
+    final c = context.colors;
+    final t = Theme.of(context).textTheme;
+    return Material(
+      color: c.surface,
+      elevation: 4,
+      shadowColor: Colors.black26,
+      borderRadius: BorderRadius.circular(Radii.card),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(Space.sm, Space.sm, Space.xs, Space.sm),
+        child: Row(children: [
+          Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(color: c.warning.withValues(alpha: 0.16), shape: BoxShape.circle),
+            child: AppIcon(AppIcons.locationPin, size: 20, color: c.warningText),
+          ),
+          const SizedBox(width: Space.sm),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+              Text(s.t('map.loc_off_title'), style: t.titleSmall),
+              Text(s.t('map.loc_off_body'), style: t.bodySmall!.copyWith(color: c.muted)),
+            ]),
+          ),
+          TextButton(
+            onPressed: () async {
+              await Geolocator.openLocationSettings();
+              widget.onRetry();
+            },
+            child: Text(s.t('map.loc_off_button'), style: const TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+/// A rounded card holding stacked map buttons, separated by hairlines.
+class MapControlGroup extends StatelessWidget {
+  const MapControlGroup({super.key, required this.children});
+  final List<Widget> children;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Material(
+      color: c.surface,
+      elevation: 3,
+      shadowColor: Colors.black26,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: c.border)),
+      clipBehavior: Clip.antiAlias,
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        for (var i = 0; i < children.length; i++) ...[
+          if (i > 0) Container(width: 28, height: 1, color: c.border),
+          children[i],
+        ],
+      ]),
+    );
+  }
+}
+
+/// 48dp square map button with a tooltip and TalkBack label.
+class MapControlButton extends StatelessWidget {
+  const MapControlButton({super.key, required this.icon, required this.label, required this.onTap, this.primary = false});
+  final String icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool primary;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        button: true,
+        label: label,
+        excludeSemantics: true,
+        child: InkWell(
+          onTap: onTap,
+          child: SizedBox.square(
+            dimension: Sizes.minTouchTarget,
+            child: Center(child: AppIcon(icon, size: 22, color: primary ? c.primaryText : c.text)),
+          ),
+        ),
+      ),
+    );
+  }
+}

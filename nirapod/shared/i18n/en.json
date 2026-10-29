@@ -777,5 +777,8 @@
   "faq.bill_1_a": "Live location and SOS are always free. Premium adds more members, places and longer history.",
   "faq.priv_1_q": "Who can see my location?",
   "faq.priv_1_a": "Only the family members you share with. Nirapod staff and support never see locations.",
-  "delacc.wrong_password": "Password is incorrect"
+  "delacc.wrong_password": "Password is incorrect",
+  "map.loc_off_title": "Location is off",
+  "map.loc_off_body": "Turn on location to see yourself on the map.",
+  "map.loc_off_button": "Turn on"
 }

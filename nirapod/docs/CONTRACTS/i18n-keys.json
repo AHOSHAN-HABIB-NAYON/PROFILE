@@ -3661,6 +3661,18 @@
     "delacc.wrong_password": {
       "placeholders": [],
       "en": "Password is incorrect"
+    },
+    "map.loc_off_title": {
+      "placeholders": [],
+      "en": "Location is off"
+    },
+    "map.loc_off_body": {
+      "placeholders": [],
+      "en": "Turn on location to see yourself on the map."
+    },
+    "map.loc_off_button": {
+      "placeholders": [],
+      "en": "Turn on"
     }
   }
 }
