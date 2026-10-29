@@ -49,4 +49,7 @@ GRANT SELECT ON nirapod.email_logs TO 'nirapod_admin'@'localhost';
 GRANT SELECT, UPDATE ON nirapod.abuse_reports TO 'nirapod_admin'@'localhost';
 GRANT SELECT, INSERT, UPDATE ON nirapod.data_requests TO 'nirapod_admin'@'localhost';
 GRANT SELECT ON nirapod.job_runs TO 'nirapod_admin'@'localhost';
+GRANT SELECT, INSERT, UPDATE, DELETE ON nirapod.admin_sessions TO 'nirapod_admin'@'localhost';
+GRANT SELECT, INSERT, UPDATE, DELETE ON nirapod.canned_replies TO 'nirapod_admin'@'localhost';
+GRANT SELECT, INSERT, UPDATE ON nirapod.campaigns TO 'nirapod_admin'@'localhost';
 FLUSH PRIVILEGES;

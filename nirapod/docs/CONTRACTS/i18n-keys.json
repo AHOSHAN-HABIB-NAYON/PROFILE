@@ -3841,6 +3841,12 @@
     "chat.priority": {
       "placeholders": [],
       "en": "Priority support"
+    },
+    "notif.chat_reply": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "{name} replied to your support chat"
     }
   }
 }

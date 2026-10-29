@@ -58,6 +58,8 @@ const schema = z.object({
   GEOIP_DB_PATH: z.string().optional(),
   // Server-side key for Places API (New) nearby search (restrict it to the server IP in Google Cloud).
   GOOGLE_PLACES_API_KEY: z.string().optional(),
+  // One-time key to create the first super admin at /admin (remove it after setup).
+  ADMIN_SETUP_KEY: z.string().min(12).optional(),
 });
 
 export function loadConfig(env = process.env) {

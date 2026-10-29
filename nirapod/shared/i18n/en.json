@@ -818,5 +818,6 @@
   "chat.image_too_big": "The photo is larger than 5 MB.",
   "chat.image_gone": "Photo removed after 7 days",
   "chat.failed": "Not sent. Tap to try again.",
-  "chat.priority": "Priority support"
+  "chat.priority": "Priority support",
+  "notif.chat_reply": "{name} replied to your support chat"
 }

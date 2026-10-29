@@ -54,7 +54,7 @@ export async function familyPlan(db, familyId, now) {
   // Free plan: limits come from app_settings.free_limits (admin-editable), per-country overrides win.
   const free = await db('plans').where({ code: 'free' }).first();
   if (!free) return free;
-  const rows = await db('app_settings').whereIn('key', ['free_limits', 'country_overrides', 'free_plan_enabled']).select('key', 'value');
+  const rows = await db('app_settings').whereIn('key', ['free_limits', 'country_overrides', 'free_plan_enabled', 'family_overrides']).select('key', 'value');
   const get = (k) => {
     const r = rows.find((x) => x.key === k);
     if (!r) return undefined;
@@ -66,6 +66,12 @@ export async function familyPlan(db, familyId, now) {
     const owner = await db('families as f').join('users as u', 'u.id', 'f.owner_user_id').where('f.id', familyId).first('u.country_iso2');
     const o = owner?.country_iso2 ? overrides[owner.country_iso2]?.free_limits : null;
     if (o) limits = { ...limits, ...o };
+  }
+  // One family's limits adjusted by support (admin panel) win over everything else.
+  const fam = get('family_overrides');
+  if (fam && Object.keys(fam).length) {
+    const f = await db('families').where({ id: familyId }).first('uuid');
+    if (f && fam[f.uuid]) limits = { ...limits, ...fam[f.uuid] };
   }
   const out = { ...free };
   for (const k of ['max_children', 'max_members', 'max_places', 'history_days']) if (limits[k] !== undefined) out[k] = limits[k];

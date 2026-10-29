@@ -22,6 +22,7 @@ import { notificationsRouter } from './routes/notifications.js';
 import { billingRouter } from './routes/billing.js';
 import { dataRightsRouter } from './routes/data-rights.js';
 import { chatRouter } from './routes/chat.js';
+import { adminRouter } from './routes/admin.js';
 import { createPusher } from './push/fcm.js';
 import { getSecret } from './settings.js';
 import { createRealtimeHub } from './realtime.js';
@@ -48,7 +49,7 @@ let ephemeralSecret;
  *   clock?: {now: () => Date}, mailTransport?: object, googleVerifier?: Function, geoLookup?: Function}} deps
  *   mailTransport, googleVerifier and geoLookup are injectable for tests.
  */
-export function createApp({ cfg, db, logger, clock = systemClock, mailTransport, googleVerifier, geoLookup, placesFetcher, realtime, fcmTransport, pusher, playTransport, aiProvider }) {
+export function createApp({ cfg, db, adminDb, logger, clock = systemClock, mailTransport, googleVerifier, geoLookup, placesFetcher, realtime, fcmTransport, pusher, playTransport, aiProvider }) {
   const app = express();
   let secret = cfg.JWT_ACCESS_SECRET;
   if (!secret) {
@@ -60,7 +61,7 @@ export function createApp({ cfg, db, logger, clock = systemClock, mailTransport,
   const tokens = createTokenService({ secret, ttlS: cfg.JWT_ACCESS_TTL_S, clock });
   const sessions = createSessionService({ db, cfg, clock, tokens });
   const ctx = {
-    db, cfg, clock, logger, tokens, sessions,
+    db, adminDb: adminDb ?? db, cfg, clock, logger, tokens, sessions,
     codes: createCodeService({ db, clock, key: codeKey }),
     throttle: createSendThrottle({ clock, key: codeKey }),
     mailer: createMailer({ cfg, db, logger, clock, transport: mailTransport }),
@@ -159,6 +160,7 @@ export function createApp({ cfg, db, logger, clock = systemClock, mailTransport,
   v1.use(billingRouter(ctx));
   v1.use(dataRightsRouter(ctx));
   v1.use(chatRouter(ctx));
+  v1.use(adminRouter(ctx));
   v1.use((req, res, next) => next(new ApiError('NOT_FOUND')));
 
   app.use('/api/v1', apiLimiter, v1);
@@ -185,6 +187,7 @@ export function createApp({ cfg, db, logger, clock = systemClock, mailTransport,
     else if (err?.type === 'entity.too.large') e = new ApiError('PAYLOAD_TOO_LARGE');
     else if (err?.status === 404 || err?.statusCode === 404) e = new ApiError('NOT_FOUND');
     else if (err?.status === 403 && err?.expose) e = new ApiError('FORBIDDEN');
+    else if (err?.code === 'ER_DUP_ENTRY') e = new ApiError('CONFLICT');
     else if (!(err instanceof ApiError)) {
       req.log?.error({ err }, 'unhandled error');
       e = new ApiError('INTERNAL');
