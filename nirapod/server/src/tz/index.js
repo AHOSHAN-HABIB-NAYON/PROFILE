@@ -116,11 +116,11 @@ export function formatOffset(mins) {
   return m ? `${sign}${h}:${String(m).padStart(2, '0')}` : `${sign}${h}`;
 }
 
-/** Greeting period from the hour in the user's saved zone: 05-11 morning, 12-16 afternoon, 17-20 evening, 21-04 night. */
+/** Greeting period from the hour in the user's saved zone: 05-11 morning, 12-16 afternoon, 17-19 evening, 20-04 night. */
 export function greetingPeriodForHour(hour) {
   if (hour >= 5 && hour <= 11) return 'morning';
   if (hour >= 12 && hour <= 16) return 'afternoon';
-  if (hour >= 17 && hour <= 20) return 'evening';
+  if (hour >= 17 && hour <= 19) return 'evening';
   return 'night';
 }
 

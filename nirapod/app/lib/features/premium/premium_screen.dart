@@ -31,6 +31,7 @@ class PremiumScreen extends ConsumerStatefulWidget {
 }
 
 class _PremiumScreenState extends ConsumerState<PremiumScreen> {
+  String? _selected;
   String _period = 'yearly';
   final _code = TextEditingController();
   String? _busy; // plan code or 'redeem'
@@ -126,21 +127,21 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
               child: ListView(padding: const EdgeInsets.fromLTRB(Space.screenHorizontal, Space.md, Space.screenHorizontal, Space.xl), children: [
                 // Hero
                 Container(
-                  padding: const EdgeInsets.all(Space.lg),
+                  padding: const EdgeInsets.fromLTRB(Space.md, Space.md, Space.md, Space.md),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(colors: [Color(0xFF065F46), Color(0xFF0D9488)], begin: Alignment.topLeft, end: Alignment.bottomRight),
                     borderRadius: BorderRadius.circular(Radii.cardLarge),
                   ),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Row(children: [
-                      const AppIcon(AppIcons.crownFilled, size: 30, color: Color(0xFFFCD34D)),
+                      const AppIcon(AppIcons.crownFilled, size: 26, color: Color(0xFFFCD34D)),
                       const SizedBox(width: Space.xs),
                       Expanded(child: Semantics(header: true, child: Text(s.t('prem.title'), style: t.headlineSmall!.copyWith(color: Colors.white, fontWeight: FontWeight.w800)))),
                     ]),
-                    const SizedBox(height: Space.xs),
-                    Text(s.t('prem.subtitle'), style: t.bodyMedium!.copyWith(color: const Color(0xE6FFFFFF))),
+                    const SizedBox(height: Space.xxs),
+                    Text(s.t('prem.subtitle'), style: t.bodySmall!.copyWith(color: const Color(0xE6FFFFFF))),
                     if (value.current != null) ...[
-                      const SizedBox(height: Space.md),
+                      const SizedBox(height: Space.sm),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: Space.sm, vertical: Space.xs),
                         decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.16), borderRadius: BorderRadius.circular(Radii.pill)),
@@ -164,8 +165,11 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                   Padding(padding: const EdgeInsets.only(top: Space.md), child: MessageView(icon: AppIcons.info, title: s.t('prem.child_note'))),
                 if (value.current?.canBuy != false) ...[
                   const SizedBox(height: Space.md),
-                  Center(
-                    child: SegmentedButton<String>(
+                  Row(children: [
+                    Expanded(child: Text(s.t('prem.choose'), style: t.titleMedium)),
+                    SegmentedButton<String>(
+                      style: const ButtonStyle(visualDensity: VisualDensity.compact, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                      showSelectedIcon: false,
                       segments: [
                         ButtonSegment(value: 'monthly', label: Text(s.t('prem.monthly'))),
                         ButtonSegment(value: 'yearly', label: Text(s.t('prem.yearly'))),
@@ -173,24 +177,45 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                       selected: {_period},
                       onSelectionChanged: (v) => setState(() => _period = v.first),
                     ),
-                  ),
-                  const SizedBox(height: Space.md),
-                  for (final p in value.plans)
-                    _PlanCard(
-                      plan: p,
-                      period: _period,
-                      strings: s,
-                      current: value.current?.plan == p.code,
-                      trialAvailable: !(value.current?.trialUsed ?? false) && p.trialDays > 0,
-                      busy: _busy == p.code,
-                      onTrial: () => _trial(p),
-                      onBuy: () => _buy(p),
-                    ),
+                  ]),
+                  const SizedBox(height: Space.sm),
+                  Builder(builder: (context) {
+                    final paid = value.plans.where((p) => !p.isFree).toList();
+                    if (paid.isEmpty) return const SizedBox();
+                    final sel = paid.where((p) => p.code == _selected).firstOrNull ?? paid.where((p) => p.popular).firstOrNull ?? paid.first;
+                    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      Row(children: [
+                        for (var i = 0; i < paid.length; i++) ...[
+                          if (i > 0) const SizedBox(width: Space.sm),
+                          Expanded(
+                            child: _PlanTile(
+                              plan: paid[i],
+                              period: _period,
+                              strings: s,
+                              selected: paid[i].code == sel.code,
+                              current: value.current?.plan == paid[i].code,
+                              onTap: () => setState(() => _selected = paid[i].code),
+                            ),
+                          ),
+                        ],
+                      ]),
+                      const SizedBox(height: Space.sm),
+                      _PlanCard(
+                        plan: sel,
+                        period: _period,
+                        strings: s,
+                        current: value.current?.plan == sel.code,
+                        trialAvailable: !(value.current?.trialUsed ?? false) && sel.trialDays > 0,
+                        busy: _busy == sel.code,
+                        onTrial: () => _trial(sel),
+                        onBuy: () => _buy(sel),
+                      ),
+                    ]);
+                  }),
                 ],
-                const SizedBox(height: Space.sm),
                 _Comparison(plans: value.plans, strings: s),
                 if (value.current?.canBuy != false) ...[
-                  const SizedBox(height: Space.lg),
+                  const SizedBox(height: Space.md),
                   Text(s.t('prem.redeem'), style: t.titleMedium),
                   const SizedBox(height: Space.xs),
                   Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -204,9 +229,20 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                         error: _codeError,
                       ),
                     ),
+                    const SizedBox(width: Space.xs),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 22),
+                      child: SizedBox(
+                        height: 48,
+                        child: FilledButton(
+                          key: const Key('redeem_go'),
+                          style: FilledButton.styleFrom(backgroundColor: c.primaryFill, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.input))),
+                          onPressed: _busy != null ? null : _redeem,
+                          child: _busy == 'redeem' ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : Text(s.t('prem.redeem_cta')),
+                        ),
+                      ),
+                    ),
                   ]),
-                  const SizedBox(height: Space.xs),
-                  AppButton(key: const Key('redeem_go'), label: s.t('prem.redeem_cta'), kind: ButtonKind.secondary, loading: _busy == 'redeem', onPressed: _busy != null ? null : _redeem),
                 ],
                 if (cfg != null && cfg.paymentBannerEnabled && cfg.whatsappNumber.isNotEmpty &&
                     (cfg.paymentBannerCountries.isEmpty ? false : cfg.paymentBannerCountries.contains(value.country))) ...[
@@ -228,7 +264,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
                     onPressed: () => context.push('${locationFor('chat')}?priority=1'),
                   ),
                 ],
-                const SizedBox(height: Space.lg),
+                const SizedBox(height: Space.md),
                 _GiftFamilyCard(strings: s),
               ]),
             ),
@@ -282,11 +318,11 @@ class _PlanCard extends StatelessWidget {
         color: c.surface,
         borderRadius: BorderRadius.circular(Radii.cardLarge),
         border: Border.all(color: plan.popular ? c.primary : c.border, width: plan.popular ? 2 : 1),
-        boxShadow: [BoxShadow(color: c.primary.withValues(alpha: plan.popular ? 0.14 : 0.05), blurRadius: 16, offset: const Offset(0, 6))],
+        boxShadow: [BoxShadow(color: c.primary.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Expanded(child: Text(plan.name, style: t.titleMedium!.copyWith(fontSize: 20, fontWeight: FontWeight.w800))),
+          Expanded(child: Text(plan.name, style: t.titleMedium!.copyWith(fontWeight: FontWeight.w800))),
           if (current) _Badge(text: s.t('prem.current_badge'), color: c.success),
           if (!current && plan.popular) _Badge(text: s.t('prem.popular'), color: c.primary),
         ]),
@@ -297,22 +333,27 @@ class _PlanCard extends StatelessWidget {
           Wrap(crossAxisAlignment: WrapCrossAlignment.end, spacing: Space.xs, children: [
             Text(
               s.t(price.period == 'yearly' ? 'prem.per_year' : 'prem.per_month', {'price': formatMoney(price.currency, price.amountMinor)}),
-              style: t.headlineSmall!.copyWith(color: c.primaryText, fontWeight: FontWeight.w800),
+              style: t.titleLarge!.copyWith(color: c.primaryText, fontWeight: FontWeight.w800),
             ),
             if (price.period == 'yearly')
               Text(s.t('prem.per_month', {'price': formatMoney(price.currency, price.perMonthMinor)}), style: t.bodySmall),
             if (price.period == 'yearly' && save > 0) _Badge(text: s.t('prem.save', {'pct': save}), color: c.accent),
           ]),
         const SizedBox(height: Space.sm),
-        for (final f in feats)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Row(children: [
-              AppIcon(AppIcons.checkCircle, size: 18, color: c.successText),
-              const SizedBox(width: Space.xs),
-              Expanded(child: Text(f, style: t.bodyMedium)),
-            ]),
-          ),
+        LayoutBuilder(builder: (context, box) {
+          final w = (box.maxWidth - Space.sm) / 2;
+          return Wrap(spacing: Space.sm, runSpacing: 6, children: [
+            for (final f in feats)
+              SizedBox(
+                width: w,
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Padding(padding: const EdgeInsets.only(top: 1), child: AppIcon(AppIcons.checkCircle, size: 16, color: c.successText)),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text(f, style: t.bodySmall!.copyWith(color: c.text))),
+                ]),
+              ),
+          ]);
+        }),
         if (!plan.isFree && !current) ...[
           const SizedBox(height: Space.sm),
           SizedBox(
@@ -329,6 +370,56 @@ class _PlanCard extends StatelessWidget {
   }
 }
 
+/// Small selectable plan tile: name, price for the period, badge.
+class _PlanTile extends StatelessWidget {
+  const _PlanTile({required this.plan, required this.period, required this.strings, required this.selected, required this.current, required this.onTap});
+  final Plan plan;
+  final String period;
+  final Strings strings;
+  final bool selected;
+  final bool current;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final t = Theme.of(context).textTheme;
+    final price = plan.price(period) ?? plan.prices.firstOrNull;
+    return Semantics(
+      selected: selected,
+      button: true,
+      child: Material(
+        color: selected ? c.primary.withValues(alpha: 0.10) : c.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.card), side: BorderSide(color: selected ? c.primary : c.border, width: selected ? 2 : 1)),
+        child: InkWell(
+          key: Key('plan_${plan.code}'),
+          borderRadius: BorderRadius.circular(Radii.card),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(Space.sm),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Expanded(child: Text(plan.name, style: t.titleSmall!.copyWith(fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                AppIcon(selected ? AppIcons.checkCircle : AppIcons.chevronRight, size: 18, color: selected ? c.primaryText : c.muted),
+              ]),
+              const SizedBox(height: 2),
+              if (price != null)
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(formatMoney(price.currency, price.amountMinor), style: t.titleLarge!.copyWith(color: c.primaryText, fontWeight: FontWeight.w800)),
+                ),
+              Text(
+                current ? strings.t('prem.current_badge') : (plan.popular ? strings.t('prem.popular') : strings.t(period == 'yearly' ? 'prem.yearly' : 'prem.monthly')),
+                style: t.labelSmall!.copyWith(color: current ? c.successText : (plan.popular ? c.primaryText : c.muted), fontWeight: FontWeight.w700),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _Badge extends StatelessWidget {
   const _Badge({required this.text, required this.color});
   final String text;
@@ -341,10 +432,18 @@ class _Badge extends StatelessWidget {
       );
 }
 
-class _Comparison extends StatelessWidget {
+class _Comparison extends StatefulWidget {
   const _Comparison({required this.plans, required this.strings});
   final List<Plan> plans;
   final Strings strings;
+  @override
+  State<_Comparison> createState() => _ComparisonState();
+}
+
+class _ComparisonState extends State<_Comparison> {
+  bool _open = false;
+  List<Plan> get plans => widget.plans;
+  Strings get strings => widget.strings;
   @override
   Widget build(BuildContext context) {
     final s = strings;
@@ -368,9 +467,19 @@ class _Comparison extends StatelessWidget {
       padding: const EdgeInsets.all(Space.sm),
       decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(Radii.card), border: Border.all(color: c.border)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Text(s.t('prem.compare'), style: t.titleMedium),
-        const SizedBox(height: Space.xs),
-        Table(
+        InkWell(
+          key: const Key('compare_toggle'),
+          onTap: () => setState(() => _open = !_open),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(children: [
+              Expanded(child: Text(s.t('prem.compare'), style: t.titleMedium)),
+              AnimatedRotation(turns: _open ? 0.5 : 0, duration: const Duration(milliseconds: 200), child: AppIcon(AppIcons.chevronDown, size: 20, color: c.muted)),
+            ]),
+          ),
+        ),
+        if (_open) const SizedBox(height: Space.xs),
+        if (_open) Table(
           columnWidths: const {0: FlexColumnWidth(2)},
           defaultVerticalAlignment: TableCellVerticalAlignment.middle,
           children: [

@@ -1,5 +1,7 @@
 // Loads and validates environment configuration. Secrets live only in env.
 import 'dotenv/config';
+import os from 'node:os';
+import path from 'node:path';
 import { z } from 'zod';
 
 const bool = z
@@ -43,7 +45,8 @@ const schema = z.object({
   // Version string stored with the 18+/Terms/Privacy consent.
   TERMS_VERSION: z.string().min(1).max(20).default('2026-10'),
   // Profile photos (re-encoded, metadata-free) are written here and served read-only at /media/avatars/.
-  UPLOAD_DIR: z.string().min(1).default('./uploads'),
+  // Photos and chat images. Must live OUTSIDE the app folder so a redeploy (new zip) never deletes them.
+  UPLOAD_DIR: z.string().min(1).optional(),
 
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().optional(),
@@ -76,6 +79,12 @@ export function loadConfig(env = process.env) {
     if (missing.length) throw new Error(`Missing required production settings: ${missing.join(', ')}`);
     if (cfg.BCRYPT_COST < 12) throw new Error('BCRYPT_COST must be at least 12 in production');
     cfg.FORCE_HTTPS = true;
+  }
+  // Default upload folder: in production the home folder (~/nirapod-uploads), outside the deployed app, so new
+  // deploys keep every profile photo, agent photo, banner logo and chat image. Locally ./uploads.
+  if (!cfg.UPLOAD_DIR) {
+    const home = env.HOME || os.homedir();
+    cfg.UPLOAD_DIR = cfg.NODE_ENV === 'production' && home ? path.join(home, 'nirapod-uploads') : './uploads';
   }
   if (cfg.TRUST_PROXY === undefined) cfg.TRUST_PROXY = cfg.NODE_ENV === 'production';
   cfg.corsOrigins = cfg.CORS_ALLOWED_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean);

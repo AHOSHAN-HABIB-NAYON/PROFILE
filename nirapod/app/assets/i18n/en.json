@@ -830,5 +830,12 @@
   "chpw.need_current": "Enter your current password",
   "chpw.others_signed_out": "Your other phones will be signed out for safety.",
   "notif.trial_ending": "Your {plan} trial ends in {days} days",
-  "notif.plan_ending": "{plan} ends in {days} days. Renew to keep it."
+  "notif.plan_ending": "{plan} ends in {days} days. Renew to keep it.",
+  "history.last7": "7 days",
+  "history.pick_dates": "Pick dates",
+  "history.range": "{from} – {to}",
+  "history.days_count": "{count} days",
+  "prem.choose": "Choose a plan",
+  "me.account": "Account",
+  "me.your_data": "Your data"
 }

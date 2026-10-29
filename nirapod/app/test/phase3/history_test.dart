@@ -58,7 +58,7 @@ void main() {
     await t.tap(find.text('Routes'));
     await t.pump();
     await t.pump(const Duration(milliseconds: 50));
-    expect(find.text('Today'), findsOneWidget);
+    expect(find.text('Today'), findsWidgets);
     await t.pump(const Duration(milliseconds: 100));
     await t.pump(const Duration(milliseconds: 100));
     expect(find.text('2 location updates'), findsOneWidget);

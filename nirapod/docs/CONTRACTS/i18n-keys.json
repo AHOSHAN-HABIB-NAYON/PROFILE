@@ -3905,6 +3905,39 @@
         "days"
       ],
       "en": "{plan} ends in {days} days. Renew to keep it."
+    },
+    "history.last7": {
+      "placeholders": [],
+      "en": "7 days"
+    },
+    "history.pick_dates": {
+      "placeholders": [],
+      "en": "Pick dates"
+    },
+    "history.range": {
+      "placeholders": [
+        "from",
+        "to"
+      ],
+      "en": "{from} – {to}"
+    },
+    "history.days_count": {
+      "placeholders": [
+        "count"
+      ],
+      "en": "{count} days"
+    },
+    "prem.choose": {
+      "placeholders": [],
+      "en": "Choose a plan"
+    },
+    "me.account": {
+      "placeholders": [],
+      "en": "Account"
+    },
+    "me.your_data": {
+      "placeholders": [],
+      "en": "Your data"
     }
   }
 }

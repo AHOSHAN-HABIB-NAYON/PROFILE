@@ -12,6 +12,7 @@ import '../../core/theme/tokens.g.dart';
 import '../../nav/router.dart';
 import '../home/widgets/dialogs.dart';
 import '../home/widgets/header_buttons.dart';
+import '../settings/settings_screens.dart' show SettingsGroup, SettingsRow;
 
 /// Profile page: avatar, name, email (verified), sign-in method, role badge, edit profile (photo, name,
 /// country, time zone via Profile setup), password, devices and sessions, data export, delete, Log out.
@@ -34,36 +35,57 @@ class MeScreen extends ConsumerWidget {
             AppRole.child => s.t('me.role_child'),
             null => '—',
           };
-    Widget row(String icon, String title, {String? sub, VoidCallback? onTap, Color? color}) => ListTile(
-          leading: AppIcon(icon, color: color ?? c.primaryText),
-          title: Text(title, style: color == null ? null : TextStyle(color: color)),
-          subtitle: sub == null ? null : Text(sub),
-          trailing: onTap == null ? null : AppIcon(AppIcons.chevronRight, color: c.muted),
-          onTap: onTap,
-        );
     return Scaffold(
       appBar: AppBar(title: Text(s.t('me.title')), backgroundColor: c.background),
-      body: ListView(padding: const EdgeInsets.symmetric(vertical: Space.md), children: [
-        Center(child: RingAvatar(size: 112, url: u.avatarUrl ?? u.avatarThumbUrl, initials: initialsOf(u.name))),
-        const SizedBox(height: Space.sm),
-        Center(child: Text(u.name ?? '', style: t.headlineSmall, textAlign: TextAlign.center)),
-        Center(
+      body: ListView(padding: const EdgeInsets.only(bottom: Space.md), children: [
+        // Header card: photo, name, role, email
+        Padding(
+          padding: const EdgeInsets.fromLTRB(Space.md, Space.xs, Space.md, 0),
           child: Container(
-            margin: const EdgeInsets.only(top: Space.xxs),
-            padding: const EdgeInsets.symmetric(horizontal: Space.sm, vertical: 2),
-            decoration: BoxDecoration(color: c.accent.withValues(alpha: 0.14), borderRadius: BorderRadius.circular(Radii.pill)),
-            child: Text(role, style: t.labelMedium!.copyWith(color: c.primaryText)),
+            padding: const EdgeInsets.all(Space.md),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [c.primary.withValues(alpha: 0.14), c.accent.withValues(alpha: 0.08)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              borderRadius: BorderRadius.circular(Radii.cardLarge),
+              border: Border.all(color: c.primary.withValues(alpha: 0.25)),
+            ),
+            child: Row(children: [
+              InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => context.push(locationFor('profile_setup')),
+                child: RingAvatar(size: 76, url: u.avatarUrl ?? u.avatarThumbUrl, initials: initialsOf(u.name)),
+              ),
+              const SizedBox(width: Space.md),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(u.name ?? '', style: t.titleLarge!.copyWith(fontWeight: FontWeight.w700), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: Space.sm, vertical: 2),
+                    decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(Radii.pill), border: Border.all(color: c.border)),
+                    child: Text(role, style: t.labelMedium!.copyWith(color: c.primaryText)),
+                  ),
+                  if (u.email != null) ...[
+                    const SizedBox(height: 6),
+                    Row(children: [
+                      Flexible(child: Text(u.email!, style: t.bodySmall!.copyWith(color: c.muted), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      if (u.emailVerified) ...[const SizedBox(width: 4), AppIcon(AppIcons.checkCircle, size: 14, color: c.successText)],
+                    ]),
+                  ],
+                ]),
+              ),
+            ]),
           ),
         ),
-        const SizedBox(height: Space.md),
-        row(AppIcons.user, s.t('me.edit_profile'), onTap: () => context.push(locationFor('profile_setup'))),
-        if (u.email != null)
-          row(AppIcons.mail, s.t('me.email'), sub: '${u.email}${u.emailVerified ? '  ·  ${s.t('me.verified')}' : ''}'),
-        row(AppIcons.lock, s.t('me.sign_in_method'), sub: u.authProvider == 'google' ? s.t('me.method_google') : s.t('me.method_email')),
-        if (u.authProvider == 'email') row(AppIcons.lock, s.t('me.change_password'), onTap: () => context.push(locationFor('change_password'))),
-        row(AppIcons.settings, s.t('me.devices'), onTap: () => context.push(locationFor('sessions'))),
-        row(AppIcons.history, s.t('me.download'), onTap: () => context.push(locationFor('data_export'))),
-        row(AppIcons.alertCircle, s.t('me.delete'), color: c.dangerText, onTap: () => context.push(locationFor('delete_account'))),
+        SettingsGroup(title: s.t('me.account'), children: [
+          SettingsRow(icon: AppIcons.user, title: s.t('me.edit_profile'), onTap: () => context.push(locationFor('profile_setup'))),
+          SettingsRow(icon: AppIcons.lock, title: s.t('me.sign_in_method'), subtitle: u.authProvider == 'google' ? s.t('me.method_google') : s.t('me.method_email')),
+          if (u.authProvider == 'email') SettingsRow(icon: AppIcons.lock, title: s.t('me.change_password'), onTap: () => context.push(locationFor('change_password'))),
+          SettingsRow(icon: AppIcons.settings, title: s.t('me.devices'), onTap: () => context.push(locationFor('sessions'))),
+        ]),
+        SettingsGroup(title: s.t('me.your_data'), children: [
+          SettingsRow(icon: AppIcons.history, title: s.t('me.download'), onTap: () => context.push(locationFor('data_export'))),
+          SettingsRow(icon: AppIcons.alertCircle, title: s.t('me.delete'), danger: true, onTap: () => context.push(locationFor('delete_account'))),
+        ]),
         Padding(
           padding: const EdgeInsets.all(Space.screenHorizontal),
           child: AppButton(

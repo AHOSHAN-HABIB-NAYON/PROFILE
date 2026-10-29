@@ -16,7 +16,7 @@ test('zone.tab mapping', () => {
 test('greeting boundaries in five zones', () => {
   const expect = [
     ['04:59', 'night'], ['05:00', 'morning'], ['11:59', 'morning'], ['12:00', 'afternoon'],
-    ['16:59', 'afternoon'], ['17:00', 'evening'], ['20:59', 'evening'], ['21:00', 'night'],
+    ['16:59', 'afternoon'], ['17:00', 'evening'], ['19:59', 'evening'], ['20:00', 'night'], ['20:59', 'night'], ['21:00', 'night'],
   ];
   for (const tz of ['Asia/Dhaka', 'Asia/Riyadh', 'Asia/Kuala_Lumpur', 'Europe/London', 'America/New_York']) {
     // one winter date and one summer date (DST for London/New York)

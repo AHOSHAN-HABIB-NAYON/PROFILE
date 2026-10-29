@@ -167,12 +167,36 @@ class _Routes extends ConsumerStatefulWidget {
 
 class _RoutesState extends ConsumerState<_Routes> {
   String? _member;
-  int _daysAgo = 0;
+  int _end = 0; // days ago of the last day in the range (0 = today)
+  int _span = 1; // number of days shown (1..31)
+
+  String _ymd(DateTime d) => '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  Future<void> _pickRange(DateTime today, int historyDays) async {
+    final first = DateTime(today.year, today.month, today.day).subtract(Duration(days: (historyDays - 1).clamp(0, 365)));
+    final last = DateTime(today.year, today.month, today.day);
+    final end = last.subtract(Duration(days: _end));
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: first,
+      lastDate: last,
+      initialDateRange: DateTimeRange(start: end.subtract(Duration(days: _span - 1)), end: end),
+      helpText: widget.strings.t('history.pick_dates'),
+    );
+    if (picked == null || !mounted) return;
+    final s = DateTime(picked.start.year, picked.start.month, picked.start.day);
+    final e = DateTime(picked.end.year, picked.end.month, picked.end.day);
+    setState(() {
+      _end = last.difference(e).inDays;
+      _span = (e.difference(s).inDays + 1).clamp(1, 31);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final s = widget.strings;
     final t = Theme.of(context).textTheme;
+    final c = context.colors;
     final lang = ref.watch(languageProvider);
     final family = ref.watch(familyProvider).value;
     final now = ref.watch(homeClockProvider)();
@@ -182,28 +206,76 @@ class _RoutesState extends ConsumerState<_Routes> {
     if (members.isEmpty) return MessageView(icon: AppIcons.users, title: s.t('history.empty_title'));
     final member = members.firstWhere((m) => m.id == _member, orElse: () => members.first);
     final zone = member.timezone ?? 'UTC';
-    final day = inZone(now, zone).subtract(Duration(days: _daysAgo));
-    final date = '${day.year.toString().padLeft(4, '0')}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
-    final async = ref.watch(routeProvider((member.id, date)));
-    final dayLabel = _daysAgo == 0 ? s.t('history.today') : (_daysAgo == 1 ? s.t('history.yesterday') : formatLongDate(day, zone, language: lang));
+    final today = inZone(now, zone);
+    final todayDate = DateTime(today.year, today.month, today.day);
+    final days = [for (var i = _span - 1; i >= 0; i--) todayDate.subtract(Duration(days: _end + i))];
+    final routes = [for (final d in days) ref.watch(routeProvider((member.id, _ymd(d))))];
+    final historyDays = routes.map((r) => r.value?.historyDays).whereType<int>().firstOrNull ?? 90;
+    String label(DateTime d) {
+      final ago = todayDate.difference(d).inDays;
+      return ago == 0 ? s.t('history.today') : (ago == 1 ? s.t('history.yesterday') : formatLongDate(d, zone, language: lang));
+    }
+
+    final dayLabel = _span == 1 ? label(days.first) : s.t('history.range', {'from': label(days.first), 'to': label(days.last)});
+    // Combined state: any error wins, then loading, then all points of the range in time order.
+    final AsyncValue<DayRoute> async = routes.firstWhere((r) => r.hasError, orElse: () => routes.firstWhere((r) => r.isLoading && !r.hasValue, orElse: () => AsyncData(DayRoute(
+          points: [for (final r in routes) ...?r.value?.points]..sort((a, b) => a.at.compareTo(b.at)),
+          timezone: zone,
+          historyDays: historyDays,
+        ))));
+    Widget chip(String text, bool on, VoidCallback tap) => ChoiceChip(label: Text(text), selected: on, onSelected: (_) => tap());
     return ListView(padding: const EdgeInsets.all(Space.screenHorizontal), children: [
       Wrap(spacing: Space.xs, runSpacing: Space.xs, children: [
         for (final m in members) ChoiceChip(label: Text(m.name), selected: m.id == member.id, onSelected: (_) => setState(() => _member = m.id)),
       ]),
       const SizedBox(height: Space.sm),
-      Row(children: [
-        IconButton(
-          tooltip: s.t('history.pick_day'),
-          onPressed: _daysAgo < 89 ? () => setState(() => _daysAgo++) : null,
-          icon: AppIcon(AppIcons.chevronLeft, color: context.colors.text),
-        ),
-        Expanded(child: Text(dayLabel, textAlign: TextAlign.center, style: t.titleMedium)),
-        IconButton(
-          tooltip: s.t('history.pick_day'),
-          onPressed: _daysAgo > 0 ? () => setState(() => _daysAgo--) : null,
-          icon: AppIcon(AppIcons.chevronRight, color: context.colors.text),
-        ),
-      ]),
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(children: [
+          chip(s.t('history.today'), _end == 0 && _span == 1, () => setState(() { _end = 0; _span = 1; })),
+          const SizedBox(width: Space.xs),
+          chip(s.t('history.yesterday'), _end == 1 && _span == 1, () => setState(() { _end = 1; _span = 1; })),
+          const SizedBox(width: Space.xs),
+          if (historyDays >= 7) ...[
+            chip(s.t('history.last7'), _end == 0 && _span == 7, () => setState(() { _end = 0; _span = 7; })),
+            const SizedBox(width: Space.xs),
+          ],
+          ActionChip(
+            key: const Key('pick_dates'),
+            avatar: AppIcon(AppIcons.history, size: 16, color: c.primaryText),
+            label: Text(s.t('history.pick_dates')),
+            onPressed: () => _pickRange(todayDate, historyDays),
+          ),
+        ]),
+      ),
+      const SizedBox(height: Space.xs),
+      Container(
+        decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(Radii.card), border: Border.all(color: c.border)),
+        child: Row(children: [
+          IconButton(
+            tooltip: s.t('history.pick_day'),
+            onPressed: _end + _span < historyDays ? () => setState(() => _end += _span) : null,
+            icon: AppIcon(AppIcons.chevronLeft, color: c.text),
+          ),
+          Expanded(
+            child: InkWell(
+              onTap: () => _pickRange(todayDate, historyDays),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: Space.xs),
+                child: Column(children: [
+                  Text(dayLabel, textAlign: TextAlign.center, style: t.titleMedium, maxLines: 2),
+                  if (_span > 1) Text(localizeDigits(s.t('history.days_count', {'count': _span}), lang.numerals), style: t.bodySmall!.copyWith(color: c.muted)),
+                ]),
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: s.t('history.pick_day'),
+            onPressed: _end > 0 ? () => setState(() => _end = (_end - _span).clamp(0, 1 << 20)) : null,
+            icon: AppIcon(AppIcons.chevronRight, color: c.text),
+          ),
+        ]),
+      ),
       const SizedBox(height: Space.xs),
       switch (async) {
         AsyncData(:final value) when value.points.isEmpty => MessageView(icon: AppIcons.map, title: s.t('history.no_route')),
@@ -245,7 +317,7 @@ class _RoutesState extends ConsumerState<_Routes> {
             icon: AppIcons.alertCircle,
             title: s.t('state.error_title'),
             body: s.t(ApiError.from(error).messageKey),
-            action: AppButton(label: s.t('common.retry'), kind: ButtonKind.secondary, onPressed: () => ref.invalidate(routeProvider((member.id, date)))),
+            action: AppButton(label: s.t('common.retry'), kind: ButtonKind.secondary, onPressed: () { for (final d in days) { ref.invalidate(routeProvider((member.id, _ymd(d)))); } }),
           ),
         _ => const SkeletonList(rows: 2),
       },

@@ -26,7 +26,7 @@ void main() {
     const expectations = {
       '04:59': GreetingPeriod.night, '05:00': GreetingPeriod.morning, '11:59': GreetingPeriod.morning,
       '12:00': GreetingPeriod.afternoon, '16:59': GreetingPeriod.afternoon, '17:00': GreetingPeriod.evening,
-      '20:59': GreetingPeriod.evening, '21:00': GreetingPeriod.night,
+      '19:59': GreetingPeriod.evening, '20:00': GreetingPeriod.night, '20:59': GreetingPeriod.night, '21:00': GreetingPeriod.night,
     };
     for (final zone in ['Asia/Dhaka', 'Asia/Riyadh', 'Asia/Kuala_Lumpur', 'Europe/London', 'America/New_York']) {
       final loc = tz.getLocation(zone);

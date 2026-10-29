@@ -84,7 +84,7 @@ export const emergencyNumbers = [
   ['KR', 'ambulance', '119', 'Ambulance and fire'],
 ].map(([country_iso2, service, number, note]) => ({ country_iso2, service, number, note }));
 
-export function appSettings({ allLanguages = false } = {}) {
+export function appSettings({ allLanguages = true } = {}) {
   return {
     free_plan_enabled: true,
     free_limits: { max_children: 1, max_members: 2, max_places: 2, history_days: 3 },

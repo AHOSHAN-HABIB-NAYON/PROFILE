@@ -49,6 +49,7 @@ async function main() {
 
   const cfg = loadConfig();
   const logger = createLogger(cfg.LOG_LEVEL);
+  await keepUploadsSafe(cfg, logger);
   const db = createDb(cfg);
   const adminDb = createDb(cfg, { admin: true });
   if (!cfg.DB_ADMIN_USER) logger.warn('DB_ADMIN_USER not set: admin panel shares the app DB user (dev only).');
@@ -89,3 +90,24 @@ main().catch((err) => {
   console.error(`Nirapod start-up failed: ${info.problem}${info.code ? ` (${info.code})` : ''}: ${info.detail}`);
   startupErrorServer(info);
 });
+
+/**
+ * Uploads live outside the app folder so a redeploy never deletes photos. If an older version stored them
+ * inside the app (./uploads) and they are still there, copy them over once.
+ */
+async function keepUploadsSafe(cfg, logger) {
+  const { default: fs } = await import('node:fs/promises');
+  const { default: path } = await import('node:path');
+  const target = path.resolve(cfg.UPLOAD_DIR);
+  await fs.mkdir(target, { recursive: true });
+  const legacy = path.resolve('uploads');
+  if (legacy !== target) {
+    try {
+      await fs.cp(legacy, target, { recursive: true, force: false, errorOnExist: false });
+      logger.info({ from: 'app/uploads' }, 'copied old uploads to the persistent upload folder');
+    } catch (e) {
+      if (e?.code !== 'ENOENT') logger.warn({ code: e?.code }, 'could not copy old uploads');
+    }
+  }
+  logger.info({ uploadDirOutsideApp: !target.startsWith(path.resolve('.')) }, 'upload folder ready');
+}

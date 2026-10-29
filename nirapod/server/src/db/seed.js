@@ -2,7 +2,7 @@
 // Existing app_settings values are NOT overwritten (admin edits win).
 import { plans, planPrices, emergencyNumbers, appSettings } from './seed-data.js';
 
-export async function seed(db, { allLanguages = false } = {}) {
+export async function seed(db, { allLanguages = true } = {}) {
   for (const p of plans) {
     await db('plans')
       .insert({ ...p, features: JSON.stringify(p.features) })

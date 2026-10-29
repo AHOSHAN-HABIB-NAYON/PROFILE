@@ -150,6 +150,11 @@ ThemeData buildTheme({required Brightness brightness, required String script}) {
     bodySmall: _style(TypeScale.caption, c.muted, tall: tall),
     labelLarge: _style(TypeStep(TypeScale.body.size, 600, TypeScale.body.lineHeight, TypeScale.body.lineHeightBengali), c.text, tall: tall),
     labelMedium: _style(TypeScale.caption, c.text, tall: tall),
+    // The remaining Material styles get the same fonts and fallback chain (৳, Bengali names, etc. never show as boxes).
+    headlineMedium: _style(TypeScale.display, c.text, tall: tall),
+    titleLarge: _style(TypeScale.title, c.text, tall: tall),
+    titleSmall: _style(TypeStep(TypeScale.body.size, 600, TypeScale.body.lineHeight, TypeScale.body.lineHeightBengali), c.text, tall: tall),
+    labelSmall: _style(const TypeStep(12, 500, 1.35, 1.5), c.muted, tall: tall),
   );
   final scheme = ColorScheme(
     brightness: brightness,

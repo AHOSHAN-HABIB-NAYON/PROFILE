@@ -830,5 +830,12 @@
   "chpw.need_current": "বর্তমান পাসওয়ার্ড দিন",
   "chpw.others_signed_out": "নিরাপত্তার জন্য আপনার অন্য ফোনগুলো থেকে সাইন আউট হবে।",
   "notif.trial_ending": "আপনার {plan} ট্রায়াল {days} দিনে শেষ হবে",
-  "notif.plan_ending": "{plan} {days} দিনে শেষ হবে। চালু রাখতে রিনিউ করুন।"
+  "notif.plan_ending": "{plan} {days} দিনে শেষ হবে। চালু রাখতে রিনিউ করুন।",
+  "history.last7": "৭ দিন",
+  "history.pick_dates": "তারিখ বাছুন",
+  "history.range": "{from} – {to}",
+  "history.days_count": "{count} দিন",
+  "prem.choose": "প্ল্যান বেছে নিন",
+  "me.account": "অ্যাকাউন্ট",
+  "me.your_data": "আপনার ডেটা"
 }

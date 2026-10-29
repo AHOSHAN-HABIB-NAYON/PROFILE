@@ -44,11 +44,20 @@ void main() {
     final bnHome = b.forScreen('home', 'bn');
     expect(bnHome.language, 'bn');
     expect(bnHome.t('nav.home'), 'হোম');
-    final msHome = b.forScreen('home', 'ms'); // ms only has greetings so far
-    expect(msHome.language, 'en');
-    expect(msHome.isFallback, isTrue);
-    expect(msHome.t('greeting.afternoon'), 'Good afternoon,'); // not 'Selamat tengah hari,'
-    final msSheet = b.forScreen('language_sheet', 'ms'); // namespace complete -> Malay
+    // Malay is complete now: the whole Home screen is Malay.
+    final msHome = b.forScreen('home', 'ms');
+    expect(msHome.language, 'ms');
+    expect(msHome.t('greeting.afternoon'), 'Selamat tengah hari,');
+    // A language missing one key of a screen shows that whole screen in English (never mixed).
+    final partial = StringsBundle({
+      ...b.tables,
+      'ms': {...b.tables['ms']!}..remove('nav.home'),
+    }, b.screens);
+    final mixed = partial.forScreen('home', 'ms');
+    expect(mixed.language, 'en');
+    expect(mixed.isFallback, isTrue);
+    expect(mixed.t('greeting.afternoon'), 'Good afternoon,');
+    final msSheet = partial.forScreen('language_sheet', 'ms'); // namespace still complete -> Malay
     expect(msSheet.t('lang.sheet_title'), 'Bahasa');
   });
 
