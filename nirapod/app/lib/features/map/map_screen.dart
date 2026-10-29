@@ -244,6 +244,8 @@ class _NearbySheetState extends ConsumerState<_NearbySheet> {
     final t = Theme.of(context).textTheme;
     final lang = ref.watch(languageProvider);
     final async = ref.watch(nearbyProvider((widget.position.latitude, widget.position.longitude)));
+    // Feature switched off by the admin: show nothing instead of an empty sheet.
+    if (async case AsyncError(:final error) when ApiError.from(error).code == 'FEATURE_DISABLED') return const SizedBox.shrink();
     return DraggableScrollableSheet(
       initialChildSize: 0.22,
       minChildSize: 0.12,

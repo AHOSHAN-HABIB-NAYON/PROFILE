@@ -416,7 +416,7 @@
   "map.layer_labels": "Etiquetas",
   "map.recenter": "Mostrar mi ubicación",
   "map.compass": "Orientar al norte",
-  "map.follow": "Seguir a {name}",
+  "map.follow": "Siguiendo a {name}",
   "map.show_all": "Mostrar a todos",
   "map.nearby_title": "Lugares cercanos",
   "map.cat_all": "Todos",

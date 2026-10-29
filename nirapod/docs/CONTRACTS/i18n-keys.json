@@ -2052,7 +2052,7 @@
       "placeholders": [
         "name"
       ],
-      "en": "Follow {name}"
+      "en": "Following {name}"
     },
     "map.show_all": {
       "placeholders": [],

@@ -416,7 +416,7 @@
   "map.layer_labels": "التسميات",
   "map.recenter": "عرض موقعي",
   "map.compass": "إعادة الاتجاه للشمال",
-  "map.follow": "تتبّع {name}",
+  "map.follow": "جارٍ تتبّع {name}",
   "map.show_all": "عرض الجميع",
   "map.nearby_title": "الأماكن القريبة",
   "map.cat_all": "الكل",

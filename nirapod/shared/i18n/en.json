@@ -416,7 +416,7 @@
   "map.layer_labels": "Labels",
   "map.recenter": "Show my location",
   "map.compass": "Reset to north",
-  "map.follow": "Follow {name}",
+  "map.follow": "Following {name}",
   "map.show_all": "Show everyone",
   "map.nearby_title": "Nearby places",
   "map.cat_all": "All",

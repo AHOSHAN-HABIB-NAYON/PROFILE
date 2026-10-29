@@ -416,7 +416,7 @@
   "map.layer_labels": "Label",
   "map.recenter": "Tampilkan lokasi saya",
   "map.compass": "Arahkan ke utara",
-  "map.follow": "Ikuti {name}",
+  "map.follow": "Mengikuti {name}",
   "map.show_all": "Tampilkan semua",
   "map.nearby_title": "Tempat terdekat",
   "map.cat_all": "Semua",

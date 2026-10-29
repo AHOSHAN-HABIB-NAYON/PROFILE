@@ -416,7 +416,7 @@
   "map.layer_labels": "লেবেল",
   "map.recenter": "আমার লোকেশন দেখান",
   "map.compass": "উত্তর দিকে ফেরান",
-  "map.follow": "{name}-কে অনুসরণ",
+  "map.follow": "{name}-কে অনুসরণ করা হচ্ছে",
   "map.show_all": "সবাইকে দেখান",
   "map.nearby_title": "কাছের জায়গা",
   "map.cat_all": "সব",
