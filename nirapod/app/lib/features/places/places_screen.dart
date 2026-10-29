@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:geocoding/geocoding.dart' as geo;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../core/i18n/locale_controller.dart';
@@ -32,10 +35,54 @@ String placeTypeIcon(String type) => switch (type) {
 /// Swappable in tests (platform views do not run there).
 typedef PickerMapBuilder = Widget Function(double lat, double lng, int radiusM, ValueChanged<(double, double)> onCenter);
 
-final pickerMapBuilderProvider = Provider<PickerMapBuilder>((ref) => (lat, lng, r, onCenter) => _GooglePickerMap(lat: lat, lng: lng, radiusM: r, onCenter: onCenter));
+final pickerMapBuilderProvider = Provider<PickerMapBuilder>((ref) => (lat, lng, r, onCenter) => _GooglePickerMap(
+      lat: lat,
+      lng: lng,
+      radiusM: r,
+      onCenter: onCenter,
+      mapTypeLabel: ref.read(screenStringsProvider('places')).t('places.map_type'),
+    ));
+
+/// One place found by search.
+class PlaceHit {
+  const PlaceHit(this.label, this.lat, this.lng);
+  final String label;
+  final double lat;
+  final double lng;
+}
+
+typedef PlaceSearch = Future<List<PlaceHit>> Function(String query);
+
+/// Search by name or address with the phone's own geocoder (no extra key or billing).
+/// Only the typed text is sent; the user's own position is not.
+final placeSearchProvider = Provider<PlaceSearch>((ref) => (q) async {
+      final g = geo.Geocoding();
+      try {
+        final found = await g.locationFromAddress(q);
+        final hits = <PlaceHit>[];
+        for (final l in found.take(5)) {
+          var label = q;
+          try {
+            final pm = (await g.placemarkFromCoordinates(l.latitude, l.longitude)).firstOrNull;
+            if (pm != null) {
+              label = [pm.name, pm.subLocality, pm.locality, pm.country]
+                  .whereType<String>()
+                  .where((x) => x.trim().isNotEmpty)
+                  .toSet()
+                  .join(', ');
+            }
+          } catch (_) {}
+          hits.add(PlaceHit(label.isEmpty ? q : label, l.latitude, l.longitude));
+        }
+        return hits;
+      } catch (_) {
+        return const [];
+      }
+    });
 
 class _GooglePickerMap extends StatefulWidget {
-  const _GooglePickerMap({required this.lat, required this.lng, required this.radiusM, required this.onCenter});
+  const _GooglePickerMap({required this.lat, required this.lng, required this.radiusM, required this.onCenter, this.mapTypeLabel});
+  final String? mapTypeLabel;
   final double lat;
   final double lng;
   final int radiusM;
@@ -47,6 +94,7 @@ class _GooglePickerMap extends StatefulWidget {
 class _GooglePickerMapState extends State<_GooglePickerMap> {
   late LatLng _center = LatLng(widget.lat, widget.lng);
   GoogleMapController? _map;
+  bool _satellite = true;
 
   @override
   void didUpdateWidget(covariant _GooglePickerMap old) {
@@ -64,7 +112,11 @@ class _GooglePickerMapState extends State<_GooglePickerMap> {
     return Stack(alignment: Alignment.center, children: [
       GoogleMap(
         initialCameraPosition: CameraPosition(target: _center, zoom: 16),
-        mapType: MapType.hybrid,
+        mapType: _satellite ? MapType.hybrid : MapType.normal,
+        // The page scrolls; let the map take drags and pinches first.
+        gestureRecognizers: {Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer())},
+        // Tap a spot to move the pin there.
+        onTap: (p) => _map?.animateCamera(CameraUpdate.newLatLng(p)),
         zoomControlsEnabled: false,
         mapToolbarEnabled: false,
         myLocationButtonEnabled: false,
@@ -87,6 +139,21 @@ class _GooglePickerMapState extends State<_GooglePickerMap> {
         child: Padding(
           padding: const EdgeInsets.only(bottom: 36),
           child: AppIcon(AppIcons.locationPinFilled, size: 40, color: c.primaryText),
+        ),
+      ),
+      PositionedDirectional(
+        top: Space.xs,
+        end: Space.xs,
+        child: Material(
+          color: c.surface,
+          shape: const CircleBorder(),
+          elevation: 2,
+          child: IconButton(
+            key: const Key('picker_map_type'),
+            tooltip: widget.mapTypeLabel,
+            onPressed: () => setState(() => _satellite = !_satellite),
+            icon: AppIcon(AppIcons.layers, size: 20, color: c.primaryText),
+          ),
         ),
       ),
     ]);
@@ -228,6 +295,9 @@ class PlaceEditScreen extends ConsumerStatefulWidget {
 
 class _PlaceEditScreenState extends ConsumerState<PlaceEditScreen> {
   final _name = TextEditingController();
+  final _search = TextEditingController();
+  List<PlaceHit>? _hits;
+  bool _searching = false;
   String _type = 'home';
   int _radius = 150;
   double? _lat;
@@ -246,6 +316,7 @@ class _PlaceEditScreenState extends ConsumerState<PlaceEditScreen> {
   @override
   void dispose() {
     _name.dispose();
+    _search.dispose();
     super.dispose();
   }
 
@@ -269,6 +340,29 @@ class _PlaceEditScreenState extends ConsumerState<PlaceEditScreen> {
       _loaded = me != null;
     }
   }
+
+  Future<void> _runSearch() async {
+    final q = _search.text.trim();
+    if (q.length < 2) return;
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _searching = true;
+      _hits = null;
+    });
+    final hits = await ref.read(placeSearchProvider)(q);
+    if (!mounted) return;
+    setState(() {
+      _searching = false;
+      _hits = hits;
+    });
+  }
+
+  void _pick(PlaceHit h) => setState(() {
+        _lat = h.lat;
+        _lng = h.lng;
+        _hits = null;
+        if (_name.text.trim().isEmpty) _name.text = h.label.split(',').first.trim();
+      });
 
   Future<void> _save() async {
     final s = ref.read(screenStringsProvider('places'));
@@ -362,12 +456,54 @@ class _PlaceEditScreenState extends ConsumerState<PlaceEditScreen> {
         child: Column(children: [
           Expanded(
             child: ListView(padding: const EdgeInsets.all(Space.screenHorizontal), children: [
+              TextField(
+                key: const Key('place_search'),
+                controller: _search,
+                textInputAction: TextInputAction.search,
+                onSubmitted: (_) => _runSearch(),
+                decoration: InputDecoration(
+                  hintText: s.t('places.search_hint'),
+                  isDense: true,
+                  filled: true,
+                  fillColor: c.surface,
+                  prefixIcon: Padding(padding: const EdgeInsets.all(12), child: AppIcon(AppIcons.search, size: 20, color: c.muted)),
+                  suffixIcon: _searching
+                      ? const Padding(padding: EdgeInsets.all(14), child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)))
+                      : IconButton(
+                          key: const Key('place_search_go'),
+                          tooltip: s.t('places.search'),
+                          onPressed: _runSearch,
+                          icon: AppIcon(AppIcons.arrowRight, size: 20, color: c.primaryText),
+                        ),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(Radii.card)),
+                ),
+              ),
+              if (_hits != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: Space.xs),
+                  child: Material(
+                    color: c.surface,
+                    borderRadius: BorderRadius.circular(Radii.card),
+                    child: _hits!.isEmpty
+                        ? Padding(padding: const EdgeInsets.all(Space.sm), child: Text(s.t('places.search_none'), style: t.bodySmall))
+                        : Column(children: [
+                            for (final h in _hits!)
+                              ListTile(
+                                dense: true,
+                                leading: AppIcon(AppIcons.locationPin, size: 20, color: c.primaryText),
+                                title: Text(h.label, maxLines: 2, overflow: TextOverflow.ellipsis),
+                                onTap: () => _pick(h),
+                              ),
+                          ]),
+                  ),
+                ),
+              const SizedBox(height: Space.sm),
               Semantics(
                 label: s.t('places.pin_a11y'),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(Radii.cardLarge),
                   child: SizedBox(
-                    height: 220,
+                    height: (MediaQuery.sizeOf(context).height * 0.42).clamp(260.0, 420.0),
                     child: picker(lat, lng, _radius, (p) {
                       _lat = p.$1;
                       _lng = p.$2;

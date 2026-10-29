@@ -525,7 +525,7 @@
   "places.type": "Jenis",
   "places.radius_label": "Area peringatan: {meters} m",
   "places.applies": "Peringatan untuk",
-  "places.pin_hint": "Geser peta agar pin berada di tempat itu",
+  "places.pin_hint": "Geser peta atau ketuk titik untuk memindahkan pin",
   "places.use_my_location": "Pakai lokasi saya",
   "places.delete": "Hapus tempat",
   "places.delete_title": "Hapus tempat ini?",
@@ -837,5 +837,9 @@
   "history.days_count": "{count} hari",
   "prem.choose": "Pilih paket",
   "me.account": "Akun",
-  "me.your_data": "Data Anda"
+  "me.your_data": "Data Anda",
+  "places.search_hint": "Cari tempat atau alamat",
+  "places.search": "Cari",
+  "places.search_none": "Tempat tidak ditemukan. Coba nama lain atau geser peta.",
+  "places.map_type": "Ganti jenis peta"
 }

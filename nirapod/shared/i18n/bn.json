@@ -525,7 +525,7 @@
   "places.type": "ধরন",
   "places.radius_label": "সতর্কতার এলাকা: {meters} মিটার",
   "places.applies": "কার জন্য সতর্কতা",
-  "places.pin_hint": "পিনটি জায়গার উপর আনতে ম্যাপ সরান",
+  "places.pin_hint": "ম্যাপ টেনে সরান বা কোনো জায়গায় ট্যাপ করে পিন বসান",
   "places.use_my_location": "আমার অবস্থান ব্যবহার করুন",
   "places.delete": "জায়গা মুছুন",
   "places.delete_title": "এই জায়গাটি মুছবেন?",
@@ -837,5 +837,9 @@
   "history.days_count": "{count} দিন",
   "prem.choose": "প্ল্যান বেছে নিন",
   "me.account": "অ্যাকাউন্ট",
-  "me.your_data": "আপনার ডেটা"
+  "me.your_data": "আপনার ডেটা",
+  "places.search_hint": "জায়গা বা ঠিকানা খুঁজুন",
+  "places.search": "খুঁজুন",
+  "places.search_none": "কোনো জায়গা পাওয়া যায়নি। অন্য নাম দিয়ে খুঁজুন, বা ম্যাপ সরান।",
+  "places.map_type": "ম্যাপের ধরন বদলান"
 }

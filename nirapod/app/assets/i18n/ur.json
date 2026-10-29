@@ -525,7 +525,7 @@
   "places.type": "قسم",
   "places.radius_label": "الرٹ کا علاقہ: {meters} میٹر",
   "places.applies": "کس کے لیے الرٹ",
-  "places.pin_hint": "نقشہ کھسکائیں تاکہ پن مقام پر ہو",
+  "places.pin_hint": "نقشہ کھینچیں یا کسی جگہ ٹیپ کر کے پن لگائیں",
   "places.use_my_location": "میری لوکیشن استعمال کریں",
   "places.delete": "مقام حذف کریں",
   "places.delete_title": "یہ مقام حذف کریں؟",
@@ -837,5 +837,9 @@
   "history.days_count": "{count} دن",
   "prem.choose": "پلان منتخب کریں",
   "me.account": "اکاؤنٹ",
-  "me.your_data": "آپ کا ڈیٹا"
+  "me.your_data": "آپ کا ڈیٹا",
+  "places.search_hint": "جگہ یا پتہ تلاش کریں",
+  "places.search": "تلاش کریں",
+  "places.search_none": "کوئی جگہ نہیں ملی۔ کوئی اور نام آزمائیں یا نقشہ کھسکائیں۔",
+  "places.map_type": "نقشے کی قسم بدلیں"
 }

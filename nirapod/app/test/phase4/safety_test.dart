@@ -71,7 +71,7 @@ class FakeSafety implements SafetyRepo {
   dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
 }
 
-Future<(FakeSafety, dynamic)> pumpRouted(WidgetTester t, String id, {AuthUser user = child, FakeSafety? fake, Map<String, Object> prefs = const {}}) async {
+Future<(FakeSafety, dynamic)> pumpRouted(WidgetTester t, String id, {AuthUser user = child, FakeSafety? fake, Map<String, Object> prefs = const {}, PlaceSearch? search}) async {
   setScreen(t, const Size(412, 915));
   final f = fake ?? FakeSafety();
   final router = createRouter(initialLocation: locationFor(id));
@@ -81,6 +81,7 @@ Future<(FakeSafety, dynamic)> pumpRouted(WidgetTester t, String id, {AuthUser us
     safetyRepoProvider.overrideWithValue(f),
     sosPositionReaderProvider.overrideWithValue(() async => (23.81, 90.41, 10.0)),
     pickerMapBuilderProvider.overrideWithValue((lat, lng, r, onCenter) => const ColoredBox(color: Color(0xFFDDE7E3))),
+    if (search != null) placeSearchProvider.overrideWithValue(search),
   ];
   await t.pumpWidget(ProviderScope(overrides: o, child: const NirapodApp()));
   for (var i = 0; i < 10; i++) {
@@ -142,6 +143,26 @@ void main() {
     expect(find.byKey(const Key('places_upsell')), findsOneWidget);
     expect(find.byKey(const Key('add_place')), findsNothing);
     expect(family().members.length, 4);
+  });
+
+  testWidgets('new place: search finds a place, picking it fills the name', (t) async {
+    final queries = <String>[];
+    await pumpRouted(t, 'place_edit', user: parent, search: (q) async {
+      queries.add(q);
+      return q == 'zzz' ? const <PlaceHit>[] : const [PlaceHit('Jhinia High School, Jhenaidah, Bangladesh', 23.5, 89.1)];
+    });
+    await t.enterText(find.byKey(const Key('place_search')), 'zzz');
+    await t.tap(find.byKey(const Key('place_search_go')));
+    await t.pump(const Duration(milliseconds: 100));
+    expect(find.textContaining('No place found'), findsOneWidget);
+    await t.enterText(find.byKey(const Key('place_search')), 'Jhinia school');
+    await t.tap(find.byKey(const Key('place_search_go')));
+    await t.pump(const Duration(milliseconds: 100));
+    await t.tap(find.text('Jhinia High School, Jhenaidah, Bangladesh'));
+    await t.pump(const Duration(milliseconds: 100));
+    expect(queries, ['zzz', 'Jhinia school']);
+    final name = t.widget<TextField>(find.descendant(of: find.byKey(const Key('place_name')), matching: find.byType(TextField)));
+    expect(name.controller!.text, 'Jhinia High School');
   });
 
   testWidgets('remember me: email is prefilled when remembered', (t) async {

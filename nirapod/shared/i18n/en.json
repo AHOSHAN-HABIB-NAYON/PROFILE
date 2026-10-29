@@ -525,7 +525,7 @@
   "places.type": "Type",
   "places.radius_label": "Alert area: {meters} m",
   "places.applies": "Alerts for",
-  "places.pin_hint": "Move the map so the pin is on the place",
+  "places.pin_hint": "Drag the map or tap a spot to move the pin",
   "places.use_my_location": "Use my location",
   "places.delete": "Delete place",
   "places.delete_title": "Delete this place?",
@@ -837,5 +837,9 @@
   "history.days_count": "{count} days",
   "prem.choose": "Choose a plan",
   "me.account": "Account",
-  "me.your_data": "Your data"
+  "me.your_data": "Your data",
+  "places.search_hint": "Search a place or address",
+  "places.search": "Search",
+  "places.search_none": "No place found. Try another name, or move the map.",
+  "places.map_type": "Change map type"
 }

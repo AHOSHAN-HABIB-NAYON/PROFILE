@@ -525,7 +525,7 @@
   "places.type": "Tipo",
   "places.radius_label": "Área de alerta: {meters} m",
   "places.applies": "Alertas para",
-  "places.pin_hint": "Mueve el mapa para que el marcador quede sobre el lugar",
+  "places.pin_hint": "Arrastra el mapa o toca un punto para mover el pin",
   "places.use_my_location": "Usar mi ubicación",
   "places.delete": "Eliminar lugar",
   "places.delete_title": "¿Eliminar este lugar?",
@@ -837,5 +837,9 @@
   "history.days_count": "{count} días",
   "prem.choose": "Elige un plan",
   "me.account": "Cuenta",
-  "me.your_data": "Tus datos"
+  "me.your_data": "Tus datos",
+  "places.search_hint": "Busca un lugar o dirección",
+  "places.search": "Buscar",
+  "places.search_none": "No se encontró ningún lugar. Prueba otro nombre o mueve el mapa.",
+  "places.map_type": "Cambiar tipo de mapa"
 }

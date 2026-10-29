@@ -525,7 +525,7 @@
   "places.type": "النوع",
   "places.radius_label": "منطقة التنبيه: {meters} م",
   "places.applies": "التنبيهات لـ",
-  "places.pin_hint": "حرّك الخريطة ليكون الدبوس على المكان",
+  "places.pin_hint": "اسحب الخريطة أو انقر على مكان لنقل الدبوس",
   "places.use_my_location": "استخدام موقعي",
   "places.delete": "حذف المكان",
   "places.delete_title": "حذف هذا المكان؟",
@@ -837,5 +837,9 @@
   "history.days_count": "{count} أيام",
   "prem.choose": "اختر خطة",
   "me.account": "الحساب",
-  "me.your_data": "بياناتك"
+  "me.your_data": "بياناتك",
+  "places.search_hint": "ابحث عن مكان أو عنوان",
+  "places.search": "بحث",
+  "places.search_none": "لم يُعثر على مكان. جرّب اسمًا آخر أو حرّك الخريطة.",
+  "places.map_type": "تغيير نوع الخريطة"
 }

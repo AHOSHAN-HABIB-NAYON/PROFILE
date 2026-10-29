@@ -2584,7 +2584,7 @@
     },
     "places.pin_hint": {
       "placeholders": [],
-      "en": "Move the map so the pin is on the place"
+      "en": "Drag the map or tap a spot to move the pin"
     },
     "places.use_my_location": {
       "placeholders": [],
@@ -3938,6 +3938,22 @@
     "me.your_data": {
       "placeholders": [],
       "en": "Your data"
+    },
+    "places.search_hint": {
+      "placeholders": [],
+      "en": "Search a place or address"
+    },
+    "places.search": {
+      "placeholders": [],
+      "en": "Search"
+    },
+    "places.search_none": {
+      "placeholders": [],
+      "en": "No place found. Try another name, or move the map."
+    },
+    "places.map_type": {
+      "placeholders": [],
+      "en": "Change map type"
     }
   }
 }

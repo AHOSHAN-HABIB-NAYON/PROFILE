@@ -525,7 +525,7 @@
   "places.type": "प्रकार",
   "places.radius_label": "अलर्ट क्षेत्र: {meters} मीटर",
   "places.applies": "किसके लिए अलर्ट",
-  "places.pin_hint": "मैप खिसकाएँ ताकि पिन जगह पर हो",
+  "places.pin_hint": "मैप खींचें या किसी जगह पर टैप करके पिन लगाएँ",
   "places.use_my_location": "मेरी लोकेशन इस्तेमाल करें",
   "places.delete": "जगह मिटाएँ",
   "places.delete_title": "यह जगह मिटाएँ?",
@@ -837,5 +837,9 @@
   "history.days_count": "{count} दिन",
   "prem.choose": "प्लान चुनें",
   "me.account": "खाता",
-  "me.your_data": "आपका डेटा"
+  "me.your_data": "आपका डेटा",
+  "places.search_hint": "जगह या पता खोजें",
+  "places.search": "खोजें",
+  "places.search_none": "कोई जगह नहीं मिली। दूसरा नाम आज़माएँ या मैप खिसकाएँ।",
+  "places.map_type": "मैप का प्रकार बदलें"
 }
