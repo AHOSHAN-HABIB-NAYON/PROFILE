@@ -32,6 +32,8 @@ export const planPrices = [
   ['family_plus', 'yearly', 12, 'USD', null, 3999, 'nirapod_family_plus', 'yearly'],
   ['premium', 'monthly', 1, 'BDT', 'BD', 29900, 'nirapod_premium', 'monthly'],
   ['premium', 'yearly', 12, 'BDT', 'BD', 249900, 'nirapod_premium', 'yearly'],
+  ['family_plus', 'monthly', 1, 'BDT', 'BD', 49900, 'nirapod_family_plus', 'monthly'],
+  ['family_plus', 'yearly', 12, 'BDT', 'BD', 399900, 'nirapod_family_plus', 'yearly'],
   ['premium', 'monthly', 1, 'SAR', 'SA', 1199, 'nirapod_premium', 'monthly'],
   ['premium', 'yearly', 12, 'SAR', 'SA', 9499, 'nirapod_premium', 'yearly'],
   ['premium', 'monthly', 1, 'MYR', 'MY', 1290, 'nirapod_premium', 'monthly'],

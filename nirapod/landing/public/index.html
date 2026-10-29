@@ -1,20 +1,114 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Nirapod: Live Family Locator</title>
-<meta name="description" content="See where your family is, know when they arrive, and get SOS alerts instantly.">
+<meta name="description" content="See where your family is, know when they arrive, and get SOS alerts instantly. Nothing is hidden: everyone always knows sharing is on.">
+<meta name="theme-color" content="#065F46">
+<link rel="icon" href="/shared/web/brand/logo-app-small.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/shared/web/tokens.css">
 <link rel="stylesheet" href="landing.css">
+<script src="landing.js" defer></script>
 </head>
 <body>
-<main class="hero">
-  <img src="/shared/web/brand/logo-app.svg" width="72" height="72" alt="Nirapod logo">
-  <h1>Nirapod</h1>
-  <p class="tag">Live Family Locator</p>
-  <p>See where your family is, know when they arrive, and get SOS alerts instantly.</p>
-  <p class="soon">The full landing page (features, plans, local payment, gift Premium, changelog) arrives in Phase 6.</p>
+<header class="top">
+  <a class="brand" href="#"><img src="/shared/web/brand/logo-app.svg" width="36" height="36" alt=""><span>Nirapod</span></a>
+  <nav>
+    <a href="#features" data-i18n="nav_features">Features</a>
+    <a href="#premium" data-i18n="nav_premium">Premium</a>
+    <a href="#updates" data-i18n="nav_updates">Updates</a>
+  </nav>
+  <div class="tools">
+    <button id="lang" class="chip" type="button" aria-label="Language">বাংলা</button>
+    <button id="theme" class="chip icon" type="button" aria-label="Dark mode">◐</button>
+  </div>
+</header>
+
+<main>
+<section class="hero">
+  <div class="hero-text">
+    <p class="eyebrow" data-i18n="eyebrow">Live Family Locator</p>
+    <h1 data-i18n="hero_title">Know your family is safe, every day.</h1>
+    <p class="lead" data-i18n="hero_lead">See where your family is, know when they arrive home or at school, and get SOS alerts instantly. Nothing is hidden: everyone always knows sharing is on.</p>
+    <div class="cta">
+      <a id="play" class="btn play" href="https://play.google.com/store/apps/details?id=app.nirapod.family" rel="noopener">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M3.6 2.3 13.4 12l-9.8 9.7c-.4-.2-.6-.6-.6-1.1V3.4c0-.5.2-.9.6-1.1zm11 10.9 2.6 2.6-11 6.3 8.4-8.9zm3.8-3.8 2.7 1.6c.8.4.8 1.6 0 2l-2.7 1.6-2.9-2.6 2.9-2.6zM6.2 1.9l11 6.3-2.6 2.6-8.4-8.9z"/></svg>
+        <span><small data-i18n="get_it">Get it on</small><b>Google Play</b></span>
+      </a>
+      <a class="btn ghost" href="#premium" data-i18n="see_plans">See plans</a>
+    </div>
+    <ul class="trust">
+      <li data-i18n="trust_1">SOS and live map always free</li>
+      <li data-i18n="trust_2">No ads, no data selling</li>
+      <li data-i18n="trust_3">8 languages incl. Bengali</li>
+    </ul>
+  </div>
+  <div class="phones" aria-hidden="true">
+    <div class="phone back"><div class="screen sos"><div class="sos-ring">SOS</div><p>Your SOS has been sent</p><div class="row ok">Mom · Seen</div><div class="row ok">Dad · Coming</div></div></div>
+    <div class="phone front"><div class="screen home">
+      <div class="bar"><img src="/shared/web/brand/logo-app.svg" width="22" height="22" alt=""><b>Nirapod</b></div>
+      <div class="map"><span class="pin p1">R</span><span class="pin p2">M</span><span class="me"></span></div>
+      <div class="card"><span class="av">R</span><div><b>Rafi</b> <small>Son</small><p><i class="dot"></i>Live · At School</p></div><em>78%</em></div>
+      <div class="card"><span class="av">M</span><div><b>Mina</b> <small>Daughter</small><p><i class="dot"></i>Live · At Home</p></div><em>85%</em></div>
+      <div class="card"><span class="av">A</span><div><b>Ammu</b> <small>Mom</small><p><i class="dot amber"></i>12 min ago</p></div><em>62%</em></div>
+    </div></div>
+  </div>
+</section>
+
+<section id="features" class="features">
+  <h2 data-i18n="features_title">Everything a family needs to feel safe</h2>
+  <div class="grid">
+    <article><span class="ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></span><h3 data-i18n="f1_t">Live location</h3><p data-i18n="f1_b">See your family on a satellite map with battery, accuracy and last update. Old positions are never shown as live.</p></article>
+    <article><span class="ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10 12 4l9 6"/><path d="M5 9v10h14V9"/><path d="M10 19v-5h4v5"/></svg></span><h3 data-i18n="f2_t">Arrive and leave alerts</h3><p data-i18n="f2_b">Add home, school or coaching. Get a notice when your child arrives or leaves.</p></article>
+    <article><span class="ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6"/><path d="M12 16.5v.5"/></svg></span><h3 data-i18n="f3_t">SOS in one press</h3><p data-i18n="f3_b">A big red button or shake the phone. Parents get a loud alert with the map; you see who has seen it.</p></article>
+    <article><span class="ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13" cy="4.5" r="1.8"/><path d="m9 21 2.5-6.5L14 17v4"/><path d="m7 12 3-4 4 1 2 3"/></svg></span><h3 data-i18n="f4_t">Safe walk home</h3><p data-i18n="f4_b">Your child taps "Heading home". You are told on arrival, or if they are late or stop too long.</p></article>
+    <article><span class="ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 13.5 21 6l-4.5 13-4-5.5-5 2 1-4.5z"/></svg></span><h3 data-i18n="f5_t">Made for Probashi families</h3><p data-i18n="f5_b">Living abroad? See each member's local time and look after your family from anywhere.</p></article>
+    <article><span class="ic"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span><h3 data-i18n="f6_t">Private by design</h3><p data-i18n="f6_b">Nothing hidden, no ads, no data selling. Adults share only after they agree, and can pause any time.</p></article>
+  </div>
+</section>
+
+<section id="premium" class="premium">
+  <h2 data-i18n="premium_title">Simple plans for the whole family</h2>
+  <p class="sub" data-i18n="premium_sub">One adult buys, everyone in the family benefits. Live location and SOS are always free.</p>
+  <div id="plans" class="plans"><p class="muted" data-i18n="loading">Loading plans…</p></div>
+
+  <div class="local">
+    <div>
+      <h3 data-i18n="local_title">Local payment</h3>
+      <p data-i18n="local_body">Pay with bKash or Nagad. Message us on WhatsApp with your plan and account email; we activate Premium for your family.</p>
+      <div class="badges"><span class="badge bkash">bKash</span><span class="badge nagad">Nagad</span></div>
+    </div>
+    <a id="wa" class="btn wa" href="#" rel="noopener"><span data-i18n="pay_wa">Pay on WhatsApp</span> →</a>
+  </div>
+
+  <div class="gift">
+    <h3 data-i18n="gift_title">Gift Premium to your family</h3>
+    <ol>
+      <li data-i18n="gift_1">Join your family as a guardian in the app and buy Premium for everyone.</li>
+      <li data-i18n="gift_2">Or ask us on WhatsApp for a redeem code to send home.</li>
+      <li data-i18n="gift_3">We can also activate a package for your family's account directly.</li>
+    </ol>
+  </div>
+</section>
+
+<section id="updates" class="updates">
+  <h2 data-i18n="updates_title">App updates</h2>
+  <div id="changelog"><p class="muted" data-i18n="no_updates">News about new versions appears here.</p></div>
+</section>
 </main>
+
+<footer>
+  <div class="foot">
+    <div class="brand"><img src="/shared/web/brand/logo-app.svg" width="28" height="28" alt=""><span>Nirapod</span></div>
+    <nav>
+      <a href="/privacy/" data-i18n="privacy">Privacy Policy</a>
+      <a href="/terms/" data-i18n="terms">Terms</a>
+      <a href="/delete-account/" data-i18n="delete">Account and data deletion</a>
+      <a id="contact" href="mailto:support@family-track.webtecit.com" data-i18n="contact">Contact</a>
+    </nav>
+    <p class="muted">© <span id="year">2026</span> Nirapod</p>
+  </div>
+</footer>
 </body>
 </html>
