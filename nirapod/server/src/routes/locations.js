@@ -12,6 +12,7 @@ import { audit } from '../audit.js';
 import { fromJson } from '../db/json.js';
 import { sha256 } from '../auth/tokens.js';
 import { raiseAlert, batteryAlert } from '../tracking/alerts.js';
+import { applyFences } from '../tracking/fences.js';
 import crypto from 'node:crypto';
 
 export const ONLINE_WINDOW_MS = 5 * 60_000;
@@ -54,15 +55,14 @@ export function unavailableReason(device, lastPointAt, now) {
   return null;
 }
 
-export function locationsRouter(ctx) {
-  const { db, cfg, clock, requireAuth, realtime } = ctx;
-  const r = Router();
-
-  /**
-   * Uploads authenticate with the user's access token, or (child background service) with
-   * `Authorization: Device <upload_key>` plus `x-device-id`. The device key only works here.
-   */
-  const uploader = ah(async (req, res, next) => {
+/**
+ * Uploads authenticate with the user's access token, or (child background service) with
+ * `Authorization: Device <upload_key>` plus `x-device-id`. The device key only works on the routes that use
+ * this middleware (location upload and shake-to-SOS).
+ */
+export function deviceOrUserAuth(ctx) {
+  const { db, requireAuth } = ctx;
+  return ah(async (req, res, next) => {
     const m = /^Device\s+(\S{20,200})$/.exec(req.get('authorization') || '');
     if (!m) return requireAuth(req, res, next);
     const deviceId = req.get('x-device-id') || '';
@@ -74,6 +74,13 @@ export function locationsRouter(ctx) {
     req.session = { isChildDevice: true, deviceId };
     next();
   });
+}
+
+export function locationsRouter(ctx) {
+  const { db, cfg, clock, requireAuth, realtime } = ctx;
+  const r = Router();
+
+  const uploader = deviceOrUserAuth(ctx);
 
   // A child session creates (or rotates) the device upload key for its native background service.
   r.post('/devices/upload-key', requireAuth, ah(async (req, res) => {
@@ -133,6 +140,8 @@ export function locationsRouter(ctx) {
         }
         await db('child_devices').where({ id: device.id }).update(upd);
       }
+      // Places: arrival / departure (debounced), safe-walk arrival.
+      await applyFences(ctx, { familyId: membership.family_id, subject: { id: req.user.id, uuid: req.user.uuid, name: req.user.name }, points: rows, now });
       // "Request update now": tell the device (piggybacked on uploads until FCM arrives in Phase 5).
       const pending = await db('notifications').where({ user_id: req.user.id, type: 'update_requested' }).whereNull('read_at').orderBy('id', 'desc').first();
       if (pending) {
@@ -236,8 +245,8 @@ export function locationsRouter(ctx) {
 
   // Timeline: arrivals, departures, SOS, battery, offline, location-off events (newest first).
   const CATEGORY = {
-    safety: ['sos', 'battery_low', 'battery_critical', 'offline', 'location_off', 'permission_removed', 'safe_walk_overdue'],
-    family: ['arrival', 'departure', 'safe_arrival', 'safe_walk_started', 'safe_walk_arrived', 'update_requested'],
+    safety: ['sos', 'sos_resolved', 'battery_low', 'battery_critical', 'offline', 'location_off', 'permission_removed', 'safe_walk_overdue', 'safe_walk_stopped'],
+    family: ['arrival', 'departure', 'safe_arrival', 'safe_walk_started', 'safe_walk_arrived', 'safe_walk_cancelled', 'update_requested'],
   };
   r.get('/families/:familyId/timeline', requireAuth, ah(async (req, res) => {
     const f = await familyForMember(db, req.params.familyId, req.user.id);

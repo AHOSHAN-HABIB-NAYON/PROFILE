@@ -4,7 +4,7 @@
 -- Replace the password and database name.
 --
 -- Location-bearing tables (never granted): locations, places, trips, sos_events,
--- timeline_events, nearby_cache. Keep in sync with LOCATION_TABLES in
+-- timeline_events, nearby_cache, place_presence. Keep in sync with LOCATION_TABLES in
 -- server/migrations/20261028_0001_initial_schema.js (a test checks this file).
 
 -- email_codes: 6-digit codes could be brute-forced from their hashes, so admin gets no access at all.

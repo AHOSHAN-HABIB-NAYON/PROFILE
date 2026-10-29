@@ -3,7 +3,7 @@
 // LOCATION-BEARING TABLES (never readable by the admin DB user): see LOCATION_TABLES below and
 // tools/sql/admin-grants.sql.
 
-export const LOCATION_TABLES = ['locations', 'places', 'trips', 'sos_events', 'timeline_events', 'nearby_cache'];
+export const LOCATION_TABLES = ['locations', 'places', 'trips', 'sos_events', 'timeline_events', 'nearby_cache', 'place_presence'];
 
 let K; // knex instance, set in up()
 const ts = (t) => {

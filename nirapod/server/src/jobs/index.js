@@ -3,6 +3,7 @@
 // index.js) or from system/hPanel cron via scripts/run-jobs.js.
 import { raiseAlert } from '../tracking/alerts.js';
 import { familyPlan } from '../users/presenter.js';
+import { stayedWithin } from '../safety/geo.js';
 
 export const OFFLINE_AFTER_MS = 15 * 60_000;
 
@@ -56,7 +57,46 @@ export async function purgeLocationHistory(ctx) {
   return deleted;
 }
 
+/** Safe walk not finished on time, or stopped in one spot too long, each alerted once per walk. */
+export const STOPPED_AFTER_MS = 10 * 60_000;
+export const STOPPED_RADIUS_M = 50;
+export async function watchTrips(ctx) {
+  const { db, clock, realtime } = ctx;
+  const now = clock.now();
+  const trips = await db('trips as t').join('users as u', 'u.id', 't.user_id')
+    .where('t.status', 'active').select('t.*', 'u.uuid as user_uuid', 'u.name as user_name');
+  let n = 0;
+  for (const t of trips) {
+    const subject = { id: t.user_id, uuid: t.user_uuid, name: t.user_name };
+    const changed = {};
+    if (!t.overdue_alerted_at && new Date(t.expected_arrival_at) <= now) {
+      await raiseAlert(ctx, { familyId: t.family_id, subject, type: 'safe_walk_overdue', now, data: { expected_at: new Date(t.expected_arrival_at).toISOString() } });
+      changed.overdue_alerted_at = now;
+    }
+    if (now - new Date(t.started_at) >= STOPPED_AFTER_MS) {
+      const pts = await db('locations').where({ user_id: t.user_id }).where('recorded_at', '>=', new Date(now - STOPPED_AFTER_MS))
+        .orderBy('recorded_at', 'asc').select('lat', 'lng', 'recorded_at');
+      // Enough coverage of the window: the first point is near its start.
+      const covered = pts.length >= 2 && new Date(pts[0].recorded_at) - (now - STOPPED_AFTER_MS) < 3 * 60_000;
+      const still = covered && stayedWithin(pts, STOPPED_RADIUS_M);
+      if (still && !t.stopped_alerted_at) {
+        await raiseAlert(ctx, { familyId: t.family_id, subject, type: 'safe_walk_stopped', now, data: { minutes: STOPPED_AFTER_MS / 60_000 } });
+        changed.stopped_alerted_at = now;
+      } else if (!still && t.stopped_alerted_at && pts.length >= 2) {
+        changed.stopped_alerted_at = null; // moving again: re-arm
+      }
+    }
+    if (Object.keys(changed).length) {
+      await db('trips').where({ id: t.id }).update(changed);
+      n += 1;
+      realtime?.emitToUsers([t.user_uuid], 'trip.updated', { id: t.uuid, status: 'active' }, now);
+    }
+  }
+  return n;
+}
+
 export const JOBS = {
+  trips_watch: { everyMs: 60_000, run: watchTrips },
   stale_devices: { everyMs: 60_000, run: detectStaleDevices },
   location_retention: { everyMs: 6 * 3600_000, run: purgeLocationHistory },
 };

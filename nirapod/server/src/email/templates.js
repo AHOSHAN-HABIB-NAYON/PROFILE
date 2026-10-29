@@ -35,6 +35,15 @@ const T = {
       time: 'Time',
       unknownDevice: 'Unknown device',
     },
+    sos_alert: {
+      subject: 'SOS from {name}',
+      heading: '{name} needs help',
+      intro: '{name} pressed SOS in Nirapod at {time}.',
+      map: 'Open the location on the map',
+      noMap: 'The location was not available when the SOS was sent. Open Nirapod to see the latest position.',
+      emergency: 'Emergency numbers: {numbers}',
+      note: 'Call {name} or the emergency services now. Open Nirapod to see the live location and tell the family you are responding.',
+    },
     family_invite: {
       subject: 'You are invited to a Nirapod family circle',
       heading: 'Join your family on Nirapod',
@@ -71,6 +80,15 @@ const T = {
       device: 'ডিভাইস',
       time: 'সময়',
       unknownDevice: 'অজানা ডিভাইস',
+    },
+    sos_alert: {
+      subject: '{name}-এর কাছ থেকে SOS',
+      heading: '{name}-এর সাহায্য দরকার',
+      intro: '{name} {time}-এ Nirapod-এ SOS চেপেছে।',
+      map: 'ম্যাপে অবস্থান খুলুন',
+      noMap: 'SOS পাঠানোর সময় অবস্থান পাওয়া যায়নি। সর্বশেষ অবস্থান দেখতে Nirapod খুলুন।',
+      emergency: 'জরুরি নম্বর: {numbers}',
+      note: 'এখনই {name}-কে বা জরুরি সেবায় ফোন করুন। লাইভ অবস্থান দেখতে এবং পরিবারকে জানাতে Nirapod খুলুন।',
     },
     family_invite: {
       subject: 'আপনাকে একটি Nirapod পরিবারে আমন্ত্রণ জানানো হয়েছে',
@@ -127,6 +145,20 @@ export function render(template, language, vars = {}) {
   if (!t) throw new Error(`Unknown email template ${template}`);
   let bodyHtml;
   let text;
+  const fill = (str) => String(str).replaceAll('{name}', vars.name || '').replaceAll('{time}', vars.time || '').replaceAll('{numbers}', vars.emergency || '');
+  if (template === 'sos_alert') {
+    const button = vars.map_url
+      ? `<p style="margin:8px 0 16px;"><a href="${esc(vars.map_url)}" style="display:inline-block;padding:14px 22px;background:#DC2626;color:#FFFFFF;border-radius:12px;font-weight:700;text-decoration:none;">${esc(t.map)}</a></p>`
+      : p(t.noMap);
+    bodyHtml = p(fill(t.intro)) + button + (vars.emergency ? p(fill(t.emergency)) : '') + muted(fill(t.note));
+    text = `${fill(t.heading)}\n\n${fill(t.intro)}\n${vars.map_url ? `${t.map}: ${vars.map_url}` : t.noMap}\n${vars.emergency ? fill(t.emergency) + '\n' : ''}\n${fill(t.note)}`;
+    return {
+      subject: fill(t.subject),
+      html: layout({ lang, dir: L.dir, heading: fill(t.heading), bodyHtml, footer: L.footer }),
+      text: `${text}\n\n--\n${L.footer}\n`,
+      language: lang,
+    };
+  }
   if (template === 'family_invite') {
     const intro = t.intro.replace('{inviter}', vars.inviter || 'A family member');
     bodyHtml = p(intro) + codeBlock(vars.code) + muted(t.note);

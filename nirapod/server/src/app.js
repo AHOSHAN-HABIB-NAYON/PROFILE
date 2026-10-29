@@ -16,6 +16,8 @@ import { familiesRouter } from './routes/families.js';
 import { familyManageRouter } from './routes/family-manage.js';
 import { locationsRouter } from './routes/locations.js';
 import { nearbyRouter, googlePlacesFetcher } from './routes/nearby.js';
+import { placesRouter } from './routes/places.js';
+import { safetyRouter } from './routes/safety.js';
 import { createRealtimeHub } from './realtime.js';
 import { geoRouter, createGeoLookup } from './geo/hint.js';
 import { systemClock } from './clock.js';
@@ -141,6 +143,8 @@ export function createApp({ cfg, db, logger, clock = systemClock, mailTransport,
   v1.use(familyManageRouter(ctx));
   v1.use(locationsRouter(ctx));
   v1.use(nearbyRouter(ctx));
+  v1.use(placesRouter(ctx));
+  v1.use(safetyRouter(ctx));
   v1.use((req, res, next) => next(new ApiError('NOT_FOUND')));
 
   app.use('/api/v1', apiLimiter, v1);
