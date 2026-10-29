@@ -58,11 +58,15 @@ jobs:
       - name: Migrate + seed a fresh database (smoke)
         run: node scripts/migrate.js latest && node scripts/seed.js && node scripts/seed.js
       - name: Package the server for Hostinger (nirapod-server.zip)
-        run: node ../tools/pack-server.mjs
+        # GitHub zips artifacts itself, so upload the unpacked bundle: the downloaded zip then has
+        # package.json at its root and can go straight into Hostinger's Node.js upload.
+        run: |
+          node ../tools/pack-server.mjs
+          mkdir -p ../dist/bundle && cd ../dist/bundle && unzip -q ../nirapod-server.zip && test -f package.json
       - uses: actions/upload-artifact@v4
         with:
           name: nirapod-server
-          path: nirapod/dist/nirapod-server.zip
+          path: nirapod/dist/bundle/
           retention-days: 30
 
   app:

@@ -10,7 +10,7 @@ Domain: **family-track.webtecit.com** · API: `https://family-track.webtecit.com
 hPanel → Domains → Subdomains → create `family-track` on `webtecit.com`. Enable SSL (free) for it.
 
 ## 3. Upload the server
-1. Download `nirapod-server.zip` (GitHub → Actions → latest "Nirapod CI" run → Artifacts → `nirapod-server`).
+1. Download `nirapod-server.zip` (GitHub → Actions → latest "Nirapod CI" run → Artifacts → `nirapod-server`). Upload it as is; do not unzip it first. It has `package.json` at its root (Express app).
 2. hPanel → Websites → **Node.js** → Create application:
    - Node version: **22** (or 20)
    - Application root: e.g. `nirapod` (a folder in your home directory)
