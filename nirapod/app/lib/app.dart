@@ -9,6 +9,7 @@ import 'core/motion/motion.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
 import 'features/family/data/sharing.dart';
+import 'features/safety/sos_screens.dart';
 import 'nav/router.dart';
 
 final routerProvider = Provider<GoRouter>((ref) => createRouter());
@@ -38,7 +39,7 @@ class NirapodApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      builder: (context, child) => LanguageFade(languageCode: language.code, child: child ?? const SizedBox()),
+      builder: (context, child) => LanguageFade(languageCode: language.code, child: SosAlertHost(child: child ?? const SizedBox())),
     );
   }
 }

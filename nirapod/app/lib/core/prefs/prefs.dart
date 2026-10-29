@@ -10,4 +10,7 @@ abstract final class PrefKeys {
   static const roleChoice = 'role_choice';
   static const onboardingDone = 'onboarding_done';
   static const onboardingStep = 'onboarding_step';
+  /// Login "Remember me": false = sign out on the next app start. Email is kept only when true.
+  static const rememberMe = 'remember_me';
+  static const rememberedEmail = 'remembered_email';
 }

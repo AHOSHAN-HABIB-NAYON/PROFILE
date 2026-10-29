@@ -605,5 +605,6 @@
   "econ.empty": "No emergency contacts yet",
   "econ.remove": "Remove {name}",
   "econ.max": "You can add up to 5 contacts.",
-  "econ.err": "Enter a name and a valid email."
+  "econ.err": "Enter a name and a valid email.",
+  "walk.open": "Open"
 }

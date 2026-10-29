@@ -42,10 +42,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   String? _error;
   bool _loading = false;
   bool _googleLoading = false;
+  bool _remember = true;
 
   @override
   void initState() {
     super.initState();
+    final prefs = ref.read(prefsProvider);
+    _remember = prefs.getBool(PrefKeys.rememberMe) ?? true;
+    final saved = prefs.getString(PrefKeys.rememberedEmail);
+    if (_remember && saved != null) _email.text = saved;
     // Remember the role so "Back to log in" and the next app start return to this page.
     unawaited(ref.read(prefsProvider).setString(PrefKeys.roleChoice, widget.role.name));
   }
@@ -75,6 +80,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _loading = true);
     try {
       final s = await ref.read(authServiceProvider).login(email, _password.text);
+      await _saveRemember(email);
       await _acceptInvite();
       if (!mounted) return;
       context.go(locationFor(destinationAfterAuth(s.user, needsProfileSetup: s.needsProfileSetup)));
@@ -92,6 +98,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _error = loginErrorKey(e);
       });
     }
+  }
+
+  /// Remember me: keep the email and let the phone's password manager save the password (Android autofill);
+  /// off: forget the email and end the session on the next app start.
+  Future<void> _saveRemember(String email) async {
+    final prefs = ref.read(prefsProvider);
+    await prefs.setBool(PrefKeys.rememberMe, _remember);
+    if (_remember) {
+      await prefs.setString(PrefKeys.rememberedEmail, email);
+    } else {
+      await prefs.remove(PrefKeys.rememberedEmail);
+    }
+    TextInput.finishAutofillContext(shouldSave: _remember);
   }
 
   /// Other family member: optional invite code, accepted right after login.
@@ -183,9 +202,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 onSubmitted: (_) => _login(),
               ),
             ],
-            Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: TextLink(label: s.t('auth.forgot'), onTap: busy ? null : () => context.push(locationFor('forgot_email'))),
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Semantics(
+                  checked: _remember,
+                  label: s.t('auth.remember_me'),
+                  excludeSemantics: true,
+                  child: InkWell(
+                    key: const Key('remember_me'),
+                    borderRadius: BorderRadius.circular(Radii.input),
+                    onTap: busy ? null : () => setState(() => _remember = !_remember),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: Space.xxs),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Checkbox(value: _remember, onChanged: busy ? null : (v) => setState(() => _remember = v ?? true)),
+                        Flexible(child: Text(s.t('auth.remember_me'), style: Theme.of(context).textTheme.bodyMedium)),
+                      ]),
+                    ),
+                  ),
+                ),
+                TextLink(label: s.t('auth.forgot'), onTap: busy ? null : () => context.push(locationFor('forgot_email'))),
+              ],
             ),
             if (_error != null) ...[InlineMessage(s.t(_error!)), const SizedBox(height: Space.md)],
             AppButton(label: s.t('auth.log_in'), loading: _loading, onPressed: busy ? null : _login),

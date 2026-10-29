@@ -106,6 +106,14 @@ class SessionController extends Notifier<SessionState> {
   Future<SessionState> restore() async {
     final impl = restoreImpl;
     state = impl == null ? const SignedOut() : await impl(ref);
+    // "Remember me" was off at the last login: this session ends when the app starts again.
+    final s = state;
+    if (s is SignedIn && !s.user.isChild && ref.read(prefsProvider).getBool(PrefKeys.rememberMe) == false) {
+      try {
+        await signOutImpl?.call(ref);
+      } catch (_) {}
+      state = const SignedOut();
+    }
     return state;
   }
 

@@ -35,7 +35,7 @@ export const SCREENS = {
   me: ['common', 'state', 'err', 'a11y', 'me', 'dialog'],
   history: ['common', 'state', 'err', 'a11y', 'history', 'home', 'trust', 'map'],
   tracking: ['tracking'],
-  child_home: ['common', 'state', 'trust', 'err', 'a11y', 'lang', 'greeting', 'time', 'dialog', 'notif', 'kid', 'sos', 'walk', 'places'],
+  child_home: ['common', 'state', 'trust', 'err', 'a11y', 'lang', 'greeting', 'time', 'dialog', 'notif', 'kid', 'sos', 'walk', 'places', 'home'],
   places: ['common', 'state', 'err', 'a11y', 'places', 'dialog', 'map', 'home'],
   sos: ['common', 'state', 'err', 'a11y', 'sos', 'time', 'trust'],
   safe_walk: ['common', 'state', 'err', 'a11y', 'walk', 'time', 'trust', 'home'],

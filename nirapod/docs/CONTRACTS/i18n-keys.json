@@ -183,7 +183,8 @@
       "kid",
       "sos",
       "walk",
-      "places"
+      "places",
+      "home"
     ],
     "places": [
       "common",
@@ -2854,6 +2855,10 @@
     "econ.err": {
       "placeholders": [],
       "en": "Enter a name and a valid email."
+    },
+    "walk.open": {
+      "placeholders": [],
+      "en": "Open"
     }
   }
 }
