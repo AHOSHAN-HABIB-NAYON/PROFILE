@@ -392,7 +392,7 @@ paths:
       parameters: [ { $ref: '#/components/parameters/familyId' } ]
       requestBody: { content: { application/json: { schema: { type: object, properties: { email: { type: string }, role: { enum: [parent, guardian] }, is_overseas: { type: boolean }, timezone: { type: string } } } } } }
       responses:
-        '201': { description: Invite created }
+        '201': { description: 'Invite created: {code, role, is_overseas, expires_at (7 days), invite_url, email_sent}' }
         '402': { $ref: '#/components/responses/Error' }
   /invites/accept:
     post:
@@ -443,6 +443,7 @@ paths:
       x-phase: 3
       summary: Batch upload from a device (offline queue). Coordinates are never logged.
       requestBody: { content: { application/json: { schema: { type: object, required: [points], properties: { points: { type: array, maxItems: 200, items: { $ref: '#/components/schemas/LocationPoint' } }, device_state: { $ref: '#/components/schemas/DeviceDiagnostics' } } } } } }
+      description: 'Adults must have sharing_status active (else 403 CONSENT_REQUIRED). Points older than 7 days or >2 min in the future are dropped. Response {accepted, dropped}.'
       responses:
         '202': { description: Accepted }
   /families/{familyId}/live:
@@ -484,6 +485,7 @@ paths:
       x-phase: 2
       summary: Nearby places via Places API (New), cached per grid cell for 24 h, per-user and daily caps, admin switch
       parameters: [ { name: lat, in: query, required: true, schema: { type: number } }, { name: lng, in: query, required: true, schema: { type: number } }, { name: categories, in: query, schema: { type: string, example: 'school,hospital,police,pharmacy,mosque,store' } } ]
+      description: 'Response {places: [{id, name, category, lat, lng, address, distance_m}], fetched}. Google is queried with the ~1 km grid-cell centre, never the exact position.'
       responses:
         '200': { description: Places with distance }
         '503': { $ref: '#/components/responses/Error' }
@@ -810,10 +812,11 @@ components:
       properties:
         member_id: { type: string }
         point: { oneOf: [ { $ref: '#/components/schemas/LocationPoint' }, { type: 'null' } ] }
+        last_update_at: { type: [string, 'null'], format: date-time, description: 'Exact time of the last point (trust label input)' }
         place_name: { type: [string, 'null'] }
         battery_pct: { type: [integer, 'null'] }
         online: { type: boolean }
-        unavailable_reason: { enum: [phone_off, location_off, permission_removed, battery_saver, no_network, null] }
+        unavailable_reason: { enum: [phone_off, location_off, permission_removed, battery_saver, no_network, no_data, null] }
     Place:
       type: object
       required: [name, type, lat, lng, radius_m]

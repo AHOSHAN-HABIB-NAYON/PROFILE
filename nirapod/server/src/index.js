@@ -2,6 +2,7 @@ import { loadConfig } from './config.js';
 import { createLogger } from './logger.js';
 import { createDb } from './db/knex.js';
 import { createApp } from './app.js';
+import { attachRealtime } from './realtime.js';
 
 const cfg = loadConfig();
 const logger = createLogger(cfg.LOG_LEVEL);
@@ -11,6 +12,7 @@ if (!cfg.DB_ADMIN_USER) logger.warn('DB_ADMIN_USER not set: admin panel shares t
 
 const app = createApp({ cfg, db, adminDb, logger });
 const server = app.listen(cfg.PORT, () => logger.info({ port: cfg.PORT }, 'Nirapod server listening'));
+attachRealtime(server, app.locals.ctx);
 
 async function shutdown(signal) {
   logger.info({ signal }, 'shutting down');

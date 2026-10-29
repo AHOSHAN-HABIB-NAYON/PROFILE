@@ -56,6 +56,8 @@ const schema = z.object({
   GOOGLE_OAUTH_CLIENT_IDS: z.string().optional(),
   GOOGLE_PLAY_PACKAGE_NAME: z.string().default('app.nirapod.family'),
   GEOIP_DB_PATH: z.string().optional(),
+  // Server-side key for Places API (New) nearby search (restrict it to the server IP in Google Cloud).
+  GOOGLE_PLACES_API_KEY: z.string().optional(),
 });
 
 export function loadConfig(env = process.env) {

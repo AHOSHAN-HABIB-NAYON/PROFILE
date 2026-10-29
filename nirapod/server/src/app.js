@@ -13,6 +13,10 @@ import { appConfigRouter } from './routes/app-config.js';
 import { authRouter } from './routes/auth.js';
 import { meRouter } from './routes/me.js';
 import { familiesRouter } from './routes/families.js';
+import { familyManageRouter } from './routes/family-manage.js';
+import { locationsRouter } from './routes/locations.js';
+import { nearbyRouter, googlePlacesFetcher } from './routes/nearby.js';
+import { createRealtimeHub } from './realtime.js';
 import { geoRouter, createGeoLookup } from './geo/hint.js';
 import { systemClock } from './clock.js';
 import { createTokenService } from './auth/tokens.js';
@@ -36,7 +40,7 @@ let ephemeralSecret;
  *   clock?: {now: () => Date}, mailTransport?: object, googleVerifier?: Function, geoLookup?: Function}} deps
  *   mailTransport, googleVerifier and geoLookup are injectable for tests.
  */
-export function createApp({ cfg, db, logger, clock = systemClock, mailTransport, googleVerifier, geoLookup }) {
+export function createApp({ cfg, db, logger, clock = systemClock, mailTransport, googleVerifier, geoLookup, placesFetcher, realtime }) {
   const app = express();
   let secret = cfg.JWT_ACCESS_SECRET;
   if (!secret) {
@@ -54,6 +58,8 @@ export function createApp({ cfg, db, logger, clock = systemClock, mailTransport,
     mailer: createMailer({ cfg, db, logger, clock, transport: mailTransport }),
     google: googleVerifier ?? createGoogleVerifier(cfg.GOOGLE_OAUTH_CLIENT_IDS),
     requireAuth: requireAuth({ tokens, sessions, clock }),
+    realtime: realtime ?? createRealtimeHub(),
+    placesFetcher: placesFetcher ?? googlePlacesFetcher(cfg.GOOGLE_PLACES_API_KEY),
   };
   app.locals.ctx = ctx;
   app.disable('x-powered-by');
@@ -132,6 +138,9 @@ export function createApp({ cfg, db, logger, clock = systemClock, mailTransport,
   v1.use(authRouter(ctx));
   v1.use(meRouter(ctx));
   v1.use(familiesRouter(ctx));
+  v1.use(familyManageRouter(ctx));
+  v1.use(locationsRouter(ctx));
+  v1.use(nearbyRouter(ctx));
   v1.use((req, res, next) => next(new ApiError('NOT_FOUND')));
 
   app.use('/api/v1', apiLimiter, v1);

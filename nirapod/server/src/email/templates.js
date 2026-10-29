@@ -35,6 +35,12 @@ const T = {
       time: 'Time',
       unknownDevice: 'Unknown device',
     },
+    family_invite: {
+      subject: 'You are invited to a Nirapod family circle',
+      heading: 'Join your family on Nirapod',
+      intro: '{inviter} invited you to their family circle. Install Nirapod, sign in with this email and enter this code:',
+      note: 'The code expires in 7 days. Your own location is shared only after you agree in the app, and you can pause it any time.',
+    },
   },
   bn: {
     dir: 'ltr',
@@ -65,6 +71,12 @@ const T = {
       device: 'ডিভাইস',
       time: 'সময়',
       unknownDevice: 'অজানা ডিভাইস',
+    },
+    family_invite: {
+      subject: 'আপনাকে একটি Nirapod পরিবারে আমন্ত্রণ জানানো হয়েছে',
+      heading: 'Nirapod-এ আপনার পরিবারে যোগ দিন',
+      intro: '{inviter} আপনাকে তাঁর পরিবারের সার্কেলে আমন্ত্রণ জানিয়েছেন। Nirapod ইনস্টল করুন, এই ইমেইল দিয়ে সাইন ইন করুন এবং এই কোডটি দিন:',
+      note: 'কোডটির মেয়াদ ৭ দিন। আপনি অ্যাপে সম্মতি দেওয়ার পরেই আপনার লোকেশন শেয়ার হবে, আর যেকোনো সময় তা থামাতে পারবেন।',
     },
   },
 };
@@ -115,7 +127,11 @@ export function render(template, language, vars = {}) {
   if (!t) throw new Error(`Unknown email template ${template}`);
   let bodyHtml;
   let text;
-  if (template === 'verify_email' || template === 'reset_password') {
+  if (template === 'family_invite') {
+    const intro = t.intro.replace('{inviter}', vars.inviter || 'A family member');
+    bodyHtml = p(intro) + codeBlock(vars.code) + muted(t.note);
+    text = `${t.heading}\n\n${intro}\n\n    ${vars.code}\n\n${t.note}`;
+  } else if (template === 'verify_email' || template === 'reset_password') {
     bodyHtml = p(t.intro) + codeBlock(vars.code) + muted(t.note);
     text = `${t.heading}\n\n${t.intro}\n\n    ${vars.code}\n\n${t.note}`;
   } else if (template === 'new_device_login') {
