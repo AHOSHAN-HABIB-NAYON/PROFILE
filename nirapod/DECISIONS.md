@@ -88,3 +88,20 @@ CORS allow-list on `/api` only, express-rate-limit (general + stricter auth limi
 - Exception to "never show Bengali when English is selected": the Language sheet lists each language by its
   native name (e.g. "বাংলা (Bengali)"), as the spec requires for that sheet.
 - Not changed (minor, recorded): the public health endpoint shows version/uptime; CI actions are pinned by tag.
+
+## D-014 Phase 4: geofencing, SOS delivery, safe walk
+- Arrival/departure is decided on the server from uploaded points (2 agreeing points, 25 m exit margin,
+  points worse than 150 m ignored, first state silent). Android geofences only wake the device for a 3-minute
+  high-accuracy burst, so both paths give the same, debounced result and nothing depends on one OEM's geofencing.
+- SOS: one open SOS per person; adults get realtime + email now, push (high-priority FCM) is added in Phase 5.
+  Delivery status per recipient moves only forward: sent -> delivered -> seen -> responded. Emergency contacts get
+  email only (no SMS). The map link goes only to recipients and is never logged.
+- Shake-to-SOS runs in the visible foreground service (accelerometer, no permission); a 5 s notification with
+  Cancel comes first; the device key is accepted on POST /sos (and POST /locations) only.
+- Safe walk: status stays `active` until arrival/cancel; "overdue" and "stopped too long" are one-time alerts
+  stored as timestamps, so a late child can still arrive and end the walk normally.
+- place_presence joins LOCATION_TABLES (admin can never read it).
+- String tables are read with AssetBundle.load + utf8: loadString moves files over 50 KB to an isolate,
+  which never completes in widget tests (bn.json passed 50 KB).
+- Remember me: keeps the email and lets Android autofill save the password; when off, the session ends on the
+  next app start (the password is never stored by the app).
