@@ -5,12 +5,14 @@ import 'package:flutter/foundation.dart';
 /// same scrubbed text.
 abstract final class Log {
   static final _email = RegExp(r'[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}', caseSensitive: false);
-  static final _coords = RegExp(r'-?\d{1,3}\.\d{3,}\s*,\s*-?\d{1,3}\.\d{3,}');
+  static final _coords = RegExp(r'-?\d{1,3}\.\d{2,}\s*,\s*-?\d{1,3}\.\d{2,}');
+  static final _labelled = RegExp(r'\b(lat|lng|lon|latitude|longitude)\b\s*[=:]\s*-?\d{1,3}(\.\d+)?', caseSensitive: false);
   static final _bearer = RegExp(r'Bearer\s+[A-Za-z0-9\-._~+/]+=*');
   static final _jwt = RegExp(r'eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]+');
 
   static String scrub(String s) => s
       .replaceAll(_email, '[email]')
+      .replaceAllMapped(_labelled, (m) => '${m[1]}=[coord]')
       .replaceAll(_coords, '[coords]')
       .replaceAll(_bearer, 'Bearer [token]')
       .replaceAll(_jwt, '[jwt]');

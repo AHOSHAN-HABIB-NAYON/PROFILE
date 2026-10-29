@@ -10,7 +10,8 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   PUBLIC_BASE_URL: z.string().url().default('http://localhost:3000'),
-  TRUST_PROXY: bool.default(false),
+  // Unset = false in dev/test, true in production (Hostinger/NGINX terminate HTTPS in front of Node).
+  TRUST_PROXY: bool.optional(),
   // Comma-separated list of allowed browser origins (admin/landing are same-origin, so this is usually empty).
   CORS_ALLOWED_ORIGINS: z.string().default(''),
   FORCE_HTTPS: bool.default(false),
@@ -72,6 +73,7 @@ export function loadConfig(env = process.env) {
     if (cfg.BCRYPT_COST < 12) throw new Error('BCRYPT_COST must be at least 12 in production');
     cfg.FORCE_HTTPS = true;
   }
+  if (cfg.TRUST_PROXY === undefined) cfg.TRUST_PROXY = cfg.NODE_ENV === 'production';
   cfg.corsOrigins = cfg.CORS_ALLOWED_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean);
   return Object.freeze(cfg);
 }

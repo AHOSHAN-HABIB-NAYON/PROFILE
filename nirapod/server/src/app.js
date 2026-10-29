@@ -7,7 +7,7 @@ import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ApiError, errorBody } from './errors.js';
-import { scrubString } from './logger.js';
+import { serializeError } from './logger.js';
 import { healthRouter } from './routes/health.js';
 import { appConfigRouter } from './routes/app-config.js';
 import { authRouter } from './routes/auth.js';
@@ -60,7 +60,8 @@ export function createApp({ cfg, db, logger, clock = systemClock, mailTransport,
   if (cfg.TRUST_PROXY) app.set('trust proxy', 1);
 
   app.use((req, res, next) => {
-    req.id = req.get('x-request-id')?.slice(0, 64) || crypto.randomUUID();
+    const given = req.get('x-request-id');
+    req.id = given && /^[A-Za-z0-9._-]{1,64}$/.test(given) ? given : crypto.randomUUID();
     res.set('x-request-id', req.id);
     next();
   });
@@ -74,7 +75,7 @@ export function createApp({ cfg, db, logger, clock = systemClock, mailTransport,
       // pino-http hands serializers a wrapped object; the real one is at .raw
       req: (req) => ({ method: req.method, path: String(req.raw?.originalUrl ?? req.url ?? '').split('?')[0] }),
       res: (res) => ({ statusCode: res.raw?.statusCode ?? res.statusCode }),
-      err: (err) => ({ type: err?.name, errCode: err?.code, detail: scrubString(String(err?.message || '')) }),
+      err: serializeError,
     },
   }));
 

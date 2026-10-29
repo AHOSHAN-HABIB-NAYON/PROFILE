@@ -140,7 +140,7 @@ class CodeCellsState extends State<CodeCells> {
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(Radii.inputLarge),
                             borderSide: BorderSide(
-                              color: widget.error ? c.danger : c.border,
+                              color: widget.error ? c.danger : c.inputBorder,
                               width: widget.error ? 1.5 : 1,
                             ),
                           ),

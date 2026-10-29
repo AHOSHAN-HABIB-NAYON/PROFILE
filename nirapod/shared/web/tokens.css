@@ -11,7 +11,7 @@
 --trust-recent:#D97706;
 --trust-stale:#6B7C77;
 --trust-unavailable:#6B7C77;
---background:#F6F8F7;--surface:#FFFFFF;--border:#E5EAE8;--text:#0F2A24;--muted:#6B7C77;--muted-text:#5B6C67;--primary-text:#047857;--primary-fill:#047857;--primary-fill-pressed:#065F46;--warning-text:#B45309;--success-text:#15803D;--danger-text:#B91C1C;
+--background:#F6F8F7;--surface:#FFFFFF;--border:#E5EAE8;--text:#0F2A24;--muted:#6B7C77;--muted-text:#5B6C67;--primary-text:#047857;--primary-fill:#047857;--primary-fill-pressed:#065F46;--warning-text:#B45309;--success-text:#15803D;--danger-text:#B91C1C;--input-border:#7F8F8A;
 --radius-input:12px;
 --radius-input-large:14px;
 --radius-card:16px;
@@ -51,6 +51,6 @@
 --motion-reduced-motion-max:120ms;
 --motion-frame-budget:6.9ms;
 color-scheme:light;}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--background:#0B1512;--surface:#121F1B;--border:#20322D;--text:#E8F1EE;--muted:#8FA39D;--muted-text:#8FA39D;--primary-text:#34D399;--primary-fill:#10B981;--primary-fill-pressed:#34D399;--on-primary-fill:#0B1512;--warning-text:#FBBF24;--success-text:#4ADE80;--danger-text:#F87171;color-scheme:dark;}}
-:root[data-theme="dark"]{--background:#0B1512;--surface:#121F1B;--border:#20322D;--text:#E8F1EE;--muted:#8FA39D;--muted-text:#8FA39D;--primary-text:#34D399;--primary-fill:#10B981;--primary-fill-pressed:#34D399;--on-primary-fill:#0B1512;--warning-text:#FBBF24;--success-text:#4ADE80;--danger-text:#F87171;color-scheme:dark;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--background:#0B1512;--surface:#121F1B;--border:#20322D;--text:#E8F1EE;--muted:#8FA39D;--muted-text:#8FA39D;--primary-text:#34D399;--primary-fill:#10B981;--primary-fill-pressed:#34D399;--on-primary-fill:#0B1512;--warning-text:#FBBF24;--success-text:#4ADE80;--danger-text:#F87171;--input-border:#61766F;color-scheme:dark;}}
+:root[data-theme="dark"]{--background:#0B1512;--surface:#121F1B;--border:#20322D;--text:#E8F1EE;--muted:#8FA39D;--muted-text:#8FA39D;--primary-text:#34D399;--primary-fill:#10B981;--primary-fill-pressed:#34D399;--on-primary-fill:#0B1512;--warning-text:#FBBF24;--success-text:#4ADE80;--danger-text:#F87171;--input-border:#61766F;color-scheme:dark;}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:120ms!important}}
