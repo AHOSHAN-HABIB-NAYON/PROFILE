@@ -15,7 +15,6 @@ import '../../../core/state/buttons.dart';
 import '../../../core/state/state_views.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/tokens.g.dart';
-import '../../../core/widgets/auth_scaffold.dart';
 import '../data/auth_api.dart';
 
 /// Devices and sessions: this device is marked; any other can be signed out remotely.
@@ -68,17 +67,19 @@ class _SessionsScreenState extends ConsumerState<SessionsScreen> {
   @override
   Widget build(BuildContext context) {
     final s = ref.watch(screenStringsProvider('sessions'));
-    return AuthScaffold(
-      showLanguage: false,
-      backLabel: s.t('common.back'),
-      title: s.t('sessions.title'),
-      body: switch (_state) {
+    final c = context.colors;
+    return Scaffold(
+      backgroundColor: c.background,
+      appBar: AppBar(title: Text(s.t('sessions.title')), backgroundColor: c.background),
+      body: SingleChildScrollView(padding: const EdgeInsets.fromLTRB(Space.md, Space.xs, Space.md, Space.xl), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        switch (_state) {
         Data(:final value) => Column(children: [for (final x in value) _tile(context, s, x)]),
         final other => SizedBox(
             height: 420,
             child: StateView<List<SessionInfo>>(state: other, strings: s, data: (_, _) => const SizedBox(), onRetry: _load),
           ),
       },
+      ])),
     );
   }
 

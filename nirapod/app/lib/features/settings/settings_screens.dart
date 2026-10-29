@@ -495,6 +495,7 @@ class _HelpScreenState extends ConsumerState<HelpScreen> {
               Theme(
                 data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                 child: ExpansionTile(
+                  trailing: AppIcon(AppIcons.chevronDown, size: 20, color: c.muted),
                   title: Text(a.title, style: t.bodyLarge!.copyWith(fontWeight: FontWeight.w500)),
                   childrenPadding: const EdgeInsets.fromLTRB(Space.md, 0, Space.md, Space.md),
                   expandedCrossAxisAlignment: CrossAxisAlignment.start,

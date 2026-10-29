@@ -322,7 +322,7 @@ class _QuickActions extends StatelessWidget {
                   child: AppIcon(icon, color: c.primaryText),
                 ),
                 const SizedBox(height: Space.xxs),
-                Text(s.t(key), style: Theme.of(context).textTheme.labelMedium, textAlign: TextAlign.center, maxLines: 2),
+                FittedBox(fit: BoxFit.scaleDown, child: Text(s.t(key), style: Theme.of(context).textTheme.labelMedium, textAlign: TextAlign.center, maxLines: 1, softWrap: false)),
               ]),
             ),
           ),
