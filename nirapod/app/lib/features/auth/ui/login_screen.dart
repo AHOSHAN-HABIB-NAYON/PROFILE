@@ -128,12 +128,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final busy = _loading || _googleLoading;
     return AuthScaffold(
       backLabel: s.t('common.back'),
-      illustration: switch (widget.role) {
-        RoleChoice.parent => BrandAssets.illustrationParent,
-        RoleChoice.child => BrandAssets.illustrationChild,
-        RoleChoice.probashi => BrandAssets.illustrationProbashi,
-        RoleChoice.member => BrandAssets.illustrationMember,
-      },
+      footer: Column(mainAxisSize: MainAxisSize.min, children: [
+        FooterPrompt(
+          question: s.t('auth.new_here'),
+          action: s.t('auth.create_account'),
+          onTap: () => context.push(locationFor('register')),
+        ),
+        TextLink(label: s.t('auth.change_role'), bold: false, onTap: () => context.go(locationFor('role'))),
+      ]),
       body: AutofillGroup(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -189,13 +191,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             AppButton(label: s.t('auth.log_in'), loading: _loading, onPressed: busy ? null : _login),
             OrDivider(s.t('auth.or')),
             GoogleButton(label: s.t('auth.google'), loading: _googleLoading, onPressed: busy ? null : _google),
-            const SizedBox(height: Space.lg),
-            FooterPrompt(
-              question: s.t('auth.new_here'),
-              action: s.t('auth.create_account'),
-              onTap: () => context.push(locationFor('register')),
-            ),
-            Center(child: TextLink(label: s.t('auth.change_role'), bold: false, onTap: () => context.go(locationFor('role')))),
           ],
         ),
       ),

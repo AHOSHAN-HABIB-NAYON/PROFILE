@@ -156,19 +156,33 @@ class PermissionPageScaffold extends StatelessWidget {
         child: Column(
           children: [
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(Space.screenHorizontal, Space.md, Space.screenHorizontal, Space.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (progress != null) ...[progress!, const SizedBox(height: Space.md)],
-                    demo,
-                    const SizedBox(height: Space.xl),
-                    Semantics(header: true, child: Text(title, style: t.headlineSmall)),
-                    const SizedBox(height: Space.xs),
-                    Text(body, style: t.bodyLarge!.copyWith(color: c.muted)),
-                    for (final w in extra) ...[const SizedBox(height: Space.md), w],
-                  ],
+              child: LayoutBuilder(
+                builder: (context, box) => SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(Space.screenHorizontal, Space.md, Space.screenHorizontal, Space.md),
+                  child: ConstrainedBox(
+                    // Progress stays on top; the demo and text sit in the middle of the free space.
+                    constraints: BoxConstraints(minHeight: box.maxHeight - 2 * Space.md),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        progress ?? const SizedBox.shrink(),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const SizedBox(height: Space.md),
+                            demo,
+                            const SizedBox(height: Space.xl),
+                            Semantics(header: true, child: Text(title, style: t.headlineSmall)),
+                            const SizedBox(height: Space.xs),
+                            Text(body, style: t.bodyLarge!.copyWith(color: c.muted)),
+                            for (final w in extra) ...[const SizedBox(height: Space.md), w],
+                          ],
+                        ),
+                        const SizedBox.shrink(),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),

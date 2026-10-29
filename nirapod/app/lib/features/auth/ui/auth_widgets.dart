@@ -23,12 +23,15 @@ class AuthHeading extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Semantics(header: true, child: Text(title, style: t.headlineSmall)),
+      Semantics(
+        header: true,
+        child: Text(title, style: t.headlineSmall!.copyWith(fontSize: 26, fontWeight: FontWeight.w700, fontVariations: const [FontVariation('wght', 700)])),
+      ),
       if (subtitle != null) ...[
-        const SizedBox(height: Space.xs),
+        const SizedBox(height: Space.xxs),
         Text(subtitle!, style: t.bodyMedium!.copyWith(color: context.colors.muted)),
       ],
-      const SizedBox(height: Space.xl),
+      const SizedBox(height: Space.lg),
     ]);
   }
 }

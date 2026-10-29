@@ -60,9 +60,13 @@ class _RoleScreenState extends ConsumerState<RoleScreen> {
         child: Column(
           children: [
             Expanded(
-              child: SingleChildScrollView(
+              child: LayoutBuilder(
+                builder: (context, viewport) => SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(Space.screenHorizontal, Space.xl, Space.screenHorizontal, Space.md),
-                child: Column(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: viewport.maxHeight - Space.xl - Space.md),
+                  child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Semantics(header: true, child: Text(s.t('role.title'), style: t.headlineSmall)),
@@ -118,6 +122,8 @@ class _RoleScreenState extends ConsumerState<RoleScreen> {
                     ),
                   ],
                 ),
+                ),
+              ),
               ),
             ),
             Padding(
@@ -168,7 +174,7 @@ class _RoleCard extends StatelessWidget {
         child: AnimatedContainer(
           duration: d,
           curve: Motion.decelerate,
-          padding: const EdgeInsets.fromLTRB(Space.sm, Space.xxl, Space.sm, Space.xxl),
+          padding: const EdgeInsets.fromLTRB(Space.sm, Space.md, Space.sm, Space.md),
           decoration: BoxDecoration(
             color: selected ? c.primary.withValues(alpha: 0.08) : c.surface,
             borderRadius: BorderRadius.circular(Radii.cardLarge),
@@ -181,7 +187,7 @@ class _RoleCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Original brand illustration (Design), decorative.
-                  SvgPicture.asset(icon, width: 108, height: 108, excludeFromSemantics: true),
+                  SvgPicture.asset(icon, width: 76, height: 76, excludeFromSemantics: true),
                   const SizedBox(height: Space.sm),
                   Text(title, style: t.titleMedium, textAlign: TextAlign.center),
                   const SizedBox(height: Space.xxs),
