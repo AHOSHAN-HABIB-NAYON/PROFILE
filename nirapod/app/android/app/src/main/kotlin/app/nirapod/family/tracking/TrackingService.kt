@@ -2,6 +2,7 @@ package app.nirapod.family.tracking
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -22,6 +23,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
+import android.os.SystemClock
 import android.os.PowerManager
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -68,6 +70,7 @@ class TrackingService : Service() {
     private var stillCount = 0
     private var backoffMs = 30_000L
     private var uploadScheduled = false
+    private var lastUploadWall = 0L
     private var lastStateSent: String? = null
     private var receiverRegistered = false
     private var shakeRegistered = false
@@ -123,7 +126,13 @@ class TrackingService : Service() {
             }
             ACTION_GEOFENCES_CHANGED -> worker.post { registerGeofences() }
             ACTION_SOS_CANCEL -> worker.post { cancelShakeSos() }
+            // Screen off / deep sleep: the alarm wakes us; take a fresh fix and send what is queued.
+            ACTION_HEARTBEAT -> worker.post {
+                requestImmediateFix()
+                scheduleUpload(0)
+            }
         }
+        scheduleHeartbeat()
         if (!shakeRegistered) {
             sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.let {
                 shakeRegistered = sensors.registerListener(shake, it, SensorManager.SENSOR_DELAY_UI, worker)
@@ -237,9 +246,12 @@ class TrackingService : Service() {
         if (level in 0..100) p.put("battery_pct", level)
         store.enqueue(p)
         applyMode()
+        // Wall-clock check: Handler delays stop counting while the phone sleeps, so never wait if the last
+        // upload is already older than the batching window.
+        val overdue = System.currentTimeMillis() - lastUploadWall >= 5 * 60_000L
         val due = when (currentMode()) {
             Mode.TRIP, Mode.STILL -> 0L
-            Mode.MOVING -> if (store.size() >= 3) 0L else 5 * 60_000L
+            Mode.MOVING -> if (store.size() >= 3 || overdue) 0L else 5 * 60_000L
         }
         scheduleUpload(due)
     }
@@ -261,6 +273,7 @@ class TrackingService : Service() {
         when (val r = Uploader.post(store, points, deviceState())) {
             is UploadResult.Ok -> {
                 store.remove(ids)
+                lastUploadWall = System.currentTimeMillis()
                 backoffMs = 30_000L
                 r.updateRequestedBy?.let { onUpdateRequested(it) }
                 if (store.size() > 0) scheduleUpload(0)
@@ -426,7 +439,31 @@ class TrackingService : Service() {
         }
     }
 
+    // ---------------------------------------------------------------- heartbeat
+
+    private fun heartbeatIntent(): PendingIntent = PendingIntent.getBroadcast(
+        this, 7, Intent(this, HeartbeatReceiver::class.java),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+    )
+
+    /** Inexact alarm that also fires in Doze (about every 15 min), so updates continue with the screen off. */
+    private fun scheduleHeartbeat() {
+        try {
+            val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            am.setAndAllowWhileIdle(
+                AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                SystemClock.elapsedRealtime() + HEARTBEAT_MS,
+                heartbeatIntent(),
+            )
+        } catch (_: Exception) {
+        }
+    }
+
     private fun stopForGood() {
+        try {
+            (getSystemService(Context.ALARM_SERVICE) as AlarmManager).cancel(heartbeatIntent())
+        } catch (_: Exception) {
+        }
         try {
             geofencing.removeGeofences(geofenceIntent())
         } catch (_: Exception) {
@@ -501,6 +538,8 @@ class TrackingService : Service() {
         const val SOS_NOTIFICATION_ID = 4103
         const val SOS_COUNTDOWN_MS = 5_000L
         const val BURST_MS = 3 * 60_000L
+        const val HEARTBEAT_MS = 15 * 60_000L
+        const val ACTION_HEARTBEAT = "app.nirapod.family.tracking.HEARTBEAT"
 
         fun start(context: Context, action: String? = null) {
             val i = Intent(context, TrackingService::class.java)

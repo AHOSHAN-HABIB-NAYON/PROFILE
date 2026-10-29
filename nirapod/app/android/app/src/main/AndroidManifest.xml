@@ -69,6 +69,10 @@
         <receiver
             android:name=".tracking.GeofenceReceiver"
             android:exported="false" />
+        <!-- Heartbeat alarm while sharing runs (screen off / Doze). -->
+        <receiver
+            android:name=".tracking.HeartbeatReceiver"
+            android:exported="false" />
         <receiver
             android:name=".tracking.BootReceiver"
             android:exported="false">
