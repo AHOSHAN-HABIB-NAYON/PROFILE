@@ -27,6 +27,10 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Google Maps SDK key: restrict it to package app.nirapod.family + the signing SHA-1 in Google Cloud.
+        // Supplied from the MAPS_API_KEY gradle property or environment variable (never committed).
+        manifestPlaceholders["mapsApiKey"] =
+            (project.findProperty("MAPS_API_KEY") as String?) ?: System.getenv("MAPS_API_KEY") ?: 
     }
 
     // Release signing comes from android/key.properties (never committed) or CI secrets.

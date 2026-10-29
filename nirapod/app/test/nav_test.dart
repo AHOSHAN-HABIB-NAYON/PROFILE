@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nirapod/app.dart';
 import 'package:nirapod/features/auth/routes.dart';
+import 'package:nirapod/features/main_routes.dart';
 import 'package:nirapod/features/onboarding/routes.dart';
 import 'package:nirapod/nav/router.dart';
 import 'package:nirapod/nav/routes.g.dart';
@@ -77,7 +78,7 @@ void main() {
       await t.pump();
       await t.pump(const Duration(milliseconds: 600));
       expect(t.takeException(), isNull, reason: s.id);
-      final registered = onboardingScreens.containsKey(s.id) || authScreens.containsKey(s.id);
+      final registered = onboardingScreens.containsKey(s.id) || authScreens.containsKey(s.id) || mainScreens.containsKey(s.id);
       if (!registered) expect(find.text(s.title), findsWidgets, reason: s.id);
     }
   });

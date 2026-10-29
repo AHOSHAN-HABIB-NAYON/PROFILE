@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../core/motion/motion.dart';
 import '../features/auth/routes.dart';
+import '../features/main_routes.dart';
 import '../features/onboarding/routes.dart';
 import '../features/splash/splash_screen.dart';
 import 'adult_shell.dart';
@@ -19,7 +20,7 @@ String locationFor(String id, {String param = 'demo'}) => screenById(id).path.re
 /// Builds a screen by id. Each feature registers its screens in its own routes.dart map;
 /// anything not registered yet is a walkable placeholder.
 Widget buildScreen(String id, GoRouterState state) {
-  final builder = onboardingScreens[id] ?? authScreens[id];
+  final builder = onboardingScreens[id] ?? authScreens[id] ?? mainScreens[id];
   if (builder != null) return builder(state);
   if (id == 'splash') return const SplashScreen();
   return PlaceholderScreen(spec: screenById(id));

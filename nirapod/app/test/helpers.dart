@@ -9,6 +9,7 @@ import 'package:nirapod/core/prefs/prefs.dart';
 import 'package:nirapod/core/theme/app_theme.dart';
 import 'package:nirapod/core/tz/tz_provider.dart';
 import 'package:nirapod/core/tz/tz_utils.dart';
+import 'package:nirapod/features/map/family_map.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 StringsBundle? _strings;
@@ -24,6 +25,8 @@ Future<List<Override>> overrides({Map<String, Object> prefs = const {}}) async {
     prefsProvider.overrideWithValue(await SharedPreferences.getInstance()),
     stringsBundleProvider.overrideWithValue(await loadStrings()),
     tzDataProvider.overrideWithValue(await loadTz()),
+    // Platform views (Google Maps) do not run in widget tests.
+    familyMapBuilderProvider.overrideWithValue((data, onReady, onPinTap) => const ColoredBox(color: Color(0xFFDDE7E3))),
   ];
 }
 

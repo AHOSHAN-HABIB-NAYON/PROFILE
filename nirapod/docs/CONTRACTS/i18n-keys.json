@@ -117,6 +117,43 @@
       "lang",
       "greeting",
       "time",
+      "dialog",
+      "home"
+    ],
+    "member": [
+      "common",
+      "state",
+      "trust",
+      "err",
+      "a11y",
+      "member",
+      "home",
+      "time"
+    ],
+    "family": [
+      "common",
+      "state",
+      "err",
+      "a11y",
+      "family",
+      "home",
+      "dialog"
+    ],
+    "map": [
+      "common",
+      "state",
+      "trust",
+      "err",
+      "a11y",
+      "map",
+      "home"
+    ],
+    "me": [
+      "common",
+      "state",
+      "err",
+      "a11y",
+      "me",
       "dialog"
     ],
     "child_home": [
@@ -128,7 +165,8 @@
       "lang",
       "greeting",
       "time",
-      "dialog"
+      "dialog",
+      "notif"
     ],
     "placeholder": [
       "common",
@@ -1399,6 +1437,636 @@
     "legal.err_open": {
       "placeholders": [],
       "en": "We couldn't open this page. Check your internet connection and try again."
+    },
+    "dialog.logout_title": {
+      "placeholders": [],
+      "en": "Log out?"
+    },
+    "dialog.logout_body": {
+      "placeholders": [],
+      "en": "You will need to sign in again to see your family on this phone."
+    },
+    "dialog.logout_confirm": {
+      "placeholders": [],
+      "en": "Log out"
+    },
+    "home.overseas": {
+      "placeholders": [],
+      "en": "Overseas"
+    },
+    "home.guardian": {
+      "placeholders": [],
+      "en": "Guardian"
+    },
+    "home.set_country": {
+      "placeholders": [],
+      "en": "Set your country"
+    },
+    "home.family_members": {
+      "placeholders": [],
+      "en": "Family members"
+    },
+    "home.view_all": {
+      "placeholders": [],
+      "en": "View all"
+    },
+    "home.quick_places": {
+      "placeholders": [],
+      "en": "Places"
+    },
+    "home.quick_alerts": {
+      "placeholders": [],
+      "en": "Alerts"
+    },
+    "home.quick_safe_walk": {
+      "placeholders": [],
+      "en": "Safe walk"
+    },
+    "home.quick_chat": {
+      "placeholders": [],
+      "en": "Live chat"
+    },
+    "home.quick_family": {
+      "placeholders": [],
+      "en": "Family"
+    },
+    "home.family_status": {
+      "placeholders": [],
+      "en": "Family status"
+    },
+    "home.status_ok": {
+      "placeholders": [],
+      "en": "Everyone checked in recently."
+    },
+    "home.status_attention": {
+      "placeholders": [
+        "count"
+      ],
+      "en": "{count} need attention."
+    },
+    "home.local_time_for": {
+      "placeholders": [
+        "time",
+        "name"
+      ],
+      "en": "It is {time} for {name}"
+    },
+    "home.empty_parent_title": {
+      "placeholders": [],
+      "en": "Create your family"
+    },
+    "home.empty_parent_body": {
+      "placeholders": [],
+      "en": "Then add your child with a 6-character code."
+    },
+    "home.empty_parent_cta": {
+      "placeholders": [],
+      "en": "Create family"
+    },
+    "home.empty_probashi_title": {
+      "placeholders": [],
+      "en": "Your family circle"
+    },
+    "home.empty_probashi_body": {
+      "placeholders": [],
+      "en": "Create your family circle or join one with an invite code."
+    },
+    "home.empty_member_title": {
+      "placeholders": [],
+      "en": "Enter invite code"
+    },
+    "home.empty_member_body": {
+      "placeholders": [],
+      "en": "Ask the family owner for the 6-character invite code."
+    },
+    "home.create_circle": {
+      "placeholders": [],
+      "en": "Create my family circle"
+    },
+    "home.join_invite": {
+      "placeholders": [],
+      "en": "Join with invite"
+    },
+    "home.invite_code": {
+      "placeholders": [],
+      "en": "Invite code"
+    },
+    "home.join": {
+      "placeholders": [],
+      "en": "Join"
+    },
+    "home.sharing_pending_title": {
+      "placeholders": [],
+      "en": "Share your location with your family?"
+    },
+    "home.sharing_pending_body": {
+      "placeholders": [],
+      "en": "Other adults see you only after you agree. You can pause it any time."
+    },
+    "home.sharing_accept": {
+      "placeholders": [],
+      "en": "Share my location"
+    },
+    "home.sharing_on": {
+      "placeholders": [],
+      "en": "You are sharing your location"
+    },
+    "home.sharing_paused": {
+      "placeholders": [],
+      "en": "Your location sharing is paused"
+    },
+    "home.map_preview_a11y": {
+      "placeholders": [],
+      "en": "Family map preview. Opens the map."
+    },
+    "home.battery": {
+      "placeholders": [
+        "pct"
+      ],
+      "en": "Battery {pct}%"
+    },
+    "home.online": {
+      "placeholders": [],
+      "en": "Online"
+    },
+    "home.offline": {
+      "placeholders": [],
+      "en": "Offline"
+    },
+    "home.no_location": {
+      "placeholders": [],
+      "en": "No location yet"
+    },
+    "home.you": {
+      "placeholders": [],
+      "en": "You"
+    },
+    "home.role_parent": {
+      "placeholders": [],
+      "en": "Parent"
+    },
+    "home.role_guardian": {
+      "placeholders": [],
+      "en": "Guardian"
+    },
+    "home.role_child": {
+      "placeholders": [],
+      "en": "Child"
+    },
+    "home.theme_light": {
+      "placeholders": [],
+      "en": "Light mode"
+    },
+    "member.call": {
+      "placeholders": [],
+      "en": "Call"
+    },
+    "member.message": {
+      "placeholders": [],
+      "en": "Where are you?"
+    },
+    "member.request_update": {
+      "placeholders": [],
+      "en": "Request update now"
+    },
+    "member.requested": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "Update requested. {name} will see a notice on their phone."
+    },
+    "member.request_wait": {
+      "placeholders": [
+        "seconds"
+      ],
+      "en": "You can ask again in {seconds} s"
+    },
+    "member.location": {
+      "placeholders": [],
+      "en": "Current location"
+    },
+    "member.accuracy": {
+      "placeholders": [
+        "meters"
+      ],
+      "en": "Accurate to about {meters} m"
+    },
+    "member.local_time": {
+      "placeholders": [
+        "time"
+      ],
+      "en": "Local time: {time}"
+    },
+    "member.route_today": {
+      "placeholders": [],
+      "en": "Today's route"
+    },
+    "member.route_soon": {
+      "placeholders": [],
+      "en": "Routes appear here once location history is on."
+    },
+    "member.safe_walk": {
+      "placeholders": [],
+      "en": "Safe walk"
+    },
+    "member.remove": {
+      "placeholders": [],
+      "en": "Remove member"
+    },
+    "member.remove_title": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "Remove {name}?"
+    },
+    "member.remove_child_body": {
+      "placeholders": [],
+      "en": "Location sharing on their phone stops. You can re-link later with a new code."
+    },
+    "member.remove_adult_body": {
+      "placeholders": [],
+      "en": "They leave your family and no longer see anyone."
+    },
+    "member.relink": {
+      "placeholders": [],
+      "en": "Re-link child device"
+    },
+    "member.no_phone": {
+      "placeholders": [],
+      "en": "Nirapod does not store phone numbers. Your dialer opens so you can pick the contact."
+    },
+    "member.sharing_off": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "{name} is not sharing their location."
+    },
+    "family.title": {
+      "placeholders": [],
+      "en": "Family"
+    },
+    "family.owner": {
+      "placeholders": [],
+      "en": "Owner"
+    },
+    "family.add_child": {
+      "placeholders": [],
+      "en": "Add a child"
+    },
+    "family.invite_adult": {
+      "placeholders": [],
+      "en": "Invite an adult"
+    },
+    "family.invite_title": {
+      "placeholders": [],
+      "en": "Invite to your family"
+    },
+    "family.invite_email": {
+      "placeholders": [],
+      "en": "Email (optional)"
+    },
+    "family.invite_role": {
+      "placeholders": [],
+      "en": "Role"
+    },
+    "family.invite_overseas": {
+      "placeholders": [],
+      "en": "Lives abroad (overseas guardian)"
+    },
+    "family.invite_create": {
+      "placeholders": [],
+      "en": "Create invite"
+    },
+    "family.invite_code": {
+      "placeholders": [],
+      "en": "Invite code (valid 7 days)"
+    },
+    "family.invite_share": {
+      "placeholders": [],
+      "en": "Share invite"
+    },
+    "family.invite_share_text": {
+      "placeholders": [
+        "code",
+        "url"
+      ],
+      "en": "Join my family on Nirapod. Invite code: {code} {url}"
+    },
+    "family.invite_emailed": {
+      "placeholders": [],
+      "en": "We emailed the invite."
+    },
+    "family.my_sharing": {
+      "placeholders": [],
+      "en": "My location sharing"
+    },
+    "family.sharing_active": {
+      "placeholders": [],
+      "en": "On: your family can see you"
+    },
+    "family.sharing_paused": {
+      "placeholders": [],
+      "en": "Paused: nobody can see you"
+    },
+    "family.sharing_pending": {
+      "placeholders": [],
+      "en": "Off: you have not agreed yet"
+    },
+    "family.sharing_stopped": {
+      "placeholders": [],
+      "en": "Stopped"
+    },
+    "family.share": {
+      "placeholders": [],
+      "en": "Share"
+    },
+    "family.pause": {
+      "placeholders": [],
+      "en": "Pause"
+    },
+    "family.stop": {
+      "placeholders": [],
+      "en": "Stop sharing"
+    },
+    "family.transfer": {
+      "placeholders": [],
+      "en": "Transfer ownership"
+    },
+    "family.transfer_pick": {
+      "placeholders": [],
+      "en": "Choose the new owner"
+    },
+    "family.transfer_done": {
+      "placeholders": [],
+      "en": "Ownership transferred"
+    },
+    "family.leave": {
+      "placeholders": [],
+      "en": "Leave family"
+    },
+    "family.leave_title": {
+      "placeholders": [],
+      "en": "Leave this family?"
+    },
+    "family.leave_body": {
+      "placeholders": [],
+      "en": "You will stop seeing everyone and they will stop seeing you."
+    },
+    "family.err_transfer_first": {
+      "placeholders": [],
+      "en": "Transfer ownership to another adult before leaving."
+    },
+    "family.report": {
+      "placeholders": [],
+      "en": "Report misuse"
+    },
+    "family.report_title": {
+      "placeholders": [],
+      "en": "Report misuse"
+    },
+    "family.report_body": {
+      "placeholders": [],
+      "en": "Tell us if someone is tracking you without your agreement. Our team reviews every report."
+    },
+    "family.report_covert": {
+      "placeholders": [],
+      "en": "Someone is tracking me secretly"
+    },
+    "family.report_harassment": {
+      "placeholders": [],
+      "en": "Harassment"
+    },
+    "family.report_unwanted": {
+      "placeholders": [],
+      "en": "My location is shared against my will"
+    },
+    "family.report_other": {
+      "placeholders": [],
+      "en": "Something else"
+    },
+    "family.report_details": {
+      "placeholders": [],
+      "en": "Details (optional)"
+    },
+    "family.report_send": {
+      "placeholders": [],
+      "en": "Send report"
+    },
+    "family.report_sent": {
+      "placeholders": [],
+      "en": "Thank you. We received your report."
+    },
+    "map.layers": {
+      "placeholders": [],
+      "en": "Map layers"
+    },
+    "map.type": {
+      "placeholders": [],
+      "en": "Map type"
+    },
+    "map.type_normal": {
+      "placeholders": [],
+      "en": "Normal"
+    },
+    "map.type_satellite": {
+      "placeholders": [],
+      "en": "Satellite"
+    },
+    "map.type_hybrid": {
+      "placeholders": [],
+      "en": "Hybrid"
+    },
+    "map.type_terrain": {
+      "placeholders": [],
+      "en": "Terrain"
+    },
+    "map.layer_3d": {
+      "placeholders": [],
+      "en": "3D view"
+    },
+    "map.layer_nearby": {
+      "placeholders": [],
+      "en": "Nearby places"
+    },
+    "map.layer_places": {
+      "placeholders": [],
+      "en": "My places"
+    },
+    "map.layer_trail": {
+      "placeholders": [],
+      "en": "Route trail"
+    },
+    "map.layer_accuracy": {
+      "placeholders": [],
+      "en": "Accuracy circles"
+    },
+    "map.layer_labels": {
+      "placeholders": [],
+      "en": "Labels"
+    },
+    "map.recenter": {
+      "placeholders": [],
+      "en": "Show my location"
+    },
+    "map.compass": {
+      "placeholders": [],
+      "en": "Reset to north"
+    },
+    "map.follow": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "Follow {name}"
+    },
+    "map.show_all": {
+      "placeholders": [],
+      "en": "Show everyone"
+    },
+    "map.nearby_title": {
+      "placeholders": [],
+      "en": "Nearby places"
+    },
+    "map.cat_all": {
+      "placeholders": [],
+      "en": "All"
+    },
+    "map.cat_school": {
+      "placeholders": [],
+      "en": "Schools"
+    },
+    "map.cat_hospital": {
+      "placeholders": [],
+      "en": "Hospitals"
+    },
+    "map.cat_police": {
+      "placeholders": [],
+      "en": "Police"
+    },
+    "map.cat_pharmacy": {
+      "placeholders": [],
+      "en": "Pharmacies"
+    },
+    "map.cat_mosque": {
+      "placeholders": [],
+      "en": "Mosques"
+    },
+    "map.cat_store": {
+      "placeholders": [],
+      "en": "Shops"
+    },
+    "map.no_nearby": {
+      "placeholders": [],
+      "en": "No places found nearby."
+    },
+    "map.nearby_off": {
+      "placeholders": [],
+      "en": "Nearby places are turned off right now."
+    },
+    "map.distance_m": {
+      "placeholders": [
+        "m"
+      ],
+      "en": "{m} m"
+    },
+    "map.distance_km": {
+      "placeholders": [
+        "km"
+      ],
+      "en": "{km} km"
+    },
+    "map.permission": {
+      "placeholders": [],
+      "en": "Allow location to see yourself on the map."
+    },
+    "map.unavailable": {
+      "placeholders": [],
+      "en": "The map could not load. Check your internet connection."
+    },
+    "map.you": {
+      "placeholders": [],
+      "en": "You"
+    },
+    "me.title": {
+      "placeholders": [],
+      "en": "Profile"
+    },
+    "me.name": {
+      "placeholders": [],
+      "en": "Name"
+    },
+    "me.email": {
+      "placeholders": [],
+      "en": "Email"
+    },
+    "me.verified": {
+      "placeholders": [],
+      "en": "Verified"
+    },
+    "me.sign_in_method": {
+      "placeholders": [],
+      "en": "Sign-in method"
+    },
+    "me.method_email": {
+      "placeholders": [],
+      "en": "Email and password"
+    },
+    "me.method_google": {
+      "placeholders": [],
+      "en": "Google"
+    },
+    "me.change_password": {
+      "placeholders": [],
+      "en": "Change password"
+    },
+    "me.role": {
+      "placeholders": [],
+      "en": "Role"
+    },
+    "me.role_parent": {
+      "placeholders": [],
+      "en": "Parent"
+    },
+    "me.role_guardian": {
+      "placeholders": [],
+      "en": "Guardian"
+    },
+    "me.role_overseas": {
+      "placeholders": [],
+      "en": "Overseas"
+    },
+    "me.role_child": {
+      "placeholders": [],
+      "en": "Child"
+    },
+    "me.devices": {
+      "placeholders": [],
+      "en": "Devices and sessions"
+    },
+    "me.download": {
+      "placeholders": [],
+      "en": "Download my data"
+    },
+    "me.delete": {
+      "placeholders": [],
+      "en": "Delete my account and data"
+    },
+    "me.logout": {
+      "placeholders": [],
+      "en": "Log out"
+    },
+    "me.saved": {
+      "placeholders": [],
+      "en": "Saved"
+    },
+    "me.edit_profile": {
+      "placeholders": [],
+      "en": "Edit name, photo, country and time zone"
+    },
+    "notif.update_requested": {
+      "placeholders": [
+        "by_name"
+      ],
+      "en": "{by_name} requested your location"
     }
   }
 }

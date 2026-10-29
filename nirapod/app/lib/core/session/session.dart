@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../net/providers.dart';
+import '../prefs/prefs.dart';
+
 /// Real role, decided by the SERVER from the account and family membership.
 enum AppRole { parent, guardian, child }
 
@@ -125,6 +128,18 @@ class SessionController extends Notifier<SessionState> {
     state = const SignedOut();
   }
 
+  /// Reloads GET /me (e.g. after creating or joining a family) and updates the session. Returns null on error.
+  Future<AuthUser?> refreshMe() async {
+    try {
+      final j = await ref.read(apiClientProvider).get<Map<String, dynamic>>('/me');
+      final u = AuthUser.fromJson(j);
+      updateUser(u);
+      return u;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Tokens were rejected by the server (refresh failed): no server call, just end the session.
   void signedOutLocally() => state = const SignedOut();
 
@@ -133,3 +148,6 @@ class SessionController extends Notifier<SessionState> {
 }
 
 final sessionControllerProvider = NotifierProvider<SessionController, SessionState>(SessionController.new);
+
+/// The role picked on "Who are you?" (UI only; the real role comes from the server).
+final roleChoiceProvider = Provider<RoleChoice?>((ref) => roleChoiceFromName(ref.read(prefsProvider).getString(PrefKeys.roleChoice)));

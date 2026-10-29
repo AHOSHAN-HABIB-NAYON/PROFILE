@@ -32,6 +32,9 @@ dependencies:
   crypto: ^3.0.8
   url_launcher: ^6.3.3
   share_plus: ^13.3.1
+  google_maps_flutter: ^2.19.0
+  socket_io_client: ^3.1.6
+  geolocator: ^14.0.1
 
 dev_dependencies:
   flutter_test:

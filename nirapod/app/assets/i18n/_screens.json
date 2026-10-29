@@ -108,6 +108,43 @@
     "lang",
     "greeting",
     "time",
+    "dialog",
+    "home"
+  ],
+  "member": [
+    "common",
+    "state",
+    "trust",
+    "err",
+    "a11y",
+    "member",
+    "home",
+    "time"
+  ],
+  "family": [
+    "common",
+    "state",
+    "err",
+    "a11y",
+    "family",
+    "home",
+    "dialog"
+  ],
+  "map": [
+    "common",
+    "state",
+    "trust",
+    "err",
+    "a11y",
+    "map",
+    "home"
+  ],
+  "me": [
+    "common",
+    "state",
+    "err",
+    "a11y",
+    "me",
     "dialog"
   ],
   "child_home": [
@@ -119,7 +156,8 @@
     "lang",
     "greeting",
     "time",
-    "dialog"
+    "dialog",
+    "notif"
   ],
   "placeholder": [
     "common",
