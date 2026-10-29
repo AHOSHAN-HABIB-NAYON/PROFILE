@@ -37,7 +37,9 @@ function startupErrorServer(info) {
     .listen(port);
 }
 
-try {
+// No top-level await: Hostinger's LiteSpeed/Passenger loader require()s the startup file, and Node can only
+// require() an ES module that has no top-level await.
+async function main() {
   const { loadConfig } = await import('./config.js');
   const { createLogger } = await import('./logger.js');
   const { createDb } = await import('./db/knex.js');
@@ -80,8 +82,10 @@ try {
   }
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
-} catch (err) {
+}
+
+main().catch((err) => {
   const info = describe(err);
   console.error(`Nirapod start-up failed: ${info.problem}${info.code ? ` (${info.code})` : ''}: ${info.detail}`);
   startupErrorServer(info);
-}
+});

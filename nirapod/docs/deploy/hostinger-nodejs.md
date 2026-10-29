@@ -15,7 +15,7 @@ hPanel → Domains → Subdomains → create `family-track` on `webtecit.com`. E
    - Node version: **22** (or 20)
    - Application root: e.g. `nirapod` (a folder in your home directory)
    - Application URL: `family-track.webtecit.com`
-   - Startup file: `server/src/index.js`
+   - Startup file: `server/src/index.js` (if the app still shows 503, use `server/start.cjs`)
 3. File Manager → open the application root → upload the zip → Extract here.
 4. Back in the Node.js app page → **Run NPM install**.
 
