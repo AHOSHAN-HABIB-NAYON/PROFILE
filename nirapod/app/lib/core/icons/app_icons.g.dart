@@ -9,6 +9,7 @@ abstract final class AppIcons {
   static const bell = 'assets/icons/bell.svg';
   static const camera = 'assets/icons/camera.svg';
   static const checkCircle = 'assets/icons/check-circle.svg';
+  static const checkDouble = 'assets/icons/check-double.svg';
   static const check = 'assets/icons/check.svg';
   static const chevronDown = 'assets/icons/chevron-down.svg';
   static const chevronLeft = 'assets/icons/chevron-left.svg';
@@ -48,6 +49,7 @@ abstract final class AppIcons {
   static const recenter = 'assets/icons/recenter.svg';
   static const refresh = 'assets/icons/refresh.svg';
   static const search = 'assets/icons/search.svg';
+  static const send = 'assets/icons/send.svg';
   static const settingsFilled = 'assets/icons/settings-filled.svg';
   static const settings = 'assets/icons/settings.svg';
   static const shieldCheck = 'assets/icons/shield-check.svg';
@@ -55,6 +57,8 @@ abstract final class AppIcons {
   static const sos = 'assets/icons/sos.svg';
   static const star = 'assets/icons/star.svg';
   static const sun = 'assets/icons/sun.svg';
+  static const thumbsDown = 'assets/icons/thumbs-down.svg';
+  static const thumbsUp = 'assets/icons/thumbs-up.svg';
   static const user = 'assets/icons/user.svg';
   static const users = 'assets/icons/users.svg';
   static const walk = 'assets/icons/walk.svg';
@@ -69,6 +73,7 @@ abstract final class AppIcons {
     bell,
     camera,
     checkCircle,
+    checkDouble,
     check,
     chevronDown,
     chevronLeft,
@@ -108,6 +113,7 @@ abstract final class AppIcons {
     recenter,
     refresh,
     search,
+    send,
     settingsFilled,
     settings,
     shieldCheck,
@@ -115,6 +121,8 @@ abstract final class AppIcons {
     sos,
     star,
     sun,
+    thumbsDown,
+    thumbsUp,
     user,
     users,
     walk,

@@ -284,6 +284,14 @@
       "common",
       "upd"
     ],
+    "chat": [
+      "common",
+      "state",
+      "err",
+      "a11y",
+      "chat",
+      "time"
+    ],
     "placeholder": [
       "common",
       "nav"
@@ -3715,6 +3723,124 @@
         "email"
       ],
       "en": "Legal and law-enforcement requests are not handled in chat. Please email {email}."
+    },
+    "chat.title": {
+      "placeholders": [],
+      "en": "Live chat"
+    },
+    "chat.assistant": {
+      "placeholders": [],
+      "en": "Nirapod Assistant (AI)"
+    },
+    "chat.agent": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "Agent: {name}"
+    },
+    "chat.online": {
+      "placeholders": [],
+      "en": "Usually replies instantly"
+    },
+    "chat.waiting": {
+      "placeholders": [],
+      "en": "Waiting for a person to join…"
+    },
+    "chat.talk_person": {
+      "placeholders": [],
+      "en": "Talk to a person"
+    },
+    "chat.hint": {
+      "placeholders": [],
+      "en": "Write a message"
+    },
+    "chat.send": {
+      "placeholders": [],
+      "en": "Send"
+    },
+    "chat.attach": {
+      "placeholders": [],
+      "en": "Send a photo"
+    },
+    "chat.typing": {
+      "placeholders": [],
+      "en": "typing…"
+    },
+    "chat.welcome_title": {
+      "placeholders": [],
+      "en": "How can we help?"
+    },
+    "chat.welcome_body": {
+      "placeholders": [],
+      "en": "Ask anything about Nirapod. A person from our team can join anytime."
+    },
+    "chat.notice": {
+      "placeholders": [],
+      "en": "AI may answer first. Our support team can read this chat. Never share passwords or codes."
+    },
+    "chat.chip_location": {
+      "placeholders": [],
+      "en": "Location not updating"
+    },
+    "chat.chip_child": {
+      "placeholders": [],
+      "en": "How do I add a child?"
+    },
+    "chat.chip_premium": {
+      "placeholders": [],
+      "en": "Premium and payment"
+    },
+    "chat.chip_delete": {
+      "placeholders": [],
+      "en": "Delete my account"
+    },
+    "chat.end": {
+      "placeholders": [],
+      "en": "End chat"
+    },
+    "chat.end_confirm": {
+      "placeholders": [],
+      "en": "End this chat? The messages will be removed from your phone."
+    },
+    "chat.ended": {
+      "placeholders": [],
+      "en": "Chat ended"
+    },
+    "chat.rate": {
+      "placeholders": [],
+      "en": "Was this helpful?"
+    },
+    "chat.thanks": {
+      "placeholders": [],
+      "en": "Thanks for your feedback"
+    },
+    "chat.new": {
+      "placeholders": [],
+      "en": "Start a new chat"
+    },
+    "chat.child": {
+      "placeholders": [],
+      "en": "Ask your parent for help"
+    },
+    "chat.child_body": {
+      "placeholders": [],
+      "en": "Live chat is for adults. Your parent can contact Nirapod support."
+    },
+    "chat.image_too_big": {
+      "placeholders": [],
+      "en": "The photo is larger than 5 MB."
+    },
+    "chat.image_gone": {
+      "placeholders": [],
+      "en": "Photo removed after 7 days"
+    },
+    "chat.failed": {
+      "placeholders": [],
+      "en": "Not sent. Tap to try again."
+    },
+    "chat.priority": {
+      "placeholders": [],
+      "en": "Priority support"
     }
   }
 }

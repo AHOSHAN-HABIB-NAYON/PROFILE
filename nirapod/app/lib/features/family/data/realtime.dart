@@ -23,7 +23,7 @@ class RealtimeClient {
   /// Safety events (Phase 4): `sos.new`, `sos.updated`, `trip.updated`, `notification.new`.
   final _events = StreamController<RealtimeEvent>.broadcast();
   Stream<RealtimeEvent> get events => _events.stream;
-  static const safetyEvents = ['sos.new', 'sos.updated', 'trip.updated', 'notification.new'];
+  static const safetyEvents = ['sos.new', 'sos.updated', 'trip.updated', 'notification.new', 'chat.message', 'chat.updated', 'chat.typing'];
 
   static String get serverOrigin => Env.apiBaseUrl.replaceFirst(RegExp(r'/api/v\d+/?$'), '');
 

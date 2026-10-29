@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
 import 'alerts/alerts_screens.dart';
+import 'chat/chat_screen.dart';
 import 'child/child_home_screen.dart';
 import 'family/ui/family_screen.dart';
 import 'family/ui/member_screen.dart';
@@ -30,6 +31,7 @@ final mainScreens = <String, Widget Function(GoRouterState state)>{
   'data_export': (_) => const DataExportScreen(),
   'delete_account': (_) => const DeleteAccountScreen(),
   'help': (_) => const HelpScreen(),
+  'chat': chatRoute,
   'update_required': (_) => const UpdateRequiredScreen(),
   // Phase 6.
   'premium': (_) => const PremiumScreen(),
