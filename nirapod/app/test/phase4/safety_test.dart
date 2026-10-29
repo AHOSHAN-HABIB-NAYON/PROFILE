@@ -168,7 +168,7 @@ void main() {
   });
 
   testWidgets('map: a parent with no places sees how to set where children go; Add place opens the place page', (t) async {
-    final (_, router) = await pumpRouted(t, 'map', user: parent);
+    await pumpRouted(t, 'map', user: parent);
     expect(find.byKey(const Key('map_places_setup')), findsOneWidget);
     expect(find.text('Where do your children go?'), findsOneWidget);
     expect(find.byKey(const Key('map_add_place')), findsOneWidget);
