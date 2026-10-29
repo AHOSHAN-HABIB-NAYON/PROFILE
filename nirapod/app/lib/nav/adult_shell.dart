@@ -85,7 +85,7 @@ class BottomBar extends StatelessWidget {
                       onTap: () => onTap(i),
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(minHeight: 64),
-                        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        child: Column(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
                           // Outline-to-filled morph (220 ms cross-fade + scale).
                           AnimatedSwitcher(
                             duration: morph,
