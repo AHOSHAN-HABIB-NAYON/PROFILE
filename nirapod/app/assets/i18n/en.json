@@ -76,6 +76,7 @@
   "perm.demo_message": "Mom: Where are you?",
   "perm.demo_sos": "SOS alert from Rafi",
   "perm.demo_now": "now",
+  "perm.demo_date": "Thursday, 29 October",
   "perm.demo_ago": "{minutes} min ago",
   "perm.how_title": "How location works",
   "perm.how_body": "Your family sees where you are and gets an alert when you arrive or leave a place.",

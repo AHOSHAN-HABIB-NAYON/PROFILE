@@ -203,12 +203,15 @@ void main() {
       expect(find.text(en.t('auth.err_email_taken')), findsOneWidget);
     });
 
-    testWidgets('Terms opens the in-app browser and returns', (t) async {
+    testWidgets('Terms opens inside the app (no external browser) and Back returns', (t) async {
       final (env, o) = await authOverrides();
       final router = await pumpApp(t, o, 'register');
       await tapLabel(t, en.t('auth.terms'));
       await t.pumpAndSettle();
       expect(env.opened.single.toString(), 'https://family-track.webtecit.com/terms');
+      expect(find.byKey(const Key('legal_view')), findsOneWidget);
+      await t.tap(find.byKey(const Key('legal_back')));
+      await t.pumpAndSettle();
       expect(pathOf(router), '/register');
     });
   });

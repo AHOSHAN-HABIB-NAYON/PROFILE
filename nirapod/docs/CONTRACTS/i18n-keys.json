@@ -518,6 +518,10 @@
       "placeholders": [],
       "en": "now"
     },
+    "perm.demo_date": {
+      "placeholders": [],
+      "en": "Thursday, 29 October"
+    },
     "perm.demo_ago": {
       "placeholders": [
         "minutes"

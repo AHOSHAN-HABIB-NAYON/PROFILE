@@ -13,7 +13,6 @@ import '../../../core/theme/tokens.g.dart';
 import '../../../core/widgets/brand/animated_logo.dart';
 import '../../../core/widgets/language_selector.dart';
 import '../../../nav/router.dart';
-import '../demos/welcome_backdrop.dart';
 import '../onboarding_flow.dart';
 
 /// Welcome (first page): language pill top-right (top-left in RTL), animated logo (900 ms draw-on),
@@ -26,102 +25,109 @@ class WelcomeScreen extends ConsumerWidget {
     final s = ref.watch(screenStringsProvider('welcome'));
     final c = context.colors;
     final t = Theme.of(context).textTheme;
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       backgroundColor: c.background,
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Semantics(
-              label: s.t('welcome.illustration_a11y'),
-              image: true,
-              excludeSemantics: true,
-              child: Stack(
-                children: [
-                  const Positioned.fill(child: WelcomeBackdrop()),
-                  // Brand illustration (Design): family in a green landscape, anchored to the bottom.
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Opacity(
-                      opacity: Theme.of(context).brightness == Brightness.dark ? 0.55 : 1,
-                      child: SvgPicture.asset(
-                        BrandAssets.illustrationWelcome,
-                        width: double.infinity,
-                        fit: BoxFit.fitWidth,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+      body: DecoratedBox(
+        // Soft brand wash at the top, plain background below.
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            // Mint all the way down so the picture's sky blends in (no white band).
+            colors: [c.primary.withValues(alpha: dark ? 0.18 : 0.14), c.primary.withValues(alpha: dark ? 0.08 : 0.06)],
           ),
-          SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(
-                  height: Sizes.headerHeight,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: Space.sm),
-                    child: Row(children: [Spacer(), LanguagePill()]),
-                  ),
+        ),
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              const SizedBox(
+                height: Sizes.headerHeight,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: Space.sm),
+                  child: Row(children: [Spacer(), LanguagePill()]),
                 ),
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, box) => SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: Space.screenHorizontal),
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(minHeight: box.maxHeight),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            AnimatedLogo(size: 120, semanticLabel: s.t('welcome.title_a11y')),
-                            const SizedBox(height: Space.xl),
-                            Semantics(
-                              header: true,
-                              child: Text(s.t('common.app_name'), style: t.displaySmall, textAlign: TextAlign.center),
-                            ),
-                            const SizedBox(height: Space.xxs),
-                            Text(
-                              s.t('common.tagline'),
-                              style: t.titleMedium!.copyWith(color: c.primaryText),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: Space.md),
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 340),
-                              child: Text(
-                                s.t('common.promise'),
-                                style: t.bodyLarge!.copyWith(color: c.muted),
+              ),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, box) => SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: box.maxHeight),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const SizedBox.shrink(),
+                          // Text block: never overlaps the picture (they are separate rows).
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: Space.screenHorizontal),
+                            child: Column(children: [
+                              AnimatedLogo(size: 104, semanticLabel: s.t('welcome.title_a11y')),
+                              const SizedBox(height: Space.lg),
+                              Semantics(
+                                header: true,
+                                child: Text(
+                                  s.t('common.app_name'),
+                                  style: t.displaySmall!.copyWith(color: c.primaryText),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                              const SizedBox(height: Space.xxs),
+                              Text(
+                                s.t('common.tagline'),
+                                style: t.titleMedium!.copyWith(color: c.text),
                                 textAlign: TextAlign.center,
                               ),
+                              const SizedBox(height: Space.sm),
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 320),
+                                child: Text(
+                                  s.t('common.promise'),
+                                  style: t.bodyMedium!.copyWith(color: c.muted),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ]),
+                          ),
+                          const SizedBox(height: Space.md),
+                          // Brand illustration: family in a green landscape, full width, below the text.
+                          Semantics(
+                            label: s.t('welcome.illustration_a11y'),
+                            image: true,
+                            excludeSemantics: true,
+                            child: Opacity(
+                              opacity: dark ? 0.6 : 1,
+                              child: AspectRatio(
+                                aspectRatio: 360 / 200,
+                                child: SvgPicture.asset(BrandAssets.illustrationWelcome, fit: BoxFit.cover),
+                              ),
                             ),
-                            const SizedBox(height: Space.xl),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    Space.screenHorizontal,
-                    Space.xs,
-                    Space.screenHorizontal,
-                    Space.lg,
-                  ),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: AppButton(
-                      key: const Key('get_started'),
-                      label: s.t('welcome.get_started'),
-                      large: true,
-                      onPressed: () => context.push(locationFor(ref.read(onboardingProgressProvider).resumeScreen)),
-                    ),
+              ),
+              // Ground colour of the illustration continues under the button: no seam, no empty band.
+              ColoredBox(
+                color: dark ? const Color(0xFFA7DEC6).withValues(alpha: 0.6 * 0.6) : const Color(0xFFA7DEC6),
+                child: Padding(
+                padding: EdgeInsets.fromLTRB(Space.screenHorizontal, Space.xs, Space.screenHorizontal, Space.lg + MediaQuery.paddingOf(context).bottom),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: AppButton(
+                    key: const Key('get_started'),
+                    label: s.t('welcome.get_started'),
+                    large: true,
+                    onPressed: () => context.push(locationFor(ref.read(onboardingProgressProvider).resumeScreen)),
                   ),
                 ),
-              ],
-            ),
+              ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

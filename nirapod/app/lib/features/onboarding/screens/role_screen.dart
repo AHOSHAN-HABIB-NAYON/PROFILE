@@ -168,37 +168,41 @@ class _RoleCard extends StatelessWidget {
         child: AnimatedContainer(
           duration: d,
           curve: Motion.decelerate,
-          padding: const EdgeInsets.all(Space.md),
+          padding: const EdgeInsets.fromLTRB(Space.sm, Space.xxl, Space.sm, Space.xxl),
           decoration: BoxDecoration(
             color: selected ? c.primary.withValues(alpha: 0.08) : c.surface,
             borderRadius: BorderRadius.circular(Radii.cardLarge),
             border: Border.all(color: selected ? c.primaryText : c.border, width: selected ? 2 : 1),
+            boxShadow: [BoxShadow(color: c.primary.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, 6))],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Stack(
             children: [
-              Row(
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // Original brand illustration (Design), decorative.
-                  SvgPicture.asset(icon, width: 64, height: 64, excludeFromSemantics: true),
-                  const Spacer(),
-                  AnimatedOpacity(
-                    duration: d,
-                    opacity: selected ? 1 : 0,
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(color: c.primaryFill, shape: BoxShape.circle),
-                      child: AppIcon(AppIcons.check, size: 16, color: c.onPrimaryFill),
-                    ),
-                  ),
+                  SvgPicture.asset(icon, width: 108, height: 108, excludeFromSemantics: true),
+                  const SizedBox(height: Space.sm),
+                  Text(title, style: t.titleMedium, textAlign: TextAlign.center),
+                  const SizedBox(height: Space.xxs),
+                  Text(description, style: t.bodySmall, textAlign: TextAlign.center),
                 ],
               ),
-              const SizedBox(height: Space.sm),
-              Text(title, style: t.titleMedium),
-              const SizedBox(height: Space.xxs),
-              Text(description, style: t.bodySmall),
+              PositionedDirectional(
+                top: 0,
+                end: 0,
+                child: AnimatedOpacity(
+                  duration: d,
+                  opacity: selected ? 1 : 0,
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: c.primaryFill, shape: BoxShape.circle),
+                    child: AppIcon(AppIcons.check, size: 16, color: c.onPrimaryFill),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

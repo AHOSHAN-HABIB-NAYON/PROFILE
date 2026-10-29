@@ -112,7 +112,7 @@ class TestEnv {
 
 Future<(TestEnv, List<Override>)> authOverrides({Handler? handler, Map<String, Object> prefs = const {}, Tokens? tokens}) async {
   final env = TestEnv(FakeApi(handler ?? (o) => (404, apiErr('NOT_FOUND'))), MemoryTokenStore(tokens), MemoryDeviceIdStore('device-test-1'), FakeGoogle());
-  final base = await h.overrides(prefs: prefs);
+  final base = await h.overrides(prefs: prefs, legalView: false);
   final names = _names ??= await CountryNames.load(rootBundle);
   return (
     env,
@@ -126,9 +126,9 @@ Future<(TestEnv, List<Override>)> authOverrides({Handler? handler, Map<String, O
       travelWatcherProvider.overrideWith((ref) => QuietTravelWatcher(ref)),
       deviceZoneReaderProvider.overrideWithValue(() async => env.deviceZone),
       localeRegionReaderProvider.overrideWithValue(() => env.localeRegion),
-      urlOpenerProvider.overrideWithValue((u) async {
+      legalViewProvider.overrideWithValue((u) {
         env.opened.add(u);
-        return true;
+        return const SizedBox(key: Key('legal_view'));
       }),
     ],
   );

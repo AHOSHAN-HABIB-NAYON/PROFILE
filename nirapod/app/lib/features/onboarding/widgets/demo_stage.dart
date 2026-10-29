@@ -20,7 +20,7 @@ class DemoStage extends StatefulWidget {
     required this.semanticLabel,
     required this.builder,
     this.staticFrame = 0.7,
-    this.maxHeight = 300,
+    this.maxHeight = 540,
   });
 
   final Duration period;
@@ -57,7 +57,8 @@ class _DemoStageState extends State<DemoStage> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
-    final height = math.min(widget.maxHeight, math.max(180.0, mq.size.height * 0.34));
+    // Fill the page: about half the screen on phones, so no large empty band is left under the text.
+    final height = math.min(widget.maxHeight, math.max(200.0, mq.size.height * 0.6));
     final c = context.colors;
     return Semantics(
       label: widget.semanticLabel,
