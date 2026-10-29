@@ -14,8 +14,36 @@ sealed class UploadResult {
     object RetryLater : UploadResult()
 }
 
-/** POST /locations with `Authorization: Device <key>` (never logs coordinates). */
+/** POST /locations and /sos with `Authorization: Device <key>` (never logs coordinates). */
 object Uploader {
+    /** Shake-to-SOS from the background. Returns true when the server accepted it (201 new / 200 already open). */
+    fun postSos(store: TrackingStore, lat: Double?, lng: Double?, accuracy: Float?): Boolean {
+        if (store.apiBase.isEmpty() || store.uploadKey.isEmpty()) return false
+        var conn: HttpURLConnection? = null
+        return try {
+            conn = (URL(store.apiBase.trimEnd('/') + "/sos").openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                connectTimeout = 15_000
+                readTimeout = 20_000
+                doOutput = true
+                setRequestProperty("content-type", "application/json")
+                setRequestProperty("authorization", "Device " + store.uploadKey)
+                setRequestProperty("x-device-id", store.deviceId)
+            }
+            val body = JSONObject().put("trigger", "shake")
+            if (lat != null && lng != null) {
+                body.put("lat", lat).put("lng", lng)
+                if (accuracy != null) body.put("accuracy_m", accuracy.toDouble())
+            }
+            conn.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+            conn.responseCode == 201 || conn.responseCode == 200
+        } catch (e: Exception) {
+            false
+        } finally {
+            conn?.disconnect()
+        }
+    }
+
     fun post(store: TrackingStore, points: JSONArray, deviceState: JSONObject?): UploadResult {
         if (store.apiBase.isEmpty() || store.uploadKey.isEmpty()) return UploadResult.Revoked
         var conn: HttpURLConnection? = null

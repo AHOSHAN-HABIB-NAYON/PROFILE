@@ -15,7 +15,8 @@ import '../../auth/profile/travel_service.dart';
 Map<String, String> trackingTexts(Ref ref) {
   final s = ref.read(screenStringsProvider('tracking'));
   return {
-    for (final k in ['sharing_title', 'sharing_body', 'channel_sharing', 'channel_requests', 'request_title', 'request_body'])
+    for (final k in ['sharing_title', 'sharing_body', 'channel_sharing', 'channel_requests', 'request_title', 'request_body',
+        'channel_sos', 'shake_title', 'shake_body', 'shake_cancel', 'sos_sent_title', 'sos_sent_body', 'sos_failed'])
       k: s.t('tracking.$k'),
   };
 }

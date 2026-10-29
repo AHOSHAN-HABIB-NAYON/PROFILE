@@ -2859,6 +2859,34 @@
     "walk.open": {
       "placeholders": [],
       "en": "Open"
+    },
+    "tracking.channel_sos": {
+      "placeholders": [],
+      "en": "Emergency (SOS)"
+    },
+    "tracking.shake_title": {
+      "placeholders": [],
+      "en": "Sending SOS in 5 seconds"
+    },
+    "tracking.shake_body": {
+      "placeholders": [],
+      "en": "You shook your phone. Tap Cancel if this was a mistake."
+    },
+    "tracking.shake_cancel": {
+      "placeholders": [],
+      "en": "Cancel"
+    },
+    "tracking.sos_sent_title": {
+      "placeholders": [],
+      "en": "SOS sent to your family"
+    },
+    "tracking.sos_sent_body": {
+      "placeholders": [],
+      "en": "Your family can see where you are."
+    },
+    "tracking.sos_failed": {
+      "placeholders": [],
+      "en": "SOS could not be sent yet. Trying again…"
     }
   }
 }

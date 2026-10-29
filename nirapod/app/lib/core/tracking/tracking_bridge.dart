@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,6 +10,9 @@ abstract class TrackingBridge {
   Future<void> setTrip(DateTime? until);
   Future<bool> requestNow();
   Future<Map<String, Object?>> status();
+
+  /// Family places for this child (Android geofences wake the service for fresh points).
+  Future<void> setGeofences(List<({String id, double lat, double lng, int radiusM})> places);
 
   /// Device time-zone changes (Android ACTION_TIMEZONE_CHANGED).
   Stream<String> timezoneChanges();
@@ -36,6 +41,13 @@ class MethodChannelTrackingBridge implements TrackingBridge {
 
   @override
   Stream<String> timezoneChanges() => _tz.receiveBroadcastStream().map((e) => '$e');
+
+  @override
+  Future<void> setGeofences(List<({String id, double lat, double lng, int radiusM})> places) => _m.invokeMethod<bool>('setGeofences', {
+        'json': jsonEncode([
+          for (final p in places) {'id': p.id, 'lat': p.lat, 'lng': p.lng, 'radius': p.radiusM},
+        ]),
+      });
 }
 
 /// Tests and non-Android builds use a no-op bridge.
@@ -61,6 +73,8 @@ class NoopTrackingBridge implements TrackingBridge {
   Future<Map<String, Object?>> status() async => const {'enabled': false};
   @override
   Stream<String> timezoneChanges() => const Stream.empty();
+  @override
+  Future<void> setGeofences(List<({String id, double lat, double lng, int radiusM})> places) async => calls.add('geofences:${places.length}');
 }
 
 final trackingBridgeProvider = Provider<TrackingBridge>((ref) => MethodChannelTrackingBridge());

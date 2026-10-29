@@ -14,6 +14,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- SOS haptics (countdown and shake-to-SOS confirmation). -->
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <!-- No advertising ID: no ad or tracking SDKs. Removes it if any library tries to add it. -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
@@ -54,6 +56,10 @@
             android:name=".tracking.TrackingService"
             android:exported="false"
             android:foregroundServiceType="location" />
+        <!-- Geofence transitions for family places (wakes the service for fresh points). -->
+        <receiver
+            android:name=".tracking.GeofenceReceiver"
+            android:exported="false" />
         <receiver
             android:name=".tracking.BootReceiver"
             android:exported="false">

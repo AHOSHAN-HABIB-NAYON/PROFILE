@@ -606,5 +606,12 @@
   "econ.remove": "{name}-কে সরান",
   "econ.max": "সর্বোচ্চ ৫টি যোগাযোগ রাখা যায়।",
   "econ.err": "নাম ও সঠিক ইমেইল লিখুন।",
-  "walk.open": "খুলুন"
+  "walk.open": "খুলুন",
+  "tracking.channel_sos": "জরুরি (SOS)",
+  "tracking.shake_title": "৫ সেকেন্ডে SOS যাবে",
+  "tracking.shake_body": "তুমি ফোন ঝাঁকিয়েছ। ভুল হলে বাতিল চাপো।",
+  "tracking.shake_cancel": "বাতিল",
+  "tracking.sos_sent_title": "পরিবারকে SOS পাঠানো হয়েছে",
+  "tracking.sos_sent_body": "তোমার পরিবার দেখতে পাচ্ছে তুমি কোথায় আছ।",
+  "tracking.sos_failed": "SOS এখনো পাঠানো যায়নি। আবার চেষ্টা করা হচ্ছে…"
 }

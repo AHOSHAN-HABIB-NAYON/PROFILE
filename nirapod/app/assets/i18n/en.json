@@ -606,5 +606,12 @@
   "econ.remove": "Remove {name}",
   "econ.max": "You can add up to 5 contacts.",
   "econ.err": "Enter a name and a valid email.",
-  "walk.open": "Open"
+  "walk.open": "Open",
+  "tracking.channel_sos": "Emergency (SOS)",
+  "tracking.shake_title": "Sending SOS in 5 seconds",
+  "tracking.shake_body": "You shook your phone. Tap Cancel if this was a mistake.",
+  "tracking.shake_cancel": "Cancel",
+  "tracking.sos_sent_title": "SOS sent to your family",
+  "tracking.sos_sent_body": "Your family can see where you are.",
+  "tracking.sos_failed": "SOS could not be sent yet. Trying again…"
 }

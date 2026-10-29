@@ -14,6 +14,7 @@ import '../../core/motion/motion.dart';
 import '../../core/net/api_error.dart';
 import '../../core/session/session.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/tracking/tracking_bridge.dart';
 import '../../core/theme/tokens.g.dart';
 import '../../core/trust/trust.dart';
 import '../../core/tz/tz_utils.dart';
@@ -89,6 +90,15 @@ class _ChildHomeScreenState extends ConsumerState<ChildHomeScreen> {
     final me = ref.watch(myPositionProvider).value;
     final nearby = me == null ? const <NearbyPlace>[] : (ref.watch(nearbyProvider((me.latitude, me.longitude))).value ?? const <NearbyPlace>[]);
     final mapBuilder = ref.watch(familyMapBuilderProvider);
+    // Hand the family places to the background service (Android geofences).
+    ref.listen(placesProvider, (prev, next) {
+      final list = next.value?.places;
+      if (list == null) return;
+      unawaited(ref.read(trackingBridgeProvider).setGeofences([
+        for (final p in list) (id: p.id, lat: p.lat, lng: p.lng, radiusM: p.radiusM),
+      ]).catchError((Object _) {}));
+    });
+    ref.watch(placesProvider);
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {

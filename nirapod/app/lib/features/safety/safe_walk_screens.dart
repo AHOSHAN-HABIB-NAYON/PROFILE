@@ -14,6 +14,7 @@ import '../../core/state/buttons.dart';
 import '../../core/state/state_views.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.g.dart';
+import '../../core/tracking/tracking_bridge.dart';
 import '../../core/tz/tz_utils.dart';
 import '../../core/widgets/fields.dart';
 import '../../nav/router.dart';
@@ -106,7 +107,13 @@ class _ChildSafeWalkScreenState extends ConsumerState<ChildSafeWalkScreen> {
                         label: s.t('walk.start'),
                         large: true,
                         loading: _busy,
-                        onPressed: _busy ? null : () => _run(() => ref.read(safetyRepoProvider).startTrip(_minutes)),
+                        onPressed: _busy
+                            ? null
+                            : () => _run(() async {
+                                  final trip = await ref.read(safetyRepoProvider).startTrip(_minutes);
+                                  // Frequent updates (20 s) until the expected time plus a margin.
+                                  await ref.read(trackingBridgeProvider).setTrip(trip.expectedAt.add(const Duration(minutes: 15))).catchError((Object _) {});
+                                }),
                       ),
                     ])
                   : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -147,6 +154,7 @@ class _ChildSafeWalkScreenState extends ConsumerState<ChildSafeWalkScreen> {
                             ? null
                             : () => _run(() async {
                                   await ref.read(safetyRepoProvider).arriveTrip(trip.id);
+                                  await ref.read(trackingBridgeProvider).setTrip(null).catchError((Object _) {});
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.t('walk.arrived'))));
                                     context.go(locationFor('child_home'));
@@ -158,7 +166,12 @@ class _ChildSafeWalkScreenState extends ConsumerState<ChildSafeWalkScreen> {
                         key: const Key('walk_end'),
                         label: s.t('walk.end'),
                         kind: ButtonKind.text,
-                        onPressed: _busy ? null : () => _run(() => ref.read(safetyRepoProvider).cancelTrip(trip.id)),
+                        onPressed: _busy
+                            ? null
+                            : () => _run(() async {
+                                  await ref.read(safetyRepoProvider).cancelTrip(trip.id);
+                                  await ref.read(trackingBridgeProvider).setTrip(null).catchError((Object _) {});
+                                }),
                       ),
                     ]),
         ),

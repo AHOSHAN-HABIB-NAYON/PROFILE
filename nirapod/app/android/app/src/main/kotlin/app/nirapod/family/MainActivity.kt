@@ -44,6 +44,11 @@ class MainActivity : FlutterActivity() {
                         if (store.enabled) TrackingService.start(applicationContext, TrackingService.ACTION_TRIP)
                         result.success(true)
                     }
+                    "setGeofences" -> {
+                        store.geofences = call.argument<String>("json") ?: "[]"
+                        if (store.enabled) TrackingService.start(applicationContext, TrackingService.ACTION_GEOFENCES_CHANGED)
+                        result.success(true)
+                    }
                     "requestNow" -> {
                         if (store.enabled) TrackingService.start(applicationContext, TrackingService.ACTION_REQUEST_NOW)
                         result.success(store.enabled)

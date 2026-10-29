@@ -1,6 +1,7 @@
 package app.nirapod.family.tracking
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -12,6 +13,8 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.hardware.Sensor
+import android.hardware.SensorManager
 import android.location.Location
 import android.location.LocationManager
 import android.os.BatteryManager
@@ -20,11 +23,15 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
 import android.os.PowerManager
+import android.os.VibrationEffect
+import android.os.Vibrator
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import app.nirapod.family.MainActivity
 import app.nirapod.family.R
+import com.google.android.gms.location.Geofence
+import com.google.android.gms.location.GeofencingRequest
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
@@ -63,6 +70,12 @@ class TrackingService : Service() {
     private var uploadScheduled = false
     private var lastStateSent: String? = null
     private var receiverRegistered = false
+    private var shakeRegistered = false
+    private var sosPending = false
+    private val shake = ShakeDetector { worker.post { onShake() } }
+    private val sensors by lazy { getSystemService(Context.SENSOR_SERVICE) as SensorManager }
+    private val geofencing by lazy { LocationServices.getGeofencingClient(this) }
+    private val sosRunnable = Runnable { sendShakeSos(attempt = 0) }
 
     private val callback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
@@ -103,6 +116,19 @@ class TrackingService : Service() {
         when (intent?.action) {
             ACTION_REQUEST_NOW -> worker.post { requestImmediateFix() }
             ACTION_TRIP -> worker.post { applyMode(force = true) }
+            ACTION_GEOFENCE -> worker.post {
+                store.burstUntil = System.currentTimeMillis() + BURST_MS
+                applyMode(force = true)
+                requestImmediateFix()
+            }
+            ACTION_GEOFENCES_CHANGED -> worker.post { registerGeofences() }
+            ACTION_SOS_CANCEL -> worker.post { cancelShakeSos() }
+        }
+        if (!shakeRegistered) {
+            sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)?.let {
+                shakeRegistered = sensors.registerListener(shake, it, SensorManager.SENSOR_DELAY_UI, worker)
+            }
+            worker.post { registerGeofences() }
         }
         worker.post {
             applyMode(force = appliedInterval == 0L)
@@ -119,6 +145,10 @@ class TrackingService : Service() {
     }
 
     override fun onDestroy() {
+        if (shakeRegistered) {
+            sensors.unregisterListener(shake)
+            shakeRegistered = false
+        }
         if (receiverRegistered) {
             unregisterReceiver(providerReceiver)
             receiverRegistered = false
@@ -136,6 +166,7 @@ class TrackingService : Service() {
 
     private fun currentMode(): Mode = when {
         System.currentTimeMillis() < store.tripUntil -> Mode.TRIP
+        System.currentTimeMillis() < store.burstUntil -> Mode.TRIP
         else -> mode
     }
 
@@ -286,7 +317,120 @@ class TrackingService : Service() {
         requestImmediateFix()
     }
 
+    // ---------------------------------------------------------------- geofences (family places)
+
+    private fun geofenceIntent(): PendingIntent = PendingIntent.getBroadcast(
+        this, 7, Intent(this, GeofenceReceiver::class.java),
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+    )
+
+    /** (Re)registers Android geofences for the places from the app. Failures are ignored: uploads still work. */
+    @SuppressLint("MissingPermission")
+    private fun registerGeofences() {
+        try {
+            geofencing.removeGeofences(geofenceIntent())
+            val list = JSONArray(store.geofences)
+            if (list.length() == 0 || !hasLocationPermission()) return
+            val fences = (0 until minOf(list.length(), 90)).map { i ->
+                val g = list.getJSONObject(i)
+                Geofence.Builder()
+                    .setRequestId(g.getString("id"))
+                    .setCircularRegion(g.getDouble("lat"), g.getDouble("lng"), g.getDouble("radius").toFloat())
+                    .setExpirationDuration(Geofence.NEVER_EXPIRE)
+                    .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT)
+                    .build()
+            }
+            val req = GeofencingRequest.Builder()
+                .setInitialTrigger(0) // no trigger for the current state: the server decides arrivals
+                .addGeofences(fences)
+                .build()
+            geofencing.addGeofences(req, geofenceIntent())
+        } catch (e: Exception) {
+            // SecurityException (background permission removed) or bad data: keep tracking without geofences.
+        }
+    }
+
+    // ---------------------------------------------------------------- shake to SOS
+
+    private fun onShake() {
+        if (sosPending) return
+        sosPending = true
+        vibrate(longArrayOf(0, 400, 150, 400))
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val cancel = PendingIntent.getService(
+            this, 9, Intent(this, TrackingService::class.java).setAction(ACTION_SOS_CANCEL),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        nm.notify(
+            SOS_NOTIFICATION_ID,
+            NotificationCompat.Builder(this, CHANNEL_SOS)
+                .setSmallIcon(R.drawable.ic_stat_sharing)
+                .setContentTitle(store.text("shake_title", "Sending SOS in 5 seconds"))
+                .setContentText(store.text("shake_body", "You shook your phone. Tap Cancel if this was a mistake."))
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setCategory(NotificationCompat.CATEGORY_ALARM)
+                .setTimeoutAfter(SOS_COUNTDOWN_MS + 2_000)
+                .addAction(0, store.text("shake_cancel", "Cancel"), cancel)
+                .setContentIntent(openAppIntent())
+                .build()
+        )
+        worker.postDelayed(sosRunnable, SOS_COUNTDOWN_MS)
+    }
+
+    private fun cancelShakeSos() {
+        worker.removeCallbacks(sosRunnable)
+        sosPending = false
+        (getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).cancel(SOS_NOTIFICATION_ID)
+    }
+
+    private fun sendShakeSos(attempt: Int) {
+        if (!sosPending) return
+        val loc = last
+        val ok = Uploader.postSos(store, loc?.latitude, loc?.longitude, loc?.accuracy)
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (!ok && attempt < 5) {
+            nm.notify(SOS_NOTIFICATION_ID, sosResultNotification(store.text("sos_failed", "SOS could not be sent yet. Trying again…"), ""))
+            worker.postDelayed({ sendShakeSos(attempt + 1) }, 10_000L * (attempt + 1))
+            return
+        }
+        sosPending = false
+        if (ok) {
+            vibrate(longArrayOf(0, 200))
+            nm.notify(SOS_NOTIFICATION_ID, sosResultNotification(store.text("sos_sent_title", "SOS sent to your family"), store.text("sos_sent_body", "Your family can see where you are.")))
+            requestImmediateFix()
+        } else {
+            nm.notify(SOS_NOTIFICATION_ID, sosResultNotification(store.text("sos_failed", "SOS could not be sent yet. Trying again…"), ""))
+        }
+    }
+
+    private fun sosResultNotification(title: String, body: String): Notification = NotificationCompat.Builder(this, CHANNEL_SOS)
+        .setSmallIcon(R.drawable.ic_stat_sharing)
+        .setContentTitle(title)
+        .setContentText(body)
+        .setPriority(NotificationCompat.PRIORITY_HIGH)
+        .setAutoCancel(true)
+        .setContentIntent(openAppIntent())
+        .build()
+
+    private fun vibrate(pattern: LongArray) {
+        try {
+            @Suppress("DEPRECATION")
+            val v = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                v.vibrate(VibrationEffect.createWaveform(pattern, -1))
+            } else {
+                @Suppress("DEPRECATION")
+                v.vibrate(pattern, -1)
+            }
+        } catch (_: Exception) {
+        }
+    }
+
     private fun stopForGood() {
+        try {
+            geofencing.removeGeofences(geofenceIntent())
+        } catch (_: Exception) {
+        }
         store.clear()
         fused.removeLocationUpdates(callback)
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
@@ -305,6 +449,11 @@ class TrackingService : Service() {
         )
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_REQUESTS, store.text("channel_requests", "Family requests"), NotificationManager.IMPORTANCE_HIGH)
+        )
+        nm.createNotificationChannel(
+            NotificationChannel(CHANNEL_SOS, store.text("channel_sos", "Emergency (SOS)"), NotificationManager.IMPORTANCE_HIGH).apply {
+                enableVibration(true)
+            }
         )
     }
 
@@ -345,6 +494,13 @@ class TrackingService : Service() {
         const val REQUEST_NOTIFICATION_ID = 4102
         const val ACTION_REQUEST_NOW = "app.nirapod.family.tracking.REQUEST_NOW"
         const val ACTION_TRIP = "app.nirapod.family.tracking.TRIP"
+        const val ACTION_GEOFENCE = "app.nirapod.family.tracking.GEOFENCE"
+        const val ACTION_GEOFENCES_CHANGED = "app.nirapod.family.tracking.GEOFENCES_CHANGED"
+        const val ACTION_SOS_CANCEL = "app.nirapod.family.tracking.SOS_CANCEL"
+        const val CHANNEL_SOS = "nirapod_sos"
+        const val SOS_NOTIFICATION_ID = 4103
+        const val SOS_COUNTDOWN_MS = 5_000L
+        const val BURST_MS = 3 * 60_000L
 
         fun start(context: Context, action: String? = null) {
             val i = Intent(context, TrackingService::class.java)
