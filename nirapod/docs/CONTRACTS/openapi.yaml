@@ -443,9 +443,18 @@ paths:
       x-phase: 3
       summary: Batch upload from a device (offline queue). Coordinates are never logged.
       requestBody: { content: { application/json: { schema: { type: object, required: [points], properties: { points: { type: array, maxItems: 200, items: { $ref: '#/components/schemas/LocationPoint' } }, device_state: { $ref: '#/components/schemas/DeviceDiagnostics' } } } } } }
-      description: 'Adults must have sharing_status active (else 403 CONSENT_REQUIRED). Points older than 7 days or >2 min in the future are dropped. Response {accepted, dropped}.'
+      description: 'Adults must have sharing_status active (else 403 CONSENT_REQUIRED). Points older than 7 days or >2 min in the future are dropped. Response {accepted, dropped, update_requested: {by_name}|null}. Auth: Bearer access token or `Device <upload_key>` + x-device-id. Body may carry only device_state (points empty) to report location off / permission removed.'
       responses:
         '202': { description: Accepted }
+  /devices/upload-key:
+    post:
+      tags: [location]
+      x-phase: 3
+      summary: Child session creates/rotates a device-scoped upload key for the native background service
+      description: 'Use as `Authorization: Device <upload_key>` + `x-device-id` on POST /locations only. Revoked when the child device is removed.'
+      responses:
+        '201': { description: '{upload_key}' }
+        '403': { $ref: '#/components/responses/Error' }
   /families/{familyId}/live:
     get:
       tags: [location]
@@ -460,6 +469,7 @@ paths:
       x-phase: 3
       summary: Route for one day (limited by plan history_days)
       parameters: [ { $ref: '#/components/parameters/familyId' }, { $ref: '#/components/parameters/memberId' }, { name: date, in: query, required: true, schema: { type: string, format: date } } ]
+      description: 'Day in the member saved zone. Response {member_id, date, timezone, history_days, points: [{recorded_at, lat, lng, accuracy_m, battery_pct}]}. Older than plan history_days -> 402 PLAN_LIMIT_REACHED (details.limit=history_days).'
       responses:
         '200': { description: Points for the day }
         '402': { $ref: '#/components/responses/Error' }
@@ -468,6 +478,7 @@ paths:
       tags: [location]
       x-phase: 3
       parameters: [ { $ref: '#/components/parameters/familyId' }, { name: before, in: query, schema: { type: string, format: date-time } } ]
+      description: 'Query: before, limit (<=100), category safety|family. Items {id, type, member_id, member_name, occurred_at, data}. Only members the caller may see; within the plan history window.'
       responses:
         '200': { description: Arrivals, departures, SOS, battery and offline events }
   /families/{familyId}/members/{memberId}/request-update:

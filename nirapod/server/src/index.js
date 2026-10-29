@@ -3,6 +3,7 @@ import { createLogger } from './logger.js';
 import { createDb } from './db/knex.js';
 import { createApp } from './app.js';
 import { attachRealtime } from './realtime.js';
+import { startScheduler } from './jobs/index.js';
 
 const cfg = loadConfig();
 const logger = createLogger(cfg.LOG_LEVEL);
@@ -13,9 +14,12 @@ if (!cfg.DB_ADMIN_USER) logger.warn('DB_ADMIN_USER not set: admin panel shares t
 const app = createApp({ cfg, db, adminDb, logger });
 const server = app.listen(cfg.PORT, () => logger.info({ port: cfg.PORT }, 'Nirapod server listening'));
 attachRealtime(server, app.locals.ctx);
+// In-process jobs (set RUN_JOBS=false when cron runs scripts/run-jobs.js instead).
+const stopJobs = process.env.RUN_JOBS === 'false' ? () => {} : startScheduler(app.locals.ctx);
 
 async function shutdown(signal) {
   logger.info({ signal }, 'shutting down');
+  stopJobs();
   server.close();
   await Promise.allSettled([db.destroy(), adminDb.destroy()]);
   process.exit(0);

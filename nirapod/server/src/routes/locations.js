@@ -5,9 +5,14 @@ import { z } from 'zod';
 import { ApiError } from '../errors.js';
 import { ah, parse, limiter } from '../http.js';
 import { familyForMember, memberOf, isAdultRole } from '../family/access.js';
-import { visibleMembers, viewersOf } from '../family/visibility.js';
+import { visibleMembers, viewersOf, activeMembers, canSee } from '../family/visibility.js';
+import { familyPlan } from '../users/presenter.js';
+import { zonedTimeToUtc } from '../tz/index.js';
 import { audit } from '../audit.js';
 import { fromJson } from '../db/json.js';
+import { sha256 } from '../auth/tokens.js';
+import { raiseAlert, batteryAlert } from '../tracking/alerts.js';
+import crypto from 'node:crypto';
 
 export const ONLINE_WINDOW_MS = 5 * 60_000;
 export const REQUEST_UPDATE_INTERVAL_MS = 2 * 60_000;
@@ -53,9 +58,38 @@ export function locationsRouter(ctx) {
   const { db, cfg, clock, requireAuth, realtime } = ctx;
   const r = Router();
 
-  // Batch upload from the device's offline queue.
-  r.post('/locations', requireAuth, limiter({ windowMs: 60_000, limit: 60 }), ah(async (req, res) => {
-    const b = parse(z.object({ points: z.array(point).min(1).max(200), device_state: diagnostics.optional() }), req.body);
+  /**
+   * Uploads authenticate with the user's access token, or (child background service) with
+   * `Authorization: Device <upload_key>` plus `x-device-id`. The device key only works here.
+   */
+  const uploader = ah(async (req, res, next) => {
+    const m = /^Device\s+(\S{20,200})$/.exec(req.get('authorization') || '');
+    if (!m) return requireAuth(req, res, next);
+    const deviceId = req.get('x-device-id') || '';
+    const row = await db('child_devices as d').join('users as u', 'u.id', 'd.user_id')
+      .where({ 'd.upload_key_hash': sha256(m[1]) }).whereNull('d.revoked_at').first('u.*', 'd.device_id');
+    if (!row || row.device_id !== deviceId || row.status !== 'active') throw new ApiError('AUTH_REFRESH_INVALID');
+    const { device_id: _d, ...user } = row;
+    req.user = user;
+    req.session = { isChildDevice: true, deviceId };
+    next();
+  });
+
+  // A child session creates (or rotates) the device upload key for its native background service.
+  r.post('/devices/upload-key', requireAuth, ah(async (req, res) => {
+    if (!req.session.isChildDevice) throw new ApiError('FORBIDDEN');
+    const key = crypto.randomBytes(32).toString('base64url');
+    const n = await db('child_devices').where({ user_id: req.user.id, device_id: req.session.deviceId }).whereNull('revoked_at')
+      .update({ upload_key_hash: sha256(key), upload_key_created_at: clock.now() });
+    if (!n) throw new ApiError('FORBIDDEN', { details: { reason: 'device_not_bound' } });
+    res.status(201).set('cache-control', 'no-store').json({ upload_key: key });
+  }));
+
+  // Batch upload from the device's offline queue. A state-only report (no points) is allowed, e.g.
+  // "location turned off".
+  r.post('/locations', uploader, limiter({ windowMs: 60_000, limit: 60 }), ah(async (req, res) => {
+    const b = parse(z.object({ points: z.array(point).max(200).default([]), device_state: diagnostics.optional() })
+      .refine((x) => x.points.length > 0 || x.device_state, 'points or device_state required'), req.body);
     const membership = await db('family_members').where({ user_id: req.user.id }).whereNull('left_at').first();
     if (!membership) throw new ApiError('FORBIDDEN', { details: { reason: 'no_family' } });
     // Adults share only after consenting (active); paused/stopped adults' points are not collected.
@@ -74,7 +108,9 @@ export function locationsRouter(ctx) {
       }));
     if (rows.length) await db('locations').insert(rows);
     const last = rows.at(-1);
+    let updateRequest = null;
     if (membership.role === 'child') {
+      const device = await db('child_devices').where({ user_id: req.user.id }).whereNull('revoked_at').orderBy('id', 'desc').first();
       const upd = { last_seen_at: now, location_state: 'ok' };
       if (last?.battery_pct != null) upd.battery_pct = last.battery_pct;
       if (b.device_state) {
@@ -83,7 +119,26 @@ export function locationsRouter(ctx) {
         else if (b.device_state.location_services_on === false) upd.location_state = 'location_off';
         else if (b.device_state.battery_saver_on) upd.location_state = 'battery_saver';
       }
-      await db('child_devices').where({ user_id: req.user.id }).whereNull('revoked_at').update(upd);
+      if (device) {
+        // Alerts, once per crossing / transition.
+        const bat = batteryAlert(last?.battery_pct ?? null, device.battery_alert_level ?? null);
+        upd.battery_alert_level = bat.next;
+        upd.offline_alerted_at = null; // back online re-arms the offline alert
+        const subject = { id: req.user.id, uuid: req.user.uuid, name: req.user.name };
+        if (bat.alert) {
+          await raiseAlert(ctx, { familyId: membership.family_id, subject, type: bat.alert, data: { battery_pct: last.battery_pct }, now });
+        }
+        if ((upd.location_state === 'location_off' || upd.location_state === 'permission_removed') && device.location_state !== upd.location_state) {
+          await raiseAlert(ctx, { familyId: membership.family_id, subject, type: upd.location_state, now });
+        }
+        await db('child_devices').where({ id: device.id }).update(upd);
+      }
+      // "Request update now": tell the device (piggybacked on uploads until FCM arrives in Phase 5).
+      const pending = await db('notifications').where({ user_id: req.user.id, type: 'update_requested' }).whereNull('read_at').orderBy('id', 'desc').first();
+      if (pending) {
+        await db('notifications').where({ user_id: req.user.id, type: 'update_requested' }).whereNull('read_at').update({ read_at: now });
+        updateRequest = { by_name: fromJson(pending.params)?.by_name ?? '' };
+      }
     }
     if (last) {
       const viewers = await viewersOf(db, membership.family_id, req.user.id);
@@ -96,7 +151,7 @@ export function locationsRouter(ctx) {
         battery_pct: last.battery_pct,
       }, now);
     }
-    res.status(202).json({ accepted: rows.length, dropped: b.points.length - rows.length });
+    res.status(202).json({ accepted: rows.length, dropped: b.points.length - rows.length, update_requested: updateRequest });
   }));
 
   // Latest position of every member the caller may see.
@@ -148,6 +203,67 @@ export function locationsRouter(ctx) {
     realtime.emitToUsers([m.uuid], 'update.requested', { by_name: byName }, now);
     await audit(db, { actorId: req.user.id, action: 'location.update_requested', targetType: 'family', targetId: f.id, now });
     res.status(202).json({ requested: true });
+  }));
+
+  // Route for one calendar day in the member's saved zone. History depth follows the family plan.
+  r.get('/families/:familyId/members/:memberId/route', requireAuth, ah(async (req, res) => {
+    const f = await familyForMember(db, req.params.familyId, req.user.id);
+    const q = parse(z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }), req.query);
+    const m = await memberOf(db, f.id, req.params.memberId);
+    const all = await activeMembers(db, f.id);
+    const viewer = all.find((x) => x.user_id === req.user.id);
+    const subject = all.find((x) => x.user_id === m.user_id);
+    if (!viewer || !subject || !canSee(viewer, subject)) throw new ApiError('NOT_FOUND');
+    const now = clock.now();
+    const subjectUser = await db('users').where({ id: m.user_id }).first('timezone');
+    const zone = subjectUser?.timezone || 'UTC';
+    const [y, mo, d] = q.date.split('-').map(Number);
+    const start = zonedTimeToUtc({ year: y, month: mo, day: d }, zone);
+    const end = new Date(zonedTimeToUtc({ year: y, month: mo, day: d + 1 }, zone).getTime());
+    const plan = await familyPlan(db, f.id, now);
+    const historyDays = plan?.history_days ?? 3;
+    if (now.getTime() - end.getTime() > historyDays * 24 * 3600_000) {
+      throw new ApiError('PLAN_LIMIT_REACHED', { details: { limit: 'history_days', max: historyDays, plan: plan?.code ?? 'free' } });
+    }
+    const rows = await db('locations').where({ user_id: m.user_id, family_id: f.id })
+      .where('recorded_at', '>=', start).where('recorded_at', '<', end).orderBy('recorded_at', 'asc')
+      .select('recorded_at', 'lat', 'lng', 'accuracy_m', 'battery_pct').limit(5000);
+    res.set('cache-control', 'no-store').json({
+      member_id: m.uuid, date: q.date, timezone: zone, history_days: historyDays,
+      points: rows.map((p) => ({ recorded_at: iso(p.recorded_at), lat: num(p.lat), lng: num(p.lng), accuracy_m: num(p.accuracy_m), battery_pct: p.battery_pct })),
+    });
+  }));
+
+  // Timeline: arrivals, departures, SOS, battery, offline, location-off events (newest first).
+  const CATEGORY = {
+    safety: ['sos', 'battery_low', 'battery_critical', 'offline', 'location_off', 'permission_removed', 'safe_walk_overdue'],
+    family: ['arrival', 'departure', 'safe_arrival', 'safe_walk_started', 'safe_walk_arrived', 'update_requested'],
+  };
+  r.get('/families/:familyId/timeline', requireAuth, ah(async (req, res) => {
+    const f = await familyForMember(db, req.params.familyId, req.user.id);
+    const q = parse(z.object({
+      before: z.iso.datetime({ offset: true }).optional(),
+      limit: z.coerce.number().int().min(1).max(100).default(50),
+      category: z.enum(['safety', 'family']).optional(),
+    }), req.query);
+    const visible = await visibleMembers(db, f.id, req.user.id);
+    const ids = visible.map((v) => v.user_id);
+    const byId = new Map(visible.map((v) => [v.user_id, v]));
+    const now = clock.now();
+    const plan = await familyPlan(db, f.id, now);
+    const since = new Date(now.getTime() - (plan?.history_days ?? 3) * 24 * 3600_000);
+    let qb = db('timeline_events').where({ family_id: f.id }).whereIn('user_id', ids.length ? ids : [0]).where('occurred_at', '>=', since);
+    if (q.before) qb = qb.where('occurred_at', '<', new Date(q.before));
+    if (q.category) qb = qb.whereIn('type', CATEGORY[q.category]);
+    const rows = await qb.orderBy('occurred_at', 'desc').orderBy('id', 'desc').limit(q.limit);
+    res.set('cache-control', 'no-store').json(rows.map((e) => {
+      const data = fromJson(e.data) || {};
+      delete data.by; // never expose internal ids
+      return {
+        id: String(e.id), type: e.type, member_id: byId.get(e.user_id)?.uuid ?? null, member_name: byId.get(e.user_id)?.name ?? '',
+        occurred_at: iso(e.occurred_at), data,
+      };
+    }));
   }));
 
   return r;

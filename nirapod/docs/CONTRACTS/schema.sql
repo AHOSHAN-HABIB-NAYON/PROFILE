@@ -1,6 +1,7 @@
--- Nirapod MySQL schema (generated from migrations with: mysqldump --no-data --compact, knex_* tables and /*!...*/ lines removed). Source of truth: server/migrations/
+-- Nirapod MySQL schema (generated from migrations with: mysqldump --no-data). Source of truth: server/migrations/.
 -- Location-bearing tables (no admin grants): locations, places, trips, sos_events, timeline_events, nearby_cache.
 /*M!999999\- enable the sandbox mode */ 
+
 CREATE TABLE `abuse_reports` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `reporter_user_id` bigint(20) unsigned NOT NULL,
@@ -195,7 +196,12 @@ CREATE TABLE `child_devices` (
   `revoked_at` datetime(3) DEFAULT NULL,
   `created_at` datetime(3) NOT NULL DEFAULT current_timestamp(3),
   `updated_at` datetime(3) NOT NULL DEFAULT current_timestamp(3) ON UPDATE current_timestamp(3),
+  `upload_key_hash` varchar(64) DEFAULT NULL,
+  `upload_key_created_at` datetime(3) DEFAULT NULL,
+  `battery_alert_level` tinyint(3) unsigned DEFAULT NULL,
+  `offline_alerted_at` datetime(3) DEFAULT NULL,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `child_devices_upload_key_hash_unique` (`upload_key_hash`),
   KEY `child_devices_user_id_foreign` (`user_id`),
   KEY `child_devices_session_id_foreign` (`session_id`),
   KEY `child_devices_family_id_revoked_at_index` (`family_id`,`revoked_at`),
@@ -421,6 +427,18 @@ CREATE TABLE `kb_articles` (
   KEY `kb_articles_updated_by_admin_id_foreign` (`updated_by_admin_id`),
   CONSTRAINT `kb_articles_updated_by_admin_id_foreign` FOREIGN KEY (`updated_by_admin_id`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+CREATE TABLE `knex_migrations` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) DEFAULT NULL,
+  `batch` int(11) DEFAULT NULL,
+  `migration_time` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+CREATE TABLE `knex_migrations_lock` (
+  `index` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `is_locked` int(11) DEFAULT NULL,
+  PRIMARY KEY (`index`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 CREATE TABLE `locations` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `family_id` bigint(20) unsigned NOT NULL,
@@ -439,6 +457,7 @@ CREATE TABLE `locations` (
   PRIMARY KEY (`id`),
   KEY `locations_user_id_recorded_at_index` (`user_id`,`recorded_at`),
   KEY `locations_family_id_recorded_at_index` (`family_id`,`recorded_at`),
+  KEY `locations_recorded_at_index` (`recorded_at`),
   CONSTRAINT `locations_family_id_foreign` FOREIGN KEY (`family_id`) REFERENCES `families` (`id`) ON DELETE CASCADE,
   CONSTRAINT `locations_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -758,3 +777,5 @@ CREATE TABLE `users` (
   UNIQUE KEY `users_email_unique` (`email`),
   UNIQUE KEY `users_google_sub_unique` (`google_sub`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+

@@ -126,7 +126,7 @@ describe('visibility and adult consent', () => {
     const { child } = await familySetup();
     const old = new Date(t.clock.now().getTime() - 8 * 24 * 3600_000).toISOString();
     const res = await api().post('/api/v1/locations').set(bearer(child)).send({ points: [pt(), pt({ recorded_at: old })] }).expect(202);
-    assert.deepEqual(res.body, { accepted: 1, dropped: 1 });
+    assert.deepEqual(res.body, { accepted: 1, dropped: 1, update_requested: null });
     await api().post('/api/v1/locations').set(bearer(child)).send({ points: [pt({ lat: 95 })] }).expect(400);
   });
 
