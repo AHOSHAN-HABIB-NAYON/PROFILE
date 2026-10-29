@@ -13,9 +13,11 @@ import 'core/motion/display_mode.dart';
 import 'core/prefs/prefs.dart';
 import 'core/tz/tz_provider.dart';
 import 'core/tz/tz_utils.dart';
+import 'features/auth/routes.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  installAuthFeature();
   final results = await Future.wait<Object>([
     SharedPreferences.getInstance(),
     StringsBundle.load(rootBundle),
