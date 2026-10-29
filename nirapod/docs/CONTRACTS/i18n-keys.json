@@ -3673,6 +3673,48 @@
     "map.loc_off_button": {
       "placeholders": [],
       "en": "Turn on"
+    },
+    "chatsys.notice": {
+      "placeholders": [],
+      "en": "Hi! I'm Nirapod Assistant (AI). Our support team can read this chat. Never share passwords or codes here."
+    },
+    "chatsys.urgent": {
+      "placeholders": [
+        "numbers"
+      ],
+      "en": "If someone is missing or in danger, call emergency services now: {numbers}. We have flagged this chat as urgent."
+    },
+    "chatsys.waiting_human": {
+      "placeholders": [],
+      "en": "I'm connecting you with a person from our team. Please stay in this chat."
+    },
+    "chatsys.agent_joined": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "Connected, Agent: {name}"
+    },
+    "chatsys.handed_back": {
+      "placeholders": [],
+      "en": "You are now chatting with Nirapod Assistant"
+    },
+    "chatsys.inactive_warning": {
+      "placeholders": [],
+      "en": "Are you still there? This chat will close in a few minutes if we don't hear from you."
+    },
+    "chatsys.closed_inactive": {
+      "placeholders": [],
+      "en": "We closed this chat because it was quiet. You can start a new chat anytime."
+    },
+    "chatsys.closed": {
+      "placeholders": [],
+      "en": "This chat was closed. Thank you for contacting Nirapod."
+    },
+    "chatsys.legal": {
+      "placeholders": [
+        "email"
+      ],
+      "en": "Legal and law-enforcement requests are not handled in chat. Please email {email}."
     }
   }
 }

@@ -12,6 +12,11 @@ export function createRealtimeHub() {
     attach(server) {
       io = server;
     },
+    /** Admin panel sockets (Phase 8) join `admins`: chat alerts only, never location data. */
+    emitToAdmins(event, data, now = new Date()) {
+      if (!io) return;
+      io.of('/rt').to('admins').emit(event, { v: 1, id: crypto.randomUUID(), at: now.toISOString(), data });
+    },
     /** Closes the sockets of deleted or blocked users. */
     disconnectUsers(userUuids) {
       if (!io) return;

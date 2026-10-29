@@ -10,6 +10,7 @@ import { emailAllowed } from '../routes/notifications.js';
 import { t } from '../push/strings.js';
 import { expireSubscriptions } from '../routes/billing.js';
 import { purgeExports } from '../routes/data-rights.js';
+import { chatInactivity, chatRetention } from '../chat/service.js';
 
 export const OFFLINE_AFTER_MS = 15 * 60_000;
 
@@ -141,6 +142,8 @@ export const JOBS = {
   stale_devices: { everyMs: 60_000, run: detectStaleDevices },
   location_retention: { everyMs: 6 * 3600_000, run: purgeLocationHistory },
   exports_purge: { everyMs: 6 * 3600_000, run: purgeExports },
+  chat_inactivity: { everyMs: 60_000, run: chatInactivity },
+  chat_retention: { everyMs: 3600_000, run: chatRetention },
 };
 
 /** Starts in-process intervals (VPS). Returns a stop() function. */
