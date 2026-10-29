@@ -64,7 +64,7 @@ class ChildCode {
     return ChildCode(
       code: code,
       expiresAt: DateTime.tryParse(j['expires_at'] as String? ?? '') ?? DateTime.now().add(const Duration(hours: 24)),
-      joinUrl: j['join_url'] as String? ?? 'https://nirapod.app/join?code=$code',
+      joinUrl: j['join_url'] as String? ?? 'https://family-track.webtecit.com/join?code=$code',
     );
   }
 

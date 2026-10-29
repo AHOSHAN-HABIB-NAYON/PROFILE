@@ -1,6 +1,6 @@
 /// Public legal pages (opened in the in-app browser). Overridable at build time via --dart-define.
 abstract final class LegalLinks {
-  static const site = String.fromEnvironment('SITE_BASE_URL', defaultValue: 'https://nirapod.app');
+  static const site = String.fromEnvironment('SITE_BASE_URL', defaultValue: 'https://family-track.webtecit.com');
   static const terms = '$site/terms';
   static const privacy = '$site/privacy';
 

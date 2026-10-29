@@ -38,7 +38,7 @@ export function transportFromConfig(cfg) {
 
 export function createMailer({ cfg, db, logger, clock, transport }) {
   const tx = nodemailer.createTransport(transport ?? transportFromConfig(cfg));
-  const from = cfg.MAIL_FROM || 'Nirapod <no-reply@nirapod.app>';
+  const from = cfg.MAIL_FROM || 'Nirapod <no-reply@family-track.webtecit.com>';
 
   /**
    * Sends `template` to `user` (needs id, email, language). Never throws: failures are recorded in email_logs.

@@ -57,6 +57,13 @@ jobs:
       - run: npm test
       - name: Migrate + seed a fresh database (smoke)
         run: node scripts/migrate.js latest && node scripts/seed.js && node scripts/seed.js
+      - name: Package the server for Hostinger (nirapod-server.zip)
+        run: node ../tools/pack-server.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nirapod-server
+          path: nirapod/dist/nirapod-server.zip
+          retention-days: 30
 
   app:
     name: Android app (analyze, test, build AAB)

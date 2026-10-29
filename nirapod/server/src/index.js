@@ -11,6 +11,15 @@ const db = createDb(cfg);
 const adminDb = createDb(cfg, { admin: true });
 if (!cfg.DB_ADMIN_USER) logger.warn('DB_ADMIN_USER not set: admin panel shares the app DB user (dev only).');
 
+// Shared hosting (Hostinger Node.js) often has no shell: apply migrations and the idempotent seed on start.
+// Set AUTO_MIGRATE=false to run them by hand instead.
+if (process.env.AUTO_MIGRATE !== 'false') {
+  const { seed } = await import('./db/seed.js');
+  const [, applied] = await db.migrate.latest();
+  if (applied.length) logger.info({ applied: applied.length }, 'migrations applied');
+  await seed(db);
+}
+
 const app = createApp({ cfg, db, adminDb, logger });
 const server = app.listen(cfg.PORT, () => logger.info({ port: cfg.PORT }, 'Nirapod server listening'));
 attachRealtime(server, app.locals.ctx);
