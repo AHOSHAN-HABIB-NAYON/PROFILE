@@ -58,7 +58,7 @@ class MeScreen extends ConsumerWidget {
         const SizedBox(height: Space.md),
         row(AppIcons.user, s.t('me.edit_profile'), onTap: () => context.push(locationFor('profile_setup'))),
         if (u.email != null)
-          row(AppIcons.message, s.t('me.email'), sub: '${u.email}${u.emailVerified ? '  ·  ${s.t('me.verified')}' : ''}'),
+          row(AppIcons.mail, s.t('me.email'), sub: '${u.email}${u.emailVerified ? '  ·  ${s.t('me.verified')}' : ''}'),
         row(AppIcons.lock, s.t('me.sign_in_method'), sub: u.authProvider == 'google' ? s.t('me.method_google') : s.t('me.method_email')),
         if (u.authProvider == 'email') row(AppIcons.lock, s.t('me.change_password'), onTap: () => context.push(locationFor('forgot_email'))),
         row(AppIcons.settings, s.t('me.devices'), onTap: () => context.push(locationFor('sessions'))),

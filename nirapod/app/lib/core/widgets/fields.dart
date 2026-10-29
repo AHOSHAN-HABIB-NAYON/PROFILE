@@ -147,7 +147,10 @@ class _PasswordFieldState extends State<PasswordField> {
         child: PressScale(
           haptic: false,
           onTap: () => setState(() => _visible = !_visible),
-          child: Center(
+          // Fixed 48dp square at the end of the field (Center alone would take the whole width).
+          child: SizedBox.square(
+            dimension: 48,
+            child: Center(
             child: AnimatedSwitcher(
               duration: Motion.of(context, const Duration(milliseconds: 200)),
               transitionBuilder: (child, a) => FadeTransition(
@@ -161,6 +164,7 @@ class _PasswordFieldState extends State<PasswordField> {
                 color: c.muted,
               ),
             ),
+          ),
           ),
         ),
       ),

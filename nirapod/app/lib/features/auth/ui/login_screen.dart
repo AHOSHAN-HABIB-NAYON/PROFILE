@@ -128,6 +128,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final busy = _loading || _googleLoading;
     return AuthScaffold(
       backLabel: s.t('common.back'),
+      illustration: switch (widget.role) {
+        RoleChoice.parent => BrandAssets.illustrationParent,
+        RoleChoice.child => BrandAssets.illustrationChild,
+        RoleChoice.probashi => BrandAssets.illustrationProbashi,
+        RoleChoice.member => BrandAssets.illustrationMember,
+      },
       body: AutofillGroup(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -137,7 +143,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               label: s.t('auth.email'),
               hint: s.t('auth.email_hint'),
               controller: _email,
-              icon: AppIcons.message,
+              icon: AppIcons.mail,
               error: _emailError == null ? null : s.t(_emailError!),
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,

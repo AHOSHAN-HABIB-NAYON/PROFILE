@@ -79,7 +79,7 @@ class _ForgotEmailScreenState extends ConsumerState<ForgotEmailScreen> {
           label: s.t('auth.email'),
           hint: s.t('auth.email_hint'),
           controller: _email,
-          icon: AppIcons.message,
+          icon: AppIcons.mail,
           error: _emailError == null ? null : s.t(_emailError!),
           keyboardType: TextInputType.emailAddress,
           autofillHints: const [AutofillHints.email],

@@ -38,6 +38,7 @@ abstract final class AppIcons {
   static const locationPin = 'assets/icons/location-pin.svg';
   static const lock = 'assets/icons/lock.svg';
   static const logout = 'assets/icons/logout.svg';
+  static const mail = 'assets/icons/mail.svg';
   static const mapFilled = 'assets/icons/map-filled.svg';
   static const map = 'assets/icons/map.svg';
   static const message = 'assets/icons/message.svg';
@@ -97,6 +98,7 @@ abstract final class AppIcons {
     locationPin,
     lock,
     logout,
+    mail,
     mapFilled,
     map,
     message,

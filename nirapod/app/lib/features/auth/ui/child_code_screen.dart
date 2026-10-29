@@ -101,6 +101,7 @@ class _ChildCodeScreenState extends ConsumerState<ChildCodeScreen> {
     final c = context.colors;
     return AuthScaffold(
       backLabel: s.t('common.back'),
+      illustration: BrandAssets.illustrationChild,
       body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         AuthHeading(title: s.t('child.code_title'), subtitle: s.t('child.code_body')),
         CodeCells(

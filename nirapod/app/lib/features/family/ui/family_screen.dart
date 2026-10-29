@@ -225,7 +225,7 @@ class _InviteSheetState extends ConsumerState<_InviteSheet> {
         Text(s.t('family.invite_title'), style: t.headlineSmall),
         const SizedBox(height: Space.md),
         if (r == null) ...[
-          AppTextField(label: s.t('family.invite_email'), controller: _email, keyboardType: TextInputType.emailAddress, icon: AppIcons.message, error: _error),
+          AppTextField(label: s.t('family.invite_email'), controller: _email, keyboardType: TextInputType.emailAddress, icon: AppIcons.mail, error: _error),
           SwitchListTile(contentPadding: EdgeInsets.zero, title: Text(s.t('family.invite_overseas')), value: _overseas, onChanged: (v) => setState(() => _overseas = v)),
           const SizedBox(height: Space.sm),
           AppButton(

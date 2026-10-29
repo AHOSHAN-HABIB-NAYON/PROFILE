@@ -82,7 +82,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               label: s.t('auth.email'),
               hint: s.t('auth.email_hint'),
               controller: _email,
-              icon: AppIcons.message,
+              icon: AppIcons.mail,
               error: t(_emailError),
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../i18n/locale_controller.dart';
@@ -22,6 +23,7 @@ class AuthScaffold extends ConsumerWidget {
     this.backLabel,
     this.title,
     this.footer,
+    this.illustration,
   });
 
   final Widget body;
@@ -31,6 +33,8 @@ class AuthScaffold extends ConsumerWidget {
   final String? backLabel;
   final String? title;
   final Widget? footer;
+  /// Optional decorative brand picture shown at the bottom of the page (fills the empty space).
+  final String? illustration;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -72,10 +76,41 @@ class AuthScaffold extends ConsumerWidget {
               ),
             ),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(Space.screenHorizontal, Space.xs, Space.screenHorizontal, Space.xl),
-                child: body,
-              ),
+              child: illustration == null
+                  ? SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(Space.screenHorizontal, Space.xs, Space.screenHorizontal, Space.xl),
+                      child: body,
+                    )
+                  : LayoutBuilder(
+                      builder: (context, box) => SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(Space.screenHorizontal, Space.xs, Space.screenHorizontal, Space.lg),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minHeight: box.maxHeight - Space.xs - Space.lg),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              body,
+                              Padding(
+                                padding: const EdgeInsets.only(top: Space.xl),
+                                child: Center(
+                                  child: Container(
+                                    width: 168,
+                                    height: 168,
+                                    padding: const EdgeInsets.all(Space.md),
+                                    decoration: BoxDecoration(
+                                      color: c.primary.withValues(alpha: 0.07),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: SvgPicture.asset(illustration!, excludeFromSemantics: true),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
             ),
             if (footer != null)
               Padding(
