@@ -78,9 +78,9 @@ class MeScreen extends ConsumerWidget {
         ),
         SettingsGroup(title: s.t('me.account'), children: [
           SettingsRow(icon: AppIcons.user, title: s.t('me.edit_profile'), onTap: () => context.push(locationFor('profile_setup'))),
-          SettingsRow(icon: AppIcons.lock, title: s.t('me.sign_in_method'), subtitle: u.authProvider == 'google' ? s.t('me.method_google') : s.t('me.method_email')),
+          SettingsRow(icon: AppIcons.shieldCheck, title: s.t('me.sign_in_method'), subtitle: u.authProvider == 'google' ? s.t('me.method_google') : s.t('me.method_email')),
           if (u.authProvider == 'email') SettingsRow(icon: AppIcons.lock, title: s.t('me.change_password'), onTap: () => context.push(locationFor('change_password'))),
-          SettingsRow(icon: AppIcons.settings, title: s.t('me.devices'), onTap: () => context.push(locationFor('sessions'))),
+          SettingsRow(icon: AppIcons.phone, title: s.t('me.devices'), onTap: () => context.push(locationFor('sessions'))),
         ]),
         SettingsGroup(title: s.t('me.your_data'), children: [
           SettingsRow(icon: AppIcons.history, title: s.t('me.download'), onTap: () => context.push(locationFor('data_export'))),
