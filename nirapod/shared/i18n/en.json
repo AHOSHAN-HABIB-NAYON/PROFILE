@@ -841,5 +841,9 @@
   "places.search_hint": "Search a place or address",
   "places.search": "Search",
   "places.search_none": "No place found. Try another name, or move the map.",
-  "places.map_type": "Change map type"
+  "places.map_type": "Change map type",
+  "map.add_place": "Add place",
+  "map.setup_title": "Where do your children go?",
+  "map.setup_body": "Add Home, School or Coaching. You get an alert when a child arrives or leaves.",
+  "map.long_press_hint": "Tip: press and hold anywhere on the map to add a place there."
 }

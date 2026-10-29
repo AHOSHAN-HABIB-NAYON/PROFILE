@@ -841,5 +841,9 @@
   "places.search_hint": "Cari lokasi atau alamat",
   "places.search": "Cari",
   "places.search_none": "Tiada lokasi dijumpai. Cuba nama lain atau alihkan peta.",
-  "places.map_type": "Tukar jenis peta"
+  "places.map_type": "Tukar jenis peta",
+  "map.add_place": "Tambah lokasi",
+  "map.setup_title": "Ke mana anak-anak anda pergi?",
+  "map.setup_body": "Tambah Rumah, Sekolah atau Kelas Tuisyen. Anda akan dimaklumkan apabila anak tiba atau beredar.",
+  "map.long_press_hint": "Petua: tekan dan tahan di mana-mana pada peta untuk menambah lokasi di situ."
 }

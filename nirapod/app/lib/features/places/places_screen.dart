@@ -314,8 +314,12 @@ class _PlaceRow extends StatelessWidget {
 
 /// Add / edit a place: pin drop on the map, name, type, radius 100-300 m, which children it is for.
 class PlaceEditScreen extends ConsumerStatefulWidget {
-  const PlaceEditScreen({super.key, this.placeId});
+  const PlaceEditScreen({super.key, this.placeId, this.initialLat, this.initialLng});
   final String? placeId;
+
+  /// Start point for a new place (e.g. where the user pressed and held on the map).
+  final double? initialLat;
+  final double? initialLng;
   @override
   ConsumerState<PlaceEditScreen> createState() => _PlaceEditScreenState();
 }
@@ -357,6 +361,10 @@ class _PlaceEditScreenState extends ConsumerState<PlaceEditScreen> {
       _lat = p.lat;
       _lng = p.lng;
       _children = p.appliesTo.toSet();
+      _loaded = true;
+    } else if (widget.placeId == null && widget.initialLat != null && widget.initialLng != null) {
+      _lat = widget.initialLat;
+      _lng = widget.initialLng;
       _loaded = true;
     } else if (widget.placeId == null) {
       final me = ref.read(myPositionProvider).value;

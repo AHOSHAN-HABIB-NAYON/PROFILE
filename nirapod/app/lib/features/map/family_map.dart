@@ -23,8 +23,34 @@ class MapPin {
   final Trust trust;
 }
 
+/// A saved place (Home, School...) drawn as its alert circle.
+class MapPlace {
+  const MapPlace({required this.id, required this.name, required this.lat, required this.lng, required this.radiusM});
+  final String id;
+  final String name;
+  final double lat;
+  final double lng;
+  final int radiusM;
+}
+
 class FamilyMapData {
-  const FamilyMapData({this.pins = const [], this.nearby = const [], this.prefs = const MapPrefs(), this.compact = false, this.trail = const []});
+  const FamilyMapData({
+    this.pins = const [],
+    this.nearby = const [],
+    this.prefs = const MapPrefs(),
+    this.compact = false,
+    this.trail = const [],
+    this.places = const [],
+    this.onLongPress,
+    this.onPlaceTap,
+  });
+
+  /// Saved places, shown when the "My places" layer is on.
+  final List<MapPlace> places;
+
+  /// Press and hold on the map (e.g. to add a place there).
+  final ValueChanged<(double, double)>? onLongPress;
+  final ValueChanged<String>? onPlaceTap;
   final List<MapPin> pins;
   final List<NearbyPlace> nearby;
   final MapPrefs prefs;
@@ -134,7 +160,16 @@ class _GoogleFamilyMapState extends State<GoogleFamilyMap> implements FamilyMapC
           fitAll(d.pins);
         }
       },
+      onLongPress: d.compact || d.onLongPress == null ? null : (p) => d.onLongPress!((p.latitude, p.longitude)),
       markers: {
+        if (d.prefs.places)
+          for (final pl in d.places)
+            Marker(
+              markerId: MarkerId('p:${pl.id}'),
+              position: LatLng(pl.lat, pl.lng),
+              icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+              infoWindow: InfoWindow(title: pl.name, onTap: d.onPlaceTap == null ? null : () => d.onPlaceTap!(pl.id)),
+            ),
         for (final p in d.pins)
           Marker(
             markerId: MarkerId('m:${p.id}'),
@@ -166,6 +201,16 @@ class _GoogleFamilyMapState extends State<GoogleFamilyMap> implements FamilyMapC
           ),
       },
       circles: {
+        if (d.prefs.places)
+          for (final pl in d.places)
+            Circle(
+              circleId: CircleId('p:${pl.id}'),
+              center: LatLng(pl.lat, pl.lng),
+              radius: pl.radiusM.toDouble(),
+              fillColor: c.accent.withValues(alpha: 0.15),
+              strokeColor: c.accent,
+              strokeWidth: 2,
+            ),
         if (d.prefs.accuracy)
           for (final p in d.pins)
             Circle(

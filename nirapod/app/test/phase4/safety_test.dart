@@ -167,6 +167,18 @@ void main() {
     expect(name.controller!.text, 'Jhinia High School');
   });
 
+  testWidgets('map: a parent with no places sees how to set where children go; Add place opens the place page', (t) async {
+    final (_, router) = await pumpRouted(t, 'map', user: parent);
+    expect(find.byKey(const Key('map_places_setup')), findsOneWidget);
+    expect(find.text('Where do your children go?'), findsOneWidget);
+    expect(find.byKey(const Key('map_add_place')), findsOneWidget);
+    await t.tap(find.byKey(const Key('map_setup_add')));
+    for (var i = 0; i < 5; i++) {
+      await t.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.byKey(const Key('place_search')), findsOneWidget);
+  });
+
   testWidgets('remember me: email is prefilled when remembered', (t) async {
     SharedPreferences.setMockInitialValues({});
     await pumpRouted(t, 'login_parent', user: parent, prefs: {PrefKeys.rememberMe: true, PrefKeys.rememberedEmail: 'mom@example.com'});

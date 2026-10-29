@@ -3954,6 +3954,22 @@
     "places.map_type": {
       "placeholders": [],
       "en": "Change map type"
+    },
+    "map.add_place": {
+      "placeholders": [],
+      "en": "Add place"
+    },
+    "map.setup_title": {
+      "placeholders": [],
+      "en": "Where do your children go?"
+    },
+    "map.setup_body": {
+      "placeholders": [],
+      "en": "Add Home, School or Coaching. You get an alert when a child arrives or leaves."
+    },
+    "map.long_press_hint": {
+      "placeholders": [],
+      "en": "Tip: press and hold anywhere on the map to add a place there."
     }
   }
 }

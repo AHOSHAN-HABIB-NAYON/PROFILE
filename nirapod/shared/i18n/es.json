@@ -841,5 +841,9 @@
   "places.search_hint": "Busca un lugar o dirección",
   "places.search": "Buscar",
   "places.search_none": "No se encontró ningún lugar. Prueba otro nombre o mueve el mapa.",
-  "places.map_type": "Cambiar tipo de mapa"
+  "places.map_type": "Cambiar tipo de mapa",
+  "map.add_place": "Añadir lugar",
+  "map.setup_title": "¿A dónde van tus hijos?",
+  "map.setup_body": "Añade Casa, Escuela o Clases. Recibirás un aviso cuando un hijo llegue o se vaya.",
+  "map.long_press_hint": "Consejo: mantén pulsado cualquier punto del mapa para añadir un lugar allí."
 }

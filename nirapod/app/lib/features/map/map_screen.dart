@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/permissions/permission_card.dart';
 import '../onboarding/data/permission_gateway.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:geolocator/geolocator.dart';
 
@@ -19,7 +20,10 @@ import '../../core/theme/app_theme.dart';
 import '../../core/theme/tokens.g.dart';
 import '../family/data/family_models.dart';
 import '../family/data/family_repo.dart';
+import '../../core/state/buttons.dart';
+import '../../nav/router.dart';
 import '../home/home_screen.dart' show pinsFor;
+import '../safety/data/safety_repo.dart';
 import '../home/widgets/profile_row.dart' show homeClockProvider;
 import 'family_map.dart';
 import 'map_prefs.dart';
@@ -64,6 +68,12 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   FamilyMapController? _map;
   String? _follow;
   bool _centeredOnMe = false;
+  bool _hideSetup = false;
+
+  void _addPlaceAt((double, double)? at) {
+    final base = locationFor('place_edit');
+    context.push(at == null ? base : '$base?lat=${at.$1.toStringAsFixed(6)}&lng=${at.$2.toStringAsFixed(6)}');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +84,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final me = ref.watch(myPositionProvider).value;
     final now = ref.watch(homeClockProvider)();
     final pins = family == null ? <MapPin>[] : pinsFor(family, live, now);
+    final user = switch (ref.watch(sessionControllerProvider)) {
+      SignedIn(:final user) => user,
+      _ => null,
+    };
+    // Adults set where children go (Home, School...). Children never manage places.
+    final adult = family != null && user != null && user.role != AppRole.child;
+    final placesAsync = adult ? ref.watch(placesProvider) : null;
+    final places = [
+      for (final p in placesAsync?.value?.places ?? const <Place>[])
+        MapPlace(id: p.id, name: p.name, lat: p.lat, lng: p.lng, radiusM: p.radiusM),
+    ];
+    final showSetup = adult && !_hideSetup && placesAsync?.hasValue == true && places.isEmpty;
     final nearby = (prefs.nearby && me != null)
         ? (ref.watch(nearbyProvider((me.latitude, me.longitude))).value ?? const <NearbyPlace>[])
         : const <NearbyPlace>[];
@@ -95,7 +117,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         children: [
           Positioned.fill(
             child: FamilyMapView(
-              data: FamilyMapData(pins: pins, nearby: nearby, prefs: prefs),
+              data: FamilyMapData(
+                pins: pins,
+                nearby: nearby,
+                prefs: prefs,
+                places: places,
+                onLongPress: adult ? _addPlaceAt : null,
+                onPlaceTap: (id) => context.push('${locationFor('place_edit')}?id=$id'),
+              ),
               onReady: (m) {
                 setState(() => _map = m);
                 if (me != null && !_centeredOnMe) {
@@ -111,7 +140,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             top: MediaQuery.paddingOf(context).top + Space.sm,
             start: Space.sm,
             end: 72,
-            child: PermissionNeededCard(permission: OnbPermission.locationWhenInUse, strings: s),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              PermissionNeededCard(permission: OnbPermission.locationWhenInUse, strings: s),
+              if (showSetup)
+                _PlacesSetupCard(
+                  strings: s,
+                  onAdd: () => _addPlaceAt(me == null ? null : (me.latitude, me.longitude)),
+                  onClose: () => setState(() => _hideSetup = true),
+                ),
+            ]),
           ),
           // Map controls: two grouped cards on the right edge (like the system maps app).
           PositionedDirectional(
@@ -123,6 +160,18 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 MapControlButton(icon: AppIcons.compass, label: s.t('map.compass'), onTap: () => _map?.resetNorth()),
               ]),
               const SizedBox(height: Space.sm),
+              if (adult) ...[
+                MapControlGroup(children: [
+                  MapControlButton(
+                    key: const Key('map_add_place'),
+                    icon: AppIcons.plus,
+                    label: s.t('map.add_place'),
+                    primary: true,
+                    onTap: () => _addPlaceAt(me == null ? null : (me.latitude, me.longitude)),
+                  ),
+                ]),
+                const SizedBox(height: Space.sm),
+              ],
               MapControlGroup(children: [
                 MapControlButton(
                   icon: AppIcons.recenter,
@@ -432,6 +481,51 @@ class MapControlGroup extends StatelessWidget {
 }
 
 /// 48dp square map button with a tooltip and TalkBack label.
+/// First-time guide: how to set where children go.
+class _PlacesSetupCard extends StatelessWidget {
+  const _PlacesSetupCard({required this.strings, required this.onAdd, required this.onClose});
+  final Strings strings;
+  final VoidCallback onAdd;
+  final VoidCallback onClose;
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final t = Theme.of(context).textTheme;
+    final s = strings;
+    return Card(
+      key: const Key('map_places_setup'),
+      margin: const EdgeInsets.only(top: Space.xs),
+      color: c.surface,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.card)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(Space.md, Space.sm, Space.xs, Space.sm),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+          Row(children: [
+            AppIcon(AppIcons.locationPinFilled, size: 20, color: c.primaryText),
+            const SizedBox(width: Space.xs),
+            Expanded(child: Text(s.t('map.setup_title'), style: t.titleSmall)),
+            IconButton(
+              tooltip: s.t('common.close'),
+              visualDensity: VisualDensity.compact,
+              onPressed: onClose,
+              icon: AppIcon(AppIcons.close, size: 18, color: c.muted),
+            ),
+          ]),
+          Padding(
+            padding: const EdgeInsetsDirectional.only(end: Space.sm),
+            child: Text(s.t('map.setup_body'), style: t.bodySmall),
+          ),
+          const SizedBox(height: Space.sm),
+          AppButton(key: const Key('map_setup_add'), label: s.t('map.add_place'), onPressed: onAdd),
+          const SizedBox(height: Space.xs),
+          Text(s.t('map.long_press_hint'), style: t.bodySmall!.copyWith(color: c.muted)),
+        ]),
+      ),
+    );
+  }
+}
+
 class MapControlButton extends StatelessWidget {
   const MapControlButton({super.key, required this.icon, required this.label, required this.onTap, this.primary = false});
   final String icon;

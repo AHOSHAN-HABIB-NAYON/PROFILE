@@ -42,7 +42,11 @@ final mainScreens = <String, Widget Function(GoRouterState state)>{
   'settings_notifications': (_) => const NotificationSettingsScreen(),
   // Phase 4: places and safety.
   'places': (_) => const PlacesScreen(),
-  'place_edit': (st) => PlaceEditScreen(placeId: st.uri.queryParameters['id']),
+  'place_edit': (st) => PlaceEditScreen(
+        placeId: st.uri.queryParameters['id'],
+        initialLat: double.tryParse(st.uri.queryParameters['lat'] ?? ''),
+        initialLng: double.tryParse(st.uri.queryParameters['lng'] ?? ''),
+      ),
   'safe_walk': (_) => const SafeWalkScreen(),
   'emergency_contacts': (_) => const EmergencyContactsScreen(),
   'child_home': (_) => const ChildHomeScreen(),
