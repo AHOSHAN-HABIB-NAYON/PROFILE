@@ -19,6 +19,9 @@ import '../../core/trust/trust.dart';
 import '../../core/widgets/code_cells.dart';
 import '../../core/widgets/language_selector.dart';
 import '../../nav/router.dart';
+import '../alerts/alerts_screens.dart';
+import '../../core/permissions/permission_card.dart';
+import '../onboarding/data/permission_gateway.dart';
 import '../family/data/family_models.dart';
 import '../family/data/family_repo.dart';
 import '../family/data/realtime.dart';
@@ -31,7 +34,7 @@ import 'widgets/member_card.dart';
 import 'widgets/profile_row.dart';
 
 /// Unread alerts count (Phase 5 fills it from /notifications).
-final unreadAlertsProvider = Provider<int>((ref) => 0);
+final unreadAlertsProvider = Provider<int>((ref) => ref.watch(unreadAlertsCountProvider));
 
 List<MapPin> pinsFor(Family family, Map<String, MemberLive> live, DateTime now) => [
       for (final m in family.members)
@@ -76,6 +79,14 @@ class HomeScreen extends ConsumerWidget {
                   strings: s,
                   sharing: familyAsync.value?.member(user.id)?.sharingStatus == 'active',
                   onTap: () => context.push(locationFor('profile')),
+                ),
+                // Skipped during onboarding? Ask here, where it matters.
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Space.screenHorizontal),
+                  child: Column(children: [
+                    PermissionNeededCard(permission: OnbPermission.notification, strings: s),
+                    PermissionNeededCard(permission: OnbPermission.locationWhenInUse, strings: s),
+                  ]),
                 ),
                 switch (familyAsync) {
                   AsyncData(value: null) => _EmptyFamily(strings: s, user: user),

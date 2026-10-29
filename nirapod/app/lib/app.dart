@@ -8,6 +8,7 @@ import 'core/i18n/locale_controller.dart';
 import 'core/motion/motion.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
+import 'core/push/push_service.dart';
 import 'features/family/data/sharing.dart';
 import 'features/safety/sos_screens.dart';
 import 'nav/router.dart';
@@ -22,6 +23,7 @@ class NirapodApp extends ConsumerWidget {
     final language = ref.watch(languageProvider);
     final mode = ref.watch(themeControllerProvider);
     ref.watch(backgroundHooksProvider);
+    ref.watch(pushHooksProvider);
     return MaterialApp.router(
       title: 'Nirapod',
       debugShowCheckedModeBanner: false,

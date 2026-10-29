@@ -15,6 +15,8 @@ import '../../core/net/api_error.dart';
 import '../../core/session/session.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/tracking/tracking_bridge.dart';
+import '../../core/permissions/permission_card.dart';
+import '../onboarding/data/permission_gateway.dart';
 import '../../core/theme/tokens.g.dart';
 import '../../core/trust/trust.dart';
 import '../../core/tz/tz_utils.dart';
@@ -127,6 +129,9 @@ class _ChildHomeScreenState extends ConsumerState<ChildHomeScreen> {
                 Text(s.t('greeting.${period.name}'), style: t.bodyMedium!.copyWith(color: c.muted)),
                 Text(user?.name ?? '', style: t.headlineSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: Space.sm),
+                // Without "all the time" the family cannot see the child when the app is closed.
+                PermissionNeededCard(permission: OnbPermission.locationAlways, strings: s, critical: true),
+                PermissionNeededCard(permission: OnbPermission.notification, strings: s),
                 // Sharing status: always visible, never hidden.
                 Semantics(
                   container: true,

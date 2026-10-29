@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:async/async.dart' show StreamGroup;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +17,7 @@ import '../../core/icons/app_icon.dart';
 import '../../core/icons/app_icons.g.dart';
 import '../../core/motion/motion.dart';
 import '../../core/net/api_error.dart';
+import '../../core/push/push_service.dart';
 import '../../core/session/session.dart';
 import '../../core/state/buttons.dart';
 import '../../core/theme/app_theme.dart';
@@ -326,6 +329,7 @@ class _SosAlertHostState extends ConsumerState<SosAlertHost> {
   final _acked = <String>{};
   SosEvent? _sos;
   StreamSubscription<RealtimeEvent>? _sub;
+  StreamSubscription<PushEvent>? _pushSub;
   String? _forUser;
 
   bool get _adult {
@@ -342,6 +346,10 @@ class _SosAlertHostState extends ConsumerState<SosAlertHost> {
     _sub = null;
     if (uid == null || !_adult) return;
     _sub = ref.read(realtimeProvider).events.listen(_onEvent);
+    // A push while the app is open (socket may be down) or a tap on an SOS notification: load open SOS.
+    _pushSub?.cancel();
+    final push = ref.read(pushServiceProvider);
+    _pushSub = StreamGroup.merge([push.foreground, push.opened]).where((e) => e.type == 'sos').listen((_) => _loadOpen());
     unawaited(_loadOpen());
   }
 
@@ -378,6 +386,7 @@ class _SosAlertHostState extends ConsumerState<SosAlertHost> {
   @override
   void dispose() {
     _sub?.cancel();
+    _pushSub?.cancel();
     super.dispose();
   }
 

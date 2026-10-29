@@ -15,7 +15,8 @@
       "trust",
       "err",
       "a11y",
-      "lang"
+      "lang",
+      "permneed"
     ],
     "splash": [
       "common"
@@ -118,7 +119,8 @@
       "greeting",
       "time",
       "dialog",
-      "home"
+      "home",
+      "permneed"
     ],
     "member": [
       "common",
@@ -146,7 +148,8 @@
       "err",
       "a11y",
       "map",
-      "home"
+      "home",
+      "permneed"
     ],
     "me": [
       "common",
@@ -184,7 +187,8 @@
       "sos",
       "walk",
       "places",
-      "home"
+      "home",
+      "permneed"
     ],
     "places": [
       "common",
@@ -222,6 +226,18 @@
       "a11y",
       "econ",
       "dialog"
+    ],
+    "notifications": [
+      "common",
+      "state",
+      "err",
+      "a11y",
+      "alerts",
+      "notif",
+      "notifset",
+      "history",
+      "time",
+      "permneed"
     ],
     "placeholder": [
       "common",
@@ -2913,6 +2929,178 @@
         "count"
       ],
       "en": "{count} alerts today"
+    },
+    "alerts.title": {
+      "placeholders": [],
+      "en": "Alerts"
+    },
+    "alerts.all": {
+      "placeholders": [],
+      "en": "All"
+    },
+    "alerts.safety": {
+      "placeholders": [],
+      "en": "Safety"
+    },
+    "alerts.family": {
+      "placeholders": [],
+      "en": "Family"
+    },
+    "alerts.account": {
+      "placeholders": [],
+      "en": "Account"
+    },
+    "alerts.empty_title": {
+      "placeholders": [],
+      "en": "No alerts yet"
+    },
+    "alerts.empty_body": {
+      "placeholders": [],
+      "en": "SOS, arrivals, battery and family news appear here."
+    },
+    "alerts.mark_all": {
+      "placeholders": [],
+      "en": "Mark all read"
+    },
+    "alerts.ch_safety": {
+      "placeholders": [],
+      "en": "Safety alerts"
+    },
+    "alerts.ch_family": {
+      "placeholders": [],
+      "en": "Family"
+    },
+    "alerts.ch_account": {
+      "placeholders": [],
+      "en": "Account"
+    },
+    "alerts.ch_marketing": {
+      "placeholders": [],
+      "en": "News and offers"
+    },
+    "alerts.just_now": {
+      "placeholders": [],
+      "en": "Just now"
+    },
+    "alerts.min_ago": {
+      "placeholders": [
+        "minutes"
+      ],
+      "en": "{minutes} min ago"
+    },
+    "alerts.hours_ago": {
+      "placeholders": [
+        "hours"
+      ],
+      "en": "{hours} h ago"
+    },
+    "notifset.title": {
+      "placeholders": [],
+      "en": "Notifications and email"
+    },
+    "notifset.push": {
+      "placeholders": [],
+      "en": "Push notifications"
+    },
+    "notifset.email": {
+      "placeholders": [],
+      "en": "Email"
+    },
+    "notifset.safety_always": {
+      "placeholders": [],
+      "en": "Safety alerts (SOS, battery, arrivals, safe walk) are always on."
+    },
+    "notifset.push_family": {
+      "placeholders": [],
+      "en": "Family activity"
+    },
+    "notifset.push_account": {
+      "placeholders": [],
+      "en": "Account"
+    },
+    "notifset.push_marketing": {
+      "placeholders": [],
+      "en": "News and offers"
+    },
+    "notifset.email_family_joined": {
+      "placeholders": [],
+      "en": "Someone joins the family"
+    },
+    "notifset.email_new_device_login": {
+      "placeholders": [],
+      "en": "New sign-in on another phone"
+    },
+    "notifset.email_sos_summary": {
+      "placeholders": [],
+      "en": "SOS summary"
+    },
+    "notifset.email_subscription": {
+      "placeholders": [],
+      "en": "Plan and trial status"
+    },
+    "notifset.email_gift": {
+      "placeholders": [],
+      "en": "Gifts"
+    },
+    "notifset.email_daily_summary": {
+      "placeholders": [],
+      "en": "Daily family summary"
+    },
+    "notifset.email_chat": {
+      "placeholders": [],
+      "en": "Support chat"
+    },
+    "notifset.email_announcements": {
+      "placeholders": [],
+      "en": "Announcements"
+    },
+    "notifset.daily_time": {
+      "placeholders": [],
+      "en": "Daily summary time"
+    },
+    "notifset.daily_off": {
+      "placeholders": [],
+      "en": "Off"
+    },
+    "notifset.system_off": {
+      "placeholders": [],
+      "en": "Notifications are off for Nirapod on this phone. SOS cannot reach you."
+    },
+    "permneed.location_title": {
+      "placeholders": [],
+      "en": "Turn on location"
+    },
+    "permneed.location_body": {
+      "placeholders": [],
+      "en": "Needed to show where you are on the map and to share your location with your family."
+    },
+    "permneed.always_title": {
+      "placeholders": [],
+      "en": "Allow location all the time"
+    },
+    "permneed.always_body": {
+      "placeholders": [],
+      "en": "Without this, your family cannot see you when Nirapod is closed. Choose \"Allow all the time\"."
+    },
+    "permneed.notif_title": {
+      "placeholders": [],
+      "en": "Turn on notifications"
+    },
+    "permneed.notif_body": {
+      "placeholders": [],
+      "en": "SOS, arrival and battery alerts reach you only with notifications on."
+    },
+    "permneed.allow": {
+      "placeholders": [],
+      "en": "Allow"
+    },
+    "permneed.open_settings": {
+      "placeholders": [],
+      "en": "Open Settings"
+    },
+    "permneed.blocked": {
+      "placeholders": [],
+      "en": "It was turned off in Settings. Open Settings > Permissions and allow it."
     }
   }
 }

@@ -12,7 +12,7 @@ const RULES = [
 
 // Screen id (or group) -> namespaces it uses.
 export const SCREENS = {
-  _default: ['common', 'nav', 'state', 'trust', 'err', 'a11y', 'lang'],
+  _default: ['common', 'nav', 'state', 'trust', 'err', 'a11y', 'lang', 'permneed'],
   splash: ['common'],
   welcome: ['common', 'welcome', 'lang', 'a11y'],
   permissions: ['common', 'perm'],
@@ -28,18 +28,19 @@ export const SCREENS = {
   child_code_generate: ['common', 'code', 'state', 'err'],
   sessions: ['common', 'sessions', 'state', 'err'],
   legal: ['common', 'legal', 'state', 'err'],
-  home: ['common', 'nav', 'state', 'trust', 'err', 'a11y', 'lang', 'greeting', 'time', 'dialog', 'home'],
+  home: ['common', 'nav', 'state', 'trust', 'err', 'a11y', 'lang', 'greeting', 'time', 'dialog', 'home', 'permneed'],
   member: ['common', 'state', 'trust', 'err', 'a11y', 'member', 'home', 'time'],
   family: ['common', 'state', 'err', 'a11y', 'family', 'home', 'dialog'],
-  map: ['common', 'state', 'trust', 'err', 'a11y', 'map', 'home'],
+  map: ['common', 'state', 'trust', 'err', 'a11y', 'map', 'home', 'permneed'],
   me: ['common', 'state', 'err', 'a11y', 'me', 'dialog'],
   history: ['common', 'state', 'err', 'a11y', 'history', 'home', 'trust', 'map'],
   tracking: ['tracking'],
-  child_home: ['common', 'state', 'trust', 'err', 'a11y', 'lang', 'greeting', 'time', 'dialog', 'notif', 'kid', 'sos', 'walk', 'places', 'home'],
+  child_home: ['common', 'state', 'trust', 'err', 'a11y', 'lang', 'greeting', 'time', 'dialog', 'notif', 'kid', 'sos', 'walk', 'places', 'home', 'permneed'],
   places: ['common', 'state', 'err', 'a11y', 'places', 'dialog', 'map', 'home'],
   sos: ['common', 'state', 'err', 'a11y', 'sos', 'time', 'trust'],
   safe_walk: ['common', 'state', 'err', 'a11y', 'walk', 'time', 'trust', 'home'],
   emergency_contacts: ['common', 'state', 'err', 'a11y', 'econ', 'dialog'],
+  notifications: ['common', 'state', 'err', 'a11y', 'alerts', 'notif', 'notifset', 'history', 'time', 'permneed'],
   placeholder: ['common', 'nav'],
   language_sheet: ['lang'],
 };

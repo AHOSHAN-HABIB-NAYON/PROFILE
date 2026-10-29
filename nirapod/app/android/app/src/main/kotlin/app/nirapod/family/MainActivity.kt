@@ -9,6 +9,22 @@ import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
+    /** Push channels (ids match the server's FCM channel_id). Safety is high importance with sound + vibration. */
+    private fun createPushChannels(safety: String?, family: String?, account: String?, marketing: String?) {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O) return
+        val nm = getSystemService(android.app.NotificationManager::class.java)
+        fun ch(id: String, name: String?, importance: Int, block: android.app.NotificationChannel.() -> Unit = {}) =
+            nm.createNotificationChannel(android.app.NotificationChannel(id, name ?: id, importance).apply(block))
+        ch("nirapod_safety", safety ?: "Safety", android.app.NotificationManager.IMPORTANCE_HIGH) {
+            enableVibration(true)
+            vibrationPattern = longArrayOf(0, 500, 200, 500, 200, 800)
+            setShowBadge(true)
+        }
+        ch("nirapod_family", family ?: "Family", android.app.NotificationManager.IMPORTANCE_DEFAULT)
+        ch("nirapod_account", account ?: "Account", android.app.NotificationManager.IMPORTANCE_DEFAULT)
+        ch("nirapod_marketing", marketing ?: "News", android.app.NotificationManager.IMPORTANCE_LOW)
+    }
+
     private var tzSink: EventChannel.EventSink? = null
     private val tzReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: android.content.Context, intent: Intent) {
@@ -42,6 +58,10 @@ class MainActivity : FlutterActivity() {
                     "setTrip" -> {
                         store.tripUntil = (call.argument<Number>("untilMs") ?: 0).toLong()
                         if (store.enabled) TrackingService.start(applicationContext, TrackingService.ACTION_TRIP)
+                        result.success(true)
+                    }
+                    "createChannels" -> {
+                        createPushChannels(call.argument<String>("safety"), call.argument<String>("family"), call.argument<String>("account"), call.argument<String>("marketing"))
                         result.success(true)
                     }
                     "setGeofences" -> {

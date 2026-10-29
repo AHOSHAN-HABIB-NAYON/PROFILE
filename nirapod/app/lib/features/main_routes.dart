@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
+import 'alerts/alerts_screens.dart';
 import 'child/child_home_screen.dart';
 import 'family/ui/family_screen.dart';
 import 'family/ui/member_screen.dart';
@@ -22,6 +23,9 @@ final mainScreens = <String, Widget Function(GoRouterState state)>{
   'invite': (_) => const FamilyScreen(),
   'member': (st) => MemberScreen(memberId: st.pathParameters['id'] ?? ''),
   'report_misuse': (_) => const ReportMisuseScreen(),
+  // Phase 5: notifications.
+  'alerts': (_) => const AlertsScreen(),
+  'settings_notifications': (_) => const NotificationSettingsScreen(),
   // Phase 4: places and safety.
   'places': (_) => const PlacesScreen(),
   'place_edit': (st) => PlaceEditScreen(placeId: st.uri.queryParameters['id']),

@@ -1,6 +1,9 @@
 import '../../core/net/retry.dart';
 
 import 'package:flutter/material.dart';
+
+import '../../core/permissions/permission_card.dart';
+import '../onboarding/data/permission_gateway.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:geolocator/geolocator.dart';
@@ -102,6 +105,13 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 }
               },
               onPinTap: (id) => setState(() => _follow = id),
+            ),
+          ),
+          // Own position needs location: ask on the map itself.
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(Space.sm, Space.sm, 64, 0),
+              child: PermissionNeededCard(permission: OnbPermission.locationWhenInUse, strings: s),
             ),
           ),
           SafeArea(

@@ -6,7 +6,8 @@
     "trust",
     "err",
     "a11y",
-    "lang"
+    "lang",
+    "permneed"
   ],
   "splash": [
     "common"
@@ -109,7 +110,8 @@
     "greeting",
     "time",
     "dialog",
-    "home"
+    "home",
+    "permneed"
   ],
   "member": [
     "common",
@@ -137,7 +139,8 @@
     "err",
     "a11y",
     "map",
-    "home"
+    "home",
+    "permneed"
   ],
   "me": [
     "common",
@@ -175,7 +178,8 @@
     "sos",
     "walk",
     "places",
-    "home"
+    "home",
+    "permneed"
   ],
   "places": [
     "common",
@@ -213,6 +217,18 @@
     "a11y",
     "econ",
     "dialog"
+  ],
+  "notifications": [
+    "common",
+    "state",
+    "err",
+    "a11y",
+    "alerts",
+    "notif",
+    "notifset",
+    "history",
+    "time",
+    "permneed"
   ],
   "placeholder": [
     "common",
