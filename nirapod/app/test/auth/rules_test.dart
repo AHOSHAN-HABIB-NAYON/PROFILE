@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nirapod/core/net/api_error.dart';
+import 'package:nirapod/core/net/device_id.dart';
 import 'package:nirapod/core/session/session.dart';
 import 'package:nirapod/features/auth/data/auth_errors.dart';
 import 'package:nirapod/features/auth/data/auth_flow.dart';
@@ -113,15 +114,11 @@ void main() {
     });
   });
 
-  test('device id is a random UUID v4, generated once and kept', () async {
-    final kv = MemoryKv();
-    final a = await DeviceIdentity(kv).deviceId();
-    final b = await DeviceIdentity(kv).deviceId();
-    expect(a, b);
-    expect(RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$').hasMatch(a), isTrue);
-    expect(uuidV4(), isNot(uuidV4()));
-    final info = await DeviceIdentity(kv).deviceInfo();
-    expect(info['device_id'], a);
+  test('device info uses the core device id (same id as the x-device-id header)', () async {
+    final info = await DeviceIdentity(MemoryDeviceIdStore('dev-1')).deviceInfo();
+    expect(info['device_id'], 'dev-1');
+    expect(info['app_version'], isNotEmpty);
+    expect(info.keys.toSet(), {'device_id', 'os_version', 'app_version'});
   });
 
   test('child code display helpers', () {

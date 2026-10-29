@@ -12,7 +12,7 @@ import 'package:nirapod/core/net/api_client.dart';
 import 'package:nirapod/core/net/providers.dart';
 import 'package:nirapod/core/net/token_store.dart';
 import 'package:nirapod/core/theme/app_theme.dart';
-import 'package:nirapod/features/auth/data/device_identity.dart';
+import 'package:nirapod/core/net/device_id.dart';
 import 'package:nirapod/features/auth/data/google_gateway.dart';
 import 'package:nirapod/features/auth/legal/legal_screen.dart';
 import 'package:flutter/services.dart' show rootBundle;
@@ -100,10 +100,10 @@ class QuietTravelWatcher extends TravelWatcher {
 CountryNames? _names;
 
 class TestEnv {
-  TestEnv(this.api, this.tokens, this.kv, this.google);
+  TestEnv(this.api, this.tokens, this.deviceIds, this.google);
   final FakeApi api;
   final MemoryTokenStore tokens;
-  final MemoryKv kv;
+  final MemoryDeviceIdStore deviceIds;
   final FakeGoogle google;
   final opened = <Uri>[];
   String deviceZone = 'Asia/Dhaka';
@@ -111,7 +111,7 @@ class TestEnv {
 }
 
 Future<(TestEnv, List<Override>)> authOverrides({Handler? handler, Map<String, Object> prefs = const {}, Tokens? tokens}) async {
-  final env = TestEnv(FakeApi(handler ?? (o) => (404, apiErr('NOT_FOUND'))), MemoryTokenStore(tokens), MemoryKv(), FakeGoogle());
+  final env = TestEnv(FakeApi(handler ?? (o) => (404, apiErr('NOT_FOUND'))), MemoryTokenStore(tokens), MemoryDeviceIdStore('device-test-1'), FakeGoogle());
   final base = await h.overrides(prefs: prefs);
   final names = _names ??= await CountryNames.load(rootBundle);
   return (
@@ -119,8 +119,8 @@ Future<(TestEnv, List<Override>)> authOverrides({Handler? handler, Map<String, O
     [
       ...base,
       tokenStoreProvider.overrideWithValue(env.tokens),
-      apiClientProvider.overrideWith((ref) => ApiClient(tokens: env.tokens, adapter: env.api, baseUrl: 'https://x/api/v1')),
-      secureKvProvider.overrideWithValue(env.kv),
+      apiClientProvider.overrideWith((ref) => ApiClient(tokens: env.tokens, deviceIds: env.deviceIds, adapter: env.api, baseUrl: 'https://x/api/v1')),
+      deviceIdStoreProvider.overrideWithValue(env.deviceIds),
       countryNamesProvider.overrideWith((ref) => names),
       googleGatewayProvider.overrideWithValue(env.google),
       travelWatcherProvider.overrideWith((ref) => QuietTravelWatcher(ref)),

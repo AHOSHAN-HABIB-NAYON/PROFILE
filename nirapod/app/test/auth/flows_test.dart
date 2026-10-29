@@ -175,7 +175,7 @@ void main() {
       expect(body['first_name'], 'Rafi');
       expect(body['timezone'], 'Asia/Riyadh');
       expect(body['country_iso2'], 'SA');
-      expect((body['device'] as Map)['device_id'], env.kv.values['nirapod.device_id']);
+      expect((body['device'] as Map)['device_id'], 'device-test-1');
       expect(body.containsKey('email'), isFalse);
       expect(pathOf(router), '/child/onboarding/background');
     });
