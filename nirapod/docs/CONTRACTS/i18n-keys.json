@@ -179,7 +179,48 @@
       "greeting",
       "time",
       "dialog",
-      "notif"
+      "notif",
+      "kid",
+      "sos",
+      "walk",
+      "places"
+    ],
+    "places": [
+      "common",
+      "state",
+      "err",
+      "a11y",
+      "places",
+      "dialog",
+      "map",
+      "home"
+    ],
+    "sos": [
+      "common",
+      "state",
+      "err",
+      "a11y",
+      "sos",
+      "time",
+      "trust"
+    ],
+    "safe_walk": [
+      "common",
+      "state",
+      "err",
+      "a11y",
+      "walk",
+      "time",
+      "trust",
+      "home"
+    ],
+    "emergency_contacts": [
+      "common",
+      "state",
+      "err",
+      "a11y",
+      "econ",
+      "dialog"
     ],
     "placeholder": [
       "common",
@@ -2274,6 +2315,545 @@
         "end"
       ],
       "en": "{start} – {end}"
+    },
+    "auth.remember_me": {
+      "placeholders": [],
+      "en": "Remember me"
+    },
+    "history.ev_safe_arrival": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "{name} sent \"I arrived safely\""
+    },
+    "history.ev_safe_walk_started": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "{name} started a safe walk home"
+    },
+    "history.ev_safe_walk_arrived": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "{name} arrived from the safe walk"
+    },
+    "history.ev_safe_walk_overdue": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "{name} did not arrive on time"
+    },
+    "history.ev_safe_walk_stopped": {
+      "placeholders": [
+        "name",
+        "minutes"
+      ],
+      "en": "{name} stopped on the way for {minutes} min"
+    },
+    "history.ev_safe_walk_cancelled": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "{name} ended the safe walk"
+    },
+    "history.ev_sos_resolved": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "{name}'s SOS ended"
+    },
+    "notif.arrival": {
+      "placeholders": [
+        "name",
+        "place"
+      ],
+      "en": "{name} arrived at {place}"
+    },
+    "notif.departure": {
+      "placeholders": [
+        "name",
+        "place"
+      ],
+      "en": "{name} left {place}"
+    },
+    "notif.sos": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "SOS from {name}"
+    },
+    "notif.sos_resolved": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "{name}'s SOS ended"
+    },
+    "notif.safe_arrival": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "{name} arrived safely"
+    },
+    "notif.safe_walk_started": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "{name} is heading home"
+    },
+    "notif.safe_walk_arrived": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "{name} arrived home safely"
+    },
+    "notif.safe_walk_overdue": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "{name} has not arrived on time"
+    },
+    "notif.safe_walk_stopped": {
+      "placeholders": [
+        "name",
+        "minutes"
+      ],
+      "en": "{name} has stopped on the way for {minutes} min"
+    },
+    "notif.safe_walk_cancelled": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "{name} ended the safe walk"
+    },
+    "places.title": {
+      "placeholders": [],
+      "en": "Places"
+    },
+    "places.add": {
+      "placeholders": [],
+      "en": "Add place"
+    },
+    "places.empty_title": {
+      "placeholders": [],
+      "en": "No places yet"
+    },
+    "places.empty_body": {
+      "placeholders": [],
+      "en": "Add home, school or coaching to get an alert when your child arrives or leaves."
+    },
+    "places.type_home": {
+      "placeholders": [],
+      "en": "Home"
+    },
+    "places.type_school": {
+      "placeholders": [],
+      "en": "School"
+    },
+    "places.type_coaching": {
+      "placeholders": [],
+      "en": "Coaching"
+    },
+    "places.type_custom": {
+      "placeholders": [],
+      "en": "Other"
+    },
+    "places.radius": {
+      "placeholders": [
+        "meters"
+      ],
+      "en": "{meters} m area"
+    },
+    "places.applies_all": {
+      "placeholders": [],
+      "en": "All children"
+    },
+    "places.limit": {
+      "placeholders": [
+        "max"
+      ],
+      "en": "Your plan allows {max} places. Upgrade to add more."
+    },
+    "places.new_title": {
+      "placeholders": [],
+      "en": "New place"
+    },
+    "places.edit_title": {
+      "placeholders": [],
+      "en": "Edit place"
+    },
+    "places.name": {
+      "placeholders": [],
+      "en": "Place name"
+    },
+    "places.name_hint": {
+      "placeholders": [],
+      "en": "e.g. Home"
+    },
+    "places.type": {
+      "placeholders": [],
+      "en": "Type"
+    },
+    "places.radius_label": {
+      "placeholders": [
+        "meters"
+      ],
+      "en": "Alert area: {meters} m"
+    },
+    "places.applies": {
+      "placeholders": [],
+      "en": "Alerts for"
+    },
+    "places.pin_hint": {
+      "placeholders": [],
+      "en": "Move the map so the pin is on the place"
+    },
+    "places.use_my_location": {
+      "placeholders": [],
+      "en": "Use my location"
+    },
+    "places.delete": {
+      "placeholders": [],
+      "en": "Delete place"
+    },
+    "places.delete_title": {
+      "placeholders": [],
+      "en": "Delete this place?"
+    },
+    "places.delete_body": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "Arrival and departure alerts for {name} will stop."
+    },
+    "places.delete_confirm": {
+      "placeholders": [],
+      "en": "Delete"
+    },
+    "places.err_name": {
+      "placeholders": [],
+      "en": "Enter a name for the place."
+    },
+    "places.no_children": {
+      "placeholders": [],
+      "en": "Add a child to your family first."
+    },
+    "places.pin_a11y": {
+      "placeholders": [],
+      "en": "Map to choose the place. The pin marks the centre."
+    },
+    "sos.title": {
+      "placeholders": [],
+      "en": "Emergency"
+    },
+    "sos.press": {
+      "placeholders": [],
+      "en": "Press SOS to alert your family"
+    },
+    "sos.button": {
+      "placeholders": [],
+      "en": "SOS"
+    },
+    "sos.button_a11y": {
+      "placeholders": [],
+      "en": "Send SOS to your family"
+    },
+    "sos.countdown": {
+      "placeholders": [
+        "seconds"
+      ],
+      "en": "Sending SOS in {seconds}"
+    },
+    "sos.cancel": {
+      "placeholders": [],
+      "en": "Cancel SOS"
+    },
+    "sos.sending": {
+      "placeholders": [],
+      "en": "Sending SOS…"
+    },
+    "sos.sent_title": {
+      "placeholders": [],
+      "en": "Your SOS has been sent"
+    },
+    "sos.sent_body": {
+      "placeholders": [],
+      "en": "Your family can see where you are. Stay somewhere safe if you can."
+    },
+    "sos.st_queued": {
+      "placeholders": [],
+      "en": "Waiting"
+    },
+    "sos.st_sent": {
+      "placeholders": [],
+      "en": "Sent"
+    },
+    "sos.st_delivered": {
+      "placeholders": [],
+      "en": "Delivered"
+    },
+    "sos.st_seen": {
+      "placeholders": [],
+      "en": "Seen"
+    },
+    "sos.st_responded": {
+      "placeholders": [],
+      "en": "Coming"
+    },
+    "sos.st_failed": {
+      "placeholders": [],
+      "en": "Not sent"
+    },
+    "sos.via_email": {
+      "placeholders": [],
+      "en": "Email"
+    },
+    "sos.via_app": {
+      "placeholders": [],
+      "en": "App"
+    },
+    "sos.call_emergency": {
+      "placeholders": [
+        "number"
+      ],
+      "en": "Call {number}"
+    },
+    "sos.im_safe": {
+      "placeholders": [],
+      "en": "I am safe now"
+    },
+    "sos.resolved": {
+      "placeholders": [],
+      "en": "SOS ended. Your family has been told."
+    },
+    "sos.err_send": {
+      "placeholders": [],
+      "en": "SOS could not be sent. Check the internet and try again."
+    },
+    "sos.alert_title": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "SOS from {name}"
+    },
+    "sos.alert_body": {
+      "placeholders": [
+        "name",
+        "time"
+      ],
+      "en": "{name} needs help. Sent at {time}."
+    },
+    "sos.alert_map": {
+      "placeholders": [],
+      "en": "Open in Maps"
+    },
+    "sos.alert_respond": {
+      "placeholders": [],
+      "en": "I'm coming"
+    },
+    "sos.alert_responded": {
+      "placeholders": [],
+      "en": "Your family knows you are coming."
+    },
+    "sos.alert_close": {
+      "placeholders": [],
+      "en": "Close"
+    },
+    "sos.no_location": {
+      "placeholders": [],
+      "en": "Location not available yet"
+    },
+    "sos.shake_hint": {
+      "placeholders": [],
+      "en": "You can also shake your phone hard 3 times."
+    },
+    "walk.title": {
+      "placeholders": [],
+      "en": "Safe walk"
+    },
+    "walk.heading_home": {
+      "placeholders": [],
+      "en": "Heading home"
+    },
+    "walk.pick_time": {
+      "placeholders": [],
+      "en": "When will you get there?"
+    },
+    "walk.minutes": {
+      "placeholders": [
+        "minutes"
+      ],
+      "en": "{minutes} min"
+    },
+    "walk.start": {
+      "placeholders": [],
+      "en": "Start safe walk"
+    },
+    "walk.to_place": {
+      "placeholders": [
+        "place"
+      ],
+      "en": "To {place}"
+    },
+    "walk.no_home": {
+      "placeholders": [],
+      "en": "Home is not added yet. Tap \"I arrived\" when you get there."
+    },
+    "walk.active_title": {
+      "placeholders": [],
+      "en": "Your family is watching your walk"
+    },
+    "walk.expected": {
+      "placeholders": [
+        "time"
+      ],
+      "en": "Expected by {time}"
+    },
+    "walk.i_arrived": {
+      "placeholders": [],
+      "en": "I arrived"
+    },
+    "walk.end": {
+      "placeholders": [],
+      "en": "End safe walk"
+    },
+    "walk.arrived": {
+      "placeholders": [],
+      "en": "Your family knows you arrived safely."
+    },
+    "walk.empty_title": {
+      "placeholders": [],
+      "en": "No one is walking right now"
+    },
+    "walk.empty_body": {
+      "placeholders": [],
+      "en": "When your child taps \"Heading home\", you can watch the walk here."
+    },
+    "walk.overdue": {
+      "placeholders": [
+        "time"
+      ],
+      "en": "Late: expected by {time}"
+    },
+    "walk.stopped": {
+      "placeholders": [],
+      "en": "Stopped for a while"
+    },
+    "walk.on_the_way": {
+      "placeholders": [],
+      "en": "On the way"
+    },
+    "walk.started": {
+      "placeholders": [
+        "time"
+      ],
+      "en": "Started {time}"
+    },
+    "walk.call": {
+      "placeholders": [],
+      "en": "Call"
+    },
+    "walk.end_for": {
+      "placeholders": [],
+      "en": "End walk"
+    },
+    "kid.sharing_on": {
+      "placeholders": [],
+      "en": "Location sharing is on"
+    },
+    "kid.sharing_body": {
+      "placeholders": [],
+      "en": "Your family can see where you are."
+    },
+    "kid.you_are_here": {
+      "placeholders": [],
+      "en": "You are here"
+    },
+    "kid.arrived": {
+      "placeholders": [],
+      "en": "I arrived safely"
+    },
+    "kid.arrived_sent": {
+      "placeholders": [],
+      "en": "Sent to your family"
+    },
+    "kid.arrived_sent_place": {
+      "placeholders": [
+        "place"
+      ],
+      "en": "Sent: you are at {place}"
+    },
+    "kid.heading_home": {
+      "placeholders": [],
+      "en": "Heading home"
+    },
+    "kid.who_can_see": {
+      "placeholders": [],
+      "en": "Who can see me"
+    },
+    "kid.who_body": {
+      "placeholders": [],
+      "en": "These people in your family can see your location. Nobody else can."
+    },
+    "kid.help": {
+      "placeholders": [],
+      "en": "Help"
+    },
+    "kid.help_body": {
+      "placeholders": [],
+      "en": "Ask your parent for help with Nirapod."
+    },
+    "kid.walk_active": {
+      "placeholders": [
+        "time"
+      ],
+      "en": "Safe walk: expected by {time}"
+    },
+    "kid.no_map": {
+      "placeholders": [],
+      "en": "Waiting for your location…"
+    },
+    "econ.title": {
+      "placeholders": [],
+      "en": "Emergency contacts"
+    },
+    "econ.body": {
+      "placeholders": [],
+      "en": "They get an email with your child's location when SOS is pressed. No SMS."
+    },
+    "econ.add": {
+      "placeholders": [],
+      "en": "Add contact"
+    },
+    "econ.name": {
+      "placeholders": [],
+      "en": "Name"
+    },
+    "econ.email": {
+      "placeholders": [],
+      "en": "Email"
+    },
+    "econ.relationship": {
+      "placeholders": [],
+      "en": "Relationship (optional)"
+    },
+    "econ.empty": {
+      "placeholders": [],
+      "en": "No emergency contacts yet"
+    },
+    "econ.remove": {
+      "placeholders": [
+        "name"
+      ],
+      "en": "Remove {name}"
+    },
+    "econ.max": {
+      "placeholders": [],
+      "en": "You can add up to 5 contacts."
+    },
+    "econ.err": {
+      "placeholders": [],
+      "en": "Enter a name and a valid email."
     }
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
@@ -18,6 +19,11 @@ class RealtimeClient {
 
   /// Called for `update.requested` (child phones show "`name` requested your location").
   void Function(String byName)? onUpdateRequested;
+
+  /// Safety events (Phase 4): `sos.new`, `sos.updated`, `trip.updated`, `notification.new`.
+  final _events = StreamController<RealtimeEvent>.broadcast();
+  Stream<RealtimeEvent> get events => _events.stream;
+  static const safetyEvents = ['sos.new', 'sos.updated', 'trip.updated', 'notification.new'];
 
   static String get serverOrigin => Env.apiBaseUrl.replaceFirst(RegExp(r'/api/v\d+/?$'), '');
 
@@ -53,6 +59,9 @@ class RealtimeClient {
           }
         }));
     s.on('update.requested', (data) => _onEnvelope(data, (d) => onUpdateRequested?.call((d['by_name'] as String?) ?? '')));
+    for (final name in safetyEvents) {
+      s.on(name, (data) => _onEnvelope(data, (d) => _events.add(RealtimeEvent(name, d))));
+    }
     s.connect();
     _socket = s;
   }
@@ -76,12 +85,23 @@ class RealtimeClient {
     _socket?.dispose();
     _socket = null;
   }
+
+  void dispose() {
+    disconnect();
+    _events.close();
+  }
+}
+
+class RealtimeEvent {
+  const RealtimeEvent(this.name, this.data);
+  final String name;
+  final Map<String, dynamic> data;
 }
 
 /// Connected while signed in; disconnected on sign-out.
 final realtimeProvider = Provider<RealtimeClient>((ref) {
   final client = RealtimeClient(ref);
-  ref.onDispose(client.disconnect);
+  ref.onDispose(client.dispose);
   final s = ref.watch(sessionControllerProvider);
   if (s is SignedIn) client.connect();
   return client;

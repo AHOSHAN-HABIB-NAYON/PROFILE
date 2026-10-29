@@ -19,12 +19,19 @@ class StringsBundle {
   static Future<StringsBundle> load(AssetBundle assets) async {
     final tables = <String, Map<String, String>>{};
     for (final l in supportedLanguages) {
-      final raw = await assets.loadString('assets/i18n/${l.code}.json');
+      final raw = await _read(assets, 'assets/i18n/${l.code}.json');
       tables[l.code] = (jsonDecode(raw) as Map<String, dynamic>).map((k, v) => MapEntry(k, v as String));
     }
-    final screensRaw = jsonDecode(await assets.loadString('assets/i18n/_screens.json')) as Map<String, dynamic>;
+    final screensRaw = jsonDecode(await _read(assets, 'assets/i18n/_screens.json')) as Map<String, dynamic>;
     final screens = screensRaw.map((k, v) => MapEntry(k, (v as List<dynamic>).cast<String>()));
     return StringsBundle(tables, screens);
+  }
+
+  /// Reads UTF-8 text directly. (AssetBundle.loadString moves files over 50 KB to a background isolate,
+  /// which is slower for these small tables and never completes inside widget tests.)
+  static Future<String> _read(AssetBundle assets, String key) async {
+    final data = await assets.load(key);
+    return utf8.decode(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
   }
 
   List<String> namespacesFor(String screen) => screens[screen] ?? screens['_default'] ?? const [];

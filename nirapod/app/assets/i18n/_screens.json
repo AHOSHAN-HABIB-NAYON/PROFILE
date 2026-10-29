@@ -170,7 +170,48 @@
     "greeting",
     "time",
     "dialog",
-    "notif"
+    "notif",
+    "kid",
+    "sos",
+    "walk",
+    "places"
+  ],
+  "places": [
+    "common",
+    "state",
+    "err",
+    "a11y",
+    "places",
+    "dialog",
+    "map",
+    "home"
+  ],
+  "sos": [
+    "common",
+    "state",
+    "err",
+    "a11y",
+    "sos",
+    "time",
+    "trust"
+  ],
+  "safe_walk": [
+    "common",
+    "state",
+    "err",
+    "a11y",
+    "walk",
+    "time",
+    "trust",
+    "home"
+  ],
+  "emergency_contacts": [
+    "common",
+    "state",
+    "err",
+    "a11y",
+    "econ",
+    "dialog"
   ],
   "placeholder": [
     "common",
