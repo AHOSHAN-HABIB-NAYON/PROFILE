@@ -11,8 +11,26 @@
 <main class="doc">
 <a class="brand" href="/"><img src="/shared/web/brand/logo-app.svg" width="32" height="32" alt=""> Nirapod</a>
 <h1>Delete your account and data</h1>
-<p>In the app: <strong>Profile → Delete my account and data</strong>. This removes your personal data, photos, location history, chat data and tokens, and signs out all devices.</p><p>If you cannot open the app, email <strong>support@webtecit.com</strong> from the email address of your account with the subject "Delete my Nirapod account". We complete deletion within 30 days.</p><p>Family owners must transfer ownership or delete the family first; children are removed by their parent.</p>
-<p class="muted">Draft for review before public launch. Contact: support@webtecit.com</p>
+<section id="ask">
+<p>The fastest way is in the app: <strong>Settings → Delete my account and data</strong>.</p>
+<p>Cannot open the app? Enter your account email. We send a confirmation link; nothing is deleted until you press it.</p>
+<form id="f" class="form">
+<label for="email">Account email</label>
+<input id="email" type="email" required autocomplete="email" maxlength="254">
+<button type="submit" class="btn danger">Send confirmation link</button>
+</form>
+<p id="sent" class="ok" hidden>If an account uses this email, a confirmation link is on its way. Check your inbox (and spam).</p>
+</section>
+<section id="confirm" hidden>
+<p>Press the button to delete your Nirapod account. This cannot be undone.</p>
+<button id="go" class="btn danger" type="button">Delete my account</button>
+<p id="done" class="ok" hidden>Your account and data were deleted. Thank you for using Nirapod.</p>
+<p id="bad" class="err" hidden>This link is not valid or has expired. Ask for a new one.</p>
+</section>
+<h2>What is deleted</h2>
+<p>Your profile, photo, location history, places you created, alerts, support chats and sign-in tokens. All devices are signed out. If you own a family with another adult, it passes to them; otherwise the family and its children's accounts are deleted too.</p>
+<p>Some billing records are kept as the law requires, without your location. Questions: <strong>support@webtecit.com</strong></p>
 </main>
+<script src="/delete-account.js"></script>
 </body>
 </html>

@@ -12,6 +12,11 @@ export function createRealtimeHub() {
     attach(server) {
       io = server;
     },
+    /** Closes the sockets of deleted or blocked users. */
+    disconnectUsers(userUuids) {
+      if (!io) return;
+      for (const u of userUuids ?? []) io.of('/rt').in(`user:${u}`).disconnectSockets(true);
+    },
     /** Sends `event` to each user uuid's room with the standard envelope. */
     emitToUsers(userUuids, event, data, now = new Date()) {
       if (!io || !userUuids?.length) return;

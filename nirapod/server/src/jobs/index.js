@@ -9,6 +9,7 @@ import { visibleMembers } from '../family/visibility.js';
 import { emailAllowed } from '../routes/notifications.js';
 import { t } from '../push/strings.js';
 import { expireSubscriptions } from '../routes/billing.js';
+import { purgeExports } from '../routes/data-rights.js';
 
 export const OFFLINE_AFTER_MS = 15 * 60_000;
 
@@ -139,6 +140,7 @@ export const JOBS = {
   trips_watch: { everyMs: 60_000, run: watchTrips },
   stale_devices: { everyMs: 60_000, run: detectStaleDevices },
   location_retention: { everyMs: 6 * 3600_000, run: purgeLocationHistory },
+  exports_purge: { everyMs: 6 * 3600_000, run: purgeExports },
 };
 
 /** Starts in-process intervals (VPS). Returns a stop() function. */

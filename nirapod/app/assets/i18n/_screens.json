@@ -237,6 +237,44 @@
     "time",
     "permneed"
   ],
+  "settings": [
+    "common",
+    "state",
+    "err",
+    "a11y",
+    "set",
+    "me",
+    "dialog"
+  ],
+  "data_export": [
+    "common",
+    "state",
+    "err",
+    "a11y",
+    "export"
+  ],
+  "delete_account": [
+    "common",
+    "state",
+    "err",
+    "a11y",
+    "delacc",
+    "dialog",
+    "export",
+    "auth"
+  ],
+  "help": [
+    "common",
+    "state",
+    "err",
+    "a11y",
+    "help",
+    "faq"
+  ],
+  "update": [
+    "common",
+    "upd"
+  ],
   "placeholder": [
     "common",
     "nav"

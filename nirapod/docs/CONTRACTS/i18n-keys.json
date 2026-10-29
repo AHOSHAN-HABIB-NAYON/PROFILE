@@ -246,6 +246,44 @@
       "time",
       "permneed"
     ],
+    "settings": [
+      "common",
+      "state",
+      "err",
+      "a11y",
+      "set",
+      "me",
+      "dialog"
+    ],
+    "data_export": [
+      "common",
+      "state",
+      "err",
+      "a11y",
+      "export"
+    ],
+    "delete_account": [
+      "common",
+      "state",
+      "err",
+      "a11y",
+      "delacc",
+      "dialog",
+      "export",
+      "auth"
+    ],
+    "help": [
+      "common",
+      "state",
+      "err",
+      "a11y",
+      "help",
+      "faq"
+    ],
+    "update": [
+      "common",
+      "upd"
+    ],
     "placeholder": [
       "common",
       "nav"
@@ -3323,6 +3361,306 @@
     "prem.gift_family_body": {
       "placeholders": [],
       "en": "Join the family as a guardian and buy here, or ask us on WhatsApp for a redeem code."
+    },
+    "set.title": {
+      "placeholders": [],
+      "en": "Settings"
+    },
+    "set.general": {
+      "placeholders": [],
+      "en": "General"
+    },
+    "set.dark_mode": {
+      "placeholders": [],
+      "en": "Dark mode"
+    },
+    "set.notifications": {
+      "placeholders": [],
+      "en": "Notifications and email"
+    },
+    "set.family_safety": {
+      "placeholders": [],
+      "en": "Family and safety"
+    },
+    "set.family": {
+      "placeholders": [],
+      "en": "Family"
+    },
+    "set.places": {
+      "placeholders": [],
+      "en": "Places"
+    },
+    "set.emergency_contacts": {
+      "placeholders": [],
+      "en": "Emergency contacts"
+    },
+    "set.report_misuse": {
+      "placeholders": [],
+      "en": "Report misuse"
+    },
+    "set.support": {
+      "placeholders": [],
+      "en": "Help and support"
+    },
+    "set.help": {
+      "placeholders": [],
+      "en": "Help and FAQ"
+    },
+    "set.chat": {
+      "placeholders": [],
+      "en": "Live chat"
+    },
+    "set.rate": {
+      "placeholders": [],
+      "en": "Rate Nirapod"
+    },
+    "set.legal": {
+      "placeholders": [],
+      "en": "Legal"
+    },
+    "set.privacy": {
+      "placeholders": [],
+      "en": "Privacy Policy"
+    },
+    "set.terms": {
+      "placeholders": [],
+      "en": "Terms"
+    },
+    "set.your_data": {
+      "placeholders": [],
+      "en": "Your data"
+    },
+    "set.download": {
+      "placeholders": [],
+      "en": "Download my data"
+    },
+    "set.delete": {
+      "placeholders": [],
+      "en": "Delete my account and data"
+    },
+    "set.version": {
+      "placeholders": [
+        "version"
+      ],
+      "en": "Version {version}"
+    },
+    "set.view_profile": {
+      "placeholders": [],
+      "en": "View profile"
+    },
+    "set.privacy_note": {
+      "placeholders": [],
+      "en": "Your location is only shared with your family. Nirapod staff never see it."
+    },
+    "export.title": {
+      "placeholders": [],
+      "en": "Download my data"
+    },
+    "export.intro": {
+      "placeholders": [],
+      "en": "Get a copy of your Nirapod data: profile, family role, consents, devices, alerts and your own last 90 days of location."
+    },
+    "export.how": {
+      "placeholders": [],
+      "en": "We email you a download link. It works once and expires in 7 days."
+    },
+    "export.others": {
+      "placeholders": [],
+      "en": "Other family members' data is never included."
+    },
+    "export.request": {
+      "placeholders": [],
+      "en": "Email me my data"
+    },
+    "export.sent": {
+      "placeholders": [
+        "email"
+      ],
+      "en": "Sent. Check {email} for the link."
+    },
+    "export.no_email": {
+      "placeholders": [],
+      "en": "This account has no email. Ask your parent to download family data."
+    },
+    "delacc.title": {
+      "placeholders": [],
+      "en": "Delete account"
+    },
+    "delacc.warning": {
+      "placeholders": [],
+      "en": "This cannot be undone"
+    },
+    "delacc.what": {
+      "placeholders": [],
+      "en": "We delete your profile, photo, location history, alerts, chats and sign-ins. All your devices are signed out."
+    },
+    "delacc.owner_transfer": {
+      "placeholders": [],
+      "en": "You own this family. Another adult in it becomes the owner."
+    },
+    "delacc.owner_alone": {
+      "placeholders": [],
+      "en": "You are the only adult. The family and its children's accounts will be deleted too."
+    },
+    "delacc.billing": {
+      "placeholders": [],
+      "en": "An active Google Play subscription is not cancelled automatically. Cancel it in Play Store."
+    },
+    "delacc.password": {
+      "placeholders": [],
+      "en": "Enter your password to confirm"
+    },
+    "delacc.type_delete": {
+      "placeholders": [],
+      "en": "Type DELETE to confirm"
+    },
+    "delacc.button": {
+      "placeholders": [],
+      "en": "Delete my account"
+    },
+    "delacc.confirm_title": {
+      "placeholders": [],
+      "en": "Delete your account?"
+    },
+    "delacc.confirm_body": {
+      "placeholders": [],
+      "en": "Your data will be gone for good."
+    },
+    "delacc.done": {
+      "placeholders": [],
+      "en": "Your account was deleted"
+    },
+    "delacc.export_first": {
+      "placeholders": [],
+      "en": "Download a copy first"
+    },
+    "help.title": {
+      "placeholders": [],
+      "en": "Help and FAQ"
+    },
+    "help.search": {
+      "placeholders": [],
+      "en": "Search help"
+    },
+    "help.empty": {
+      "placeholders": [],
+      "en": "No answer found. Chat with us."
+    },
+    "help.still_need": {
+      "placeholders": [],
+      "en": "Still need help?"
+    },
+    "help.chat": {
+      "placeholders": [],
+      "en": "Chat with support"
+    },
+    "help.cat_start": {
+      "placeholders": [],
+      "en": "Getting started"
+    },
+    "help.cat_location": {
+      "placeholders": [],
+      "en": "Location and battery"
+    },
+    "help.cat_safety": {
+      "placeholders": [],
+      "en": "SOS and safety"
+    },
+    "help.cat_family": {
+      "placeholders": [],
+      "en": "Family"
+    },
+    "help.cat_billing": {
+      "placeholders": [],
+      "en": "Plans and payments"
+    },
+    "help.cat_privacy": {
+      "placeholders": [],
+      "en": "Privacy"
+    },
+    "upd.title": {
+      "placeholders": [],
+      "en": "Update Nirapod"
+    },
+    "upd.required": {
+      "placeholders": [],
+      "en": "This version is too old to keep your family safe. Please update to continue."
+    },
+    "upd.available": {
+      "placeholders": [],
+      "en": "A new version is ready"
+    },
+    "upd.available_body": {
+      "placeholders": [],
+      "en": "Update for the latest fixes and features."
+    },
+    "upd.button": {
+      "placeholders": [],
+      "en": "Update now"
+    },
+    "upd.later": {
+      "placeholders": [],
+      "en": "Later"
+    },
+    "faq.start_1_q": {
+      "placeholders": [],
+      "en": "How do I add my family?"
+    },
+    "faq.start_1_a": {
+      "placeholders": [],
+      "en": "Open Family, tap Invite and share the code. Children join with a child code from your phone."
+    },
+    "faq.loc_1_q": {
+      "placeholders": [],
+      "en": "Why is a location not updating?"
+    },
+    "faq.loc_1_a": {
+      "placeholders": [],
+      "en": "Check that location is On and set to \"Allow all the time\", the phone has internet, and battery saver is not limiting Nirapod."
+    },
+    "faq.loc_2_q": {
+      "placeholders": [],
+      "en": "Does Nirapod drain the battery?"
+    },
+    "faq.loc_2_a": {
+      "placeholders": [],
+      "en": "No. It updates more often when moving and rests when still. Typical use is a few percent a day."
+    },
+    "faq.sos_1_q": {
+      "placeholders": [],
+      "en": "What happens when someone presses SOS?"
+    },
+    "faq.sos_1_a": {
+      "placeholders": [],
+      "en": "Every adult in the family gets a loud alert with the live location, plus an email. You see who has seen it."
+    },
+    "faq.fam_1_q": {
+      "placeholders": [],
+      "en": "Can someone track me secretly?"
+    },
+    "faq.fam_1_a": {
+      "placeholders": [],
+      "en": "No. Sharing is always visible with a notification, adults must agree, and you can pause anytime."
+    },
+    "faq.bill_1_q": {
+      "placeholders": [],
+      "en": "Is Nirapod free?"
+    },
+    "faq.bill_1_a": {
+      "placeholders": [],
+      "en": "Live location and SOS are always free. Premium adds more members, places and longer history."
+    },
+    "faq.priv_1_q": {
+      "placeholders": [],
+      "en": "Who can see my location?"
+    },
+    "faq.priv_1_a": {
+      "placeholders": [],
+      "en": "Only the family members you share with. Nirapod staff and support never see locations."
+    },
+    "delacc.wrong_password": {
+      "placeholders": [],
+      "en": "Password is incorrect"
     }
   }
 }

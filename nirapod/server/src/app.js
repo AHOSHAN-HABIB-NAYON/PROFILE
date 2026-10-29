@@ -20,6 +20,7 @@ import { placesRouter } from './routes/places.js';
 import { safetyRouter } from './routes/safety.js';
 import { notificationsRouter } from './routes/notifications.js';
 import { billingRouter } from './routes/billing.js';
+import { dataRightsRouter } from './routes/data-rights.js';
 import { createPusher } from './push/fcm.js';
 import { getSecret } from './settings.js';
 import { createRealtimeHub } from './realtime.js';
@@ -154,6 +155,7 @@ export function createApp({ cfg, db, logger, clock = systemClock, mailTransport,
   v1.use(safetyRouter(ctx));
   v1.use(notificationsRouter(ctx));
   v1.use(billingRouter(ctx));
+  v1.use(dataRightsRouter(ctx));
   v1.use((req, res, next) => next(new ApiError('NOT_FOUND')));
 
   app.use('/api/v1', apiLimiter, v1);

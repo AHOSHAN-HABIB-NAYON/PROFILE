@@ -10,10 +10,23 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/theme_controller.dart';
 import 'core/push/push_service.dart';
 import 'features/family/data/sharing.dart';
+import 'core/session/session.dart';
 import 'features/safety/sos_screens.dart';
+import 'features/settings/app_info.dart';
+import 'features/settings/settings_screens.dart';
 import 'nav/router.dart';
 
 final routerProvider = Provider<GoRouter>((ref) => createRouter());
+
+/// Asks for a Play review once per app start check (adults only; the service applies the 7 days / 3 sessions rule).
+final reviewHooksProvider = Provider<void>((ref) {
+  var done = false;
+  ref.listen<SessionState>(sessionControllerProvider, (_, next) {
+    if (done || next is! SignedIn || next.user.role == AppRole.child) return;
+    done = true;
+    ref.read(reviewServiceProvider).maybeAsk();
+  }, fireImmediately: true);
+});
 
 class NirapodApp extends ConsumerWidget {
   const NirapodApp({super.key});
@@ -24,6 +37,7 @@ class NirapodApp extends ConsumerWidget {
     final mode = ref.watch(themeControllerProvider);
     ref.watch(backgroundHooksProvider);
     ref.watch(pushHooksProvider);
+    ref.watch(reviewHooksProvider);
     return MaterialApp.router(
       title: 'Nirapod',
       debugShowCheckedModeBanner: false,
@@ -41,7 +55,7 @@ class NirapodApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      builder: (context, child) => LanguageFade(languageCode: language.code, child: SosAlertHost(child: child ?? const SizedBox())),
+      builder: (context, child) => LanguageFade(languageCode: language.code, child: UpdateGate(child: SosAlertHost(child: child ?? const SizedBox()))),
     );
   }
 }

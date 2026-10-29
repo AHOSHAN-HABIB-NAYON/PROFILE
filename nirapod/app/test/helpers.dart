@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:nirapod/features/premium/billing.dart';
+import 'package:nirapod/features/settings/app_info.dart';
 import 'package:nirapod/core/push/push_service.dart';
 import 'package:nirapod/features/auth/legal/legal_screen.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +24,7 @@ TzData? _tz;
 Future<StringsBundle> loadStrings() async => _strings ??= await StringsBundle.load(rootBundle);
 Future<TzData> loadTz() async => _tz ??= await TzData.load(rootBundle);
 
-Future<List<Override>> overrides({Map<String, Object> prefs = const {}, bool legalView = true}) async {
+Future<List<Override>> overrides({Map<String, Object> prefs = const {}, bool legalView = true, bool appVersion = true}) async {
   SharedPreferences.setMockInitialValues(prefs);
   await initializeDateFormatting();
   return [
@@ -33,6 +35,8 @@ Future<List<Override>> overrides({Map<String, Object> prefs = const {}, bool leg
     trackingBridgeProvider.overrideWithValue(NoopTrackingBridge()),
     pushServiceProvider.overrideWithValue(NoopPushService()),
     playBillingProvider.overrideWithValue(NoopPlayBilling()),
+    // No installed-app version in tests: the update gate stays out of the way.
+    if (appVersion) appVersionProvider.overrideWith((ref) => Completer<String>().future),
     familyMapBuilderProvider.overrideWithValue((data, onReady, onPinTap) => const ColoredBox(color: Color(0xFFDDE7E3))),
     if (legalView) legalViewProvider.overrideWithValue((uri) => const SizedBox(key: Key('legal_view'))),
   ];

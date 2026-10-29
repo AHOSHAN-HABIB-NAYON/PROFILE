@@ -4,3 +4,10 @@ body{margin:0;background:var(--background);color:var(--text);font:16px/1.6 "Noto
 h1{font-size:26px;margin:16px 0}h2{font-size:19px;margin-top:24px}
 a{color:var(--primary-text)}.muted{color:var(--muted-text);font-size:14px;margin-top:32px}
 .code{font-size:36px;font-weight:700;letter-spacing:8px;direction:ltr;color:var(--primary-text)}
+[hidden]{display:none!important}
+.form{display:grid;gap:10px;max-width:420px;margin:16px 0}
+.form label{font-weight:600;font-size:14px}
+.form input{font:inherit;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text)}
+.btn{font:inherit;font-weight:700;padding:12px 18px;border:0;border-radius:12px;cursor:pointer;background:var(--primary);color:#fff}
+.btn.danger{background:#DC2626}.btn:disabled{opacity:.6}
+.ok{color:var(--primary-text);font-weight:600}.err{color:#DC2626;font-weight:600}

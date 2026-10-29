@@ -110,6 +110,8 @@ const GENERIC = {
     daily_summary: { subject: 'Your family today', heading: 'Daily family summary', intro: 'Here is how your family is doing ({date}).', note: 'Open Nirapod for live locations. You can turn this email off in Settings.' },
     chat_inactivity: { subject: 'Are you still there?', heading: 'Your support chat', intro: 'We have not heard from you for a few minutes. Reply in the app or the chat will close soon.', note: 'You can always start a new chat.' },
     announcement: { subject: '{title}', heading: '{title}', intro: '{body}', note: 'You can turn announcements off in Settings > Notifications and email.' },
+    data_export: { subject: 'Your Nirapod data is ready', heading: 'Your data is ready', intro: 'You asked for a copy of your Nirapod data. Download it with the button below.', note: 'The link works once and expires in 7 days. If you did not ask for this, change your password.', button: 'Download my data' },
+    delete_confirm: { subject: 'Confirm deleting your Nirapod account', heading: 'Delete your account?', intro: 'Someone asked to delete the Nirapod account for this email. Press the button to confirm. This cannot be undone.', note: 'The link expires in 24 hours. If you did not ask for this, ignore this email and nothing will change.', button: 'Confirm deletion' },
     support_new_chat: { subject: 'New support chat{urgent}', heading: 'New support chat', intro: 'A user started a chat ({status}). Open the admin panel to read it.', note: 'This email contains no chat content or location data.' },
   },
   bn: {
@@ -121,6 +123,8 @@ const GENERIC = {
     daily_summary: { subject: 'আজ আপনার পরিবার', heading: 'পরিবারের দৈনিক সারাংশ', intro: 'আপনার পরিবার কেমন আছে ({date})।', note: 'লাইভ অবস্থান দেখতে Nirapod খুলুন। সেটিংস থেকে এই ইমেইল বন্ধ করা যায়।' },
     chat_inactivity: { subject: 'আপনি কি এখনো আছেন?', heading: 'আপনার সাপোর্ট চ্যাট', intro: 'কয়েক মিনিট আপনার কোনো উত্তর পাইনি। অ্যাপে উত্তর দিন, নাহলে চ্যাটটি শিগগির বন্ধ হবে।', note: 'আপনি যেকোনো সময় নতুন চ্যাট শুরু করতে পারেন।' },
     announcement: { subject: '{title}', heading: '{title}', intro: '{body}', note: 'সেটিংস > নোটিফিকেশন ও ইমেইল থেকে ঘোষণা বন্ধ করা যায়।' },
+    data_export: { subject: 'আপনার Nirapod ডেটা তৈরি', heading: 'আপনার ডেটা তৈরি', intro: 'আপনি আপনার Nirapod ডেটার কপি চেয়েছেন। নিচের বাটন থেকে ডাউনলোড করুন।', note: 'লিংকটি একবারই কাজ করবে এবং ৭ দিনে মেয়াদ শেষ হবে। আপনি না চাইলে পাসওয়ার্ড বদলে নিন।', button: 'আমার ডেটা ডাউনলোড করুন' },
+    delete_confirm: { subject: 'Nirapod অ্যাকাউন্ট মুছে ফেলা নিশ্চিত করুন', heading: 'অ্যাকাউন্ট মুছবেন?', intro: 'এই ইমেইলের Nirapod অ্যাকাউন্ট মুছে ফেলার অনুরোধ এসেছে। নিশ্চিত করতে বাটনে চাপুন। এটি আর ফেরানো যাবে না।', note: 'লিংকটি ২৪ ঘণ্টায় মেয়াদ শেষ হবে। আপনি না চাইলে এই ইমেইল উপেক্ষা করুন, কিছুই বদলাবে না।', button: 'মুছে ফেলা নিশ্চিত করুন' },
     support_new_chat: { subject: 'নতুন সাপোর্ট চ্যাট{urgent}', heading: 'নতুন সাপোর্ট চ্যাট', intro: 'একজন ব্যবহারকারী চ্যাট শুরু করেছেন ({status})। পড়তে অ্যাডমিন প্যানেল খুলুন।', note: 'এই ইমেইলে চ্যাটের লেখা বা অবস্থান নেই।' },
   },
   ms: {
@@ -140,6 +144,8 @@ const GENERIC = {
     daily_summary: { subject: 'Keluarga anda hari ini', heading: 'Ringkasan harian keluarga', intro: 'Beginilah keadaan keluarga anda ({date}).', note: 'Buka Nirapod untuk lokasi langsung. Anda boleh mematikan e-mel ini dalam Tetapan.' },
     chat_inactivity: { subject: 'Anda masih di sana?', heading: 'Sembang sokongan anda', intro: 'Kami tidak mendengar daripada anda beberapa minit. Balas dalam aplikasi atau sembang akan ditutup.', note: 'Anda boleh memulakan sembang baharu bila-bila masa.' },
     announcement: { subject: '{title}', heading: '{title}', intro: '{body}', note: 'Matikan pengumuman di Tetapan > Pemberitahuan dan e-mel.' },
+    data_export: { subject: 'Data Nirapod anda sudah sedia', heading: 'Data anda sudah sedia', intro: 'Anda meminta salinan data Nirapod anda. Muat turun dengan butang di bawah.', note: 'Pautan berfungsi sekali dan tamat dalam 7 hari. Jika bukan anda, tukar kata laluan.', button: 'Muat turun data saya' },
+    delete_confirm: { subject: 'Sahkan pemadaman akaun Nirapod', heading: 'Padam akaun anda?', intro: 'Seseorang meminta untuk memadam akaun Nirapod bagi e-mel ini. Tekan butang untuk mengesahkan. Ini tidak boleh dibatalkan.', note: 'Pautan tamat dalam 24 jam. Jika bukan anda, abaikan e-mel ini.', button: 'Sahkan pemadaman' },
     support_new_chat: { subject: 'Sembang sokongan baharu{urgent}', heading: 'Sembang sokongan baharu', intro: 'Pengguna memulakan sembang ({status}). Buka panel admin untuk membacanya.', note: 'E-mel ini tidak mengandungi isi sembang atau data lokasi.' },
   },
 };
@@ -205,8 +211,11 @@ export function render(template, language, vars = {}) {
       ? `<ul class="t" style="margin:0 0 16px;padding-left:20px;font-size:15px;line-height:1.7;color:#0F2A24;">${lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul>`
       : '';
     const note = fill(t.note).trim();
-    bodyHtml = p(fill(t.intro)) + list + (note ? muted(note) : '');
-    text = `${fill(t.heading)}\n\n${fill(t.intro)}\n${lines.map((l) => `- ${l}`).join('\n')}\n\n${note}`;
+    const btn = vars.url && t.button
+      ? `<p style="margin:8px 0 16px;"><a href="${esc(vars.url)}" style="display:inline-block;padding:14px 22px;background:#047857;color:#FFFFFF;border-radius:12px;font-weight:700;text-decoration:none;">${esc(t.button)}</a></p>`
+      : '';
+    bodyHtml = p(fill(t.intro)) + list + btn + (note ? muted(note) : '');
+    text = `${fill(t.heading)}\n\n${fill(t.intro)}\n${lines.map((l) => `- ${l}`).join('\n')}${vars.url && t.button ? `\n${t.button}: ${vars.url}` : ''}\n\n${note}`;
     return {
       subject: fill(t.subject),
       html: layout({ lang, dir: L.dir, heading: fill(t.heading), bodyHtml, footer: L.footer }),

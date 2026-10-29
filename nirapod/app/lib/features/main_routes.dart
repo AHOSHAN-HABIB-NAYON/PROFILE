@@ -13,6 +13,7 @@ import 'places/places_screen.dart';
 import 'premium/premium_screen.dart';
 import 'safety/safe_walk_screens.dart';
 import 'safety/sos_screens.dart';
+import 'settings/settings_screens.dart';
 
 /// Phase 2 screens (Home, Map, Profile, Family, Member, invite, report misuse), keyed by navigation id.
 final mainScreens = <String, Widget Function(GoRouterState state)>{
@@ -24,6 +25,12 @@ final mainScreens = <String, Widget Function(GoRouterState state)>{
   'invite': (_) => const FamilyScreen(),
   'member': (st) => MemberScreen(memberId: st.pathParameters['id'] ?? ''),
   'report_misuse': (_) => const ReportMisuseScreen(),
+  // Phase 7: settings, data rights, help, update.
+  'settings': (_) => const SettingsScreen(),
+  'data_export': (_) => const DataExportScreen(),
+  'delete_account': (_) => const DeleteAccountScreen(),
+  'help': (_) => const HelpScreen(),
+  'update_required': (_) => const UpdateRequiredScreen(),
   // Phase 6.
   'premium': (_) => const PremiumScreen(),
   // Phase 5: notifications.
