@@ -35,7 +35,7 @@ export async function detectStaleDevices(ctx) {
   const rows = await db('child_devices as d')
     .join('family_members as m', function join() { this.on('m.user_id', 'd.user_id').andOn('m.family_id', 'd.family_id'); })
     .join('users as u', 'u.id', 'd.user_id')
-    .whereNull('d.revoked_at').whereNull('m.left_at').where('u.status', 'active')
+    .whereNull('d.revoked_at').whereNull('m.left_at').where('m.role', 'child').where('u.status', 'active')
     .whereNotNull('d.last_seen_at').where('d.last_seen_at', '<', cutoff).whereNull('d.offline_alerted_at')
     .select('d.id as device_id', 'd.family_id', 'd.last_seen_at', 'd.location_state', 'u.id', 'u.uuid', 'u.name');
   for (const r of rows) {

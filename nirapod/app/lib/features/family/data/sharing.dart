@@ -7,6 +7,8 @@ import '../../../core/config/env.dart';
 import '../../../core/i18n/locale_controller.dart';
 import '../../../core/log/log.dart';
 import '../../../core/net/providers.dart';
+import '../../../core/prefs/prefs.dart';
+import '../../onboarding/data/permission_gateway.dart';
 import '../../../core/session/session.dart';
 import '../../../core/tracking/tracking_bridge.dart';
 import '../../auth/profile/travel_service.dart';
@@ -51,9 +53,54 @@ final childTrackingProvider = Provider<ChildTracking>(ChildTracking.new);
 
 /// App-wide hooks: starts child tracking when a child session appears, and feeds Android's time-zone
 /// change broadcast into the travel watcher.
+/// Adults who chose "share when the app is closed": the same visible native service as children, started only
+/// after an explicit opt-in (with disclosure) and only while their sharing is active. Pausing or stopping
+/// sharing ends it (the server also revokes the phone's key).
+class AdultBackgroundSharing {
+  AdultBackgroundSharing(this._ref);
+  final Ref _ref;
+
+  bool get isOn => _ref.read(prefsProvider).getBool(PrefKeys.adultBackground) ?? false;
+
+  /// Asks for "Allow all the time", then starts the service. Returns false if not possible.
+  Future<bool> enable() async {
+    final gw = _ref.read(permissionGatewayProvider);
+    if (!(await gw.request(OnbPermission.locationWhenInUse)).isGranted) return false;
+    if (!(await gw.request(OnbPermission.locationAlways)).isGranted) return false;
+    final ok = await _start();
+    await _ref.read(prefsProvider).setBool(PrefKeys.adultBackground, ok);
+    return ok;
+  }
+
+  Future<void> disable() async {
+    await _ref.read(prefsProvider).setBool(PrefKeys.adultBackground, false);
+    await _ref.read(trackingBridgeProvider).stop().catchError((Object _) {});
+  }
+
+  /// App start: keep it running if the adult turned it on before.
+  Future<void> resumeIfOn() async {
+    if (!isOn) return;
+    if (!(await _start())) await disable();
+  }
+
+  Future<bool> _start() async {
+    try {
+      final key = (await _ref.read(apiClientProvider).post<Map<String, dynamic>>('/devices/upload-key', data: {}))['upload_key'] as String;
+      final deviceId = await _ref.read(deviceIdStoreProvider).get();
+      return await _ref.read(trackingBridgeProvider).start(apiBase: Env.apiBaseUrl, uploadKey: key, deviceId: deviceId, texts: trackingTexts(_ref));
+    } catch (e) {
+      Log.warn('tracking', 'adult start failed: ${e.runtimeType}');
+      return false;
+    }
+  }
+}
+
+final adultBackgroundProvider = Provider<AdultBackgroundSharing>(AdultBackgroundSharing.new);
+
 final backgroundHooksProvider = Provider<void>((ref) {
   final s = ref.watch(sessionControllerProvider);
   if (s is SignedIn && s.user.isChild) unawaited(ref.read(childTrackingProvider).ensureStarted());
+  if (s is SignedIn && !s.user.isChild) unawaited(ref.read(adultBackgroundProvider).resumeIfOn());
   final sub = ref.read(trackingBridgeProvider).timezoneChanges().listen((_) {
     if (ref.read(sessionControllerProvider) is SignedIn) unawaited(ref.read(travelWatcherProvider).check());
   });

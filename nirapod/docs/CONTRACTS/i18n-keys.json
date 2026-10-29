@@ -3970,6 +3970,30 @@
     "map.long_press_hint": {
       "placeholders": [],
       "en": "Tip: press and hold anywhere on the map to add a place there."
+    },
+    "family.bg_title": {
+      "placeholders": [],
+      "en": "Share when the app is closed"
+    },
+    "family.bg_body": {
+      "placeholders": [],
+      "en": "Your family keeps seeing you with the screen off. A \"Location sharing is on\" notice stays visible."
+    },
+    "family.bg_disclosure_title": {
+      "placeholders": [],
+      "en": "Share your location in the background?"
+    },
+    "family.bg_disclosure": {
+      "placeholders": [],
+      "en": "Nirapod collects your location to share it with your family circle, even when the app is closed or not in use. Only your family circle can see it. It is never sold or used for ads. You can turn this off here any time."
+    },
+    "family.bg_allow_all": {
+      "placeholders": [],
+      "en": "On the next screen choose \"Allow all the time\"."
+    },
+    "family.bg_denied": {
+      "placeholders": [],
+      "en": "Background location is not allowed. Open Settings > Location and choose \"Allow all the time\"."
     }
   }
 }

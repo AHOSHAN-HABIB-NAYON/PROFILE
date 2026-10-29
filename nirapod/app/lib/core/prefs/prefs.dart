@@ -13,4 +13,6 @@ abstract final class PrefKeys {
   /// Login "Remember me": false = sign out on the next app start. Email is kept only when true.
   static const rememberMe = 'remember_me';
   static const rememberedEmail = 'remembered_email';
+  /// Adult opted in to "share when the app is closed" (native service, visible notification).
+  static const adultBackground = 'adult_background_sharing';
 }

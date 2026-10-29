@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../onboarding/data/permission_gateway.dart';
+import '../data/sharing.dart' show adultBackgroundProvider;
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -147,6 +150,7 @@ class _SharingControl extends ConsumerWidget {
     final st = me.sharingStatus;
     Future<void> set(String v) async {
       try {
+        if (v != 'active') await ref.read(adultBackgroundProvider).disable();
         await ref.read(familyRepoProvider).patchMember(family.id, me.id, {'sharing_status': v});
         ref.invalidate(familyProvider);
       } catch (e) {
@@ -173,6 +177,10 @@ class _SharingControl extends ConsumerWidget {
             ),
           ]),
           const SizedBox(height: Space.sm),
+          if (st == 'active') ...[
+            _BackgroundSwitch(strings: s),
+            const SizedBox(height: Space.xs),
+          ],
           Wrap(spacing: Space.xs, runSpacing: Space.xs, children: [
             if (st != 'active') FilledButton(onPressed: () => set('active'), child: Text(s.t('family.share'))),
             if (st == 'active') OutlinedButton(onPressed: () => set('paused'), child: Text(s.t('family.pause'))),
@@ -180,6 +188,66 @@ class _SharingControl extends ConsumerWidget {
           ]),
         ]),
       ),
+    );
+  }
+}
+
+/// Adults: "Share when the app is closed" (opt-in, with the Play prominent disclosure first).
+class _BackgroundSwitch extends ConsumerStatefulWidget {
+  const _BackgroundSwitch({required this.strings});
+  final Strings strings;
+  @override
+  ConsumerState<_BackgroundSwitch> createState() => _BackgroundSwitchState();
+}
+
+class _BackgroundSwitchState extends ConsumerState<_BackgroundSwitch> {
+  bool _busy = false;
+
+  Future<void> _toggle(bool on) async {
+    final s = widget.strings;
+    final bg = ref.read(adultBackgroundProvider);
+    if (!on) {
+      setState(() => _busy = true);
+      await bg.disable();
+      if (mounted) setState(() => _busy = false);
+      return;
+    }
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(s.t('family.bg_disclosure_title')),
+        content: Text('${s.t('family.bg_disclosure')}\n\n${s.t('family.bg_allow_all')}'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(s.t('common.not_now'))),
+          FilledButton(key: const Key('bg_disclosure_ok'), onPressed: () => Navigator.pop(ctx, true), child: Text(s.t('common.continue'))),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    setState(() => _busy = true);
+    final started = await bg.enable();
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (!started) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(s.t('family.bg_denied')),
+        action: SnackBarAction(label: s.t('common.open_settings'), onPressed: () => ref.read(permissionGatewayProvider).openSettings()),
+      ));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.strings;
+    final t = Theme.of(context).textTheme;
+    final on = ref.read(adultBackgroundProvider).isOn;
+    return SwitchListTile(
+      key: const Key('bg_sharing_switch'),
+      contentPadding: EdgeInsets.zero,
+      value: on,
+      onChanged: _busy ? null : _toggle,
+      title: Text(s.t('family.bg_title'), style: t.bodyLarge),
+      subtitle: Text(s.t('family.bg_body'), style: t.bodySmall),
     );
   }
 }

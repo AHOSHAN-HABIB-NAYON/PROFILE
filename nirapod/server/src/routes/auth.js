@@ -297,6 +297,11 @@ export function authRouter(ctx) {
   // ---- signed-in ----
   r.post('/auth/logout', requireAuth, ah(async (req, res) => {
     await sessions.revokeOne(req.session.id, 'logout');
+    // An adult's "share when the app is closed" key for this phone ends with the session.
+    if (!req.session.isChildDevice && req.session.deviceId) {
+      await db('child_devices').where({ user_id: req.user.id, device_id: req.session.deviceId }).whereNull('revoked_at')
+        .update({ revoked_at: clock.now(), upload_key_hash: null });
+    }
     await audit(db, { actorId: req.user.id, action: 'auth.logout', targetType: 'session', targetId: req.session.uuid, now: clock.now() });
     res.status(204).end();
   }));

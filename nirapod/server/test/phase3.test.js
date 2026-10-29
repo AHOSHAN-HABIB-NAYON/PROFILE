@@ -38,6 +38,24 @@ describe('device upload key', () => {
     await api().get('/api/v1/me').set({ authorization: `Device ${key}` }).expect(401); // key is useless elsewhere
   });
 
+  test('adults: background key only while their own sharing is active; pausing revokes it; no offline alerts for adults', async () => {
+    const devId = `adult-${++n}`;
+    const mom = await signUp(t, undefined, { device: { device_id: devId } });
+    const fam = (await api().post('/api/v1/families').set(bearer(mom)).send({}).expect(201)).body;
+    await api().patch(`/api/v1/families/${fam.id}/members/${mom.user.id}`).set(bearer(mom)).send({ sharing_status: 'paused' }).expect(200);
+    await api().post('/api/v1/devices/upload-key').set(bearer(mom)).expect(403);
+    await api().patch(`/api/v1/families/${fam.id}/members/${mom.user.id}`).set(bearer(mom)).send({ sharing_status: 'active' }).expect(200);
+    const key = (await api().post('/api/v1/devices/upload-key').set(bearer(mom)).expect(201)).body.upload_key;
+    await api().post('/api/v1/locations').set(deviceAuth(key, devId)).send({ points: [pt()] }).expect(202);
+    t.clock.advance(60 * 60_000);
+    await detectStaleDevices(t.app.locals.ctx);
+    const momId = (await db('users').where({ uuid: mom.user.id }).first()).id;
+    assert.equal((await db('timeline_events').where({ type: 'offline', user_id: momId })).length, 0);
+    const again = (await api().post('/api/v1/auth/login').send({ email: mom.email, password: 'Nirapod-Family-2026', device: { device_id: devId } }).expect(200)).body;
+    await api().patch(`/api/v1/families/${fam.id}/members/${mom.user.id}`).set(bearer(again)).send({ sharing_status: 'paused' }).expect(200);
+    await api().post('/api/v1/locations').set(deviceAuth(key, devId)).send({ points: [pt()] }).expect(401);
+  });
+
   test('removing the child invalidates the key', async () => {
     const { parent, fam, child, deviceId } = await setup();
     const key = (await api().post('/api/v1/devices/upload-key').set(bearer(child)).expect(201)).body.upload_key;

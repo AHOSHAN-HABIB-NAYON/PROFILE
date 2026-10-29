@@ -97,6 +97,10 @@ export function familyManageRouter(ctx) {
     const now = clock.now();
     await db('family_members').where({ id: m.id }).update(patch);
     if (patch.sharing_status) {
+      // Pause / stop also ends "share when the app is closed": the phone's background key stops working.
+      if (patch.sharing_status !== 'active') {
+        await db('child_devices').where({ user_id: req.user.id }).whereNull('revoked_at').update({ revoked_at: now, upload_key_hash: null });
+      }
       await audit(db, { actorId: req.user.id, action: `sharing.${patch.sharing_status}`, targetType: 'family', targetId: f.id, now });
       await db('consents').insert({
         user_id: req.user.id, family_id: f.id, type: 'adult_location_sharing', version: cfg.TERMS_VERSION,

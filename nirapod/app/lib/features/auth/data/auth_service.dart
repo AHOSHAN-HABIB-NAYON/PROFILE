@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../family/data/sharing.dart' show adultBackgroundProvider;
+
 import '../../../core/i18n/locale_controller.dart';
 import '../../../core/log/log.dart';
 import '../../../core/net/api_error.dart';
@@ -164,6 +166,8 @@ class AuthService {
       // Offline or already revoked: the local session still ends.
     }
     unawaited(_ref.read(googleGatewayProvider).signOut());
+    // Adult "share when the app is closed" ends with the session.
+    await _ref.read(adultBackgroundProvider).disable().catchError((Object _) {});
     await _clearLocal(keepDevice: true);
   }
 

@@ -845,5 +845,11 @@
   "map.add_place": "Tambah lokasi",
   "map.setup_title": "Ke mana anak-anak anda pergi?",
   "map.setup_body": "Tambah Rumah, Sekolah atau Kelas Tuisyen. Anda akan dimaklumkan apabila anak tiba atau beredar.",
-  "map.long_press_hint": "Petua: tekan dan tahan di mana-mana pada peta untuk menambah lokasi di situ."
+  "map.long_press_hint": "Petua: tekan dan tahan di mana-mana pada peta untuk menambah lokasi di situ.",
+  "family.bg_title": "Kongsi walaupun aplikasi ditutup",
+  "family.bg_body": "Keluarga anda masih dapat melihat anda ketika skrin dimatikan. Notis \"Perkongsian lokasi dihidupkan\" akan sentiasa kelihatan.",
+  "family.bg_disclosure_title": "Kongsi lokasi anda di latar?",
+  "family.bg_disclosure": "Nirapod mengambil lokasi anda untuk dikongsi dengan ahli keluarga anda, walaupun aplikasi ditutup atau tidak digunakan. Hanya ahli keluarga anda boleh melihatnya. Ia tidak akan dijual atau digunakan untuk iklan. Anda boleh mematikannya di sini pada bila-bila masa.",
+  "family.bg_allow_all": "Pada skrin seterusnya, pilih \"Benarkan sepanjang masa\".",
+  "family.bg_denied": "Lokasi latar tidak dibenarkan. Buka Tetapan > Lokasi dan pilih \"Benarkan sepanjang masa\"."
 }

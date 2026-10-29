@@ -83,8 +83,22 @@ export function locationsRouter(ctx) {
   const uploader = deviceOrUserAuth(ctx);
 
   // A child session creates (or rotates) the device upload key for its native background service.
+  // Adults may opt in to "share when the app is closed" too, but only while their sharing is active (consent).
   r.post('/devices/upload-key', requireAuth, ah(async (req, res) => {
-    if (!req.session.isChildDevice) throw new ApiError('FORBIDDEN');
+    if (!req.session.isChildDevice) {
+      const m = await db('family_members').where({ user_id: req.user.id }).whereNull('left_at').first();
+      if (!m || m.role === 'child' || m.sharing_status !== 'active' || !req.session.deviceId) {
+        throw new ApiError('FORBIDDEN', { details: { reason: 'sharing_not_active' } });
+      }
+      const has = await db('child_devices').where({ user_id: req.user.id, device_id: req.session.deviceId }).whereNull('revoked_at').first('id');
+      if (!has) {
+        const now = clock.now();
+        await db('child_devices').insert({
+          user_id: req.user.id, family_id: m.family_id, session_id: req.session.id ?? null, device_id: req.session.deviceId,
+          bound_at: now, last_seen_at: now, created_at: now,
+        });
+      }
+    }
     const key = crypto.randomBytes(32).toString('base64url');
     const n = await db('child_devices').where({ user_id: req.user.id, device_id: req.session.deviceId }).whereNull('revoked_at')
       .update({ upload_key_hash: sha256(key), upload_key_created_at: clock.now() });

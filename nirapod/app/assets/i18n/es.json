@@ -845,5 +845,11 @@
   "map.add_place": "Añadir lugar",
   "map.setup_title": "¿A dónde van tus hijos?",
   "map.setup_body": "Añade Casa, Escuela o Clases. Recibirás un aviso cuando un hijo llegue o se vaya.",
-  "map.long_press_hint": "Consejo: mantén pulsado cualquier punto del mapa para añadir un lugar allí."
+  "map.long_press_hint": "Consejo: mantén pulsado cualquier punto del mapa para añadir un lugar allí.",
+  "family.bg_title": "Compartir con la app cerrada",
+  "family.bg_body": "Tu familia te seguirá viendo con la pantalla apagada. El aviso \"Compartir ubicación activado\" seguirá visible.",
+  "family.bg_disclosure_title": "¿Compartir tu ubicación en segundo plano?",
+  "family.bg_disclosure": "Nirapod recoge tu ubicación para compartirla con tu círculo familiar, incluso cuando la app está cerrada o no se usa. Solo tu círculo familiar puede verla. Nunca se vende ni se usa para anuncios. Puedes desactivarlo aquí cuando quieras.",
+  "family.bg_allow_all": "En la siguiente pantalla elige \"Permitir todo el tiempo\".",
+  "family.bg_denied": "La ubicación en segundo plano no está permitida. Abre Ajustes > Ubicación y elige \"Permitir todo el tiempo\"."
 }
