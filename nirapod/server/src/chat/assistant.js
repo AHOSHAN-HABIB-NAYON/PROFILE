@@ -150,7 +150,7 @@ export async function askAssistant(ctx, { conversation, userId, history, now }) 
   const lang = conversation.language || 'en';
   let kb = await db('kb_articles').where({ is_published: true, language: lang }).select('title', 'body');
   if (lang !== 'en') kb = kb.concat(await db('kb_articles').where({ is_published: true, language: 'en' }).select('title', 'body'));
-  const legalEmail = await getSetting(db, 'legal_request_email', 'legal@webtecit.com');
+  const legalEmail = (await getSetting(db, 'legal_request_email', '')) || 'legal@webtecit.com';
   const kbText = kb.slice(0, 40).map((a) => `## ${a.title}\n${a.body}`).join('\n\n').slice(0, 12_000);
   const summary = await safeSummary(db, userId, now);
   const system = [

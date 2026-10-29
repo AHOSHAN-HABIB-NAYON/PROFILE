@@ -5,16 +5,16 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>Nirapod Admin</title>
+<link rel="icon" href="/shared/web/brand/logo-app.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/shared/web/tokens.css">
 <link rel="stylesheet" href="admin.css">
 </head>
 <body>
-<main class="shell">
-  <img src="/shared/web/brand/logo-app.svg" width="48" height="48" alt="">
-  <h1>Nirapod Admin</h1>
-  <p>The admin panel is built in Phase 8 (sign-in with 2FA, roles: super admin, support, finance).</p>
-  <p class="note">The admin panel has no access path to any user's location, route or visited places.</p>
-  <p><a href="/api/v1/health">API health</a></p>
-</main>
+<div id="app" class="boot">
+  <img src="/shared/web/brand/logo-app.svg" width="56" height="56" alt="">
+  <p>Loading Nirapod Admin…</p>
+</div>
+<noscript><p class="boot">The admin panel needs JavaScript.</p></noscript>
+<script src="admin.js"></script>
 </body>
 </html>

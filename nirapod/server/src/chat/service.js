@@ -166,7 +166,7 @@ export async function userMessage(ctx, user, { body, attachment = null, priority
     return { conversation: conv, added };
   }
   if (isLegal(text)) {
-    const email = await getSetting(db, 'legal_request_email', 'legal@webtecit.com');
+    const email = (await getSetting(db, 'legal_request_email', '')) || 'legal@webtecit.com';
     added.push(await addMessage(ctx, conv, { sender: 'ai', body: t(lang, 'chatsys.legal', { email }) }));
     await audit(db, { actorType: 'system', action: 'chat.legal_request', targetType: 'chat', targetId: conv.id, now });
     return { conversation: conv, added };
@@ -224,7 +224,7 @@ export async function chatInactivity(ctx) {
   const { db, clock, mailer } = ctx;
   const now = clock.now();
   const warnMin = Number(await getSetting(db, 'chat_inactivity_warn_minutes', 5));
-  const closeMin = Number(await getSetting(db, 'chat_inactivity_close_minutes', 5));
+  const closeMin = Number(await getSetting(db, 'chat_autoclose_minutes', 5));
   const open = await db('chat_conversations').whereIn('status', ['ai', 'human']);
   let n = 0;
   for (const conv of open) {

@@ -33,17 +33,17 @@ const page = (q) => ({ limit: Math.min(Number(q.limit) || 50, 200), offset: Math
 export const SETTING_KEYS = {
   min_version: z.string().max(20), latest_version: z.string().max(20), play_store_url: z.string().url().max(300),
   update_message: z.record(z.string(), z.string().max(300)),
-  whatsapp_number: z.string().max(30), payment_banner_enabled: z.boolean(), payment_banner_show_logos: z.boolean(),
+  whatsapp_number: z.string().max(30), landing_ai_chat_enabled: z.boolean(), payment_banner_enabled: z.boolean(), payment_banner_show_logos: z.boolean(),
   payment_banner_countries: z.array(z.string().length(2)).max(60), payment_banner_text: z.record(z.string(), z.string().max(300)),
-  nearby_enabled: z.boolean(), nearby_daily_cap: z.number().int().min(0).max(1_000_000),
+  nearby_places_enabled: z.boolean(), nearby_places_daily_cap: z.number().int().min(0).max(1_000_000), nearby_places_per_user_daily: z.number().int().min(0).max(10_000),
   languages_enabled: z.record(z.string(), z.boolean()),
   free_plan_enabled: z.boolean(), trial_days: z.number().int().min(0).max(90),
   free_limits: z.object({ max_children: z.number().int().min(0), max_members: z.number().int().min(1), max_places: z.number().int().min(0), history_days: z.number().int().min(1) }).partial(),
   country_overrides: z.record(z.string(), z.any()),
   family_overrides: z.record(z.string(), z.any()),
   live_chat_human_for: z.enum(['all', 'premium']),
-  legal_request_email: z.email(), support_emails: z.array(z.email()).max(5),
-  chat_inactivity_warn_minutes: z.number().int().min(1).max(120), chat_inactivity_close_minutes: z.number().int().min(1).max(120),
+  legal_request_email: z.union([z.email(), z.literal('')]), support_emails: z.array(z.email()).max(5),
+  chat_inactivity_warn_minutes: z.number().int().min(1).max(120), chat_autoclose_minutes: z.number().int().min(1).max(120),
   firebase_android: z.object({ api_key: z.string().max(100), app_id: z.string().max(100), project_id: z.string().max(100), sender_id: z.string().max(40) }).partial(),
 };
 export const SECRET_KEYS = ['fcm_service_account', 'play_service_account', 'play_rtdn_token', 'google_places_api_key'];
@@ -770,7 +770,7 @@ export function adminRouter(ctx) {
     const now = clock.now();
     const jobs = await db('job_runs').whereIn('id', db('job_runs').max('id').groupBy('job')).select('job', 'status', 'affected', 'error', 'started_at', 'finished_at');
     const emails = await db('email_logs').where('created_at', '>', new Date(now - DAY)).groupBy('status').select('status').count({ n: '*' });
-    const off = await db('child_devices').whereNull('revoked_at').whereNot('location_state', 'on').count({ n: '*' }).first();
+    const off = await db('child_devices').whereNull('revoked_at').whereIn('location_state', ['location_off', 'permission_removed']).count({ n: '*' }).first();
     const stale = await db('child_devices').whereNull('revoked_at').where('last_seen_at', '<', new Date(now - DAY)).count({ n: '*' }).first();
     const fcm = await db('sessions').whereNull('revoked_at').whereNotNull('fcm_token').count({ n: '*' }).first();
     res.json({
