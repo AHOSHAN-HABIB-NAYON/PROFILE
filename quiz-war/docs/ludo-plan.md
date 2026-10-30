@@ -1,5 +1,7 @@
 # Ludo Online: agreed plan (build after Play Store production launch)
 
+See also the master list [roadmap.md](roadmap.md) for store, premium, chat calls and the order of updates.
+
 Status: planned only. No code yet. The owner asked to start this after QUIZ WAR is live on Google Play.
 
 ## Rules (same as common Ludo apps)
