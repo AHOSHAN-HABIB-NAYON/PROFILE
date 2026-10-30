@@ -125,7 +125,7 @@ class _MemberScreenState extends ConsumerState<MemberScreen> {
                     height: 200,
                     child: FamilyMapView(
                       data: FamilyMapData(
-                        pins: [MapPin(id: m.id, name: m.name, lat: p.lat, lng: p.lng, accuracyM: p.accuracyM, trust: trust)],
+                        pins: [MapPin(id: m.id, name: m.name, photoUrl: m.avatarThumbUrl, lat: p.lat, lng: p.lng, accuracyM: p.accuracyM, trust: trust)],
                         prefs: ref.watch(mapPrefsProvider),
                       ),
                       onReady: (_) {},

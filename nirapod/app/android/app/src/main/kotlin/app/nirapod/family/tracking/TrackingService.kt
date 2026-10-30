@@ -50,15 +50,17 @@ import java.util.TimeZone
  * Child-device location sharing (foreground service, type location) with a permanent, visible notification
  * "Location sharing is on". Nothing is hidden: the notification cannot be dismissed while sharing runs.
  *
- * Adaptive frequency: still 12 min, moving 90 s, safe-walk trip 20 s; slower on low battery (not charging)
+ * Adaptive frequency: still 5 min, moving 45 s, safe-walk trip 20 s, live watch 10 s (someone has the family
+ * map open, for a few minutes); slower on low battery (not charging)
  * and in battery saver. Weak GPS: very inaccurate fixes are skipped. Points are queued in SQLite and
  * uploaded in batches with exponential backoff, so nothing is lost offline.
  */
 class TrackingService : Service() {
     enum class Mode(val intervalMs: Long, val priority: Int) {
-        STILL(12 * 60_000L, Priority.PRIORITY_BALANCED_POWER_ACCURACY),
-        MOVING(90_000L, Priority.PRIORITY_HIGH_ACCURACY),
+        STILL(5 * 60_000L, Priority.PRIORITY_BALANCED_POWER_ACCURACY),
+        MOVING(45_000L, Priority.PRIORITY_HIGH_ACCURACY),
         TRIP(20_000L, Priority.PRIORITY_HIGH_ACCURACY),
+        LIVE(10_000L, Priority.PRIORITY_HIGH_ACCURACY),
     }
 
     private lateinit var store: TrackingStore
@@ -127,6 +129,14 @@ class TrackingService : Service() {
             ACTION_GEOFENCES_CHANGED -> worker.post { registerGeofences() }
             ACTION_SOS_CANCEL -> worker.post { cancelShakeSos() }
             // Screen off / deep sleep: the alarm wakes us; take a fresh fix and send what is queued.
+            // Someone in the family opened the map: fast updates for a few minutes, then back to normal.
+            ACTION_LIVE -> worker.post {
+                val sec = (intent?.getLongExtra(EXTRA_SECONDS, 300L) ?: 300L).coerceIn(30L, 600L)
+                store.liveUntil = System.currentTimeMillis() + sec * 1000L
+                applyMode(force = true)
+                requestImmediateFix()
+                worker.postDelayed({ applyMode(force = true) }, sec * 1000L + 1_000L)
+            }
             ACTION_HEARTBEAT -> worker.post {
                 requestImmediateFix()
                 scheduleUpload(0)
@@ -174,13 +184,14 @@ class TrackingService : Service() {
             ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
     private fun currentMode(): Mode = when {
+        System.currentTimeMillis() < store.liveUntil -> Mode.LIVE
         System.currentTimeMillis() < store.tripUntil -> Mode.TRIP
         System.currentTimeMillis() < store.burstUntil -> Mode.TRIP
         else -> mode
     }
 
     private fun intervalFor(m: Mode): Long {
-        if (m == Mode.TRIP) return m.intervalMs
+        if (m == Mode.TRIP || m == Mode.LIVE) return m.intervalMs
         val power = getSystemService(Context.POWER_SERVICE) as PowerManager
         if (power.isPowerSaveMode) return Mode.STILL.intervalMs
         val (level, charging) = battery()
@@ -248,10 +259,10 @@ class TrackingService : Service() {
         applyMode()
         // Wall-clock check: Handler delays stop counting while the phone sleeps, so never wait if the last
         // upload is already older than the batching window.
-        val overdue = System.currentTimeMillis() - lastUploadWall >= 5 * 60_000L
+        val overdue = System.currentTimeMillis() - lastUploadWall >= 2 * 60_000L
         val due = when (currentMode()) {
-            Mode.TRIP, Mode.STILL -> 0L
-            Mode.MOVING -> if (store.size() >= 3 || overdue) 0L else 5 * 60_000L
+            Mode.TRIP, Mode.LIVE, Mode.STILL -> 0L
+            Mode.MOVING -> if (store.size() >= 2 || overdue) 0L else 2 * 60_000L
         }
         scheduleUpload(due)
     }
@@ -538,12 +549,15 @@ class TrackingService : Service() {
         const val SOS_NOTIFICATION_ID = 4103
         const val SOS_COUNTDOWN_MS = 5_000L
         const val BURST_MS = 3 * 60_000L
-        const val HEARTBEAT_MS = 15 * 60_000L
+        const val HEARTBEAT_MS = 10 * 60_000L
+        const val ACTION_LIVE = "app.nirapod.family.tracking.LIVE"
+        const val EXTRA_SECONDS = "seconds"
         const val ACTION_HEARTBEAT = "app.nirapod.family.tracking.HEARTBEAT"
 
-        fun start(context: Context, action: String? = null) {
+        fun start(context: Context, action: String? = null, seconds: Long? = null) {
             val i = Intent(context, TrackingService::class.java)
             if (action != null) i.action = action
+            if (seconds != null) i.putExtra(EXTRA_SECONDS, seconds)
             ContextCompat.startForegroundService(context, i)
         }
 

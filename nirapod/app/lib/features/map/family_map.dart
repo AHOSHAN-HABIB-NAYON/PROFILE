@@ -11,13 +11,14 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/trust/trust.dart';
 import '../family/data/family_models.dart';
-import '../home/widgets/header_buttons.dart' show initialsOf;
+import '../home/widgets/header_buttons.dart' show avatarColorFor, initialsOf, paintDefaultAvatar;
 import 'map_prefs.dart';
 import 'map_styles.dart';
 
 /// Everything the map needs to draw. Built by the screens; drawn by [FamilyMapView].
 class MapPin {
-  const MapPin({required this.id, required this.name, required this.lat, required this.lng, required this.accuracyM, required this.trust});
+  const MapPin({required this.id, required this.name, required this.lat, required this.lng, required this.accuracyM, required this.trust, this.photoUrl});
+  final String? photoUrl;
   final String id;
   final String name;
   final double lat;
@@ -114,6 +115,28 @@ class _GoogleFamilyMapState extends State<GoogleFamilyMap> with SingleTickerProv
   late final AnimationController _move = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
     ..addListener(() => setState(() {}));
   Map<String, LatLng> _from = {};
+  double _zoom = 14;
+  double _pulse = 0;
+  Timer? _pulseTimer;
+
+  /// About 10 frames a second is smooth enough for a soft pulse and cheap for the map.
+  void _syncPulse() {
+    final want = !widget.data.compact && widget.data.pins.any((p) => p.trust == Trust.live) && !(MediaQuery.maybeDisableAnimationsOf(context) ?? false);
+    if (want && _pulseTimer == null) {
+      _pulseTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+        if (mounted) setState(() => _pulse = (_pulse + 0.06) % 1.0);
+      });
+    } else if (!want && _pulseTimer != null) {
+      _pulseTimer!.cancel();
+      _pulseTimer = null;
+    }
+  }
+
+  /// Ring size in meters for 12-40 screen pixels at the current zoom.
+  double _pulseRadius(double lat) {
+    final metersPerPx = 156543.03392 * math.cos(lat * math.pi / 180) / math.pow(2, _zoom);
+    return (12 + 28 * _pulse) * metersPerPx;
+  }
   Map<String, LatLng> _to = {};
   String _fittedIds = '';
 
@@ -126,6 +149,7 @@ class _GoogleFamilyMapState extends State<GoogleFamilyMap> with SingleTickerProv
 
   @override
   void dispose() {
+    _pulseTimer?.cancel();
     _move.dispose();
     super.dispose();
   }
@@ -149,6 +173,7 @@ class _GoogleFamilyMapState extends State<GoogleFamilyMap> with SingleTickerProv
     if (moved) _move.forward(from: 0);
     _ensureIcons();
     _autoFit();
+    _syncPulse();
     final t = widget.data.trail, o = old.data.trail;
     if (t.length > 1 && (t.length != o.length || t.first != o.first || t.last != o.last)) {
       fitAll([for (final p in t) MapPin(id: '', name: '', lat: p.$1, lng: p.$2, accuracyM: 0, trust: Trust.live)]);
@@ -177,19 +202,31 @@ class _GoogleFamilyMapState extends State<GoogleFamilyMap> with SingleTickerProv
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _syncPulse();
     _ensureIcons();
   }
 
   Future<void> _ensureIcons() async {
     final c = context.colors;
     for (final p in widget.data.pins) {
-      final key = '${p.id}|${p.trust.name}|${p.name}';
+      final key = _iconKey(p);
       if (_icons.containsKey(key)) continue;
       final ring = switch (p.trust) { Trust.live => c.success, Trust.recent => c.warning, _ => c.muted };
-      _icons[key] = await _avatarMarker(initialsOf(p.name), c.primary, c.accent, ring, size: widget.data.compact ? 30 : 44);
+      final height = widget.data.compact ? 34.0 : 52.0;
+      // Avatar pin first (instant), then the photo version when it has loaded.
+      _icons[key] = await _pinMarker(null, avatarColorFor(initialsOf(p.name)), ring, c.primary, height: height);
       if (mounted) setState(() {});
+      if (p.photoUrl != null) {
+        final photo = await _loadPhoto(p.photoUrl!);
+        if (photo != null) {
+          _icons[key] = await _pinMarker(photo, avatarColorFor(initialsOf(p.name)), ring, c.primary, height: height);
+          if (mounted) setState(() {});
+        }
+      }
     }
   }
+
+  String _iconKey(MapPin p) => '${p.id}|${p.trust.name}|${p.name}|${p.photoUrl ?? ''}|${widget.data.compact}';
 
   MapType get _type => switch (widget.data.prefs.kind) {
         MapKind.normal => MapType.normal,
@@ -257,8 +294,8 @@ class _GoogleFamilyMapState extends State<GoogleFamilyMap> with SingleTickerProv
             markerId: MarkerId('m:${p.id}'),
             position: _shown(p),
             zIndexInt: 2,
-            icon: _icons['${p.id}|${p.trust.name}|${p.name}'] ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-            anchor: const Offset(0.5, 0.5),
+            icon: _icons[_iconKey(p)] ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+            anchor: const Offset(0.5, 1.0),
             infoWindow: InfoWindow(title: p.name),
             onTap: () => widget.onPinTap(p.id),
           ),
@@ -294,7 +331,21 @@ class _GoogleFamilyMapState extends State<GoogleFamilyMap> with SingleTickerProv
             endCap: Cap.roundCap,
           ),
       },
+      onCameraMove: (pos) => _zoom = pos.zoom,
       circles: {
+        // Live pulse: a soft ring that grows and fades around everyone updating right now.
+        if (!d.compact && _pulseTimer != null)
+          for (final p in d.pins)
+            if (p.trust == Trust.live)
+              Circle(
+                circleId: CircleId('pulse:${p.id}'),
+                center: _shown(p),
+                radius: _pulseRadius(_shown(p).latitude),
+                fillColor: c.success.withValues(alpha: 0.22 * (1 - _pulse)),
+                strokeColor: c.success.withValues(alpha: 0.5 * (1 - _pulse)),
+                strokeWidth: 1,
+                zIndex: 0,
+              ),
         if (d.prefs.places)
           for (final pl in d.places)
             Circle(
@@ -382,28 +433,56 @@ class _GoogleFamilyMapState extends State<GoogleFamilyMap> with SingleTickerProv
   }
 }
 
-/// Circular avatar marker (gradient with initials, coloured status ring) drawn once per member/state.
-Future<BitmapDescriptor> _avatarMarker(String initials, Color a, Color b, Color ring, {double size = 44}) async {
-  final shown = size;
-  const px = 96.0;
+/// Loads a member photo for drawing into a marker (null on any error or after 10 s).
+Future<ui.Image?> _loadPhoto(String url) async {
+  final done = Completer<ui.Image?>();
+  final stream = NetworkImage(url).resolve(ImageConfiguration.empty);
+  late final ImageStreamListener l;
+  l = ImageStreamListener((info, _) {
+    if (!done.isCompleted) done.complete(info.image);
+    stream.removeListener(l);
+  }, onError: (_, _) {
+    if (!done.isCompleted) done.complete(null);
+    stream.removeListener(l);
+  });
+  stream.addListener(l);
+  return done.future.timeout(const Duration(seconds: 10), onTimeout: () => null);
+}
+
+/// Google-style pin: white teardrop with a shadow, the photo (or default avatar) in the round head, and a
+/// status dot (green live, amber recent, grey stale). The tip is the exact position.
+Future<BitmapDescriptor> _pinMarker(ui.Image? photo, Color avatarBg, Color status, Color brand, {double height = 52}) async {
+  const w = 120.0, h = 150.0, r = 54.0;
+  const head = Offset(w / 2, 58);
   final rec = ui.PictureRecorder();
   final canvas = Canvas(rec);
-  const center = Offset(px / 2, px / 2);
-  canvas.drawCircle(center, px / 2, Paint()..color = Colors.white);
-  canvas.drawCircle(center, px / 2 - 4, Paint()..color = ring);
-  canvas.drawCircle(
-    center,
-    px / 2 - 10,
-    Paint()..shader = ui.Gradient.linear(Offset.zero, const Offset(px, px), [a, b]),
-  );
-  final tp = TextPainter(
-    text: TextSpan(text: initials, style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w700)),
-    textDirection: TextDirection.ltr,
-  )..layout();
-  tp.paint(canvas, center - Offset(tp.width / 2, tp.height / 2));
-  final img = await rec.endRecording().toImage(px.toInt(), px.toInt());
+  final pin = Path()
+    ..addOval(Rect.fromCircle(center: head, radius: r))
+    ..moveTo(head.dx - r * 0.55, head.dy + r * 0.83)
+    ..quadraticBezierTo(w / 2, h - 18, w / 2, h - 4)
+    ..quadraticBezierTo(w / 2, h - 18, head.dx + r * 0.55, head.dy + r * 0.83)
+    ..close();
+  canvas.drawPath(pin.shift(const Offset(0, 3)), Paint()..color = const Color(0x40000000)..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4));
+  canvas.drawPath(pin, Paint()..color = Colors.white);
+  canvas.drawCircle(head, r - 3, Paint()..color = brand..style = PaintingStyle.stroke..strokeWidth = 3);
+  const inner = r - 8;
+  if (photo != null) {
+    canvas.save();
+    canvas.clipPath(Path()..addOval(Rect.fromCircle(center: head, radius: inner)));
+    final src = Rect.fromLTWH(0, 0, photo.width.toDouble(), photo.height.toDouble());
+    final side = math.min(src.width, src.height);
+    final crop = Rect.fromCenter(center: src.center, width: side, height: side);
+    canvas.drawImageRect(photo, crop, Rect.fromCircle(center: head, radius: inner), Paint()..filterQuality = FilterQuality.medium);
+    canvas.restore();
+  } else {
+    paintDefaultAvatar(canvas, head, inner, avatarBg);
+  }
+  final dot = head + const Offset(r * 0.68, r * 0.68);
+  canvas.drawCircle(dot, 15, Paint()..color = Colors.white);
+  canvas.drawCircle(dot, 11, Paint()..color = status);
+  final img = await rec.endRecording().toImage(w.toInt(), h.toInt());
   final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
-  return BitmapDescriptor.bytes(bytes!.buffer.asUint8List(), width: shown, height: shown);
+  return BitmapDescriptor.bytes(bytes!.buffer.asUint8List(), width: height * w / h, height: height);
 }
 
 /// White pill with the distance, drawn in the middle of a member line.

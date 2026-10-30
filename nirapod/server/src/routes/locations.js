@@ -76,6 +76,9 @@ export function deviceOrUserAuth(ctx) {
   });
 }
 
+const LIVE_SECONDS = 300;
+const LIVE_WAKE_EVERY_MS = 90_000;
+
 export function locationsRouter(ctx) {
   const { db, cfg, clock, requireAuth, realtime } = ctx;
   const r = Router();
@@ -202,6 +205,28 @@ export function locationsRouter(ctx) {
       });
     }
     res.set('cache-control', 'no-store').json(out);
+  }));
+
+  // Live watch: an adult has the family map open. Phones that share in the background (children, and adults
+  // who opted in) send fast updates for a few minutes. Silent (the sharing notice is already visible); at most
+  // one wake per family every 90 s, whoever is watching.
+  const liveWoken = new Map();
+  r.post('/families/:familyId/live-watch', requireAuth, limiter({ windowMs: 60_000, limit: 10 }), ah(async (req, res) => {
+    const f = await familyForMember(db, req.params.familyId, req.user.id);
+    if (!isAdultRole(f.my_role) || req.session.isChildDevice) throw new ApiError('FORBIDDEN');
+    const now = clock.now().getTime();
+    const last = liveWoken.get(f.id) || 0;
+    if (now - last < LIVE_WAKE_EVERY_MS) return res.status(202).json({ live_seconds: LIVE_SECONDS, woken: 0 });
+    liveWoken.set(f.id, now);
+    const rows = await db('child_devices as d')
+      .join('family_members as m', function join() { this.on('m.user_id', 'd.user_id').andOn('m.family_id', 'd.family_id'); })
+      .where('d.family_id', f.id).whereNull('d.revoked_at').whereNull('m.left_at').whereNotNull('d.upload_key_hash')
+      .whereNot('d.user_id', req.user.id)
+      .where(function sharing() { this.where('m.role', 'child').orWhere('m.sharing_status', 'active'); })
+      .distinct('d.user_id');
+    let woken = 0;
+    try { woken = await ctx.pusher?.wakeUsers(rows.map((x) => x.user_id), { type: 'live', seconds: String(LIVE_SECONDS) }) ?? 0; } catch { /* push optional */ }
+    res.status(202).json({ live_seconds: LIVE_SECONDS, woken });
   }));
 
   // "Request update now": wakes the child's location service (push in Phase 5, socket now); the child sees a notice.

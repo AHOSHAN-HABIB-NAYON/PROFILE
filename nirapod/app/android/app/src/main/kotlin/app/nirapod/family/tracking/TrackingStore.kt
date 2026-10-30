@@ -41,6 +41,11 @@ class TrackingStore(context: Context) {
         get() = prefs.getLong("burst_until", 0L)
         set(v) = prefs.edit().putLong("burst_until", v).apply()
 
+    /** Live watch: someone in the family has the map open; fast updates until this time (epoch ms). */
+    var liveUntil: Long
+        get() = prefs.getLong("live_until", 0L)
+        set(v) = prefs.edit().putLong("live_until", v).apply()
+
     /** Localized texts from the app (the selected language). */
     fun text(key: String, fallback: String): String = prefs.getString("t_$key", null) ?: fallback
     fun setTexts(map: Map<String, String>) {

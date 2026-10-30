@@ -290,7 +290,7 @@ class _RoutesState extends ConsumerState<_Routes> {
                     prefs: ref.watch(mapPrefsProvider),
                     trail: [for (final p in value.points) (p.lat, p.lng)],
                     pins: [
-                      MapPin(id: member.id, name: member.name, lat: value.points.last.lat, lng: value.points.last.lng, accuracyM: value.points.last.accuracyM, trust: Trust.stale),
+                      MapPin(id: member.id, name: member.name, photoUrl: member.avatarThumbUrl, lat: value.points.last.lat, lng: value.points.last.lng, accuracyM: value.points.last.accuracyM, trust: Trust.stale),
                     ],
                   ),
                   onReady: (_) {},

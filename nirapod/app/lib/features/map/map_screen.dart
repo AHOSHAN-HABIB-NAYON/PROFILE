@@ -26,6 +26,7 @@ import '../home/home_screen.dart' show pinsFor;
 import '../safety/data/safety_repo.dart';
 import '../home/widgets/profile_row.dart' show homeClockProvider;
 import 'family_map.dart';
+import 'live_watch.dart';
 import 'map_prefs.dart';
 
 /// Own position (no extra permission: uses the while-in-use location permission from onboarding).
@@ -111,7 +112,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       final p = _follow == null ? null : next.value?[_follow!]?.point;
       if (p != null) _map?.focus(p.lat, p.lng);
     });
-    return Scaffold(
+    return LiveWatch(child: Scaffold(
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -226,7 +227,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ),
         ],
       ),
-    );
+    ));
   }
 
   Future<void> _layers(BuildContext context, Strings s) => showModalBottomSheet<void>(

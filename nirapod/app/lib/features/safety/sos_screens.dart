@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:async/async.dart' show StreamGroup;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/prefs/prefs.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -325,11 +326,22 @@ class SosAlertHost extends ConsumerStatefulWidget {
 }
 
 class _SosAlertHostState extends ConsumerState<SosAlertHost> {
-  final _dismissed = <String>{};
+  static const _dismissedKey = 'sos_dismissed';
+
+  /// SOS the user already closed on this phone (kept across app starts, so it does not pop up again).
+  late final Set<String> _dismissed = {...?ref.read(prefsProvider).getStringList(_dismissedKey)};
+
+  void _rememberDismissed(String id) {
+    _dismissed.add(id);
+    final list = _dismissed.toList();
+    unawaited(ref.read(prefsProvider).setStringList(_dismissedKey, list.length > 50 ? list.sublist(list.length - 50) : list));
+  }
+
   final _acked = <String>{};
   SosEvent? _sos;
   StreamSubscription<RealtimeEvent>? _sub;
   StreamSubscription<PushEvent>? _pushSub;
+  StreamSubscription<PushEvent>? _pushSub2;
   String? _forUser;
 
   bool get _adult {
@@ -349,18 +361,21 @@ class _SosAlertHostState extends ConsumerState<SosAlertHost> {
     // A push while the app is open (socket may be down) or a tap on an SOS notification: load open SOS.
     _pushSub?.cancel();
     final push = ref.read(pushServiceProvider);
-    _pushSub = StreamGroup.merge([push.foreground, push.opened]).where((e) => e.type == 'sos').listen((_) => _loadOpen());
+    _pushSub = push.foreground.where((e) => e.type == 'sos').listen((_) => _loadOpen());
+    // Tapping an SOS notification always opens it, even if it was closed before.
+    _pushSub2?.cancel();
+    _pushSub2 = push.opened.where((e) => e.type == 'sos').listen((_) => _loadOpen(force: true));
     unawaited(_loadOpen());
   }
 
-  Future<void> _loadOpen() async {
+  Future<void> _loadOpen({bool force = false}) async {
     final fid = ref.read(familyIdProvider);
     if (fid == null) return;
     try {
       final open = await ref.read(safetyRepoProvider).openSos(fid);
       final s = ref.read(sessionControllerProvider);
       final me = s is SignedIn ? s.user.id : '';
-      final first = open.where((e) => e.memberId != me && !_dismissed.contains(e.id)).firstOrNull;
+      final first = open.where((e) => e.memberId != me && (force || !_dismissed.contains(e.id))).firstOrNull;
       if (first != null && mounted) _show(first);
     } catch (_) {}
   }
@@ -387,6 +402,7 @@ class _SosAlertHostState extends ConsumerState<SosAlertHost> {
   void dispose() {
     _sub?.cancel();
     _pushSub?.cancel();
+    _pushSub2?.cancel();
     super.dispose();
   }
 
@@ -404,7 +420,7 @@ class _SosAlertHostState extends ConsumerState<SosAlertHost> {
           child: _SosAlert(
             sos: sos,
             onClose: () => setState(() {
-              _dismissed.add(sos.id);
+              _rememberDismissed(sos.id);
               _sos = null;
             }),
           ),

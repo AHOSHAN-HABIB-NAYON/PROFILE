@@ -188,15 +188,10 @@ class _RingAvatarState extends State<RingAvatar> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     final c = context.colors;
     final inner = widget.size - 12;
-    final initials = Container(
-      width: inner,
-      height: inner,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(colors: [c.primary, c.accent], begin: Alignment.topLeft, end: Alignment.bottomRight),
-      ),
-      child: Text(widget.initials, style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: inner * 0.36)),
+    // No photo: a person avatar on a colour picked from the name (stable per person), like Google accounts.
+    final initials = Semantics(
+      label: widget.initials,
+      child: CustomPaint(size: Size(inner, inner), painter: DefaultAvatarPainter(avatarColorFor(widget.initials))),
     );
     final photo = widget.url == null
         ? initials
@@ -229,4 +224,40 @@ String initialsOf(String? name) {
   final first = parts.first.characters.first;
   final last = parts.length > 1 ? parts.last.characters.first : '';
   return (first + last).toUpperCase();
+}
+
+/// Calm avatar colours (white figure stays readable on each).
+const _avatarPalette = [
+  Color(0xFF0F8A6B), Color(0xFF2F6FDE), Color(0xFF8E5BD8), Color(0xFFD8650F),
+  Color(0xFFC2416B), Color(0xFF0E8FA6), Color(0xFF5E7D1E), Color(0xFF6B5A4E),
+];
+
+/// Stable colour for a person (same name or initials -> same colour).
+Color avatarColorFor(String seed) {
+  var h = 0;
+  for (final u in seed.codeUnits) {
+    h = (h * 31 + u) & 0x7fffffff;
+  }
+  return _avatarPalette[h % _avatarPalette.length];
+}
+
+/// Draws the default avatar (head and shoulders) inside a circle of [radius] at [center].
+void paintDefaultAvatar(Canvas canvas, Offset center, double radius, Color bg) {
+  canvas.save();
+  canvas.clipPath(Path()..addOval(Rect.fromCircle(center: center, radius: radius)));
+  canvas.drawCircle(center, radius, Paint()..color = bg);
+  final white = Paint()..color = const Color(0xF2FFFFFF);
+  canvas.drawCircle(center + Offset(0, -radius * 0.18), radius * 0.34, white);
+  final body = Rect.fromCenter(center: center + Offset(0, radius * 0.86), width: radius * 1.5, height: radius * 1.2);
+  canvas.drawOval(body, white);
+  canvas.restore();
+}
+
+class DefaultAvatarPainter extends CustomPainter {
+  const DefaultAvatarPainter(this.bg);
+  final Color bg;
+  @override
+  void paint(Canvas canvas, Size size) => paintDefaultAvatar(canvas, size.center(Offset.zero), size.shortestSide / 2, bg);
+  @override
+  bool shouldRepaint(DefaultAvatarPainter old) => old.bg != bg;
 }

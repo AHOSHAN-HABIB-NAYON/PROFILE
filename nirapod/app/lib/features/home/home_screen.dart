@@ -27,6 +27,7 @@ import '../family/data/family_repo.dart';
 import '../family/data/realtime.dart';
 import '../family/data/sharing.dart';
 import '../map/family_map.dart';
+import '../map/live_watch.dart';
 import '../map/map_prefs.dart';
 import 'widgets/dialogs.dart';
 import 'widgets/header_buttons.dart';
@@ -39,7 +40,7 @@ final unreadAlertsProvider = Provider<int>((ref) => ref.watch(unreadAlertsCountP
 List<MapPin> pinsFor(Family family, Map<String, MemberLive> live, DateTime now) => [
       for (final m in family.members)
         if (live[m.id]?.point case final p?)
-          MapPin(id: m.id, name: m.name, lat: p.lat, lng: p.lng, accuracyM: p.accuracyM, trust: trustFor(lastUpdate: live[m.id]!.lastUpdateAt, now: now)),
+          MapPin(id: m.id, name: m.name, photoUrl: m.avatarThumbUrl, lat: p.lat, lng: p.lng, accuracyM: p.accuracyM, trust: trustFor(lastUpdate: live[m.id]!.lastUpdateAt, now: now)),
     ];
 
 /// Adult Home: header (logo + name; theme toggle, language flag, bell), profile row, sharing consent card,
@@ -205,10 +206,12 @@ class _FamilyBody extends ConsumerWidget {
               child: SizedBox(
                 height: 168,
                 child: AbsorbPointer(
-                  child: FamilyMapView(
-                    data: FamilyMapData(pins: pins, prefs: const MapPrefs(kind: MapKind.normal), compact: true, connectFromId: user.id),
-                    onReady: (_) {},
-                    onPinTap: (_) {},
+                  child: LiveWatch(
+                    child: FamilyMapView(
+                      data: FamilyMapData(pins: pins, prefs: const MapPrefs(kind: MapKind.normal), compact: true, connectFromId: user.id),
+                      onReady: (_) {},
+                      onPinTap: (_) {},
+                    ),
                   ),
                 ),
               ),

@@ -56,6 +56,20 @@ describe('device upload key', () => {
     await api().post('/api/v1/locations').set(deviceAuth(key, devId)).send({ points: [pt()] }).expect(401);
   });
 
+  test('live watch: adults can ask background phones for fast updates; children cannot; throttled per family', async () => {
+    const { parent, fam, child } = await setup();
+    await api().post('/api/v1/devices/upload-key').set(bearer(child)).expect(201);
+    const woke = [];
+    t.app.locals.ctx.pusher = { wakeUsers: async (ids, data) => { woke.push([ids.length, data.type]); return ids.length; } };
+    const r1 = (await api().post(`/api/v1/families/${fam.id}/live-watch`).set(bearer(parent)).expect(202)).body;
+    assert.equal(r1.live_seconds, 300);
+    assert.deepEqual(woke, [[1, 'live']]);
+    await api().post(`/api/v1/families/${fam.id}/live-watch`).set(bearer(parent)).expect(202);
+    assert.equal(woke.length, 1); // throttled
+    await api().post(`/api/v1/families/${fam.id}/live-watch`).set(bearer(child)).expect(403);
+    delete t.app.locals.ctx.pusher;
+  });
+
   test('removing the child invalidates the key', async () => {
     const { parent, fam, child, deviceId } = await setup();
     const key = (await api().post('/api/v1/devices/upload-key').set(bearer(child)).expect(201)).body.upload_key;

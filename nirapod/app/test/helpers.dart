@@ -15,6 +15,7 @@ import 'package:nirapod/core/theme/app_theme.dart';
 import 'package:nirapod/core/tz/tz_provider.dart';
 import 'package:nirapod/core/tz/tz_utils.dart';
 import 'package:nirapod/features/map/family_map.dart';
+import 'package:nirapod/features/map/live_watch.dart';
 import 'package:nirapod/core/tracking/tracking_bridge.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -38,6 +39,7 @@ Future<List<Override>> overrides({Map<String, Object> prefs = const {}, bool leg
     // No installed-app version in tests: the update gate stays out of the way.
     if (appVersion) appVersionProvider.overrideWith((ref) => Completer<String>().future),
     familyMapBuilderProvider.overrideWithValue((data, onReady, onPinTap) => const ColoredBox(color: Color(0xFFDDE7E3))),
+    liveWatchPingProvider.overrideWithValue((_) async {}),
     if (legalView) legalViewProvider.overrideWithValue((uri) => const SizedBox(key: Key('legal_view'))),
   ];
 }
