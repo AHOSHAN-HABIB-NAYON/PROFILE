@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../onboarding/data/permission_gateway.dart';
+import '../../../core/tracking/tracking_bridge.dart';
 import '../data/sharing.dart' show adultBackgroundProvider;
 import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
@@ -241,14 +242,26 @@ class _BackgroundSwitchState extends ConsumerState<_BackgroundSwitch> {
     final s = widget.strings;
     final t = Theme.of(context).textTheme;
     final on = ref.read(adultBackgroundProvider).isOn;
-    return SwitchListTile(
-      key: const Key('bg_sharing_switch'),
-      contentPadding: EdgeInsets.zero,
-      value: on,
-      onChanged: _busy ? null : _toggle,
-      title: Text(s.t('family.bg_title'), style: t.bodyLarge),
-      subtitle: Text(s.t('family.bg_body'), style: t.bodySmall),
-    );
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      SwitchListTile(
+        key: const Key('bg_sharing_switch'),
+        contentPadding: EdgeInsets.zero,
+        value: on,
+        onChanged: _busy ? null : _toggle,
+        title: Text(s.t('family.bg_title'), style: t.bodyLarge),
+        subtitle: Text(s.t('family.bg_body'), style: t.bodySmall),
+      ),
+      // Adults decide for themselves: the phone's settings can hide the quiet sharing notice.
+      if (on)
+        TextButton.icon(
+          key: const Key('bg_hide_notice'),
+          style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),
+          onPressed: () => ref.read(trackingBridgeProvider).openSharingNotificationSettings().catchError((Object _) {}),
+          icon: AppIcon(AppIcons.eyeOff, size: 18, color: context.colors.primaryText),
+          label: Text(s.t('family.bg_hide')),
+        ),
+      if (on) Text(s.t('family.bg_hide_hint'), style: t.bodySmall!.copyWith(color: context.colors.muted)),
+    ]);
   }
 }
 

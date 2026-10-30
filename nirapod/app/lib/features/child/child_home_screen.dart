@@ -27,7 +27,8 @@ import '../family/data/family_repo.dart';
 import '../home/widgets/header_buttons.dart';
 import '../home/widgets/profile_row.dart' show homeClockProvider;
 import '../map/family_map.dart';
-import '../map/map_screen.dart' show myPositionProvider, nearbyProvider;
+import '../map/map_prefs.dart';
+import '../map/map_screen.dart' show MapControlButton, MapControlGroup, myPositionProvider, nearbyProvider;
 import '../safety/data/safety_repo.dart';
 
 /// Child home (no bottom bar, no bell, no log out): sharing status, a small "You are here" map with nearby
@@ -176,11 +177,11 @@ class _ChildHomeScreenState extends ConsumerState<ChildHomeScreen> {
                   ),
                 ],
                 const SizedBox(height: Space.sm),
-                // "You are here" mini map.
+                // "You are here" map with the family places; tap "Big map" for full screen.
                 ClipRRect(
                   borderRadius: BorderRadius.circular(Radii.cardLarge),
                   child: SizedBox(
-                    height: 150,
+                    height: 240,
                     child: Stack(children: [
                       Positioned.fill(
                         child: me == null
@@ -190,10 +191,12 @@ class _ChildHomeScreenState extends ConsumerState<ChildHomeScreen> {
                               )
                             : mapBuilder(
                                 FamilyMapData(
-                                  compact: true,
+                                  embedded: true,
                                   nearby: nearby,
+                                  places: childPlaces(ref),
+                                  prefs: const MapPrefs(kind: MapKind.normal),
                                   pins: [
-                                    MapPin(id: user?.id ?? 'me', name: user?.name ?? '', lat: me.latitude, lng: me.longitude, accuracyM: me.accuracy, trust: Trust.live),
+                                    MapPin(id: user?.id ?? 'me', name: user?.name ?? '', photoUrl: user?.avatarThumbUrl, lat: me.latitude, lng: me.longitude, accuracyM: me.accuracy, trust: Trust.live),
                                   ],
                                 ),
                                 (m) {
@@ -216,6 +219,17 @@ class _ChildHomeScreenState extends ConsumerState<ChildHomeScreen> {
                           ]),
                         ),
                       ),
+                      if (me != null)
+                        PositionedDirectional(
+                          end: Space.xs,
+                          bottom: Space.xs,
+                          child: FilledButton.icon(
+                            key: const Key('child_big_map'),
+                            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const ChildMapScreen())),
+                            icon: AppIcon(AppIcons.map, size: 18, color: c.onPrimaryFill),
+                            label: Text(s.t('kid.big_map')),
+                          ),
+                        ),
                     ]),
                   ),
                 ),
@@ -400,4 +414,84 @@ class WhoCanSeeMeScreen extends ConsumerWidget {
   }
 
   String _role(Strings s, FamilyMember m) => m.relationship ?? (m.role == 'parent' ? s.t('home.role_parent') : s.t('home.role_guardian'));
+}
+
+/// Family places (Home, School...) drawn on a child's map.
+List<MapPlace> childPlaces(WidgetRef ref) => [
+      for (final p in ref.watch(placesProvider).value?.places ?? const <Place>[])
+        MapPlace(id: p.id, name: p.name, lat: p.lat, lng: p.lng, radiusM: p.radiusM),
+    ];
+
+/// Full-screen map for a child: where I am, my places, nearby places; road map or satellite.
+class ChildMapScreen extends ConsumerStatefulWidget {
+  const ChildMapScreen({super.key});
+  @override
+  ConsumerState<ChildMapScreen> createState() => _ChildMapScreenState();
+}
+
+class _ChildMapScreenState extends ConsumerState<ChildMapScreen> {
+  FamilyMapController? _map;
+  bool _satellite = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = ref.watch(screenStringsProvider('child_home'));
+    final c = context.colors;
+    final session = ref.watch(sessionControllerProvider);
+    final user = session is SignedIn ? session.user : null;
+    final me = ref.watch(myPositionProvider).value;
+    final nearby = me == null ? const <NearbyPlace>[] : (ref.watch(nearbyProvider((me.latitude, me.longitude))).value ?? const <NearbyPlace>[]);
+    return Scaffold(
+      body: Stack(fit: StackFit.expand, children: [
+        if (me == null)
+          ColoredBox(color: c.background, child: Center(child: Text(s.t('kid.no_map'))))
+        else
+          ref.watch(familyMapBuilderProvider)(
+            FamilyMapData(
+              nearby: nearby,
+              places: childPlaces(ref),
+              prefs: MapPrefs(kind: _satellite ? MapKind.hybrid : MapKind.normal),
+              pins: [
+                MapPin(id: user?.id ?? 'me', name: user?.name ?? '', photoUrl: user?.avatarThumbUrl, lat: me.latitude, lng: me.longitude, accuracyM: me.accuracy, trust: Trust.live),
+              ],
+            ),
+            (m) {
+              _map = m;
+              unawaited(m.focus(me.latitude, me.longitude, zoom: 16));
+            },
+            (_) {},
+          ),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(Space.sm),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Material(
+                color: c.surface,
+                shape: const CircleBorder(),
+                elevation: 2,
+                child: IconButton(
+                  key: const Key('child_map_back'),
+                  tooltip: s.t('common.back'),
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: AppIcon(AppIcons.arrowLeft, color: c.text),
+                ),
+              ),
+              const Spacer(),
+              MapControlGroup(children: [
+                MapControlButton(icon: AppIcons.layers, label: s.t('map.type'), onTap: () => setState(() => _satellite = !_satellite)),
+                MapControlButton(
+                  icon: AppIcons.recenter,
+                  label: s.t('map.recenter'),
+                  primary: true,
+                  onTap: () {
+                    if (me != null) _map?.focus(me.latitude, me.longitude, zoom: 16);
+                  },
+                ),
+              ]),
+            ]),
+          ),
+        ),
+      ]),
+    );
+  }
 }

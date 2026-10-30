@@ -34,9 +34,15 @@ final myPositionProvider = FutureProvider.autoDispose<Position?>((ref) async {
   try {
     final p = await Geolocator.checkPermission();
     if (p == LocationPermission.denied || p == LocationPermission.deniedForever) return null;
-    return await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 15)),
-    );
+    // Last known position first (instant, works indoors), then a fresh fix when the GPS answers in time.
+    final last = await Geolocator.getLastKnownPosition().catchError((Object _) => null);
+    try {
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 20)),
+      );
+    } catch (_) {
+      return last;
+    }
   } catch (_) {
     return null;
   }

@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:geolocator/geolocator.dart' show Position;
 import 'package:nirapod/app.dart';
 import 'package:nirapod/core/prefs/prefs.dart';
 import 'package:nirapod/core/session/session.dart';
 import 'package:nirapod/features/places/places_screen.dart';
+import 'package:nirapod/features/map/map_screen.dart' show myPositionProvider;
 import 'package:nirapod/features/safety/data/safety_repo.dart';
 import 'package:nirapod/features/safety/sos_screens.dart';
 import 'package:nirapod/nav/router.dart';
@@ -71,17 +73,20 @@ class FakeSafety implements SafetyRepo {
   dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
 }
 
-Future<(FakeSafety, dynamic)> pumpRouted(WidgetTester t, String id, {AuthUser user = child, FakeSafety? fake, Map<String, Object> prefs = const {}, PlaceSearch? search}) async {
+Future<(FakeSafety, dynamic)> pumpRouted(WidgetTester t, String id, {AuthUser user = child, FakeSafety? fake, Map<String, Object> prefs = const {}, PlaceSearch? search, Position? at}) async {
   setScreen(t, const Size(412, 915));
   final f = fake ?? FakeSafety();
   final router = createRouter(initialLocation: locationFor(id));
+  final base = await phase2Overrides(user: user, prefs: prefs);
   final List<Override> o = [
-    ...await phase2Overrides(user: user, prefs: prefs),
+    // A test position replaces the default "no position" override.
+    ...[for (final x in base) if (at == null || !'$x'.contains('Position')) x],
     routerProvider.overrideWithValue(router),
     safetyRepoProvider.overrideWithValue(f),
     sosPositionReaderProvider.overrideWithValue(() async => (23.81, 90.41, 10.0)),
     pickerMapBuilderProvider.overrideWithValue((lat, lng, r, onCenter) => const ColoredBox(color: Color(0xFFDDE7E3))),
     if (search != null) placeSearchProvider.overrideWithValue(search),
+    if (at != null) myPositionProvider.overrideWith((ref) async => at),
   ];
   await t.pumpWidget(ProviderScope(overrides: o, child: const NirapodApp()));
   for (var i = 0; i < 10; i++) {
@@ -177,6 +182,20 @@ void main() {
       await t.pump(const Duration(milliseconds: 100));
     }
     expect(find.byKey(const Key('place_search')), findsOneWidget);
+  });
+
+  testWidgets('child home: map shows where I am and opens a big map', (t) async {
+    final at = Position(latitude: 23.81, longitude: 90.41, timestamp: DateTime(2026), accuracy: 12, altitude: 0, altitudeAccuracy: 0,
+        heading: 0, headingAccuracy: 0, speed: 0, speedAccuracy: 0);
+    await pumpRouted(t, 'child_home', at: at);
+    await t.scrollUntilVisible(find.byKey(const Key('child_big_map')), 200);
+    expect(find.text('You are here'), findsOneWidget);
+    await t.tap(find.byKey(const Key('child_big_map')));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('child_map_back')), findsOneWidget);
+    await t.tap(find.byKey(const Key('child_map_back')));
+    await t.pumpAndSettle();
+    expect(find.byKey(const Key('child_big_map')), findsOneWidget);
   });
 
   testWidgets('remember me: email is prefilled when remembered', (t) async {

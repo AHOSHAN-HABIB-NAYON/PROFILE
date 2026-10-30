@@ -7,6 +7,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 abstract class TrackingBridge {
   Future<bool> start({required String apiBase, required String uploadKey, required String deviceId, required Map<String, String> texts});
   Future<void> stop();
+
+  /// Opens the phone's settings for the "Location sharing is on" notification (the user may hide it there).
+  Future<void> openSharingNotificationSettings();
   Future<void> setTrip(DateTime? until);
   Future<bool> requestNow();
   Future<Map<String, Object?>> status();
@@ -28,6 +31,9 @@ class MethodChannelTrackingBridge implements TrackingBridge {
 
   @override
   Future<void> stop() => _m.invokeMethod<bool>('stop');
+
+  @override
+  Future<void> openSharingNotificationSettings() => _m.invokeMethod<bool>('openSharingNotificationSettings');
 
   @override
   Future<void> setTrip(DateTime? until) => _m.invokeMethod<bool>('setTrip', {'untilMs': until?.millisecondsSinceEpoch ?? 0});
@@ -61,6 +67,9 @@ class NoopTrackingBridge implements TrackingBridge {
 
   @override
   Future<void> stop() async => calls.add('stop');
+
+  @override
+  Future<void> openSharingNotificationSettings() async => calls.add('notif_settings');
   @override
   Future<void> setTrip(DateTime? until) async => calls.add('trip');
   @override

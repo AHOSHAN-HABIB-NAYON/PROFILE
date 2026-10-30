@@ -188,7 +188,8 @@
       "walk",
       "places",
       "home",
-      "permneed"
+      "permneed",
+      "map"
     ],
     "places": [
       "common",
@@ -3994,6 +3995,18 @@
     "family.bg_denied": {
       "placeholders": [],
       "en": "Background location is not allowed. Open Settings > Location and choose \"Allow all the time\"."
+    },
+    "family.bg_hide": {
+      "placeholders": [],
+      "en": "Hide the notification"
+    },
+    "family.bg_hide_hint": {
+      "placeholders": [],
+      "en": "Opens your phone's settings: turn off \"Location sharing\". Sharing keeps working; your phone still lists Nirapod as running."
+    },
+    "kid.big_map": {
+      "placeholders": [],
+      "en": "Big map"
     }
   }
 }

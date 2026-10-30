@@ -490,9 +490,14 @@ class TrackingService : Service() {
     private fun createChannels() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        // Quietest level: no sound, no status-bar icon, folded at the bottom of the shade. (A channel's
+        // importance cannot change after creation, so the old louder channel is replaced.)
+        nm.deleteNotificationChannel(OLD_CHANNEL_SHARING)
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_SHARING, store.text("channel_sharing", "Location sharing"), NotificationManager.IMPORTANCE_LOW).apply {
+            NotificationChannel(CHANNEL_SHARING, store.text("channel_sharing", "Location sharing"), NotificationManager.IMPORTANCE_MIN).apply {
                 setShowBadge(false)
+                setSound(null, null)
+                enableVibration(false)
             }
         )
         nm.createNotificationChannel(
@@ -516,6 +521,9 @@ class TrackingService : Service() {
         .setContentText(store.text("sharing_body", "Your family can see where you are."))
         .setOngoing(true)
         .setOnlyAlertOnce(true)
+        .setSilent(true)
+        .setShowWhen(false)
+        .setPriority(NotificationCompat.PRIORITY_MIN)
         .setCategory(NotificationCompat.CATEGORY_SERVICE)
         .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
         .setContentIntent(openAppIntent())
@@ -536,7 +544,8 @@ class TrackingService : Service() {
     }
 
     companion object {
-        const val CHANNEL_SHARING = "nirapod_sharing"
+        const val CHANNEL_SHARING = "nirapod_sharing_quiet"
+        const val OLD_CHANNEL_SHARING = "nirapod_sharing"
         const val CHANNEL_REQUESTS = "nirapod_requests"
         const val NOTIFICATION_ID = 4101
         const val REQUEST_NOTIFICATION_ID = 4102

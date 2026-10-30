@@ -851,5 +851,8 @@
   "family.bg_disclosure_title": "Kongsi lokasi anda di latar?",
   "family.bg_disclosure": "Nirapod mengambil lokasi anda untuk dikongsi dengan ahli keluarga anda, walaupun aplikasi ditutup atau tidak digunakan. Hanya ahli keluarga anda boleh melihatnya. Ia tidak akan dijual atau digunakan untuk iklan. Anda boleh mematikannya di sini pada bila-bila masa.",
   "family.bg_allow_all": "Pada skrin seterusnya, pilih \"Benarkan sepanjang masa\".",
-  "family.bg_denied": "Lokasi latar tidak dibenarkan. Buka Tetapan > Lokasi dan pilih \"Benarkan sepanjang masa\"."
+  "family.bg_denied": "Lokasi latar tidak dibenarkan. Buka Tetapan > Lokasi dan pilih \"Benarkan sepanjang masa\".",
+  "family.bg_hide": "Sembunyikan pemberitahuan",
+  "family.bg_hide_hint": "Tetapan telefon akan dibuka: matikan \"Perkongsian lokasi\". Perkongsian terus berjalan; telefon masih menyenaraikan Nirapod sebagai aplikasi yang aktif.",
+  "kid.big_map": "Peta besar"
 }

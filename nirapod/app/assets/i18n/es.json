@@ -851,5 +851,8 @@
   "family.bg_disclosure_title": "¿Compartir tu ubicación en segundo plano?",
   "family.bg_disclosure": "Nirapod recoge tu ubicación para compartirla con tu círculo familiar, incluso cuando la app está cerrada o no se usa. Solo tu círculo familiar puede verla. Nunca se vende ni se usa para anuncios. Puedes desactivarlo aquí cuando quieras.",
   "family.bg_allow_all": "En la siguiente pantalla elige \"Permitir todo el tiempo\".",
-  "family.bg_denied": "La ubicación en segundo plano no está permitida. Abre Ajustes > Ubicación y elige \"Permitir todo el tiempo\"."
+  "family.bg_denied": "La ubicación en segundo plano no está permitida. Abre Ajustes > Ubicación y elige \"Permitir todo el tiempo\".",
+  "family.bg_hide": "Ocultar la notificación",
+  "family.bg_hide_hint": "Abre los ajustes del teléfono: desactiva \"Compartir ubicación\". Se sigue compartiendo; el teléfono sigue mostrando Nirapod como app en ejecución.",
+  "kid.big_map": "Mapa grande"
 }

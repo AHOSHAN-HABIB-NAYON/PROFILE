@@ -851,5 +851,8 @@
   "family.bg_disclosure_title": "Bagikan lokasi Anda di latar belakang?",
   "family.bg_disclosure": "Nirapod mengumpulkan lokasi Anda untuk dibagikan kepada lingkaran keluarga Anda, bahkan saat aplikasi ditutup atau tidak digunakan. Hanya lingkaran keluarga Anda yang dapat melihatnya. Tidak pernah dijual atau dipakai untuk iklan. Anda bisa mematikannya di sini kapan saja.",
   "family.bg_allow_all": "Di layar berikutnya pilih \"Izinkan sepanjang waktu\".",
-  "family.bg_denied": "Lokasi latar belakang tidak diizinkan. Buka Setelan > Lokasi lalu pilih \"Izinkan sepanjang waktu\"."
+  "family.bg_denied": "Lokasi latar belakang tidak diizinkan. Buka Setelan > Lokasi lalu pilih \"Izinkan sepanjang waktu\".",
+  "family.bg_hide": "Sembunyikan notifikasi",
+  "family.bg_hide_hint": "Membuka setelan ponsel: matikan \"Berbagi lokasi\". Berbagi tetap berjalan; ponsel tetap menampilkan Nirapod sebagai aplikasi yang berjalan.",
+  "kid.big_map": "Peta besar"
 }

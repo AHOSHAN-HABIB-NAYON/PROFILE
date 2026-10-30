@@ -73,6 +73,24 @@ class MainActivity : FlutterActivity() {
                         if (store.enabled) TrackingService.start(applicationContext, TrackingService.ACTION_REQUEST_NOW)
                         result.success(store.enabled)
                     }
+                    // Adults: open the phone's own settings for the sharing notification, so they can hide it themselves.
+                    "openSharingNotificationSettings" -> {
+                        val i = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                            val nm = getSystemService(android.app.NotificationManager::class.java)
+                            if (nm.getNotificationChannel(TrackingService.CHANNEL_SHARING) != null) {
+                                Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+                                    .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
+                                    .putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, TrackingService.CHANNEL_SHARING)
+                            } else {
+                                Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                    .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, packageName)
+                            }
+                        } else {
+                            Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.parse("package:$packageName"))
+                        }
+                        startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        result.success(true)
+                    }
                     "status" -> result.success(
                         mapOf("enabled" to store.enabled, "hasKey" to store.uploadKey.isNotEmpty(), "queued" to store.size())
                     )
