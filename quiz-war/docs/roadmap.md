@@ -159,6 +159,13 @@ Text chat stays free.
 
 ---
 
+## Google Play policy notes (from the policy email, Oct 2026)
+- **Trader status:** declare it in Play Console from Nov 2026. The owner sells premium, so declare "Trader" (contact info is shown to EU users only).
+- **Japan:** before selling anything, complete Japan's payments authorization (deadline Dec 1, 2026), or remove Japan from the production countries. Otherwise payouts are held globally.
+- **App quality:** memory and code-optimization thresholds apply from Feb 2027. Keep the app light and check Android vitals each release.
+- **Subscriptions:** any eligibility-based discount (e.g. a student plan) must clearly disclose its criteria, the verification process and the price after eligibility ends.
+- Not used by our apps: Local network, Contacts, Location, All files access, Accessibility, SMS/Call log, crypto, AppFunctions.
+
 ## Play Console updates needed along the way
 - **Data safety:**
   - Audio (voice chat/messages)
