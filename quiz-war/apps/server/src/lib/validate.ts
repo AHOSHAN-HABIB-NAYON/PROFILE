@@ -1,7 +1,7 @@
-import type { ZodType, ZodTypeDef } from 'zod';
+import type { ZodType } from 'zod';
 import { badRequest } from './errors';
 
-export function parse<T>(schema: ZodType<T, ZodTypeDef, unknown>, data: unknown): T {
+export function parse<T>(schema: ZodType<T, any>, data: unknown): T {
   const r = schema.safeParse(data);
   if (!r.success) {
     const first = r.error.issues[0];

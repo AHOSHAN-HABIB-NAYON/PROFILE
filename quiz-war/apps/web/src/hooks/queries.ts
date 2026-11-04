@@ -19,6 +19,8 @@ export interface Category {
   /** Home "Collections" set (e.g. previous-year questions), not a normal category. */
   isCollection?: boolean;
   isPremium?: boolean;
+  /** Coins that unlock a premium collection for good (0 = premium only). */
+  unlockCoins?: number;
 }
 export const useCategories = () => useQuery({ queryKey: ['categories'], queryFn: async () => (await api<{ items: Category[] }>('/categories?collections=1', { auth: false })).items, staleTime: 5 * 60_000 });
 

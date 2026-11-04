@@ -646,10 +646,10 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     if (q.user) {
       const n = normalizeUid(q.user);
       const row = n ? await queryOne<{ id: number }>('SELECT id FROM users WHERE uid = ?', [n]) : /^\d+$/.test(q.user) ? { id: Number(q.user) } : null;
-      if (!row) return { items: [], retentionDays: ctx.settings.app().chatRetention.days, retention: ctx.settings.app().chatRetention, voice: ctx.settings.app().chatVoiceEnabled, enabled: ctx.settings.app().chatEnabled };
+      if (!row) return { items: [], retentionDays: ctx.settings.app().chatRetention.days, retention: ctx.settings.app().chatRetention, voice: ctx.settings.app().chatVoiceEnabled, images: ctx.settings.app().chatImagesEnabled, enabled: ctx.settings.app().chatEnabled };
       userId = Number(row.id);
     }
-    return { items: await ctx.chat.adminList({ userId, q: q.q || undefined }), retentionDays: ctx.settings.app().chatRetention.days, retention: ctx.settings.app().chatRetention, voice: ctx.settings.app().chatVoiceEnabled, enabled: ctx.settings.app().chatEnabled };
+    return { items: await ctx.chat.adminList({ userId, q: q.q || undefined }), retentionDays: ctx.settings.app().chatRetention.days, retention: ctx.settings.app().chatRetention, voice: ctx.settings.app().chatVoiceEnabled, images: ctx.settings.app().chatImagesEnabled, enabled: ctx.settings.app().chatEnabled };
   });
   app.put('/messages/enabled', can('reports.handle'), async (req) => {
     const b = parse(z.object({ enabled: z.boolean() }), req.body);
@@ -666,11 +666,12 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
         voice: z.boolean(),
         images: z.boolean(),
         voiceEnabled: z.boolean().optional(),
+        imagesEnabled: z.boolean().optional(),
       }),
       req.body,
     );
-    const { voiceEnabled, ...retention } = b;
-    await ctx.settings.updateApp({ chatRetention: retention, ...(voiceEnabled === undefined ? {} : { chatVoiceEnabled: voiceEnabled }) }, req.admin!.id);
+    const { voiceEnabled, imagesEnabled, ...retention } = b;
+    await ctx.settings.updateApp({ chatRetention: retention, ...(voiceEnabled === undefined ? {} : { chatVoiceEnabled: voiceEnabled }), ...(imagesEnabled === undefined ? {} : { chatImagesEnabled: imagesEnabled }) }, req.admin!.id);
     await log(req, 'settings.app', { type: 'settings', summary: `Chat retention ${b.days} days (text ${b.text ? 'on' : 'off'}, voice ${b.voice ? 'on' : 'off'}, photos ${b.images ? 'on' : 'off'})` });
     return { ok: true };
   });
@@ -766,7 +767,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     name: z.string().trim().min(2).max(80),
     description: z.string().trim().max(200).nullable().optional(),
     price: z.number().int().min(0).max(1_000_000),
-    data: z.record(z.unknown()).nullable().optional(),
+    data: z.record(z.string(), z.unknown()).nullable().optional(),
     isActive: z.boolean().default(true),
   });
   app.get('/shop', can('content.manage'), async () => ({ items: (await query<any>('SELECT * FROM shop_items ORDER BY sort_order, id')).map((i) => ({ ...i, data: parseJson(i.data) })) }));

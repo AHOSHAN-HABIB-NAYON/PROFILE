@@ -1,6 +1,11 @@
 import { AI_LEVEL_DIFFICULTY, AI_LEVELS, type AiLevel, type Difficulty } from '@quizwar/shared';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { api, friendlyError } from '../lib/api';
+import { useAuth } from '../lib/auth';
+import { sfx } from '../lib/sound';
+import { toast } from '../lib/toast';
 import { useCategories, type Category } from '../hooks/queries';
 import { num, useLang, useT } from '../lib/i18n';
 import { haptic } from '../lib/platform';
@@ -161,26 +166,73 @@ export function HomeCategories() {
 export function HomeCollections() {
   const t = useT();
   const lang = useLang();
+  const qc = useQueryClient();
+  const me = useAuth((s) => s.user);
   const { data } = useCategories();
+  const unlocks = useQuery({ queryKey: ['unlocks'], queryFn: async () => (await api<{ ids: number[] }>('/me/unlocks')).ids, enabled: !!me });
   const [open, setOpen] = useState<Category | null>(null);
+  const [locked, setLocked] = useState<Category | null>(null);
+  const [busy, setBusy] = useState(false);
   const cols = (data ?? []).filter((c) => c.isCollection && c.questionCount > 0);
   if (!cols.length) return null;
+  const isLocked = (c: Category) => !!c.isPremium && !me?.premium && !(unlocks.data ?? []).includes(c.id);
+  const unlock = async (c: Category) => {
+    setBusy(true);
+    try {
+      await api(`/collections/${c.id}/unlock`, { method: 'POST' });
+      haptic('success');
+      sfx('reward');
+      toast.success(t('Unlocked!', 'আনলক হয়েছে!'), lang === 'bn' ? (c.nameBn ?? c.name) : c.name, 'lock');
+      await qc.invalidateQueries({ queryKey: ['unlocks'] });
+      void useAuth.getState().loadMe();
+      setLocked(null);
+      setOpen(c);
+    } catch (e) {
+      toast.error(t('Could not unlock', 'আনলক করা যায়নি'), friendlyError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <section aria-labelledby="home-cols">
       <div className="section-head">
         <h3 id="home-cols"><Icon name="book" size={18} /> {t('Question collections', 'প্রশ্ন সংগ্রহ')}</h3>
       </div>
       <div className="cat-grid stagger">
-        {cols.map((c) => (
-          <button key={c.id} type="button" className="cat-tile" style={{ ['--cat' as string]: categoryColor(c) }} onClick={() => (haptic('tap'), setOpen(c))}>
-            <CategoryArt c={c} />
-            <b>{lang === 'bn' ? (c.nameBn ?? c.name) : c.name}</b>
-            <span className="xs">{num(c.questionCount, lang)} {t('questions', 'প্রশ্ন')}</span>
-          </button>
-        ))}
+        {cols.map((c) => {
+          const lock = isLocked(c);
+          return (
+            <button key={c.id} type="button" className={`cat-tile${lock ? ' locked' : ''}`} style={{ ['--cat' as string]: categoryColor(c) }} onClick={() => (haptic('tap'), lock ? setLocked(c) : setOpen(c))}>
+              {c.isPremium && <span className={`cat-badge ${lock ? '' : 'open'}`}><Icon name={lock ? 'lock' : 'crown'} size={12} /> {lock ? (c.unlockCoins ? num(c.unlockCoins, lang) : t('Premium', 'প্রিমিয়াম')) : t('Premium', 'প্রিমিয়াম')}</span>}
+              <CategoryArt c={c} />
+              <b>{lang === 'bn' ? (c.nameBn ?? c.name) : c.name}</b>
+              <span className="xs">{num(c.questionCount, lang)} {t('questions', 'প্রশ্ন')}</span>
+            </button>
+          );
+        })}
       </div>
       <p className="xs faint" style={{ marginTop: 8 }}>{t('Collected questions, not an official source', 'সংগৃহীত প্রশ্ন, সরকারি উৎস নয়')}</p>
       {open && <CategorySheet key={open.id} c={open} onClose={() => setOpen(null)} />}
+      <Sheet open={!!locked} onClose={() => setLocked(null)} title={t('Premium collection', 'প্রিমিয়াম সংগ্রহ')} icon="lock">
+        {locked && (
+          <div className="col center unlock-sheet">
+            <CategoryArt c={locked} size={68} />
+            <b className="mt">{lang === 'bn' ? (locked.nameBn ?? locked.name) : locked.name}</b>
+            <p className="small muted">{num(locked.questionCount, lang)} {t('questions', 'প্রশ্ন')}</p>
+            {locked.unlockCoins ? (
+              <>
+                <p className="small">{t('Unlock it for good with coins you earned by playing.', 'খেলে জেতা কয়েন দিয়ে চিরদিনের জন্য আনলক করুন।')}</p>
+                <button className="btn primary lg block mt" disabled={busy || (me?.coins ?? 0) < locked.unlockCoins} onClick={() => void unlock(locked)}>
+                  {busy ? <span className="spinner" /> : <Icon name="coin" />} {t(`Unlock for ${locked.unlockCoins} coins`, `${num(locked.unlockCoins, lang)} কয়েনে আনলক`)}
+                </button>
+                <p className="xs muted mt">{t(`You have ${me?.coins ?? 0} coins`, `আপনার আছে ${num(me?.coins ?? 0, lang)} কয়েন`)}</p>
+              </>
+            ) : (
+              <p className="small">{t('For premium players. Premium is coming soon.', 'শুধু প্রিমিয়াম প্লেয়ারদের জন্য। প্রিমিয়াম শীঘ্রই আসছে।')}</p>
+            )}
+          </div>
+        )}
+      </Sheet>
     </section>
   );
 }

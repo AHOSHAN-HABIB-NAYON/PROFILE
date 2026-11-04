@@ -20,7 +20,12 @@ export type ThreadsData = { items: (ChatThread & { status: PresenceStatus; reque
 export type ChatHead = { peer: PublicUser; count: number; last: string; at: number; request?: boolean };
 
 /** Short text for previews (chat list, toasts, chat heads). */
-export const previewText = (m: { body: string; kind?: string }) => (m.kind === 'voice' ? (useSettings.getState().lang === 'bn' ? 'ভয়েস মেসেজ' : 'Voice message') : m.body);
+export const previewText = (m: { body: string; kind?: string }) => {
+  const bn = useSettings.getState().lang === 'bn';
+  if (m.kind === 'voice') return bn ? 'ভয়েস মেসেজ' : 'Voice message';
+  if (m.kind === 'image') return bn ? 'ছবি' : 'Photo';
+  return m.body;
+};
 
 export const threadKey = (uid: string) => ['chat-thread', uid.toUpperCase()] as const;
 

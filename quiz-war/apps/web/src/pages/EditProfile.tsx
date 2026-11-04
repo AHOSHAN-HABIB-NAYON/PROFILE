@@ -9,12 +9,14 @@ import { api, friendlyError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { num, useLang, useT } from '../lib/i18n';
 import { uploadImage } from '../lib/image';
+import { useImageCropper } from '../components/ImageCropper';
 import { haptic } from '../lib/platform';
 import { toast } from '../lib/toast';
 
 export default function EditProfile() {
   const me = useAuth((s) => s.user)!;
   const t = useT();
+  const cropper = useImageCropper();
   const lang = useLang();
   const nav = useNavigate();
   const profile = useQuery({ queryKey: ['profile', me.uid], queryFn: () => api(`/users/${me.uid}`) });
@@ -56,6 +58,7 @@ export default function EditProfile() {
 
   return (
     <div className="page stack">
+      {cropper.element}
       <PageHeader title={t('Edit profile', 'প্রোফাইল এডিট')} back />
       <section className="card col center edit-photo">
         <Avatar name={me.username} src={me.avatarUrl} size={110} frame={me.frame} />
@@ -68,7 +71,10 @@ export default function EditProfile() {
               accept="image/*"
               hidden
               onChange={async (e) => {
-                const f = e.target.files?.[0];
+                const picked = e.target.files?.[0];
+                e.target.value = '';
+                if (!picked) return;
+                const f = await cropper.crop(picked);
                 if (!f) return;
                 setUploading(true);
                 try {
@@ -79,7 +85,6 @@ export default function EditProfile() {
                   toast.error(t('Upload failed', 'আপলোড হয়নি'), e2 instanceof Error ? e2.message : friendlyError(e2));
                 } finally {
                   setUploading(false);
-                  e.target.value = '';
                 }
               }}
             />

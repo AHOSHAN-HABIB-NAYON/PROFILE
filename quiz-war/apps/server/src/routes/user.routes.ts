@@ -5,7 +5,8 @@ import type { AppContext } from '../context';
 import { optionalUser, requireUser, uid } from '../http/guards';
 import { AppError, badRequest, notFound } from '../lib/errors';
 import { parse } from '../lib/validate';
-import { getMe, getUserByUid } from '../modules/users/users.repo';
+import { getMe, getPublicUsers, getUserByUid } from '../modules/users/users.repo';
+import { query } from '../db/pool';
 
 async function readUpload(req: any, maxBytes: number): Promise<Buffer> {
   const file = await req.file({ limits: { fileSize: maxBytes, files: 1 } });
@@ -118,6 +119,30 @@ export async function userRoutes(app: FastifyInstance, ctx: AppContext) {
     if (block === 'me') throw new AppError(403, 'blocked_by_you', 'You blocked this player', { user: { id: user.id, uid: user.uid, username: user.username, avatarThumbUrl: user.avatarThumbUrl } });
     if (block === 'them') throw notFound('No player with this UID');
     return { user, status: ctx.presence.status(user.id) };
+  });
+
+  /** Find players by name (starts with) or UID — for the chat search box. */
+  app.get('/users/find', { ...auth, config: { rateLimit: { max: 40, timeWindow: '1 minute' } } }, async (req) => {
+    const q = parse(z.object({ q: z.string().trim().min(2).max(30) }), req.query).q;
+    const me = uid(req);
+    const asUid = normalizeUid(q);
+    let ids: number[] = [];
+    if (asUid) {
+      const u = await getUserByUid(asUid);
+      if (u) ids = [u.id];
+    }
+    if (!ids.length) {
+      const like = `${q.replace(/[%_\\]/g, '\\$&')}%`;
+      const rows = await query<{ id: number }>(
+        `SELECT u.id FROM users u JOIN user_profiles p ON p.user_id = u.id
+         WHERE p.username LIKE ? AND u.status = 'active' AND u.id <> ? ORDER BY CHAR_LENGTH(p.username), p.username LIMIT 20`,
+        [like, me],
+      );
+      ids = rows.map((r) => Number(r.id));
+    }
+    const blocked = await ctx.friends.blockedSet(me);
+    const users = await getPublicUsers(ids.filter((id) => id !== me && !blocked.has(id)));
+    return { items: [...users.values()].map((user) => ({ user, status: ctx.presence.status(user.id) })) };
   });
 
   app.post('/reports', { ...auth, config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, async (req) => {

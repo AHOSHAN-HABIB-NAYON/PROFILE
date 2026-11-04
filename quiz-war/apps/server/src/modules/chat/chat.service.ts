@@ -1,4 +1,5 @@
 import type { ChatMessage, ChatThread, PresenceStatus, PublicUser, ServerToClientEvents } from '@quizwar/shared';
+import sharp from 'sharp';
 import { exec, query, queryOne } from '../../db/pool';
 import { AppError, badRequest, notFound } from '../../lib/errors';
 import type { PushService } from '../notifications/push';
@@ -23,7 +24,28 @@ const toMsg = (r: any): ChatMessage => ({
   createdAt: new Date(r.created_at).toISOString(),
   readAt: r.read_at ? new Date(r.read_at).toISOString() : null,
   ...(r.kind === 'voice' && !r.deleted_at ? { kind: 'voice' as const, media: { url: r.media_url ?? null, secs: Number(r.media_secs ?? 0) } } : {}),
+  ...(r.kind === 'image' && !r.deleted_at ? { kind: 'image' as const, media: { url: r.media_url ?? null, secs: 0, ...dims(r.media_dims) } } : {}),
 });
+
+/** Short quote of a replied-to message (voice / photo shown as such, not as text). */
+const quoteOf = (q: any, id: number) =>
+  q
+    ? {
+        id,
+        from: Number(q.sender_id),
+        body: q.deleted_at || q.kind === 'voice' || q.kind === 'image' ? '' : String(q.body).slice(0, 160),
+        deleted: !!q.deleted_at,
+        ...(q.kind === 'voice' || q.kind === 'image' ? { kind: q.kind, secs: Number(q.media_secs ?? 0) } : {}),
+      }
+    : { id, from: 0, body: '', deleted: true };
+
+const dims = (v: unknown) => {
+  const m = /^(\d+)x(\d+)$/.exec(String(v ?? ''));
+  return m ? { w: Number(m[1]), h: Number(m[2]) } : {};
+};
+export const IMAGE_BODY = 'ছবি (দেখতে অ্যাপ আপডেট করুন)';
+/** Photos up to 12 MB in; stored as WebP, longest side 1600 px (a 5 MB photo becomes ~300–500 KB). */
+export const IMAGE_MAX_IN_BYTES = 12 * 1024 * 1024;
 
 /** Text kept in `body` for voice messages, so older app versions show something sensible. */
 export const VOICE_BODY = 'ভয়েস মেসেজ (শুনতে অ্যাপ আপডেট করুন)';
@@ -57,7 +79,7 @@ export class ChatService {
     private readonly push: PushService,
     private readonly emitter: () => Emitter | null,
     private readonly presence: (userId: number) => PresenceStatus,
-    private readonly enabled: () => { chat: boolean; push: boolean; voice?: boolean },
+    private readonly enabled: () => { chat: boolean; push: boolean; voice?: boolean; images?: boolean },
     private readonly retention: () => { days: number; text: boolean; voice: boolean; images: boolean } = () => ({ days: CHAT_RETENTION_DAYS, text: true, voice: true, images: true }),
     private readonly media: MediaStore | null = null,
   ) {}
@@ -189,7 +211,7 @@ export class ChatService {
     const replyIds = [...new Set(rows.map((r) => Number(r.reply_to_id)).filter(Boolean))];
     const quotes = new Map<number, any>();
     if (replyIds.length) {
-      for (const q of await query<any>(`SELECT id, sender_id, body, deleted_at FROM chat_messages WHERE id IN (${replyIds.map(() => '?').join(',')})`, replyIds)) quotes.set(Number(q.id), q);
+      for (const q of await query<any>(`SELECT id, sender_id, body, deleted_at, kind, media_secs FROM chat_messages WHERE id IN (${replyIds.map(() => '?').join(',')})`, replyIds)) quotes.set(Number(q.id), q);
     }
     const reacts = new Map<number, { u: number; r: string }[]>();
     const ids = msgs.map((m) => m.id);
@@ -204,7 +226,7 @@ export class ChatService {
       const q = qid ? quotes.get(qid) : null;
       return {
         ...m,
-        ...(qid ? { replyTo: q ? { id: qid, from: Number(q.sender_id), body: q.deleted_at ? '' : String(q.body).slice(0, 160), deleted: !!q.deleted_at } : { id: qid, from: 0, body: '', deleted: true } } : {}),
+        ...(qid ? { replyTo: quoteOf(q, qid) } : {}),
         ...(reacts.has(m.id) ? { reactions: reacts.get(m.id) } : {}),
       };
     });
@@ -251,6 +273,33 @@ export class ChatService {
     }
   }
 
+  /** Photo message: re-encoded on the server (EXIF/GPS stripped), small WebP. */
+  async sendImage(userId: number, peerId: number, data: Buffer, replyToId?: number): Promise<ChatMessage> {
+    this.assertOn();
+    if (this.enabled().images === false) throw new AppError(403, 'images_disabled', 'Photos are turned off');
+    if (!this.media) throw new AppError(503, 'images_unavailable', 'Photos are not available');
+    if (!data.length) throw badRequest('The photo is empty');
+    await this.checkCanSend(userId, peerId);
+    let out: { data: Buffer; info: { width: number; height: number } };
+    try {
+      out = await sharp(data, { limitInputPixels: 50_000_000, failOn: 'error' })
+        .rotate()
+        .resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 72, effort: 4 })
+        .toBuffer({ resolveWithObject: true });
+    } catch {
+      throw new AppError(400, 'invalid_image', 'This file is not a valid photo');
+    }
+    const key = `chat-img/${new Date().toISOString().slice(0, 10)}/${userId}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}.webp`;
+    const url = await this.media.put(key, out.data, 'image/webp');
+    try {
+      return await this.deliver(userId, peerId, { body: IMAGE_BODY, kind: 'image', mediaUrl: url, bytes: out.data.length, dims: `${out.info.width}x${out.info.height}` }, replyToId);
+    } catch (e) {
+      await this.media.remove(url).catch(() => undefined);
+      throw e;
+    }
+  }
+
   private async checkCanSend(userId: number, peerId: number) {
     this.assertOn();
     if (peerId === userId) throw badRequest('You cannot message yourself');
@@ -267,7 +316,7 @@ export class ChatService {
   private async deliver(
     userId: number,
     peerId: number,
-    m: { body: string; kind?: 'voice'; mediaUrl?: string; secs?: number; bytes?: number },
+    m: { body: string; kind?: 'voice' | 'image'; mediaUrl?: string; secs?: number; bytes?: number; dims?: string },
     replyToId?: number,
   ): Promise<ChatMessage> {
     if (!m.kind) await this.checkCanSend(userId, peerId);
@@ -276,19 +325,20 @@ export class ChatService {
     let quote: any = null;
     if (replyToId) {
       quote = await queryOne<any>(
-        'SELECT id, sender_id, body, deleted_at FROM chat_messages WHERE id = ? AND ((sender_id = ? AND recipient_id = ?) OR (sender_id = ? AND recipient_id = ?))',
+        'SELECT id, sender_id, body, deleted_at, kind, media_secs FROM chat_messages WHERE id = ? AND ((sender_id = ? AND recipient_id = ?) OR (sender_id = ? AND recipient_id = ?))',
         [replyToId, userId, peerId, peerId, userId],
       );
     }
     const res = m.kind
-      ? await exec('INSERT INTO chat_messages (sender_id, recipient_id, body, reply_to_id, kind, media_url, media_secs, media_bytes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [userId, peerId, body, quote ? quote.id : null, m.kind, m.mediaUrl ?? null, m.secs ?? null, m.bytes ?? null])
+      ? await exec('INSERT INTO chat_messages (sender_id, recipient_id, body, reply_to_id, kind, media_url, media_secs, media_bytes, media_dims) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [userId, peerId, body, quote ? quote.id : null, m.kind, m.mediaUrl ?? null, m.secs ?? null, m.bytes ?? null, m.dims ?? null])
       : await exec('INSERT INTO chat_messages (sender_id, recipient_id, body, reply_to_id) VALUES (?, ?, ?, ?)', [userId, peerId, body, quote ? quote.id : null]);
     await exec('INSERT IGNORE INTO chat_accepts (user_id, peer_id) VALUES (?, ?)', [userId, peerId]);
     const isRequest = !(await this.isTrusted(peerId, userId));
     const message: ChatMessage = {
       id: res.insertId, from: userId, to: peerId, body, createdAt: new Date().toISOString(), readAt: null,
       ...(m.kind === 'voice' ? { kind: 'voice' as const, media: { url: m.mediaUrl ?? null, secs: m.secs ?? 0 } } : {}),
-      ...(quote ? { replyTo: { id: Number(quote.id), from: Number(quote.sender_id), body: quote.deleted_at ? '' : String(quote.body).slice(0, 160), deleted: !!quote.deleted_at } } : {}),
+      ...(m.kind === 'image' ? { kind: 'image' as const, media: { url: m.mediaUrl ?? null, secs: 0, ...dims(m.dims) } } : {}),
+      ...(quote ? { replyTo: quoteOf(quote, Number(quote.id)) } : {}),
     };
     const [me, them] = await Promise.all([getPublicUser(userId), getPublicUser(peerId)]);
     if (me) this.emitter()?.toUser(peerId, 'chat:message', { message, peer: me, request: isRequest });
@@ -301,7 +351,7 @@ export class ChatService {
       if (now - (this.lastPush.get(key) ?? 0) > 20_000) {
         this.lastPush.set(key, now);
         if (this.lastPush.size > 20_000) this.lastPush.clear();
-        const text = m.kind === 'voice' ? 'ভয়েস মেসেজ পাঠিয়েছে' : body.length > 140 ? `${body.slice(0, 137)}…` : body;
+        const text = m.kind === 'voice' ? 'ভয়েস মেসেজ পাঠিয়েছে' : m.kind === 'image' ? 'ছবি পাঠিয়েছে' : body.length > 140 ? `${body.slice(0, 137)}…` : body;
         void this.push
           .sendToUser(peerId, { title: isRequest ? `${me.username} · মেসেজ রিকোয়েস্ট` : me.username, body: text, url: `/chat/${me.uid}`, tag: `chat-${userId}`, channel: 'quizwar_messages', image: me.avatarThumbUrl ?? undefined })
           .catch(() => undefined);
@@ -397,22 +447,24 @@ export class ChatService {
   }
 
   /**
-   * Retention (admin: Chat settings): after N days, voice files are deleted (the bubble shows
+   * Retention (admin: Chat settings): after N days, voice/photo files are deleted (the bubble shows
    * "expired") and text messages are removed — each only when its switch is on.
    */
   async purgeOld() {
     const r = this.retention();
     const days = Math.max(1, Math.min(90, Math.floor(r.days || CHAT_RETENTION_DAYS)));
     let n = 0;
-    if (r.voice) {
+    for (const kind of ['voice', 'image'] as const) {
+      if (!(kind === 'voice' ? r.voice : r.images)) continue;
       const old = await query<{ id: number; media_url: string }>(
-        `SELECT id, media_url FROM chat_messages WHERE kind = 'voice' AND media_url IS NOT NULL AND created_at < NOW() - INTERVAL ${days} DAY LIMIT 2000`,
+        `SELECT id, media_url FROM chat_messages WHERE kind = ? AND media_url IS NOT NULL AND created_at < NOW() - INTERVAL ${days} DAY LIMIT 2000`,
+        [kind],
       );
       for (const m of old) await this.media?.remove(m.media_url).catch(() => undefined);
       if (old.length) await exec(`UPDATE chat_messages SET media_url = NULL WHERE id IN (${old.map(() => '?').join(',')})`, old.map((m) => m.id));
       n += old.length;
-      // Expired voice rows go too when text is purged (nothing left to show).
-      if (r.text) n += (await exec(`DELETE FROM chat_messages WHERE kind = 'voice' AND media_url IS NULL AND created_at < NOW() - INTERVAL ${days} DAY LIMIT 50000`)).affectedRows;
+      // Expired media rows go too when text is purged (nothing left to show).
+      if (r.text) n += (await exec(`DELETE FROM chat_messages WHERE kind = ? AND media_url IS NULL AND created_at < NOW() - INTERVAL ${days} DAY LIMIT 50000`, [kind])).affectedRows;
     }
     if (r.text) n += (await exec(`DELETE FROM chat_messages WHERE kind = 'text' AND created_at < NOW() - INTERVAL ${days} DAY LIMIT 50000`)).affectedRows;
     return n;

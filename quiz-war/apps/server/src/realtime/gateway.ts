@@ -201,7 +201,12 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
       return id;
     };
 
-    const category = async (id: number | null | undefined) => (id ? await ctx.categories.get(id) : null);
+    /** Category of a new match; premium collections need premium or a coin unlock. */
+    const category = async (id: number | null | undefined) => {
+      if (!id) return null;
+      await ctx.categories.assertCanUse(userId, id);
+      return ctx.categories.get(id);
+    };
     /** Chosen difficulty → only those questions and the admin-set time per question (hard = less time). */
     const difficultyOptions = (difficulty: Difficulty | null, questionCount?: number | null, questionTimeSec?: number | null) => {
       const m = ctx.settings.game().match;

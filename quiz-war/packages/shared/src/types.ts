@@ -102,13 +102,13 @@ export interface ChatMessage {
   /** Unsent by its author: shown as "This message was deleted". */
   deleted?: boolean;
   /** The message this one replies to (a short quote). */
-  replyTo?: { id: number; from: number; body: string; deleted?: boolean };
+  replyTo?: { id: number; from: number; body: string; deleted?: boolean; kind?: 'voice' | 'image'; secs?: number };
   /** Emoji reactions: one per person. */
   reactions?: { u: number; r: string }[];
   /** 'voice' = audio message (text messages leave this out). */
-  kind?: 'text' | 'voice';
-  /** Audio file and length; url is null once the file has expired. */
-  media?: { url: string | null; secs: number };
+  kind?: 'text' | 'voice' | 'image';
+  /** Audio / photo file (secs for audio, w/h for photos); url is null once the file has expired. */
+  media?: { url: string | null; secs: number; w?: number; h?: number };
 }
 export interface ChatThread {
   peer: PublicUser;

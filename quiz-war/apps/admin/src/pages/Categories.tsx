@@ -50,7 +50,7 @@ export default function Categories({ collections = false }: { collections?: bool
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
-    const body = { slug: f.get('slug'), name: f.get('name'), nameBn: f.get('nameBn') || null, icon: f.get('icon'), iconUrl, description: f.get('description') || null, color, isActive: f.get('isActive') === 'on', isCollection: collections, isPremium: !!edit.isPremium };
+    const body = { slug: f.get('slug'), name: f.get('name'), nameBn: f.get('nameBn') || null, icon: f.get('icon'), iconUrl, description: f.get('description') || null, color, isActive: f.get('isActive') === 'on', isCollection: collections, isPremium: collections ? f.get('isPremium') === 'on' : false, unlockCoins: collections ? Math.max(0, Number(f.get('unlockCoins') || 0)) : 0 };
     try {
       if (edit.id) await api(`/categories/${edit.id}`, { method: 'PUT', body });
       else await api('/categories', { body });
@@ -82,7 +82,7 @@ export default function Categories({ collections = false }: { collections?: bool
                 <tr key={c.id}>
                   <td>{manage && <><div className="row" style={{ gap: 2, flexWrap: 'nowrap' }}><button className="btn sm ghost icon-btn" aria-label={`Move ${c.name} up`} title="Move up" disabled={i === 0} onClick={() => void move(i, -1)}><Icon name="arrow-up" size={16} /></button><button className="btn sm ghost icon-btn" aria-label={`Move ${c.name} down`} title="Move down" disabled={i === data!.length - 1} onClick={() => void move(i, 1)}><Icon name="arrow-down" size={16} /></button></div></>}</td>
                   <td><span className="cat-ic" style={c.color ? { color: c.color, background: `color-mix(in srgb, ${c.color} 14%, transparent)` } : undefined} title={c.iconUrl ? 'Custom icon' : hasKey(c.icon) ? c.icon : `Legacy icon “${c.icon}” — pick a new one`}>{c.iconUrl ? <img src={c.iconUrl} alt="" width={22} height={22} style={{ objectFit: 'contain' }} /> : <Icon name={categoryIcon(c)} size={20} />}</span></td><td><b>{c.name}</b><div className="small faint">{c.description}</div></td><td>{c.nameBn}</td><td><code>{c.slug}</code></td><td>{c.questionCount}</td>
-                  <td>{c.isActive ? <span className="badge green">enabled</span> : <span className="badge">disabled</span>}</td>
+                  <td>{c.isActive ? <span className="badge green">enabled</span> : <span className="badge">disabled</span>}{collections && (c.isPremium ? <div className="small">Premium{c.unlockCoins ? ` · ${c.unlockCoins} coins` : ''}</div> : <div className="small faint">Free</div>)}</td>
                   <td>{manage && <div className="row" style={{ flexWrap: 'nowrap' }}>
                     <button className="btn sm" onClick={() => open(c)}>Edit</button>
                     <button className="btn sm" style={{ color: 'var(--danger)' }} onClick={() => confirm(`Delete category "${c.name}"? Its questions stop being served.`) && void api(`/categories/${c.id}`, { method: 'DELETE' }).then(refresh)}>Delete</button>
@@ -125,6 +125,16 @@ export default function Categories({ collections = false }: { collections?: bool
             </div>
             <div className="field"><label htmlFor="ds">Description</label><input id="ds" name="description" className="input" maxLength={300} defaultValue={edit.description ?? ''} /></div>
             <label className="row"><input type="checkbox" name="isActive" defaultChecked={edit.isActive} /> Enabled</label>
+            {collections && (
+              <>
+                <label className="row"><input type="checkbox" name="isPremium" defaultChecked={!!edit.isPremium} /> Premium (locked)</label>
+                <div className="field">
+                  <label htmlFor="uc">Unlock with game coins</label>
+                  <input id="uc" name="unlockCoins" type="number" min={0} step={10} className="input" defaultValue={edit.unlockCoins ?? 0} />
+                  <span className="small faint">Only for premium. Players can unlock it for good with this many coins (earned by playing). 0 = premium players only.</span>
+                </div>
+              </>
+            )}
             <button className="btn primary">{edit.id ? 'Save category' : 'Create category'}</button>
           </form>
         )}

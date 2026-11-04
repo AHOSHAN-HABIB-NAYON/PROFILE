@@ -6,7 +6,7 @@ import { requireUser, uid } from '../http/guards';
 import { badRequest, notFound } from '../lib/errors';
 import { parse } from '../lib/validate';
 import { squadCreateSchema } from '../modules/squads/squad.service';
-import { VOICE_MAX_BYTES } from '../modules/chat/chat.service';
+import { IMAGE_MAX_IN_BYTES, VOICE_MAX_BYTES } from '../modules/chat/chat.service';
 import { getPublicUser, getUserByUid } from '../modules/users/users.repo';
 
 const idParam = z.object({ id: z.coerce.number().int().positive() });
@@ -56,6 +56,17 @@ export async function socialRoutes(app: FastifyInstance, ctx: AppContext) {
     const field = (k: string) => Number(file.fields?.[k]?.value ?? (req.query as any)?.[k] ?? 0);
     const peer = await chatPeer(p.uid);
     return { message: await ctx.chat.sendVoice(uid(req), peer.id, { data, mime: String(file.mimetype || ''), secs: field('secs') }, field('replyTo') || undefined) };
+  });
+  /** Photo message: multipart with one image (field `replyTo` optional, before the file). */
+  app.post('/chats/:uid/image', { ...auth, config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (req) => {
+    const p = parse(z.object({ uid: z.string().max(20) }), req.params);
+    const file = await (req as any).file({ limits: { fileSize: IMAGE_MAX_IN_BYTES, files: 1 } });
+    if (!file) throw badRequest('No photo uploaded');
+    const data: Buffer = await file.toBuffer();
+    if (file.file?.truncated) throw badRequest('Photo is too large');
+    const replyTo = Number(file.fields?.replyTo?.value ?? (req.query as any)?.replyTo ?? 0) || undefined;
+    const peer = await chatPeer(p.uid);
+    return { message: await ctx.chat.sendImage(uid(req), peer.id, data, replyTo) };
   });
   app.post('/chats/:uid/read', auth, async (req) => {
     const p = parse(z.object({ uid: z.string().max(20) }), req.params);

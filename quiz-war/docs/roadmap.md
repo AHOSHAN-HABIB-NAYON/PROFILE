@@ -194,3 +194,14 @@ Text chat stays free.
 - New accounts: one setup screen (photo optional + name), then Home.
 - Fewer borders: top-level cards run full width on phones.
 - Android: RECORD_AUDIO + MODIFY_AUDIO_SETTINGS (Play Console Data safety: Audio, not stored).
+
+### Update 1, second round (owner feedback, November 2026)
+- Profile: new cover (evening sky, river, a flock of kites gliding); number tiles; achievements only in their tab.
+- Matchmaking music back on; AI suggestion after 25 s and on timeout; full-width card fix.
+- Chat: search players by name or UID; hold the mic to talk (release sends) or tap to keep recording; photos from gallery or camera (WebP, longest side 1600 px, ~10% of the original, no videos); replies to voice/photo show "Voice message (0:01)" / "Photo"; links and e-mails are tappable.
+- Collections: admin sets Free or Premium and an optional coin price; players unlock with game coins (`user_collection_unlocks`, migration 017); server checks access for every way to play and for Study.
+- Live voice: entering a room or a match with people you hear everyone at once; your mic stays off until you tap it. Voice keeps going while the room / match is open in the background and while chatting from the result page. Speaker routing on Android (QwAudio plugin), Opus ~40 kbps with FEC.
+- Reopening the app during a live match goes straight back into it.
+- Avatar: crop / move / zoom page before upload (onboarding and edit profile).
+- Result page: "Chat with <player>" button.
+- Security: zod 4.6.7, fastify 5.12.8, @fastify/static 10.1.10, nodemailer 10.3.1 — `npm audit --omit=dev` is clean (remaining items are build-only tools).

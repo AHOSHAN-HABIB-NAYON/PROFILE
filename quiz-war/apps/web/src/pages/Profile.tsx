@@ -8,7 +8,7 @@ import { LevelBar, useLeagues } from '../components/Game';
 import { Icon, IconTile, type IconName } from '../components/Icon';
 import { LeagueEmblem } from '../components/LeagueEmblem';
 import { ProfileCover } from '../components/ProfileCover';
-import { AchievementGrid, AchievementHighlights, CategoryBars, ProfileNumbers, ProfileTabs, PxSection, SeasonList, StatsNumbers } from '../components/ProfileParts';
+import { AchievementGrid, CategoryBars, ProfileNumbers, ProfileTabs, PxSection, SeasonList, StatsNumbers } from '../components/ProfileParts';
 import { PullToRefresh } from '../components/PullToRefresh';
 import { QrCode } from '../components/Qr';
 import { Sheet } from '../components/Sheet';
@@ -154,7 +154,6 @@ export default function Profile({ tab: initial }: { tab?: 'stats' | 'achievement
           ) : (
             <Skeleton kind="line" lines={1} />
           )}
-          {ach.data && <AchievementHighlights items={ach.data} total={ach.data.length} onMore={() => setTab('achievements')} />}
         </section>
 
         <ProfileTabs<Tab>

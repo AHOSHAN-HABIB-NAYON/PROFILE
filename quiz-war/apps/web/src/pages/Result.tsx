@@ -482,6 +482,11 @@ export default function Result() {
 
       <div className="row">
         <Link to={`/review/${id}`} className="btn outline grow"><Icon name="book-check" /> {t('Review answers', 'উত্তর দেখুন')}</Link>
+        {humanOpps.length === 1 && view(humanOpps[0]!.userId)?.uid && (
+          <Link to={`/chat/${view(humanOpps[0]!.userId)!.uid}`} className="btn soft grow" onClick={() => haptic('tap')}>
+            <Icon name="message" /> {t(`Chat with ${nameOf(humanOpps[0]!.userId, false)}`, `${nameOf(humanOpps[0]!.userId, false)}-এর সাথে চ্যাট`)}
+          </Link>
+        )}
       </div>
 
       <Sheet open={shareOpen} onClose={() => setShareOpen(false)} title={t('Share your result', 'রেজাল্ট শেয়ার করুন')} icon="share">

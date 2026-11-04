@@ -15,6 +15,8 @@ export interface VoicePlayer {
 }
 
 const EXPLAINED = 'qw-voice-explained';
+/** Rooms where the player left voice on purpose (no auto-join again there). */
+const skipped = new Set<string>();
 
 /**
  * Live voice controls, shown at the bottom of the quiz match, the result page and the war room
@@ -29,22 +31,29 @@ export function VoiceBar({ roomId, players, className = '' }: { roomId: string; 
   const members = st.members[roomId] ?? [];
   const others = players.filter((p) => p.userId > 0);
 
+  // Entering the room / match: listen to everyone right away (my mic stays off until I tap it).
+  const enabled = voiceSupported() && cfg?.voiceEnabled !== false && others.length > 0;
   useEffect(() => {
     watchVoice(roomId);
-  }, [roomId]);
+    if (!enabled) return;
+    const st0 = useVoice.getState();
+    if (st0.roomId !== roomId && !st0.joining && !skipped.has(roomId)) void joinVoice(roomId, false).catch(() => undefined);
+  }, [roomId, enabled]);
 
-  if (!voiceSupported() || cfg?.voiceEnabled === false || !others.length) return null;
+  if (!enabled) return null;
 
   const start = async () => {
     haptic('tap');
+    skipped.delete(roomId);
     try {
-      await joinVoice(roomId);
+      if (useVoice.getState().roomId === roomId) await setMic(true);
+      else await joinVoice(roomId, true);
     } catch {
       toast.error(t('Microphone blocked', 'মাইক্রোফোনের অনুমতি নেই'), t('Allow the microphone for QUIZ WAR in your phone settings.', 'ফোনের সেটিংসে QUIZ WAR-এর মাইক্রোফোন চালু করুন।'));
     }
   };
   const tapMic = () => {
-    if (!joined) {
+    if (!joined || !st.micOn) {
       let seen = false;
       try {
         seen = !!localStorage.getItem(EXPLAINED);
@@ -55,7 +64,7 @@ export function VoiceBar({ roomId, players, className = '' }: { roomId: string; 
       return void start();
     }
     haptic('tap');
-    setMic(!st.micOn);
+    void setMic(false);
   };
   const inVoice = (uid: number) => members.find((m) => m.userId === uid);
   const someoneWaiting = !joined && others.some((p) => inVoice(p.userId));
@@ -68,14 +77,14 @@ export function VoiceBar({ roomId, players, className = '' }: { roomId: string; 
         onClick={tapMic}
         disabled={st.joining}
         aria-pressed={joined && st.micOn}
-        aria-label={!joined ? t('Turn on voice', 'ভয়েস চালু করুন') : st.micOn ? t('Mute my mic', 'আমার মাইক বন্ধ') : t('Unmute my mic', 'আমার মাইক চালু')}
+        aria-label={!joined || !st.micOn ? t('Turn on my mic', 'আমার মাইক চালু করুন') : st.micOn ? t('Mute my mic', 'আমার মাইক বন্ধ') : t('Unmute my mic', 'আমার মাইক চালু')}
       >
         {st.joining ? <span className="spinner" /> : <Icon name={joined && st.micOn ? 'mic' : 'mic-off'} size={22} />}
       </button>
       <div className="vb-mid">
         {!joined ? (
           <span className="vb-hint">
-            {someoneWaiting ? t('Opponent is in voice — tap the mic to talk', 'প্রতিপক্ষ ভয়েসে আছে — কথা বলতে মাইক চাপুন') : t('Mic is off · tap to talk live', 'মাইক বন্ধ · চাপলে লাইভ কথা বলুন')}
+            {someoneWaiting ? t('Players are talking — tap the mic to join', 'প্লেয়াররা কথা বলছে — যোগ দিতে মাইক চাপুন') : t('Voice is off · tap the mic to talk live', 'ভয়েস বন্ধ · লাইভ কথা বলতে মাইক চাপুন')}
           </span>
         ) : (
           <div className="vb-peers">
@@ -104,7 +113,7 @@ export function VoiceBar({ roomId, players, className = '' }: { roomId: string; 
         )}
       </div>
       {joined && (
-        <button type="button" className="vb-leave" onClick={() => (haptic('tap'), leaveVoice())} aria-label={t('Leave voice', 'ভয়েস থেকে বের হন')}>
+        <button type="button" className="vb-leave" onClick={() => (haptic('tap'), skipped.add(roomId), leaveVoice())} aria-label={t('Leave voice', 'ভয়েস থেকে বের হন')}>
           <Icon name="phone-off" size={19} />
         </button>
       )}
@@ -114,7 +123,7 @@ export function VoiceBar({ roomId, players, className = '' }: { roomId: string; 
           <IconTile name="mic" tone="primary" size={72} />
         </div>
         <h2>{t('Talk live with players', 'প্লেয়ারদের সাথে লাইভ কথা বলুন')}</h2>
-        <p>{t('Your phone will ask for microphone access. Voice goes directly between players and is never recorded. You can mute anyone for yourself, and the mic turns off when you leave.', 'ফোন মাইক্রোফোনের অনুমতি চাইবে। কথা সরাসরি প্লেয়ারদের মধ্যে যায়, কখনো রেকর্ড হয় না। যে কাউকে নিজের জন্য মিউট করতে পারবেন, আর বের হলে মাইক বন্ধ হয়ে যায়।')}</p>
+        <p>{t('Your phone will ask for microphone access. Voice goes directly between players and is never recorded. Tap the mic again to mute yourself; tap a player to mute them for you only.', 'ফোন মাইক্রোফোনের অনুমতি চাইবে। কথা সরাসরি প্লেয়ারদের মধ্যে যায়, কখনো রেকর্ড হয় না। আবার মাইক চাপলে আপনার মাইক বন্ধ হবে; কোনো প্লেয়ারে চাপলে শুধু আপনার জন্য মিউট।')}</p>
         <div className="modal-actions">
           <button className="btn outline" onClick={() => setExplain(false)}>{t('Not now', 'এখন না')}</button>
           <button

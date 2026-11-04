@@ -143,7 +143,7 @@ export function createContext(env: Env, log: Logger, overrides: { mailer?: Maile
     push,
     () => emitter,
     (uid) => presence.status(uid),
-    () => ({ chat: settings.app().chatEnabled, push: settings.app().notificationsEnabled, voice: settings.app().chatVoiceEnabled }),
+    () => ({ chat: settings.app().chatEnabled, push: settings.app().notificationsEnabled, voice: settings.app().chatVoiceEnabled, images: settings.app().chatImagesEnabled }),
     () => settings.app().chatRetention,
     storage,
   );

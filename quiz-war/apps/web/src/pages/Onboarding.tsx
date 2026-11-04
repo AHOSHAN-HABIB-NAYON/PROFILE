@@ -7,6 +7,7 @@ import { api, friendlyError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { useT } from '../lib/i18n';
 import { uploadImage } from '../lib/image';
+import { useImageCropper } from '../components/ImageCropper';
 import { haptic } from '../lib/platform';
 import { sfx } from '../lib/sound';
 import { toast } from '../lib/toast';
@@ -24,6 +25,7 @@ export default function Onboarding() {
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [avatar, setAvatar] = useState<string | null>(user.avatarUrl);
+  const cropper = useImageCropper();
 
   async function finish(e: FormEvent) {
     e.preventDefault();
@@ -47,7 +49,9 @@ export default function Onboarding() {
     }
   }
 
-  async function pick(file: File | undefined) {
+  async function pick(picked: File | undefined) {
+    if (!picked) return;
+    const file = await cropper.crop(picked);
     if (!file) return;
     setUploading(true);
     setErr(null);
@@ -65,6 +69,7 @@ export default function Onboarding() {
 
   return (
     <div className="onb">
+      {cropper.element}
       <form className="onb-step" onSubmit={finish}>
         <h1>{t('Set up your profile', 'প্রোফাইল সাজিয়ে নিন')}</h1>
         <p className="muted">{t('Just a name — a photo is optional. You can change both later.', 'শুধু একটা নাম দিন — ছবি ঐচ্ছিক। পরে দুটোই বদলাতে পারবেন।')}</p>

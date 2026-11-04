@@ -4,8 +4,8 @@ import { z } from 'zod';
 import type { AppContext } from '../context';
 import { optionalUser, requireUser, uid } from '../http/guards';
 import { parse } from '../lib/validate';
-import { notFound } from '../lib/errors';
-import { query, queryOne } from '../db/pool';
+import { AppError, notFound } from '../lib/errors';
+import { exec, query, queryOne, tx } from '../db/pool';
 
 export async function gameRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/categories', async (req, reply) => {
@@ -17,8 +17,9 @@ export async function gameRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   /** Study mode: every question of a category with its correct answer, 30 per page. */
-  app.get('/categories/:id/study', { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } }, async (req, reply) => {
+  app.get('/categories/:id/study', { preHandler: optionalUser(ctx), config: { rateLimit: { max: 60, timeWindow: '1 minute' } } }, async (req, reply) => {
     const { id } = parse(z.object({ id: z.coerce.number().int().positive() }), req.params);
+    await ctx.categories.assertCanUse((req as any).user?.id ?? null, id);
     const q = parse(z.object({ page: z.coerce.number().int().min(1).max(10000).default(1), difficulty: z.enum(['easy', 'medium', 'hard', 'expert']).optional() }), req.query);
     const cat = (await ctx.categories.listPublic(true)).find((c: any) => c.id === id);
     if (!cat) throw notFound('Category not found');
@@ -34,7 +35,7 @@ export async function gameRoutes(app: FastifyInstance, ctx: AppContext) {
       : [];
     const byQ = new Map<number, { text: string; correct: boolean }[]>();
     for (const o of opts) byQ.set(Number(o.question_id), [...(byQ.get(Number(o.question_id)) ?? []), { text: o.text, correct: !!o.is_correct }]);
-    reply.header('cache-control', 'public, max-age=120');
+    reply.header('cache-control', cat.isPremium ? 'private, max-age=60' : 'public, max-age=120');
     return {
       category: { id: cat.id, name: cat.name, nameBn: cat.nameBn, slug: cat.slug, icon: cat.icon, iconUrl: cat.iconUrl, color: cat.color },
       page, pages, total, pageSize: PAGE,
@@ -73,6 +74,23 @@ export async function gameRoutes(app: FastifyInstance, ctx: AppContext) {
   app.get('/seasons/current', async () => {
     const s = ctx.seasons.current();
     return { season: s ? { id: s.id, name: s.name, startsAt: s.startsAt, endsAt: s.endsAt } : null, leagues: ctx.settings.game().ranked.leagues };
+  });
+
+  /** Premium collections this player unlocked with coins. */
+  app.get('/me/unlocks', { preHandler: requireUser(ctx) }, async (req) => ({ ids: await ctx.categories.unlockedIds(uid(req)) }));
+  app.post('/collections/:id/unlock', { preHandler: requireUser(ctx), config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, async (req) => {
+    const { id } = parse(z.object({ id: z.coerce.number().int().positive() }), req.params);
+    const me = uid(req);
+    const c = (await ctx.categories.listPublic(true)).find((x: any) => x.id === id);
+    if (!c || !c.isCollection) throw notFound('Collection not found');
+    if (await ctx.categories.canUse(me, id)) return { ok: true, unlocked: true };
+    if (!c.unlockCoins) throw new AppError(403, 'premium_only', 'This collection is for premium players');
+    await tx(async (conn) => {
+      await ctx.progression.spendCoins(conn, me, c.unlockCoins, 'collection_unlock', String(id));
+      await exec('INSERT IGNORE INTO user_collection_unlocks (user_id, category_id, coins) VALUES (?, ?, ?)', [me, id, c.unlockCoins], conn);
+    });
+    await ctx.progression.pushAccount(me);
+    return { ok: true, unlocked: true };
   });
 
   app.get('/daily', { preHandler: requireUser(ctx) }, async (req) => ctx.daily.status(uid(req)));

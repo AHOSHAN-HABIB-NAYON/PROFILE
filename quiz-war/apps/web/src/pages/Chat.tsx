@@ -7,6 +7,7 @@ import { Empty, ErrorBox, Spinner } from '../components/Feedback';
 import { Icon, IconTile } from '../components/Icon';
 import { Sheet } from '../components/Sheet';
 import { PlayerName } from '../components/Verified';
+import { compressImage } from '../lib/image';
 import { canRecordVoice, fmtSecs, useVoiceRecorder, VoiceBubble } from '../components/Voice';
 import { useConfig } from '../hooks/queries';
 import { api, friendlyError } from '../lib/api';
@@ -124,7 +125,7 @@ export default function Chat() {
     haptic('tap');
     const tempId = retryId ?? tempSeq--;
     const prevTemp = retryId ? data?.items.find((m) => m.id === retryId) : undefined;
-    const replyTo = quote && quote.id > 0 ? { id: quote.id, from: quote.from, body: quote.body, deleted: quote.deleted } : prevTemp?.replyTo;
+    const replyTo = quote && quote.id > 0 ? quoteOf(quote) : prevTemp?.replyTo;
     const temp: LiveMessage = { id: tempId, from: -1, to: peer.id, body: body.trim(), createdAt: new Date().toISOString(), readAt: null, pending: true, ...(replyTo ? { replyTo } : {}) };
     stick.current = true;
     qc.setQueryData<ThreadData>(key, (d) => (d ? { ...d, items: [...d.items.filter((m) => m.id !== tempId), temp] } : d));
@@ -150,6 +151,69 @@ export default function Chat() {
       toast.error(t('Microphone blocked', 'মাইক্রোফোনের অনুমতি নেই'), t('Allow the microphone in settings to send voice messages.', 'ভয়েস মেসেজ পাঠাতে সেটিংসে মাইক্রোফোন চালু করুন।'));
     }
   };
+  /** Mic: press and hold to talk (release sends), or tap once to keep recording. */
+  const holdRef = useRef<{ at: number; hold: boolean } | null>(null);
+  const [holding, setHolding] = useState(false);
+  const micDown = (e: React.PointerEvent) => {
+    e.preventDefault();
+    holdRef.current = { at: Date.now(), hold: false };
+    void startVoice();
+    const timer = window.setTimeout(() => {
+      if (holdRef.current) {
+        holdRef.current.hold = true;
+        setHolding(true);
+      }
+    }, 450);
+    const up = () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', up);
+      const h = holdRef.current;
+      holdRef.current = null;
+      setHolding(false);
+      if (h && Date.now() - h.at >= 450) void sendVoice();
+    };
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', up);
+  };
+
+  const [photoMenu, setPhotoMenu] = useState(false);
+  const [viewer, setViewer] = useState<string | null>(null);
+  const galleryInput = useRef<HTMLInputElement>(null);
+  const cameraInput = useRef<HTMLInputElement>(null);
+  const imagesOn = cfg?.chatImagesEnabled ?? true;
+  const sendPhoto = async (file: File | undefined) => {
+    setPhotoMenu(false);
+    if (!file || !peer) return;
+    haptic('tap');
+    const tempId = tempSeq--;
+    let blob: Blob;
+    try {
+      // About 10% of the original: 5 MB → ~500 KB or less (WebP, longest side 1600 px).
+      blob = await compressImage(file, 1600, 0.72);
+    } catch (e) {
+      return toast.error(t('Photo not sent', 'ছবি যায়নি'), e instanceof Error ? e.message : friendlyError(e));
+    }
+    const local = URL.createObjectURL(blob);
+    const quote = replying;
+    setReplying(null);
+    const replyTo = quote && quote.id > 0 ? quoteOf(quote) : undefined;
+    const temp: LiveMessage = { id: tempId, from: -1, to: peer.id, body: '', kind: 'image', media: { url: local, secs: 0 }, createdAt: new Date().toISOString(), readAt: null, pending: true, ...(replyTo ? { replyTo } : {}) };
+    stick.current = true;
+    qc.setQueryData<ThreadData>(key, (d) => (d ? { ...d, items: [...d.items, temp] } : d));
+    try {
+      const form = new FormData();
+      if (replyTo) form.append('replyTo', String(replyTo.id));
+      form.append('file', blob, blob.type === 'image/webp' ? 'photo.webp' : 'photo.jpg');
+      const r = await api<{ message: LiveMessage }>(`/chats/${peer.uid}/image`, { form });
+      addToThread(peer.uid, r.message, tempId);
+      void qc.invalidateQueries({ queryKey: ['chats'] });
+    } catch (e) {
+      qc.setQueryData<ThreadData>(key, (d) => (d ? { ...d, items: d.items.filter((m) => m.id !== tempId) } : d));
+      toast.error(t('Photo not sent', 'ছবি যায়নি'), friendlyError(e));
+    }
+  };
+
   const sendVoice = async () => {
     const clip = await voice.stop();
     if (!clip || !peer) return;
@@ -158,7 +222,7 @@ export default function Chat() {
     const local = URL.createObjectURL(clip.blob);
     const quote = replying;
     setReplying(null);
-    const replyTo = quote && quote.id > 0 ? { id: quote.id, from: quote.from, body: quote.body, deleted: quote.deleted } : undefined;
+    const replyTo = quote && quote.id > 0 ? quoteOf(quote) : undefined;
     const temp: LiveMessage = { id: tempId, from: -1, to: peer.id, body: '', kind: 'voice', media: { url: local, secs: clip.secs }, createdAt: new Date().toISOString(), readAt: null, pending: true, ...(replyTo ? { replyTo } : {}) };
     stick.current = true;
     qc.setQueryData<ThreadData>(key, (d) => (d ? { ...d, items: [...d.items, temp] } : d));
@@ -365,7 +429,7 @@ export default function Chat() {
               const newDay = !prev || new Date(prev.createdAt).toDateString() !== new Date(m.createdAt).toDateString();
               const groupTop = newDay || !prev || (prev.to === peer?.id) !== mine || new Date(m.createdAt).getTime() - new Date(prev.createdAt).getTime() > 5 * 60_000;
               const groupEnd = !next || (next.to === peer?.id) !== mine || new Date(next.createdAt).getTime() - new Date(m.createdAt).getTime() > 5 * 60_000;
-              const big = !m.deleted && m.kind !== 'voice' && isEmojiOnly(m.body);
+              const big = !m.deleted && !m.kind && isEmojiOnly(m.body);
               return (
                 <Fragment key={m.id}>
                   {newDay && <div className="chat-day"><span>{dayLabel(m.createdAt, lang, t)}</span></div>}
@@ -376,12 +440,12 @@ export default function Chat() {
                     {m.replyTo && (
                       <button type="button" className="msg-quote" onClick={() => jumpTo(m.replyTo!.id)}>
                         <span className="mq-label"><Icon name="reply" size={13} /> {mine ? t(`You replied to ${m.replyTo.from === peer?.id ? peer?.username : 'yourself'}`, m.replyTo.from === peer?.id ? `আপনি ${peer?.username}-কে উত্তর দিয়েছেন` : 'আপনি নিজের মেসেজে উত্তর দিয়েছেন') : t(`${peer?.username} replied to ${m.replyTo.from === peer?.id ? 'themselves' : 'you'}`, m.replyTo.from === peer?.id ? `${peer?.username} নিজের মেসেজে উত্তর দিয়েছে` : `${peer?.username} আপনাকে উত্তর দিয়েছে`)}</span>
-                        <span className="mq-body">{m.replyTo.deleted ? t('Message deleted', 'মেসেজ মুছে ফেলা হয়েছে') : m.replyTo.body}</span>
+                        <span className="mq-body"><QuoteText q={m.replyTo} /></span>
                       </button>
                     )}
                     {swipe?.id === m.id && <span className={`swipe-hint${Math.abs(swipe.dx) >= 64 ? ' ready' : ''}`} style={{ opacity: Math.min(1, Math.abs(swipe.dx) / 64) }} aria-hidden><Icon name="reply" size={18} /></span>}
                     <div
-                      className={`bubble${picked?.id === m.id ? ' picked' : ''}`}
+                      className={`bubble${picked?.id === m.id ? ' picked' : ''}${m.kind === 'image' && m.media?.url ? ' photo' : ''}`}
                       style={swipe?.id === m.id ? { transform: `translateX(${swipe.dx}px)`, transition: 'none' } : undefined}
                       onPointerDown={(e) => swipeDown(e, m)}
                       onPointerMove={(e) => swipeMove(e, mine)}
@@ -393,10 +457,18 @@ export default function Chat() {
                     >
                       {m.deleted ? (
                         <span className="msg-text msg-gone"><Icon name="ban" size={15} /> {mine ? t('You deleted this message', 'আপনি মেসেজটি মুছে ফেলেছেন') : t('This message was deleted', 'মেসেজটি মুছে ফেলা হয়েছে')}</span>
+                      ) : m.kind === 'image' ? (
+                        m.media?.url ? (
+                          <button type="button" className="msg-photo" onClick={(e) => (e.stopPropagation(), setViewer(m.media!.url))} style={m.media.w && m.media.h ? { aspectRatio: `${m.media.w} / ${m.media.h}` } : undefined}>
+                            <img src={m.media.url} alt={t('Photo', 'ছবি')} loading="lazy" decoding="async" />
+                          </button>
+                        ) : (
+                          <span className="msg-text msg-gone"><Icon name="image" size={15} /> {t('Photo expired', 'ছবির মেয়াদ শেষ')}</span>
+                        )
                       ) : m.kind === 'voice' ? (
                         <VoiceBubble url={m.media?.url ?? null} secs={m.media?.secs ?? 0} mine={mine} />
                       ) : (
-                        <span className="msg-text">{m.body}</span>
+                        <span className="msg-text"><Linkify text={m.body} /></span>
                       )}
                       <span className="msg-meta">
                         {clock(m.createdAt, lang)}
@@ -467,7 +539,7 @@ export default function Chat() {
               <Icon name="reply" size={18} />
               <span className="grow">
                 <b>{replying.from === peer?.id ? t(`Replying to ${peer?.username}`, `${peer?.username}-কে উত্তর দিচ্ছেন`) : t('Replying to yourself', 'নিজের মেসেজে উত্তর দিচ্ছেন')}</b>
-                <small>{replying.body}</small>
+                <small><QuoteText q={quoteOf(replying)} /></small>
               </span>
               <button type="button" className="btn icon sm ghost" aria-label={t('Cancel reply', 'উত্তর বাতিল')} onClick={() => setReplying(null)}><Icon name="close" size={18} /></button>
             </div>
@@ -475,13 +547,13 @@ export default function Chat() {
           {voice.recording ? (
             <div className="chat-compose voice-rec" role="group" aria-label={t('Recording voice message', 'ভয়েস মেসেজ রেকর্ড হচ্ছে')}>
               <button type="button" className="btn icon ghost danger-text" aria-label={t('Delete recording', 'রেকর্ডিং মুছুন')} onClick={() => (haptic('tap'), voice.cancel())}><Icon name="trash" size={22} /></button>
-              <span className="vr-bar grow"><i className="vr-dot" /> {fmtSecs(voice.secs, lang)} <span className="vr-hint">{t('Recording… max 2 min', 'রেকর্ড হচ্ছে… সর্বোচ্চ ২ মিনিট')}</span></span>
+              <span className="vr-bar grow"><i className="vr-dot" /> {fmtSecs(voice.secs, lang)} <span className="vr-hint">{holding ? t('Release to send', 'ছেড়ে দিলে চলে যাবে') : t('Recording… max 2 min', 'রেকর্ড হচ্ছে… সর্বোচ্চ ২ মিনিট')}</span></span>
               <button type="button" className="chat-send" aria-label={t('Send voice message', 'ভয়েস মেসেজ পাঠান')} onClick={() => void sendVoice()}><Icon name="send" size={21} /></button>
             </div>
           ) : (
           <form className="chat-compose" onSubmit={submit}>
             <button type="button" className={`btn icon ghost${emojiOpen ? ' on' : ''}`} aria-label={t('Emoji', 'ইমোজি')} aria-pressed={emojiOpen} onClick={() => setEmojiOpen((v) => !v)}><Icon name="smile" size={23} /></button>
-            <button type="button" className="btn icon ghost" aria-label={t('Photo', 'ছবি')} onClick={() => upcoming(t('Sending photos', 'ছবি পাঠানো'))}><Icon name="image" size={22} /></button>
+            {imagesOn && <button type="button" className="btn icon ghost" aria-label={t('Send a photo', 'ছবি পাঠান')} disabled={!peer} onClick={() => (haptic('tap'), setPhotoMenu(true))}><Icon name="image" size={22} /></button>}
             <textarea
               ref={input}
               className="chat-input"
@@ -501,12 +573,31 @@ export default function Chat() {
               disabled={!peer}
             />
             {voiceOn && !text.trim() ? (
-              <button type="button" className="chat-send mic" aria-label={t('Record voice message', 'ভয়েস মেসেজ রেকর্ড করুন')} disabled={!peer} onClick={() => void startVoice()}><Icon name="mic" size={21} /></button>
+              <button type="button" className="chat-send mic" aria-label={t('Record voice message: hold to talk, or tap', 'ভয়েস মেসেজ: চেপে ধরে বলুন, বা একবার চাপুন')} disabled={!peer} onPointerDown={micDown} onContextMenu={(e) => e.preventDefault()}><Icon name="mic" size={21} /></button>
             ) : (
               <button className="chat-send" aria-label={t('Send', 'পাঠান')} disabled={!text.trim() || !peer}><Icon name="send" size={21} /></button>
             )}
           </form>
           )}
+        </div>
+      )}
+
+      <input ref={galleryInput} type="file" accept="image/*" hidden onChange={(e) => (void sendPhoto(e.target.files?.[0]), (e.target.value = ''))} />
+      <input ref={cameraInput} type="file" accept="image/*" capture="environment" hidden onChange={(e) => (void sendPhoto(e.target.files?.[0]), (e.target.value = ''))} />
+      <Sheet open={photoMenu} onClose={() => setPhotoMenu(false)} title={t('Send a photo', 'ছবি পাঠান')} icon="image">
+        <section className="menu">
+          <button className="menu-row" onClick={() => galleryInput.current?.click()}>
+            <IconTile name="image" tone="primary" size={40} /><span className="m-text"><b>{t('From gallery', 'গ্যালারি থেকে')}</b><small>{t('Made small before sending', 'পাঠানোর আগে ছোট করা হয়')}</small></span>
+          </button>
+          <button className="menu-row" onClick={() => cameraInput.current?.click()}>
+            <IconTile name="camera" tone="success" size={40} /><span className="m-text"><b>{t('Take a photo', 'ক্যামেরা দিয়ে তুলুন')}</b><small>{t('Photos only, no videos', 'শুধু ছবি, ভিডিও নয়')}</small></span>
+          </button>
+        </section>
+      </Sheet>
+      {viewer && (
+        <div className="photo-viewer" role="dialog" aria-label={t('Photo', 'ছবি')} onClick={() => setViewer(null)}>
+          <img src={viewer} alt="" />
+          <button className="pv-close" aria-label={t('Close', 'বন্ধ করুন')}><Icon name="close" size={24} /></button>
         </div>
       )}
 
@@ -625,7 +716,7 @@ export default function Chat() {
 }
 
 /** "Chats" tab: every conversation, newest first, with unread counts; requests kept apart. */
-export function ChatList({ onFind }: { onFind: () => void }) {
+export function ChatList({ onFind, filter = '' }: { onFind: () => void; filter?: string }) {
   const t = useT();
   const lang = useLang();
   const [showRequests, setShowRequests] = useState(false);
@@ -635,7 +726,10 @@ export function ChatList({ onFind }: { onFind: () => void }) {
   if (q.error) return <ErrorBox error={q.error} retry={q.refetch} />;
   const all = q.data?.items ?? [];
   const requests = all.filter((c) => c.request);
-  const list = showRequests ? requests : all.filter((c) => !c.request);
+  const f = filter.trim().toLowerCase();
+  const base = showRequests ? requests : all.filter((c) => !c.request);
+  const list = f ? all.filter((c) => c.peer.username.toLowerCase().includes(f) || (c.peer.uid ?? '').toLowerCase().includes(f.replace(/^qw-?/, ''))) : base;
+  if (f && !list.length) return null;
   const reqUnread = requests.reduce((s, c) => s + c.unread, 0);
   return (
     <>
@@ -696,6 +790,41 @@ export function ChatList({ onFind }: { onFind: () => void }) {
           })}
         </div>
       )}
+    </>
+  );
+}
+
+/** Reply quote from a message: voice / photo keep their kind (shown with an icon, not as text). */
+function quoteOf(m: LiveMessage) {
+  return { id: m.id, from: m.from, body: m.kind ? '' : m.body, deleted: m.deleted, ...(m.kind === 'voice' || m.kind === 'image' ? { kind: m.kind, secs: m.media?.secs ?? 0 } : {}) };
+}
+
+function QuoteText({ q }: { q: { body: string; deleted?: boolean; kind?: string; secs?: number } }) {
+  const t = useT();
+  const lang = useLang();
+  if (q.deleted) return <>{t('Message deleted', 'মেসেজ মুছে ফেলা হয়েছে')}</>;
+  if (q.kind === 'voice') return <><Icon name="mic" size={13} /> {t('Voice message', 'ভয়েস মেসেজ')} ({fmtSecs(q.secs ?? 0, lang)})</>;
+  if (q.kind === 'image') return <><Icon name="image" size={13} /> {t('Photo', 'ছবি')}</>;
+  return <>{q.body}</>;
+}
+
+const LINK_RE = /((?:https?:\/\/|www\.)[^\s<]+[^\s<.,;:!?)\]'"]|[\w.+-]+@[\w-]+\.[\w.-]+)/gi;
+
+/** Text with tappable links (open in the right app or the browser) and e-mail addresses. */
+function Linkify({ text }: { text: string }) {
+  const parts = text.split(LINK_RE);
+  return (
+    <>
+      {parts.map((p, i) => {
+        if (i % 2 === 0) return p;
+        const isMail = !/^(https?:\/\/|www\.)/i.test(p) && p.includes('@');
+        const href = isMail ? `mailto:${p}` : /^www\./i.test(p) ? `https://${p}` : p;
+        return (
+          <a key={i} className="msg-link" href={href} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+            {p}
+          </a>
+        );
+      })}
     </>
   );
 }

@@ -14,7 +14,7 @@ export default function Messages() {
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const list = useQuery({
     queryKey: ['messages', filter],
-    queryFn: () => api<{ items: Msg[]; retentionDays: number; retention?: Retention; voice?: boolean; enabled: boolean }>(`/messages?user=${encodeURIComponent(filter.user)}&q=${encodeURIComponent(filter.q)}`),
+    queryFn: () => api<{ items: Msg[]; retentionDays: number; retention?: Retention; voice?: boolean; images?: boolean; enabled: boolean }>(`/messages?user=${encodeURIComponent(filter.user)}&q=${encodeURIComponent(filter.q)}`),
   });
   const del = async (body: { ids?: number[]; fromUserId?: number }, what: string) => {
     if (!confirm(`Delete ${what}? This can’t be undone.`)) return;
@@ -47,7 +47,7 @@ export default function Messages() {
           <input type="checkbox" checked={list.data?.enabled ?? true} onChange={(e) => void setEnabled(e.target.checked)} /> {(list.data?.enabled ?? true) ? 'On' : 'Off'}
         </label>
       </div>
-      {list.data && <RetentionCard key={JSON.stringify(list.data.retention)} r={list.data.retention ?? { days: 7, text: true, voice: true, images: true }} voice={list.data.voice ?? true} onSaved={() => void list.refetch()} />}
+      {list.data && <RetentionCard key={JSON.stringify(list.data.retention)} r={list.data.retention ?? { days: 7, text: true, voice: true, images: true }} voice={list.data.voice ?? true} images={list.data.images ?? true} onSaved={() => void list.refetch()} />}
       <form className="card form mt" onSubmit={(e) => (e.preventDefault(), setFilter({ user: user.trim(), q: q.trim() }))}>
         <div className="cols">
           <div className="field"><label htmlFor="mu">Player UID</label><input id="mu" className="input" value={user} onChange={(e) => setUser(e.target.value)} placeholder="QW-XXXXXX" /></div>
@@ -70,7 +70,7 @@ export default function Messages() {
                   <td className="small">{fmtDate(m.createdAt)}</td>
                   <td><Link to={`/users/${m.sender.id}`}>{m.sender.username}</Link><div className="small faint">{m.sender.uid}</div></td>
                   <td><Link to={`/users/${m.recipient.id}`}>{m.recipient.username}</Link><div className="small faint">{m.recipient.uid}</div></td>
-                  <td style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxWidth: 360 }}>{m.kind === 'voice' ? (m.media?.url ? <audio controls preload="none" src={m.media.url} style={{ height: 32, maxWidth: 260 }} /> : <i className="faint">Voice message (expired)</i>) : m.body}</td>
+                  <td style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxWidth: 360 }}>{m.kind === 'voice' ? (m.media?.url ? <audio controls preload="none" src={m.media.url} style={{ height: 32, maxWidth: 260 }} /> : <i className="faint">Voice message (expired)</i>) : m.kind === 'image' ? (m.media?.url ? <a href={m.media.url} target="_blank" rel="noreferrer"><img src={m.media.url} alt="" style={{ maxWidth: 160, maxHeight: 120, borderRadius: 8 }} /></a> : <i className="faint">Photo (expired)</i>) : m.body}</td>
                   <td><button className="btn sm danger" onClick={() => void del({ ids: [m.id] }, 'this message')}>Delete</button></td>
                 </tr>
               ))}
@@ -83,8 +83,8 @@ export default function Messages() {
 }
 
 /** Admin: keep chat for N days; choose what the cleanup deletes; voice messages on/off. */
-function RetentionCard({ r, voice, onSaved }: { r: Retention; voice: boolean; onSaved: () => void }) {
-  const [v, setV] = useState({ ...r, voiceEnabled: voice });
+function RetentionCard({ r, voice, images, onSaved }: { r: Retention; voice: boolean; images: boolean; onSaved: () => void }) {
+  const [v, setV] = useState({ ...r, voiceEnabled: voice, imagesEnabled: images });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const save = async () => {
@@ -115,10 +115,11 @@ function RetentionCard({ r, voice, onSaved }: { r: Retention; voice: boolean; on
           <span className="small bold">What gets deleted</span>
           <label className="row"><input type="checkbox" checked={v.text} onChange={(e) => setV({ ...v, text: e.target.checked })} /> Text messages</label>
           <label className="row"><input type="checkbox" checked={v.voice} onChange={(e) => setV({ ...v, voice: e.target.checked })} /> Voice messages (audio files)</label>
-          <label className="row"><input type="checkbox" checked={v.images} onChange={(e) => setV({ ...v, images: e.target.checked })} /> Photos (when photo sending is added)</label>
+          <label className="row"><input type="checkbox" checked={v.images} onChange={(e) => setV({ ...v, images: e.target.checked })} /> Photos</label>
         </div>
       </div>
       <label className="row"><input type="checkbox" checked={v.voiceEnabled} onChange={(e) => setV({ ...v, voiceEnabled: e.target.checked })} /> Allow voice messages in chat</label>
+      <label className="row"><input type="checkbox" checked={v.imagesEnabled} onChange={(e) => setV({ ...v, imagesEnabled: e.target.checked })} /> Allow photos in chat (compressed to about 10% of the original; no videos)</label>
       <div className="row">
         <button className="btn primary" disabled={busy} onClick={() => void save()}>Save</button>
         {msg && <span className="small">{msg}</span>}

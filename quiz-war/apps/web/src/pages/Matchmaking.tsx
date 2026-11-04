@@ -63,6 +63,15 @@ export default function Matchmaking() {
     };
   }, [conn, mode, ranked, categoryId]);
 
+  // Taking long: suggest a game against AI (also when the server's offer was missed).
+  const [offered, setOffered] = useState(false);
+  useEffect(() => {
+    if (!offered && !aiOffer && !timedOut && elapsed >= 25) {
+      setOffered(true);
+      setAiOffer('normal');
+    }
+  }, [elapsed, aiOffer, timedOut, offered]);
+
   useEffect(() => {
     const id = setInterval(() => setTip((x) => (x + 1) % TIPS.length), 4500);
     return () => clearInterval(id);
@@ -73,7 +82,8 @@ export default function Matchmaking() {
 
   const acceptAi = async () => {
     try {
-      const r = await emit('mm:accept_ai', { level: aiOffer ?? 'normal' });
+      // After a timeout the search ticket is gone, so start an AI match directly.
+      const r = timedOut ? await emit('ai:start', { mode, level: aiOffer ?? 'normal', categoryId }) : await emit('mm:accept_ai', { level: aiOffer ?? 'normal' });
       useGame.getState().reset(r.matchId);
       sfx('start');
       nav(`/match/${r.matchId}`, { replace: true });
@@ -105,7 +115,8 @@ export default function Matchmaking() {
           <>
             <h1>{t('No opponent found', 'কোনো প্রতিপক্ষ পাওয়া যায়নি')}</h1>
             <p className="dim">{t('Not many players in your range right now.', 'এই মুহূর্তে আপনার লেভেলের প্লেয়ার কম।')}</p>
-            <button className="btn white lg" onClick={() => location.reload()}><Icon name="refresh" /> {t('Search again', 'আবার খুঁজুন')}</button>
+            <button className="btn accent lg" onClick={() => void acceptAi()}><Icon name="bot" /> {t('Play vs AI now', 'এখনই AI-এর সাথে খেলুন')}</button>
+            <button className="btn white" onClick={() => location.reload()}><Icon name="refresh" /> {t('Search again', 'আবার খুঁজুন')}</button>
           </>
         ) : (
           <>

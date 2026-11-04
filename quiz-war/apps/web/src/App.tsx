@@ -24,7 +24,7 @@ import { initNativePush } from './lib/push';
 import { applyTheme, useSettings } from './lib/settings';
 import { connectSocket, disconnectSocket, emit } from './lib/socket';
 import { setMusic } from './lib/sound';
-import { leaveVoice, useVoice, voiceBackground } from './lib/voice';
+import { leaveVoice, resumeVoiceAudio, useVoice, voiceBackground } from './lib/voice';
 import { toast } from './lib/toast';
 import { Login, Register } from './pages/Auth';
 import Home from './pages/Home';
@@ -225,20 +225,43 @@ export function App() {
   const voiceRoom = useVoice((s) => s.roomId);
   useEffect(() => {
     const inGame = /^\/(match|war-room|matchmaking)/.test(loc.pathname);
-    const withPeople = /^\/(war-room|matchmaking)/.test(loc.pathname) || (/^\/(match|result)\//.test(loc.pathname) && gameType === 'pvp');
+    const withPeople = /^\/war-room/.test(loc.pathname) || (/^\/(match|result)\//.test(loc.pathname) && gameType === 'pvp');
     setMusic(music && status === 'authed' && !splash && !withPeople && !voiceRoom, inGame ? 'match' : 'menu');
   }, [music, loc.pathname, status, splash, gameType, voiceRoom]);
 
-  // Live voice ends when the player leaves the match / result / room screens.
+  // Live voice keeps going while the room / match is still open in the background (and while
+  // chatting from the result page); it ends when the player is really done with it.
+  const openRoom = useAuth((s) => s.openRoomId);
+  const activeMatch = useAuth((s) => s.activeMatchId);
   useEffect(() => {
-    if (voiceRoom && !/^\/(match|result|war-room)\//.test(loc.pathname)) leaveVoice();
-  }, [loc.pathname, voiceRoom]);
-  // The mic turns off when the app goes to the background.
+    if (!voiceRoom) return;
+    if (/^\/(match|result|war-room|chat)\//.test(loc.pathname)) return;
+    if (voiceRoom === openRoom || voiceRoom === activeMatch) return;
+    leaveVoice();
+  }, [loc.pathname, voiceRoom, openRoom, activeMatch]);
+  // Sound may need one tap to start (browser rule): resume on the next touch.
   useEffect(() => {
-    const on = () => document.hidden && voiceBackground();
+    const on = () => resumeVoiceAudio();
+    document.addEventListener('pointerdown', on, { passive: true });
+    return () => document.removeEventListener('pointerdown', on);
+  }, []);
+  // Coming back to the app during a live match: straight back into it, no tap needed.
+  // (The mic turns off while the app is in the background, for privacy.)
+  useEffect(() => {
+    const on = () => {
+      if (document.hidden) return voiceBackground();
+      const id = useAuth.getState().activeMatchId;
+      if (!id || window.location.pathname.startsWith(`/match/${id}`)) return;
+      void emit('match:resume', { matchId: id }, 5000)
+        .then((r: any) => {
+          const st = r?.snapshot?.state;
+          if (r?.snapshot && !['finished', 'aborted', 'lobby'].includes(st)) nav(`/match/${id}`);
+        })
+        .catch(() => undefined);
+    };
     document.addEventListener('visibilitychange', on);
     return () => document.removeEventListener('visibilitychange', on);
-  }, []);
+  }, [nav]);
 
   useEffect(() => {
     if (status === 'authed') {

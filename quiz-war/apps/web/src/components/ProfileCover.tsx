@@ -1,92 +1,97 @@
 /**
- * Branded, softly animated profile cover: night-blue sky, a Bangladesh-red sun, drifting
- * winner's cups and stars, and two rolling waves. Pure SVG + CSS transforms (compositor-only), and still
- * under reduced motion.
+ * Profile cover: an evening sky over Bangladesh fields and a river, with a flock of kites (চিল)
+ * gliding across. Pure SVG + CSS transforms (cheap for the phone), still under reduced motion.
  */
-export function ProfileCover() {
-  const marks = [
-    { x: 30, y: 58, s: 16, d: 0, c: 'cup' },
-    { x: 92, y: 32, s: 9, d: 1.6, c: 'star' },
-    { x: 148, y: 66, s: 14, d: 3.1, c: 'cup' },
-    { x: 262, y: 26, s: 8, d: 2.2, c: 'star' },
-    { x: 312, y: 70, s: 15, d: 0.8, c: 'cup' },
-    { x: 370, y: 36, s: 9, d: 3.8, c: 'star' },
-    { x: 200, y: 62, s: 15, d: 2.6, c: 'q' },
-    { x: 236, y: 30, s: 11, d: 4.4, c: 'a' },
-    { x: 60, y: 84, s: 12, d: 5.2, c: 'q' },
-  ];
+const FLOCK = [
+  { x: 0, y: 0, s: 1, d: 0 },
+  { x: -26, y: 10, s: 0.8, d: 0.35 },
+  { x: -22, y: -12, s: 0.85, d: 0.7 },
+  { x: -50, y: 20, s: 0.65, d: 0.2 },
+  { x: -48, y: -22, s: 0.7, d: 0.55 },
+  { x: -74, y: 4, s: 0.6, d: 0.9 },
+  { x: -80, y: 28, s: 0.5, d: 0.45 },
+];
+
+function Kite({ s, d }: { s: number; d: number }) {
+  // A gliding kite: two long wings that flap slowly, with a small body.
   return (
-    <svg className="pc-cover" viewBox="0 0 400 120" preserveAspectRatio="xMidYMid slice" aria-hidden focusable="false">
+    <g transform={`scale(${s})`}>
+      <g className="pcb-bob" style={{ animationDelay: `${-d * 3}s` }}>
+        <path className="pcb-wing" style={{ animationDelay: `${-d}s` }} d="M0 0 C-6 -6 -13 -7 -20 -3 C-13 -4 -7 -2 0 2 C7 -2 13 -4 20 -3 C13 -7 6 -6 0 0 Z" />
+        <path d="M-1.4 0 L1.4 0 L0.8 5 L0 7 L-0.8 5 Z" />
+      </g>
+    </g>
+  );
+}
+
+export function ProfileCover() {
+  return (
+    <svg className="pc-cover" viewBox="0 0 400 140" preserveAspectRatio="xMidYMid slice" aria-hidden focusable="false">
       <defs>
-        <linearGradient id="pcSky" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#1d4ed8" />
-          <stop offset=".55" stopColor="#1e1b4b" />
-          <stop offset="1" stopColor="#4c1d95" />
+        <linearGradient id="pcSky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#1e3a8a" />
+          <stop offset=".45" stopColor="#4f46e5" />
+          <stop offset=".78" stopColor="#f472b6" />
+          <stop offset="1" stopColor="#fdba74" />
         </linearGradient>
         <radialGradient id="pcSun" cx=".5" cy=".5" r=".5">
-          <stop offset="0" stopColor="#f42a41" stopOpacity=".95" />
-          <stop offset=".6" stopColor="#f42a41" stopOpacity=".55" />
-          <stop offset="1" stopColor="#f42a41" stopOpacity="0" />
+          <stop offset="0" stopColor="#fff7ed" />
+          <stop offset=".35" stopColor="#fdba74" stopOpacity=".9" />
+          <stop offset="1" stopColor="#fb923c" stopOpacity="0" />
         </radialGradient>
-        <linearGradient id="pcShine" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#fff" stopOpacity="0" />
-          <stop offset=".5" stopColor="#fff" stopOpacity=".16" />
-          <stop offset="1" stopColor="#fff" stopOpacity="0" />
+        <linearGradient id="pcRiver" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#fde68a" stopOpacity=".15" />
+          <stop offset=".5" stopColor="#fde68a" stopOpacity=".55" />
+          <stop offset="1" stopColor="#fde68a" stopOpacity=".15" />
         </linearGradient>
-        <pattern id="pcDots" width="16" height="16" patternUnits="userSpaceOnUse">
-          <circle cx="2" cy="2" r="1" fill="#fff" opacity=".12" />
-        </pattern>
       </defs>
-      <rect width="400" height="120" fill="url(#pcSky)" />
-      <rect width="400" height="120" fill="url(#pcDots)" />
+      <rect width="400" height="140" fill="url(#pcSky)" />
 
-      {/* Red sun (flag) with a slow breathing glow */}
-      <g className="pcc-sun">
-        <circle cx="330" cy="52" r="46" fill="url(#pcSun)" />
-        <circle cx="330" cy="52" r="20" fill="#f42a41" opacity=".9" />
+      {/* Setting sun with a slow glow */}
+      <g className="pcb-sun">
+        <circle cx="300" cy="104" r="46" fill="url(#pcSun)" />
+        <circle cx="300" cy="104" r="15" fill="#fff7ed" opacity=".95" />
       </g>
 
-      {/* Crossed swords watermark — the QUIZ WAR mark */}
-      <g className="pcc-swords" transform="translate(52 22)" stroke="#fde047" strokeWidth="3.2" strokeLinecap="round" fill="none" opacity=".55">
-        <path d="M4 4 L34 34 M28 38 L38 28 M31 37 L37 43" />
-        <path d="M40 4 L10 34 M16 38 L6 28 M13 37 L7 43" />
+      {/* Soft clouds drifting */}
+      <g className="pcb-cloud c1" fill="#fff" opacity=".22">
+        <ellipse cx="70" cy="34" rx="34" ry="7" />
+        <ellipse cx="92" cy="30" rx="20" ry="6" />
       </g>
-      <text x="100" y="40" className="pcc-word">QUIZ WAR</text>
-      <text x="101" y="56" className="pcc-sub">BANGLADESH</text>
+      <g className="pcb-cloud c2" fill="#fff" opacity=".16">
+        <ellipse cx="250" cy="22" rx="42" ry="6" />
+        <ellipse cx="226" cy="26" rx="22" ry="5" />
+      </g>
 
-      {/* Drifting winner's cups and stars */}
-      {marks.map((m, i) => (
-        <g key={i} transform={`translate(${m.x} ${m.y}) scale(${m.s / 16})`}>
-        <g className="pcc-mark" style={{ animationDelay: `${m.d}s` }}>
-          {m.c === 'q' || m.c === 'a' ? (
-            <>
-              <circle cx="8" cy="8" r="8" fill={m.c === 'q' ? '#22d3ee' : '#4ade80'} opacity=".85" />
-              <text x="8" y="12" textAnchor="middle" fontSize="11" fontWeight="900" fill="#0b1336">{m.c === 'q' ? '?' : '✓'}</text>
-            </>
-          ) : m.c === 'cup' ? (
-            <>
-              <path d="M3 0h10v4a5 5 0 0 1-10 0z" fill="#facc15" />
-              <path d="M3 1H0.5a2.6 2.6 0 0 0 2.9 3.4M13 1h2.5a2.6 2.6 0 0 1-2.9 3.4" fill="none" stroke="#facc15" strokeWidth="1.2" strokeLinecap="round" />
-              <path d="M7 9h2v3H7zM4.5 12h7v2h-7z" fill="#f59e0b" />
-              <path d="M6 2.2l.6 1.2 1.3.2-1 .9.3 1.3L6 5.2l-1.2.6.3-1.3-1-.9 1.3-.2z" fill="#fff7cc" opacity=".9" />
-            </>
-          ) : (
-            <path d="M8 0l2.2 5 5.3.5-4 3.6 1.2 5.3L8 11.6 3.3 14.4l1.2-5.3-4-3.6L5.8 5z" fill="#fde68a" />
-          )}
+      {/* Fields, a palm line and the river */}
+      <path d="M0 112 C60 100 110 104 170 110 C230 116 300 100 400 106 V140 H0 Z" fill="#14532d" opacity=".9" />
+      <path d="M0 120 C70 112 140 118 210 122 C280 126 340 114 400 118 V140 H0 Z" fill="#052e16" />
+      <g fill="#052e16">
+        <path d="M44 108 l1 -14 l1 14 Z M38 95 q7 -3 14 0 q-7 -1 -14 0 Z" />
+        <path d="M352 106 l1 -16 l1 16 Z M345 91 q8 -3 16 0 q-8 -1 -16 0 Z" />
+        <path d="M368 108 l1 -11 l1 11 Z M363 98 q6 -2 12 0 q-6 -1 -12 0 Z" />
+      </g>
+      <path className="pcb-river" d="M0 130 C80 124 160 134 240 128 C300 124 350 130 400 127" stroke="url(#pcRiver)" strokeWidth="3" fill="none" />
+
+      {/* The flock of kites gliding across the sky */}
+      <g className="pcb-flock">
+        <g transform="translate(0 54)" fill="#0b1336" opacity=".85">
+          {FLOCK.map((b, i) => (
+            <g key={i} transform={`translate(${b.x} ${b.y})`}>
+              <Kite s={b.s} d={b.d} />
+            </g>
+          ))}
         </g>
+      </g>
+      <g className="pcb-flock f2">
+        <g transform="translate(0 30) scale(.55)" fill="#0b1336" opacity=".55">
+          {FLOCK.slice(0, 4).map((b, i) => (
+            <g key={i} transform={`translate(${b.x} ${b.y})`}>
+              <Kite s={b.s} d={b.d + 0.2} />
+            </g>
+          ))}
         </g>
-      ))}
-
-      {/* Rolling waves (green fields + river), drawn twice as wide and slid sideways */}
-      <g className="pcc-wave w1">
-        <path d="M0 96 Q50 82 100 96 T200 96 T300 96 T400 96 T500 96 T600 96 T700 96 T800 96 V120 H0Z" fill="#006a4e" opacity=".55" />
       </g>
-      <g className="pcc-wave w2">
-        <path d="M0 104 Q50 94 100 104 T200 104 T300 104 T400 104 T500 104 T600 104 T700 104 T800 104 V120 H0Z" fill="#22d3ee" opacity=".25" />
-      </g>
-
-      {/* Light sweep */}
-      <rect className="pcc-shine" x="-160" y="0" width="140" height="120" fill="url(#pcShine)" transform="skewX(-20)" />
     </svg>
   );
 }

@@ -285,6 +285,8 @@ export const appSettingsSchema = z.object({
   chatEnabled: z.boolean(),
   /** Voice messages in chat (recorded small, auto-deleted). */
   chatVoiceEnabled: z.boolean().default(true),
+  /** Photos in chat (compressed on the phone and again on the server). */
+  chatImagesEnabled: z.boolean().default(true),
   /** Chat retention: how many days to keep, and which kinds get deleted. */
   chatRetention: z
     .object({
@@ -331,6 +333,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   ourAppsEnabled: true,
   chatEnabled: true,
   chatVoiceEnabled: true,
+  chatImagesEnabled: true,
   chatRetention: { days: 7, text: true, voice: true, images: true },
   voiceEnabled: true,
   collectionsEnabled: true,

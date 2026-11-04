@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { exec, query, queryOne } from '../../db/pool';
-import { conflict, notFound } from '../../lib/errors';
+import { AppError, conflict, notFound } from '../../lib/errors';
 
 export const categoryInputSchema = z.object({
   slug: z.string().trim().toLowerCase().regex(/^[a-z0-9-]{2,60}$/, 'lowercase letters, numbers and dashes'),
@@ -16,6 +16,8 @@ export const categoryInputSchema = z.object({
   isCollection: z.boolean().default(false),
   /** Reserved for Premium (Update 2); free for now. */
   isPremium: z.boolean().default(false),
+  /** Premium collections: game coins that unlock it for good (0 = premium only). */
+  unlockCoins: z.number().int().min(0).max(10_000_000).default(0),
 });
 
 export class CategoryService {
@@ -30,13 +32,37 @@ export class CategoryService {
   private async listAll() {
     if (this.cache && Date.now() - this.cache.at < 60_000) return this.cache.data;
     const rows = await query<any>(
-      `SELECT c.id, c.slug, c.name, c.name_bn AS nameBn, c.icon, c.icon_url AS iconUrl, c.description, c.color, c.is_collection AS isCollection, c.is_premium AS isPremium,
+      `SELECT c.id, c.slug, c.name, c.name_bn AS nameBn, c.icon, c.icon_url AS iconUrl, c.description, c.color, c.is_collection AS isCollection, c.is_premium AS isPremium, c.unlock_coins AS unlockCoins,
               (SELECT COUNT(*) FROM questions q WHERE q.category_id = c.id AND q.is_active = 1 AND q.review_status = 'approved' AND q.deleted_at IS NULL) AS questionCount
        FROM categories c WHERE c.is_active = 1 AND c.deleted_at IS NULL ORDER BY c.sort_order, c.id`,
     );
-    const data = rows.map((r) => ({ ...r, isCollection: !!r.isCollection, isPremium: !!r.isPremium, questionCount: Number(r.questionCount) }));
+    const data = rows.map((r) => ({ ...r, isCollection: !!r.isCollection, isPremium: !!r.isPremium, unlockCoins: Number(r.unlockCoins ?? 0), questionCount: Number(r.questionCount) }));
     this.cache = { at: Date.now(), data };
     return data;
+  }
+
+  /** Collections this player unlocked with coins. */
+  async unlockedIds(userId: number): Promise<number[]> {
+    const rows = await query<{ category_id: number }>('SELECT category_id FROM user_collection_unlocks WHERE user_id = ?', [userId]);
+    return rows.map((r) => Number(r.category_id));
+  }
+
+  /** May this player play / read this category? Premium collections need premium or a coin unlock. */
+  async canUse(userId: number | null, categoryId: number | null | undefined) {
+    if (!categoryId) return true;
+    const c = (await this.listAll()).find((x: any) => x.id === categoryId);
+    if (!c || !c.isPremium) return true;
+    if (!userId) return false;
+    const row = await queryOne(
+      `SELECT 1 x FROM user_profiles WHERE user_id = ? AND premium_at IS NOT NULL
+       UNION SELECT 1 FROM user_collection_unlocks WHERE user_id = ? AND category_id = ? LIMIT 1`,
+      [userId, userId, categoryId],
+    );
+    return !!row;
+  }
+
+  async assertCanUse(userId: number | null, categoryId: number | null | undefined) {
+    if (!(await this.canUse(userId, categoryId))) throw new AppError(403, 'collection_locked', 'This collection is premium. Unlock it first.');
   }
 
   invalidate() {
@@ -45,12 +71,12 @@ export class CategoryService {
 
   async listAdmin() {
     const rows = await query<any>(
-      `SELECT c.id, c.slug, c.name, c.name_bn AS nameBn, c.icon, c.icon_url AS iconUrl, c.description, c.color, c.sort_order AS sortOrder, c.is_active AS isActive, c.is_collection AS isCollection, c.is_premium AS isPremium,
+      `SELECT c.id, c.slug, c.name, c.name_bn AS nameBn, c.icon, c.icon_url AS iconUrl, c.description, c.color, c.sort_order AS sortOrder, c.is_active AS isActive, c.is_collection AS isCollection, c.is_premium AS isPremium, c.unlock_coins AS unlockCoins,
               (SELECT COUNT(*) FROM questions q WHERE q.category_id = c.id AND q.review_status = 'approved' AND q.deleted_at IS NULL) AS questionCount,
               (SELECT COUNT(*) FROM questions q WHERE q.category_id = c.id AND q.review_status = 'pending' AND q.deleted_at IS NULL) AS pendingCount
        FROM categories c WHERE c.deleted_at IS NULL ORDER BY c.sort_order, c.id`,
     );
-    return rows.map((r) => ({ ...r, isActive: !!r.isActive, isCollection: !!r.isCollection, isPremium: !!r.isPremium, questionCount: Number(r.questionCount) }));
+    return rows.map((r) => ({ ...r, isActive: !!r.isActive, isCollection: !!r.isCollection, isPremium: !!r.isPremium, unlockCoins: Number(r.unlockCoins ?? 0), questionCount: Number(r.questionCount) }));
   }
 
   async get(id: number) {
@@ -62,7 +88,7 @@ export class CategoryService {
   async create(input: z.infer<typeof categoryInputSchema>) {
     const max = await queryOne<{ m: number }>('SELECT COALESCE(MAX(sort_order), 0) m FROM categories');
     try {
-      const r = await exec('INSERT INTO categories (slug, name, name_bn, icon, icon_url, description, color, is_active, is_collection, is_premium, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+      const r = await exec('INSERT INTO categories (slug, name, name_bn, icon, icon_url, description, color, is_active, is_collection, is_premium, unlock_coins, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
         input.slug,
         input.name,
         input.nameBn ?? null,
@@ -73,6 +99,7 @@ export class CategoryService {
         input.isActive ? 1 : 0,
         input.isCollection ? 1 : 0,
         input.isPremium ? 1 : 0,
+        input.unlockCoins,
         Number(max?.m ?? 0) + 1,
       ]);
       this.invalidate();
@@ -84,7 +111,7 @@ export class CategoryService {
   }
 
   async update(id: number, input: z.infer<typeof categoryInputSchema>) {
-    await exec('UPDATE categories SET slug = ?, name = ?, name_bn = ?, icon = ?, icon_url = ?, description = ?, color = ?, is_active = ?, is_collection = ?, is_premium = ? WHERE id = ? AND deleted_at IS NULL', [
+    await exec('UPDATE categories SET slug = ?, name = ?, name_bn = ?, icon = ?, icon_url = ?, description = ?, color = ?, is_active = ?, is_collection = ?, is_premium = ?, unlock_coins = ? WHERE id = ? AND deleted_at IS NULL', [
       input.slug,
       input.name,
       input.nameBn ?? null,
@@ -95,6 +122,7 @@ export class CategoryService {
       input.isActive ? 1 : 0,
       input.isCollection ? 1 : 0,
       input.isPremium ? 1 : 0,
+      input.unlockCoins,
       id,
     ]);
     this.invalidate();

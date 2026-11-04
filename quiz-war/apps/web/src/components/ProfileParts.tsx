@@ -8,7 +8,7 @@ import { num, useLang, useT } from '../lib/i18n';
 /** Big numbers in one line, TikTok style (no boxes). */
 export function ProfileNumbers({ items }: { items: { value: string | number; label: string; to?: string }[] }) {
   return (
-    <div className="px-nums">
+    <div className="px-nums" style={{ ['--n' as string]: items.length }}>
       {items.map((it) =>
         it.to ? (
           <Link key={it.label} to={it.to}>
@@ -70,25 +70,26 @@ export function ProfileTabs<T extends string>({ tabs, value, onChange }: { tabs:
   );
 }
 
-/** Nine detailed stats as plain numbers in a 3-column grid. */
+/** Nine detailed stats as soft tiles with a coloured icon. */
 export function StatsNumbers({ stats }: { stats: any }) {
   const t = useT();
-  const items: [string, string | number, string?][] = [
-    [t('Games', 'ম্যাচ'), stats.totalGames],
-    [t('Wins', 'জয়'), stats.wins, 'success'],
-    [t('Losses', 'হার'), stats.losses, 'danger'],
-    [t('Accuracy', 'সঠিকতা'), `${stats.accuracy}%`],
-    [t('Best score', 'সেরা স্কোর'), stats.bestScore],
-    [t('Win streak', 'টানা জয়'), stats.currentWinStreak],
-    [t('Best streak', 'সেরা টানা জয়'), stats.bestWinStreak],
-    [t('Best days', 'সেরা টানা দিন'), stats.bestStreakDays],
-    [t('Survival best', 'সারভাইভাল সেরা'), stats.bestSurvival],
+  const items: [IconName, string, string, string | number][] = [
+    ['gamepad', 'blue', t('Games', 'ম্যাচ'), stats.totalGames],
+    ['trophy', 'green', t('Wins', 'জয়'), stats.wins],
+    ['x-circle', 'red', t('Losses', 'হার'), stats.losses],
+    ['target', 'violet', t('Accuracy', 'সঠিকতা'), `${stats.accuracy}%`],
+    ['star', 'amber', t('Best score', 'সেরা স্কোর'), stats.bestScore],
+    ['fire', 'orange', t('Win streak', 'টানা জয়'), stats.currentWinStreak],
+    ['medal', 'amber', t('Best streak', 'সেরা টানা জয়'), stats.bestWinStreak],
+    ['calendar', 'cyan', t('Best days', 'সেরা টানা দিন'), stats.bestStreakDays],
+    ['heart-pulse', 'pink', t('Survival best', 'সারভাইভাল সেরা'), stats.bestSurvival],
   ];
   return (
     <div className="px-grid">
-      {items.map(([label, value, tone]) => (
-        <div key={label}>
-          <b className={tone ? `t-${tone}` : undefined}><N v={value} /></b>
+      {items.map(([icon, tone, label, value]) => (
+        <div key={label} className={`px-stat t-${tone}`}>
+          <span className="px-stat-ic"><Icon name={icon} size={18} /></span>
+          <b><N v={value} /></b>
           <span>{label}</span>
         </div>
       ))}

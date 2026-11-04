@@ -17,7 +17,7 @@ import { num, useLang, useT } from '../lib/i18n';
 import { reasonLabel } from '../lib/labels';
 import { haptic } from '../lib/platform';
 import { toast } from '../lib/toast';
-import { AchievementGrid, AchievementHighlights, ProfileNumbers, ProfileTabs, StatsNumbers } from '../components/ProfileParts';
+import { AchievementGrid, ProfileNumbers, ProfileTabs, StatsNumbers } from '../components/ProfileParts';
 import { SquadLogo } from './Squads';
 import { NameBadges } from '../components/Verified';
 
@@ -190,7 +190,6 @@ export default function PublicProfile() {
           )
         )}
         {authed && !self && !rel?.available && <p className="xs muted" style={{ marginTop: 8 }}>{t('This player isn’t available for battle right now.', 'এই প্লেয়ার এখন ব্যাটলের জন্য প্রস্তুত নন।')}</p>}
-        {data.achievements.length > 0 && <AchievementHighlights items={data.achievements} onMore={() => setTab('achievements')} />}
       </section>
 
       <ProfileTabs<'stats' | 'achievements'>
