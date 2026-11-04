@@ -109,7 +109,7 @@ export const fmtSecs = (s: number, lang: 'bn' | 'en') => num(`${Math.floor(s / 6
 let playing: HTMLAudioElement | null = null;
 
 /** Chat bubble player: play/pause, progress, length. */
-export function VoiceBubble({ url, secs, mine }: { url: string | null; secs: number; mine: boolean }) {
+export function VoiceBubble({ url, secs, mine, gone }: { url: string | null; secs: number; mine: boolean; gone?: string }) {
   const t = useT();
   const lang = useLang();
   const audio = useRef<HTMLAudioElement | null>(null);
@@ -125,7 +125,7 @@ export function VoiceBubble({ url, secs, mine }: { url: string | null; secs: num
   if (!url)
     return (
       <span className="voice-msg expired">
-        <Icon name="mic" size={16} /> {t('Voice message expired', 'ভয়েস মেসেজের মেয়াদ শেষ')}
+        <Icon name="mic" size={16} /> {gone === 'owner' ? t('Deleted by its owner', 'মালিক এটি মুছে দিয়েছেন') : t('Voice message expired', 'ভয়েস মেসেজের মেয়াদ শেষ')}
       </span>
     );
 

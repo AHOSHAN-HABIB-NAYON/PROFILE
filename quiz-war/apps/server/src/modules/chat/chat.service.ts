@@ -23,8 +23,8 @@ const toMsg = (r: any): ChatMessage => ({
   ...(r.deleted_at ? { deleted: true } : {}),
   createdAt: new Date(r.created_at).toISOString(),
   readAt: r.read_at ? new Date(r.read_at).toISOString() : null,
-  ...(r.kind === 'voice' && !r.deleted_at ? { kind: 'voice' as const, media: { url: r.media_url ?? null, secs: Number(r.media_secs ?? 0) } } : {}),
-  ...(r.kind === 'image' && !r.deleted_at ? { kind: 'image' as const, media: { url: r.media_url ?? null, secs: 0, ...dims(r.media_dims) } } : {}),
+  ...(r.kind === 'voice' && !r.deleted_at ? { kind: 'voice' as const, media: { url: r.media_url ?? null, secs: Number(r.media_secs ?? 0), ...(r.media_gone ? { gone: r.media_gone } : {}) } } : {}),
+  ...(r.kind === 'image' && !r.deleted_at ? { kind: 'image' as const, media: { url: r.media_url ?? null, secs: 0, ...dims(r.media_dims), ...(r.media_gone ? { gone: r.media_gone } : {}) } } : {}),
 });
 
 /** Short quote of a replied-to message (voice / photo shown as such, not as text). */
@@ -301,24 +301,32 @@ export class ChatService {
     }
   }
 
-  /** Forward one of my chat messages (text, photo or voice) to another player. Media gets its own copy. */
+  /**
+   * Forward one of my chat messages (text, photo or voice). Photos and voice share the original
+   * file — no second upload. If the owner deletes the original, forwards show "deleted by owner".
+   */
   async forward(userId: number, messageId: number, toId: number): Promise<ChatMessage> {
     const m = await queryOne<any>('SELECT * FROM chat_messages WHERE id = ? AND (sender_id = ? OR recipient_id = ?)', [messageId, userId, userId]);
     if (!m || m.deleted_at) throw notFound('Message not found');
     if (m.kind === 'text' || !m.kind) return this.send(userId, toId, String(m.body));
     if (!m.media_url) throw new AppError(410, 'expired', 'This file has expired');
     await this.checkCanSend(userId, toId);
-    const ext = String(m.media_url).split('.').pop()?.replace(/[^a-z0-9]/gi, '') || 'bin';
-    const folder = m.kind === 'voice' ? 'chat-voice' : 'chat-img';
-    const key = `${folder}/${new Date().toISOString().slice(0, 10)}/${userId}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}.${ext}`;
-    const url = (await this.media?.copy?.(m.media_url, key)) ?? null;
-    if (!url) throw new AppError(410, 'expired', 'This file has expired');
-    try {
-      return await this.deliver(userId, toId, { body: m.kind === 'voice' ? VOICE_BODY : IMAGE_BODY, kind: m.kind, mediaUrl: url, secs: m.media_secs ?? undefined, bytes: m.media_bytes ?? undefined, dims: m.media_dims ?? undefined });
-    } catch (e) {
-      await this.media?.remove(url).catch(() => undefined);
-      throw e;
-    }
+    return this.deliver(userId, toId, {
+      body: m.kind === 'voice' ? VOICE_BODY : IMAGE_BODY,
+      kind: m.kind,
+      mediaUrl: m.media_url,
+      secs: m.media_secs ?? undefined,
+      bytes: m.media_bytes ?? undefined,
+      dims: m.media_dims ?? undefined,
+      forwardOf: Number(m.forward_of ?? m.id),
+    });
+  }
+
+  /** The original's file is gone: every forward of it shows "deleted by owner" (or expired). */
+  private async dropForwards(rootId: number, why: 'owner' | 'expired') {
+    const rows = await query<{ id: number; sender_id: number; recipient_id: number }>('SELECT id, sender_id, recipient_id FROM chat_messages WHERE forward_of = ? AND media_url IS NOT NULL', [rootId]);
+    if (!rows.length) return;
+    await exec(`UPDATE chat_messages SET media_url = NULL, media_gone = ? WHERE forward_of = ?`, [why, rootId]);
   }
 
   private async checkCanSend(userId: number, peerId: number) {
@@ -337,7 +345,7 @@ export class ChatService {
   private async deliver(
     userId: number,
     peerId: number,
-    m: { body: string; kind?: 'voice' | 'image'; mediaUrl?: string; secs?: number; bytes?: number; dims?: string },
+    m: { body: string; kind?: 'voice' | 'image'; mediaUrl?: string; secs?: number; bytes?: number; dims?: string; forwardOf?: number },
     replyToId?: number,
   ): Promise<ChatMessage> {
     if (!m.kind) await this.checkCanSend(userId, peerId);
@@ -351,7 +359,7 @@ export class ChatService {
       );
     }
     const res = m.kind
-      ? await exec('INSERT INTO chat_messages (sender_id, recipient_id, body, reply_to_id, kind, media_url, media_secs, media_bytes, media_dims) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [userId, peerId, body, quote ? quote.id : null, m.kind, m.mediaUrl ?? null, m.secs ?? null, m.bytes ?? null, m.dims ?? null])
+      ? await exec('INSERT INTO chat_messages (sender_id, recipient_id, body, reply_to_id, kind, media_url, media_secs, media_bytes, media_dims, forward_of) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [userId, peerId, body, quote ? quote.id : null, m.kind, m.mediaUrl ?? null, m.secs ?? null, m.bytes ?? null, m.dims ?? null, m.forwardOf ?? null])
       : await exec('INSERT INTO chat_messages (sender_id, recipient_id, body, reply_to_id) VALUES (?, ?, ?, ?)', [userId, peerId, body, quote ? quote.id : null]);
     await exec('INSERT IGNORE INTO chat_accepts (user_id, peer_id) VALUES (?, ?)', [userId, peerId]);
     const isRequest = !(await this.isTrusted(peerId, userId));
@@ -402,14 +410,18 @@ export class ChatService {
    * phones); any message can be removed just for you.
    */
   async deleteMessage(userId: number, id: number, forEveryone: boolean) {
-    const m = await queryOne<{ sender_id: number; recipient_id: number; media_url: string | null }>('SELECT sender_id, recipient_id, media_url FROM chat_messages WHERE id = ?', [id]);
+    const m = await queryOne<{ sender_id: number; recipient_id: number; media_url: string | null; forward_of: number | null }>('SELECT sender_id, recipient_id, media_url, forward_of FROM chat_messages WHERE id = ?', [id]);
     if (!m || (Number(m.sender_id) !== userId && Number(m.recipient_id) !== userId)) throw notFound('Message not found');
     const mine = Number(m.sender_id) === userId;
     if (forEveryone) {
       if (!mine) throw new AppError(403, 'not_yours', 'You can only delete your own messages for everyone');
       // The text is wiped for good; both phones show "This message was deleted".
       await exec(`UPDATE chat_messages SET body = '', media_url = NULL, deleted_at = NOW() WHERE id = ?`, [id]);
-      if (m.media_url) await this.media?.remove(m.media_url).catch(() => undefined);
+      // Only the owner's original removes the shared file; a forwarded copy just disappears.
+      if (m.media_url && !m.forward_of) {
+        await this.media?.remove(m.media_url).catch(() => undefined);
+        await this.dropForwards(id, 'owner');
+      }
       this.emitter()?.toUser(Number(m.sender_id), 'chat:deleted', { ids: [id], unsent: true });
       this.emitter()?.toUser(Number(m.recipient_id), 'chat:deleted', { ids: [id], unsent: true });
     } else {
@@ -452,9 +464,13 @@ export class ChatService {
 
   async adminDelete(ids: number[]) {
     if (!ids.length) return 0;
-    const rows = await query<{ id: number; sender_id: number; recipient_id: number; media_url: string | null }>(`SELECT id, sender_id, recipient_id, media_url FROM chat_messages WHERE id IN (${ids.map(() => '?').join(',')})`, ids);
+    const rows = await query<{ id: number; sender_id: number; recipient_id: number; media_url: string | null; forward_of: number | null }>(`SELECT id, sender_id, recipient_id, media_url, forward_of FROM chat_messages WHERE id IN (${ids.map(() => '?').join(',')})`, ids);
     if (!rows.length) return 0;
-    for (const r of rows) if (r.media_url) await this.media?.remove(r.media_url).catch(() => undefined);
+    for (const r of rows) {
+      if (!r.media_url || r.forward_of) continue;
+      await this.media?.remove(r.media_url).catch(() => undefined);
+      await this.dropForwards(Number(r.id), 'owner');
+    }
     await exec(`DELETE FROM chat_messages WHERE id IN (${rows.map(() => '?').join(',')})`, rows.map((r) => r.id));
     const byUser = new Map<number, number[]>();
     for (const r of rows) for (const u of [Number(r.sender_id), Number(r.recipient_id)]) byUser.set(u, [...(byUser.get(u) ?? []), Number(r.id)]);
@@ -477,11 +493,15 @@ export class ChatService {
     let n = 0;
     for (const kind of ['voice', 'image'] as const) {
       if (!(kind === 'voice' ? r.voice : r.images)) continue;
-      const old = await query<{ id: number; media_url: string }>(
-        `SELECT id, media_url FROM chat_messages WHERE kind = ? AND media_url IS NOT NULL AND created_at < NOW() - INTERVAL ${days} DAY LIMIT 2000`,
+      const old = await query<{ id: number; media_url: string; forward_of: number | null }>(
+        `SELECT id, media_url, forward_of FROM chat_messages WHERE kind = ? AND media_url IS NOT NULL AND created_at < NOW() - INTERVAL ${days} DAY LIMIT 2000`,
         [kind],
       );
-      for (const m of old) await this.media?.remove(m.media_url).catch(() => undefined);
+      for (const m of old) {
+        if (m.forward_of) continue; // shared file: it goes with its original
+        await this.media?.remove(m.media_url).catch(() => undefined);
+        await this.dropForwards(Number(m.id), 'expired');
+      }
       if (old.length) await exec(`UPDATE chat_messages SET media_url = NULL WHERE id IN (${old.map(() => '?').join(',')})`, old.map((m) => m.id));
       n += old.length;
       // Expired media rows go too when text is purged (nothing left to show).

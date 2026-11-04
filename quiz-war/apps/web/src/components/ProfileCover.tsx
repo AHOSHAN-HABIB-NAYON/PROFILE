@@ -11,14 +11,14 @@ const sceneFor = (h: number): Scene => (h >= 5 && h < 10 ? 'morning' : h >= 10 &
 const PAL: Record<Scene, { sky: [string, string, string]; sun: string; glow: string; far: string; mid: string; near: string; field: string; water: [string, string]; bird: string; cloud: string; mist: number }> = {
   morning: { sky: ['#3b82f6', '#93c5fd', '#fed7aa'], sun: '#fff7ed', glow: '#fdba74', far: '#7c9cc4', mid: '#3f7d5c', near: '#1f5a3a', field: '#4d8f3f', water: ['#bfdbfe', '#fbcfa0'], bird: '#1e293b', cloud: '#fff7ed', mist: 0.55 },
   day: { sky: ['#1d4ed8', '#3b82f6', '#bae6fd'], sun: '#ffffff', glow: '#fef9c3', far: '#6b93c9', mid: '#2f7a4b', near: '#185c34', field: '#5aa33f', water: ['#60a5fa', '#bae6fd'], bird: '#0f172a', cloud: '#ffffff', mist: 0.25 },
-  night: { sky: ['#020617', '#0b1a4a', '#1e3a8a'], sun: '#f8fafc', glow: '#93c5fd', far: '#1e2b55', mid: '#0f2a2a', near: '#071a16', field: '#0d2b1d', water: ['#1e3a8a', '#0b1a4a'], bird: '#000', cloud: '#94a3b8', mist: 0.15 },
+  night: { sky: ['#030712', '#0b1640', '#1e3a8a'], sun: '#fefce8', glow: '#e0e7ff', far: '#16224a', mid: '#0d2224', near: '#061612', field: '#0b2418', water: ['#1d3a8a', '#0b1640'], bird: '#000', cloud: '#64748b', mist: 0.06 },
 };
 
 /** Scattered stars (fixed pseudo-random spread, same on every render). */
 const STARS = Array.from({ length: 40 }, (_, i) => {
   const a = Math.sin(i * 12.9898) * 43758.5453;
   const b = Math.sin(i * 78.233) * 12345.6789;
-  return { x: (a - Math.floor(a)) * 400, y: (b - Math.floor(b)) * 78, r: i % 6 === 0 ? 1.2 : 0.6, d: (i % 7) * 0.6 };
+  return { x: (a - Math.floor(a)) * 400, y: 4 + (b - Math.floor(b)) * 50, r: i % 6 === 0 ? 1.3 : i % 3 === 0 ? 0.9 : 0.55, d: ((i * 7) % 11) * 0.37 };
 });
 
 function Palm({ x, y, s, c }: { x: number; y: number; s: number; c: string }) {
@@ -74,8 +74,9 @@ export function ProfileCover({ scene: forced }: { scene?: Scene }) {
   }, [forced]);
   const p = PAL[scene];
   const night = scene === 'night';
-  const sunX = scene === 'morning' ? 300 : scene === 'day' ? 320 : 312;
-  const sunY = scene === 'morning' ? 86 : scene === 'day' ? 28 : 30;
+  // Centre of the sky: clear of the share/settings buttons (top right) and the photo (bottom left).
+  const sunX = scene === 'morning' ? 236 : scene === 'day' ? 226 : 214;
+  const sunY = scene === 'morning' ? 84 : scene === 'day' ? 34 : 38;
   const id = `pc-${scene}`;
   return (
     <svg className={`pc-cover pcv-${scene}`} viewBox="0 0 400 140" preserveAspectRatio="xMidYMid slice" aria-hidden focusable="false">
@@ -111,29 +112,52 @@ export function ProfileCover({ scene: forced }: { scene?: Scene }) {
       <rect width="400" height="140" fill={`url(#${id}-sky)`} />
 
       {night && (
-        <g fill="#fff">
-          {STARS.map((s, i) => (
-            <circle key={i} className="pcv-star" style={{ animationDelay: `${s.d}s` }} cx={s.x} cy={s.y} r={s.r} />
-          ))}
-        </g>
+        <>
+          <g fill="#fff">
+            {STARS.map((s, i) =>
+              s.r > 1.2 ? (
+                <g key={i} className="pcv-star big" style={{ animationDelay: `${s.d}s` }} transform={`translate(${s.x} ${s.y})`}>
+                  <circle r="1.1" />
+                  <path d="M0 -3.4 L.35 0 L0 3.4 L-.35 0 Z M-3.4 0 L0 .35 L3.4 0 L0 -.35 Z" opacity=".75" />
+                </g>
+              ) : (
+                <circle key={i} className="pcv-star" style={{ animationDelay: `${s.d}s` }} cx={s.x} cy={s.y} r={s.r} />
+              ),
+            )}
+          </g>
+          {/* A shooting star now and then */}
+          <path className="pcv-meteor" d="M300 10 l26 -9" stroke="#fff" strokeWidth="1.2" strokeLinecap="round" />
+        </>
       )}
 
       {/* Sun / moon with a soft glow */}
       <g className="pcb-sun">
         <circle cx={sunX} cy={sunY} r={night ? 40 : 58} fill={`url(#${id}-glow)`} />
-        <circle cx={sunX} cy={sunY} r={night ? 11 : 13} fill={p.sun} mask={night ? `url(#${id}-moon)` : undefined} />
+        <circle cx={sunX} cy={sunY} r={night ? 12 : 13} fill={p.sun} />
+        {night && (
+          <g fill="#94a3b8" opacity=".35">
+            <circle cx={sunX - 4} cy={sunY - 3} r="2.6" />
+            <circle cx={sunX + 4} cy={sunY + 2} r="1.8" />
+            <circle cx={sunX - 1} cy={sunY + 6} r="1.3" />
+            <circle cx={sunX + 5} cy={sunY - 6} r="1" />
+          </g>
+        )}
       </g>
 
       {/* Soft clouds */}
-      <g className="pcb-cloud c1" fill={p.cloud} opacity={night ? 0.18 : 0.85} filter={`url(#${id}-soft)`}>
+      {!night && (
+      <>
+      <g className="pcb-cloud c1" fill={p.cloud} opacity={0.85} filter={`url(#${id}-soft)`}>
         <ellipse cx="70" cy="36" rx="30" ry="8" />
         <ellipse cx="88" cy="31" rx="18" ry="9" />
         <ellipse cx="54" cy="33" rx="14" ry="7" />
       </g>
-      <g className="pcb-cloud c2" fill={p.cloud} opacity={night ? 0.12 : 0.6} filter={`url(#${id}-soft)`}>
-        <ellipse cx="200" cy="22" rx="36" ry="6" />
-        <ellipse cx="220" cy="18" rx="18" ry="7" />
+      <g className="pcb-cloud c2" fill={p.cloud} opacity={0.6} filter={`url(#${id}-soft)`}>
+        <ellipse cx="320" cy="24" rx="36" ry="6" />
+        <ellipse cx="340" cy="20" rx="18" ry="7" />
       </g>
+      </>
+      )}
 
       {/* Far hills and tree line (lighter = further away) */}
       <path d="M0 98 C40 88 80 92 120 95 C170 99 210 86 260 90 C310 94 350 86 400 92 V112 H0 Z" fill={p.far} opacity=".75" />

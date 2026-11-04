@@ -15,11 +15,12 @@ import { api, friendlyError } from '../lib/api';
 import { addToThread, previewText, chatTime, clock, markRead, threadKey, useChat, type LiveMessage, type ThreadData, type ThreadsData } from '../lib/chat';
 import { num, useLang, useT } from '../lib/i18n';
 import { reasonLabel } from '../lib/labels';
-import { haptic } from '../lib/platform';
+import { haptic, PUBLIC_WEB_URL } from '../lib/platform';
 import { useSettings } from '../lib/settings';
 import { useAuth } from '../lib/auth';
 import { emit } from '../lib/socket';
 import { toast } from '../lib/toast';
+import { sfx } from '../lib/sound';
 
 const EMOJIS = [
   '😀', '😂', '🤣', '😊', '😍', '🥰', '😘', '😎', '🤩', '🥳', '😇', '🙂',
@@ -191,7 +192,7 @@ export default function Chat() {
   };
   const savePhoto = async (url: string) => {
     try {
-      const r = await saveImage(await photoBlob(url), `quizwar-${Date.now()}.jpg`);
+      const r = await saveImage(await photoBlob(url), fileNameOf(url));
       if (r === 'failed') throw new Error('failed');
       haptic('success');
       toast.success(r === 'saved' ? t('Saved to gallery', 'গ্যালারিতে সেভ হয়েছে') : t('Downloaded', 'ডাউনলোড হয়েছে'), undefined, 'download');
@@ -201,12 +202,26 @@ export default function Chat() {
   };
   const sharePhoto = async (url: string) => {
     try {
-      await shareImage(await photoBlob(url), { title: 'QUIZ WAR', text: '', url: '', fileName: `quizwar-${Date.now()}.jpg` });
+      const name = fileNameOf(url);
+      await shareImage(await photoBlob(url), { title: name, text: name, url: '', fileName: name });
     } catch {
       /* cancelled */
     }
   };
-  const [viewer, setViewer] = useState<string | null>(null);
+  const [viewer, setViewerRaw] = useState<string | null>(null);
+  // The photo viewer is a step in history: Back closes it and you stay in the chat.
+  const setViewer = (url: string | null) => {
+    if (url) {
+      window.history.pushState({ qwPhoto: true }, '');
+      setViewerRaw(url);
+    } else if (window.history.state?.qwPhoto) window.history.back();
+    else setViewerRaw(null);
+  };
+  useEffect(() => {
+    const on = () => setViewerRaw(null);
+    window.addEventListener('popstate', on);
+    return () => window.removeEventListener('popstate', on);
+  }, []);
   const galleryInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
   const imagesOn = cfg?.chatImagesEnabled ?? true;
@@ -339,6 +354,7 @@ export default function Chat() {
     setPicked(null);
     if (m.id < 0 || m.deleted) return;
     haptic('success');
+    sfx('react');
     const mineNow = m.reactions?.find((x) => x.u === myId)?.r;
     const next = mineNow === r ? null : r;
     // Show it at once; the server echo (chat:reaction) confirms it.
@@ -491,10 +507,10 @@ export default function Chat() {
                             <img src={m.media.url} alt={t('Photo', 'ছবি')} loading="lazy" decoding="async" />
                           </button>
                         ) : (
-                          <span className="msg-text msg-gone"><Icon name="image" size={15} /> {t('Photo expired', 'ছবির মেয়াদ শেষ')}</span>
+                          <span className="msg-text msg-gone"><Icon name="image" size={15} /> {m.media?.gone === 'owner' ? t('Deleted by the photo owner', 'ছবির মালিক এটি মুছে দিয়েছেন') : t('Photo expired', 'ছবির মেয়াদ শেষ')}</span>
                         )
                       ) : m.kind === 'voice' ? (
-                        <VoiceBubble url={m.media?.url ?? null} secs={m.media?.secs ?? 0} mine={mine} />
+                        <VoiceBubble url={m.media?.url ?? null} secs={m.media?.secs ?? 0} mine={mine} gone={m.media?.gone} />
                       ) : (
                         <span className="msg-text"><Linkify text={m.body} /></span>
                       )}
@@ -680,7 +696,7 @@ export default function Chat() {
             )}
             {!picked.deleted &&
               (picked.kind === 'image' && picked.media?.url ? (
-                <img className="msg-preview-img" src={picked.media.url} alt="" />
+                <p className="msg-preview file"><Icon name="image" size={16} /> {fileNameOf(picked.media.url)}</p>
               ) : (
                 <p className="msg-preview">{picked.kind ? <QuoteText q={quoteOf(picked)} /> : picked.body}</p>
               ))}
@@ -862,6 +878,7 @@ const LINK_RE = /((?:https?:\/\/|www\.)[^\s<]+[^\s<.,;:!?)\]'"]|[\w.+-]+@[\w-]+\
 
 /** Text with tappable links (open in the right app or the browser) and e-mail addresses. */
 function Linkify({ text }: { text: string }) {
+  const navTo = useNavigate();
   const parts = text.split(LINK_RE);
   return (
     <>
@@ -869,8 +886,24 @@ function Linkify({ text }: { text: string }) {
         if (i % 2 === 0) return p;
         const isMail = !/^(https?:\/\/|www\.)/i.test(p) && p.includes('@');
         const href = isMail ? `mailto:${p}` : /^www\./i.test(p) ? `https://${p}` : p;
+        const inApp = appPath(href);
         return (
-          <a key={i} className="msg-link" href={href} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+          <a
+            key={i}
+            className="msg-link"
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => {
+              e.stopPropagation();
+              // Our own links (war room, profile, …) open right here in the app.
+              if (inApp) {
+                e.preventDefault();
+                navTo(inApp);
+              }
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+          >
             {p}
           </a>
         );
@@ -932,4 +965,24 @@ function ForwardSheet({ message, onClose }: { message: LiveMessage | null; onClo
       )}
     </Sheet>
   );
+}
+
+/** Readable file name for a chat photo, e.g. QuizWar-photo-2026-11-04-mw2lzdx0.jpg */
+function fileNameOf(url: string) {
+  const base = (url.split('/').pop() ?? 'photo').split('?')[0]!.replace(/\.[a-z0-9]+$/i, '');
+  const day = /\/(\d{4}-\d{2}-\d{2})\//.exec(url)?.[1] ?? new Date().toISOString().slice(0, 10);
+  const id = base.split('-').pop()?.slice(0, 8) ?? 'img';
+  return `QuizWar-photo-${day}-${id}.jpg`;
+}
+
+/** Path inside the app for a QUIZ WAR link (war room code, profile, chat…), or null. */
+function appPath(href: string): string | null {
+  try {
+    const u = new URL(href);
+    const own = new Set([window.location.host, new URL(PUBLIC_WEB_URL).host, 'quizwar.webtecit.com']);
+    if (!own.has(u.host)) return null;
+    return u.pathname + u.search + u.hash;
+  } catch {
+    return null;
+  }
 }
