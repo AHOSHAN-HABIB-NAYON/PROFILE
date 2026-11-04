@@ -117,6 +117,23 @@ export class LocalStorage implements StorageProvider {
     await this.backup?.remove(key);
   }
 
+  /** Copies a stored file to a new key (e.g. a forwarded chat photo / voice message). */
+  async copy(urlOrKey: string, newKey: string): Promise<string | null> {
+    const key = this.keyOf(urlOrKey);
+    if (!key || key.includes('..')) return null;
+    const full = path.resolve(this.dir, key);
+    if (!full.startsWith(path.resolve(this.dir))) return null;
+    let data: Buffer | null = await readFile(full).catch(() => null);
+    let type = contentTypeFor(key);
+    if (!data) {
+      const r = await this.restore(key);
+      if (!r) return null;
+      data = r.data;
+      type = r.contentType;
+    }
+    return this.put(newKey, data, type);
+  }
+
   /** Restores one file from the database on demand (used when the disk copy is missing). */
   async restore(key: string): Promise<{ data: Buffer; contentType: string } | null> {
     if (!this.backup || !key || key.includes('..')) return null;

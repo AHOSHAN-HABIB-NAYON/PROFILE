@@ -19,6 +19,7 @@ import { modeIcon, modeLabel } from '../lib/labels';
 import { haptic, PUBLIC_WEB_URL, share } from '../lib/platform';
 import { emit, getSocket, useConn } from '../lib/socket';
 import { VoiceBar } from '../components/VoiceBar';
+import { useVoice } from '../lib/voice';
 import { sfx } from '../lib/sound';
 import { toast } from '../lib/toast';
 
@@ -32,6 +33,10 @@ export default function WarRoom() {
   const nav = useNavigate();
   const me = useAuth((s) => s.user)!;
   const conn = useConn((s) => s.status);
+  const voiceSpeaking = useVoice((s) => s.speaking);
+  const voiceRoom = useVoice((s) => s.roomId);
+  const voiceMic = useVoice((s) => s.micOn);
+  const voiceAll = useVoice((s) => s.members);
   const snap = useGame((s) => (s.matchId === id ? s.snapshot : null));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -132,6 +137,9 @@ export default function WarRoom() {
     );
 
   const mine = snap.players.find((p) => p.userId === me.id);
+  const voiceMembers = voiceAll[snap.matchId] ?? [];
+  const talkingOf = (uid: number) => !!voiceSpeaking[uid === me.id ? 0 : uid];
+  const micOf = (uid: number) => (uid === me.id ? voiceRoom === snap.matchId && voiceMic : !!voiceMembers.find((x) => x.userId === uid)?.mic);
   const isHost = snap.hostUserId === me.id;
   const teams = Array.from({ length: MODES[snap.mode].teams }, (_, i) => snap.players.filter((p) => p.team === i));
   const allReady = snap.players.every((p) => p.ready) && teams.every((x) => x.length > 0);
@@ -264,7 +272,7 @@ export default function WarRoom() {
           <span className={`wr2-pill ${conn === 'connected' ? 'on' : 'off'}`}><Icon name={conn === 'connected' ? 'wifi' : 'wifi-off'} size={15} /> {conn === 'connected' ? t('Online', 'অনলাইন') : t('Offline', 'অফলাইন')}</span>
         </div>
 
-        <VoiceBar className="dark" roomId={snap.matchId} players={snap.players.filter((p) => !p.isBot && p.userId !== me.id).map((p) => ({ userId: p.userId, name: p.username, avatar: p.avatarUrl }))} />
+        <VoiceBar className="dark" roomId={snap.matchId} players={snap.players.filter((p) => !p.isBot && p.userId !== me.id).map((p) => ({ userId: p.userId, name: p.username, avatar: p.avatarUrl, ...(MODES[snap.mode].teams > 1 && MODES[snap.mode].teamSize > 1 ? { side: p.team === mine?.team ? ('mine' as const) : ('opp' as const) } : {}) }))} />
 
         {isHost && setup ? (
           <>
@@ -317,14 +325,23 @@ export default function WarRoom() {
                   <div className="wr2-team-body">
                     {players.map((p) => (
                       <button key={p.userId} type="button" className={`wr2-player${p.ready ? ' ready' : ''}`} onClick={() => p.userId !== me.id && !p.isBot && (haptic('tap'), setPicked(p))}>
-                        <Avatar name={p.username} src={p.avatarUrl} size={48} bot={p.isBot} status={p.connected ? 'online' : 'offline'} />
+                        <span className={`wr2-av${talkingOf(p.userId) ? ' talking' : ''}`}>
+                          <Avatar name={p.username} src={p.avatarUrl} size={48} bot={p.isBot} status={p.connected ? 'online' : 'offline'} />
+                          {!p.isBot && (talkingOf(p.userId) ? (
+                            <span className="wr2-vb talk" aria-hidden><i /><i /><i /></span>
+                          ) : !micOf(p.userId) ? (
+                            <span className="wr2-vb off" aria-hidden><Icon name="mic-off" size={11} /></span>
+                          ) : null)}
+                        </span>
                         <span className="grow">
                           <b>
                             {p.username}
                             {p.userId === snap.hostUserId && <Icon name="crown" size={16} className="wr2-crown" />}
                             {p.userId === me.id && <em>{t('You', 'আপনি')}</em>}
                           </b>
-                          <small>{t('Lv', 'লেভেল')} {num(p.level, lang)} · {num(p.rating, lang)}</small>
+                          <small>
+                            {!p.isBot && talkingOf(p.userId) ? <span className="wr2-talk-txt">{t('Talking…', 'কথা বলছে…')}</span> : !p.isBot && !micOf(p.userId) ? t('Mic off', 'মাইক বন্ধ') : <>{t('Lv', 'লেভেল')} {num(p.level, lang)} · {num(p.rating, lang)}</>}
+                          </small>
                         </span>
                         <span className={`wr2-state ${p.ready ? 'on' : 'off'}`}>
                           <Icon name={p.ready ? 'check' : 'clock'} size={15} /> {p.ready ? t('Ready', 'প্রস্তুত') : t('Waiting', 'অপেক্ষায়')}

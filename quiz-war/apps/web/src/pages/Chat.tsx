@@ -8,6 +8,7 @@ import { Icon, IconTile } from '../components/Icon';
 import { Sheet } from '../components/Sheet';
 import { PlayerName } from '../components/Verified';
 import { compressImage } from '../lib/image';
+import { saveImage, shareImage } from '../lib/shareImage';
 import { canRecordVoice, fmtSecs, useVoiceRecorder, VoiceBubble } from '../components/Voice';
 import { useConfig } from '../hooks/queries';
 import { api, friendlyError } from '../lib/api';
@@ -178,6 +179,33 @@ export default function Chat() {
   };
 
   const [photoMenu, setPhotoMenu] = useState(false);
+  const [forwarding, setForwarding] = useState<LiveMessage | null>(null);
+  /** Photo as a JPEG blob (saves and shares everywhere). */
+  const photoBlob = async (url: string) => {
+    const img = await createImageBitmap(await (await fetch(url)).blob());
+    const c = document.createElement('canvas');
+    c.width = img.width;
+    c.height = img.height;
+    c.getContext('2d')!.drawImage(img, 0, 0);
+    return (await new Promise<Blob | null>((r) => c.toBlob(r, 'image/jpeg', 0.92)))!;
+  };
+  const savePhoto = async (url: string) => {
+    try {
+      const r = await saveImage(await photoBlob(url), `quizwar-${Date.now()}.jpg`);
+      if (r === 'failed') throw new Error('failed');
+      haptic('success');
+      toast.success(r === 'saved' ? t('Saved to gallery', 'গ্যালারিতে সেভ হয়েছে') : t('Downloaded', 'ডাউনলোড হয়েছে'), undefined, 'download');
+    } catch {
+      toast.error(t('Could not save the photo', 'ছবি সেভ করা যায়নি'));
+    }
+  };
+  const sharePhoto = async (url: string) => {
+    try {
+      await shareImage(await photoBlob(url), { title: 'QUIZ WAR', text: '', url: '', fileName: `quizwar-${Date.now()}.jpg` });
+    } catch {
+      /* cancelled */
+    }
+  };
   const [viewer, setViewer] = useState<string | null>(null);
   const galleryInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
@@ -596,10 +624,17 @@ export default function Chat() {
       </Sheet>
       {viewer && (
         <div className="photo-viewer" role="dialog" aria-label={t('Photo', 'ছবি')} onClick={() => setViewer(null)}>
-          <img src={viewer} alt="" />
-          <button className="pv-close" aria-label={t('Close', 'বন্ধ করুন')}><Icon name="close" size={24} /></button>
+          <img src={viewer} alt="" onClick={(e) => e.stopPropagation()} />
+          <div className="pv-bar" onClick={(e) => e.stopPropagation()}>
+            <button className="pv-btn" aria-label={t('Close', 'বন্ধ করুন')} onClick={() => setViewer(null)}><Icon name="close" size={22} /></button>
+            <span className="grow" />
+            <button className="pv-btn" aria-label={t('Forward', 'ফরওয়ার্ড')} onClick={() => { const m = data?.items.find((x) => x.media?.url === viewer); if (m) setForwarding(m); setViewer(null); }}><Icon name="send" size={20} /></button>
+            <button className="pv-btn" aria-label={t('Share', 'শেয়ার')} onClick={() => void sharePhoto(viewer)}><Icon name="share" size={20} /></button>
+            <button className="pv-btn" aria-label={t('Save photo', 'ছবি সেভ করুন')} onClick={() => void savePhoto(viewer)}><Icon name="download" size={20} /></button>
+          </div>
         </div>
       )}
+      <ForwardSheet message={forwarding} onClose={() => setForwarding(null)} />
 
       <Sheet open={menu} onClose={() => setMenu(false)} title={peer?.username ?? ''} icon="message">
         {peer && (
@@ -643,7 +678,12 @@ export default function Chat() {
                 ))}
               </div>
             )}
-            {!picked.deleted && <p className="msg-preview">{picked.body}</p>}
+            {!picked.deleted &&
+              (picked.kind === 'image' && picked.media?.url ? (
+                <img className="msg-preview-img" src={picked.media.url} alt="" />
+              ) : (
+                <p className="msg-preview">{picked.kind ? <QuoteText q={quoteOf(picked)} /> : picked.body}</p>
+              ))}
             {!!picked.reactions?.length && (
               <p className="xs muted react-who">
                 {picked.reactions.map((x) => `${x.r} ${x.u === myId ? t('You', 'আপনি') : peer?.username}`).join(' · ')}
@@ -654,7 +694,17 @@ export default function Chat() {
                 <IconTile name="reply" tone="cyan" size={40} /><span className="m-text"><b>{t('Reply', 'উত্তর দিন')}</b></span>
               </button>
             )}
-            {!picked.deleted && (
+            {!picked.deleted && picked.id > 0 && (!picked.kind || picked.media?.url) && (
+              <button className="menu-row" onClick={() => (setForwarding(picked), setPicked(null))}>
+                <IconTile name="send" tone="success" size={40} /><span className="m-text"><b>{t('Forward', 'ফরওয়ার্ড করুন')}</b><small>{t('Send it to a friend', 'বন্ধুকে পাঠান')}</small></span>
+              </button>
+            )}
+            {!picked.deleted && picked.kind === 'image' && picked.media?.url && (
+              <button className="menu-row" onClick={() => (void savePhoto(picked.media!.url!), setPicked(null))}>
+                <IconTile name="download" tone="primary" size={40} /><span className="m-text"><b>{t('Save photo', 'ছবি সেভ করুন')}</b><small>{t('To your gallery', 'গ্যালারিতে')}</small></span>
+              </button>
+            )}
+            {!picked.deleted && !picked.kind && (
               <button className="menu-row" onClick={() => void copyMsg(picked)}>
                 <IconTile name="copy" tone="primary" size={40} /><span className="m-text"><b>{t('Copy text', 'লেখা কপি করুন')}</b></span>
               </button>
@@ -826,5 +876,60 @@ function Linkify({ text }: { text: string }) {
         );
       })}
     </>
+  );
+}
+
+/** Forward a message to friends (Messenger style: tap Send next to each friend). */
+function ForwardSheet({ message, onClose }: { message: LiveMessage | null; onClose: () => void }) {
+  const t = useT();
+  const [q, setQ] = useState('');
+  const [sent, setSent] = useState<Record<number, 'busy' | 'done'>>({});
+  const friends = useQuery({ queryKey: ['friends'], queryFn: async () => (await api<{ items: any[] }>('/friends')).items, enabled: !!message });
+  useEffect(() => {
+    if (!message) {
+      setQ('');
+      setSent({});
+    }
+  }, [message]);
+  const list = (friends.data ?? []).filter((f) => !q.trim() || f.user.username.toLowerCase().includes(q.trim().toLowerCase()) || String(f.user.uid).toLowerCase().includes(q.trim().toLowerCase()));
+  const send = async (u: any) => {
+    if (!message) return;
+    setSent((s) => ({ ...s, [u.id]: 'busy' }));
+    try {
+      await api(`/chats/${u.uid}/forward`, { body: { messageId: message.id } });
+      haptic('success');
+      setSent((s) => ({ ...s, [u.id]: 'done' }));
+    } catch (e) {
+      setSent((s) => {
+        const n = { ...s };
+        delete n[u.id];
+        return n;
+      });
+      toast.error(t('Not sent', 'পাঠানো যায়নি'), friendlyError(e));
+    }
+  };
+  return (
+    <Sheet open={!!message} onClose={onClose} title={t('Forward to', 'ফরওয়ার্ড করুন')} icon="send">
+      {message && (
+        <div className="fwd">
+          <label className="chat-search">
+            <Icon name="search" size={18} />
+            <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Search friends', 'বন্ধু খুঁজুন')} />
+          </label>
+          <div className="fwd-list">
+            {!list.length && <p className="small muted" style={{ padding: 12 }}>{t('No friends found.', 'কোনো বন্ধু পাওয়া যায়নি।')}</p>}
+            {list.map((f) => (
+              <div key={f.user.id} className="fwd-row">
+                <Avatar name={f.user.username} src={f.user.avatarThumbUrl} status={f.status} size={42} />
+                <b className="grow ellipsis">{f.user.username}</b>
+                <button className={`btn sm ${sent[f.user.id] === 'done' ? 'soft' : 'primary'}`} disabled={!!sent[f.user.id]} onClick={() => void send(f.user)}>
+                  {sent[f.user.id] === 'busy' ? <span className="spinner" /> : sent[f.user.id] === 'done' ? <><Icon name="check" /> {t('Sent', 'পাঠানো হয়েছে')}</> : t('Send', 'পাঠান')}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </Sheet>
   );
 }

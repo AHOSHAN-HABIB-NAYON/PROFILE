@@ -39,7 +39,8 @@ public class QwGalleryPlugin extends Plugin {
         ContentResolver resolver = getContext().getContentResolver();
         ContentValues values = new ContentValues();
         values.put(MediaStore.Images.Media.DISPLAY_NAME, name);
-        values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+        String lower = name.toLowerCase();
+        values.put(MediaStore.Images.Media.MIME_TYPE, lower.endsWith(".jpg") || lower.endsWith(".jpeg") ? "image/jpeg" : lower.endsWith(".webp") ? "image/webp" : "image/png");
         values.put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/QUIZ WAR");
         values.put(MediaStore.Images.Media.IS_PENDING, 1);
         Uri uri = null;

@@ -12,6 +12,8 @@ export interface VoicePlayer {
   userId: number;
   name: string;
   avatar?: string | null;
+  /** Team games: my teammate or an opponent (colours the chip). */
+  side?: 'mine' | 'opp';
 }
 
 const EXPLAINED = 'qw-voice-explained';
@@ -30,6 +32,9 @@ export function VoiceBar({ roomId, players, className = '' }: { roomId: string; 
   const joined = st.roomId === roomId;
   const members = st.members[roomId] ?? [];
   const others = players.filter((p) => p.userId > 0);
+  /** 3+ other players (2 VS 2 and bigger rooms): pictures only, to fit one line. */
+  const compact = others.length >= 3;
+  const teams = others.some((p) => p.side === 'mine') && others.some((p) => p.side === 'opp');
 
   // Entering the room / match: listen to everyone right away (my mic stays off until I tap it).
   const enabled = voiceSupported() && cfg?.voiceEnabled !== false && others.length > 0;
@@ -87,7 +92,14 @@ export function VoiceBar({ roomId, players, className = '' }: { roomId: string; 
             {someoneWaiting ? t('Players are talking — tap the mic to join', 'প্লেয়াররা কথা বলছে — যোগ দিতে মাইক চাপুন') : t('Voice is off · tap the mic to talk live', 'ভয়েস বন্ধ · লাইভ কথা বলতে মাইক চাপুন')}
           </span>
         ) : (
-          <div className="vb-peers">
+          <div className={`vb-peers${compact ? ' compact' : ''}`}>
+            {teams && (
+              <div className="vb-legend" aria-hidden>
+                <span><i className="mine" /> {t('Teammate', 'দলের সাথী')}</span>
+                <span><i className="opp" /> {t('Opponents', 'প্রতিপক্ষ')}</span>
+              </div>
+            )}
+            <div className="vb-chips">
             {others.map((p) => {
               const m = inVoice(p.userId);
               const muted = !!st.mutedForMe[p.userId];
@@ -95,7 +107,7 @@ export function VoiceBar({ roomId, players, className = '' }: { roomId: string; 
                 <button
                   key={p.userId}
                   type="button"
-                  className={`vb-peer ${st.speaking[p.userId] ? 'talking' : ''} ${m ? '' : 'away'}`}
+                  className={`vb-peer ${st.speaking[p.userId] ? 'talking' : ''} ${m ? '' : 'away'} ${p.side ?? ''}`}
                   onClick={() => {
                     haptic('tap');
                     const now = toggleMuteForMe(p.userId);
@@ -104,11 +116,12 @@ export function VoiceBar({ roomId, players, className = '' }: { roomId: string; 
                   aria-label={muted ? t(`Unmute ${p.name}`, `${p.name}-কে আনমিউট`) : t(`Mute ${p.name} for me`, `${p.name}-কে আমার জন্য মিউট`)}
                 >
                   <Avatar name={p.name} src={p.avatar ?? null} size={30} />
-                  <span className="vb-name">{p.name}</span>
+                  {!compact && <span className="vb-name">{p.name}</span>}
                   <Icon name={!m ? 'mic-off' : muted ? 'mute' : 'volume'} size={16} />
                 </button>
               );
             })}
+            </div>
           </div>
         )}
       </div>

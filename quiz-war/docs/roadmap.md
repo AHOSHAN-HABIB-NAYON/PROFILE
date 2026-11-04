@@ -205,3 +205,10 @@ Text chat stays free.
 - Avatar: crop / move / zoom page before upload (onboarding and edit profile).
 - Result page: "Chat with <player>" button.
 - Security: zod 4.6.7, fastify 5.12.8, @fastify/static 10.1.10, nodemailer 10.3.1 — `npm audit --omit=dev` is clean (remaining items are build-only tools).
+
+### Update 1, third round (November 2026)
+- Profile cover follows the time of day: morning, day and night landscapes (fields, palms, river; kites by day; moon, stars and fireflies at night).
+- 2 VS 2 voice: chips coloured by team (blue teammate, red opponents), pictures only when 3+ players; talking glow on the score avatars too.
+- War room: each player card shows "Talking…" with a green wave, or "Mic off".
+- Chat: Forward (text, photo, voice) to friends; save / share photos (gallery via QwGallery, JPEG); the message menu shows the photo or "Voice message (0:03)" instead of placeholder text; clearer search box; player search matches any part of a name or a UID.
+- Sign-out popup always centred.

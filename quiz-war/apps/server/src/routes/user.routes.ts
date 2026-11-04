@@ -132,11 +132,13 @@ export async function userRoutes(app: FastifyInstance, ctx: AppContext) {
       if (u) ids = [u.id];
     }
     if (!ids.length) {
-      const like = `${q.replace(/[%_\\]/g, '\\$&')}%`;
+      const esc = q.replace(/[%_\\]/g, '\\$&');
+      // Names that start with the text first, then names that contain it.
       const rows = await query<{ id: number }>(
         `SELECT u.id FROM users u JOIN user_profiles p ON p.user_id = u.id
-         WHERE p.username LIKE ? AND u.status = 'active' AND u.id <> ? ORDER BY CHAR_LENGTH(p.username), p.username LIMIT 20`,
-        [like, me],
+         WHERE p.username LIKE ? AND u.status = 'active' AND u.id <> ?
+         ORDER BY p.username LIKE ? DESC, CHAR_LENGTH(p.username), p.username LIMIT 20`,
+        [`%${esc}%`, me, `${esc}%`],
       );
       ids = rows.map((r) => Number(r.id));
     }

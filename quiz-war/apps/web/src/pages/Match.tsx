@@ -18,6 +18,7 @@ import { sfx } from '../lib/sound';
 import { toast } from '../lib/toast';
 import { useSettings } from '../lib/settings';
 import { VoiceBar } from '../components/VoiceBar';
+import { useVoice } from '../lib/voice';
 
 const KEYS_EN = ['A', 'B', 'C', 'D'];
 const KEYS_BN = ['ক', 'খ', 'গ', 'ঘ'];
@@ -79,13 +80,15 @@ function ComboBurst({ combo }: { combo: number }) {
 
 function SideScore({ players, score, right, answered, label }: { players: MatchPlayerView[]; score: number; right?: boolean; answered: number[]; label: string }) {
   const lang = useLang();
+  const speaking = useVoice((s) => s.speaking);
+  const me = useAuth((s) => s.user?.id);
   const lead = players[0];
   const done = players.some((p) => answered.includes(p.userId));
   return (
     <div className={`score-side ${right ? 'right' : ''}`}>
       <div className="row" style={{ gap: 0 }}>
         {players.slice(0, 2).map((p, i) => (
-          <span key={p.userId} style={{ marginLeft: i ? -12 : 0 }} className={done ? 'answered' : ''}>
+          <span key={p.userId} style={{ marginLeft: i ? -12 : 0 }} className={`${done ? 'answered' : ''}${speaking[p.userId === me ? 0 : p.userId] ? ' talking-av' : ''}`}>
             <Avatar name={p.username} src={p.avatarUrl} size={40} bot={p.isBot} status={p.connected ? null : 'offline'} />
           </span>
         ))}
@@ -488,7 +491,7 @@ export default function Match() {
       )}
 
       {snap.type === 'pvp' && !solo && (
-        <VoiceBar className="game-voice" roomId={id} players={snap.players.filter((p) => !p.isBot && p.userId !== me.id).map((p) => ({ userId: p.userId, name: p.username, avatar: p.avatarUrl }))} />
+        <VoiceBar className="game-voice" roomId={id} players={snap.players.filter((p) => !p.isBot && p.userId !== me.id).sort((a, b) => Number(a.team !== myTeam) - Number(b.team !== myTeam)).map((p) => ({ userId: p.userId, name: p.username, avatar: p.avatarUrl, side: p.team === myTeam ? 'mine' : 'opp' }))} />
       )}
 
       <Sheet open={quitOpen} onClose={() => setQuitOpen(false)} title={t('Leave this match?', 'ম্যাচ ছেড়ে যাবেন?')} icon="flag">

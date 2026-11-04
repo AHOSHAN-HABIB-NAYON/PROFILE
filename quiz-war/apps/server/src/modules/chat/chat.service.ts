@@ -57,6 +57,7 @@ export const VOICE_MAX_BYTES = 600 * 1024;
 interface MediaStore {
   put(key: string, data: Buffer, contentType?: string): Promise<string>;
   remove(urlOrKey: string): Promise<void>;
+  copy?(urlOrKey: string, newKey: string): Promise<string | null>;
 }
 
 /** Strips control characters but keeps emoji, Bangla and line breaks; collapses runs of blank lines. */
@@ -296,6 +297,26 @@ export class ChatService {
       return await this.deliver(userId, peerId, { body: IMAGE_BODY, kind: 'image', mediaUrl: url, bytes: out.data.length, dims: `${out.info.width}x${out.info.height}` }, replyToId);
     } catch (e) {
       await this.media.remove(url).catch(() => undefined);
+      throw e;
+    }
+  }
+
+  /** Forward one of my chat messages (text, photo or voice) to another player. Media gets its own copy. */
+  async forward(userId: number, messageId: number, toId: number): Promise<ChatMessage> {
+    const m = await queryOne<any>('SELECT * FROM chat_messages WHERE id = ? AND (sender_id = ? OR recipient_id = ?)', [messageId, userId, userId]);
+    if (!m || m.deleted_at) throw notFound('Message not found');
+    if (m.kind === 'text' || !m.kind) return this.send(userId, toId, String(m.body));
+    if (!m.media_url) throw new AppError(410, 'expired', 'This file has expired');
+    await this.checkCanSend(userId, toId);
+    const ext = String(m.media_url).split('.').pop()?.replace(/[^a-z0-9]/gi, '') || 'bin';
+    const folder = m.kind === 'voice' ? 'chat-voice' : 'chat-img';
+    const key = `${folder}/${new Date().toISOString().slice(0, 10)}/${userId}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const url = (await this.media?.copy?.(m.media_url, key)) ?? null;
+    if (!url) throw new AppError(410, 'expired', 'This file has expired');
+    try {
+      return await this.deliver(userId, toId, { body: m.kind === 'voice' ? VOICE_BODY : IMAGE_BODY, kind: m.kind, mediaUrl: url, secs: m.media_secs ?? undefined, bytes: m.media_bytes ?? undefined, dims: m.media_dims ?? undefined });
+    } catch (e) {
+      await this.media?.remove(url).catch(() => undefined);
       throw e;
     }
   }

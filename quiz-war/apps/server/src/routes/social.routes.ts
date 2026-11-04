@@ -68,6 +68,13 @@ export async function socialRoutes(app: FastifyInstance, ctx: AppContext) {
     const peer = await chatPeer(p.uid);
     return { message: await ctx.chat.sendImage(uid(req), peer.id, data, replyTo) };
   });
+  /** Forward a message (text / photo / voice) to this player. */
+  app.post('/chats/:uid/forward', { ...auth, config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, async (req) => {
+    const p = parse(z.object({ uid: z.string().max(20) }), req.params);
+    const b = parse(z.object({ messageId: z.number().int().positive() }), req.body);
+    const peer = await chatPeer(p.uid);
+    return { message: await ctx.chat.forward(uid(req), b.messageId, peer.id) };
+  });
   app.post('/chats/:uid/read', auth, async (req) => {
     const p = parse(z.object({ uid: z.string().max(20) }), req.params);
     return ctx.chat.markRead(uid(req), (await chatPeer(p.uid)).id);
