@@ -1,6 +1,8 @@
 # QUIZ WAR: product roadmap after Play Store launch
 
-Written from the owner's requests (October 2026). This is the master list for the next updates. Nothing here is built yet.
+Written from the owner's requests (October 2026). This is the master list for the next updates.
+
+**Status:** Update 1 is built (November 2026) — see "Update 1: what was built" at the end. Updates 2–5 are not built yet.
 Read this file before starting any of these updates.
 
 - The Ludo details are in [ludo-plan.md](ludo-plan.md).
@@ -175,3 +177,20 @@ Text chat stays free.
 - **Content rating:** users interact (chat, voice); digital purchases.
 - **Privacy policy:** voice, media retention (7 days), purchases.
 - **Store listing:** mention Ludo and premium after they ship.
+
+---
+
+## Update 1: what was built (November 2026)
+- Play Store everywhere: update popup asks Google Play (in-app update API, plugin `@capawesome/capacitor-app-update`); CI test builds no longer count as "latest"; web banner goes to Play.
+- Rating prompt: after a win or 5+ matches, at most once per 30 days.
+- Share card footer: "Get it on Google Play" badge + QR to the Play listing; web address small.
+- Profile redesign (own + public): full-width animated cover, tabs Matches / Statistics / Achievements.
+- Home: mode tiles removed; "Question collections" grid (admin: Home collections). Collections are categories with `is_collection = 1` (migration 015); old apps never see them; mixed matches skip them.
+- Chat: Messenger-style list with a draggable online-friends row; voice messages (Opus ~16 kbps, max 2 min, migration 016); admin chooses retention days and what gets deleted (Player chat page).
+- Live voice (WebRTC mesh, signalling over Socket.IO, `realtime/voice.ts`): quiz matches with real people (bar at the bottom), result page, war room lobby. Mic off until tapped; mute per player; ends when leaving; mic off in background. Optional Cloudflare TURN: `CF_TURN_KEY_ID`, `CF_TURN_API_TOKEN`. Admin switch: App settings > Live voice.
+- Music only in solo / AI matches, with a toggle on the match screen.
+- War room: settings visible to all; players can tap a setting to ask the host to change it.
+- Rejoin: reopening the app during a live match goes straight back in.
+- New accounts: one setup screen (photo optional + name), then Home.
+- Fewer borders: top-level cards run full width on phones.
+- Android: RECORD_AUDIO + MODIFY_AUDIO_SETTINGS (Play Console Data safety: Audio, not stored).

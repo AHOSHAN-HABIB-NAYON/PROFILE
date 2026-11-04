@@ -66,7 +66,7 @@ export function RoomSettings({ snap }: { snap: MatchSnapshot }) {
           <Icon name="sparkles" size={15} /> {t('Mixed', 'মিশ্র')}
         </button>
         {cats
-          .filter((c) => c.questionCount > 0)
+          .filter((c) => c.questionCount > 0 && (!c.isCollection || snap.category?.id === c.id))
           .map((c) => (
             <button key={c.id} type="button" role="radio" aria-checked={snap.category?.id === c.id} className="select-chip dark" onClick={() => void update({ categoryId: c.id })}>
               <Icon name={categoryIcon(c)} size={15} /> {lang === 'bn' ? (c.nameBn ?? c.name) : c.name}

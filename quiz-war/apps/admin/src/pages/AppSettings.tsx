@@ -249,7 +249,7 @@ function AppUpdate({ a }: { a: App }) {
   const s = useSaver();
   return (
     <Card icon="smartphone" title="App update (Android)" saving={s.busy} msg={s.msg} saveLabel="Save update settings"
-      desc="Version codes are the Android versionCode numbers. Players below the latest version see an update popup; below the minimum they must update when forced updates are on."
+      desc="The app asks Google Play itself when a new version is live and shows the update popup. Bump the latest code here only to remind older apps; below the minimum, players must update when forced updates are on. Update always opens Google Play."
       onSubmit={(e) => {
         const f = new FormData(e.currentTarget);
         void s.save({ minAppVersionCode: int(f, 'minAppVersionCode'), latestAppVersionCode: int(f, 'latestAppVersionCode'), forceUpdate: f.get('forceUpdate') === 'on', playStoreUrl: str(f, 'playStoreUrl'), updateMessage: str(f, 'updateMessage') }, 'Update settings saved.');
@@ -259,7 +259,7 @@ function AppUpdate({ a }: { a: App }) {
         <div className="field"><label htmlFor="up-latest">Latest versionCode</label><input id="up-latest" name="latestAppVersionCode" type="number" min={0} step={1} className="input" defaultValue={a.latestAppVersionCode} /></div>
       </div>
       <Toggle name="forceUpdate" label="Force update below the minimum version" hint="Players on older versions cannot play until they update." checked={a.forceUpdate} />
-      <div className="field"><label htmlFor="up-url">Play Store URL</label><input id="up-url" name="playStoreUrl" type="url" className="input" maxLength={500} defaultValue={a.playStoreUrl} placeholder="https://play.google.com/store/apps/details?id=…" /></div>
+      <div className="field"><label htmlFor="up-url">Play Store URL</label><input id="up-url" name="playStoreUrl" type="url" className="input" maxLength={500} defaultValue={a.playStoreUrl || 'https://play.google.com/store/apps/details?id=app.quizwar.bd'} placeholder="https://play.google.com/store/apps/details?id=…" /></div>
       <div className="field"><label htmlFor="up-msg">Update message</label><textarea id="up-msg" name="updateMessage" className="input" maxLength={300} rows={2} defaultValue={a.updateMessage} style={{ fontFamily: 'var(--font-bn)' }} /></div>
     </Card>
   );
@@ -270,7 +270,17 @@ function Rate({ a }: { a: App }) {
   return (
     <Card icon="star" title="Rate the app" desc="Ask happy players to rate QUIZ WAR on the Play Store after a number of wins." saving={s.busy} msg={s.msg} saveLabel="Save rating prompt"
       onSubmit={(e) => void s.save({ ratePromptAfterWins: int(new FormData(e.currentTarget), 'ratePromptAfterWins') }, 'Rating prompt saved.')}>
-      <div className="field" style={{ maxWidth: 260 }}><label htmlFor="rt-wins">Ask after this many wins</label><input id="rt-wins" name="ratePromptAfterWins" type="number" min={0} max={1000} step={1} className="input" defaultValue={a.ratePromptAfterWins} /><span className="small faint">0 = never ask.</span></div>
+      <div className="field" style={{ maxWidth: 260 }}><label htmlFor="rt-wins">Ask after this many matches (or a win)</label><input id="rt-wins" name="ratePromptAfterWins" type="number" min={0} max={1000} step={1} className="input" defaultValue={a.ratePromptAfterWins} /><span className="small faint">0 = never ask. At most once every 30 days.</span></div>
+    </Card>
+  );
+}
+
+function Voice({ a }: { a: App }) {
+  const s = useSaver();
+  return (
+    <Card icon="mic" title="Live voice" desc="Players can talk live in quiz matches with real people, on the result page and in the war room lobby. Audio goes phone-to-phone (not through Hostinger) and is never recorded. Mic is off until the player taps it." saving={s.busy} msg={s.msg} saveLabel="Save voice"
+      onSubmit={(e) => void s.save({ voiceEnabled: new FormData(e.currentTarget).get('voiceEnabled') === 'on' }, 'Voice settings saved.')}>
+      <Toggle name="voiceEnabled" label="Live voice on" hint="For a relay on strict mobile networks, add CF_TURN_KEY_ID and CF_TURN_API_TOKEN (Cloudflare Realtime TURN) to the server environment." checked={a.voiceEnabled ?? true} />
     </Card>
   );
 }
@@ -401,6 +411,7 @@ export default function AppSettings() {
         <Emails a={a} />
         <AppUpdate a={a} />
         <Rate a={a} />
+        <Voice a={a} />
         <Legal a={a} />
       </div>
     </>

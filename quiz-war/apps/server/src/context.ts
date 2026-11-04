@@ -137,7 +137,16 @@ export function createContext(env: Env, log: Logger, overrides: { mailer?: Maile
   engineRef = engine;
 
   const friends = new FriendsService(notifications, (uid) => presence.status(uid));
-  const chat = new ChatService(friends, push, () => emitter, (uid) => presence.status(uid), () => ({ chat: settings.app().chatEnabled, push: settings.app().notificationsEnabled }));
+  const storage = new LocalStorage(env.STORAGE_LOCAL_DIR, env.STORAGE_PUBLIC_URL, new MediaBackup({ warn: (o, m) => log.warn(o, m), info: (o, m) => log.info(o, m) }));
+  const chat = new ChatService(
+    friends,
+    push,
+    () => emitter,
+    (uid) => presence.status(uid),
+    () => ({ chat: settings.app().chatEnabled, push: settings.app().notificationsEnabled, voice: settings.app().chatVoiceEnabled }),
+    () => settings.app().chatRetention,
+    storage,
+  );
   const ourApps = new OurAppsService();
   const matchmaking = new MatchmakingService(engine, () => settings.game(), emitter, { error: (o, m) => log.error(o, m) });
   const battles = new BattleRequestService(engine, () => settings.game(), presence, friends, notifications, () => emitter);
@@ -145,7 +154,6 @@ export function createContext(env: Env, log: Logger, overrides: { mailer?: Maile
   const leaderboard = new LeaderboardService(seasons);
   const daily = new DailyChallengeService(engine, () => settings.game(), progression);
   hooks.finished.push((m) => void daily.onMatchFinished(m).catch((err) => log.error({ err }, 'daily challenge result failed')));
-  const storage = new LocalStorage(env.STORAGE_LOCAL_DIR, env.STORAGE_PUBLIC_URL, new MediaBackup({ warn: (o, m) => log.warn(o, m), info: (o, m) => log.info(o, m) }));
   const images = new ImageService(storage, env.UPLOAD_MAX_BYTES);
   const profile = new ProfileService(images, () => settings.game());
   const shop = new ShopService(progression);

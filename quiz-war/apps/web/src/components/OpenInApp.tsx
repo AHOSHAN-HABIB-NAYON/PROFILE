@@ -7,12 +7,12 @@ import { BrandMark } from './Splash';
 import { Icon } from './Icon';
 
 const PACKAGE = 'app.quizwar.bd';
-const APK_URL = 'https://github.com/AHOSHAN-HABIB-NAYON/PROFILE/releases/download/app-latest/QuizWar.apk';
+const PLAY_URL = 'https://play.google.com/store/apps/details?id=app.quizwar.bd';
 const KEY = 'qw-open-in-app-hidden';
 
 /**
  * Android browsers: "Open in the app". The intent:// link opens this exact page in the installed
- * app, or falls back to the Play Store / APK download when it isn't installed. (Browsers don't
+ * app, or falls back to the Google Play listing when it isn't installed. (Browsers don't
  * allow switching apps without a tap, so this is one tap instead of an automatic jump.)
  */
 export function OpenInApp() {
@@ -31,7 +31,7 @@ export function OpenInApp() {
   if (isNative || !android || standalone || hidden) return null;
   if (/^\/(match|war-room|matchmaking|result|review)\b/.test(loc.pathname)) return null;
 
-  const fallback = cfg?.playStoreUrl || APK_URL;
+  const fallback = cfg?.playStoreUrl || PLAY_URL;
   const href = `intent://${window.location.host}${loc.pathname}${loc.search}#Intent;scheme=https;package=${PACKAGE};S.browser_fallback_url=${encodeURIComponent(fallback)};end`;
   const hide = () => {
     setHidden(true);
@@ -47,10 +47,10 @@ export function OpenInApp() {
       <BrandMark size={38} animate={false} />
       <div className="grow">
         <b>QUIZ WAR</b>
-        <span>{t('Smoother in the app — notifications, music, offline.', 'অ্যাপে আরো স্মুথ — নোটিফিকেশন, মিউজিক সহ।')}</span>
+        <span>{t('Free on Google Play · smoother, with notifications', 'Google Play-তে ফ্রি · আরো স্মুথ, নোটিফিকেশন সহ')}</span>
       </div>
       <a className="btn sm primary" href={href}>
-        {t('Open app', 'অ্যাপে খুলুন')}
+        {t('Get app', 'অ্যাপ নিন')}
       </a>
       <button className="btn icon sm ghost" onClick={hide} aria-label={t('Close', 'বন্ধ করুন')}>
         <Icon name="close" size={18} />

@@ -44,7 +44,9 @@ export function ConnectionPill() {
   );
 }
 
-/** "You have a match running" — a proper popup once, then a small return chip. */
+const autoRejoined = new Set<string>();
+
+/** "You have a match running" — straight back in after reopening the app; else a return chip. */
 function ActiveMatch() {
   const matchId = useAuth((s) => s.activeMatchId);
   const nav = useNavigate();
@@ -63,7 +65,15 @@ function ActiveMatch() {
         if (!alive) return;
         const st = r?.snapshot?.state;
         if (!r?.snapshot || st === 'finished' || st === 'aborted' || st === 'lobby') useAuth.setState({ activeMatchId: null });
-        else setChecked(matchId);
+        else {
+          setChecked(matchId);
+          // Reopened the app during a live match: go straight back in (once per match).
+          if (!autoRejoined.has(matchId) && !window.location.pathname.startsWith('/match/')) {
+            autoRejoined.add(matchId);
+            setDismissed(matchId);
+            nav(`/match/${matchId}`);
+          }
+        }
       })
       .catch(() => alive && useAuth.setState({ activeMatchId: null }));
     return () => {

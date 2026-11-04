@@ -7,10 +7,18 @@ import { useAdmin } from '../lib/auth';
 
 const hasKey = (k: string) => k in CATEGORY_ICONS;
 
-export default function Categories() {
+/** Categories, or (collections) the Home "Collections" such as previous-year BCS questions. */
+export default function Categories({ collections = false }: { collections?: boolean }) {
   const { can } = useAdmin();
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ['categories'], queryFn: async () => (await api('/categories')).items as any[] });
+  const { data: all, isLoading } = useQuery({ queryKey: ['categories'], queryFn: async () => (await api('/categories')).items as any[] });
+  const data = all?.filter((c) => !!c.isCollection === collections);
+  const settings = useQuery({ queryKey: ['settings'], queryFn: () => api('/settings'), enabled: collections });
+  const homeOn = settings.data?.app?.collectionsEnabled ?? true;
+  const setHomeOn = async (on: boolean) => {
+    await api('/settings/app', { method: 'PUT', body: { collectionsEnabled: on } }).catch((e) => alert(errMsg(e)));
+    void settings.refetch();
+  };
   const [edit, setEdit] = useState<any | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [color, setColor] = useState<string | null>(null);
@@ -32,7 +40,7 @@ export default function Categories() {
   };
   const refresh = () => void qc.invalidateQueries({ queryKey: ['categories'] });
   const move = async (i: number, dir: -1 | 1) => {
-    const ids = data!.map((c) => c.id);
+    const ids = data!.map((c: any) => c.id);
     const j = i + dir;
     if (j < 0 || j >= ids.length) return;
     [ids[i], ids[j]] = [ids[j], ids[i]];
@@ -42,7 +50,7 @@ export default function Categories() {
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
-    const body = { slug: f.get('slug'), name: f.get('name'), nameBn: f.get('nameBn') || null, icon: f.get('icon'), iconUrl, description: f.get('description') || null, color, isActive: f.get('isActive') === 'on' };
+    const body = { slug: f.get('slug'), name: f.get('name'), nameBn: f.get('nameBn') || null, icon: f.get('icon'), iconUrl, description: f.get('description') || null, color, isActive: f.get('isActive') === 'on', isCollection: collections, isPremium: !!edit.isPremium };
     try {
       if (edit.id) await api(`/categories/${edit.id}`, { method: 'PUT', body });
       else await api('/categories', { body });
@@ -55,7 +63,16 @@ export default function Categories() {
   const manage = can('categories.manage');
   return (
     <>
-      <div className="head"><h1>Categories</h1>{manage && <button className="btn primary" onClick={() => open({ isActive: true, icon: 'brain' })}><Icon name="plus" size={16} />Add category</button>}</div>
+      <div className="head"><h1>{collections ? 'Home collections' : 'Categories'}</h1>{manage && <button className="btn primary" onClick={() => open({ isActive: true, icon: collections ? 'book' : 'brain' })}><Icon name="plus" size={16} />{collections ? 'Add collection' : 'Add category'}</button>}</div>
+      {collections && (
+        <div className="card row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <b>Collections on Home</b>
+            <p className="small faint">Question sets such as “আগের বছরের BCS প্রশ্ন”. They show on Home (same grid as categories) only when a collection is enabled and has approved questions — not in the battle category picker. Add questions on the Questions page or by CSV: pick the collection as the category. Each one shows “সংগৃহীত প্রশ্ন, সরকারি উৎস নয়”.</p>
+          </div>
+          <label className="row"><input type="checkbox" checked={homeOn} onChange={(e) => void setHomeOn(e.target.checked)} /> {homeOn ? 'On' : 'Off'}</label>
+        </div>
+      )}
       <div className="card table-wrap">
         {isLoading ? <Loading /> : (
           <table>

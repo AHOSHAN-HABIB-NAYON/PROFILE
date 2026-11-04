@@ -20,6 +20,7 @@ import { AppError } from '../lib/errors';
 import type { AppContext } from '../context';
 import { loadIdentity } from '../context';
 import { verifyAccessToken } from '../modules/auth/tokens';
+import { VoiceRooms } from './voice';
 
 interface SocketData {
   userId: number;
@@ -106,6 +107,18 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
     transports: ['websocket', 'polling'],
   });
   ctx.emitter.io = io;
+  const voice = new VoiceRooms({ keyId: ctx.env.CF_TURN_KEY_ID, token: ctx.env.CF_TURN_API_TOKEN }, ctx.log);
+  const voiceRoomId = z.string().regex(/^[0-9A-Z]{26}$/);
+  /** Tell everyone in the match (and everyone in its voice chat) who is talking. */
+  const voiceBroadcast = (roomId: string) => {
+    const peers = voice.peers(roomId);
+    let target = io.to(`match:${roomId}`);
+    for (const p of peers) {
+      const sid = voice.socketOf(roomId, p.userId);
+      if (sid) target = target.to(sid);
+    }
+    target.emit('voice:peers', { roomId, peers });
+  };
 
   if (ctx.redis) {
     const pub = ctx.redis.duplicate();
@@ -382,10 +395,80 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
     socket.on('match:react', guard(schemas.react, (p) => ctx.engine.react(p.matchId, userId, p.reaction)));
     socket.on('chat:typing', guard(z.object({ to: z.number().int().positive() }), (p) => ctx.chat.typing(userId, p.to)));
     socket.on('chat:focus', guard(z.object({ peerId: z.number().int().positive().nullable() }), (p) => ctx.chat.setFocus(userId, socket.id, p.peerId)));
+    let lastAsk = 0;
+    socket.on(
+      'room:ask',
+      guard(z.object({ matchId, field: z.enum(['category', 'count', 'time', 'difficulty']) }), async (p) => {
+        const m = ctx.engine.get(p.matchId);
+        const me = m?.players.find((x) => x.userId === userId);
+        if (!m || m.state !== 'lobby' || !me) throw new AppError(404, 'match_not_found', 'This room is closed');
+        if (Date.now() - lastAsk < 5000) throw new AppError(429, 'rate_limited', 'Please wait a moment');
+        lastAsk = Date.now();
+        const host = m.hostUserId;
+        if (host && host !== userId) ctx.emitter.toUser(host, 'room:ask', { matchId: m.id, fromUserId: userId, from: me.username, field: p.field });
+        return {};
+      }),
+    );
+
+    /* ----------------------------- Live voice ----------------------------- */
+    /** Only human players of this match (live, or finished in the last 2 hours: result page). */
+    const assertVoiceMember = async (roomId: string) => {
+      if (!ctx.settings.app().voiceEnabled) throw new AppError(403, 'voice_disabled', 'Voice chat is turned off');
+      const m = ctx.engine.get(roomId);
+      if (m) {
+        if (!m.players.some((x) => x.userId === userId && !x.isBot)) throw new AppError(403, 'not_in_match', 'You are not in this match');
+        return;
+      }
+      const row = await queryOne(
+        `SELECT 1 x FROM match_players mp JOIN matches m ON m.id = mp.match_id
+         WHERE mp.match_id = ? AND mp.user_id = ? AND m.match_type = 'pvp' AND COALESCE(m.ended_at, m.created_at) > UTC_TIMESTAMP() - INTERVAL 2 HOUR LIMIT 1`,
+        [roomId, userId],
+      );
+      if (!row) throw new AppError(403, 'not_in_match', 'You are not in this match');
+    };
+    socket.on(
+      'voice:join',
+      guard(z.object({ roomId: voiceRoomId, mic: z.boolean() }), async (p) => {
+        await assertVoiceMember(p.roomId);
+        const old = voice.join(p.roomId, userId, socket.id, p.mic);
+        if (old) io.to(old).emit('voice:peers', { roomId: p.roomId, peers: [] });
+        voiceBroadcast(p.roomId);
+        return { peers: voice.peers(p.roomId).filter((x) => x.userId !== userId), iceServers: await voice.iceServers() };
+      }),
+    );
+    socket.on(
+      'voice:leave',
+      guard(z.object({ roomId: voiceRoomId }), (p) => {
+        if (voice.leave(p.roomId, userId, socket.id)) voiceBroadcast(p.roomId);
+        return {};
+      }),
+    );
+    socket.on('voice:who', guard(z.object({ roomId: voiceRoomId }), (p) => ({ peers: voice.peers(p.roomId) })));
+    socket.on(
+      'voice:mic',
+      guard(z.object({ roomId: voiceRoomId, on: z.boolean() }), (p) => {
+        if (voice.setMic(p.roomId, userId, p.on)) voiceBroadcast(p.roomId);
+        return {};
+      }),
+    );
+    const sdp = z.object({ type: z.enum(['offer', 'answer']), sdp: z.string().max(20_000) });
+    const cand = z.object({ candidate: z.string().max(1000), sdpMid: z.string().max(64).nullish(), sdpMLineIndex: z.number().int().min(0).max(64).nullish() });
+    socket.on(
+      'voice:signal',
+      guard(z.object({ roomId: voiceRoomId, to: z.number().int().positive(), data: z.union([z.object({ sdp }), z.object({ candidate: cand })]) }), (p) => {
+        // Both sides must be in this voice room; messages go to that one device only.
+        if (voice.socketOf(p.roomId, userId) !== socket.id) throw new AppError(403, 'not_in_voice', 'Join voice first');
+        const to = voice.socketOf(p.roomId, p.to);
+        if (to) io.to(to).emit('voice:signal', { roomId: p.roomId, from: userId, data: p.data as any });
+        return {};
+      }),
+    );
+
     socket.on('time:sync', guard(schemas.timeSync, (p) => ({ serverTime: Date.now(), clientTime: p.clientTime })));
 
     socket.on('disconnect', () => {
       ctx.chat.setFocus(userId, socket.id, null);
+      for (const r of voice.leaveSocket(socket.id)) voiceBroadcast(r.roomId);
       const wentOffline = ctx.presence.disconnect(userId, socket.id);
       if (wentOffline) {
         // Remember when they were last online ("active 5 min ago" in friends lists).

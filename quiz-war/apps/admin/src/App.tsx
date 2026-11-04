@@ -36,6 +36,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
     { to: '/questions', label: 'Questions', icon: 'question', perm: 'questions.view' },
     { to: '/ai', label: 'AI Generator', icon: 'sparkles', perm: 'questions.manage' },
     { to: '/categories', label: 'Categories', icon: 'folder', perm: 'questions.view' },
+    { to: '/collections', label: 'Home collections', icon: 'folder', perm: 'questions.view' },
     { to: '/content', label: 'Achievements & Shop', icon: 'award', perm: 'content.manage' },
     { to: '/missions', label: 'Missions', icon: 'target', perm: 'content.manage' },
     { to: '/announcements', label: 'Announcements', icon: 'megaphone', perm: 'announcements.send' },
@@ -201,6 +202,7 @@ export function App() {
           <Route path="/ai" element={<Guard perm="questions.manage"><AiGenerator /></Guard>} />
           <Route path="/missions" element={<Guard perm="content.manage"><Missions /></Guard>} />
           <Route path="/categories" element={<Guard perm="questions.view"><Categories /></Guard>} />
+          <Route path="/collections" element={<Guard perm="questions.view"><Categories collections /></Guard>} />
           <Route path="/matches" element={<Guard perm="matches.view"><Matches /></Guard>} />
           <Route path="/reports" element={<Guard perm="reports.view"><Reports /></Guard>} />
           <Route path="/game-settings" element={<Guard perm="settings.game"><GameSettings /></Guard>} />

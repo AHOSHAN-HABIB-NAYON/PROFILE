@@ -172,7 +172,26 @@ export interface ClientToServerEvents {
   'chat:typing': (p: { to: number }) => void;
   /** Which chat is open and visible on this device (null = none); no push for that chat. */
   'chat:focus': (p: { peerId: number | null }) => void;
+  /** A player in a war room asks the host to change a setting. */
+  'room:ask': (p: { matchId: string; field: 'category' | 'count' | 'time' | 'difficulty' }, ack?: Ack) => void;
+  /** Live voice (WebRTC mesh) in a match / room: the server only relays signalling. */
+  'voice:join': (p: { roomId: string; mic: boolean }, ack: Ack<{ peers: VoicePeer[]; iceServers: VoiceIceServer[] }>) => void;
+  'voice:leave': (p: { roomId: string }, ack?: Ack) => void;
+  'voice:who': (p: { roomId: string }, ack: Ack<{ peers: VoicePeer[] }>) => void;
+  'voice:mic': (p: { roomId: string; on: boolean }, ack?: Ack) => void;
+  'voice:signal': (p: { roomId: string; to: number; data: VoiceSignal }, ack?: Ack) => void;
 }
+
+export interface VoicePeer {
+  userId: number;
+  mic: boolean;
+}
+export interface VoiceIceServer {
+  urls: string | string[];
+  username?: string;
+  credential?: string;
+}
+export type VoiceSignal = { sdp: { type: 'offer' | 'answer'; sdp: string } } | { candidate: { candidate: string; sdpMid?: string | null; sdpMLineIndex?: number | null } };
 
 export interface ServerToClientEvents {
   'presence:count': (p: { online: number }) => void;
@@ -204,4 +223,8 @@ export interface ServerToClientEvents {
   'chat:typing': (p: { from: number }) => void;
   'chat:deleted': (p: { ids: number[]; unsent?: boolean }) => void;
   'chat:reaction': (p: { id: number; userId: number; reaction: string | null }) => void;
+  'room:ask': (p: { matchId: string; fromUserId: number; from: string; field: 'category' | 'count' | 'time' | 'difficulty' }) => void;
+  /** Who is in the voice chat of a match / room (full list on every change). */
+  'voice:peers': (p: { roomId: string; peers: VoicePeer[] }) => void;
+  'voice:signal': (p: { roomId: string; from: number; data: VoiceSignal }) => void;
 }

@@ -283,8 +283,26 @@ export const appSettingsSchema = z.object({
   ourAppsEnabled: z.boolean(),
   /** One-to-one player chat. */
   chatEnabled: z.boolean(),
+  /** Voice messages in chat (recorded small, auto-deleted). */
+  chatVoiceEnabled: z.boolean().default(true),
+  /** Chat retention: how many days to keep, and which kinds get deleted. */
+  chatRetention: z
+    .object({
+      days: z.number().int().min(1).max(90),
+      text: z.boolean(),
+      voice: z.boolean(),
+      images: z.boolean(),
+    })
+    .default({ days: 7, text: true, voice: true, images: true }),
+  /** Live voice in quiz matches, result page and room lobby. */
+  voiceEnabled: z.boolean().default(true),
+  /** Home "Collections" (previous-year question sets). */
+  collectionsEnabled: z.boolean().default(true),
 });
 export type AppSettings = z.infer<typeof appSettingsSchema>;
+
+/** The app's Google Play listing. */
+export const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=app.quizwar.bd';
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
   appName: 'QUIZ WAR: Bangladesh',
@@ -301,7 +319,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   minAppVersionCode: 1,
   latestAppVersionCode: 1,
   forceUpdate: false,
-  playStoreUrl: '',
+  playStoreUrl: PLAY_STORE_URL,
   privacyUrl: '/legal/privacy',
   termsUrl: '/legal/terms',
   updateMessage: 'নতুন ফিচার আর উন্নতি সহ QUIZ WAR-এর নতুন ভার্সন এসেছে।',
@@ -312,6 +330,10 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   emails: { welcome: true, activity: true },
   ourAppsEnabled: true,
   chatEnabled: true,
+  chatVoiceEnabled: true,
+  chatRetention: { days: 7, text: true, voice: true, images: true },
+  voiceEnabled: true,
+  collectionsEnabled: true,
 };
 
 /** Public subset of app settings exposed to clients (no admin-only flags). */

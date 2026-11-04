@@ -11,6 +11,9 @@ export function ProfileCover() {
     { x: 262, y: 26, s: 8, d: 2.2, c: 'star' },
     { x: 312, y: 70, s: 15, d: 0.8, c: 'cup' },
     { x: 370, y: 36, s: 9, d: 3.8, c: 'star' },
+    { x: 200, y: 62, s: 15, d: 2.6, c: 'q' },
+    { x: 236, y: 30, s: 11, d: 4.4, c: 'a' },
+    { x: 60, y: 84, s: 12, d: 5.2, c: 'q' },
   ];
   return (
     <svg className="pc-cover" viewBox="0 0 400 120" preserveAspectRatio="xMidYMid slice" aria-hidden focusable="false">
@@ -55,7 +58,12 @@ export function ProfileCover() {
       {marks.map((m, i) => (
         <g key={i} transform={`translate(${m.x} ${m.y}) scale(${m.s / 16})`}>
         <g className="pcc-mark" style={{ animationDelay: `${m.d}s` }}>
-          {m.c === 'cup' ? (
+          {m.c === 'q' || m.c === 'a' ? (
+            <>
+              <circle cx="8" cy="8" r="8" fill={m.c === 'q' ? '#22d3ee' : '#4ade80'} opacity=".85" />
+              <text x="8" y="12" textAnchor="middle" fontSize="11" fontWeight="900" fill="#0b1336">{m.c === 'q' ? '?' : '✓'}</text>
+            </>
+          ) : m.c === 'cup' ? (
             <>
               <path d="M3 0h10v4a5 5 0 0 1-10 0z" fill="#facc15" />
               <path d="M3 1H0.5a2.6 2.6 0 0 0 2.9 3.4M13 1h2.5a2.6 2.6 0 0 1-2.9 3.4" fill="none" stroke="#facc15" strokeWidth="1.2" strokeLinecap="round" />

@@ -2,7 +2,7 @@ import { useChatUnread } from '../lib/chat';
 import { ChatList } from './Chat';
 import { normalizeUid, type PublicUser } from '@quizwar/shared';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent, type PointerEvent as RPointerEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { PageHeader } from '../components/AppShell';
 import { Avatar, statusLabel } from '../components/Avatar';
@@ -130,7 +130,7 @@ export default function Friends() {
             </div>
           }
         />
-        <div className="tabs" role="tablist">
+        <div className="tabs chip-tabs" role="tablist">
           <button role="tab" aria-selected={tab === 'chats'} onClick={() => setTab('chats')}>
             <Icon name="message" /> {t('Chats', 'চ্যাট')} {chatUnread ? <span className="tab-badge">{num(chatUnread, lang)}</span> : null}
           </button>
@@ -148,7 +148,12 @@ export default function Friends() {
           </button>
         </div>
 
-        {tab === 'chats' && <ChatList onFind={() => setTab('friends')} />}
+        {tab === 'chats' && (
+          <>
+            <OnlineStrip friends={sorted.filter((f) => f.status !== 'offline')} />
+            <ChatList onFind={() => setTab('friends')} />
+          </>
+        )}
 
         {tab === 'friends' &&
           (friends.isLoading ? (
@@ -334,5 +339,50 @@ export default function Friends() {
         </Sheet>
       </div>
     </PullToRefresh>
+  );
+}
+
+/**
+ * Online friends in a row (Messenger style). Swipe to scroll on phones; on a computer it can be
+ * dragged with the mouse. Tap opens the chat.
+ */
+function OnlineStrip({ friends }: { friends: any[] }) {
+  const t = useT();
+  const nav = useNavigate();
+  const ref = useRef<HTMLDivElement>(null);
+  const drag = useRef<{ x: number; left: number; moved: boolean } | null>(null);
+  if (!friends.length) return null;
+  const down = (e: RPointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse' || !ref.current) return;
+    drag.current = { x: e.clientX, left: ref.current.scrollLeft, moved: false };
+  };
+  const move = (e: RPointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d || !ref.current) return;
+    const dx = e.clientX - d.x;
+    if (Math.abs(dx) > 4) d.moved = true;
+    ref.current.scrollLeft = d.left - dx;
+  };
+  const up = () => setTimeout(() => (drag.current = null), 0);
+  return (
+    <section className="online-strip" aria-label={t('Friends online', 'অনলাইনে বন্ধুরা')}>
+      <div ref={ref} className="os-row" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerLeave={up}>
+        {friends.map((f) => (
+          <button
+            key={f.user.id}
+            type="button"
+            className="os-item"
+            onClick={() => {
+              if (drag.current?.moved) return;
+              haptic('tap');
+              nav(`/chat/${f.user.uid}`);
+            }}
+          >
+            <Avatar name={f.user.username} src={f.user.avatarThumbUrl} status={f.status} size={58} frame={f.user.frame} />
+            <span className="os-name">{f.user.username}</span>
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }

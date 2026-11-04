@@ -105,6 +105,10 @@ export interface ChatMessage {
   replyTo?: { id: number; from: number; body: string; deleted?: boolean };
   /** Emoji reactions: one per person. */
   reactions?: { u: number; r: string }[];
+  /** 'voice' = audio message (text messages leave this out). */
+  kind?: 'text' | 'voice';
+  /** Audio file and length; url is null once the file has expired. */
+  media?: { url: string | null; secs: number };
 }
 export interface ChatThread {
   peer: PublicUser;

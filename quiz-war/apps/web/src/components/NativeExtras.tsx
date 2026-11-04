@@ -13,10 +13,44 @@ import { toast } from '../lib/toast';
 import { Icon, IconTile } from './Icon';
 import { Modal } from './Sheet';
 
-/** Android app update prompt (forced when the installed build is below the minimum). */
+const PLAY_URL = 'https://play.google.com/store/apps/details?id=app.quizwar.bd';
+
+/** Asks Google Play whether a newer version is published (null = not on Play / unknown). */
+async function playUpdateCode(): Promise<number | null> {
+  try {
+    const { AppUpdate, AppUpdateAvailability } = await import('@capawesome/capacitor-app-update');
+    const info = await AppUpdate.getAppUpdateInfo();
+    if (info.updateAvailability !== AppUpdateAvailability.UPDATE_AVAILABLE) return null;
+    return Number(info.availableVersionCode) || null;
+  } catch {
+    return null;
+  }
+}
+
+/** Opens Google Play's own update screen; falls back to the Play listing. */
+async function openPlayUpdate(url: string) {
+  try {
+    const { AppUpdate } = await import('@capawesome/capacitor-app-update');
+    const info = await AppUpdate.getAppUpdateInfo();
+    if (info.immediateUpdateAllowed) {
+      await AppUpdate.performImmediateUpdate();
+      return;
+    }
+    await AppUpdate.openAppStore();
+    return;
+  } catch {
+    window.location.href = url;
+  }
+}
+
+/**
+ * Android app update prompt. Google Play tells us when a newer version is live (optional update);
+ * the admin's minimum version forces it. Updates always go through the Play Store.
+ */
 function UpdatePrompt() {
   const cfg = useConfig().data;
   const t = useT();
+  const [playCode, setPlayCode] = useState<number | null>(null);
   const [dismissed, setDismissed] = useState(() => {
     try {
       return Number(localStorage.getItem('qw-update-dismissed') ?? 0);
@@ -24,17 +58,19 @@ function UpdatePrompt() {
       return 0;
     }
   });
+  useEffect(() => {
+    if (!isNative) return;
+    const id = setTimeout(() => void playUpdateCode().then(setPlayCode), 4000);
+    return () => clearTimeout(id);
+  }, []);
   if (!isNative || !cfg) return null;
   const code = appVersionCode();
   if (!code) return null;
+  const latest = Math.max(cfg.latestAppVersionCode, playCode ?? 0);
   const forced = code < cfg.minAppVersionCode || (cfg.forceUpdate && code < cfg.latestAppVersionCode);
-  const optional = !forced && code < cfg.latestAppVersionCode && dismissed < cfg.latestAppVersionCode;
+  const optional = !forced && code < latest && dismissed < latest;
   if (!forced && !optional) return null;
-  const open = () => {
-    const url = cfg.appDownloadUrl || cfg.playStoreUrl || 'https://play.google.com/store/apps/details?id=app.quizwar.bd';
-    // The WebView hands external links to the browser / Play Store.
-    window.location.href = url;
-  };
+  const url = cfg.playStoreUrl || PLAY_URL;
   return (
     <Modal
       open
@@ -42,11 +78,11 @@ function UpdatePrompt() {
       label={t('Update available', 'আপডেট এসেছে')}
       onClose={() => {
         try {
-          localStorage.setItem('qw-update-dismissed', String(cfg.latestAppVersionCode));
+          localStorage.setItem('qw-update-dismissed', String(latest));
         } catch {
           /* ignore */
         }
-        setDismissed(cfg.latestAppVersionCode);
+        setDismissed(latest);
       }}
     >
       <div className="m-art">
@@ -61,8 +97,8 @@ function UpdatePrompt() {
             {t('Later', 'পরে')}
           </button>
         )}
-        <button className="btn primary" onClick={open}>
-          <Icon name="download" /> {t('Update now', 'এখনই আপডেট করুন')}
+        <button className="btn primary" onClick={() => void openPlayUpdate(url)}>
+          <Icon name="download" /> {t('Update on Google Play', 'Google Play-তে আপডেট')}
         </button>
       </div>
     </Modal>
@@ -156,7 +192,7 @@ export function VerifyEmailPrompt() {
       } catch {
         /* ignore */
       }
-    }, 3500);
+    }, 9000);
     return () => clearTimeout(id);
   }, [need, inGame]);
 

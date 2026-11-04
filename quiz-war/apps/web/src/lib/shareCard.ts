@@ -33,6 +33,8 @@ export interface ResultCardData {
   players: CardPlayer[];
   appUrl: string;
   profileUrl: string;
+  /** Google Play listing (QR target). */
+  playUrl?: string;
   ctaText: string;
   labels: { correct: string; points: string; teamBlue: string; teamRed: string; you: string; ai: string };
 }
@@ -331,20 +333,25 @@ export async function renderResultCard(d: ResultCardData): Promise<Blob | null> 
     x.textAlign = 'left';
   }
 
-  // Footer: call to action + QR to the player's profile.
+  // Footer: "Get it on Google Play" + QUIZ WAR + QR to the Play listing; web address small.
   const fy = 1180;
   roundRect(x, 64, fy, W - 128, 126, 28);
-  x.fillStyle = 'rgba(255,255,255,.95)';
+  x.fillStyle = 'rgba(255,255,255,.96)';
   x.fill();
+  drawPlayBadge(x, 92, fy + 16, 236, 66);
+  x.textAlign = 'left';
   x.fillStyle = '#0f172a';
-  x.font = F(800, 32);
-  x.fillText(fitText(x, d.ctaText, 700), 96, fy + 56);
-  x.font = L(700, 26);
-  x.fillStyle = '#1d4ed8';
-  x.fillText(d.appUrl.replace(/^https?:\/\//, ''), 96, fy + 98);
+  x.font = F(900, 36);
+  x.fillText('QUIZ WAR', 348, fy + 50);
+  x.font = L(700, 21);
+  x.fillStyle = '#334155';
+  x.fillText(fitText(x, d.ctaText, 520), 348, fy + 80);
+  x.font = F(600, 18);
+  x.fillStyle = '#64748b';
+  x.fillText(d.appUrl.replace(/^https?:\/\//, '').replace(/\/$/, ''), 96, fy + 110);
   try {
     const qr = document.createElement('canvas');
-    await QRCode.toCanvas(qr, d.profileUrl, { width: 104, margin: 0, color: { dark: '#0f172a', light: '#ffffff' } });
+    await QRCode.toCanvas(qr, d.playUrl || d.profileUrl, { width: 104, margin: 0, color: { dark: '#0f172a', light: '#ffffff' } });
     x.drawImage(qr, W - 64 - 116, fy + 11, 104, 104);
   } catch {
     /* QR optional */
@@ -382,4 +389,35 @@ export async function renderShareCard(o: { title: string; subtitle: string; big:
   x.fillStyle = 'rgba(255,255,255,.8)';
   x.fillText(o.footer, 80, 980);
   return new Promise((r) => c.toBlob(r, 'image/png'));
+}
+
+/** Black "GET IT ON Google Play" badge with the Play triangle (drawn, no image files). */
+function drawPlayBadge(x: CanvasRenderingContext2D, bx: number, by: number, w: number, h: number) {
+  roundRect(x, bx, by, w, h, 14);
+  x.fillStyle = '#000';
+  x.fill();
+  x.strokeStyle = '#a6a6a6';
+  x.lineWidth = 2;
+  x.stroke();
+  const tx = bx + 18;
+  const ty = by + h / 2;
+  const s = h * 0.32;
+  const tri = (c: string, pts: number[]) => {
+    x.beginPath();
+    x.moveTo(pts[0]!, pts[1]!);
+    for (let i = 2; i < pts.length; i += 2) x.lineTo(pts[i]!, pts[i + 1]!);
+    x.closePath();
+    x.fillStyle = c;
+    x.fill();
+  };
+  tri('#00d7fe', [tx, ty - s, tx + s * 1.05, ty, tx, ty + s]);
+  tri('#32a071', [tx, ty - s, tx + s * 1.35, ty - s * 0.25, tx + s * 1.05, ty]);
+  tri('#f7b400', [tx + s * 1.05, ty, tx + s * 1.35, ty - s * 0.25, tx + s * 1.65, ty, tx + s * 1.35, ty + s * 0.25]);
+  tri('#ea4335', [tx, ty + s, tx + s * 1.05, ty, tx + s * 1.35, ty + s * 0.25]);
+  x.fillStyle = '#fff';
+  x.textAlign = 'left';
+  x.font = "600 15px 'Plus Jakarta Sans Variable', sans-serif";
+  x.fillText('GET IT ON', bx + 70, by + 26);
+  x.font = "700 27px 'Plus Jakarta Sans Variable', sans-serif";
+  x.fillText('Google Play', bx + 70, by + 54);
 }

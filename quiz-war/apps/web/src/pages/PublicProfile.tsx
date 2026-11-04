@@ -2,13 +2,12 @@ import { leagueForRating, REPORT_REASONS } from '@quizwar/shared';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
-import { PageHeader } from '../components/AppShell';
 import { ProfileCover } from '../components/ProfileCover';
 import { Avatar, statusLabel } from '../components/Avatar';
 import { ChallengeSheet } from '../components/ChallengeSheet';
 import { Empty, Skeleton } from '../components/Feedback';
 import { useLeagues } from '../components/Game';
-import { achievementIcon, Icon, IconTile } from '../components/Icon';
+import { Icon, IconTile } from '../components/Icon';
 import { LeagueEmblem } from '../components/LeagueEmblem';
 import { Sheet } from '../components/Sheet';
 import { BrandMark } from '../components/Splash';
@@ -18,9 +17,9 @@ import { num, useLang, useT } from '../lib/i18n';
 import { reasonLabel } from '../lib/labels';
 import { haptic } from '../lib/platform';
 import { toast } from '../lib/toast';
-import { StatsGrid } from './Profile';
+import { AchievementGrid, AchievementHighlights, ProfileNumbers, ProfileTabs, StatsNumbers } from '../components/ProfileParts';
 import { SquadLogo } from './Squads';
-import { NameBadges, VerifiedBadge } from '../components/Verified';
+import { NameBadges } from '../components/Verified';
 
 export default function PublicProfile() {
   const t = useT();
@@ -34,6 +33,7 @@ export default function PublicProfile() {
   const [challenge, setChallenge] = useState(false);
   const [more, setMore] = useState(false);
   const [report, setReport] = useState(false);
+  const [tab, setTab] = useState<'stats' | 'achievements'>('stats');
   const { data, isLoading, error } = useQuery({ queryKey: ['profile', uid.toUpperCase()], queryFn: () => api(`/users/${encodeURIComponent(uid)}`), retry: (n, e: any) => n < 1 && !String(e?.code ?? '').match(/blocked_by_you|profile_unavailable|not_found/) });
 
   if (isLoading) return <div className="page"><Skeleton kind="card" lines={2} /></div>;
@@ -115,88 +115,98 @@ export default function PublicProfile() {
   };
 
   return (
-    <div className="page stack">
-      {authed ? (
-        <PageHeader
-          title={t('Player', 'প্লেয়ার')}
-          back
-          action={!self ? <button className="btn icon sm ghost" aria-label={t('More options', 'আরও অপশন')} onClick={() => setMore(true)}><Icon name="list" /></button> : undefined}
-        />
-      ) : (
+    <div className="page px">
+      {!authed && (
         <header className="public-brand">
           <BrandMark size={36} animate={false} />
           <b>QUIZ WAR<small>BANGLADESH</small></b>
         </header>
       )}
-      <section className="profile-card">
-        <div className="pc-band"><ProfileCover /></div>
-        <div className="pc-body">
-          {authed && !self && (
-            <Link className="pc-msg" to={`/chat/${data.user.uid}`} onClick={() => haptic('tap')} aria-label={t(`Message ${data.user.username}`, `${data.user.username}-কে মেসেজ`)}>
-              <Icon name="message" size={24} />
-            </Link>
-          )}
-          <div className="pc-avatar"><Avatar name={data.user.username} src={data.user.avatarUrl} size={100} frame={data.user.frame} status={rel?.status} /></div>
-          <h1 className="name-with-badge">{data.user.username}<NameBadges user={data.user} size={22} /></h1>
-          {data.user.title && <span className="chip accent">{data.user.title}</span>}
-          <span className="uid-badge">{data.user.uid}</span>
-          {rel && <p className={`xs status-text s-${rel.status}`}>{statusLabel(rel.status)}</p>}
-          {data.bio && <p className="small muted pc-bio">{data.bio}</p>}
-          <div className="pc-league">
-            <LeagueEmblem league={league.key} size={46} />
-            <div className="grow">
-              <b>{league.name} {t('League', 'লীগ')}</b>
-              <small>{num(data.user.rating, lang)} {t('rating', 'রেটিং')} · {t('Level', 'লেভেল')} {num(data.user.level, lang)}</small>
-            </div>
+      <div className="px-cover">
+        <ProfileCover />
+        {authed && (
+          <div className="px-cover-actions left">
+            <button className="px-cbtn" onClick={() => (history.length > 1 ? nav(-1) : nav('/'))} aria-label={t('Back', 'ফিরে যান')}>
+              <Icon name="back" size={20} />
+            </button>
           </div>
+        )}
+        {authed && !self && (
+          <div className="px-cover-actions">
+            <button className="px-cbtn" onClick={() => setMore(true)} aria-label={t('More options', 'আরও অপশন')}>
+              <Icon name="more" size={20} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      <section className="px-head">
+        <div className="px-avrow">
+          <div className="px-av"><Avatar name={data.user.username} src={data.user.avatarUrl} size={92} frame={data.user.frame} status={rel?.status} /></div>
+          {self && <Link to="/profile/edit" className="btn px-edit">{t('Edit profile', 'প্রোফাইল এডিট')}</Link>}
+        </div>
+        <h1 className="px-name">{data.user.username}<NameBadges user={data.user} size={20} /></h1>
+        <div className="px-handle">
+          <span>UID {data.user.uid}</span>
+          {rel && <span className={`status-text s-${rel.status}`}>· {statusLabel(rel.status)}</span>}
+          {data.user.title && <span className="px-title">· {data.user.title}</span>}
+        </div>
+        {data.bio && <p className="px-bio">{data.bio}</p>}
+        <div className="px-meta">
+          <span><LeagueEmblem league={league.key} size={20} /> {league.name} · {num(data.user.rating, lang)}</span>
+          <span><Icon name="star" size={15} /> {t('Level', 'লেভেল')} {num(data.user.level, lang)}</span>
           {data.squad && (
-            <Link to={`/squads/${data.squad.id}`} className="chip primary" style={{ height: 32 }}>
-              <SquadLogo url={data.squad.logoUrl} size={20} /> {data.squad.name} [{data.squad.tag}]
-            </Link>
+            <Link to={`/squads/${data.squad.id}`}><SquadLogo url={data.squad.logoUrl} size={16} /> {data.squad.name}</Link>
           )}
         </div>
-      </section>
-
-      {!authed ? (
-        <Link to={`/intro?next=${encodeURIComponent(`/u/${data.user.uid}`)}`} className="btn primary lg block wrap">
-          <Icon name="swords" /> {t(`Join QUIZ WAR to challenge ${data.user.username}`, `${data.user.username}-কে চ্যালেঞ্জ করতে QUIZ WAR-এ যোগ দিন`)}
-        </Link>
-      ) : (
-        !self && (
-          <div className="pp-actions">
-            <button className="btn primary lg block" disabled={!rel?.available} onClick={() => (haptic('tap'), setChallenge(true))}>
-              <Icon name="swords" /> {t('Challenge', 'চ্যালেঞ্জ')}
-            </button>
-            <div className="pp-actions-row">
-              <Link className="btn pp-msg" to={`/chat/${data.user.uid}`} onClick={() => haptic('tap')}>
+        <ProfileNumbers
+          items={[
+            { value: data.stats.totalGames, label: t('Matches', 'ম্যাচ') },
+            { value: data.stats.wins, label: t('Wins', 'জয়') },
+            { value: `${data.stats.winRate}%`, label: t('Win rate', 'জয়ের হার') },
+          ]}
+        />
+        {!authed ? (
+          <Link to={`/intro?next=${encodeURIComponent(`/u/${data.user.uid}`)}`} className="btn primary lg block wrap mt">
+            <Icon name="swords" /> {t(`Join QUIZ WAR to challenge ${data.user.username}`, `${data.user.username}-কে চ্যালেঞ্জ করতে QUIZ WAR-এ যোগ দিন`)}
+          </Link>
+        ) : (
+          !self && (
+            <div className="px-actions">
+              <button className="btn primary" disabled={!rel?.available} onClick={() => (haptic('tap'), setChallenge(true))}>
+                <Icon name="swords" /> {t('Challenge', 'চ্যালেঞ্জ')}
+              </button>
+              <Link className="btn soft" to={`/chat/${data.user.uid}`} onClick={() => haptic('tap')}>
                 <Icon name="message" /> {t('Message', 'মেসেজ')}
               </Link>
               {rel?.friend ? (
-                <span className="btn pp-friend is-friend" aria-label={t('Friends', 'বন্ধু')}><Icon name="user-check" /> {t('Friends', 'বন্ধু')}</span>
+                <span className="btn soft icon" aria-label={t('Friends', 'বন্ধু')} title={t('Friends', 'বন্ধু')}><Icon name="user-check" /></span>
               ) : (
-                <button className="btn pp-friend" onClick={() => void act(() => api('/friends/requests', { body: { userId: data.user.id } }), t('Friend request sent', 'ফ্রেন্ড রিকোয়েস্ট পাঠানো হয়েছে'))}>
-                  <Icon name="user-plus" /> {t('Add friend', 'বন্ধু যোগ করুন')}
+                <button className="btn soft icon" aria-label={t('Add friend', 'বন্ধু যোগ করুন')} onClick={() => void act(() => api('/friends/requests', { body: { userId: data.user.id } }), t('Friend request sent', 'ফ্রেন্ড রিকোয়েস্ট পাঠানো হয়েছে'))}>
+                  <Icon name="user-plus" />
                 </button>
               )}
             </div>
-          </div>
-        )
-      )}
-      {authed && !self && !rel?.available && <p className="xs muted center">{t('This player isn’t available for battle right now.', 'এই প্লেয়ার এখন ব্যাটলের জন্য প্রস্তুত নন।')}</p>}
+          )
+        )}
+        {authed && !self && !rel?.available && <p className="xs muted" style={{ marginTop: 8 }}>{t('This player isn’t available for battle right now.', 'এই প্লেয়ার এখন ব্যাটলের জন্য প্রস্তুত নন।')}</p>}
+        {data.achievements.length > 0 && <AchievementHighlights items={data.achievements} onMore={() => setTab('achievements')} />}
+      </section>
 
-      <StatsGrid stats={data.stats} />
-      {data.achievements.length > 0 && (
-        <section className="card">
-          <div className="card-title"><h3><Icon name="award" size={18} /> {t('Achievements', 'অ্যাচিভমেন্ট')}</h3></div>
-          <div className="badges">
-            {data.achievements.map((a: any) => (
-              <div key={a.key} className="badge-tile unlocked" title={a.description}>
-                <span className="b-medal"><Icon name={achievementIcon(a)} size={26} /></span>
-                <b>{a.name}</b>
-              </div>
-            ))}
-          </div>
-        </section>
+      <ProfileTabs<'stats' | 'achievements'>
+        value={tab}
+        onChange={(k) => (haptic('tap'), setTab(k))}
+        tabs={[
+          { key: 'stats', label: t('Statistics', 'পরিসংখ্যান') },
+          { key: 'achievements', label: t('Achievements', 'অ্যাচিভমেন্ট') },
+        ]}
+      />
+      {tab === 'stats' ? (
+        <StatsNumbers stats={data.stats} />
+      ) : data.achievements.length ? (
+        <AchievementGrid items={data.achievements} />
+      ) : (
+        <Empty icon="award" title={t('No achievements yet', 'এখনো কোনো অ্যাচিভমেন্ট নেই')} />
       )}
 
       {authed && <ChallengeSheet target={challenge ? data.user : null} onClose={() => setChallenge(false)} />}

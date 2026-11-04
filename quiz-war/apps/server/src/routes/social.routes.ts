@@ -6,6 +6,7 @@ import { requireUser, uid } from '../http/guards';
 import { badRequest, notFound } from '../lib/errors';
 import { parse } from '../lib/validate';
 import { squadCreateSchema } from '../modules/squads/squad.service';
+import { VOICE_MAX_BYTES } from '../modules/chat/chat.service';
 import { getPublicUser, getUserByUid } from '../modules/users/users.repo';
 
 const idParam = z.object({ id: z.coerce.number().int().positive() });
@@ -44,6 +45,17 @@ export async function socialRoutes(app: FastifyInstance, ctx: AppContext) {
     const p = parse(z.object({ uid: z.string().max(20) }), req.params);
     const b = parse(z.object({ body: z.string().min(1).max(2000), replyTo: z.number().int().positive().optional() }), req.body);
     return { message: await ctx.chat.send(uid(req), (await chatPeer(p.uid)).id, b.body, b.replyTo) };
+  });
+  /** Voice message: multipart with the audio file first-or-last plus fields `secs` and optional `replyTo`. */
+  app.post('/chats/:uid/voice', { ...auth, config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (req) => {
+    const p = parse(z.object({ uid: z.string().max(20) }), req.params);
+    const file = await (req as any).file({ limits: { fileSize: VOICE_MAX_BYTES, files: 1 } });
+    if (!file) throw badRequest('No recording uploaded');
+    const data: Buffer = await file.toBuffer();
+    if (file.file?.truncated) throw badRequest('Voice message is too long');
+    const field = (k: string) => Number(file.fields?.[k]?.value ?? (req.query as any)?.[k] ?? 0);
+    const peer = await chatPeer(p.uid);
+    return { message: await ctx.chat.sendVoice(uid(req), peer.id, { data, mime: String(file.mimetype || ''), secs: field('secs') }, field('replyTo') || undefined) };
   });
   app.post('/chats/:uid/read', auth, async (req) => {
     const p = parse(z.object({ uid: z.string().max(20) }), req.params);

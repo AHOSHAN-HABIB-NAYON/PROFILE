@@ -1,4 +1,5 @@
 import { InAppReview } from '@capacitor-community/in-app-review';
+import { VoiceBar } from '../components/VoiceBar';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { MODES, type MatchEndPayload, type MatchPlayerView } from '@quizwar/shared';
 import { useQuery } from '@tanstack/react-query';
@@ -105,16 +106,20 @@ export default function Result() {
     else if (outcome === 'loss') sfx('defeat');
     else sfx('reward');
     resultVibration(outcome);
-    if (outcome === 'win' && isNative) {
+    // Rate prompt (Google decides if it really shows): after a win, or after enough matches,
+    // at most once every 30 days. Never during a match — this is the result screen.
+    if (isNative && outcome !== 'loss') {
       const s = useSettings.getState();
-      if (s.rateCounter >= 0) {
-        const n = s.rateCounter + 1;
-        const after = config.data?.ratePromptAfterWins ?? 5;
-        if (after > 0 && n >= after) {
-          s.set({ rateCounter: -1 });
-          setTimeout(() => void InAppReview.requestReview().catch(() => undefined), 2600);
-        } else s.set({ rateCounter: n });
-      }
+      const after = config.data?.ratePromptAfterWins ?? 5;
+      const n = Math.max(0, s.rateCounter) + 1;
+      const due = Date.now() - (s.rateLastAt ?? 0) > 30 * 24 * 3600 * 1000;
+      if (after > 0 && due && (n >= after || (outcome === 'win' && n >= 2))) {
+        s.set({ rateCounter: 0, rateLastAt: Date.now() });
+        setTimeout(() => void InAppReview.requestReview().catch(() => undefined), 2600);
+      } else s.set({ rateCounter: n });
+    } else if (isNative) {
+      const s = useSettings.getState();
+      s.set({ rateCounter: Math.max(0, s.rateCounter) + 1 });
     }
   }, [end, outcome, leagueUp, config.data]);
 
@@ -199,6 +204,7 @@ export default function Result() {
       players: cardPlayers,
       appUrl: PUBLIC_WEB_URL,
       profileUrl: profileLink(me.uid),
+      playUrl: config.data?.playStoreUrl || 'https://play.google.com/store/apps/details?id=app.quizwar.bd',
       ctaText: t(`Challenge me! UID ${me.uid}`, `আমাকে চ্যালেঞ্জ করুন! UID ${me.uid}`),
       labels: { correct: t('correct', 'সঠিক'), points: t('points', 'পয়েন্ট'), teamBlue: t('Blue team', 'নীল দল'), teamRed: t('Opponent', 'প্রতিপক্ষ'), you: t('You', 'আপনি'), ai: t('AI player', 'এআই প্লেয়ার') },
     }).then((blob) => {
@@ -234,6 +240,7 @@ export default function Result() {
     factsLine,
     outcome === 'win' ? t('Can you beat me?', 'পারলে আমাকে হারাও!') : t('Play with me!', 'আমার সাথে খেলো!'),
     `UID: ${me.uid}`,
+    `${t('Get it on Google Play', 'Google Play থেকে নিন')}: ${config.data?.playStoreUrl || 'https://play.google.com/store/apps/details?id=app.quizwar.bd'}`,
     '#QuizWarBangladesh #QUIZWAR',
   ]
     .filter(Boolean)
@@ -354,6 +361,9 @@ export default function Result() {
           </div>
         </div>
       </section>
+      {end.type === 'pvp' && !solo && humanOpps.length > 0 && (
+        <VoiceBar roomId={id} players={humanOpps.map((p) => ({ userId: p.userId, name: nameOf(p.userId, false), avatar: view(p.userId)?.avatarUrl ?? null }))} />
+      )}
 
       {/* Right under the result: the share card (most players miss it further down) + next steps. */}
       <button className="share-cta" onClick={() => (haptic('tap'), setShareOpen(true))}>

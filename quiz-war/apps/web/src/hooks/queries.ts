@@ -16,8 +16,11 @@ export interface Category {
   color: string | null;
   description: string | null;
   questionCount: number;
+  /** Home "Collections" set (e.g. previous-year questions), not a normal category. */
+  isCollection?: boolean;
+  isPremium?: boolean;
 }
-export const useCategories = () => useQuery({ queryKey: ['categories'], queryFn: async () => (await api<{ items: Category[] }>('/categories', { auth: false })).items, staleTime: 5 * 60_000 });
+export const useCategories = () => useQuery({ queryKey: ['categories'], queryFn: async () => (await api<{ items: Category[] }>('/categories?collections=1', { auth: false })).items, staleTime: 5 * 60_000 });
 
 export const useNotifications = () => {
   const authed = useAuth((s) => s.status === 'authed');

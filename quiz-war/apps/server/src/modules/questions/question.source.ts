@@ -62,6 +62,9 @@ export class MysqlQuestionSource implements QuestionSource {
     if (o.categoryId) {
       where.push('q.category_id = ?');
       params.push(o.categoryId);
+    } else {
+      // Mixed matches use normal categories only; Home collections are played on purpose.
+      where.push('c.is_collection = 0');
     }
     if (o.difficulties?.length) {
       where.push('q.difficulty IN (?)');

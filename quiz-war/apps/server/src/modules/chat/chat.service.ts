@@ -22,7 +22,20 @@ const toMsg = (r: any): ChatMessage => ({
   ...(r.deleted_at ? { deleted: true } : {}),
   createdAt: new Date(r.created_at).toISOString(),
   readAt: r.read_at ? new Date(r.read_at).toISOString() : null,
+  ...(r.kind === 'voice' && !r.deleted_at ? { kind: 'voice' as const, media: { url: r.media_url ?? null, secs: Number(r.media_secs ?? 0) } } : {}),
 });
+
+/** Text kept in `body` for voice messages, so older app versions show something sensible. */
+export const VOICE_BODY = 'ভয়েস মেসেজ (শুনতে অ্যাপ আপডেট করুন)';
+/** Audio formats phones record in (WebM/Opus, Ogg/Opus, MP4/AAC). */
+const VOICE_TYPES: Record<string, string> = { 'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/mp4': 'm4a', 'audio/aac': 'aac', 'audio/mpeg': 'mp3' };
+export const VOICE_MAX_SECS = 120;
+export const VOICE_MAX_BYTES = 600 * 1024;
+
+interface MediaStore {
+  put(key: string, data: Buffer, contentType?: string): Promise<string>;
+  remove(urlOrKey: string): Promise<void>;
+}
 
 /** Strips control characters but keeps emoji, Bangla and line breaks; collapses runs of blank lines. */
 export function cleanChatText(raw: string) {
@@ -44,7 +57,9 @@ export class ChatService {
     private readonly push: PushService,
     private readonly emitter: () => Emitter | null,
     private readonly presence: (userId: number) => PresenceStatus,
-    private readonly enabled: () => { chat: boolean; push: boolean },
+    private readonly enabled: () => { chat: boolean; push: boolean; voice?: boolean },
+    private readonly retention: () => { days: number; text: boolean; voice: boolean; images: boolean } = () => ({ days: CHAT_RETENTION_DAYS, text: true, voice: true, images: true }),
+    private readonly media: MediaStore | null = null,
   ) {}
 
   setFocus(userId: number, socketId: string, peerId: number | null) {
@@ -209,10 +224,36 @@ export class ChatService {
   }
 
   async send(userId: number, peerId: number, raw: string, replyToId?: number): Promise<ChatMessage> {
-    this.assertOn();
-    if (peerId === userId) throw badRequest('You cannot message yourself');
     const body = cleanChatText(raw);
     if (!body) throw badRequest('Message is empty');
+    return this.deliver(userId, peerId, { body }, replyToId);
+  }
+
+  /** Voice message: small Opus/AAC clip recorded on the phone (max 2 minutes). */
+  async sendVoice(userId: number, peerId: number, file: { data: Buffer; mime: string; secs: number }, replyToId?: number): Promise<ChatMessage> {
+    this.assertOn();
+    if (this.enabled().voice === false) throw new AppError(403, 'voice_disabled', 'Voice messages are turned off');
+    if (!this.media) throw new AppError(503, 'voice_unavailable', 'Voice messages are not available');
+    const mime = file.mime.split(';')[0]!.trim().toLowerCase();
+    const ext = VOICE_TYPES[mime];
+    if (!ext) throw new AppError(415, 'unsupported_audio', 'Unsupported audio format');
+    if (!file.data.length) throw badRequest('The recording is empty');
+    if (file.data.length > VOICE_MAX_BYTES) throw new AppError(413, 'audio_too_large', 'Voice message is too long');
+    const secs = Math.max(1, Math.min(VOICE_MAX_SECS, Math.round(file.secs || 1)));
+    await this.checkCanSend(userId, peerId);
+    const key = `chat-voice/${new Date().toISOString().slice(0, 10)}/${userId}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const url = await this.media.put(key, file.data, mime);
+    try {
+      return await this.deliver(userId, peerId, { body: VOICE_BODY, kind: 'voice', mediaUrl: url, secs, bytes: file.data.length }, replyToId);
+    } catch (e) {
+      await this.media.remove(url).catch(() => undefined);
+      throw e;
+    }
+  }
+
+  private async checkCanSend(userId: number, peerId: number) {
+    this.assertOn();
+    if (peerId === userId) throw badRequest('You cannot message yourself');
     const dir = await this.friends.blockDirection(userId, peerId);
     if (dir === 'me') throw new AppError(403, 'blocked_by_you', 'You blocked this player. Unblock them to chat.');
     if (dir === 'them') throw new AppError(403, 'blocked', 'You can’t message this player.');
@@ -221,7 +262,16 @@ export class ChatService {
     if (cdir === 'them') throw new AppError(403, 'chat_blocked', 'This player isn’t accepting your messages.');
     const ok = await queryOne<{ id: number }>(`SELECT id FROM users WHERE id = ? AND status = 'active'`, [peerId]);
     if (!ok) throw notFound('Player not found');
+  }
 
+  private async deliver(
+    userId: number,
+    peerId: number,
+    m: { body: string; kind?: 'voice'; mediaUrl?: string; secs?: number; bytes?: number },
+    replyToId?: number,
+  ): Promise<ChatMessage> {
+    if (!m.kind) await this.checkCanSend(userId, peerId);
+    const body = m.body;
     // A reply must quote a message from this same conversation.
     let quote: any = null;
     if (replyToId) {
@@ -230,11 +280,14 @@ export class ChatService {
         [replyToId, userId, peerId, peerId, userId],
       );
     }
-    const res = await exec('INSERT INTO chat_messages (sender_id, recipient_id, body, reply_to_id) VALUES (?, ?, ?, ?)', [userId, peerId, body, quote ? quote.id : null]);
+    const res = m.kind
+      ? await exec('INSERT INTO chat_messages (sender_id, recipient_id, body, reply_to_id, kind, media_url, media_secs, media_bytes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', [userId, peerId, body, quote ? quote.id : null, m.kind, m.mediaUrl ?? null, m.secs ?? null, m.bytes ?? null])
+      : await exec('INSERT INTO chat_messages (sender_id, recipient_id, body, reply_to_id) VALUES (?, ?, ?, ?)', [userId, peerId, body, quote ? quote.id : null]);
     await exec('INSERT IGNORE INTO chat_accepts (user_id, peer_id) VALUES (?, ?)', [userId, peerId]);
     const isRequest = !(await this.isTrusted(peerId, userId));
     const message: ChatMessage = {
       id: res.insertId, from: userId, to: peerId, body, createdAt: new Date().toISOString(), readAt: null,
+      ...(m.kind === 'voice' ? { kind: 'voice' as const, media: { url: m.mediaUrl ?? null, secs: m.secs ?? 0 } } : {}),
       ...(quote ? { replyTo: { id: Number(quote.id), from: Number(quote.sender_id), body: quote.deleted_at ? '' : String(quote.body).slice(0, 160), deleted: !!quote.deleted_at } } : {}),
     };
     const [me, them] = await Promise.all([getPublicUser(userId), getPublicUser(peerId)]);
@@ -248,7 +301,7 @@ export class ChatService {
       if (now - (this.lastPush.get(key) ?? 0) > 20_000) {
         this.lastPush.set(key, now);
         if (this.lastPush.size > 20_000) this.lastPush.clear();
-        const text = body.length > 140 ? `${body.slice(0, 137)}…` : body;
+        const text = m.kind === 'voice' ? 'ভয়েস মেসেজ পাঠিয়েছে' : body.length > 140 ? `${body.slice(0, 137)}…` : body;
         void this.push
           .sendToUser(peerId, { title: isRequest ? `${me.username} · মেসেজ রিকোয়েস্ট` : me.username, body: text, url: `/chat/${me.uid}`, tag: `chat-${userId}`, channel: 'quizwar_messages', image: me.avatarThumbUrl ?? undefined })
           .catch(() => undefined);
@@ -278,13 +331,14 @@ export class ChatService {
    * phones); any message can be removed just for you.
    */
   async deleteMessage(userId: number, id: number, forEveryone: boolean) {
-    const m = await queryOne<{ sender_id: number; recipient_id: number }>('SELECT sender_id, recipient_id FROM chat_messages WHERE id = ?', [id]);
+    const m = await queryOne<{ sender_id: number; recipient_id: number; media_url: string | null }>('SELECT sender_id, recipient_id, media_url FROM chat_messages WHERE id = ?', [id]);
     if (!m || (Number(m.sender_id) !== userId && Number(m.recipient_id) !== userId)) throw notFound('Message not found');
     const mine = Number(m.sender_id) === userId;
     if (forEveryone) {
       if (!mine) throw new AppError(403, 'not_yours', 'You can only delete your own messages for everyone');
       // The text is wiped for good; both phones show "This message was deleted".
-      await exec(`UPDATE chat_messages SET body = '', deleted_at = NOW() WHERE id = ?`, [id]);
+      await exec(`UPDATE chat_messages SET body = '', media_url = NULL, deleted_at = NOW() WHERE id = ?`, [id]);
+      if (m.media_url) await this.media?.remove(m.media_url).catch(() => undefined);
       this.emitter()?.toUser(Number(m.sender_id), 'chat:deleted', { ids: [id], unsent: true });
       this.emitter()?.toUser(Number(m.recipient_id), 'chat:deleted', { ids: [id], unsent: true });
     } else {
@@ -327,8 +381,9 @@ export class ChatService {
 
   async adminDelete(ids: number[]) {
     if (!ids.length) return 0;
-    const rows = await query<{ id: number; sender_id: number; recipient_id: number }>(`SELECT id, sender_id, recipient_id FROM chat_messages WHERE id IN (${ids.map(() => '?').join(',')})`, ids);
+    const rows = await query<{ id: number; sender_id: number; recipient_id: number; media_url: string | null }>(`SELECT id, sender_id, recipient_id, media_url FROM chat_messages WHERE id IN (${ids.map(() => '?').join(',')})`, ids);
     if (!rows.length) return 0;
+    for (const r of rows) if (r.media_url) await this.media?.remove(r.media_url).catch(() => undefined);
     await exec(`DELETE FROM chat_messages WHERE id IN (${rows.map(() => '?').join(',')})`, rows.map((r) => r.id));
     const byUser = new Map<number, number[]>();
     for (const r of rows) for (const u of [Number(r.sender_id), Number(r.recipient_id)]) byUser.set(u, [...(byUser.get(u) ?? []), Number(r.id)]);
@@ -341,9 +396,25 @@ export class ChatService {
     return this.adminDelete(rows.map((r) => Number(r.id)));
   }
 
-  /** Messages older than the retention window are removed for good. */
+  /**
+   * Retention (admin: Chat settings): after N days, voice files are deleted (the bubble shows
+   * "expired") and text messages are removed — each only when its switch is on.
+   */
   async purgeOld() {
-    const r = await exec(`DELETE FROM chat_messages WHERE created_at < NOW() - INTERVAL ${CHAT_RETENTION_DAYS} DAY LIMIT 50000`);
-    return r.affectedRows;
+    const r = this.retention();
+    const days = Math.max(1, Math.min(90, Math.floor(r.days || CHAT_RETENTION_DAYS)));
+    let n = 0;
+    if (r.voice) {
+      const old = await query<{ id: number; media_url: string }>(
+        `SELECT id, media_url FROM chat_messages WHERE kind = 'voice' AND media_url IS NOT NULL AND created_at < NOW() - INTERVAL ${days} DAY LIMIT 2000`,
+      );
+      for (const m of old) await this.media?.remove(m.media_url).catch(() => undefined);
+      if (old.length) await exec(`UPDATE chat_messages SET media_url = NULL WHERE id IN (${old.map(() => '?').join(',')})`, old.map((m) => m.id));
+      n += old.length;
+      // Expired voice rows go too when text is purged (nothing left to show).
+      if (r.text) n += (await exec(`DELETE FROM chat_messages WHERE kind = 'voice' AND media_url IS NULL AND created_at < NOW() - INTERVAL ${days} DAY LIMIT 50000`)).affectedRows;
+    }
+    if (r.text) n += (await exec(`DELETE FROM chat_messages WHERE kind = 'text' AND created_at < NOW() - INTERVAL ${days} DAY LIMIT 50000`)).affectedRows;
+    return n;
   }
 }

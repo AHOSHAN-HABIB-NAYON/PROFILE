@@ -11,8 +11,10 @@ interface SettingsState {
   introSeen: boolean;
   /** Notification permission explainer already shown. */
   pushAsked: boolean;
-  /** Wins counted towards the "rate the app" prompt; -1 = asked already. */
+  /** Matches since the last "rate the app" prompt. */
   rateCounter: number;
+  /** When the rate prompt was last requested (ms). */
+  rateLastAt: number;
   sound: boolean;
   music: boolean;
   haptics: boolean;
@@ -30,6 +32,7 @@ export const useSettings = create<SettingsState>()(
       introSeen: false,
       pushAsked: false,
       rateCounter: 0,
+      rateLastAt: 0,
       sound: true,
       music: true,
       haptics: true,

@@ -1,5 +1,5 @@
 import { SmtpMailer } from '../modules/auth/mailer';
-import { normalizeUid, type PublicConfig } from '@quizwar/shared';
+import { normalizeUid, PLAY_STORE_URL, type PublicConfig } from '@quizwar/shared';
 import type { FastifyInstance } from 'fastify';
 import type { AppContext } from '../context';
 
@@ -11,12 +11,13 @@ export async function publicRoutes(app: FastifyInstance, ctx: AppContext, static
     reply.header('cache-control', 'public, max-age=30');
     const a = ctx.settings.app();
     const g = ctx.settings.game();
-    // A newer CI build counts as the latest version even if the admin didn't bump it.
-    const feed = ctx.appRelease.latest?.versionCode ?? 0;
+    // The app is on Google Play now: the app asks Play itself for updates, so CI test builds
+    // (GitHub "app-latest") no longer count as the latest version. Admin can still bump it.
+    const play = a.playStoreUrl || PLAY_STORE_URL;
     return {
       ...a,
-      latestAppVersionCode: Math.max(a.latestAppVersionCode, feed),
-      appDownloadUrl: a.playStoreUrl || ctx.appRelease.downloadUrl,
+      playStoreUrl: play,
+      appDownloadUrl: play,
       game: { match: g.match, powerUps: g.powerUps, levels: g.levels, penalties: g.penalties, verified: g.verified, leagues: g.ranked.leagues, aiEnabled: g.ai.enabled },
       googleClientId: ctx.env.GOOGLE_CLIENT_ID ?? null,
       vapidPublicKey: ctx.push.vapidPublicKey ?? ctx.env.VAPID_PUBLIC_KEY ?? null,

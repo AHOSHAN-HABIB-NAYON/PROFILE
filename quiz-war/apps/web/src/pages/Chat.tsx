@@ -7,10 +7,11 @@ import { Empty, ErrorBox, Spinner } from '../components/Feedback';
 import { Icon, IconTile } from '../components/Icon';
 import { Sheet } from '../components/Sheet';
 import { PlayerName } from '../components/Verified';
+import { canRecordVoice, fmtSecs, useVoiceRecorder, VoiceBubble } from '../components/Voice';
 import { useConfig } from '../hooks/queries';
 import { api, friendlyError } from '../lib/api';
-import { addToThread, chatTime, clock, markRead, threadKey, useChat, type LiveMessage, type ThreadData, type ThreadsData } from '../lib/chat';
-import { useLang, useT } from '../lib/i18n';
+import { addToThread, previewText, chatTime, clock, markRead, threadKey, useChat, type LiveMessage, type ThreadData, type ThreadsData } from '../lib/chat';
+import { num, useLang, useT } from '../lib/i18n';
 import { reasonLabel } from '../lib/labels';
 import { haptic } from '../lib/platform';
 import { useSettings } from '../lib/settings';
@@ -136,6 +137,42 @@ export default function Chat() {
       const code = (e as any)?.code;
       if (code === 'blocked' || code === 'blocked_by_you') void thread.refetch();
       toast.error(t('Message not sent', 'মেসেজ যায়নি'), friendlyError(e));
+    }
+  };
+
+  const voice = useVoiceRecorder();
+  const voiceOn = (cfg?.chatVoiceEnabled ?? true) && canRecordVoice();
+  const startVoice = async () => {
+    haptic('tap');
+    try {
+      if (!(await voice.start())) toast.error(t('Recording not supported', 'এই ডিভাইসে রেকর্ড করা যাচ্ছে না'));
+    } catch {
+      toast.error(t('Microphone blocked', 'মাইক্রোফোনের অনুমতি নেই'), t('Allow the microphone in settings to send voice messages.', 'ভয়েস মেসেজ পাঠাতে সেটিংসে মাইক্রোফোন চালু করুন।'));
+    }
+  };
+  const sendVoice = async () => {
+    const clip = await voice.stop();
+    if (!clip || !peer) return;
+    haptic('success');
+    const tempId = tempSeq--;
+    const local = URL.createObjectURL(clip.blob);
+    const quote = replying;
+    setReplying(null);
+    const replyTo = quote && quote.id > 0 ? { id: quote.id, from: quote.from, body: quote.body, deleted: quote.deleted } : undefined;
+    const temp: LiveMessage = { id: tempId, from: -1, to: peer.id, body: '', kind: 'voice', media: { url: local, secs: clip.secs }, createdAt: new Date().toISOString(), readAt: null, pending: true, ...(replyTo ? { replyTo } : {}) };
+    stick.current = true;
+    qc.setQueryData<ThreadData>(key, (d) => (d ? { ...d, items: [...d.items, temp] } : d));
+    try {
+      const form = new FormData();
+      form.append('secs', String(clip.secs));
+      if (replyTo) form.append('replyTo', String(replyTo.id));
+      form.append('file', clip.blob, `voice.${clip.mime.includes('mp4') ? 'm4a' : clip.mime.includes('ogg') ? 'ogg' : 'webm'}`);
+      const r = await api<{ message: LiveMessage }>(`/chats/${peer.uid}/voice?secs=${clip.secs}`, { form });
+      addToThread(peer.uid, r.message, tempId);
+      void qc.invalidateQueries({ queryKey: ['chats'] });
+    } catch (e) {
+      qc.setQueryData<ThreadData>(key, (d) => (d ? { ...d, items: d.items.filter((m) => m.id !== tempId) } : d));
+      toast.error(t('Voice message not sent', 'ভয়েস মেসেজ যায়নি'), friendlyError(e));
     }
   };
 
@@ -308,7 +345,7 @@ export default function Chat() {
               <button className="btn sm soft chat-older" onClick={() => void loadOlder()} disabled={loadingOlder}>{loadingOlder ? t('Loading…', 'লোড হচ্ছে…') : t('Older messages', 'পুরনো মেসেজ')}</button>
             ) : (
               <>
-                <p className="chat-note"><Icon name="clock" size={14} /> {t('Messages are deleted automatically after 7 days.', 'মেসেজগুলো ৭ দিন পর নিজে থেকে মুছে যায়।')}</p>
+                <p className="chat-note"><Icon name="clock" size={14} /> {t(`Messages are deleted automatically after ${cfg?.chatRetention?.days ?? 7} days.`, `মেসেজগুলো ${num(cfg?.chatRetention?.days ?? 7, lang)} দিন পর নিজে থেকে মুছে যায়।`)}</p>
               </>
             )}
             {!items.length && peer && (
@@ -328,7 +365,7 @@ export default function Chat() {
               const newDay = !prev || new Date(prev.createdAt).toDateString() !== new Date(m.createdAt).toDateString();
               const groupTop = newDay || !prev || (prev.to === peer?.id) !== mine || new Date(m.createdAt).getTime() - new Date(prev.createdAt).getTime() > 5 * 60_000;
               const groupEnd = !next || (next.to === peer?.id) !== mine || new Date(next.createdAt).getTime() - new Date(m.createdAt).getTime() > 5 * 60_000;
-              const big = !m.deleted && isEmojiOnly(m.body);
+              const big = !m.deleted && m.kind !== 'voice' && isEmojiOnly(m.body);
               return (
                 <Fragment key={m.id}>
                   {newDay && <div className="chat-day"><span>{dayLabel(m.createdAt, lang, t)}</span></div>}
@@ -356,6 +393,8 @@ export default function Chat() {
                     >
                       {m.deleted ? (
                         <span className="msg-text msg-gone"><Icon name="ban" size={15} /> {mine ? t('You deleted this message', 'আপনি মেসেজটি মুছে ফেলেছেন') : t('This message was deleted', 'মেসেজটি মুছে ফেলা হয়েছে')}</span>
+                      ) : m.kind === 'voice' ? (
+                        <VoiceBubble url={m.media?.url ?? null} secs={m.media?.secs ?? 0} mine={mine} />
                       ) : (
                         <span className="msg-text">{m.body}</span>
                       )}
@@ -433,6 +472,13 @@ export default function Chat() {
               <button type="button" className="btn icon sm ghost" aria-label={t('Cancel reply', 'উত্তর বাতিল')} onClick={() => setReplying(null)}><Icon name="close" size={18} /></button>
             </div>
           )}
+          {voice.recording ? (
+            <div className="chat-compose voice-rec" role="group" aria-label={t('Recording voice message', 'ভয়েস মেসেজ রেকর্ড হচ্ছে')}>
+              <button type="button" className="btn icon ghost danger-text" aria-label={t('Delete recording', 'রেকর্ডিং মুছুন')} onClick={() => (haptic('tap'), voice.cancel())}><Icon name="trash" size={22} /></button>
+              <span className="vr-bar grow"><i className="vr-dot" /> {fmtSecs(voice.secs, lang)} <span className="vr-hint">{t('Recording… max 2 min', 'রেকর্ড হচ্ছে… সর্বোচ্চ ২ মিনিট')}</span></span>
+              <button type="button" className="chat-send" aria-label={t('Send voice message', 'ভয়েস মেসেজ পাঠান')} onClick={() => void sendVoice()}><Icon name="send" size={21} /></button>
+            </div>
+          ) : (
           <form className="chat-compose" onSubmit={submit}>
             <button type="button" className={`btn icon ghost${emojiOpen ? ' on' : ''}`} aria-label={t('Emoji', 'ইমোজি')} aria-pressed={emojiOpen} onClick={() => setEmojiOpen((v) => !v)}><Icon name="smile" size={23} /></button>
             <button type="button" className="btn icon ghost" aria-label={t('Photo', 'ছবি')} onClick={() => upcoming(t('Sending photos', 'ছবি পাঠানো'))}><Icon name="image" size={22} /></button>
@@ -454,8 +500,13 @@ export default function Chat() {
               }}
               disabled={!peer}
             />
-            <button className="chat-send" aria-label={t('Send', 'পাঠান')} disabled={!text.trim() || !peer}><Icon name="send" size={21} /></button>
+            {voiceOn && !text.trim() ? (
+              <button type="button" className="chat-send mic" aria-label={t('Record voice message', 'ভয়েস মেসেজ রেকর্ড করুন')} disabled={!peer} onClick={() => void startVoice()}><Icon name="mic" size={21} /></button>
+            ) : (
+              <button className="chat-send" aria-label={t('Send', 'পাঠান')} disabled={!text.trim() || !peer}><Icon name="send" size={21} /></button>
+            )}
           </form>
+          )}
         </div>
       )}
 
@@ -615,7 +666,7 @@ export function ChatList({ onFind }: { onFind: () => void }) {
           />
         )
       ) : (
-        <div className="card list stagger chat-threads">
+        <div className="list stagger chat-threads flat">
           {list.map((c) => {
             const isTyping = Date.now() - (typing[c.peer.id] ?? 0) < 4000;
             const mine = c.last.to === c.peer.id;
@@ -634,7 +685,7 @@ export function ChatList({ onFind }: { onFind: () => void }) {
                       ) : c.last.deleted ? (
                         <><Icon name="ban" size={13} /> {t('Message deleted', 'মেসেজ মুছে ফেলা হয়েছে')}</>
                       ) : (
-                        <>{mine && <Icon name={c.last.readAt ? 'check-check' : 'check'} size={14} className={c.last.readAt ? 'seen' : undefined} />}{mine ? `${t('You', 'আপনি')}: ` : ''}{c.last.body}</>
+                        <>{mine && <Icon name={c.last.readAt ? 'check-check' : 'check'} size={14} className={c.last.readAt ? 'seen' : undefined} />}{mine ? `${t('You', 'আপনি')}: ` : ''}{c.last.kind === 'voice' && <Icon name="mic" size={14} />}{previewText(c.last)}</>
                       )}
                     </span>
                     {c.unread > 0 && <span className="chat-badge">{c.unread > 99 ? '99+' : c.unread.toLocaleString(lang === 'bn' ? 'bn-BD' : 'en')}</span>}

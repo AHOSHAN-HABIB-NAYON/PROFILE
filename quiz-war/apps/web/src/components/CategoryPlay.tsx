@@ -107,6 +107,7 @@ function CategorySheet({ c, onClose }: { c: Category | null; onClose: () => void
             <span className="xs">{num(c.questionCount, lang)} {t('questions in this category', 'টি প্রশ্ন আছে')}</span>
           </div>
         </div>
+        {c.isCollection && <p className="cs-disclaimer"><Icon name="info" size={15} /> {t('Collected questions, not an official source', 'সংগৃহীত প্রশ্ন, সরকারি উৎস নয়')}</p>}
         <CountPicker value={count} onChange={setCount} />
         <DifficultyPicker value={difficulty} onChange={setDifficulty} />
         <MatchSummary count={count} difficulty={difficulty} seconds={opts.timeFor(difficulty)} />
@@ -133,7 +134,7 @@ export function HomeCategories() {
   const lang = useLang();
   const { data, isLoading } = useCategories();
   const [open, setOpen] = useState<Category | null>(null);
-  const cats = (data ?? []).filter((c) => c.questionCount > 0);
+  const cats = (data ?? []).filter((c) => c.questionCount > 0 && !c.isCollection);
   if (!isLoading && cats.length === 0) return null;
   return (
     <section aria-labelledby="home-cats">
@@ -151,6 +152,34 @@ export function HomeCategories() {
               </button>
             ))}
       </div>
+      {open && <CategorySheet key={open.id} c={open} onClose={() => setOpen(null)} />}
+    </section>
+  );
+}
+
+/** Home: question collections (e.g. previous-year BCS) — same grid as categories, only when the admin added some. */
+export function HomeCollections() {
+  const t = useT();
+  const lang = useLang();
+  const { data } = useCategories();
+  const [open, setOpen] = useState<Category | null>(null);
+  const cols = (data ?? []).filter((c) => c.isCollection && c.questionCount > 0);
+  if (!cols.length) return null;
+  return (
+    <section aria-labelledby="home-cols">
+      <div className="section-head">
+        <h3 id="home-cols"><Icon name="book" size={18} /> {t('Question collections', 'প্রশ্ন সংগ্রহ')}</h3>
+      </div>
+      <div className="cat-grid stagger">
+        {cols.map((c) => (
+          <button key={c.id} type="button" className="cat-tile" style={{ ['--cat' as string]: categoryColor(c) }} onClick={() => (haptic('tap'), setOpen(c))}>
+            <CategoryArt c={c} />
+            <b>{lang === 'bn' ? (c.nameBn ?? c.name) : c.name}</b>
+            <span className="xs">{num(c.questionCount, lang)} {t('questions', 'প্রশ্ন')}</span>
+          </button>
+        ))}
+      </div>
+      <p className="xs faint" style={{ marginTop: 8 }}>{t('Collected questions, not an official source', 'সংগৃহীত প্রশ্ন, সরকারি উৎস নয়')}</p>
       {open && <CategorySheet key={open.id} c={open} onClose={() => setOpen(null)} />}
     </section>
   );

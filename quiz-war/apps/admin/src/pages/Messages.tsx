@@ -4,7 +4,8 @@ import { Link } from 'react-router';
 import { Loading, fmtDate } from '../components/ui';
 import { api, errMsg } from '../lib/api';
 
-type Msg = { id: number; body: string; createdAt: string; readAt: string | null; sender: { id: number; uid: string; username: string }; recipient: { id: number; uid: string; username: string } };
+type Retention = { days: number; text: boolean; voice: boolean; images: boolean };
+type Msg = { id: number; body: string; kind?: string; media?: { url: string | null; secs: number }; createdAt: string; readAt: string | null; sender: { id: number; uid: string; username: string }; recipient: { id: number; uid: string; username: string } };
 
 export default function Messages() {
   const [user, setUser] = useState('');
@@ -13,7 +14,7 @@ export default function Messages() {
   const [picked, setPicked] = useState<Set<number>>(new Set());
   const list = useQuery({
     queryKey: ['messages', filter],
-    queryFn: () => api<{ items: Msg[]; retentionDays: number; enabled: boolean }>(`/messages?user=${encodeURIComponent(filter.user)}&q=${encodeURIComponent(filter.q)}`),
+    queryFn: () => api<{ items: Msg[]; retentionDays: number; retention?: Retention; voice?: boolean; enabled: boolean }>(`/messages?user=${encodeURIComponent(filter.user)}&q=${encodeURIComponent(filter.q)}`),
   });
   const del = async (body: { ids?: number[]; fromUserId?: number }, what: string) => {
     if (!confirm(`Delete ${what}? This can’t be undone.`)) return;
@@ -40,12 +41,13 @@ export default function Messages() {
       <div className="card row" style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <b>Player chat</b>
-          <p className="small muted">Text and emoji messages between players. Every message is deleted automatically after {list.data?.retentionDays ?? 7} days.</p>
+          <p className="small muted">Text, emoji and voice messages between players. Cleanup runs every hour using the settings below.</p>
         </div>
         <label className="row" style={{ gap: 8, fontWeight: 700 }}>
           <input type="checkbox" checked={list.data?.enabled ?? true} onChange={(e) => void setEnabled(e.target.checked)} /> {(list.data?.enabled ?? true) ? 'On' : 'Off'}
         </label>
       </div>
+      {list.data && <RetentionCard key={JSON.stringify(list.data.retention)} r={list.data.retention ?? { days: 7, text: true, voice: true, images: true }} voice={list.data.voice ?? true} onSaved={() => void list.refetch()} />}
       <form className="card form mt" onSubmit={(e) => (e.preventDefault(), setFilter({ user: user.trim(), q: q.trim() }))}>
         <div className="cols">
           <div className="field"><label htmlFor="mu">Player UID</label><input id="mu" className="input" value={user} onChange={(e) => setUser(e.target.value)} placeholder="QW-XXXXXX" /></div>
@@ -68,7 +70,7 @@ export default function Messages() {
                   <td className="small">{fmtDate(m.createdAt)}</td>
                   <td><Link to={`/users/${m.sender.id}`}>{m.sender.username}</Link><div className="small faint">{m.sender.uid}</div></td>
                   <td><Link to={`/users/${m.recipient.id}`}>{m.recipient.username}</Link><div className="small faint">{m.recipient.uid}</div></td>
-                  <td style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxWidth: 360 }}>{m.body}</td>
+                  <td style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxWidth: 360 }}>{m.kind === 'voice' ? (m.media?.url ? <audio controls preload="none" src={m.media.url} style={{ height: 32, maxWidth: 260 }} /> : <i className="faint">Voice message (expired)</i>) : m.body}</td>
                   <td><button className="btn sm danger" onClick={() => void del({ ids: [m.id] }, 'this message')}>Delete</button></td>
                 </tr>
               ))}
@@ -77,5 +79,50 @@ export default function Messages() {
         )}
       </div>
     </>
+  );
+}
+
+/** Admin: keep chat for N days; choose what the cleanup deletes; voice messages on/off. */
+function RetentionCard({ r, voice, onSaved }: { r: Retention; voice: boolean; onSaved: () => void }) {
+  const [v, setV] = useState({ ...r, voiceEnabled: voice });
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState('');
+  const save = async () => {
+    setBusy(true);
+    setMsg('');
+    try {
+      await api('/messages/retention', { method: 'PUT', body: v });
+      setMsg('Saved.');
+      onSaved();
+    } catch (e) {
+      setMsg(errMsg(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="card form mt">
+      <b>Auto-delete and voice messages</b>
+      <p className="small muted">Keeps Hostinger light: old messages and voice files are removed for good. Voice messages are recorded small on the phone (about 15–20 KB per 10 seconds, max 2 minutes).</p>
+      <div className="cols">
+        <div className="field">
+          <label htmlFor="rt-days">Delete after</label>
+          <select id="rt-days" className="input" value={v.days} onChange={(e) => setV({ ...v, days: Number(e.target.value) })}>
+            {[3, 7, 15, 30, 60, 90].map((d) => <option key={d} value={d}>{d} days</option>)}
+          </select>
+        </div>
+        <div className="field">
+          <span className="small bold">What gets deleted</span>
+          <label className="row"><input type="checkbox" checked={v.text} onChange={(e) => setV({ ...v, text: e.target.checked })} /> Text messages</label>
+          <label className="row"><input type="checkbox" checked={v.voice} onChange={(e) => setV({ ...v, voice: e.target.checked })} /> Voice messages (audio files)</label>
+          <label className="row"><input type="checkbox" checked={v.images} onChange={(e) => setV({ ...v, images: e.target.checked })} /> Photos (when photo sending is added)</label>
+        </div>
+      </div>
+      <label className="row"><input type="checkbox" checked={v.voiceEnabled} onChange={(e) => setV({ ...v, voiceEnabled: e.target.checked })} /> Allow voice messages in chat</label>
+      <div className="row">
+        <button className="btn primary" disabled={busy} onClick={() => void save()}>Save</button>
+        {msg && <span className="small">{msg}</span>}
+      </div>
+    </div>
   );
 }

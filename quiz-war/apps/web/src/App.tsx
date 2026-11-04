@@ -24,6 +24,7 @@ import { initNativePush } from './lib/push';
 import { applyTheme, useSettings } from './lib/settings';
 import { connectSocket, disconnectSocket, emit } from './lib/socket';
 import { setMusic } from './lib/sound';
+import { leaveVoice, useVoice, voiceBackground } from './lib/voice';
 import { toast } from './lib/toast';
 import { Login, Register } from './pages/Auth';
 import Home from './pages/Home';
@@ -218,11 +219,26 @@ export function App() {
     void Bars.set({ color, dark: darkTop || darkTheme }).catch(() => undefined);
   }, [loc.pathname, theme, splash]);
 
-  // Background music: menu track on menus, match track during battles.
+  // Background music: menu track on menus, match track in solo / AI battles. Never while playing
+  // real people (they may be talking) or while live voice is on.
+  const gameType = useGame((s) => s.snapshot?.type);
+  const voiceRoom = useVoice((s) => s.roomId);
   useEffect(() => {
     const inGame = /^\/(match|war-room|matchmaking)/.test(loc.pathname);
-    setMusic(music && status === 'authed' && !splash, inGame ? 'match' : 'menu');
-  }, [music, loc.pathname, status, splash]);
+    const withPeople = /^\/(war-room|matchmaking)/.test(loc.pathname) || (/^\/(match|result)\//.test(loc.pathname) && gameType === 'pvp');
+    setMusic(music && status === 'authed' && !splash && !withPeople && !voiceRoom, inGame ? 'match' : 'menu');
+  }, [music, loc.pathname, status, splash, gameType, voiceRoom]);
+
+  // Live voice ends when the player leaves the match / result / room screens.
+  useEffect(() => {
+    if (voiceRoom && !/^\/(match|result|war-room)\//.test(loc.pathname)) leaveVoice();
+  }, [loc.pathname, voiceRoom]);
+  // The mic turns off when the app goes to the background.
+  useEffect(() => {
+    const on = () => document.hidden && voiceBackground();
+    document.addEventListener('visibilitychange', on);
+    return () => document.removeEventListener('visibilitychange', on);
+  }, []);
 
   useEffect(() => {
     if (status === 'authed') {

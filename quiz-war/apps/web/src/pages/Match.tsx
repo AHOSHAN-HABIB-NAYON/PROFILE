@@ -16,6 +16,8 @@ import { haptic } from '../lib/platform';
 import { emit, useConn } from '../lib/socket';
 import { sfx } from '../lib/sound';
 import { toast } from '../lib/toast';
+import { useSettings } from '../lib/settings';
+import { VoiceBar } from '../components/VoiceBar';
 
 const KEYS_EN = ['A', 'B', 'C', 'D'];
 const KEYS_BN = ['ক', 'খ', 'গ', 'ঘ'];
@@ -176,6 +178,7 @@ export default function Match() {
   const nav = useNavigate();
   const me = useAuth((s) => s.user)!;
   const conn = useConn((s) => s.status);
+  const musicOn = useSettings((s) => s.music);
   const g = useGame();
   const [missing, setMissing] = useState(false);
   const [slow, setSlow] = useState(false);
@@ -380,7 +383,14 @@ export default function Match() {
       <div className="game-top">
         <span className={`conn-chip ${conn !== 'connected' ? 'bad' : ''}`}><i />{conn === 'connected' ? t('Live', 'লাইভ') : t('Reconnecting…', 'সংযোগ হচ্ছে…')}</span>
         <span className="chip"><Icon name={modeIcon(snap.mode, snap.type)} /> {snap.type === 'ai' ? t('AI battle', 'AI ব্যাটল') : modeLabel(snap.mode)}{snap.ranked ? t(' · Ranked', ' · র‍্যাংকড') : ''}</span>
-        <button className="btn icon sm ghost" aria-label={t('Leave match', 'ম্যাচ ছাড়ুন')} onClick={() => setQuitOpen(true)}><Icon name="flag" size={20} /></button>
+        <span className="row gap-sm">
+          {snap.type !== 'pvp' && (
+            <button className="btn icon sm ghost" aria-pressed={musicOn} aria-label={musicOn ? t('Music off', 'মিউজিক বন্ধ') : t('Music on', 'মিউজিক চালু')} onClick={() => (haptic('tap'), useSettings.getState().set({ music: !musicOn }))}>
+              <Icon name={musicOn ? 'music' : 'mute'} size={20} />
+            </button>
+          )}
+          <button className="btn icon sm ghost" aria-label={t('Leave match', 'ম্যাচ ছাড়ুন')} onClick={() => setQuitOpen(true)}><Icon name="flag" size={20} /></button>
+        </span>
       </div>
 
       {solo ? (
@@ -475,6 +485,10 @@ export default function Match() {
         </>
       ) : (
         <div className="countdown-stage"><span className="spinner" style={{ width: 30, height: 30, color: 'var(--primary)' }} /><p className="muted">{t('Get ready…', 'প্রস্তুত হোন…')}</p></div>
+      )}
+
+      {snap.type === 'pvp' && !solo && (
+        <VoiceBar className="game-voice" roomId={id} players={snap.players.filter((p) => !p.isBot && p.userId !== me.id).map((p) => ({ userId: p.userId, name: p.username, avatar: p.avatarUrl }))} />
       )}
 
       <Sheet open={quitOpen} onClose={() => setQuitOpen(false)} title={t('Leave this match?', 'ম্যাচ ছেড়ে যাবেন?')} icon="flag">

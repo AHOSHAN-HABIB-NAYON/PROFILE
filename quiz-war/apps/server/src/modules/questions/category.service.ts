@@ -12,20 +12,29 @@ export const categoryInputSchema = z.object({
   description: z.string().trim().max(300).nullable().optional(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional(),
   isActive: z.boolean().default(true),
+  /** Shown on Home under "Collections" instead of the category picker. */
+  isCollection: z.boolean().default(false),
+  /** Reserved for Premium (Update 2); free for now. */
+  isPremium: z.boolean().default(false),
 });
 
 export class CategoryService {
   private cache: { at: number; data: any[] } | null = null;
 
-  /** Public list (cached 60s) with active question counts. */
-  async listPublic() {
+  /** Public list (cached 60s) with active question counts. Collections only when asked (new apps). */
+  async listPublic(withCollections = false) {
+    const all = await this.listAll();
+    return withCollections ? all : all.filter((c: any) => !c.isCollection);
+  }
+
+  private async listAll() {
     if (this.cache && Date.now() - this.cache.at < 60_000) return this.cache.data;
     const rows = await query<any>(
-      `SELECT c.id, c.slug, c.name, c.name_bn AS nameBn, c.icon, c.icon_url AS iconUrl, c.description, c.color,
+      `SELECT c.id, c.slug, c.name, c.name_bn AS nameBn, c.icon, c.icon_url AS iconUrl, c.description, c.color, c.is_collection AS isCollection, c.is_premium AS isPremium,
               (SELECT COUNT(*) FROM questions q WHERE q.category_id = c.id AND q.is_active = 1 AND q.review_status = 'approved' AND q.deleted_at IS NULL) AS questionCount
        FROM categories c WHERE c.is_active = 1 AND c.deleted_at IS NULL ORDER BY c.sort_order, c.id`,
     );
-    const data = rows.map((r) => ({ ...r, questionCount: Number(r.questionCount) }));
+    const data = rows.map((r) => ({ ...r, isCollection: !!r.isCollection, isPremium: !!r.isPremium, questionCount: Number(r.questionCount) }));
     this.cache = { at: Date.now(), data };
     return data;
   }
@@ -36,12 +45,12 @@ export class CategoryService {
 
   async listAdmin() {
     const rows = await query<any>(
-      `SELECT c.id, c.slug, c.name, c.name_bn AS nameBn, c.icon, c.icon_url AS iconUrl, c.description, c.color, c.sort_order AS sortOrder, c.is_active AS isActive,
+      `SELECT c.id, c.slug, c.name, c.name_bn AS nameBn, c.icon, c.icon_url AS iconUrl, c.description, c.color, c.sort_order AS sortOrder, c.is_active AS isActive, c.is_collection AS isCollection, c.is_premium AS isPremium,
               (SELECT COUNT(*) FROM questions q WHERE q.category_id = c.id AND q.review_status = 'approved' AND q.deleted_at IS NULL) AS questionCount,
               (SELECT COUNT(*) FROM questions q WHERE q.category_id = c.id AND q.review_status = 'pending' AND q.deleted_at IS NULL) AS pendingCount
        FROM categories c WHERE c.deleted_at IS NULL ORDER BY c.sort_order, c.id`,
     );
-    return rows.map((r) => ({ ...r, isActive: !!r.isActive, questionCount: Number(r.questionCount) }));
+    return rows.map((r) => ({ ...r, isActive: !!r.isActive, isCollection: !!r.isCollection, isPremium: !!r.isPremium, questionCount: Number(r.questionCount) }));
   }
 
   async get(id: number) {
@@ -53,7 +62,7 @@ export class CategoryService {
   async create(input: z.infer<typeof categoryInputSchema>) {
     const max = await queryOne<{ m: number }>('SELECT COALESCE(MAX(sort_order), 0) m FROM categories');
     try {
-      const r = await exec('INSERT INTO categories (slug, name, name_bn, icon, icon_url, description, color, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+      const r = await exec('INSERT INTO categories (slug, name, name_bn, icon, icon_url, description, color, is_active, is_collection, is_premium, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
         input.slug,
         input.name,
         input.nameBn ?? null,
@@ -62,6 +71,8 @@ export class CategoryService {
         input.description ?? null,
         input.color ?? null,
         input.isActive ? 1 : 0,
+        input.isCollection ? 1 : 0,
+        input.isPremium ? 1 : 0,
         Number(max?.m ?? 0) + 1,
       ]);
       this.invalidate();
@@ -73,7 +84,7 @@ export class CategoryService {
   }
 
   async update(id: number, input: z.infer<typeof categoryInputSchema>) {
-    await exec('UPDATE categories SET slug = ?, name = ?, name_bn = ?, icon = ?, icon_url = ?, description = ?, color = ?, is_active = ? WHERE id = ? AND deleted_at IS NULL', [
+    await exec('UPDATE categories SET slug = ?, name = ?, name_bn = ?, icon = ?, icon_url = ?, description = ?, color = ?, is_active = ?, is_collection = ?, is_premium = ? WHERE id = ? AND deleted_at IS NULL', [
       input.slug,
       input.name,
       input.nameBn ?? null,
@@ -82,6 +93,8 @@ export class CategoryService {
       input.description ?? null,
       input.color ?? null,
       input.isActive ? 1 : 0,
+      input.isCollection ? 1 : 0,
+      input.isPremium ? 1 : 0,
       id,
     ]);
     this.invalidate();

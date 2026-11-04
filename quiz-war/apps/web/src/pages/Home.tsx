@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router';
 import { Avatar } from '../components/Avatar';
-import { HomeCategories } from '../components/CategoryPlay';
+import { HomeCategories, HomeCollections } from '../components/CategoryPlay';
 import { HomeOurApps } from '../components/OurApps';
 import { CountUp, N, Skeleton } from '../components/Feedback';
 import { LeagueBadge, LevelBar } from '../components/Game';
@@ -165,23 +165,11 @@ export default function Home() {
   const online = useConn((s) => s.online);
   const t = useT();
   const nav = useNavigate();
-  const go = (to: string) => {
-    haptic('tap');
-    nav(to, { viewTransition: true });
-  };
   const quick = () => {
     haptic('heavy');
     sfx('tap');
     nav('/matchmaking?mode=duel&ranked=1', { viewTransition: true });
   };
-  const modes: { icon: IconName; tone: 'primary' | 'cyan' | 'danger' | 'success' | 'warning' | 'accent'; title: string; sub: string; to: string }[] = [
-    { icon: 'users', tone: 'primary', title: t('Duo 2 VS 2', 'ডুও ২ বনাম ২'), sub: t('Team up with a partner', 'সঙ্গীকে নিয়ে লড়ুন'), to: '/matchmaking?mode=duo&ranked=0' },
-    { icon: 'bot', tone: 'cyan', title: t('VS AI', 'AI-এর সাথে'), sub: t('Easy to expert bots', 'সহজ থেকে কঠিন বট'), to: '/battle#ai' },
-    { icon: 'target', tone: 'danger', title: t('Challenge', 'চ্যালেঞ্জ'), sub: t('Battle a friend', 'বন্ধুর সাথে লড়াই'), to: '/friends' },
-    { icon: 'brain', tone: 'success', title: t('Solo practice', 'একা অনুশীলন'), sub: t('Learn at your pace', 'নিজের গতিতে শিখুন'), to: '/battle#solo' },
-    { icon: 'heart-pulse', tone: 'warning', title: t('Survival', 'সারভাইভাল'), sub: t('One mistake ends it', 'একটা ভুলেই শেষ'), to: '/battle#survival' },
-    { icon: 'bolt', tone: 'accent', title: t('Speed round', 'স্পিড রাউন্ড'), sub: t('60-second sprint', '৬০ সেকেন্ডের দৌড়'), to: '/battle#speed' },
-  ];
   return (
     <PullToRefresh onRefresh={() => Promise.all([useAuth.getState().loadMe()])}>
       <div className="page stack home">
@@ -210,17 +198,9 @@ export default function Home() {
         </section>
 
         <HomeCategories />
+        <HomeCollections />
         <HomeOurApps />
 
-        <div className="mode-grid stagger">
-          {modes.map((m) => (
-            <button key={m.title} className="mode-card" onClick={() => go(m.to)}>
-              <IconTile name={m.icon} tone={m.tone} size={44} />
-              <strong>{m.title}</strong>
-              <span>{m.sub}</span>
-            </button>
-          ))}
-        </div>
 
         <DailyChallengeCard />
         <MissionsCard />

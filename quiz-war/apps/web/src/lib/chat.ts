@@ -19,6 +19,9 @@ export type ThreadsData = { items: (ChatThread & { status: PresenceStatus; reque
 /** A floating round chat head (Messenger style) for someone who just messaged you. */
 export type ChatHead = { peer: PublicUser; count: number; last: string; at: number; request?: boolean };
 
+/** Short text for previews (chat list, toasts, chat heads). */
+export const previewText = (m: { body: string; kind?: string }) => (m.kind === 'voice' ? (useSettings.getState().lang === 'bn' ? 'ভয়েস মেসেজ' : 'Voice message') : m.body);
+
 export const threadKey = (uid: string) => ['chat-thread', uid.toUpperCase()] as const;
 
 interface ChatState {
@@ -102,7 +105,7 @@ export function registerChat() {
       if (useSettings.getState().chatHeads) {
         useChat.setState((st) => {
           const old = st.heads.find((h) => h.peer.id === peer.id);
-          const head: ChatHead = { peer, count: (old?.count ?? 0) + 1, last: message.body, at: Date.now(), request };
+          const head: ChatHead = { peer, count: (old?.count ?? 0) + 1, last: previewText(message), at: Date.now(), request };
           return { heads: [head, ...st.heads.filter((h) => h.peer.id !== peer.id)].slice(0, 4) };
         });
         return;
@@ -111,7 +114,7 @@ export function registerChat() {
         kind: 'info',
         icon: 'message',
         title: request ? `${peer.username} · ${tr('Message request', 'মেসেজ রিকোয়েস্ট')}` : peer.username,
-        body: message.body.length > 90 ? `${message.body.slice(0, 87)}…` : message.body,
+        body: previewText(message).length > 90 ? `${previewText(message).slice(0, 87)}…` : previewText(message),
         ttl: 6000,
         actions: [{ label: tr('Reply', 'উত্তর দিন'), primary: true, onClick: () => navigateTo(`/chat/${peer.uid}`) }],
       });

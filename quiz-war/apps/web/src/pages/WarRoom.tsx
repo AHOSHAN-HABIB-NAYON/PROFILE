@@ -17,9 +17,13 @@ import { useGame } from '../lib/game';
 import { num, useLang, useT } from '../lib/i18n';
 import { modeIcon, modeLabel } from '../lib/labels';
 import { haptic, PUBLIC_WEB_URL, share } from '../lib/platform';
-import { emit, useConn } from '../lib/socket';
+import { emit, getSocket, useConn } from '../lib/socket';
+import { VoiceBar } from '../components/VoiceBar';
 import { sfx } from '../lib/sound';
 import { toast } from '../lib/toast';
+
+type AskField = 'category' | 'count' | 'time' | 'difficulty';
+const ASK: Record<AskField, [string, string]> = { category: ['category', 'ক্যাটাগরি'], count: ['number of questions', 'প্রশ্নের সংখ্যা'], time: ['time', 'সময়'], difficulty: ['difficulty', 'কঠিনতা'] };
 
 export default function WarRoom() {
   const t = useT();
@@ -95,6 +99,19 @@ export default function WarRoom() {
       nav(`/match/${id}`, { replace: true });
     }
   }, [snap, id, nav]);
+
+  // Host: players can ask to change a setting.
+  useEffect(() => {
+    const s = getSocket();
+    if (!s) return;
+    const on = (p: { matchId: string; from: string; field: AskField }) => {
+      if (p.matchId !== snap?.matchId) return;
+      haptic('tap');
+      toast.info(t(`${p.from} asks to change the ${ASK[p.field][0]}`, `${p.from} ${ASK[p.field][1]} বদলাতে বলছে`), t('Tap Change to edit the room', 'রুম বদলাতে "বদলান" চাপুন'), 'settings');
+    };
+    s.on('room:ask', on);
+    return () => void s.off('room:ask', on);
+  }, [snap?.matchId, t]);
 
   // The room stays open until the player taps Leave, even if they go elsewhere or close the app.
   useEffect(() => {
@@ -247,6 +264,8 @@ export default function WarRoom() {
           <span className={`wr2-pill ${conn === 'connected' ? 'on' : 'off'}`}><Icon name={conn === 'connected' ? 'wifi' : 'wifi-off'} size={15} /> {conn === 'connected' ? t('Online', 'অনলাইন') : t('Offline', 'অফলাইন')}</span>
         </div>
 
+        <VoiceBar className="dark" roomId={snap.matchId} players={snap.players.filter((p) => !p.isBot && p.userId !== me.id).map((p) => ({ userId: p.userId, name: p.username, avatar: p.avatarUrl }))} />
+
         {isHost && setup ? (
           <>
             <RoomSettings snap={snap} />
@@ -266,15 +285,24 @@ export default function WarRoom() {
                 </span>
                 {isHost && <button className="wr2-change" onClick={() => setSetup(true)}><Icon name="edit" size={15} /> {t('Change', 'বদলান')}</button>}
               </div>
-              <div className="wr2-tiles">
-                <div className="wr2-tile c-blue"><span><Icon name="grid" size={18} /></span><b>{snap.category ? snap.category.name : t('Mixed', 'মিশ্র')}</b><small>{t('Category', 'বিষয়')}</small></div>
+              {!isHost && <p className="wr2-ask-hint">{t('Live for everyone. Tap a setting to ask the host to change it.', 'সবাই লাইভ দেখছে। বদলাতে চাইলে সেটিংয়ে চাপ দিয়ে হোস্টকে বলুন।')}</p>}
+              <div className={`wr2-tiles${isHost ? '' : ' askable'}`} onClick={(e) => {
+                if (isHost) return;
+                const f = (e.target as HTMLElement).closest('[data-ask]')?.getAttribute('data-ask') as AskField | null;
+                if (!f) return;
+                haptic('tap');
+                void emit('room:ask', { matchId: snap.matchId, field: f })
+                  .then(() => toast.success(t('Host asked', 'হোস্টকে জানানো হয়েছে'), t(`Change the ${ASK[f][0]}`, `${ASK[f][1]} বদলানোর অনুরোধ`), 'send'))
+                  .catch((err) => toast.error(t('Could not send', 'পাঠানো যায়নি'), friendlyError(err)));
+              }}>
+                <div className="wr2-tile c-blue" data-ask="category"><span><Icon name="grid" size={18} /></span><b>{snap.category ? snap.category.name : t('Mixed', 'মিশ্র')}</b><small>{t('Category', 'বিষয়')}</small></div>
                 {timed ? (
-                  <div className="wr2-tile c-green"><span><Icon name="hourglass" size={18} /></span><b>{num(Math.round((snap.totalTimeSec ?? 0) / 60), lang)} {t('min', 'মি')}</b><small>{t('Time limit', 'সময়সীমা')}</small></div>
+                  <div className="wr2-tile c-green" data-ask="time"><span><Icon name="hourglass" size={18} /></span><b>{num(Math.round((snap.totalTimeSec ?? 0) / 60), lang)} {t('min', 'মি')}</b><small>{t('Time limit', 'সময়সীমা')}</small></div>
                 ) : (
-                  <div className="wr2-tile c-green"><span><Icon name="list" size={18} /></span><b>{snap.questionCount ? num(snap.questionCount, lang) : '∞'}</b><small>{t('Questions', 'প্রশ্ন')}</small></div>
+                  <div className="wr2-tile c-green" data-ask="count"><span><Icon name="list" size={18} /></span><b>{snap.questionCount ? num(snap.questionCount, lang) : '∞'}</b><small>{t('Questions', 'প্রশ্ন')}</small></div>
                 )}
-                <div className="wr2-tile c-pink"><span><Icon name="timer" size={18} /></span><b>{num(snap.questionTimeSec, lang)}{t('s', 'সে')}</b><small>{t('Each', 'প্রতি প্রশ্নে')}</small></div>
-                <div className="wr2-tile c-purple"><span><Icon name={snap.difficulty ? DIFFICULTY_INFO[snap.difficulty].icon : 'chart'} size={18} /></span><b>{snap.difficulty ? t(DIFFICULTY_INFO[snap.difficulty].en, DIFFICULTY_INFO[snap.difficulty].bn) : t('Mixed', 'মিশ্র')}</b><small>{t('Level', 'লেভেল')}</small></div>
+                <div className="wr2-tile c-pink" data-ask="time"><span><Icon name="timer" size={18} /></span><b>{num(snap.questionTimeSec, lang)}{t('s', 'সে')}</b><small>{t('Each', 'প্রতি প্রশ্নে')}</small></div>
+                <div className="wr2-tile c-purple" data-ask="difficulty"><span><Icon name={snap.difficulty ? DIFFICULTY_INFO[snap.difficulty].icon : 'chart'} size={18} /></span><b>{snap.difficulty ? t(DIFFICULTY_INFO[snap.difficulty].en, DIFFICULTY_INFO[snap.difficulty].bn) : t('Mixed', 'মিশ্র')}</b><small>{t('Level', 'লেভেল')}</small></div>
               </div>
             </section>
 
