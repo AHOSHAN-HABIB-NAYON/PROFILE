@@ -1,6 +1,7 @@
 import {
   applyMove,
   applyRoll,
+  MATCH_REACTIONS,
   ludoColorsFor,
   moverOf,
   cellOf,
@@ -31,7 +32,7 @@ import { api } from '../lib/api';
 import { ludoAct, ludoQueue, ludoUnqueue, onLudoMatched, onLudoSnap } from '../lib/ludoOnline';
 import { sfx } from '../lib/sound';
 import { IconTile } from '../components/Icon';
-import { emit } from '../lib/socket';
+import { emit, getSocket } from '../lib/socket';
 import { toast } from '../lib/toast';
 import { PUBLIC_WEB_URL, share } from '../lib/platform';
 import { Avatar } from '../components/Avatar';
@@ -58,9 +59,9 @@ export default function LudoMenu() {
   const t = useT();
   const nav = useNavigate();
   return (
-    <div className="ludo-stage">
+    <div className="ludo-stage hub">
       <header className="ludo-top">
-        <button className="ludo-round" aria-label={t('Back', 'ফিরে যান')} onClick={() => nav(-1)}><Icon name="back" size={22} /></button>
+        <button className="ludo-round" aria-label={t('Back', 'ফিরে যান')} onClick={() => (history.length > 1 ? nav(-1) : nav('/battle?game=ludo'))}><Icon name="back" size={22} /></button>
         <b>{t('Ludo', 'লুডু')}</b>
         <span className="ludo-round ghost" />
       </header>
@@ -71,20 +72,22 @@ export default function LudoMenu() {
 
 type HubSheet = 'online' | 'friends' | 'computer' | 'local' | null;
 
-/** Ludo home: logo + four big tiles (Online, Friends, Computer, Pass & Play). Also used on Battle. */
-export function LudoHub() {
+/** Ludo home (like a game menu): logo, four illustrated modes, shortcuts. Also used on Battle. */
+export function LudoHub({ top = true }: { top?: boolean }) {
   const t = useT();
   const lang = useLang();
   const nav = useNavigate();
+  const me = useAuth((s) => s.user);
   const online = useConn((s) => s.online);
   const cfg = useConfig().data;
   const [sheet, setSheet] = useState<HubSheet>(null);
+  const [rules, setRules] = useState(false);
   const [mode, setMode] = useState<'1v1' | '2v2'>('1v1');
   const [room, setRoom] = useState<'2' | '4' | 'teams'>('2');
   const [code, setCode] = useState('');
   const [scan, setScan] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [players, setPlayers] = useState<2 | 4>(4);
+  const [players, setPlayers] = useState<2 | 4>(2);
   const [level, setLevel] = useState<0 | 1 | 2>(1);
   const [localN, setLocalN] = useState<2 | 3 | 4>(2);
   const onlineOff = cfg?.ludoEnabled === false;
@@ -106,55 +109,71 @@ export function LudoHub() {
       setBusy(false);
     }
   };
+  const B = LUDO_COLORS;
   return (
-    <div className="ludo-hub">
-      <div className="lh-logo" aria-label="Ludo">
-        <LudoLogo />
-      </div>
-      <div className="lh-grid">
-        <button type="button" className="lh-tile" onClick={() => open('online')}>
-          <span className="lt-art"><TileArt kind="online" /></span>
-          <b>{t('Play online', 'অনলাইনে খেলুন')}</b>
-          <small className="lt-live"><i /> {t(`${online} online`, `অনলাইনে ${num(online, lang)} জন`)}</small>
+    <div className="ludo-hub2">
+      {top && me && (
+        <div className="lh2-top">
+          <span className="lh2-me">
+            <Avatar name={me.username} src={me.avatarThumbUrl} size={40} />
+            <span>
+              <b className="ellipsis">{me.username}</b>
+              <small>{t(`Lv. ${me.level}`, `লেভেল ${num(me.level, lang)}`)}</small>
+            </span>
+          </span>
+          <span className="lh2-coins"><Icon name="coins" size={18} /> {num(me.coins ?? 0, lang)}</span>
+        </div>
+      )}
+      <div className="lh-logo" aria-label="Ludo"><LudoLogo /></div>
+
+      <div className="lh2-grid">
+        <button type="button" className="lh2-item" onClick={() => open('online')}>
+          <span className="lh2-art"><HubArt kind="online" /></span>
+          <span className="lh2-ribbon r-pink">{t('Online', 'অনলাইন')}</span>
+          <small className="lh2-sub"><i className="dot" /> {t(`${online} online`, `${num(online, lang)} জন অনলাইনে`)}</small>
         </button>
-        <button type="button" className="lh-tile" onClick={() => open('friends')}>
-          <span className="lt-art"><TileArt kind="friends" /></span>
-          <span className="lt-mic" aria-hidden><Icon name="mic" size={14} /></span>
-          <b>{t('Play with friends', 'বন্ধুদের সাথে')}</b>
-          <small>{t('Room · code · QR · voice', 'রুম · কোড · QR · ভয়েস')}</small>
+        <button type="button" className="lh2-item" onClick={() => open('friends')}>
+          <span className="lh2-art"><HubArt kind="friends" /></span>
+          <span className="lh2-ribbon r-blue">{t('Friends', 'বন্ধুরা')}</span>
+          <small className="lh2-sub"><Icon name="mic" size={12} /> {t('Room · voice', 'রুম · ভয়েস')}</small>
         </button>
-        <button type="button" className="lh-tile" onClick={() => open('computer')}>
-          <span className="lt-art"><TileArt kind="computer" /></span>
-          <b>{t('Computer', 'কম্পিউটার')}</b>
-          <small>{t('No internet needed', 'নেট ছাড়াই')}</small>
+        <button type="button" className="lh2-item" onClick={() => open('computer')}>
+          <span className="lh2-art"><HubArt kind="computer" /></span>
+          <span className="lh2-ribbon r-indigo">{t('Computer', 'কম্পিউটার')}</span>
+          <small className="lh2-sub">{t('No internet needed', 'নেট ছাড়াই')}</small>
         </button>
-        <button type="button" className="lh-tile" onClick={() => open('local')}>
-          <span className="lt-art"><TileArt kind="local" /></span>
-          <b>{t('Pass & play', 'এক ফোনে খেলুন')}</b>
-          <small>{t('2–4 players, one phone', '২–৪ জন, এক ফোনে')}</small>
+        <button type="button" className="lh2-item" onClick={() => open('local')}>
+          <span className="lh2-art"><HubArt kind="local" /></span>
+          <span className="lh2-ribbon r-teal">{t('Local', 'এক ফোনে')}</span>
+          <small className="lh2-sub">{t('Pass & play', 'হাতবদল করে খেলুন')}</small>
         </button>
       </div>
 
+      <nav className="lh2-dock" aria-label={t('Ludo shortcuts', 'লুডু শর্টকাট')}>
+        <button type="button" onClick={() => nav('/friends')}><span className="d-ic c1"><Icon name="users" size={22} /></span>{t('Friends', 'বন্ধু')}</button>
+        <button type="button" onClick={() => nav('/rank?game=ludo')}><span className="d-ic c2"><Icon name="trophy" size={22} /></span>{t('Ranking', 'র‍্যাংকিং')}</button>
+        <button type="button" onClick={() => setRules(true)}><span className="d-ic c3"><Icon name="book" size={22} /></span>{t('Rules', 'নিয়ম')}</button>
+      </nav>
+
       <Sheet open={sheet === 'online'} onClose={() => setSheet(null)} title={t('Play online', 'অনলাইনে খেলুন')} icon="globe">
-        <div className="col">
-          <p className="small muted">{t('We find real players for you. Win to earn coins and climb the Ludo board.', 'আপনার জন্য আসল প্লেয়ার খুঁজে দেওয়া হবে। জিতলে কয়েন, আর লুডুর র‍্যাংকে উপরে উঠবেন।')}</p>
-          <div className="seg">
-            <button aria-pressed={mode === '1v1'} onClick={() => setMode('1v1')}>{t('1 vs 1', '১ বনাম ১')}</button>
-            <button aria-pressed={mode === '2v2'} onClick={() => setMode('2v2')}>{t('2 vs 2 (team)', '২ বনাম ২ (দল)')}</button>
+        <div className="pick">
+          <p className="pick-note">{t('Real players · win coins · climb the Ludo board', 'আসল প্লেয়ার · জিতলে কয়েন · লুডুর র‍্যাংকে উঠুন')}</p>
+          <div className="pick-grid two">
+            <ModeCard on={mode === '1v1'} onPick={() => setMode('1v1')} title={t('1 vs 1', '১ বনাম ১')} sub={t('2 players', '২ জন')} art={<PawnsArt groups={[[B[3]], [B[1]]]} />} tone="t-blue" />
+            <ModeCard on={mode === '2v2'} onPick={() => setMode('2v2')} title={t('2 vs 2', '২ বনাম ২')} sub={t('Team play', 'দলে খেলা')} art={<PawnsArt groups={[[B[3], B[1]], [B[0], B[2]]]} />} tone="t-purple" />
           </div>
-          <button className="btn primary block" onClick={() => (setSheet(null), nav(`/ludo/find?mode=${mode}`))}><Icon name="search" /> {t('Find players', 'প্লেয়ার খুঁজুন')}</button>
+          <button className="pick-go" onClick={() => (setSheet(null), nav(`/ludo/find?mode=${mode}`))}><Icon name="search" /> {t('Find players', 'প্লেয়ার খুঁজুন')}</button>
         </div>
       </Sheet>
 
       <Sheet open={sheet === 'friends'} onClose={() => setSheet(null)} title={t('Play with friends', 'বন্ধুদের সাথে')} icon="users">
-        <div className="col">
-          <b className="small">{t('Make a room', 'রুম বানান')}</b>
-          <div className="seg">
-            <button aria-pressed={room === '2'} onClick={() => setRoom('2')}>{t('2 players', '২ জন')}</button>
-            <button aria-pressed={room === '4'} onClick={() => setRoom('4')}>{t('4 players', '৪ জন')}</button>
-            <button aria-pressed={room === 'teams'} onClick={() => setRoom('teams')}>{t('2 vs 2', '২ বনাম ২')}</button>
+        <div className="pick">
+          <div className="pick-grid three">
+            <ModeCard on={room === '2'} onPick={() => setRoom('2')} title={t('1 vs 1', '১ বনাম ১')} sub={t('2 players', '২ জন')} art={<PawnsArt groups={[[B[3]], [B[1]]]} />} tone="t-blue" />
+            <ModeCard on={room === '4'} onPick={() => setRoom('4')} title={t('4 players', '৪ জন')} sub={t('Everyone', 'সবাই আলাদা')} art={<PawnsArt groups={[[B[3], B[0], B[1], B[2]]]} />} tone="t-green" />
+            <ModeCard on={room === 'teams'} onPick={() => setRoom('teams')} title={t('2 vs 2', '২ বনাম ২')} sub={t('Teams', 'দলে')} art={<PawnsArt groups={[[B[3], B[1]], [B[0], B[2]]]} />} tone="t-purple" />
           </div>
-          <button className="btn primary block" disabled={busy} onClick={() => void makeRoom()}><Icon name="plus" /> {t('Make a room', 'রুম বানান')}</button>
+          <button className="pick-go" disabled={busy} onClick={() => void makeRoom()}><Icon name="plus" /> {t('Make a room', 'রুম বানান')}</button>
           <div className="lh-or"><span>{t('or join a room', 'অথবা রুমে যোগ দিন')}</span></div>
           <form className="ludo-code" onSubmit={(e) => (e.preventDefault(), code.trim().length >= 4 && (setSheet(null), nav(`/ludo/room/${code.trim().toUpperCase()}`)))}>
             <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder={t('Room code', 'রুম কোড')} maxLength={8} aria-label={t('Room code', 'রুম কোড')} autoCapitalize="characters" />
@@ -165,38 +184,85 @@ export function LudoHub() {
       </Sheet>
 
       <Sheet open={sheet === 'computer'} onClose={() => setSheet(null)} title={t('Play the computer', 'কম্পিউটারের সাথে')} icon="bot">
-        <div className="col">
-          <div className="lc-row">
-            <span className="lc-label">{t('Players', 'প্লেয়ার')}</span>
-            <div className="seg">
-              {([2, 4] as const).map((n) => <button key={n} aria-pressed={players === n} onClick={() => setPlayers(n)}>{n === 2 ? t('1 vs 1', '১ বনাম ১') : t('4 players', '৪ জন')}</button>)}
-            </div>
+        <div className="pick">
+          <div className="pick-grid two">
+            <ModeCard on={players === 2} onPick={() => setPlayers(2)} title={t('1 vs 1', '১ বনাম ১')} sub={t('You vs computer', 'আপনি বনাম কম্পিউটার')} art={<PawnsArt groups={[[B[3]], [B[1]]]} />} tone="t-blue" />
+            <ModeCard on={players === 4} onPick={() => setPlayers(4)} title={t('4 players', '৪ জন')} sub={t('You + 3 computers', 'আপনি + ৩ কম্পিউটার')} art={<PawnsArt groups={[[B[3], B[0], B[1], B[2]]]} />} tone="t-green" />
           </div>
-          <div className="lc-row">
-            <span className="lc-label">{t('Level', 'লেভেল')}</span>
-            <div className="seg">
-              {LEVELS.map(([en, bn], i) => <button key={en} aria-pressed={level === i} onClick={() => setLevel(i as 0 | 1 | 2)}>{t(en, bn)}</button>)}
-            </div>
+          <div className="pick-levels">
+            {LEVELS.map(([en, bn], i) => (
+              <button key={en} type="button" className={level === i ? 'on' : ''} onClick={() => (haptic('tap'), setLevel(i as 0 | 1 | 2))}>
+                <Icon name={(['smile', 'gauge', 'bolt'] as const)[i]!} size={18} /> {t(en, bn)}
+              </button>
+            ))}
           </div>
-          <button className="btn primary block" onClick={() => (setSheet(null), nav(`/ludo/play?mode=ai&n=${players}&lv=${level}`))}><Icon name="play" /> {t('Play now', 'খেলা শুরু')}</button>
+          <button className="pick-go" onClick={() => (setSheet(null), nav(`/ludo/play?mode=ai&n=${players}&lv=${level}`))}><Icon name="play" /> {t('Play now', 'খেলা শুরু')}</button>
         </div>
       </Sheet>
 
       <Sheet open={sheet === 'local'} onClose={() => setSheet(null)} title={t('Pass & play', 'এক ফোনে খেলুন')} icon="users">
-        <div className="col">
-          <p className="small muted">{t('Everyone plays on this phone — pass it on each turn.', 'সবাই এই ফোনেই খেলবে — চাল শেষে ফোন হাতবদল করুন।')}</p>
-          <div className="lc-row">
-            <span className="lc-label">{t('Players', 'প্লেয়ার')}</span>
-            <div className="seg">
-              {([2, 3, 4] as const).map((n) => <button key={n} aria-pressed={localN === n} onClick={() => setLocalN(n)}>{num(n, lang)}</button>)}
-            </div>
+        <div className="pick">
+          <p className="pick-note">{t('Everyone plays on this phone — pass it on each turn.', 'সবাই এই ফোনেই খেলবে — চাল শেষে ফোন হাতবদল করুন।')}</p>
+          <div className="pick-grid three">
+            {([2, 3, 4] as const).map((n) => (
+              <ModeCard key={n} on={localN === n} onPick={() => setLocalN(n)} title={t(`${n} players`, `${num(n, lang)} জন`)} sub="" art={<PawnsArt groups={[[B[3], B[0], B[1], B[2]].slice(0, n)]} />} tone={n === 2 ? 't-blue' : n === 3 ? 't-green' : 't-purple'} />
+            ))}
           </div>
-          <button className="btn primary block" onClick={() => (setSheet(null), nav(`/ludo/play?mode=local&n=${localN}`))}><Icon name="play" /> {t('Start', 'শুরু করুন')}</button>
+          <button className="pick-go" onClick={() => (setSheet(null), nav(`/ludo/play?mode=local&n=${localN}`))}><Icon name="play" /> {t('Start', 'শুরু করুন')}</button>
         </div>
+      </Sheet>
+
+      <Sheet open={rules} onClose={() => setRules(false)} title={t('How to play', 'কীভাবে খেলবেন')} icon="book">
+        <ol className="ludo-rules">
+          {LUDO_TIPS.concat([
+            ['Bring all 4 tokens home first to win.', 'সবার আগে ৪টি গুটি ঘরে তুললে জয়।'],
+            ['Three sixes in a row lose the turn.', 'পরপর তিনবার ছক্কা উঠলে চাল বাতিল।'],
+            ['2 vs 2: partners never capture each other and win together.', '২ বনাম ২: সাথীর গুটি কাটা যায় না, দুজনে একসাথে জেতে।'],
+          ]).map(([en, bn]) => <li key={en}>{t(en, bn)}</li>)}
+        </ol>
       </Sheet>
 
       <QrScanner open={scan} onClose={() => setScan(false)} onCode={(c) => (setScan(false), setSheet(null), nav(`/ludo/room/${c}`))} />
     </div>
+  );
+}
+
+/** A big selectable mode card (1 vs 1, 2 vs 2, 4 players…). */
+function ModeCard({ on, onPick, title, sub, art, tone }: { on: boolean; onPick: () => void; title: string; sub: string; art: ReactNode; tone: string }) {
+  return (
+    <button type="button" className={`mode-card ${tone}${on ? ' on' : ''}`} aria-pressed={on} onClick={() => (haptic('tap'), ludoSfx('turn'), onPick())}>
+      {on && <span className="mc-check"><Icon name="check" size={14} /></span>}
+      <span className="mc-art">{art}</span>
+      <b>{title}</b>
+      {sub && <small>{sub}</small>}
+    </button>
+  );
+}
+
+/** Rows of small pawns; groups are separated by "VS". */
+function PawnsArt({ groups }: { groups: string[][] }) {
+  const w = groups.reduce((s, g) => s + g.length * 22, 0) + (groups.length - 1) * 22 + 8;
+  let x = 4;
+  return (
+    <svg viewBox={`0 0 ${w} 40`} style={{ width: '100%', maxWidth: w * 1.4 }}>
+      {groups.map((g, gi) => {
+        const parts = g.map((c, i) => {
+          const cx = x + 11 + i * 22;
+          return (
+            <g key={`${gi}-${i}`} transform={`translate(${cx} 4)`}>
+              <ellipse cx="0" cy="33" rx="9" ry="2.5" fill="rgba(0,0,0,.2)" />
+              <path d="M-8 32 Q0 6 8 32 Z" fill={c} stroke="rgba(0,0,0,.25)" strokeWidth="1" />
+              <circle cx="0" cy="9" r="6.5" fill={c} stroke="rgba(0,0,0,.25)" strokeWidth="1" />
+              <circle cx="-2.2" cy="6.8" r="2" fill="rgba(255,255,255,.65)" />
+            </g>
+          );
+        });
+        x += g.length * 22;
+        const vs = gi < groups.length - 1 ? <text key={`vs${gi}`} x={x + 11} y="26" textAnchor="middle" fontSize="11" fontWeight="900" fill="#475569">VS</text> : null;
+        if (vs) x += 22;
+        return [parts, vs];
+      })}
+    </svg>
   );
 }
 
@@ -238,38 +304,68 @@ function LudoLogo() {
   );
 }
 
-/** Pictures on the four menu tiles. */
-function TileArt({ kind }: { kind: 'online' | 'friends' | 'computer' | 'local' }) {
-  const phone = (x: number) => <rect x={x} y="10" width="26" height="40" rx="5" fill="#facc15" stroke="#a16207" strokeWidth="2" />;
+/** Illustrations for the four hub items (globe + phones, pawns + heart, robot, armchair + dice). */
+function HubArt({ kind }: { kind: 'online' | 'friends' | 'computer' | 'local' }) {
   return (
-    <svg viewBox="0 0 120 60">
+    <svg viewBox="0 0 140 110">
+      <defs>
+        <radialGradient id="ha-glob" cx="35%" cy="30%" r="75%"><stop offset="0" stopColor="#7dd3fc" /><stop offset="1" stopColor="#1d4ed8" /></radialGradient>
+        <linearGradient id="ha-phone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#e0f2fe" /><stop offset="1" stopColor="#93c5fd" /></linearGradient>
+        <radialGradient id="ha-yel" cx="35%" cy="30%" r="75%"><stop offset="0" stopColor="#fef08a" /><stop offset="1" stopColor="#eab308" /></radialGradient>
+        <linearGradient id="ha-teal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#5eead4" /><stop offset="1" stopColor="#0f766e" /></linearGradient>
+        <linearGradient id="ha-robot" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ffffff" /><stop offset="1" stopColor="#cbd5e1" /></linearGradient>
+      </defs>
+      <ellipse cx="70" cy="98" rx="52" ry="9" fill="rgba(0,0,0,.22)" />
       {kind === 'online' && (
         <>
-          {phone(6)}{phone(88)}
-          <path d="M36 30 Q60 14 84 30" fill="none" stroke="#fde047" strokeWidth="2" strokeDasharray="2 4" />
-          <circle cx="60" cy="30" r="13" fill="#38bdf8" stroke="#fff" strokeWidth="2" />
-          <path d="M51 26 q5 -3 8 1 t9 0 M52 34 q4 3 8 0 t8 1" stroke="#16a34a" strokeWidth="3" fill="none" strokeLinecap="round" />
+          <path d="M34 26 Q70 -4 106 26" fill="none" stroke="#fff" strokeWidth="3" strokeDasharray="5 5" strokeLinecap="round" />
+          <path d="M100 18 l8 8 l-11 2 z" fill="#fff" />
+          <g transform="rotate(-14 30 60)"><rect x="14" y="38" width="30" height="50" rx="7" fill="url(#ha-phone)" stroke="#1e40af" strokeWidth="2.5" /><rect x="19" y="45" width="20" height="34" rx="3" fill="#bfdbfe" /></g>
+          <g transform="rotate(14 110 60)"><rect x="96" y="38" width="30" height="50" rx="7" fill="url(#ha-phone)" stroke="#1e40af" strokeWidth="2.5" /><rect x="101" y="45" width="20" height="34" rx="3" fill="#bfdbfe" /></g>
+          <circle cx="70" cy="58" r="30" fill="url(#ha-glob)" stroke="#fff" strokeWidth="3" />
+          <path d="M52 46 q8 -8 16 -2 q4 6 -4 10 q-8 2 -6 10 q-8 -4 -6 -18z M74 66 q10 -4 14 4 q-2 10 -12 10 q-6 -6 -2 -14z M78 36 q8 2 10 8 q-6 2 -10 -2z" fill="#22c55e" stroke="#15803d" strokeWidth="1.5" />
+          <ellipse cx="60" cy="44" rx="9" ry="5" fill="rgba(255,255,255,.4)" />
         </>
       )}
       {kind === 'friends' && (
         <>
-          {phone(6)}{phone(88)}
-          <path d="M36 30 Q60 14 84 30" fill="none" stroke="#fde047" strokeWidth="2" strokeDasharray="2 4" />
-          {[50, 70].map((x) => <path key={x} d={`M${x} 38 l-9 -9 a5 5 0 0 1 9 -6 a5 5 0 0 1 9 6 z`} fill="#ef4444" stroke="#fff" strokeWidth="1.5" />)}
+          {[[46, 0], [94, 1]].map(([x, i]) => (
+            <g key={i} transform={`translate(${x} 18)`}>
+              <path d="M-20 76 Q0 22 20 76 Z" fill="url(#ha-yel)" stroke="#a16207" strokeWidth="2" />
+              <circle cx="0" cy="26" r="17" fill="url(#ha-yel)" stroke="#a16207" strokeWidth="2" />
+              <circle cx="-6" cy="24" r="2.4" fill="#1e293b" /><circle cx="6" cy="24" r="2.4" fill="#1e293b" />
+              <path d="M-6 32 q6 6 12 0" stroke="#b45309" strokeWidth="2.4" fill="none" strokeLinecap="round" />
+              <circle cx="-10" cy="30" r="3" fill="#fda4af" opacity=".8" /><circle cx="10" cy="30" r="3" fill="#fda4af" opacity=".8" />
+            </g>
+          ))}
+          <path d="M70 70 l-14 -14 a8 8 0 0 1 14 -9 a8 8 0 0 1 14 9 z" fill="#f43f5e" stroke="#fff" strokeWidth="2.5" />
+          <path d="M98 14 l-6 -6 a3.5 3.5 0 0 1 6 -4 a3.5 3.5 0 0 1 6 4 z" fill="#fb7185" />
         </>
       )}
       {kind === 'computer' && (
         <>
-          <rect x="44" y="8" width="32" height="44" rx="6" fill="#facc15" stroke="#a16207" strokeWidth="2" />
-          <rect x="48" y="16" width="24" height="26" rx="3" fill="#1e3a8a" />
-          <text x="60" y="35" textAnchor="middle" fontSize="13" fontWeight="900" fill="#fff" fontFamily="sans-serif">VS</text>
+          <g transform="translate(26 50)"><path d="M-9 40 Q0 10 9 40 Z" fill="#e53935" stroke="rgba(0,0,0,.3)" /><circle cx="0" cy="14" r="8" fill="#e53935" stroke="rgba(0,0,0,.3)" /><circle cx="-2.5" cy="11.5" r="2.4" fill="rgba(255,255,255,.6)" /></g>
+          <rect x="44" y="64" width="52" height="30" rx="12" fill="url(#ha-robot)" stroke="#64748b" strokeWidth="2.5" />
+          <rect x="62" y="70" width="16" height="10" rx="3" fill="#ef4444" />
+          <line x1="70" y1="14" x2="70" y2="24" stroke="#64748b" strokeWidth="3" /><circle cx="70" cy="12" r="5" fill="#f43f5e" />
+          <rect x="38" y="22" width="64" height="44" rx="20" fill="url(#ha-robot)" stroke="#64748b" strokeWidth="2.5" />
+          <rect x="46" y="32" width="48" height="24" rx="12" fill="#1e293b" />
+          <ellipse cx="60" cy="44" rx="5" ry="6" fill="#38bdf8" /><ellipse cx="80" cy="44" rx="5" ry="6" fill="#38bdf8" />
+          <circle cx="58" cy="41" r="1.6" fill="#fff" /><circle cx="78" cy="41" r="1.6" fill="#fff" />
+          <path d="M96 76 q16 -6 14 -22" stroke="#cbd5e1" strokeWidth="6" fill="none" strokeLinecap="round" />
         </>
       )}
       {kind === 'local' && (
         <>
-          <circle cx="30" cy="20" r="8" fill="#facc15" /><path d="M16 50 q14 -26 28 0 z" fill="#facc15" />
-          <circle cx="90" cy="20" r="8" fill="#facc15" /><path d="M76 50 q14 -26 28 0 z" fill="#facc15" />
-          <path d="M48 44 L60 38 L72 44 L60 50 Z" fill="#fde047" stroke="#a16207" strokeWidth="1.5" />
+          <rect x="28" y="30" width="66" height="44" rx="14" fill="url(#ha-teal)" stroke="#115e59" strokeWidth="2.5" />
+          <rect x="22" y="56" width="78" height="26" rx="10" fill="url(#ha-teal)" stroke="#115e59" strokeWidth="2.5" />
+          <rect x="16" y="46" width="16" height="36" rx="7" fill="#2dd4bf" stroke="#115e59" strokeWidth="2.5" />
+          <rect x="90" y="46" width="16" height="36" rx="7" fill="#2dd4bf" stroke="#115e59" strokeWidth="2.5" />
+          <rect x="30" y="80" width="6" height="12" rx="2" fill="#115e59" /><rect x="86" y="80" width="6" height="12" rx="2" fill="#115e59" />
+          <g transform="rotate(14 112 74)">
+            <rect x="98" y="60" width="28" height="28" rx="7" fill="#fff" stroke="#94a3b8" strokeWidth="2" />
+            <circle cx="105" cy="67" r="2.6" fill="#1e293b" /><circle cx="119" cy="81" r="2.6" fill="#1e293b" /><circle cx="112" cy="74" r="2.6" fill="#e53935" />
+          </g>
         </>
       )}
     </svg>
@@ -379,6 +475,69 @@ const CORNER = ['tl', 'tr', 'br', 'bl'] as const;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/** Emoji bubbles above players' pictures (seat index → emoji), each shown ~2.5 s. */
+function useBubbles() {
+  const [bubbles, setBubbles] = useState<Record<number, { r: string; k: number }>>({});
+  const show = (seat: number, r: string) => {
+    const k = Date.now() + Math.random();
+    setBubbles((b) => ({ ...b, [seat]: { r, k } }));
+    window.setTimeout(() => setBubbles((b) => (b[seat]?.k === k ? (({ [seat]: _x, ...rest }) => rest)(b) : b)), 2600);
+  };
+  return { bubbles, show };
+}
+
+/** Smiley button → emoji tray (same emojis as quiz matches). */
+function LudoReactBar({ onSend }: { onSend: (r: string) => void }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const [cool, setCool] = useState(false);
+  const send = (r: string) => {
+    if (cool) return;
+    setCool(true);
+    window.setTimeout(() => setCool(false), 1300);
+    haptic('tap');
+    setOpen(false);
+    onSend(r);
+  };
+  return (
+    <div className="ludo-react">
+      {open && (
+        <div className="ludo-react-tray" role="menu" aria-label={t('Send a reaction', 'রিঅ্যাকশন পাঠান')}>
+          {MATCH_REACTIONS.map((r) => (
+            <button key={r} role="menuitem" onClick={() => send(r)} disabled={cool} aria-label={r}>{r}</button>
+          ))}
+        </div>
+      )}
+      <button type="button" className={`ludo-react-btn${open ? ' on' : ''}`} aria-label={t('Reactions', 'রিঅ্যাকশন')} aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <Icon name="smile" size={24} />
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Browser / phone Back during a game: stay on the page and ask first (like a quiz match).
+ * An extra history entry with the same address absorbs the Back press; it re-arms each time.
+ */
+function useBackGuard(active: boolean, onBack: () => void) {
+  const cb = useRef(onBack);
+  cb.current = onBack;
+  useEffect(() => {
+    if (!active) return;
+    const marker = { ...(history.state ?? {}), qwLudoGuard: true };
+    history.pushState(marker, '');
+    const onPop = () => {
+      history.pushState(marker, '');
+      cb.current();
+    };
+    window.addEventListener('popstate', onPop);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      if (history.state?.qwLudoGuard) history.back();
+    };
+  }, [active]);
+}
+
 export function LudoGame() {
   const t = useT();
   const lang = useLang();
@@ -416,6 +575,13 @@ export function LudoGame() {
   gameRef.current = game;
   const alive = useRef(true);
   useEffect(() => () => void (alive.current = false), []);
+  useBackGuard(phase !== 'over', () => setLeaving(true));
+  const { bubbles, show: showBubble } = useBubbles();
+  /** Computer players react now and then (only vs computer). */
+  const botReact = (seat: number, pool: string[], chance = 0.5) => {
+    if (mode !== 'ai' || !seats[seat]?.bot || Math.random() > chance) return;
+    window.setTimeout(() => alive.current && showBubble(seat, pool[Math.floor(Math.random() * pool.length)]!), 500 + Math.random() * 700);
+  };
   // Phone Back button: ask before leaving (game over → straight to the menu).
   const overRef = useRef(false);
   overRef.current = phase === 'over';
@@ -463,6 +629,8 @@ export function LudoGame() {
       ludoSfx('capture');
       haptic('heavy');
       flash(t('Captured! Roll again', 'গুটি কেটেছেন! আবার চাল'));
+      botReact(g.turn, ['😎', '😂', '💪', '🔥'], 0.6);
+      for (const c of r.captured) botReact(c.player, ['😡', '😭', '😤', '😱'], 0.6);
     } else if (r.reachedHome) {
       ludoSfx('home');
       cheerFor(g.players[g.turn]!.color);
@@ -628,12 +796,21 @@ export function LudoGame() {
                 : ' '}
       </p>
 
+      {phase !== 'over' && (
+        <LudoReactBar
+          onSend={(r) => {
+            const mine = mode === 'ai' ? 0 : game.turn;
+            showBubble(mine, r);
+            if (mode === 'ai') botReact(1 + Math.floor(Math.random() * (seats.length - 1)), ['😂', '😎', '👍', '😮', '🤝', '😅'], 0.45);
+          }}
+        />
+      )}
       <Modal open={leaving} onClose={() => setLeaving(false)} label={t('Leave game?', 'খেলা ছাড়বেন?')}>
         <h2>{t('Leave this game?', 'খেলা ছেড়ে যাবেন?')}</h2>
         <p>{t('The game will end.', 'খেলাটি শেষ হয়ে যাবে।')}</p>
         <div className="modal-actions">
-          <button className="btn outline" onClick={() => setLeaving(false)}>{t('Keep playing', 'খেলতে থাকুন')}</button>
-          <button className="btn danger" onClick={() => nav('/ludo')}>{t('Leave', 'ছেড়ে যান')}</button>
+          <button className="btn outline" onClick={() => setLeaving(false)}>{t('Stay', 'থাকুন')}</button>
+          <button className="btn danger" onClick={() => nav('/ludo', { replace: true })}>{t('Leave', 'ছেড়ে যান')}</button>
         </div>
       </Modal>
 
@@ -666,6 +843,7 @@ export function LudoGame() {
       <div key={corner} className={`ludo-panel ${corner}${active ? ' active' : ''}`} style={{ ['--pc' as any]: LUDO_COLORS[color] }}>
         <span className="lp-av">
           <Avatar name={seat.name} src={seat.avatar ?? null} size={40} bot={seat.bot} />
+          {bubbles[pi] && <span key={bubbles[pi]!.k} className="lp-bubble">{bubbles[pi]!.r}</span>}
         </span>
         <span className="lp-info">
           <b className="ellipsis">{seat.name}</b>
@@ -872,11 +1050,12 @@ function layoutTokens(state: LudoState, anim: { p: number; tk: number; pr: numbe
   });
 }
 
-function OnlinePanel({ corner, color, name, avatar, bot, active, sub, dice, pct, you }: { corner: string; color: LudoColor; name: string; avatar: string | null; bot: boolean; active: boolean; sub: ReactNode; dice: ReactNode; pct: number | null; you: boolean }) {
+function OnlinePanel({ corner, color, name, avatar, bot, active, sub, dice, pct, you, bubble }: { corner: string; color: LudoColor; name: string; avatar: string | null; bot: boolean; active: boolean; sub: ReactNode; dice: ReactNode; pct: number | null; you: boolean; bubble?: { r: string; k: number } }) {
   return (
     <div className={`ludo-panel ${corner}${active ? ' active' : ''}${you ? ' you' : ''}`} style={{ ['--pc' as any]: LUDO_COLORS[color] }}>
       <span className="lp-av">
         <Avatar name={name} src={avatar} size={40} bot={bot} />
+        {bubble && <span key={bubble.k} className="lp-bubble">{bubble.r}</span>}
         {pct !== null && (
           <svg className="lp-timer" viewBox="0 0 44 44" aria-hidden>
             <circle cx="22" cy="22" r="20" pathLength="100" strokeDasharray={`${pct} 100`} />
@@ -919,6 +1098,19 @@ export function LudoOnline() {
   const alive = useRef(true);
   useEffect(() => () => void (alive.current = false), []);
   const finishedRef = useRef(false);
+  useBackGuard(!!snap && !gone && (snap.status === 'playing' || snap.status === 'lobby'), () => setLeaving(true));
+  const { bubbles, show: showBubble } = useBubbles();
+  useEffect(() => {
+    const s = getSocket();
+    if (!s) return;
+    const on = (p: { gameId: string; seat: number; reaction: string }) => {
+      if (p.gameId !== id) return;
+      showBubble(p.seat, p.reaction);
+      ludoSfx('turn');
+    };
+    s.on('ludo:reaction', on);
+    return () => void s.off('ludo:reaction', on);
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const on = () => (finishedRef.current ? nav('/ludo') : setLeaving(true));
     window.addEventListener('qw:leave-ludo', on);
@@ -1157,6 +1349,7 @@ export function LudoOnline() {
         bot={seat.bot}
         active={active}
         you={seat.userId === me.id}
+        bubble={bubbles[pi]}
         sub={sub}
         pct={active && pctLeft !== null ? pctLeft : null}
         dice={active ? <Dice value={faces} rolling={rolling} canRoll={canRoll} onRoll={() => (haptic('tap'), void ludoAct('ludo:roll', snap.id))} /> : <span className="lp-dice-off" />}
@@ -1215,6 +1408,7 @@ export function LudoOnline() {
       </p>
 
       {others.length > 0 && !finished && <VoiceBar className="dark" roomId={snap.id} players={voicePlayers} autoJoin={snap.kind === 'room'} />}
+      {!finished && mySeat && <LudoReactBar onSend={(r) => void emit('ludo:react', { gameId: snap.id, reaction: r }).catch(() => undefined)} />}
 
       <LeaveModal open={leaving} onClose={() => setLeaving(false)} onLeave={leave} quick={snap.size === 2 && !snap.teams} />
 

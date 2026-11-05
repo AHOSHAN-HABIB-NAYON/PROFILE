@@ -1693,3 +1693,84 @@
 .hero-battle .btn { margin-top: 12px; height: 44px; font-size: 15px; }
 .hb-art { width: 76px; height: 76px; top: 14px; right: 10px; }
 .hb-art .qw-icon { width: 42px; height: 42px; }
+
+/* ───────── Ludo hub v2 (game menu look) ───────── */
+.ludo-stage.hub, .ludo-embed { background-color: #4c1d95; background-image: radial-gradient(120% 60% at 50% 0%, #7c3aed 0%, rgba(124,58,237,0) 60%), radial-gradient(90% 60% at 50% 100%, #312e81 0%, rgba(49,46,129,0) 70%), linear-gradient(180deg, #5b21b6, #3730a3); }
+.ludo-embed { padding: 12px 10px 14px; }
+.ludo-hub2 { display: flex; flex-direction: column; gap: 10px; }
+.lh2-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.lh2-me { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.lh2-me .avatar { box-shadow: 0 0 0 3px #fde047; }
+.lh2-me b { display: block; font-size: 14px; max-width: 140px; }
+.lh2-me small { display: inline-block; font-size: 11px; font-weight: 800; padding: 1px 8px; border-radius: 99px; background: #dc2626; }
+.lh2-coins { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 99px; background: rgba(15,23,42,.35); font-weight: 900; color: #fde047; }
+.ludo-hub2 .ludo-logo { width: min(300px, 86%); }
+.lh2-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+.lh2-item { position: relative; display: flex; flex-direction: column; align-items: center; border: 0; background: none; padding: 0 0 6px; color: #fff; font: inherit; transition: transform .15s var(--ease); }
+.lh2-item:active { transform: scale(.95); }
+.lh2-art { width: 100%; max-width: 168px; aspect-ratio: 140 / 110; filter: drop-shadow(0 10px 14px rgba(0,0,0,.35)); animation: ludo-float 4s ease-in-out infinite; }
+.lh2-item:nth-child(2) .lh2-art { animation-delay: -1s; } .lh2-item:nth-child(3) .lh2-art { animation-delay: -2s; } .lh2-item:nth-child(4) .lh2-art { animation-delay: -3s; }
+.lh2-art svg { width: 100%; height: 100%; }
+.lh2-ribbon { position: relative; margin-top: -18px; padding: 7px 26px 9px; font-size: 19px; font-weight: 900; letter-spacing: .01em; color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,.25); border-radius: 12px; box-shadow: inset 0 -4px 0 rgba(0,0,0,.18), 0 6px 14px rgba(0,0,0,.3); }
+.lh2-ribbon::before, .lh2-ribbon::after { content: ''; position: absolute; top: 8px; width: 18px; height: 100%; z-index: -1; filter: brightness(.75); background: inherit; }
+.lh2-ribbon::before { left: -12px; clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 40% 50%); }
+.lh2-ribbon::after { right: -12px; clip-path: polygon(0 0, 100% 0, 60% 50%, 100% 100%, 0 100%); }
+.r-pink { background: linear-gradient(180deg, #f0abfc, #c026d3); }
+.r-blue { background: linear-gradient(180deg, #93c5fd, #2563eb); }
+.r-indigo { background: linear-gradient(180deg, #a5b4fc, #4f46e5); }
+.r-teal { background: linear-gradient(180deg, #5eead4, #0d9488); }
+.lh2-sub { margin-top: 6px; font-size: 11.5px; font-weight: 700; opacity: .9; display: inline-flex; align-items: center; gap: 5px; }
+.lh2-sub .dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 0 3px rgba(74,222,128,.25); }
+.lh2-dock { display: flex; justify-content: center; gap: 22px; margin-top: 4px; padding: 10px 12px 8px; border-radius: 20px; background: rgba(15,23,42,.28); }
+.lh2-dock button { display: flex; flex-direction: column; align-items: center; gap: 4px; border: 0; background: none; color: #fff; font: inherit; font-size: 12px; font-weight: 800; }
+.d-ic { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; color: #fff; box-shadow: inset 0 -3px 0 rgba(0,0,0,.2); }
+.d-ic.c1 { background: linear-gradient(180deg, #60a5fa, #1d4ed8); }
+.d-ic.c2 { background: linear-gradient(180deg, #fcd34d, #d97706); }
+.d-ic.c3 { background: linear-gradient(180deg, #86efac, #16a34a); }
+/* Mode picker inside the sheets */
+.pick { display: flex; flex-direction: column; gap: 12px; }
+.pick-note { margin: 0; font-size: 13px; color: var(--text-2, #475569); }
+.pick-grid { display: grid; gap: 10px; }
+.pick-grid.two { grid-template-columns: 1fr 1fr; }
+.pick-grid.three { grid-template-columns: repeat(3, 1fr); }
+.mode-card { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 6px 10px; border-radius: 18px; border: 2px solid transparent; font: inherit; color: #0f172a; transition: transform .12s, box-shadow .15s, border-color .15s; }
+.mode-card:active { transform: scale(.97); }
+.mode-card.t-blue { background: linear-gradient(180deg, #eff6ff, #dbeafe); }
+.mode-card.t-green { background: linear-gradient(180deg, #f0fdf4, #dcfce7); }
+.mode-card.t-purple { background: linear-gradient(180deg, #faf5ff, #ede9fe); }
+.mode-card.on { border-color: #7c3aed; box-shadow: 0 6px 16px rgba(124,58,237,.25); }
+.mc-check { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: #7c3aed; color: #fff; }
+.mc-art { width: 100%; height: 44px; display: grid; place-items: center; }
+.mc-art svg { height: 100%; }
+.mode-card b { font-size: 15px; font-weight: 900; }
+.mode-card small { font-size: 11px; color: #64748b; font-weight: 700; text-align: center; }
+.pick-levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.pick-levels button { height: 42px; border-radius: 14px; border: 2px solid var(--border, #e2e8f0); background: var(--surface, #fff); font: inherit; font-weight: 800; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--text-2, #475569); }
+.pick-levels button.on { border-color: #7c3aed; color: #6d28d9; background: #f5f3ff; }
+.pick-go { height: 50px; border: 0; border-radius: 16px; font: inherit; font-size: 17px; font-weight: 900; color: #fff; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(180deg, #a855f7, #6d28d9); box-shadow: inset 0 -4px 0 rgba(0,0,0,.2), 0 8px 18px rgba(109,40,217,.35); }
+.pick-go:active { transform: translateY(2px); }
+.pick-go:disabled { opacity: .6; }
+.ludo-rules { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; line-height: 1.45; }
+
+/* Ludo: one purple palette everywhere (menu, room, search, game) */
+.ludo-stage, .ludo-find { background-color: #4c1d95 !important; background-image: radial-gradient(120% 55% at 50% 0%, rgba(167,139,250,.55) 0%, rgba(124,58,237,0) 60%), radial-gradient(90% 55% at 50% 100%, rgba(49,46,129,.9) 0%, rgba(49,46,129,0) 70%), linear-gradient(180deg, #5b21b6, #3730a3) !important; }
+.ludo-panel { background: linear-gradient(160deg, #7c3aed, #4c1d95); border-color: #facc15; }
+.ludo-board-wrap { background: #2e1065; }
+.lp-dice { background: linear-gradient(180deg, #f472b6, #db2777); }
+.lr-code, .ludo-stage .voice-bar { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.2); }
+.lr-seat { background: rgba(46,16,101,.55); }
+.ludo-round { background: rgba(255,255,255,.16); }
+.ludo-find .radar .sweep { background: conic-gradient(from 0deg, transparent 0 290deg, rgba(240,171,252,.55)); }
+
+/* Ludo emojis */
+.ludo-react { position: fixed; right: 14px; bottom: calc(96px + env(safe-area-inset-bottom)); z-index: 50; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.ludo-react-btn { width: 52px; height: 52px; border-radius: 50%; border: 3px solid #facc15; background: linear-gradient(180deg, #a855f7, #6d28d9); color: #fff; display: grid; place-items: center; box-shadow: 0 8px 18px rgba(0,0,0,.35); }
+.ludo-react-btn.on { background: #fff; color: #6d28d9; }
+.ludo-react-tray { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; padding: 8px; border-radius: 18px; background: #fff; box-shadow: 0 12px 30px rgba(0,0,0,.35); animation: fade-up .18s var(--ease-out) both; }
+.ludo-react-tray button { width: 42px; height: 42px; border: 0; background: none; font-size: 26px; line-height: 1; border-radius: 12px; }
+.ludo-react-tray button:active { transform: scale(1.25); background: #f5f3ff; }
+.lp-bubble { position: absolute; left: 50%; bottom: calc(100% + 4px); transform: translateX(-50%); font-size: 30px; line-height: 1; padding: 6px 8px; border-radius: 16px; background: #fff; box-shadow: 0 6px 16px rgba(0,0,0,.3); z-index: 60; animation: bubble-pop 2.6s ease both; pointer-events: none; }
+.lp-bubble::after { content: ''; position: absolute; left: 50%; top: 100%; transform: translateX(-50%); border: 7px solid transparent; border-top-color: #fff; }
+.ludo-panels.top .lp-bubble { bottom: auto; top: calc(100% + 6px); }
+.ludo-panels.top .lp-bubble::after { top: auto; bottom: 100%; border-top-color: transparent; border-bottom-color: #fff; }
+@keyframes bubble-pop { 0% { transform: translateX(-50%) scale(0); opacity: 0; } 12% { transform: translateX(-50%) scale(1.15); opacity: 1; } 20%, 85% { transform: translateX(-50%) scale(1); opacity: 1; } 100% { transform: translateX(-50%) translateY(-8px); opacity: 0; } }

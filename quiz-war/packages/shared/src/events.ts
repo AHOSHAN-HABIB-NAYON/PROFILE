@@ -200,6 +200,8 @@ export interface ClientToServerEvents {
   'ludo:resume': (p: { gameId: string }, ack: Ack<{ snapshot: LudoSnapshot }>) => void;
   'ludo:rematch': (p: { gameId: string }, ack?: Ack) => void;
   'ludo:invite': (p: { gameId: string; to: number }, ack?: Ack) => void;
+  /** Quick emoji during a Ludo game (same set as quiz matches). */
+  'ludo:react': (p: { gameId: string; reaction: string }, ack?: Ack) => void;
 }
 
 export interface VoicePeer {
@@ -258,5 +260,6 @@ export interface ServerToClientEvents {
   /** Auto match found a game. */
   'ludo:matched': (p: { gameId: string }) => void;
   'ludo:invited': (p: { gameId: string; code: string; from: PublicUser }) => void;
+  'ludo:reaction': (p: { gameId: string; seat: number; reaction: string }) => void;
 }
 export type CallEndReason = 'ended' | 'missed' | 'declined' | 'cancelled' | 'busy' | 'lost' | 'elsewhere';

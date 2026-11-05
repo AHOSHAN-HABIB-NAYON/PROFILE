@@ -4,6 +4,7 @@ import {
   applyRoll,
   chooseAiMove,
   ludoColorsFor,
+  MATCH_REACTIONS,
   moverOf,
   newLudoGame,
   nextTurn,
@@ -215,6 +216,19 @@ export class LudoService {
     if (!from) return;
     this.d.emit(to, 'ludo:invited', { gameId: g.id, code: g.code, from });
     void this.d.invitePush(to, from, g.code).catch(() => undefined);
+  }
+
+  private lastReact = new Map<number, number>();
+  /** Emoji to everyone at the table (rate-limited, fixed set). */
+  react(userId: number, gameId: string, reaction: string) {
+    const g = this.get(gameId);
+    const seat = g.seats.findIndex((s) => s.userId === userId);
+    if (seat < 0 || !(MATCH_REACTIONS as readonly string[]).includes(reaction)) throw new AppError(400, 'bad_reaction', 'Unknown reaction');
+    const now = Date.now();
+    if (now - (this.lastReact.get(userId) ?? 0) < 1200) return;
+    this.lastReact.set(userId, now);
+    if (this.lastReact.size > 20_000) this.lastReact.clear();
+    for (const s of g.seats) if (!s.bot) this.d.emit(s.userId, 'ludo:reaction', { gameId, seat, reaction });
   }
 
   /* ---------------------------------- Play --------------------------------- */

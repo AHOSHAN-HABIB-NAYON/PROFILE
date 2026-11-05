@@ -559,6 +559,7 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
     socket.on('ludo:resume', guard(gid, (p) => ludo.resume(userId, p.gameId)));
     socket.on('ludo:rematch', guard(gid, (p) => (ludo.rematch(userId, p.gameId), {})));
     socket.on('ludo:invite', guard(z.object({ gameId: voiceRoomId, to: z.number().int().positive() }), (p) => ludo.invite(userId, p.gameId, p.to).then(() => ({}))));
+    socket.on('ludo:react', guard(z.object({ gameId: voiceRoomId, reaction: z.string().max(16) }), (p) => (ludo.react(userId, p.gameId, p.reaction), {})));
     ludo.onConnect(userId);
 
     socket.on('time:sync', guard(schemas.timeSync, (p) => ({ serverTime: Date.now(), clientTime: p.clientTime })));

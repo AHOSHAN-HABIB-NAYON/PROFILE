@@ -128,10 +128,15 @@ function Requests() {
 export default function Battle({ tab: initialTab }: { tab?: 'play' | 'requests' }) {
   const t = useT();
   const lang = useLang();
-  const [tab, setTab] = useState<'play' | 'ludo' | 'requests'>(initialTab ?? 'play');
+  const [params, setParams] = useSearchParams();
+  // The tab lives in the address (?game=ludo), so Back from a Ludo screen returns to Ludo.
+  const [tab, setTabState] = useState<'play' | 'ludo' | 'requests'>(params.get('game') === 'ludo' ? 'ludo' : (initialTab ?? 'play'));
+  const setTab = (v: 'play' | 'ludo' | 'requests') => {
+    setTabState(v);
+    if (v !== 'requests') setParams(v === 'ludo' ? { game: 'ludo' } : {}, { replace: true });
+  };
   const pending = useQuery({ queryKey: ['battle-requests'], queryFn: () => api<{ incoming: any[]; outgoing: any[] }>('/battles/requests'), refetchInterval: 30000 });
   const pendingCount = (pending.data?.incoming.length ?? 0) + (pending.data?.outgoing.length ?? 0);
-  const [params] = useSearchParams();
   const loc = useLocation();
   const nav = useNavigate();
   const [category, setCategory] = useState<number | null>(null);
@@ -176,7 +181,7 @@ export default function Battle({ tab: initialTab }: { tab?: 'play' | 'requests' 
             <Requests />
           </>
         ) : tab === 'ludo' ? (
-          <div className="ludo-embed"><LudoHub /></div>
+          <div className="ludo-embed"><LudoHub top={false} /></div>
         ) : (
           <>
             <div className="section-label"><Icon name="grid" size={14} /> {t('Category', 'ক্যাটাগরি')}</div>
