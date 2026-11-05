@@ -8,13 +8,13 @@ const STUN: VoiceIceServer[] = [{ urls: ['stun:stun.cloudflare.com:3478', 'stun:
  */
 export class VoiceRooms {
   /** roomId → userId → { socket, mic } */
-  private rooms = new Map<string, Map<number, { socketId: string; mic: boolean }>>();
+  private rooms = new Map<string, Map<number, { socketId: string; mic: boolean; cam?: boolean }>>();
   private ice: { at: number; list: VoiceIceServer[] } | null = null;
 
   constructor(private readonly turn: { keyId?: string; token?: string }, private readonly log: { warn: (o: object, m: string) => void }) {}
 
   peers(roomId: string): VoicePeer[] {
-    return [...(this.rooms.get(roomId)?.entries() ?? [])].map(([userId, v]) => ({ userId, mic: v.mic }));
+    return [...(this.rooms.get(roomId)?.entries() ?? [])].map(([userId, v]) => ({ userId, mic: v.mic, ...(v.cam ? { cam: true } : {}) }));
   }
 
   socketOf(roomId: string, userId: number) {
@@ -42,6 +42,13 @@ export class VoiceRooms {
     const v = this.rooms.get(roomId)?.get(userId);
     if (!v) return false;
     v.mic = on;
+    return true;
+  }
+
+  setCam(roomId: string, userId: number, on: boolean) {
+    const v = this.rooms.get(roomId)?.get(userId);
+    if (!v) return false;
+    v.cam = on;
     return true;
   }
 

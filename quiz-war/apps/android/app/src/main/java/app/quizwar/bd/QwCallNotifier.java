@@ -107,6 +107,10 @@ public final class QwCallNotifier {
     }
 
     static void showIncoming(Context ctx, String callId, String name, String avatarUrl, String url, String declineToken, boolean en) {
+        showIncoming(ctx, callId, name, avatarUrl, url, declineToken, en, false);
+    }
+
+    static void showIncoming(Context ctx, String callId, String name, String avatarUrl, String url, String declineToken, boolean en, boolean video) {
         try {
             ensureChannel(ctx);
             NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -127,6 +131,7 @@ public final class QwCallNotifier {
             fi.putExtra("qw_call_avatar", avatarUrl);
             fi.putExtra("qw_call_decline", declineToken);
             fi.putExtra("qw_call_en", en);
+            fi.putExtra("qw_call_video", video);
             PendingIntent full = PendingIntent.getActivity(ctx, 4, fi, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             // Decline: handled in the background, no app.
             Intent di = new Intent(ctx, QwCallActionReceiver.class);
@@ -137,7 +142,7 @@ public final class QwCallNotifier {
             NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CHANNEL)
                     .setSmallIcon(R.drawable.ic_stat_notify)
                     .setContentTitle(name)
-                    .setContentText(en ? "QUIZ WAR audio call" : "QUIZ WAR অডিও কল")
+                    .setContentText(video ? (en ? "QUIZ WAR video call" : "QUIZ WAR ভিডিও কল") : (en ? "QUIZ WAR audio call" : "QUIZ WAR অডিও কল"))
                     .setCategory(NotificationCompat.CATEGORY_CALL)
                     .setPriority(NotificationCompat.PRIORITY_MAX)
                     .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)

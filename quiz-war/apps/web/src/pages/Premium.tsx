@@ -20,7 +20,7 @@ export const PREMIUM_PERKS: { icon: IconName; en: string; bn: string; soon?: boo
   { icon: 'image', en: 'Send photos in chat', bn: 'চ্যাটে ছবি পাঠানো' },
   { icon: 'book', en: 'All premium question collections', bn: 'সব প্রিমিয়াম প্রশ্ন কালেকশন' },
   { icon: 'crown', en: 'Gold premium badge by your name', bn: 'নামের পাশে সোনালি প্রিমিয়াম ব্যাজ' },
-  { icon: 'video', en: 'Video calls', bn: 'ভিডিও কল', soon: true },
+  { icon: 'video', en: 'Video calls (groups up to 4)', bn: 'ভিডিও কল (৪ জন পর্যন্ত)' },
 ];
 
 const PERIOD: Record<string, [string, string]> = { P1W: ['week', 'সপ্তাহ'], P1M: ['month', 'মাস'], P3M: ['3 months', '৩ মাস'], P6M: ['6 months', '৬ মাস'], P1Y: ['year', 'বছর'] };

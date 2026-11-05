@@ -21,6 +21,11 @@ interface VoiceState {
   mutedForMe: Record<number, boolean>;
   /** Who is talking right now (userId; 0 = me). */
   speaking: Record<number, boolean>;
+  /** Video calls: my camera on, which camera, my preview stream, and others' live video. */
+  camOn: boolean;
+  facing: 'user' | 'environment';
+  camStream: MediaStream | null;
+  videos: Record<number, MediaStream>;
   set: (p: Partial<Omit<VoiceState, 'set'>>) => void;
 }
 
@@ -31,6 +36,10 @@ export const useVoice = create<VoiceState>((set) => ({
   members: {},
   mutedForMe: {},
   speaking: {},
+  camOn: false,
+  facing: 'user',
+  camStream: null,
+  videos: {},
   set: (p) => set(p),
 }));
 
@@ -134,6 +143,7 @@ function closePeer(uid: number) {
   }
   p.audio.srcObject = null;
   p.audio.remove();
+  if (remoteVideo.has(uid)) setRemoteVideo(uid, null);
 }
 
 /** Clear, steady speech: Opus at ~56 kbps (full-band voice) with packet-loss protection, mono. */
@@ -151,6 +161,103 @@ async function describe(pc: RTCPeerConnection, type: 'offer' | 'answer') {
   const d = type === 'offer' ? await pc.createOffer() : await pc.createAnswer();
   await pc.setLocalDescription({ type: d.type, sdp: tuneOpus(d.sdp ?? '') });
   return pc.localDescription!;
+}
+
+/* ------------------------------- Camera ------------------------------- */
+
+let cam: MediaStream | null = null;
+
+/** Mobile-data friendly video: smaller and cheaper when more people are in the call. */
+function tuneVideo(sender: RTCRtpSender) {
+  try {
+    const p = sender.getParameters();
+    if (!p.encodings?.length) p.encodings = [{}];
+    const many = peers.size >= 2;
+    // 1-to-1: up to HD; groups send to several phones, so each copy is lighter. WebRTC lowers
+    // quality by itself on a weak network (keeping the picture smooth, no lag).
+    p.encodings[0]!.maxBitrate = many ? 400_000 : 1_200_000;
+    p.encodings[0]!.maxFramerate = many ? 20 : 30;
+    p.encodings[0]!.scaleResolutionDownBy = many ? 1.5 : 1;
+    (p as any).degradationPreference = 'maintain-framerate';
+    void sender.setParameters(p).catch(() => undefined);
+  } catch {
+    /* not supported */
+  }
+}
+
+/** Puts my camera (or nothing) on a connection; adds a video line if there is none yet. */
+function attachVideo(pc: RTCPeerConnection) {
+  const track = cam?.getVideoTracks()[0] ?? null;
+  const t = pc.getTransceivers().find((x) => x.receiver.track?.kind === 'video');
+  if (!t) {
+    if (track) tuneVideo(pc.addTransceiver(track, { direction: 'sendrecv', streams: [cam!] }).sender);
+    return;
+  }
+  if (t.direction !== 'sendrecv') t.direction = 'sendrecv';
+  if (t.sender.track !== track) void t.sender.replaceTrack(track).catch(() => undefined);
+  if (track) tuneVideo(t.sender);
+}
+
+async function openCamera(facing: 'user' | 'environment') {
+  return navigator.mediaDevices.getUserMedia({
+    video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 } },
+    audio: false,
+  });
+}
+
+/** Turn my camera on/off (asks permission the first time; throws if blocked). */
+export async function setCamera(on: boolean) {
+  const st = useVoice.getState();
+  if (on) {
+    if (!cam) cam = await openCamera(st.facing);
+    for (const tr of cam.getVideoTracks()) tr.enabled = true;
+  } else {
+    cam?.getTracks().forEach((tr) => tr.stop());
+    cam = null;
+  }
+  useVoice.getState().set({ camOn: on, camStream: cam });
+  for (const p of peers.values()) attachVideo(p.pc);
+  const roomId = useVoice.getState().roomId;
+  if (roomId) void emit('voice:cam', { roomId, on }).catch(() => undefined);
+}
+
+/** Front / back camera. */
+export async function flipCamera() {
+  const st = useVoice.getState();
+  if (!cam) return;
+  const facing = st.facing === 'user' ? 'environment' : 'user';
+  const next = await openCamera(facing).catch(() => null);
+  if (!next) return;
+  cam.getTracks().forEach((tr) => tr.stop());
+  cam = next;
+  useVoice.getState().set({ facing, camStream: cam });
+  for (const p of peers.values()) attachVideo(p.pc);
+}
+
+/** Pause / resume my camera picture (app in the background). */
+export function pauseCamera(paused: boolean) {
+  for (const tr of cam?.getVideoTracks() ?? []) tr.enabled = !paused;
+}
+
+/** Everyone's incoming video (shown only while their camera is on). */
+const remoteVideo = new Map<number, MediaStream>();
+function camOnFor(uid: number) {
+  const st = useVoice.getState();
+  const list = st.roomId ? st.members[st.roomId] : undefined;
+  return !!list?.find((x) => x.userId === uid)?.cam;
+}
+function refreshVideos() {
+  const st = useVoice.getState();
+  const next: Record<number, MediaStream> = {};
+  for (const [uid, vs] of remoteVideo) if (camOnFor(uid)) next[uid] = vs;
+  const prev = st.videos;
+  const same = Object.keys(next).length === Object.keys(prev).length && Object.entries(next).every(([k, v]) => prev[Number(k)] === v);
+  if (!same) st.set({ videos: next });
+}
+function setRemoteVideo(uid: number, stream: MediaStream | null) {
+  if (stream) remoteVideo.set(uid, stream);
+  else remoteVideo.delete(uid);
+  refreshVideos();
 }
 
 /** Puts my mic track (or nothing, while listening only) on every connection. */
@@ -189,15 +296,23 @@ function peerFor(uid: number, initiator = false): PeerConn {
   // One audio line both ways; my mic is attached later (replaceTrack), so listening works without it.
   if (initiator) pc.addTransceiver('audio', { direction: 'sendrecv' });
   attachMic(pc);
+  attachVideo(pc);
   pc.onicecandidate = (e) => e.candidate && signal(uid, { candidate: e.candidate.toJSON() as any });
   pc.ontrack = (e) => {
+    if (e.track.kind === 'video') {
+      // Their camera: shown while frames arrive (a turned-off camera goes "muted").
+      const vs = new MediaStream([e.track]);
+      e.track.onended = () => remoteVideo.get(uid) === vs && setRemoteVideo(uid, null);
+      setRemoteVideo(uid, vs);
+      return;
+    }
     // A small playout buffer (~80 ms) hides network jitter: smooth sound instead of crackles.
     try {
       (e.receiver as any).jitterBufferTarget = 80;
     } catch {
       /* older WebView */
     }
-    const stream = e.streams[0] ?? new MediaStream([e.track]);
+    const stream = new MediaStream([e.track]);
     audio.srcObject = stream;
     audio.volume = 1;
     void audio.play().catch(() => undefined);
@@ -231,6 +346,7 @@ async function onSignal(from: number, data: VoiceSignal) {
       await pc.setRemoteDescription(data.sdp);
       if (data.sdp.type === 'offer') {
         attachMic(pc);
+        attachVideo(pc);
         const d = await describe(pc, 'answer');
         signal(from, { sdp: { type: 'answer', sdp: d.sdp } });
       }
@@ -251,6 +367,7 @@ function wire() {
       const st = useVoice.getState();
       st.set({ members: { ...st.members, [roomId]: list } });
       if (st.roomId !== roomId) return;
+      refreshVideos();
       const me = myId();
       // Removed (e.g. joined from another phone): leave here.
       if (!st.joining && !list.some((x) => x.userId === me)) return void leaveVoice(false);
@@ -275,6 +392,7 @@ async function connectRoom(roomId: string, mic: boolean) {
   ice = r.iceServers ?? [];
   // The newcomer calls everyone already there.
   for (const p of r.peers as VoicePeer[]) peerFor(p.userId, true);
+  if (useVoice.getState().camOn) void emit('voice:cam', { roomId, on: true }).catch(() => undefined);
 }
 
 /** Ask what the room's voice chat looks like (for the "opponent is in voice" hint). */
@@ -369,11 +487,14 @@ export function leaveVoice(tellServer = true) {
   for (const uid of [...peers.keys()]) closePeer(uid);
   local?.getTracks().forEach((tr) => tr.stop());
   local = null;
+  cam?.getTracks().forEach((tr) => tr.stop());
+  cam = null;
   localAnalyser = null;
   stopMeter();
   loud = true;
   void speaker(false);
-  st.set({ roomId: null, micOn: false, joining: false });
+  remoteVideo.clear();
+  st.set({ roomId: null, micOn: false, joining: false, camOn: false, camStream: null, videos: {}, facing: 'user' });
   if (roomId && tellServer) void emit('voice:leave', { roomId }).catch(() => undefined);
 }
 

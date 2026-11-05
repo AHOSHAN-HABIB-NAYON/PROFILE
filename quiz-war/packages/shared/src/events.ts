@@ -180,9 +180,11 @@ export interface ClientToServerEvents {
   'voice:leave': (p: { roomId: string }, ack?: Ack) => void;
   'voice:who': (p: { roomId: string }, ack: Ack<{ peers: VoicePeer[] }>) => void;
   'voice:mic': (p: { roomId: string; on: boolean }, ack?: Ack) => void;
+  /** Camera on / off in a call (so others show the picture or the photo). */
+  'voice:cam': (p: { roomId: string; on: boolean }, ack?: Ack) => void;
   'voice:signal': (p: { roomId: string; to: number; data: VoiceSignal }, ack?: Ack) => void;
   /** 1-to-1 audio call: the call id doubles as the voice room id. */
-  'call:start': (p: { to: number }, ack: Ack<{ callId: string; peer: PublicUser }>) => void;
+  'call:start': (p: { to: number; /** Video call (camera on from the start). */ video?: boolean }, ack: Ack<{ callId: string; peer: PublicUser }>) => void;
   'call:answer': (p: { callId: string }, ack?: Ack) => void;
   'call:decline': (p: { callId: string }, ack?: Ack) => void;
   'call:end': (p: { callId: string }, ack?: Ack) => void;
@@ -207,6 +209,8 @@ export interface ClientToServerEvents {
 export interface VoicePeer {
   userId: number;
   mic: boolean;
+  /** Camera on (video calls). */
+  cam?: boolean;
 }
 export interface VoiceIceServer {
   urls: string | string[];
@@ -250,7 +254,7 @@ export interface ServerToClientEvents {
   'voice:peers': (p: { roomId: string; peers: VoicePeer[] }) => void;
   'voice:signal': (p: { roomId: string; from: number; data: VoiceSignal }) => void;
   /** Someone is calling me (also re-sent when I connect while it still rings). */
-  'call:incoming': (p: { callId: string; from: PublicUser; /** Others already talking (group call). */ with?: string[] }) => void;
+  'call:incoming': (p: { callId: string; from: PublicUser; /** Others already talking (group call). */ with?: string[]; video?: boolean }) => void;
   /** Who is in the call now (group calls: someone joined, left or is being rung). */
   'call:members': (p: { callId: string; members: { user: PublicUser; state: 'ringing' | 'active' }[] }) => void;
   /** The other side picked up (to the caller), or I picked up on another device. */

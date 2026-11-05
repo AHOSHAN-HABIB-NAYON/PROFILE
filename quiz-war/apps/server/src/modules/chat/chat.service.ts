@@ -25,13 +25,14 @@ const toMsg = (r: any): ChatMessage => ({
   readAt: r.read_at ? new Date(r.read_at).toISOString() : null,
   ...(r.kind === 'voice' && !r.deleted_at ? { kind: 'voice' as const, media: { url: r.media_url ?? null, secs: Number(r.media_secs ?? 0), ...(r.media_gone ? { gone: r.media_gone } : {}) } } : {}),
   ...(r.kind === 'image' && !r.deleted_at ? { kind: 'image' as const, media: { url: r.media_url ?? null, secs: 0, ...dims(r.media_dims), ...(r.media_gone ? { gone: r.media_gone } : {}) } } : {}),
-  ...(r.kind === 'call' && !r.deleted_at ? { kind: 'call' as const, call: { status: (r.call_status ?? 'done') as CallStatus, secs: Number(r.media_secs ?? 0) } } : {}),
+  ...(r.kind === 'call' && !r.deleted_at ? { kind: 'call' as const, call: { status: (r.call_status ?? 'done') as CallStatus, secs: Number(r.media_secs ?? 0), ...(r.media_dims === 'video' ? { video: true } : {}) } } : {}),
 });
 
 /** Plain text kept in `body` for calls, so older app versions show something sensible. */
-export function callBody(status: CallStatus, secs: number) {
-  if (status === 'done') return `অডিও কল · ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
-  return status === 'declined' || status === 'busy' ? 'অডিও কল (ধরা হয়নি)' : 'মিসড অডিও কল';
+export function callBody(status: CallStatus, secs: number, video = false) {
+  const k = video ? 'ভিডিও কল' : 'অডিও কল';
+  if (status === 'done') return `${k} · ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+  return status === 'declined' || status === 'busy' ? `${k} (ধরা হয়নি)` : `মিসড ${k}`;
 }
 
 /** Short quote of a replied-to message (voice / photo shown as such, not as text). */
@@ -360,8 +361,9 @@ export class ChatService {
   }
 
   /** The call record in the chat (from the caller), shown to both. */
-  async logCall(callerId: number, calleeId: number, status: CallStatus, secs: number) {
-    return this.deliver(callerId, calleeId, { body: callBody(status, secs), kind: 'call', secs, callStatus: status });
+  async logCall(callerId: number, calleeId: number, status: CallStatus, secs: number, video = false) {
+    // media_dims = 'video' marks a video call record.
+    return this.deliver(callerId, calleeId, { body: callBody(status, secs, video), kind: 'call', secs, callStatus: status, ...(video ? { dims: 'video' } : {}) });
   }
 
   private async deliver(

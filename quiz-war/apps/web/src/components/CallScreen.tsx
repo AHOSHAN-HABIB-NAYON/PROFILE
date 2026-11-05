@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { navigateTo } from '../lib/nav';
 import { useAuth } from '../lib/auth';
-import { addToCall, answerCall, declineCall, hangUp, toggleCallMute, toggleLoud, useCall } from '../lib/call';
+import { addToCall, answerCall, declineCall, hangUp, switchCamera, toggleCallMute, toggleCamera, toggleLoud, useCall } from '../lib/call';
 import { num, useLang, useT } from '../lib/i18n';
 import { isNative } from '../lib/platform';
 import { haptic } from '../lib/platform';
@@ -34,6 +34,10 @@ export function CallScreen() {
   const [menuFor, setMenuFor] = useState<PublicUser | null>(null);
   const mutedForMe = useVoice((s) => s.mutedForMe);
   const me = useAuth((s) => s.user);
+  const camOn = useVoice((s) => s.camOn);
+  const camStream = useVoice((s) => s.camStream);
+  const facing = useVoice((s) => s.facing);
+  const videos = useVoice((s) => s.videos);
   const [, tick] = useState(0);
 
   useEffect(() => {
@@ -59,8 +63,17 @@ export function CallScreen() {
           : dir === 'in'
             ? call.with?.length
               ? t(`Group call with ${call.with.join(', ')}`, `${call.with.join(', ')}-এর সাথে গ্রুপ কল`)
-              : t('Incoming audio call', 'অডিও কল আসছে')
-            : t('Calling…', 'কল হচ্ছে…');
+              : call.video
+                ? t('Incoming video call', 'ভিডিও কল আসছে')
+                : t('Incoming audio call', 'অডিও কল আসছে')
+            : call.video
+              ? t('Video calling…', 'ভিডিও কল হচ্ছে…')
+              : t('Calling…', 'কল হচ্ছে…');
+  const remote = videos[peer.id] ?? null;
+  const hasVideo = !!call.video || camOn || Object.keys(videos).length > 0;
+  /** 1-to-1 video: their picture fills the screen; while it rings, my own camera does. */
+  const stage = !group && hasVideo && phase !== 'ended' ? (remote ?? (camOn && camStream && dir === 'out' && phase !== 'live' ? camStream : null)) : null;
+  const stageIsMe = !!stage && stage === camStream;
 
   if (small && phase !== 'ended')
     return (
@@ -79,7 +92,9 @@ export function CallScreen() {
 
   const ringing = phase === 'calling' || phase === 'ringing';
   return (
-    <div className={`call-screen ph-${phase}`} role="dialog" aria-modal="true" aria-label={t('Audio call', 'অডিও কল')}>
+    <div className={`call-screen ph-${phase}${stage ? ' has-video' : ''}`} role="dialog" aria-modal="true" aria-label={call.video ? t('Video call', 'ভিডিও কল') : t('Audio call', 'অডিও কল')}>
+      {stage && <VideoView stream={stage} mirror={stageIsMe && facing === 'user'} className="cv-stage" />}
+      {!group && phase !== 'ended' && camOn && camStream && !stageIsMe && <VideoView stream={camStream} mirror={facing === 'user'} className="cv-self" />}
       <div className="cs-top">
         {phase !== 'ended' && !(dir === 'in' && phase === 'ringing') ? (
           <button type="button" className="cs-round" onClick={() => set({ small: true })} aria-label={t('Minimise', 'ছোট করুন')}>
@@ -103,7 +118,7 @@ export function CallScreen() {
           <p className={`cs-status${phase === 'live' ? ' live' : ''}`}>{t('Group call', 'গ্রুপ কল')} · {status}</p>
           <div className={`cs-tiles n${others.length + 1}`}>
             {me && (
-              <CallTile color={0} name={t('You', 'আপনি')} user={me as any} talking={!!speaking[0]} muted={!micOn} />
+              <CallTile color={0} name={t('You', 'আপনি')} user={me as any} talking={!!speaking[0]} muted={!micOn} stream={camOn ? camStream : null} mirror={facing === 'user'} />
             )}
             {others.map((m, i) => (
               <CallTile
@@ -114,11 +129,18 @@ export function CallScreen() {
                 talking={!!speaking[m.user.id]}
                 ringing={m.state === 'ringing'}
                 muted={!!mutedForMe[m.user.id]}
+                stream={videos[m.user.id] ?? null}
                 onHold={() => (haptic('heavy'), setMenuFor(m.user))}
               />
             ))}
           </div>
           <p className="cs-hint">{t('Hold a picture to mute that player for you', 'কারো ছবিতে চেপে ধরলে শুধু আপনার জন্য মিউট করা যাবে')}</p>
+        </div>
+      ) : stage ? (
+        <div className="cv-head">
+          <h2>{peer.username}</h2>
+          <p className={`cs-status${phase === 'live' ? ' live' : ''}`}>{status}</p>
+          {phase === 'live' && !micOn && <p className="cs-muted"><Icon name="mic-off" size={14} /> {t('Your mic is off', 'আপনার মাইক বন্ধ')}</p>}
         </div>
       ) : (
       <div className="cs-who">
@@ -141,7 +163,7 @@ export function CallScreen() {
             <small>{t('Decline', 'কেটে দিন')}</small>
           </span>
           <span className="cs-act">
-            <button type="button" className="cs-btn accept" onClick={() => void answerCall()} aria-label={t('Answer', 'ধরুন')}><Icon name="phone" size={26} /></button>
+            <button type="button" className="cs-btn accept" onClick={() => void answerCall()} aria-label={t('Answer', 'ধরুন')}><Icon name={call.video ? 'video' : 'phone'} size={26} /></button>
             <small>{t('Answer', 'ধরুন')}</small>
           </span>
           <span className="cs-act">
@@ -150,7 +172,17 @@ export function CallScreen() {
           </span>
         </div>
       ) : (
-        <div className={`cs-actions${group ? ' panel' : ''}`}>
+        <div className={`cs-actions${group || stage ? ' panel' : ''}`}>
+          <span className="cs-act">
+            <button type="button" className={`cs-btn soft${camOn ? ' on' : ''}`} onClick={() => (haptic('tap'), void toggleCamera())} disabled={phase !== 'live' && !(call.video && dir === 'out')} aria-pressed={camOn} aria-label={t('Camera', 'ক্যামেরা')}><Icon name={camOn ? 'video' : 'video-off'} size={24} /></button>
+            <small>{t('Camera', 'ক্যামেরা')}</small>
+          </span>
+          {camOn && (
+            <span className="cs-act">
+              <button type="button" className="cs-btn soft" onClick={() => (haptic('tap'), switchCamera())} aria-label={t('Switch camera', 'ক্যামেরা বদলান')}><Icon name="switch-camera" size={24} /></button>
+              <small>{t('Flip', 'উল্টান')}</small>
+            </span>
+          )}
           {isNative && (
             <span className="cs-act">
               <button type="button" className={`cs-btn soft${loud ? ' on' : ''}`} onClick={toggleLoud} aria-pressed={loud} aria-label={t('Speaker', 'স্পিকার')}><Icon name="volume" size={26} /></button>
@@ -223,7 +255,7 @@ function AddPeople({ open, onClose, inCall }: { open: boolean; onClose: () => vo
 const TILE_COLORS = ['#38bdf8', '#f59e0b', '#facc15', '#f472b6'];
 
 /** One person in a group call: coloured card, round picture, name, live sound wave. Hold = menu. */
-function CallTile({ name, user, color, talking, ringing, muted, onHold }: { name: string; user: PublicUser; color: number; talking: boolean; ringing?: boolean; muted?: boolean; onHold?: () => void }) {
+function CallTile({ name, user, color, talking, ringing, muted, onHold, stream, mirror }: { name: string; user: PublicUser; color: number; talking: boolean; ringing?: boolean; muted?: boolean; onHold?: () => void; stream?: MediaStream | null; mirror?: boolean }) {
   const t = useT();
   const timer = useRef<number | undefined>(undefined);
   const c = TILE_COLORS[color % TILE_COLORS.length];
@@ -235,7 +267,7 @@ function CallTile({ name, user, color, talking, ringing, muted, onHold }: { name
   const up = () => window.clearTimeout(timer.current);
   return (
     <div
-      className={`cs-tile2${talking ? ' talk' : ''}${ringing ? ' ringing' : ''}`}
+      className={`cs-tile2${talking ? ' talk' : ''}${ringing ? ' ringing' : ''}${stream ? ' has-video' : ''}`}
       style={{ ['--tc' as any]: c }}
       onPointerDown={down}
       onPointerUp={up}
@@ -245,6 +277,7 @@ function CallTile({ name, user, color, talking, ringing, muted, onHold }: { name
       role={onHold ? 'button' : undefined}
       aria-label={onHold ? t(`${name}: hold for options`, `${name}: অপশনের জন্য চেপে ধরুন`) : name}
     >
+      {stream && <VideoView stream={stream} mirror={mirror} className="ct-video" />}
       <b className="ct-name ellipsis">{name}</b>
       {ringing && <small className="ct-state">{t('Ringing…', 'রিং হচ্ছে…')}</small>}
       {muted && <span className="ct-muted"><Icon name={color === 0 ? 'mic-off' : 'mute'} size={15} /></span>}
@@ -256,4 +289,16 @@ function CallTile({ name, user, color, talking, ringing, muted, onHold }: { name
       </div>
     </div>
   );
+}
+
+/** A live camera picture (sound plays separately, so the video itself is muted). */
+function VideoView({ stream, mirror, className }: { stream: MediaStream; mirror?: boolean; className: string }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    if (v.srcObject !== stream) v.srcObject = stream;
+    void v.play().catch(() => undefined);
+  }, [stream]);
+  return <video ref={ref} className={`${className}${mirror ? ' mirror' : ''}`} autoPlay playsInline muted />;
 }

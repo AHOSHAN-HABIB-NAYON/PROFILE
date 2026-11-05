@@ -67,6 +67,7 @@ public class IncomingCallActivity extends Activity {
         url = in.getStringExtra("qw_call_url");
         decline = in.getStringExtra("qw_call_decline");
         final boolean en = in.getBooleanExtra("qw_call_en", false);
+        final boolean video = in.getBooleanExtra("qw_call_video", false);
         String name = in.getStringExtra("qw_call_name");
         if (name == null) name = "QUIZ WAR";
 
@@ -95,7 +96,7 @@ public class IncomingCallActivity extends Activity {
         head.addView(who, new LinearLayout.LayoutParams(-1, -2));
 
         TextView app = new TextView(this);
-        app.setText(en ? "QUIZ WAR audio call" : "QUIZ WAR অডিও কল");
+        app.setText(video ? (en ? "QUIZ WAR video call" : "QUIZ WAR ভিডিও কল") : (en ? "QUIZ WAR audio call" : "QUIZ WAR অডিও কল"));
         app.setTextColor(Color.parseColor("#B3FFFFFF"));
         app.setTextSize(15);
         app.setGravity(Gravity.CENTER);

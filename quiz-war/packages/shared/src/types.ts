@@ -112,7 +112,7 @@ export interface ChatMessage {
   /** 'voice' = audio message (text messages leave this out). */
   kind?: 'text' | 'voice' | 'image' | 'call';
   /** Audio call record (kind 'call'): done = talked for `secs`; missed / declined / cancelled. */
-  call?: { status: CallStatus; secs: number };
+  call?: { status: CallStatus; secs: number; video?: boolean };
   /** Audio / photo file (secs for audio, w/h for photos); url is null once the file has expired. */
   media?: { url: string | null; secs: number; w?: number; h?: number; /** 'owner' = the owner deleted the original (forwarded copy). */ gone?: string };
 }

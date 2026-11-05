@@ -129,21 +129,21 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
     },
     publicUser: (id) => getPublicUser(id),
     assertCanCall: (a, b) => ctx.chat.assertCanCall(a, b),
-    logCall: (a, b, st, secs) => ctx.chat.logCall(a, b, st, secs),
-    ringPush: (to, from, callId, declineToken) =>
+    logCall: (a, b, st, secs, video) => ctx.chat.logCall(a, b, st, secs, video),
+    ringPush: (to, from, callId, declineToken, video) =>
       ctx.push.sendToUser(to, {
         title: from.username,
-        body: 'অডিও কল করছে… ধরতে চাপুন',
-        en: { body: 'Audio call… tap to answer', data: { lang: 'en' } },
+        body: video ? 'ভিডিও কল করছে… ধরতে চাপুন' : 'অডিও কল করছে… ধরতে চাপুন',
+        en: { body: video ? 'Video call… tap to answer' : 'Audio call… tap to answer', data: { lang: 'en' } },
         url: `/chat/${from.uid}`,
         tag: `call-${callId}`,
         dataOnly: true,
         ttlSecs: 35,
-        data: { type: 'call', callId, name: from.username, avatar: from.avatarThumbUrl ?? '', decline: declineToken },
+        data: { type: 'call', callId, name: from.username, avatar: from.avatarThumbUrl ?? '', decline: declineToken, ...(video ? { video: '1' } : {}) },
       }),
     endPush: (to, callId) => ctx.push.sendToUser(to, { title: '', body: '', dataOnly: true, ttlSecs: 60, data: { type: 'call_end', callId } }),
-    missedPush: (to, from, callId) =>
-      ctx.push.sendToUser(to, { title: from.username, body: 'মিসড অডিও কল', en: { body: 'Missed audio call' }, url: `/chat/${from.uid}`, tag: `call-${callId}`, channel: 'quizwar_messages', image: from.avatarThumbUrl ?? undefined }),
+    missedPush: (to, from, callId, video) =>
+      ctx.push.sendToUser(to, { title: from.username, body: video ? 'মিসড ভিডিও কল' : 'মিসড অডিও কল', en: { body: video ? 'Missed video call' : 'Missed audio call' }, url: `/chat/${from.uid}`, tag: `call-${callId}`, channel: 'quizwar_messages', image: from.avatarThumbUrl ?? undefined }),
     closeVoice: (callId, only) => {
       for (const p of voice.peers(callId)) {
         if (only && p.userId !== only) continue;
@@ -527,6 +527,14 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
         return {};
       }),
     );
+    socket.on(
+      'voice:cam',
+      guard(z.object({ roomId: voiceRoomId, on: z.boolean() }), (p) => {
+        // Video is a call feature (premium when calls are).
+        if (voice.setCam(p.roomId, userId, p.on)) voiceBroadcast(p.roomId);
+        return {};
+      }),
+    );
     const sdp = z.object({ type: z.enum(['offer', 'answer']), sdp: z.string().max(20_000) });
     const cand = z.object({ candidate: z.string().max(1000), sdpMid: z.string().max(64).nullish(), sdpMLineIndex: z.number().int().min(0).max(64).nullish() });
     socket.on(
@@ -542,7 +550,7 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
 
     /* ------------------------------ Audio calls ------------------------------ */
     const callId = z.object({ callId: voiceRoomId });
-    socket.on('call:start', guard(z.object({ to: z.number().int().positive() }), async (p) => (await ctx.premium.require(userId, 'calls'), calls.start(userId, socket.id, p.to))));
+    socket.on('call:start', guard(z.object({ to: z.number().int().positive(), video: z.boolean().optional() }), async (p) => (await ctx.premium.require(userId, 'calls'), calls.start(userId, socket.id, p.to, !!p.video))));
     socket.on('call:answer', guard(callId, (p) => (calls.answer(userId, socket.id, p.callId), {})));
     socket.on('call:decline', guard(callId, (p) => (calls.decline(userId, p.callId), {})));
     socket.on('call:end', guard(callId, (p) => (calls.end(userId, p.callId), {})));

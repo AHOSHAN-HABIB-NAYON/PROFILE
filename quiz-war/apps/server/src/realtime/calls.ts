@@ -27,6 +27,8 @@ interface Call {
   host: number;
   /** Someone picked up (before that, only the host waits). */
   started: boolean;
+  /** Started as a video call (the camera can also be turned on later in any call). */
+  video: boolean;
   members: Map<number, Member>;
 }
 
@@ -34,9 +36,9 @@ interface Deps {
   emit<E extends keyof ServerToClientEvents>(userId: number, event: E, payload: Parameters<ServerToClientEvents[E]>[0], exceptSocket?: string): void;
   publicUser(id: number): Promise<PublicUser | null>;
   assertCanCall(from: number, to: number): Promise<void>;
-  logCall(caller: number, callee: number, status: CallStatus, secs: number): Promise<unknown>;
-  ringPush(to: number, from: PublicUser, callId: string, declineToken: string): Promise<void>;
-  missedPush(to: number, from: PublicUser, callId: string): Promise<void>;
+  logCall(caller: number, callee: number, status: CallStatus, secs: number, video: boolean): Promise<unknown>;
+  ringPush(to: number, from: PublicUser, callId: string, declineToken: string, video: boolean): Promise<void>;
+  missedPush(to: number, from: PublicUser, callId: string, video: boolean): Promise<void>;
   /** Stop the ringing notification on this person's phones. */
   endPush(to: number, callId: string): Promise<void>;
   /** Drop one person (or everyone) from the call's voice room. */
@@ -115,11 +117,11 @@ export class CallService {
     c.members.set(to.id, m);
     this.byUser.set(to.id, c.id);
     const others = [...c.members.values()].filter((x) => x.user.id !== to.id && x.state === 'active').map((x) => x.user.username);
-    this.d.emit(to.id, 'call:incoming', { callId: c.id, from: inviter, ...(others.length > 1 ? { with: others } : {}) });
-    void this.d.ringPush(to.id, inviter, c.id, this.declineToken(c.id, to.id)).catch(() => undefined);
+    this.d.emit(to.id, 'call:incoming', { callId: c.id, from: inviter, ...(others.length > 1 ? { with: others } : {}), ...(c.video ? { video: true } : {}) });
+    void this.d.ringPush(to.id, inviter, c.id, this.declineToken(c.id, to.id), c.video).catch(() => undefined);
   }
 
-  async start(userId: number, socketId: string, to: number) {
+  async start(userId: number, socketId: string, to: number, video = false) {
     if (!this.d.enabled()) throw new AppError(403, 'calls_disabled', 'Calls are turned off');
     if (to === userId) throw badRequest('You cannot call yourself');
     this.rateLimit(userId);
@@ -128,10 +130,10 @@ export class CallService {
     const [me, peer] = await Promise.all([this.d.publicUser(userId), this.d.publicUser(to)]);
     if (!me || !peer) throw new AppError(404, 'not_found', 'Player not found');
     if (this.byUser.has(to)) {
-      void this.d.logCall(userId, to, 'busy', 0).catch(() => undefined);
+      void this.d.logCall(userId, to, 'busy', 0, video).catch(() => undefined);
       throw new AppError(409, 'busy', 'This player is on another call');
     }
-    const c: Call = { id: ulid(), host: userId, started: false, members: new Map([[userId, { user: me, inviter: 0, state: 'active', joinedAt: Date.now(), socket: socketId }]]) };
+    const c: Call = { id: ulid(), host: userId, started: false, video, members: new Map([[userId, { user: me, inviter: 0, state: 'active', joinedAt: Date.now(), socket: socketId }]]) };
     this.calls.set(c.id, c);
     this.byUser.set(userId, c.id);
     this.ring(c, me, peer);
@@ -198,7 +200,7 @@ export class CallService {
     const m = c?.members.get(userId);
     if (!c || m?.state !== 'ringing') return;
     const from = c.members.get(m.inviter)?.user ?? (await this.d.publicUser(m.inviter));
-    if (from && this.calls.has(c.id)) this.d.emit(userId, 'call:incoming', { callId: c.id, from });
+    if (from && this.calls.has(c.id)) this.d.emit(userId, 'call:incoming', { callId: c.id, from, ...(c.video ? { video: true } : {}) });
   }
 
   /** A phone dropped: give it a short while to come back before it leaves the call. */
@@ -233,10 +235,10 @@ export class CallService {
     const status: CallStatus = !wasRinging && c.started ? 'done' : reason === 'declined' ? 'declined' : reason === 'cancelled' ? 'cancelled' : 'missed';
     void (async () => {
       try {
-        await this.d.logCall(m.inviter, uid, status, secs);
+        await this.d.logCall(m.inviter, uid, status, secs, c.video);
         if (status === 'missed' || status === 'cancelled') {
           const from = c.members.get(m.inviter)?.user ?? (await this.d.publicUser(m.inviter));
-          if (from) await this.d.missedPush(uid, from, c.id);
+          if (from) await this.d.missedPush(uid, from, c.id, c.video);
         }
       } catch (err) {
         this.d.log.warn({ err }, 'call log failed');

@@ -7,7 +7,7 @@ import { API_URL } from './api';
 import { useAuth } from './auth';
 import { emit, onSocket } from './socket';
 import { toast } from './toast';
-import { joinVoice, leaveVoice, setLoudSpeaker, setMic, useVoice } from './voice';
+import { flipCamera, joinVoice, leaveVoice, pauseCamera, setCamera, setLoudSpeaker, setMic, useVoice } from './voice';
 
 /**
  * One-to-one audio calls from the chat. The server rings the other phone; once picked up, both
@@ -29,6 +29,8 @@ export interface ActiveCall {
   members?: { user: PublicUser; state: 'ringing' | 'active' }[];
   /** Incoming group call: who is already talking. */
   with?: string[];
+  /** Started as a video call. */
+  video?: boolean;
 }
 
 interface CallState {
@@ -247,6 +249,7 @@ function finish(text: string, quiet = false) {
   const c = useCall.getState().call;
   stopTone();
   if (c?.id && useVoice.getState().roomId === c.id) leaveVoice();
+  else if (useVoice.getState().camOn && !useVoice.getState().roomId) void setCamera(false);
   void native().then((n) => n?.stop()).catch(() => undefined);
   if (!c) return;
   if (!quiet) endBeep();
@@ -262,11 +265,14 @@ async function goLive(id: string) {
   if (!c) return;
   patch({ phase: 'connecting' });
   try {
-    await joinVoice(id, true, { earpiece: true });
+    // Video calls: loud speaker and camera on (like other apps); audio calls: earpiece.
+    if (c.video) useCall.getState().set({ loud: true });
+    await joinVoice(id, true, { earpiece: !c.video });
+    if (c.video) await setCamera(true).catch(() => toast.error(tr('Camera blocked', 'ক্যামেরার অনুমতি নেই'), tr('Allow the camera for QUIZ WAR to show your video.', 'ভিডিও দেখাতে QUIZ WAR-এর ক্যামেরা চালু করুন।')));
     patch({ phase: 'live', startedAt: Date.now() });
     const n = await native();
-    await n?.start({ title: c.peer.username, text: tr('Audio call · tap to return', 'অডিও কল চলছে · ফিরতে চাপুন') });
-    await n?.proximity({ on: true });
+    await n?.start({ title: c.peer.username, text: c.video ? tr('Video call · tap to return', 'ভিডিও কল চলছে · ফিরতে চাপুন') : tr('Audio call · tap to return', 'অডিও কল চলছে · ফিরতে চাপুন') });
+    if (!c.video) await n?.proximity({ on: true });
   } catch {
     toast.error(tr('Microphone blocked', 'মাইক্রোফোনের অনুমতি নেই'), tr('Allow the microphone for QUIZ WAR to talk on calls.', 'কলে কথা বলতে QUIZ WAR-এর মাইক্রোফোন চালু করুন।'));
     void emit('call:end', { callId: id }).catch(() => undefined);
@@ -274,13 +280,14 @@ async function goLive(id: string) {
   }
 }
 
-export async function startCall(peer: PublicUser) {
+export async function startCall(peer: PublicUser, opts: { video?: boolean } = {}) {
   const cur = useCall.getState().call;
   if (cur && cur.phase !== 'ended') {
     useCall.getState().set({ small: false });
     return;
   }
   window.clearTimeout(endTimer);
+  const video = !!opts.video;
   // Ask for the mic first, so the call doesn't ring for nothing.
   try {
     const s = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -289,10 +296,19 @@ export async function startCall(peer: PublicUser) {
     toast.error(tr('Microphone blocked', 'মাইক্রোফোনের অনুমতি নেই'), tr('Allow the microphone for QUIZ WAR to make calls.', 'কল করতে QUIZ WAR-এর মাইক্রোফোন চালু করুন।'));
     return;
   }
-  useCall.getState().set({ call: { id: null, peer, dir: 'out', phase: 'calling', startedAt: 0 }, small: false, loud: false });
+  // Video: my camera shows while it rings.
+  if (video) {
+    try {
+      await setCamera(true);
+    } catch {
+      toast.error(tr('Camera blocked', 'ক্যামেরার অনুমতি নেই'), tr('Allow the camera for QUIZ WAR to make video calls.', 'ভিডিও কল করতে QUIZ WAR-এর ক্যামেরা চালু করুন।'));
+      return;
+    }
+  }
+  useCall.getState().set({ call: { id: null, peer, dir: 'out', phase: 'calling', startedAt: 0, ...(video ? { video: true } : {}) }, small: false, loud: video });
   playTone('ringback');
   try {
-    const r = await emit('call:start', { to: peer.id });
+    const r = await emit('call:start', { to: peer.id, ...(video ? { video: true } : {}) });
     if (!useCall.getState().call) return void emit('call:end', { callId: r.callId }).catch(() => undefined);
     patch({ id: r.callId });
   } catch (e: any) {
@@ -366,6 +382,19 @@ export function toggleCallMute() {
   void setMic(!v.micOn).catch(() => undefined);
 }
 
+/** Camera on/off during a call (any call can turn into a video call). */
+export async function toggleCamera() {
+  const on = !useVoice.getState().camOn;
+  try {
+    await setCamera(on);
+    if (on && !useCall.getState().loud) toggleLoud();
+  } catch {
+    toast.error(tr('Camera blocked', 'ক্যামেরার অনুমতি নেই'), tr('Allow the camera for QUIZ WAR to show your video.', 'ভিডিও দেখাতে QUIZ WAR-এর ক্যামেরা চালু করুন।'));
+  }
+}
+
+export const switchCamera = () => void flipCamera();
+
 export function toggleLoud() {
   const loud = !useCall.getState().loud;
   useCall.getState().set({ loud });
@@ -385,6 +414,8 @@ export function wireCalls() {
   window.addEventListener('qwcallaction', () => void nativeAction());
   // Back in the app while it rings: the in-app ringtone takes over from the notification.
   document.addEventListener('visibilitychange', () => {
+    // My camera picture pauses while the app is in the background (privacy).
+    if (useVoice.getState().camOn) pauseCamera(document.hidden);
     const c = useCall.getState().call;
     if (document.hidden || !c || c.dir !== 'in' || c.phase !== 'ringing') return;
     void clearRingNotification();
@@ -402,7 +433,7 @@ export function wireCalls() {
       const others = members.filter((m) => m.user.id !== me);
       patch({ members, ...(others.length === 1 ? { peer: others[0]!.user } : {}) });
     });
-    s.on('call:incoming', ({ callId, from, with: others }) => {
+    s.on('call:incoming', ({ callId, from, with: others, video }) => {
       const cur = useCall.getState().call;
       if (cur && cur.id === callId) return;
       if (cur && cur.phase !== 'ended') {
@@ -410,7 +441,7 @@ export function wireCalls() {
         return;
       }
       window.clearTimeout(endTimer);
-      useCall.getState().set({ call: { id: callId, peer: from, dir: 'in', phase: 'ringing', startedAt: 0, ...(others?.length ? { with: others } : {}) }, small: false, loud: false });
+      useCall.getState().set({ call: { id: callId, peer: from, dir: 'in', phase: 'ringing', startedAt: 0, ...(others?.length ? { with: others } : {}), ...(video ? { video: true } : {}) }, small: false, loud: !!video });
       if (answerWhenRinging === callId) {
         answerWhenRinging = null;
         void answerCall();

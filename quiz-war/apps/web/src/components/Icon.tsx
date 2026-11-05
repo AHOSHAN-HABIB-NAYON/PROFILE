@@ -1,4 +1,6 @@
 import {
+  SwitchCamera,
+  VideoOff,
   ArrowLeft,
   ArrowRight,
   AtSign,
@@ -258,6 +260,8 @@ const LINE = {
   send: SendHorizontal,
   reply: Reply,
   video: Video,
+  'video-off': VideoOff,
+  'switch-camera': SwitchCamera,
   'check-check': CheckCheck,
   more: EllipsisVertical,
   like: ThumbsUp,

@@ -304,13 +304,13 @@ export default function Chat() {
     }
   };
 
-  const callPeer = () => {
+  const callPeer = (video = false) => {
     if (!peer) return;
     if (cfg?.callsEnabled === false) return void toast.info(t('Calls are off right now', 'কল এখন বন্ধ আছে'), undefined, 'phone');
     if (needPremium('calls')) return;
-    void startCall(peer);
+    haptic('tap');
+    void startCall(peer, { video });
   };
-  const upcoming = (what: string) => toast.info(t('Coming soon', 'আসছে পরের আপডেটে'), what, 'sparkles');
 
   const act = async (fn: () => Promise<unknown>, done: string) => {
     try {
@@ -449,7 +449,7 @@ export default function Chat() {
           <span className="grow" />
         )}
         <button className="btn icon ghost" aria-label={t('Audio call', 'অডিও কল')} onClick={() => callPeer()} disabled={!peer}><Icon name="phone" size={21} /></button>
-        <button className="btn icon ghost" aria-label={t('Video call', 'ভিডিও কল')} onClick={() => upcoming(t('Video calls', 'ভিডিও কল'))}><Icon name="video" size={23} /></button>
+        <button className="btn icon ghost" aria-label={t('Video call', 'ভিডিও কল')} disabled={!peer} onClick={() => callPeer(true)}><Icon name="video" size={23} /></button>
         <button className="btn icon ghost" aria-label={t('More', 'আরও')} onClick={() => setMenu(true)} disabled={!peer}><Icon name="more" size={22} /></button>
       </header>
 
@@ -519,7 +519,7 @@ export default function Chat() {
                           <span className="msg-text msg-gone"><Icon name="image" size={15} /> {m.media?.gone === 'owner' ? t('Deleted by the photo owner', 'ছবির মালিক এটি মুছে দিয়েছেন') : t('Photo expired', 'ছবির মেয়াদ শেষ')}</span>
                         )
                       ) : m.kind === 'call' ? (
-                        <CallRecord mine={mine} status={m.call?.status ?? 'done'} secs={m.call?.secs ?? 0} onCall={() => callPeer()} />
+                        <CallRecord mine={mine} status={m.call?.status ?? 'done'} secs={m.call?.secs ?? 0} video={!!m.call?.video} onCall={() => callPeer(!!m.call?.video)} />
                       ) : m.kind === 'voice' ? (
                         <VoiceBubble url={m.media?.url ?? null} secs={m.media?.secs ?? 0} mine={mine} gone={m.media?.gone} />
                       ) : (
@@ -999,21 +999,25 @@ function appPath(href: string): string | null {
 }
 
 /** A call in the chat: "Audio call · 3:12" or "Missed call", tap to call back. */
-function CallRecord({ mine, status, secs, onCall }: { mine: boolean; status: string; secs: number; onCall: () => void }) {
+function CallRecord({ mine, status, secs, video, onCall }: { mine: boolean; status: string; secs: number; video?: boolean; onCall: () => void }) {
   const t = useT();
   const lang = useLang();
   const done = status === 'done';
   const title = done
-    ? t('Audio call', 'অডিও কল')
+    ? video
+      ? t('Video call', 'ভিডিও কল')
+      : t('Audio call', 'অডিও কল')
     : mine
       ? status === 'cancelled'
         ? t('Call cancelled', 'কল বাতিল')
         : t('No answer', 'ধরেনি')
-      : t('Missed call', 'মিসড কল');
+      : video
+        ? t('Missed video call', 'মিসড ভিডিও কল')
+        : t('Missed call', 'মিসড কল');
   const sub = done ? fmtSecs(secs, lang) : t('Call back', 'আবার কল করুন');
   return (
     <button type="button" className={`msg-call${done ? '' : ' missed'}`} onClick={(e) => (e.stopPropagation(), onCall())} onPointerDown={(e) => e.stopPropagation()}>
-      <span className="mc-ic"><Icon name={done ? 'phone' : 'phone-off'} size={15} /></span>
+      <span className="mc-ic"><Icon name={video ? 'video' : done ? 'phone' : 'phone-off'} size={15} /></span>
       <span>
         <b>{title}</b>
         <small>{sub}</small>
