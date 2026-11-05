@@ -39,6 +39,7 @@ export function CallScreen() {
   const facing = useVoice((s) => s.facing);
   const videos = useVoice((s) => s.videos);
   const [, tick] = useState(0);
+  const [swapped, setSwapped] = useState(false);
 
   useEffect(() => {
     if (call?.phase !== 'live') return;
@@ -72,8 +73,13 @@ export function CallScreen() {
   const remote = videos[peer.id] ?? null;
   const hasVideo = !!call.video || camOn || Object.keys(videos).length > 0;
   /** 1-to-1 video: their picture fills the screen; while it rings, my own camera does. */
-  const stage = !group && hasVideo && phase !== 'ended' ? (remote ?? (camOn && camStream && dir === 'out' && phase !== 'live' ? camStream : null)) : null;
+  const baseStage = !group && hasVideo && phase !== 'ended' ? (remote ?? (camOn && camStream && dir === 'out' && phase !== 'live' ? camStream : null)) : null;
+  // Tap the small picture to swap big and small (only when both pictures are live).
+  const canSwap = !!remote && camOn && !!camStream;
+  const stage = canSwap && swapped ? camStream : baseStage;
   const stageIsMe = !!stage && stage === camStream;
+  const pip = !group && phase !== 'ended' ? (stageIsMe ? (canSwap ? remote : null) : camOn && camStream ? camStream : null) : null;
+  const vgrid = group && hasVideo && phase !== 'ended';
 
   if (small && phase !== 'ended')
     return (
@@ -92,9 +98,9 @@ export function CallScreen() {
 
   const ringing = phase === 'calling' || phase === 'ringing';
   return (
-    <div className={`call-screen ph-${phase}${stage ? ' has-video' : ''}`} role="dialog" aria-modal="true" aria-label={call.video ? t('Video call', 'ভিডিও কল') : t('Audio call', 'অডিও কল')}>
+    <div className={`call-screen ph-${phase}${stage ? ' has-video' : ''}${vgrid ? ' vgrid' : ''}`} role="dialog" aria-modal="true" aria-label={call.video ? t('Video call', 'ভিডিও কল') : t('Audio call', 'অডিও কল')}>
       {stage && <VideoView stream={stage} mirror={stageIsMe && facing === 'user'} className="cv-stage" />}
-      {!group && phase !== 'ended' && camOn && camStream && !stageIsMe && <VideoView stream={camStream} mirror={facing === 'user'} className="cv-self" />}
+      {pip && <SelfPip stream={pip} mirror={pip === camStream && facing === 'user'} onTap={canSwap ? () => (haptic('tap'), setSwapped((v) => !v)) : undefined} />}
       <div className="cs-top">
         {phase !== 'ended' && !(dir === 'in' && phase === 'ringing') ? (
           <button type="button" className="cs-round" onClick={() => set({ small: true })} aria-label={t('Minimise', 'ছোট করুন')}>
@@ -103,7 +109,11 @@ export function CallScreen() {
         ) : (
           <span className="cs-round ghost" />
         )}
-        <span className="cs-lock"><Icon name="lock" size={13} /> {t('Phone to phone · not recorded', 'সরাসরি ফোনে ফোনে · রেকর্ড হয় না')}</span>
+        {vgrid ? (
+          <span className="cs-vtitle"><b>{t('Group video call', 'গ্রুপ ভিডিও কল')}</b><small><Icon name="lock" size={12} /> {status}</small></span>
+        ) : (
+          <span className="cs-lock"><Icon name="lock" size={13} /> {t('Phone to phone · not recorded', 'সরাসরি ফোনে ফোনে · রেকর্ড হয় না')}</span>
+        )}
         {canAdd ? (
           <button type="button" className="cs-round" onClick={() => setAdding(true)} aria-label={t('Add people', 'যোগ করুন')}>
             <Icon name="user-add" size={21} />
@@ -115,7 +125,7 @@ export function CallScreen() {
 
       {group && phase !== 'ended' ? (
         <div className="cs-group">
-          <p className={`cs-status${phase === 'live' ? ' live' : ''}`}>{t('Group call', 'গ্রুপ কল')} · {status}</p>
+          {!vgrid && <p className={`cs-status${phase === 'live' ? ' live' : ''}`}>{t('Group call', 'গ্রুপ কল')} · {status}</p>}
           <div className={`cs-tiles n${others.length + 1}`}>
             {me && (
               <CallTile color={0} name={t('You', 'আপনি')} user={me as any} talking={!!speaking[0]} muted={!micOn} stream={camOn ? camStream : null} mirror={facing === 'user'} />
@@ -134,7 +144,7 @@ export function CallScreen() {
               />
             ))}
           </div>
-          <p className="cs-hint">{t('Hold a picture to mute that player for you', 'কারো ছবিতে চেপে ধরলে শুধু আপনার জন্য মিউট করা যাবে')}</p>
+          {!vgrid && <p className="cs-hint">{t('Hold a picture to mute that player for you', 'কারো ছবিতে চেপে ধরলে শুধু আপনার জন্য মিউট করা যাবে')}</p>}
         </div>
       ) : stage ? (
         <div className="cv-head">
@@ -278,7 +288,7 @@ function CallTile({ name, user, color, talking, ringing, muted, onHold, stream, 
       aria-label={onHold ? t(`${name}: hold for options`, `${name}: অপশনের জন্য চেপে ধরুন`) : name}
     >
       {stream && <VideoView stream={stream} mirror={mirror} className="ct-video" />}
-      <b className="ct-name ellipsis">{name}</b>
+      <b className="ct-name ellipsis">{name}{stream && <span className={`ct-mini${talking && !muted ? ' on' : ''}`} aria-hidden><i /><i /><i /><i /></span>}</b>
       {ringing && <small className="ct-state">{t('Ringing…', 'রিং হচ্ছে…')}</small>}
       {muted && <span className="ct-muted"><Icon name={color === 0 ? 'mic-off' : 'mute'} size={15} /></span>}
       <div className="ct-foot">
@@ -287,6 +297,82 @@ function CallTile({ name, user, color, talking, ringing, muted, onHold, stream, 
           {[0.3, 0.5, 0.8, 0.45, 1, 0.6, 0.9, 0.4, 0.7, 0.35, 0.55].map((h, i) => <i key={i} style={{ ['--h' as any]: h, animationDelay: `${(i % 5) * 0.09}s` }} />)}
         </span>
       </div>
+    </div>
+  );
+}
+
+type Corner = 'tr' | 'tl' | 'br' | 'bl';
+const PIP_KEY = 'qw-pip';
+
+/** 1-to-1 video: the small picture. Drag it to any corner (it snaps); tap to swap big and small. */
+function SelfPip({ stream, mirror, onTap }: { stream: MediaStream; mirror?: boolean; onTap?: () => void }) {
+  const t = useT();
+  const [corner, setCorner] = useState<Corner>(() => {
+    try {
+      return (JSON.parse(localStorage.getItem(PIP_KEY) ?? '{}').corner as Corner) || 'tr';
+    } catch {
+      return 'tr';
+    }
+  });
+  const [hint, setHint] = useState(() => {
+    try {
+      return !JSON.parse(localStorage.getItem(PIP_KEY) ?? '{}').seen;
+    } catch {
+      return false;
+    }
+  });
+  const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
+  const start = useRef<{ x: number; y: number; moved: boolean } | null>(null);
+  const remember = (c: Corner) => {
+    try {
+      localStorage.setItem(PIP_KEY, JSON.stringify({ corner: c, seen: true }));
+    } catch {
+      /* ignore */
+    }
+  };
+  useEffect(() => {
+    if (!hint) return;
+    const id = window.setTimeout(() => (setHint(false), remember(corner)), 4500);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hint]);
+  return (
+    <div
+      className={`cv-pip c-${corner}${drag ? ' dragging' : ''}`}
+      style={drag ? { transform: `translate(${drag.x}px, ${drag.y}px)` } : undefined}
+      onPointerDown={(e) => {
+        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+        start.current = { x: e.clientX, y: e.clientY, moved: false };
+      }}
+      onPointerMove={(e) => {
+        const s0 = start.current;
+        if (!s0) return;
+        const dx = e.clientX - s0.x, dy = e.clientY - s0.y;
+        if (!s0.moved && Math.hypot(dx, dy) < 8) return;
+        s0.moved = true;
+        setDrag({ x: dx, y: dy });
+      }}
+      onPointerUp={(e) => {
+        const s0 = start.current;
+        start.current = null;
+        setDrag(null);
+        if (!s0) return;
+        if (!s0.moved) return onTap?.();
+        const left = e.clientX < window.innerWidth / 2;
+        const top = e.clientY < window.innerHeight / 2;
+        const c: Corner = `${top ? 't' : 'b'}${left ? 'l' : 'r'}` as Corner;
+        haptic('tap');
+        setCorner(c);
+        setHint(false);
+        remember(c);
+      }}
+      onPointerCancel={() => ((start.current = null), setDrag(null))}
+      role="button"
+      aria-label={t('Your camera. Drag to move, tap to swap.', 'আপনার ক্যামেরা। টেনে সরান, চাপলে বড়-ছোট বদলাবে।')}
+    >
+      <VideoView stream={stream} mirror={mirror} className="cv-pip-v" />
+      <i className="cv-pip-grip" />
+      {hint && <span className="cv-pip-hint"><Icon name="arrow-right" size={13} /> {t('Drag to any corner', 'টেনে যেকোনো কোণে নিন')}</span>}
     </div>
   );
 }

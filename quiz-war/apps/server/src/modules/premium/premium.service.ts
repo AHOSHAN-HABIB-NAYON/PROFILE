@@ -345,6 +345,27 @@ export class PremiumService {
     };
   }
 
+  /** The friends this player invited, newest first (10 per page). */
+  async referralList(userId: number, page: number, size = 10) {
+    const rows = await query<{ uid: string; username: string | null; avatar_thumb_url: string | null; joined: Date; rewarded: number }>(
+      `SELECT u.uid, p.username, p.avatar_thumb_url, u.created_at AS joined, p.referral_rewarded AS rewarded
+       FROM user_profiles p JOIN users u ON u.id = p.user_id
+       WHERE p.referred_by = ? ORDER BY u.created_at DESC, u.id DESC LIMIT ? OFFSET ?`,
+      [userId, size + 1, page * size],
+    );
+    return {
+      items: rows.slice(0, size).map((r) => ({
+        uid: r.uid,
+        name: r.username || 'Player',
+        avatar: r.avatar_thumb_url,
+        joinedAt: new Date(r.joined).toISOString(),
+        played: Number(r.rewarded) > 0,
+        rewarded: Number(r.rewarded) === 1,
+      })),
+      more: rows.length > size,
+    };
+  }
+
   /** "Premium ends tomorrow" (trials, codes, gifts — not auto-renewing Play subscriptions). */
   async remindEnding() {
     const rows = await query<{ user_id: number; premium_until: Date; trial: number }>(

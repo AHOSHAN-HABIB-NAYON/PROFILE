@@ -28,7 +28,8 @@ const skipped = new Set<string>();
  * Live voice controls, shown at the bottom of the quiz match, the result page and the war room
  * lobby: my mic, and a speaker button per player (mutes them for me only).
  */
-export function VoiceBar({ roomId, players, className = '', autoJoin = true }: { roomId: string; players: VoicePlayer[]; className?: string; /** Strangers (auto match): voice only when you choose. */ autoJoin?: boolean }) {
+/** Shared live-voice logic: joins to listen automatically, my mic on tap (premium + first-time explainer). */
+export function useVoiceControls(roomId: string, players: VoicePlayer[], autoJoin = true) {
   const t = useT();
   const cfg = useConfig().data;
   const st = useVoice();
@@ -52,8 +53,6 @@ export function VoiceBar({ roomId, players, className = '', autoJoin = true }: {
     if (autoJoin && st0.roomId !== roomId && !st0.joining && !skipped.has(roomId)) void joinVoice(roomId, false).catch(() => undefined);
   }, [roomId, enabled, autoJoin]);
 
-
-  if (!enabled) return null;
 
   const start = async () => {
     haptic('tap');
@@ -81,6 +80,13 @@ export function VoiceBar({ roomId, players, className = '', autoJoin = true }: {
     haptic('tap');
     void setMic(false);
   };
+  const explainModal = <ExplainVoice open={explain} onClose={() => setExplain(false)} onYes={() => void start()} />;
+  return { t, st, joined, members, others, compact, teams, enabled, tapMic, explainModal };
+}
+
+export function VoiceBar({ roomId, players, className = '', autoJoin = true }: { roomId: string; players: VoicePlayer[]; className?: string; /** Strangers (auto match): voice only when you choose. */ autoJoin?: boolean }) {
+  const { t, st, joined, members, others, compact, teams, enabled, tapMic, explainModal } = useVoiceControls(roomId, players, autoJoin);
+  if (!enabled) return null;
   const inVoice = (uid: number) => members.find((m) => m.userId === uid);
   const someoneWaiting = !joined && others.some((p) => inVoice(p.userId));
 
@@ -141,14 +147,22 @@ export function VoiceBar({ roomId, players, className = '', autoJoin = true }: {
         </button>
       )}
 
-      <Modal open={explain} onClose={() => setExplain(false)} label={t('Live voice', 'লাইভ ভয়েস')}>
+      {explainModal}
+    </div>
+  );
+}
+
+function ExplainVoice({ open, onClose, onYes }: { open: boolean; onClose: () => void; onYes: () => void }) {
+  const t = useT();
+  return (
+      <Modal open={open} onClose={onClose} label={t('Live voice', 'লাইভ ভয়েস')}>
         <div className="m-art">
           <IconTile name="mic" tone="primary" size={72} />
         </div>
         <h2>{t('Talk live with players', 'প্লেয়ারদের সাথে লাইভ কথা বলুন')}</h2>
         <p>{t('Your phone will ask for microphone access. Voice goes directly between players and is never recorded. Tap the mic again to mute yourself; tap a player to mute them for you only.', 'ফোন মাইক্রোফোনের অনুমতি চাইবে। কথা সরাসরি প্লেয়ারদের মধ্যে যায়, কখনো রেকর্ড হয় না। আবার মাইক চাপলে আপনার মাইক বন্ধ হবে; কোনো প্লেয়ারে চাপলে শুধু আপনার জন্য মিউট।')}</p>
         <div className="modal-actions">
-          <button className="btn outline" onClick={() => setExplain(false)}>{t('Not now', 'এখন না')}</button>
+          <button className="btn outline" onClick={onClose}>{t('Not now', 'এখন না')}</button>
           <button
             className="btn primary"
             onClick={() => {
@@ -157,14 +171,13 @@ export function VoiceBar({ roomId, players, className = '', autoJoin = true }: {
               } catch {
                 /* ignore */
               }
-              setExplain(false);
-              void start();
+              onClose();
+              onYes();
             }}
           >
             <Icon name="mic" /> {t('Turn on', 'চালু করুন')}
           </button>
         </div>
       </Modal>
-    </div>
   );
 }

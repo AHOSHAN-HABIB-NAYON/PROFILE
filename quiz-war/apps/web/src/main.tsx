@@ -23,6 +23,10 @@ registerChat();
 void initPlatformInfo();
 
 rememberInviteFromUrl();
+// A reload always starts at the top of the page.
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+window.scrollTo(0, 0);
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>

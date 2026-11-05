@@ -26,7 +26,8 @@ import { QrCode } from '../components/Qr';
 import { QrScanner } from '../components/QrScanner';
 import { useConn } from '../lib/socket';
 import { Sheet } from '../components/Sheet';
-import { VoiceBar } from '../components/VoiceBar';
+import { useVoiceControls, VoiceBar, type VoicePlayer } from '../components/VoiceBar';
+import { toggleMuteForMe, useVoice } from '../lib/voice';
 import { useConfig } from '../hooks/queries';
 import { api } from '../lib/api';
 import { ludoAct, ludoQueue, ludoUnqueue, onLudoMatched, onLudoSnap } from '../lib/ludoOnline';
@@ -35,6 +36,7 @@ import { IconTile } from '../components/Icon';
 import { emit, getSocket } from '../lib/socket';
 import { toast } from '../lib/toast';
 import { navigateTo } from '../lib/nav';
+import { saveLocalLudo } from '../lib/ludoHistory';
 import { PUBLIC_WEB_URL, share } from '../lib/platform';
 import { Avatar } from '../components/Avatar';
 import { Confetti } from '../components/Confetti';
@@ -672,6 +674,7 @@ export function LudoGame() {
     if (r.state.finished) {
       ludoSfx('win');
       setPhase('over');
+      if (mode === 'ai') saveLocalLudo({ at: new Date().toISOString(), level, players: r.state.players.length, place: r.state.players[0]!.place || r.state.players.length, names: seats.slice(1).map((x) => x.name) });
       return;
     }
     if (!r.extraTurn) ludoSfx('turn');
@@ -864,19 +867,21 @@ export function LudoGame() {
     const active = pi === cur && phase !== 'over';
     const home = game.players[pi]!.tokens.filter((x) => x >= LUDO_FINISH).length;
     return (
-      <div key={corner} className={`ludo-panel ${corner}${active ? ' active' : ''}`} style={{ ['--pc' as any]: LUDO_COLORS[color] }}>
-        <span className="lp-av">
-          <Avatar name={seat.name} src={seat.avatar ?? null} size={40} bot={seat.bot} />
-          {bubbles[pi] && <span key={bubbles[pi]!.k} className="lp-bubble">{bubbles[pi]!.r}</span>}
-        </span>
-        <span className="lp-info">
-          <b className="ellipsis">{seat.name}</b>
-          <small>{game.players[pi]!.place ? t(`#${game.players[pi]!.place}`, `${num(game.players[pi]!.place, lang)} নম্বর`) : t(`${home}/4 home`, `${num(home, lang)}/৪ ঘরে`)}</small>
-        </span>
-        <span className="lp-dice">
-          {active ? <Dice value={faces} rolling={phase === 'rolling'} canRoll={canRoll} onRoll={() => void roll()} /> : <span className="lp-dice-off" />}
-        </span>
-      </div>
+      <OnlinePanel
+        key={corner}
+        corner={corner}
+        color={color}
+        name={seat.name}
+        avatar={seat.avatar ?? null}
+        bot={seat.bot}
+        active={active}
+        you={mode === 'ai' && pi === 0}
+        bubble={bubbles[pi]}
+        home={home}
+        pct={null}
+        note={game.players[pi]!.place ? t(`#${game.players[pi]!.place}`, `${num(game.players[pi]!.place, lang)} নম্বর`) : null}
+        dice={active ? <Dice value={faces} rolling={phase === 'rolling'} canRoll={canRoll} onRoll={() => void roll()} /> : <span className="lp-dice-off" />}
+      />
     );
   }
 }
@@ -1074,24 +1079,64 @@ function layoutTokens(state: LudoState, anim: { p: number; tk: number; pr: numbe
   });
 }
 
-function OnlinePanel({ corner, color, name, avatar, bot, active, sub, dice, pct, you, bubble }: { corner: string; color: LudoColor; name: string; avatar: string | null; bot: boolean; active: boolean; sub: ReactNode; dice: ReactNode; pct: number | null; you: boolean; bubble?: { r: string; k: number } }) {
+/** Player box (Ludo King style): big square photo + name, dice box + 4 home dots, voice icon at the outer bottom corner. */
+function OnlinePanel({ corner, color, name, avatar, bot, active, dice, pct, you, bubble, home, voiceUid, voice, tag, note }: { corner: string; color: LudoColor; name: string; avatar: string | null; bot: boolean; active: boolean; dice: ReactNode; pct: number | null; you: boolean; bubble?: { r: string; k: number }; home: number; voiceUid?: number; voice?: ReactNode; tag?: { text: string; kind: 'opp' | 'mate' } | null; note?: string | null }) {
+  const talking = useVoice((st) => (voiceUid === undefined ? false : !!st.speaking[voiceUid]));
   return (
-    <div className={`ludo-panel ${corner}${active ? ' active' : ''}${you ? ' you' : ''}`} style={{ ['--pc' as any]: LUDO_COLORS[color] }}>
-      <span className="lp-av">
-        <Avatar name={name} src={avatar} size={40} bot={bot} />
+    <div className={`ludo-panel lp2 ${corner}${active ? ' active' : ''}${you ? ' you' : ''}${talking ? ' talking' : ''}`} style={{ ['--pc' as any]: LUDO_COLORS[color] }}>
+      <span className="lp2-photo">
+        <Avatar name={name} src={avatar} size={64} bot={bot} />
         {bubble && <span key={bubble.k} className="lp-bubble">{bubble.r}</span>}
         {pct !== null && (
-          <svg className="lp-timer" viewBox="0 0 44 44" aria-hidden>
-            <circle cx="22" cy="22" r="20" pathLength="100" strokeDasharray={`${pct} 100`} />
+          <svg className="lp2-timer" viewBox="0 0 64 64" aria-hidden>
+            <rect x="2" y="2" width="60" height="60" rx="14" pathLength="100" strokeDasharray={`${pct} 100`} />
           </svg>
         )}
       </span>
-      <span className="lp-info">
-        <b className="ellipsis">{name}</b>
-        <small>{sub}</small>
+      <span className="lp-dice lp2-dice">{dice}</span>
+      <b className="lp2-name ellipsis">{name}</b>
+      <span className="lp2-dots" aria-label={`${home}/4`}>
+        {[0, 1, 2, 3].map((i) => <i key={i} className={i < home ? 'on' : ''} />)}
       </span>
-      <span className="lp-dice">{dice}</span>
+      {note && <small className="lp2-note">{note}</small>}
+      {voice && <span className="lp2-ic">{voice}</span>}
+      {tag && <span className={`lp2-tag ${tag.kind}`}>{tag.text}</span>}
     </div>
+  );
+}
+
+/** Voice as small round icons on the player boxes: my mic (off until I tap), a speaker per player (tap = mute for me). */
+function LudoVoice({ roomId, players, uid, me }: { roomId: string; players: VoicePlayer[]; uid: number; me: boolean }) {
+  const v = useVoiceControls(roomId, players);
+  if (!v.enabled) return null;
+  const t = v.t;
+  if (me) {
+    const live = v.joined && v.st.micOn;
+    return (
+      <>
+        <button type="button" className={`lv-ic${live ? ' on' : ''}`} onClick={v.tapMic} disabled={v.st.joining} aria-pressed={live} aria-label={live ? t('Mute my mic', 'আমার মাইক বন্ধ') : t('Turn on my mic', 'আমার মাইক চালু করুন')}>
+          {v.st.joining ? <span className="spinner" /> : <Icon name={live ? 'mic' : 'mic-off'} size={17} />}
+        </button>
+        {v.explainModal}
+      </>
+    );
+  }
+  const muted = !!v.st.mutedForMe[uid];
+  const p = players.find((x) => x.userId === uid);
+  return (
+    <button
+      type="button"
+      className={`lv-ic spk${muted ? ' off' : ''}`}
+      onClick={() => {
+        haptic('tap');
+        const now = toggleMuteForMe(uid);
+        toast.info(now ? t(`${p?.name ?? ''} muted for you only`, `${p?.name ?? ''}-কে শুধু আপনার জন্য মিউট করা হলো`) : t(`${p?.name ?? ''} unmuted`, `${p?.name ?? ''}-এর কথা আবার শুনবেন`), undefined, now ? 'mute' : 'volume');
+      }}
+      aria-pressed={muted}
+      aria-label={muted ? t('Unmute', 'আনমিউট') : t('Mute for me', 'আমার জন্য মিউট')}
+    >
+      <Icon name={muted ? 'mute' : 'volume'} size={17} />
+    </button>
   );
 }
 
@@ -1357,13 +1402,10 @@ export function LudoOnline() {
     const seat = snap.seats[pi]!;
     const active = pi === state.turn && snap.status === 'playing';
     const home = state.players[pi]!.tokens.filter((x) => x >= LUDO_FINISH).length;
-    const sub = seat.left
-      ? t('Left · computer plays', 'চলে গেছে · কম্পিউটার খেলছে')
-      : !seat.bot && !seat.connected
-        ? t('Offline', 'অফলাইন')
-        : snap.teams
-          ? t(`Team ${(seat.team ?? 0) + 1} · ${home}/4`, `দল ${num((seat.team ?? 0) + 1, lang)} · ${num(home, lang)}/৪`)
-          : t(`${home}/4 home`, `${num(home, lang)}/৪ ঘরে`);
+    const note = seat.left ? t('Left · computer plays', 'চলে গেছে · কম্পিউটার খেলছে') : !seat.bot && !seat.connected ? t('Offline', 'অফলাইন') : null;
+    const mine = seat.userId === me.id;
+    const human = !seat.bot && !seat.left;
+    const tag = snap.teams && mySeat && !mine ? (seat.team === mySeat.team ? { text: t('Teammate', 'সাথী'), kind: 'mate' as const } : { text: t('Opponent', 'প্রতিপক্ষ'), kind: 'opp' as const }) : null;
     return (
       <OnlinePanel
         key={corner}
@@ -1375,7 +1417,11 @@ export function LudoOnline() {
         active={active}
         you={seat.userId === me.id}
         bubble={bubbles[pi]}
-        sub={sub}
+        home={home}
+        note={note}
+        tag={tag}
+        voiceUid={human ? (mine ? 0 : seat.userId) : undefined}
+        voice={human && mySeat && others.length > 0 && !finished ? <LudoVoice roomId={snap.id} players={voicePlayers} uid={seat.userId} me={mine} /> : null}
         pct={active && pctLeft !== null ? pctLeft : null}
         dice={active ? <Dice value={faces} rolling={rolling} canRoll={canRoll} onRoll={() => (haptic('tap'), void ludoAct('ludo:roll', snap.id))} /> : <span className="lp-dice-off" />}
       />
@@ -1434,7 +1480,7 @@ export function LudoOnline() {
 
       {!finished && (others.length > 0 || mySeat) && (
         <div className="ludo-dock">
-          {others.length > 0 ? <VoiceBar className="dark" roomId={snap.id} players={voicePlayers} /> : <span className="grow" />}
+          <span className="grow" />
           {mySeat && <LudoReactBar inline onSend={(r) => void emit('ludo:react', { gameId: snap.id, reaction: r }).catch(() => undefined)} />}
         </div>
       )}
@@ -1571,6 +1617,7 @@ function LudoOverScreen({ rows, won, modeText, coins, actions, onHome, voice }: 
   const me = useAuth((s) => s.user)!;
   const cfg = useConfig().data;
   const [card, setCard] = useState<{ blob: Blob; url: string } | null>(null);
+  const [preview, setPreview] = useState(false);
   const sorted = [...rows].sort((a, b) => a.place - b.place);
   const teams = rows.some((r) => r.team !== null);
   const myRow = rows.find((r) => r.isMe);
@@ -1682,23 +1729,28 @@ function LudoOverScreen({ rows, won, modeText, coins, actions, onHome, voice }: 
         ))}
       </ol>
 
-      <button type="button" className="lo-share-cta" onClick={() => void doShare()}>
+      <button type="button" className="lo-share-cta" onClick={() => (haptic('tap'), setPreview(true))}>
         <span className="lsc-thumb">{card ? <img src={card.url} alt="" /> : <span className="spinner" />}</span>
         <span className="grow">
           <b>{t('Share your result card', 'রেজাল্ট কার্ড শেয়ার করুন')}</b>
           <small>{t('Send it to friends or save it', 'বন্ধুদের পাঠান বা সেভ করুন')}</small>
         </span>
         <span className="lsc-go" role="button" tabIndex={0} aria-label={t('Save', 'সেভ')} onClick={(e) => (e.stopPropagation(), void doSave())}><Icon name="download" size={18} /></span>
-        <span className="lsc-go"><Icon name="share" size={18} /></span>
+        <span className="lsc-go" role="button" tabIndex={0} aria-label={t('Share', 'শেয়ার')} onClick={(e) => (e.stopPropagation(), void doShare())}><Icon name="share" size={18} /></span>
       </button>
+      <Sheet open={preview} onClose={() => setPreview(false)} title={t('Result card', 'রেজাল্ট কার্ড')} icon="image">
+        <div className="sp-preview">{card ? <img src={card.url} alt={t('Result card preview', 'রেজাল্ট কার্ডের প্রিভিউ')} /> : <span className="spinner" />}</div>
+        <div className="row mt">
+          <button className="btn primary grow" onClick={() => void doShare()}><Icon name="share" /> {t('Share', 'শেয়ার করুন')}</button>
+          <button className="btn soft grow" disabled={!card} onClick={() => void doSave()}><Icon name="download" /> {t('Save', 'সেভ করুন')}</button>
+        </div>
+      </Sheet>
 
       {voice}
 
       <div className="lo-actions">
         {actions}
-        {chatWith.length === 1 && (
-          <button className="btn soft lg" onClick={() => (haptic('tap'), navigateTo(`/chat/${chatWith[0]!.uid}`))} aria-label={t('Chat', 'চ্যাট')}><Icon name="message" /></button>
-        )}
+        <button className="btn soft lg" onClick={() => (haptic('tap'), navigateTo(chatWith.length === 1 ? `/chat/${chatWith[0]!.uid}` : '/chat'))} aria-label={t('Chat', 'চ্যাট')}><Icon name="message" /></button>
         <button className="btn outline lg" onClick={() => (haptic('tap'), onHome())} aria-label={t('Home', 'হোম')}><Icon name="home" /></button>
       </div>
     </div>
@@ -1722,3 +1774,4 @@ function HomeCheer({ color }: { color: LudoColor }) {
     </div>
   );
 }
+

@@ -439,3 +439,6 @@ dialog.modal[open]:not([data-closing])::backdrop { background: rgba(8, 12, 28, .
 /* App (not browser): no link pop-ups or text selection on menus, links and pictures. */
 .native-app a, .native-app nav, .native-app button, .native-app img { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .native-app a[href] { -webkit-user-drag: none; }
+.frame-rainbow { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px #a855f7, 0 0 0 7px #f59e0b, 0 0 16px #ec489988; }
+.frame-diamond { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px #a5f3fc, 0 0 0 6px #e0f2fe, 0 0 18px #67e8f9cc; }
+.frame-royal { box-shadow: 0 0 0 3px var(--surface), 0 0 0 5px #7c3aed, 0 0 0 7px #facc15, 0 0 16px #7c3aed88; }

@@ -44,7 +44,7 @@ export function PremiumPromo() {
     if (Date.now() - last.at < every * 86400_000) return;
     const timer = window.setTimeout(() => {
       if (document.querySelector('dialog[open]')) return;
-      const referral = cfg?.referralEnabled !== false;
+      const referral = cfg?.referralEnabled !== false && !!cfg?.premiumEnabled;
       const kind = !referral ? 'buy' : last.kind === 'buy' ? 'invite' : 'buy';
       try {
         localStorage.setItem(KEY, JSON.stringify({ at: Date.now(), kind }));
@@ -57,39 +57,65 @@ export function PremiumPromo() {
   }, [eligible, pathname, open, every, cfg?.referralEnabled]);
 
   const daysLeft = me?.premiumUntil ? Math.max(0, Math.ceil((new Date(me.premiumUntil).getTime() - Date.now()) / 86400_000)) : 0;
-  const go = () => (haptic('tap'), setOpen(null), nav('/premium'));
+  const go = () => (haptic('tap'), setOpen(null), nav(open === 'invite' ? '/premium?tab=invite' : '/premium'));
+  const invite = open === 'invite';
+  const trial = !invite && !!me?.premiumTrial;
+  const refDays = cfg?.referralDays ?? 7;
+  const big = cfg?.referralBigCount ?? 100;
+  const bigDays = cfg?.referralBigDays ?? 365;
   return (
     <Modal open={!!open} onClose={() => setOpen(null)} label={t('Premium', 'প্রিমিয়াম')}>
-      <div className={`pp-pop ${open ?? ''}`}>
-        <div className="ppp-top">
-          <button type="button" className="ppp-x" onClick={() => setOpen(null)} aria-label={t('Close', 'বন্ধ করুন')}><Icon name="close" size={20} /></button>
-          <span className="ppp-chip"><Icon name="bolt" size={14} /> {open === 'invite' ? t('FREE PREMIUM', 'ফ্রি প্রিমিয়াম') : me?.premiumTrial ? t('TRIAL ENDING', 'ট্রায়াল শেষ হচ্ছে') : t('PREMIUM', 'প্রিমিয়াম')}</span>
-          <div className="ppp-big">
-            <span className="ppp-ic"><Icon name={open === 'invite' ? 'gift' : 'crown'} size={36} /></span>
-            {open === 'invite' ? (
-              <span className="ppp-num"><b>+{num(cfg?.referralDays ?? 7, lang)}</b><small>{t('DAYS FREE', 'দিন ফ্রি')}</small></span>
-            ) : (
-              <span className="ppp-num"><b>{cfg?.premiumPriceMonthly ?? '৳150'}</b><small>{t('PER MONTH', 'প্রতি মাসে')}</small></span>
-            )}
+      <div className={`pq ${invite ? 'inv' : 'buy'}`}>
+        <div className="pq-top">
+          <button type="button" className="pq-x" onClick={() => setOpen(null)} aria-label={t('Close', 'বন্ধ করুন')}><Icon name="close" size={18} /></button>
+          <span className={`pq-chip${trial ? ' warn' : ''}`}>
+            <Icon name={invite ? 'gift' : 'crown'} size={14} /> {invite ? t('Free Premium', 'ফ্রি প্রিমিয়াম') : trial ? t('Trial ending', 'ট্রায়াল শেষ হচ্ছে') : t('Premium', 'প্রিমিয়াম')}
+          </span>
+          <div className="pq-row">
+            <div className="grow">
+              <h3>
+                {invite
+                  ? t('Bring friends, win free Premium', 'বন্ধু আনুন, ফ্রি প্রিমিয়াম জিতুন')
+                  : trial
+                    ? t(`Your free trial has ${daysLeft} day${daysLeft === 1 ? '' : 's'} left`, `আপনার ফ্রি ট্রায়াল আর ${num(daysLeft, lang)} দিন`)
+                    : t('Video call your friends', 'বন্ধুর সাথে ভিডিও কল করুন')}
+              </h3>
+              <p>
+                {invite
+                  ? t('More friends, more free days.', 'যত বন্ধু, তত দিন ফ্রি।')
+                  : trial
+                    ? t('After it ends, calls, video and live talk stop. Get Premium to keep them.', 'শেষ হলে কল, ভিডিও আর লাইভ কথা বন্ধ হয়ে যাবে। চালু রাখতে প্রিমিয়াম নিন।')
+                    : t('Calls, video and live talk in games — all in one Premium.', 'কল, ভিডিও আর খেলায় লাইভ কথা — সব এক প্রিমিয়ামে।')}
+              </p>
+            </div>
+            <span className="pq-big"><Icon name={invite ? 'gift' : 'crown'} size={34} /></span>
           </div>
-          <i className="ppp-conf c1" /><i className="ppp-conf c2" /><i className="ppp-conf c3" />
         </div>
-        <div className="ppp-body">
-          {open === 'invite' ? (
+        <div className="pq-body">
+          {invite ? (
             <>
-              <h3>{t('Invite friends, win Premium!', 'বন্ধু ইনভাইট করে প্রিমিয়াম জিতুন!')}</h3>
-              <p>{t(`Each friend who joins with your code and plays 1 game gives you ${cfg?.referralDays ?? 7} days. ${cfg?.referralBigCount ?? 100} friends = 1 year free!`, `আপনার কোড দিয়ে কেউ যোগ দিয়ে ১টা খেলা খেললেই ${num(cfg?.referralDays ?? 7, lang)} দিন। ${num(cfg?.referralBigCount ?? 100, lang)} জন হলে ১ বছর ফ্রি!`)}</p>
+              <ol className="pq-steps">
+                <li><i>{num(1, lang)}</i>{t('Send your code to a friend', 'আপনার কোড বন্ধুকে পাঠান')}</li>
+                <li><i>{num(2, lang)}</i>{t('They join with it and play 1 game', 'বন্ধু কোড দিয়ে যোগ দিয়ে ১টা খেলা খেলবে')}</li>
+                <li><i>{num(3, lang)}</i>{t(`You get +${refDays} days of Premium`, `আপনি পাবেন +${num(refDays, lang)} দিন প্রিমিয়াম`)}</li>
+              </ol>
+              <div className="pq-goal"><span>{t(`${big} friends`, `${num(big, lang)} বন্ধু হলে`)}</span><b>{bigDays >= 365 ? t('1 year free!', '১ বছর ফ্রি!') : t(`${bigDays} days free!`, `${num(bigDays, lang)} দিন ফ্রি!`)}</b></div>
             </>
           ) : (
             <>
-              <h3>{me?.premiumTrial ? t(`Your free trial ends in ${daysLeft} day${daysLeft === 1 ? '' : 's'}`, `আপনার ফ্রি ট্রায়াল আর ${num(daysLeft, lang)} দিন`) : t('Unlock video calls & live talk', 'ভিডিও কল আর লাইভ কথা চালু করুন')}</h3>
-              <p>{t('Video & audio calls, voice messages, photos and live talk in quiz & Ludo — all in one Premium.', 'ভিডিও ও অডিও কল, ভয়েস মেসেজ, ছবি আর কুইজ-লুডুতে লাইভ কথা — সব এক প্রিমিয়ামে।')}</p>
+              <div className="pq-perks">
+                <span><i className="c0"><Icon name="video" size={17} /></i>{t('Video call', 'ভিডিও কল')}</span>
+                <span><i className="c1"><Icon name="phone" size={17} /></i>{t('Group call', 'গ্রুপ কল')}</span>
+                <span><i className="c2"><Icon name="mic" size={17} /></i>{t('Live talk', 'লাইভ কথা')}</span>
+              </div>
+              <div className="pq-price">
+                <b>{cfg?.premiumPriceMonthly ?? '৳150'}</b><small>/{t('month', 'মাস')}</small>
+                <em>{t(`${cfg?.premiumPriceYearly ?? '৳1200'} a year`, `বছরে ${cfg?.premiumPriceYearly ?? '৳1200'}`)}</em>
+              </div>
             </>
           )}
-          <button className="btn ppp-cta block" onClick={go}>
-            <Icon name={open === 'invite' ? 'gift' : 'crown'} /> {open === 'invite' ? t('Invite & win', 'ইনভাইট করে জিতুন') : t('Get Premium', 'প্রিমিয়াম নিন')}
-          </button>
-          <button className="btn ghost block" onClick={() => setOpen(null)}>{t('Maybe later', 'পরে দেখব')}</button>
+          <button className="pv2-cta" onClick={go}>{invite ? t('Invite friends', 'ইনভাইট করুন') : t('See Premium', 'প্রিমিয়াম দেখুন')}</button>
+          <button className="pg-cancel" onClick={() => setOpen(null)}>{t('Maybe later', 'পরে দেখব')}</button>
         </div>
       </div>
     </Modal>

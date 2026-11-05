@@ -32,12 +32,18 @@ export class VerifiedService {
 
   async status(userId: number) {
     const v = this.settings().verified;
-    const [stats, row] = await Promise.all([this.monthlyStats(userId), queryOne<{ verified_at: Date | null; verified_source: string | null }>('SELECT verified_at, verified_source FROM user_profiles WHERE user_id = ?', [userId])]);
+    const [stats, row] = await Promise.all([
+      this.monthlyStats(userId),
+      queryOne<{ verified_at: Date | null; verified_source: string | null; verified_until: Date | null }>('SELECT verified_at, verified_source, verified_until FROM user_profiles WHERE user_id = ?', [userId]),
+    ]);
+    const active = !!row?.verified_at && (!row.verified_until || new Date(row.verified_until).getTime() > Date.now());
     const eligible = stats.played >= v.minMonthlyMatches && stats.winRate >= v.minMonthlyWinRate;
     return {
       enabled: v.enabled,
-      verified: !!row?.verified_at,
-      source: row?.verified_source ?? null,
+      verified: active,
+      source: active ? (row?.verified_source ?? null) : null,
+      until: active && row?.verified_until ? new Date(row.verified_until).toISOString() : null,
+      days: 30,
       price: v.price,
       requirements: { matches: v.minMonthlyMatches, winRate: v.minMonthlyWinRate, autoTopN: v.autoTopN },
       progress: stats,
@@ -53,7 +59,12 @@ export class VerifiedService {
       throw new AppError(403, 'not_eligible', `Play at least ${s.requirements.matches} real matches this month with a ${s.requirements.winRate}% win rate to unlock it`);
     await tx(async (conn) => {
       await this.progression.spendCoins(conn, userId, s.price, 'verified_badge', null);
-      await exec(`UPDATE user_profiles SET verified_at = UTC_TIMESTAMP(), verified_source = 'purchase' WHERE user_id = ? AND verified_at IS NULL`, [userId], conn);
+      await exec(
+        `UPDATE user_profiles SET verified_at = UTC_TIMESTAMP(), verified_source = 'purchase', verified_until = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 30 DAY)
+         WHERE user_id = ? AND (verified_at IS NULL OR verified_until < UTC_TIMESTAMP())`,
+        [userId],
+        conn,
+      );
     });
     await this.progression.pushAccount(userId);
     return { ok: true };
@@ -62,14 +73,16 @@ export class VerifiedService {
   async setByAdmin(userId: number, verified: boolean) {
     await exec(
       verified
-        ? `UPDATE user_profiles SET verified_at = COALESCE(verified_at, UTC_TIMESTAMP()), verified_source = 'admin' WHERE user_id = ?`
-        : `UPDATE user_profiles SET verified_at = NULL, verified_source = NULL WHERE user_id = ?`,
+        ? `UPDATE user_profiles SET verified_at = COALESCE(verified_at, UTC_TIMESTAMP()), verified_source = 'admin', verified_until = NULL WHERE user_id = ?`
+        : `UPDATE user_profiles SET verified_at = NULL, verified_source = NULL, verified_until = NULL WHERE user_id = ?`,
       [userId],
     );
   }
 
   /** Daily: the monthly leaderboard's best eligible players are verified automatically. */
   async autoGrant() {
+    // Month is over: the badge goes away (it can be won or claimed again).
+    await exec('UPDATE user_profiles SET verified_at = NULL, verified_source = NULL, verified_until = NULL WHERE verified_until IS NOT NULL AND verified_until < UTC_TIMESTAMP()');
     const v = this.settings().verified;
     if (!v.enabled || v.autoTopN <= 0) return 0;
     const top = await query<{ user_id: number }>(
@@ -82,14 +95,14 @@ export class VerifiedService {
       if (granted >= v.autoTopN) break;
       const s = await this.monthlyStats(r.user_id);
       if (s.played < v.minMonthlyMatches || s.winRate < v.minMonthlyWinRate) continue;
-      const res = await exec(`UPDATE user_profiles SET verified_at = UTC_TIMESTAMP(), verified_source = 'auto' WHERE user_id = ? AND verified_at IS NULL`, [r.user_id]);
+      const res = await exec(`UPDATE user_profiles SET verified_at = UTC_TIMESTAMP(), verified_source = 'auto', verified_until = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 30 DAY) WHERE user_id = ? AND verified_at IS NULL`, [r.user_id]);
       if (res.affectedRows !== 1) continue;
       granted++;
       await this.notifications
         .notify(r.user_id, {
           type: 'achievement',
           title: { en: 'You are now Verified!', bn: 'আপনি এখন ভেরিফায়েড!' },
-          body: { en: 'Your win rate put you among the best players. The badge now shows next to your name.', bn: 'উচ্চ জয়ের হারের জন্য আপনি সেরা প্লেয়ারদের একজন। এখন আপনার নামের পাশে ভেরিফায়েড ব্যাজ দেখাবে।' },
+          body: { en: 'Your win rate put you among the best players. The badge shows next to your name for 1 month.', bn: 'উচ্চ জয়ের হারের জন্য আপনি সেরা প্লেয়ারদের একজন। ১ মাস আপনার নামের পাশে ভেরিফায়েড ব্যাজ দেখাবে।' },
           url: '/profile',
         })
         .catch(() => undefined);

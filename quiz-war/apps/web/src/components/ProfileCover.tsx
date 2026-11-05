@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react';
  * Profile cover: a Bangladesh landscape (paddy fields, palm trees, a river) that follows the
  * time of day — morning, day and night. Pure SVG + CSS transforms, light on the phone.
  */
-type Scene = 'morning' | 'day' | 'night';
+type Scene = 'morning' | 'day' | 'evening' | 'night';
 
-const sceneFor = (h: number): Scene => (h >= 5 && h < 10 ? 'morning' : h >= 10 && h < 18 ? 'day' : 'night');
+const sceneFor = (h: number): Scene => (h >= 5 && h < 10 ? 'morning' : h >= 10 && h < 17 ? 'day' : h >= 17 && h < 20 ? 'evening' : 'night');
 
 const PAL: Record<Scene, { sky: [string, string, string]; sun: string; glow: string; far: string; mid: string; near: string; field: string; water: [string, string]; bird: string; cloud: string; mist: number }> = {
   morning: { sky: ['#3b82f6', '#93c5fd', '#fed7aa'], sun: '#fff7ed', glow: '#fdba74', far: '#7c9cc4', mid: '#3f7d5c', near: '#1f5a3a', field: '#4d8f3f', water: ['#bfdbfe', '#fbcfa0'], bird: '#1e293b', cloud: '#fff7ed', mist: 0.55 },
   day: { sky: ['#1d4ed8', '#3b82f6', '#bae6fd'], sun: '#ffffff', glow: '#fef9c3', far: '#6b93c9', mid: '#2f7a4b', near: '#185c34', field: '#5aa33f', water: ['#60a5fa', '#bae6fd'], bird: '#0f172a', cloud: '#ffffff', mist: 0.25 },
+  evening: { sky: ['#4c1d95', '#db2777', '#fb923c'], sun: '#fff1d6', glow: '#fb923c', far: '#6b3f7a', mid: '#3d3a4f', near: '#1f2335', field: '#3f4a2c', water: ['#f97316', '#7c3aed'], bird: '#1e1b2e', cloud: '#fecdd3', mist: 0.4 },
   night: { sky: ['#030712', '#0b1640', '#1e3a8a'], sun: '#fefce8', glow: '#e0e7ff', far: '#16224a', mid: '#0d2224', near: '#061612', field: '#0b2418', water: ['#1d3a8a', '#0b1640'], bird: '#000', cloud: '#64748b', mist: 0.06 },
 };
 
@@ -75,8 +76,8 @@ export function ProfileCover({ scene: forced }: { scene?: Scene }) {
   const p = PAL[scene];
   const night = scene === 'night';
   // Centre of the sky: clear of the share/settings buttons (top right) and the photo (bottom left).
-  const sunX = scene === 'morning' ? 236 : scene === 'day' ? 226 : 214;
-  const sunY = scene === 'morning' ? 84 : scene === 'day' ? 34 : 38;
+  const sunX = scene === 'morning' ? 236 : scene === 'day' ? 226 : scene === 'evening' ? 232 : 214;
+  const sunY = scene === 'morning' ? 84 : scene === 'day' ? 34 : scene === 'evening' ? 92 : 38;
   const id = `pc-${scene}`;
   return (
     <svg className={`pc-cover pcv-${scene}`} viewBox="0 0 400 140" preserveAspectRatio="xMidYMid slice" aria-hidden focusable="false">

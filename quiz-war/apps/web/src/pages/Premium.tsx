@@ -1,9 +1,11 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
+import { Avatar } from '../components/Avatar';
+import { Modal, Sheet } from '../components/Sheet';
 import { Icon, type IconName } from '../components/Icon';
 import { useConfig } from '../hooks/queries';
-import { api, friendlyError } from '../lib/api';
+import { api, ApiError, friendlyError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { num, useLang, useT } from '../lib/i18n';
 import { haptic, isNative, PUBLIC_WEB_URL, share } from '../lib/platform';
@@ -47,7 +49,11 @@ export default function Premium() {
   const [plan, setPlan] = useState<PlanId>('yearly');
   const [busy, setBusy] = useState<'buy' | 'redeem' | 'restore' | null>(null);
   const [code, setCode] = useState('');
+  const [codeErr, setCodeErr] = useState('');
   const [allPerks, setAllPerks] = useState(false);
+  const [gift, setGift] = useState(false);
+  const [help, setHelp] = useState(false);
+  const [params, setParams] = useSearchParams();
   const nav = useNavigate();
 
   useEffect(() => {
@@ -93,13 +99,15 @@ export default function Premium() {
       const r = await api<{ days: number; user: any }>('/premium/redeem', { body: { code: code.trim() } });
       if (r.user) useAuth.getState().setUser(r.user);
       setCode('');
+      setCodeErr('');
+      setGift(false);
       sfx('reward');
       haptic('success');
       toast.success(t(`${r.days} days of Premium added!`, `${num(r.days, lang)} দিনের প্রিমিয়াম যোগ হয়েছে!`), undefined, 'gift');
       void qc.invalidateQueries({ queryKey: ['premium'] });
     } catch (e) {
       haptic('error');
-      toast.error(t('Code not accepted', 'কোডটি কাজ করেনি'), friendlyError(e));
+      setCodeErr(codeError(e, t));
     } finally {
       setBusy(null);
     }
@@ -126,122 +134,224 @@ export default function Premium() {
 
   const off = info.data?.enabled === false;
   const canBuy = !off && !info.data?.subscribed && !me.premiumForever && (!premium || me.premiumTrial || daysLeft <= 7);
-  const perks = allPerks ? PREMIUM_PERKS : PREMIUM_PERKS.slice(0, 3);
+  const inviteOn = !!ref?.enabled;
+  const tab: 'premium' | 'invite' = inviteOn && params.get('tab') === 'invite' ? 'invite' : 'premium';
+  const setTab = (v: 'premium' | 'invite') => {
+    haptic('tap');
+    setParams(v === 'invite' ? { tab: 'invite' } : {}, { replace: true });
+    window.scrollTo({ top: 0 });
+  };
+  const perks = allPerks ? PREMIUM_PERKS : PREMIUM_PERKS.slice(0, 4);
   const close = () => (window.history.length > 1 ? nav(-1) : nav('/', { replace: true }));
+  const friends = useInfiniteQuery({
+    queryKey: ['premium-referrals'],
+    queryFn: ({ pageParam }) => api<{ items: Friend[]; more: boolean }>(`/premium/referrals?page=${pageParam}`),
+    initialPageParam: 0,
+    getNextPageParam: (last, all) => (last.more ? all.length : undefined),
+    enabled: tab === 'invite',
+  });
+  const list = friends.data?.pages.flatMap((p) => p.items) ?? [];
+  const fmt = new Intl.DateTimeFormat(lang === 'bn' ? 'bn-BD' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const email = cfg?.supportEmail || 'support.quizwarbd@gmail.com';
+  const buyBar = tab === 'premium' && canBuy;
+
   return (
-    <div className={`pm2${canBuy ? ' has-buy' : ''}`}>
-      <header className="pm2-top">
-        <button type="button" className="pm2-x" onClick={close} aria-label={t('Close', 'বন্ধ করুন')}><Icon name="close" size={22} /></button>
-        <span className="pm2-logo"><Icon name="crown" size={26} /></span>
-        <span className="pm2-x ghost" />
+    <div className={`pv2 ${tab}${buyBar ? ' has-buy' : ''}`}>
+      <header className="pv2-hd">
+        <button type="button" className="pv2-x" onClick={close} aria-label={t('Close', 'বন্ধ করুন')}><Icon name="close" size={20} /></button>
+        {tab === 'premium' ? (
+          <>
+            <h1>{t('Unlock everything', 'সব সুবিধা খুলে দিন')}</h1>
+            <p>{t('Video calls, live talk and much more — one Premium.', 'ভিডিও কল, লাইভ কথা আর আরও অনেক কিছু — এক প্রিমিয়ামে।')}</p>
+          </>
+        ) : (
+          <>
+            <h1>{t('Bring friends, get Premium free', 'বন্ধু আনুন, ফ্রি প্রিমিয়াম নিন')}</h1>
+            <p>{t(`Each friend who plays 1 game: +${ref?.days ?? 7} days. ${ref?.bigCount ?? 100} friends: ${(ref?.bigDays ?? 365) >= 365 ? '1 year' : `${ref?.bigDays} days`} free!`, `প্রতি বন্ধু ১টা খেলা খেললেই +${num(ref?.days ?? 7, lang)} দিন। ${num(ref?.bigCount ?? 100, lang)} জন হলে ${(ref?.bigDays ?? 365) >= 365 ? '১ বছর' : `${num(ref?.bigDays ?? 0, lang)} দিন`} ফ্রি!`)}</p>
+          </>
+        )}
       </header>
-      <h1 className="pm2-title">{t('One subscription.', 'একটা সাবস্ক্রিপশন।')}<br />{t('Everything unlocked.', 'সব সুবিধা চালু।')}</h1>
-      {premium ? (
-        <p className="pm2-status">
-          <Icon name="check" size={16} />{' '}
-          {me.premiumForever
-            ? t('Premium for good', 'আজীবন প্রিমিয়াম')
-            : me.premiumTrial
-              ? t(`Free trial · ${daysLeft} day${daysLeft === 1 ? '' : 's'} left`, `ফ্রি ট্রায়াল · আর ${num(daysLeft, lang)} দিন`)
-              : t(`Premium until ${dateText}`, `${dateText} পর্যন্ত প্রিমিয়াম`)}
-        </p>
-      ) : (
-        <p className="pm2-sub">{t('Video calls, voice and live talk in QUIZ WAR.', 'QUIZ WAR-এ ভিডিও কল, ভয়েস আর লাইভ কথা।')}</p>
-      )}
 
-      <section className="pm2-perks">
-        <p className="pm2-label"><Icon name="crown" size={14} /> {t('Premium benefits', 'প্রিমিয়াম সুবিধা')}</p>
-        <ul>
-          {perks.map((p) => (
-            <li key={p.en}>
-              <span className="pm-ic"><Icon name={p.icon} size={20} /></span>
-              <span className="grow">
-                <b>{t(p.en, p.bn)}</b>
-                {allPerks && <small>{t(p.den, p.dbn)}</small>}
-              </span>
-            </li>
-          ))}
-        </ul>
-        <button type="button" className="pm2-more" onClick={() => (haptic('tap'), setAllPerks((v) => !v))} aria-expanded={allPerks}>
-          {allPerks ? t('Show less', 'কম দেখুন') : t(`See all ${PREMIUM_PERKS.length} benefits`, `সব ${num(PREMIUM_PERKS.length, lang)}টি সুবিধা দেখুন`)}
-          <Icon name="chevron-down" size={18} className={allPerks ? 'up' : ''} />
-        </button>
-        <p className="xs muted pm-free"><Icon name="message" size={14} /> {t('Text chat and all games stay free for everyone.', 'টেক্সট চ্যাট আর সব খেলা সবার জন্য ফ্রি।')}</p>
-      </section>
+      <main className="pv2-card">
+        {inviteOn && (
+          <div className="pv2-seg" role="tablist">
+            <button type="button" role="tab" aria-selected={tab === 'premium'} className={tab === 'premium' ? 'on' : ''} onClick={() => setTab('premium')}>{t('Premium', 'প্রিমিয়াম')}</button>
+            <button type="button" role="tab" aria-selected={tab === 'invite'} className={tab === 'invite' ? 'on' : ''} onClick={() => setTab('invite')}>{t('Invite & earn', 'ইনভাইট ও আয়')}</button>
+          </div>
+        )}
 
-      {off && <p className="pm2-note">{t('Premium is not on sale yet. Everything is free for now!', 'প্রিমিয়াম এখনো বিক্রি শুরু হয়নি। এখন সব ফ্রি!')}</p>}
-      {!off && premium && info.data?.subscribed && (
-        <button className="btn outline block pm2-manage" onClick={() => void window.open(manageUrl(productId), '_blank', 'noopener')}><Icon name="settings" /> {t('Manage subscription in Google Play', 'Google Play-তে সাবস্ক্রিপশন দেখুন')}</button>
-      )}
-
-      {ref?.enabled && (
-        <section className="pm-invite">
-          <div className="pi-head">
-            <span className="pi-ic" aria-hidden><Icon name="gift" size={26} /></span>
-            <div className="grow">
-              <h3>{t('Invite friends, get Premium free', 'বন্ধু ইনভাইট করুন, প্রিমিয়াম ফ্রি নিন')}</h3>
-              <p>{t(`Each friend who joins with your code and plays 1 game: +${ref.days} days. ${ref.bigCount} friends: ${ref.bigDays >= 365 ? '1 year' : `${ref.bigDays} days`} free!`, `আপনার কোড দিয়ে কেউ যোগ দিয়ে ১টা খেলা খেললেই +${num(ref.days, lang)} দিন। ${num(ref.bigCount, lang)} জন হলে ${ref.bigDays >= 365 ? '১ বছর' : `${num(ref.bigDays, lang)} দিন`} ফ্রি!`)}</p>
+        {tab === 'premium' ? (
+          <>
+            {premium ? (
+              <p className="pv2-status">
+                <Icon name="check-circle" size={18} />
+                {me.premiumForever
+                  ? t('Premium for good', 'আজীবন প্রিমিয়াম')
+                  : me.premiumTrial
+                    ? t(`Free trial · ${daysLeft} day${daysLeft === 1 ? '' : 's'} left`, `ফ্রি ট্রায়াল · আর ${num(daysLeft, lang)} দিন`)
+                    : t(`Premium until ${dateText}`, `${dateText} পর্যন্ত প্রিমিয়াম`)}
+              </p>
+            ) : (
+              <p className="pv2-tag">{t('For those who love to talk with friends while playing', 'যারা বন্ধুদের সাথে কথা বলে খেলতে ভালোবাসেন')}</p>
+            )}
+            <h3 className="pv2-lab">{t('What you get', 'যা যা পাবেন')}</h3>
+            <ul className="pv2-perks">
+              {perks.map((p, i) => (
+                <li key={p.en}>
+                  <span className={`pv2-ic c${i % 7}`}><Icon name={p.icon} size={17} /></span>
+                  <span className="grow">
+                    <b>{t(p.en, p.bn)}</b>
+                    {allPerks && <small>{t(p.den, p.dbn)}</small>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <button type="button" className="pv2-more" onClick={() => (haptic('tap'), setAllPerks((v) => !v))} aria-expanded={allPerks}>
+              {allPerks ? t('Show less', 'কম দেখুন') : t(`See ${PREMIUM_PERKS.length - 4} more benefits`, `আরও ${num(PREMIUM_PERKS.length - 4, lang)}টি সুবিধা দেখুন`)}
+              <Icon name="chevron-down" size={16} className={allPerks ? 'up' : ''} />
+            </button>
+            <p className="pv2-free"><Icon name="message" size={14} /> {t('Text chat and all games stay free for everyone.', 'টেক্সট চ্যাট আর সব খেলা সবার জন্য ফ্রি।')}</p>
+            {(cfg?.monthlyPremiumTop ?? 0) > 0 && (
+              <p className="pv2-free"><Icon name="trophy" size={14} /> {t(`The top ${cfg!.monthlyPremiumTop} players of each month get 1 month free.`, `প্রতি মাসের সেরা ${num(cfg!.monthlyPremiumTop ?? 0, lang)} জন ১ মাস ফ্রি পায়।`)}</p>
+            )}
+            {off && <p className="pv2-note">{t('Premium is not on sale yet. Everything is free for now!', 'প্রিমিয়াম এখনো বিক্রি শুরু হয়নি। এখন সব ফ্রি!')}</p>}
+            {!off && premium && info.data?.subscribed && (
+              <button className="btn outline block" onClick={() => void window.open(manageUrl(productId), '_blank', 'noopener')}><Icon name="settings" /> {t('Manage subscription in Google Play', 'Google Play-তে সাবস্ক্রিপশন দেখুন')}</button>
+            )}
+            {isNative && !off && (
+              <button className="pv2-restore" disabled={busy !== null} onClick={() => void restore()}>
+                {busy === 'restore' ? <span className="spinner" /> : <Icon name="refresh" size={15} />} {t('Restore purchase', 'আগের কেনা ফিরিয়ে আনুন')}
+              </button>
+            )}
+            {!buyBar && <Links onGift={() => setGift(true)} onHelp={() => setHelp(true)} />}
+          </>
+        ) : (
+          <>
+            <div className="pv2-code">
+              <span className="grow"><small>{t('Your invite code', 'আপনার ইনভাইট কোড')}</small><b>{me.uid}</b></span>
+              <button type="button" className="pv2-pill" onClick={copyCode}><Icon name="copy" size={15} /> {t('Copy', 'কপি')}</button>
+              <button type="button" className="pv2-pill share" onClick={() => void shareInvite()}><Icon name="share" size={15} /> {t('Share', 'শেয়ার')}</button>
             </div>
-          </div>
-          <div className="pi-code">
-            <span className="grow"><small>{t('Your invite code', 'আপনার ইনভাইট কোড')}</small><b>{me.uid}</b></span>
-            <button type="button" className="btn sm soft" onClick={copyCode}><Icon name="copy" size={16} /> {t('Copy', 'কপি')}</button>
-            <button type="button" className="btn sm pi-share" onClick={() => void shareInvite()}><Icon name="share" size={16} /> {t('Share', 'শেয়ার')}</button>
-          </div>
-          <div className="pi-progress" role="progressbar" aria-valuemin={0} aria-valuemax={ref.bigCount} aria-valuenow={ref.played} aria-label={t('Friends who played', 'যে বন্ধুরা খেলেছে')}>
-            <span style={{ width: `${Math.min(100, (ref.played / ref.bigCount) * 100)}%` }} />
-          </div>
-          <div className="pi-stats">
-            <span><b>{num(ref.joined, lang)}</b> {t('joined', 'জন যোগ দিয়েছে')}</span>
-            <span><b>{num(ref.played, lang)}</b>/{num(ref.bigCount, lang)} {t('played', 'জন খেলেছে')}</span>
-            <span><b>+{num(ref.played * ref.days, lang)}</b> {t('days earned', 'দিন পেয়েছেন')}</span>
-          </div>
-          <p className="xs pi-note">{t('One reward per phone. Friends enter your code when they set up their profile.', 'এক ফোন থেকে একবারই পুরস্কার। বন্ধুরা প্রোফাইল খোলার সময় আপনার কোড দেবে।')}</p>
-        </section>
-      )}
-
-      <section className="pm2-redeem">
-        <p className="pm2-label"><Icon name="ticket" size={14} /> {t('Have a premium code?', 'প্রিমিয়াম কোড আছে?')}</p>
-        <form className="row" onSubmit={(e) => (e.preventDefault(), void redeem())}>
-          <input className="input grow" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder={t('Enter code', 'কোড লিখুন')} maxLength={24} autoCapitalize="characters" aria-label={t('Premium code', 'প্রিমিয়াম কোড')} />
-          <button className="btn primary" disabled={busy !== null || code.trim().length < 6}>{busy === 'redeem' ? <span className="spinner" /> : t('Redeem', 'নিন')}</button>
-        </form>
-        {(cfg?.monthlyPremiumTop ?? 0) > 0 && (
-          <p className="xs muted"><Icon name="trophy" size={14} /> {t(`The top ${cfg!.monthlyPremiumTop} players of each month get 30 days free.`, `প্রতি মাসের সেরা ${num(cfg!.monthlyPremiumTop ?? 0, lang)} জন প্লেয়ার ৩০ দিন ফ্রি পায়।`)}</p>
+            {ref && (
+              <>
+                <div className="pv2-prog">
+                  <span>{t(`${ref.played} / ${ref.bigCount} played`, `${num(ref.played, lang)} / ${num(ref.bigCount, lang)} জন খেলেছে`)}</span>
+                  <em>+{num(ref.played * ref.days, lang)} {t('days earned', 'দিন পেয়েছেন')}</em>
+                </div>
+                <div className="pv2-bar"><span style={{ width: `${Math.min(100, (ref.played / ref.bigCount) * 100)}%` }} /></div>
+              </>
+            )}
+            <h3 className="pv2-lab">{t(`Your invites (${ref?.joined ?? 0})`, `আপনার ইনভাইট (${num(ref?.joined ?? 0, lang)})`)}</h3>
+            {friends.isLoading ? (
+              <div className="pv2-empty"><span className="spinner" /></div>
+            ) : list.length === 0 ? (
+              <div className="pv2-empty">
+                <Icon name="user-plus" size={30} />
+                <p>{t('No one yet. Share your code — friends enter it when they set up their profile.', 'এখনো কেউ নেই। কোড শেয়ার করুন — বন্ধুরা প্রোফাইল খোলার সময় কোডটি দেবে।')}</p>
+              </div>
+            ) : (
+              <ul className="pv2-list">
+                {list.map((f) => (
+                  <li key={f.uid} onClick={() => nav(`/u/${f.uid}`)}>
+                    <Avatar name={f.name} src={f.avatar} size={38} />
+                    <span className="grow">
+                      <b>{f.name}</b>
+                      <small>{t('Joined', 'যোগ দিয়েছে')} {fmt.format(new Date(f.joinedAt))}</small>
+                    </span>
+                    {f.rewarded ? (
+                      <span className="pv2-st ok">{t(`Played · +${ref?.days ?? 7} days`, `খেলেছে · +${num(ref?.days ?? 7, lang)} দিন`)}</span>
+                    ) : f.played ? (
+                      <span className="pv2-st same">{t('Same phone', 'একই ফোন')}</span>
+                    ) : (
+                      <span className="pv2-st wait">{t('Yet to play', 'খেলার অপেক্ষায়')}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {friends.hasNextPage && (
+              <button type="button" className="pv2-more inv" disabled={friends.isFetchingNextPage} onClick={() => (haptic('tap'), void friends.fetchNextPage())}>
+                {friends.isFetchingNextPage ? <span className="spinner" /> : t('See 10 more', 'আরও ১০ জন দেখুন')} <Icon name="chevron-down" size={16} />
+              </button>
+            )}
+            <p className="pv2-free"><Icon name="info" size={14} /> {t('One reward per phone.', 'এক ফোন থেকে একবারই পুরস্কার।')}</p>
+            <Links onGift={() => setGift(true)} onHelp={() => setHelp(true)} />
+          </>
         )}
-        {isNative && !off && (
-          <button className="btn ghost sm" disabled={busy !== null} onClick={() => void restore()}>
-            {busy === 'restore' ? <span className="spinner" /> : <Icon name="refresh" size={16} />} {t('Restore purchase', 'আগের কেনা ফিরিয়ে আনুন')}
-          </button>
-        )}
-      </section>
+      </main>
 
-      {canBuy && (
-        <div className="pm2-buy">
-          <div className="pm2-plans" role="radiogroup" aria-label={t('Choose a plan', 'প্ল্যান বাছাই করুন')}>
+      {buyBar && (
+        <div className="pv2-buy">
+          <div className="pv2-plans" role="radiogroup" aria-label={t('Choose a plan', 'প্ল্যান বাছাই করুন')}>
             {(['monthly', 'yearly'] as const).map((id) => (
-              <button key={id} type="button" role="radio" aria-checked={plan === id} className={`pm2-plan${plan === id ? ' on' : ''}`} onClick={() => (haptic('tap'), setPlan(id))}>
-                <span className="pp-line"><b>{priceOf(id)}</b> <small>{id === 'monthly' ? t('monthly', 'মাসিক') : t('yearly', 'বাৎসরিক')}</small></span>
-                {id === 'yearly' ? (
-                  <span className="pp-sub">{t('12 months', '১২ মাস')}{save > 0 && <em> · {t(`Save ${save}%`, `${num(save, lang)}% সাশ্রয়`)}</em>}</span>
-                ) : (
-                  <span className="pp-sub">{t('1 month', '১ মাস')}</span>
-                )}
+              <button key={id} type="button" role="radio" aria-checked={plan === id} className={`pv2-plan${plan === id ? ' on' : ''}`} onClick={() => (haptic('tap'), setPlan(id))}>
+                <small>{id === 'monthly' ? t('1 month', '১ মাস') : t('1 year', '১ বছর')}</small>
+                <b>{priceOf(id)}<i>/{id === 'monthly' ? t('month', 'মাস') : t('year', 'বছর')}</i></b>
+                {id === 'yearly' && save > 0 && <em>{t(`Save ${save}%`, `${num(save, lang)}% সাশ্রয়`)}</em>}
               </button>
             ))}
           </div>
           {isNative ? (
-            <button className="btn pm2-cta block" disabled={busy !== null} onClick={() => void buy()}>
-              {busy === 'buy' ? <span className="spinner" /> : <Icon name="crown" />} {t('Get Premium', 'প্রিমিয়াম নিন')}
+            <button className="pv2-cta" disabled={busy !== null} onClick={() => void buy()}>
+              {busy === 'buy' ? <span className="spinner" /> : t(`Get Premium · ${priceOf(plan)}`, `প্রিমিয়াম নিন · ${priceOf(plan)}`)}
             </button>
           ) : (
-            <button className="btn pm2-cta block" onClick={() => void window.open(cfg?.playStoreUrl || 'https://play.google.com/store/apps/details?id=app.quizwar.bd', '_blank', 'noopener')}>
-              <Icon name="smartphone" /> {t('Get Premium in the app', 'অ্যাপে প্রিমিয়াম নিন')}
+            <button className="pv2-cta" onClick={() => void window.open(cfg?.playStoreUrl || 'https://play.google.com/store/apps/details?id=app.quizwar.bd', '_blank', 'noopener')}>
+              <Icon name="smartphone" size={18} /> {t('Get Premium in the app', 'অ্যাপে প্রিমিয়াম নিন')}
             </button>
           )}
-          <p className="pm2-legal">{t('Paid through Google Play. Renews automatically until you cancel in Google Play.', 'Google Play-এর মাধ্যমে পেমেন্ট। Google Play থেকে বন্ধ না করা পর্যন্ত নিজে থেকে রিনিউ হবে।')}</p>
+          <p className="pv2-fine">{t('Cancel any time · Paid through Google Play', 'যেকোনো সময় বন্ধ করা যায় · Google Play দিয়ে পেমেন্ট')}</p>
+          <Links onGift={() => setGift(true)} onHelp={() => setHelp(true)} />
         </div>
       )}
+
+      <Modal open={gift} onClose={() => (setGift(false), setCodeErr(''))} label={t('Gift code', 'গিফট কোড')}>
+        <form className="pv2-gift" onSubmit={(e) => (e.preventDefault(), void redeem())}>
+          <span className="pg-ic"><Icon name="gift" size={28} /></span>
+          <h3>{t('Gift code', 'গিফট কোড')}</h3>
+          <p>{t('Enter the code and tap Apply', 'কোড বসিয়ে "প্রয়োগ করুন" চাপুন')}</p>
+          <input className={`pg-in${codeErr ? ' bad' : ''}`} value={code} onChange={(e) => (setCode(e.target.value.toUpperCase()), setCodeErr(''))} placeholder={t('ENTER CODE', 'কোড লিখুন')} maxLength={24} autoCapitalize="characters" autoFocus aria-label={t('Gift code', 'গিফট কোড')} aria-invalid={!!codeErr} />
+          {codeErr && <p className="pg-err" role="alert"><Icon name="alert-circle" size={15} /> {codeErr}</p>}
+          <button className="pv2-cta" disabled={busy !== null || code.trim().length < 4}>{busy === 'redeem' ? <span className="spinner" /> : t('Apply', 'প্রয়োগ করুন')}</button>
+          <button type="button" className="pg-cancel" onClick={() => (setGift(false), setCodeErr(''))}>{t('Cancel', 'বাতিল')}</button>
+        </form>
+      </Modal>
+
+      <Sheet open={help} onClose={() => setHelp(false)} title={t('Priority support', 'প্রায়োরিটি সাপোর্ট')} icon="headset">
+        <p className="small muted" style={{ margin: '0 0 12px' }}>{t('We are here for any problem. Premium members get answers first.', 'যেকোনো সমস্যায় আমরা আছি। প্রিমিয়াম সদস্যরা আগে উত্তর পান।')}</p>
+        <a className="pv2-sup wa" href={`https://wa.me/${WHATSAPP}`} target="_blank" rel="noopener noreferrer">
+          <span className="si"><Icon name="whatsapp" size={24} /></span>
+          <span className="grow"><b>{t('Message on WhatsApp', 'WhatsApp এ মেসেজ করুন')}</b><small>+880 1757-827996</small></span>
+          <Icon name="chevron" size={18} />
+        </a>
+        <a className="pv2-sup ml" href={`mailto:${email}?subject=${encodeURIComponent(`QUIZ WAR support — ${me.uid}`)}`}>
+          <span className="si"><Icon name="mail" size={22} /></span>
+          <span className="grow"><b>{t('Send an email', 'ইমেইল করুন')}</b><small>{email}</small></span>
+          <Icon name="chevron" size={18} />
+        </a>
+      </Sheet>
+    </div>
+  );
+}
+
+const WHATSAPP = '8801757827996';
+type Friend = { uid: string; name: string; avatar: string | null; joinedAt: string; played: boolean; rewarded: boolean };
+
+function codeError(e: unknown, t: (en: string, bn: string) => string) {
+  const c = e instanceof ApiError ? e.code : '';
+  if (c === 'code_not_found') return t('This code is wrong', 'কোডটি ভুল');
+  if (c === 'code_expired') return t('This code has expired', 'কোডটির মেয়াদ শেষ');
+  if (c === 'code_used') return t('This code has already been used', 'কোডটি আগেই ব্যবহার হয়ে গেছে');
+  if (c === 'code_used_by_you') return t('You already used this code', 'আপনি এই কোড আগেই ব্যবহার করেছেন');
+  return friendlyError(e);
+}
+
+function Links({ onGift, onHelp }: { onGift: () => void; onHelp: () => void }) {
+  const t = useT();
+  return (
+    <div className="pv2-links">
+      <button type="button" onClick={() => (haptic('tap'), onGift())}><Icon name="gift" size={16} /> {t('Have a gift code?', 'গিফট কোড আছে?')}</button>
+      <button type="button" onClick={() => (haptic('tap'), onHelp())}><Icon name="headset" size={16} /> {t('Priority support', 'প্রায়োরিটি সাপোর্ট')}</button>
     </div>
   );
 }

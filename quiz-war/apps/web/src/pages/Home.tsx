@@ -1,3 +1,4 @@
+import { greeting } from '../lib/greeting';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router';
 import { Avatar } from '../components/Avatar';
@@ -154,19 +155,12 @@ function FriendsOnline() {
   );
 }
 
-function greeting(t: (en: string, bn: string) => string) {
-  const h = new Date().getHours();
-  if (h < 5) return t('Good night', 'শুভ রাত্রি');
-  if (h < 12) return t('Good morning', 'শুভ সকাল');
-  if (h < 17) return t('Good afternoon', 'শুভ দুপুর');
-  if (h < 20) return t('Good evening', 'শুভ সন্ধ্যা');
-  return t('Good night', 'শুভ রাত্রি');
-}
 
 export default function Home() {
   const user = useAuth((s) => s.user)!;
   const online = useConn((s) => s.online);
   const t = useT();
+  const lang = useLang();
   const nav = useNavigate();
   // Find opponent: Quiz or Ludo first (so the wrong game never starts).
   const [pick, setPick] = useState(false);
@@ -240,9 +234,12 @@ export default function Home() {
                 <path d="M18 70l14-14M18 56l14 14" stroke="#fde047" strokeWidth="4" strokeLinecap="round" />
               </svg>
             </span>
-            <b>{t('Quiz', 'কুইজ')}</b>
-            <small>{t('1 vs 1 · ranked', '১ বনাম ১ · র‍্যাংকড')}</small>
-            <span className="gp2-go"><Icon name="search" size={16} /> {t('Find', 'খুঁজুন')}</span>
+            <span className="gp2-text">
+              <b>{t('Quiz', 'কুইজ')}</b>
+              <small>{t('1 VS 1 · ranked', '১ বনাম ১ · র‍্যাংকড')}</small>
+              {online > 0 && <em><i /> {t(`${online} online`, `${num(online, lang)} জন অনলাইনে`)}</em>}
+            </span>
+            <span className="gp2-go" aria-hidden><Icon name="arrow-right" size={22} /></span>
           </button>
           <button type="button" className="gp2-card ludo" onClick={() => (setPick(false), nav('/ludo/find?mode=1v1'))}>
             <span className="gp2-art" aria-hidden>
@@ -263,11 +260,15 @@ export default function Home() {
                 <path d="M22 72a6 6 0 1 1 8 0l3 8H19z" fill="#3b82f6" stroke="#fff" strokeWidth="1.5" />
               </svg>
             </span>
-            <b>{t('Ludo', 'লুডু')}</b>
-            <small>{t('1 vs 1 · online', '১ বনাম ১ · অনলাইন')}</small>
-            <span className="gp2-go"><Icon name="search" size={16} /> {t('Find', 'খুঁজুন')}</span>
+            <span className="gp2-text">
+              <b>{t('Ludo', 'লুডু')}</b>
+              <small>{t('1 VS 1 · online', '১ বনাম ১ · অনলাইন')}</small>
+              <em><Icon name="users" size={13} /> {t('Real players', 'আসল খেলোয়াড়')}</em>
+            </span>
+            <span className="gp2-go" aria-hidden><Icon name="arrow-right" size={22} /></span>
           </button>
         </div>
+        <p className="gp2-foot">{t('Tap to start searching for an opponent', 'চাপলেই প্রতিপক্ষ খোঁজা শুরু হবে')}</p>
       </Modal>
     </PullToRefresh>
   );

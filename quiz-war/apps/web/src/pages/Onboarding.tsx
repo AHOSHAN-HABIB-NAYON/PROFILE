@@ -5,7 +5,7 @@ import { Avatar } from '../components/Avatar';
 import { Icon } from '../components/Icon';
 import { api, friendlyError } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { useT } from '../lib/i18n';
+import { num, useLang, useT } from '../lib/i18n';
 import { uploadImage } from '../lib/image';
 import { useImageCropper } from '../components/ImageCropper';
 import { haptic } from '../lib/platform';
@@ -20,6 +20,7 @@ import { useConfig } from '../hooks/queries';
  */
 export default function Onboarding() {
   const t = useT();
+  const lang = useLang();
   const user = useAuth((s) => s.user)!;
   const nav = useNavigate();
   const [name, setName] = useState(user.username && user.username !== 'Player' ? user.username : '');
@@ -30,7 +31,6 @@ export default function Onboarding() {
   const cropper = useImageCropper();
   const cfg = useConfig().data;
   const [invite, setInvite] = useState(savedInvite());
-  const [showInvite, setShowInvite] = useState(!!savedInvite());
   const referralOn = !!cfg?.premiumEnabled && cfg?.referralEnabled !== false;
 
   async function finish(e: FormEvent) {
@@ -79,42 +79,57 @@ export default function Onboarding() {
     }
   }
 
+  const trialDays = cfg?.premiumEnabled && cfg?.premiumTrialEnabled !== false ? (cfg?.premiumTrialDays ?? 7) : 0;
   return (
-    <div className="onb">
+    <div className="onb2">
       {cropper.element}
-      <form className="onb-step" onSubmit={finish}>
-        <h1>{t('Set up your profile', 'প্রোফাইল সাজিয়ে নিন')}</h1>
-        <p className="muted">{t('Just a name — a photo is optional. You can change both later.', 'শুধু একটা নাম দিন — ছবি ঐচ্ছিক। পরে দুটোই বদলাতে পারবেন।')}</p>
-        <label className="onb-avatar" aria-label={t('Add a profile photo', 'প্রোফাইল ছবি দিন')}>
-          <Avatar name={name || user.username || 'Q'} src={avatar} size={120} />
-          <span className="pc-edit" style={{ width: 40, height: 40 }}>{uploading ? <span className="spinner" style={{ width: 16, height: 16 }} /> : <Icon name="camera" size={18} />}</span>
+      <header className="onb2-hd">
+        <img src="/icons/icon-192.png" alt="" width={44} height={44} />
+        <h1>{t('Welcome to QUIZ WAR!', 'QUIZ WAR-এ স্বাগতম!')}</h1>
+        <p>{t('Set up your profile in a few seconds.', 'কয়েক সেকেন্ডে প্রোফাইল সাজিয়ে নিন।')}</p>
+      </header>
+      <form className="onb2-card" onSubmit={finish}>
+        <label className="onb2-photo" aria-label={t('Add a profile photo', 'প্রোফাইল ছবি দিন')}>
+          <span className="onb2-ring">
+            <Avatar name={name || user.username || 'Q'} src={avatar} size={112} />
+            <span className="onb2-cam">{uploading ? <span className="spinner" style={{ width: 16, height: 16 }} /> : <Icon name="camera" size={18} />}</span>
+          </span>
+          <b>{avatar ? t('Change photo', 'ছবি বদলান') : t('Add a photo', 'ছবি দিন')}</b>
+          <small>{t('Optional', 'ঐচ্ছিক')}</small>
           <input type="file" accept="image/*" hidden onChange={(e) => void pick(e.target.files?.[0])} />
         </label>
-        <div className="field" style={{ width: '100%' }}>
-          <label htmlFor="un">{t('Battle name', 'ব্যাটল নাম')}</label>
-          <div className="input-wrap">
+
+        <div className="onb2-field">
+          <label htmlFor="un"><span className="onb2-n">{t('1', '১')}</span> {t('Your battle name', 'আপনার ব্যাটল নাম')}</label>
+          <div className="onb2-input">
             <Icon name="at" size={20} />
-            <input id="un" className="input" autoComplete="nickname" spellCheck={false} maxLength={20} value={name} onChange={(e) => (setName(e.target.value), setErr(null))} placeholder={t('e.g. Rahim_99', 'যেমন: Rahim_99')} enterKeyHint="done" />
+            <input id="un" autoComplete="nickname" spellCheck={false} maxLength={20} value={name} onChange={(e) => (setName(e.target.value), setErr(null))} placeholder={t('e.g. Rahim_99', 'যেমন: Rahim_99')} enterKeyHint="done" />
+            {name.trim().length >= 3 && <Icon name="check-circle" size={20} className="onb2-ok" />}
           </div>
-          <span className="field-hint">{t('Other players see this name. Your email stays private.', 'অন্য প্লেয়াররা এই নাম দেখবে। আপনার ইমেইল গোপন থাকবে।')}</span>
+          <small>{t('Other players see this name. Your email stays private.', 'অন্য প্লেয়াররা এই নাম দেখবে। আপনার ইমেইল গোপন থাকবে।')}</small>
         </div>
+
         {referralOn && user.needsOnboarding && (
-          showInvite ? (
-            <div className="field onb-invite" style={{ width: '100%' }}>
-              <label htmlFor="inv">{t('Invite code (optional)', 'ইনভাইট কোড (ঐচ্ছিক)')}</label>
-              <div className="input-wrap">
-                <Icon name="gift" size={20} />
-                <input id="inv" className="input" autoCapitalize="characters" spellCheck={false} maxLength={12} value={invite} onChange={(e) => (setInvite(e.target.value.toUpperCase()), setErr(null))} placeholder={t('Friend’s UID, e.g. QW-8F29K7', 'বন্ধুর UID, যেমন QW-8F29K7')} />
-              </div>
-              <span className="field-hint">{t('Your friend gets free Premium when you play your first game.', 'আপনি প্রথম খেলা খেললে আপনার বন্ধু ফ্রি প্রিমিয়াম পাবে।')}</span>
+          <div className="onb2-field inv">
+            <label htmlFor="inv"><span className="onb2-n">{t('2', '২')}</span> {t('Invite code', 'ইনভাইট কোড')} <em>{t('optional', 'ঐচ্ছিক')}</em></label>
+            <div className="onb2-input">
+              <Icon name="gift" size={20} />
+              <input id="inv" autoCapitalize="characters" spellCheck={false} maxLength={12} value={invite} onChange={(e) => (setInvite(e.target.value.toUpperCase()), setErr(null))} placeholder={t('Friend’s UID, e.g. QW-8F29K7', 'বন্ধুর UID, যেমন QW-8F29K7')} />
             </div>
-          ) : (
-            <button type="button" className="btn ghost sm onb-invite-link" onClick={() => setShowInvite(true)}><Icon name="gift" size={16} /> {t('Have an invite code?', 'ইনভাইট কোড আছে?')}</button>
-          )
+            <small>{t('Got a code from a friend? Your friend gets free Premium when you play your first game.', 'বন্ধুর কাছ থেকে কোড পেয়েছেন? আপনি প্রথম খেলা খেললে বন্ধু ফ্রি প্রিমিয়াম পাবে।')}</small>
+          </div>
         )}
+
+        {trialDays > 0 && user.needsOnboarding && (
+          <div className="onb2-gift">
+            <span><Icon name="crown" size={20} /></span>
+            <p><b>{t(`${trialDays} days of Premium free`, `${num(trialDays, lang)} দিন প্রিমিয়াম ফ্রি`)}</b>{t('Video calls & live talk — on for new players.', 'নতুনদের জন্য ভিডিও কল আর লাইভ কথা চালু।')}</p>
+          </div>
+        )}
+
         {err && <p className="form-error" role="alert"><Icon name="alert-circle" size={18} /> {err}</p>}
-        <button className="btn primary lg block" disabled={busy || uploading || name.trim().length < 3}>
-          {busy ? <span className="spinner" /> : null} {t('Start playing', 'খেলা শুরু করুন')} <Icon name="arrow-right" />
+        <button className="onb2-cta" disabled={busy || uploading || name.trim().length < 3}>
+          {busy ? <span className="spinner" /> : null} {t('Start playing', 'খেলা শুরু করুন')} <Icon name="arrow-right" size={20} />
         </button>
       </form>
     </div>

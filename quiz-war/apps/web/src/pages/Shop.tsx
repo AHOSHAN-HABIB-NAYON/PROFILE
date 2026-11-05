@@ -136,6 +136,8 @@ function Missions() {
 type VerifiedStatus = {
   enabled: boolean;
   verified: boolean;
+  until?: string | null;
+  days?: number;
   price: number;
   eligible: boolean;
   requirements: { matches: number; winRate: number; autoTopN: number };
@@ -148,6 +150,7 @@ function VerifiedCard() {
   const lang = useLang();
   const qc = useQueryClient();
   const coins = useAuth((s) => s.user?.coins ?? 0);
+  const premium = useAuth((s) => !!s.user?.premium);
   const { data } = useQuery({ queryKey: ['verified'], queryFn: () => api<VerifiedStatus>('/verified') });
   const [busy, setBusy] = useState(false);
   if (!data?.enabled) return null;
@@ -161,7 +164,7 @@ function VerifiedCard() {
       await api('/verified/claim', { method: 'POST', body: {} });
       sfx('reward');
       haptic('success');
-      toast.success(t('You are verified!', 'আপনি এখন ভেরিফায়েড!'), t('The badge now shows next to your name.', 'এখন আপনার নামের পাশে ব্যাজ দেখাবে।'), 'verified');
+      toast.success(t('You are verified!', 'আপনি এখন ভেরিফায়েড!'), t('The badge shows next to your name for 1 month.', '১ মাস আপনার নামের পাশে ব্যাজ দেখাবে।'), 'verified');
       void qc.invalidateQueries({ queryKey: ['verified'] });
       void useAuth.getState().loadMe();
     } catch (e) {
@@ -176,11 +179,14 @@ function VerifiedCard() {
         <VerifiedBadge size={44} />
         <div className="grow">
           <b>{t('Verified badge', 'ভেরিফায়েড ব্যাজ')}</b>
-          <p className="xs">{t('Only for top players — shows next to your name everywhere.', 'শুধু সেরা প্লেয়ারদের জন্য — সব জায়গায় নামের পাশে দেখাবে।')}</p>
+          <p className="xs">{t('Only for top players — shows next to your name for 1 month.', 'শুধু সেরা প্লেয়ারদের জন্য — ১ মাস নামের পাশে দেখাবে।')}</p>
         </div>
       </div>
       {data.verified ? (
-        <span className="chip success"><Icon name="check" /> {t('You are verified', 'আপনি ভেরিফায়েড')}</span>
+        <>
+          <span className="chip success"><Icon name="check" /> {data.until ? t(`Verified until ${new Date(data.until).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`, `${new Date(data.until).toLocaleDateString('bn-BD', { day: 'numeric', month: 'long' })} পর্যন্ত ভেরিফায়েড`) : t('You are verified', 'আপনি ভেরিফায়েড')}</span>
+          {premium && <p className="xs vc-note">{t('Your gold Premium badge shows instead of the blue one.', 'প্রিমিয়াম থাকায় নীল ব্যাজের জায়গায় সোনালি প্রিমিয়াম ব্যাজ দেখাবে।')}</p>}
+        </>
       ) : (
         <>
           <div className="vc-req">

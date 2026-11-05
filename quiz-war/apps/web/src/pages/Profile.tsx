@@ -21,6 +21,8 @@ import { modeIcon, modeLabel } from '../lib/labels';
 import { haptic, share } from '../lib/platform';
 import { profileLink } from '../lib/qr';
 import { toast } from '../lib/toast';
+import { localLudoHistory } from '../lib/ludoHistory';
+import { greeting } from '../lib/greeting';
 
 /** Old box grid, kept for any screen that still wants it. */
 export function StatsGrid({ stats }: { stats: any }) {
@@ -85,6 +87,63 @@ export function RecentMatches({ items }: { items: any[] }) {
   );
 }
 
+type LudoRow = { id: string; mode: string; place: number; won: boolean; at: string; players: { uid: string; name: string; avatar: string | null; place: number }[]; local?: boolean };
+
+/** Ludo games: online (from the server) + against the computer (kept on this phone), newest first. */
+export function LudoMatches() {
+  const t = useT();
+  const lang = useLang();
+  const [pages, setPages] = useState(1);
+  const online = useQuery({ queryKey: ['ludo-matches', pages], queryFn: async () => {
+    const all: LudoRow[] = [];
+    let more = false;
+    for (let p = 0; p < pages; p++) {
+      const r = await api<{ items: LudoRow[]; more: boolean }>(`/me/ludo-matches?page=${p}`);
+      all.push(...r.items);
+      more = r.more;
+      if (!r.more) break;
+    }
+    return { items: all, more };
+  } });
+  const local: LudoRow[] = localLudoHistory().map((g, i) => ({ id: `l${i}`, mode: 'ai', place: g.place, won: g.place === 1, at: g.at, players: [], local: true }));
+  const items = [...(online.data?.items ?? []), ...local].sort((a, b) => b.at.localeCompare(a.at)).slice(0, pages * 10);
+  const levels = [t('Easy', 'সহজ'), t('Normal', 'নরমাল'), t('Hard', 'কঠিন')];
+  const raw = localLudoHistory();
+  if (online.isLoading) return <Skeleton kind="line" lines={3} />;
+  if (!items.length)
+    return <Empty icon="gamepad" tone="accent" title={t('No Ludo games yet', 'এখনো কোনো লুডু খেলা নেই')} body={t('Your Ludo games will show up here.', 'আপনার লুডু খেলাগুলো এখানে দেখাবে।')} action={<Link to="/ludo" className="btn primary"><Icon name="gamepad" /> {t('Play Ludo', 'লুডু খেলুন')}</Link>} />;
+  const modeText = (m: string) => (m === '2v2' ? t('2 VS 2', '২ বনাম ২') : m === '1v1' ? t('1 VS 1', '১ বনাম ১') : m === '4p' ? t('4 players', '৪ জন') : t('vs computer', 'কম্পিউটারের সাথে'));
+  return (
+    <>
+      <div className="px-list">
+        {items.map((m) => {
+          const lg = m.local ? raw[Number(m.id.slice(1))] : null;
+          const opp = m.players.map((p) => p.name).join(', ');
+          const place = m.won ? null : m.place;
+          return (
+            <div key={m.id} className="px-row">
+              <span className={`px-res ${m.won ? 'w' : 'l'}`}>{m.won ? t('Win', 'জয়') : t('Loss', 'হার')}</span>
+              <IconTile name="gamepad" tone={m.won ? 'success' : 'neutral'} size={36} />
+              <div className="grow" style={{ minWidth: 0 }}>
+                <b className="small ellipsis" style={{ display: 'block' }}>
+                  {m.local ? t(`vs Computer · ${levels[lg?.level ?? 1]}`, `কম্পিউটার · ${levels[lg?.level ?? 1]}`) : opp ? t(`vs ${opp}`, `বনাম ${opp}`) : t('Ludo', 'লুডু')}
+                </b>
+                <span className="xs muted">
+                  {t('Ludo', 'লুডু')} · {m.local ? t(`${lg?.players ?? 2} players`, `${num(lg?.players ?? 2, lang)} জন`) : modeText(m.mode)} · {new Date(m.at).toLocaleDateString(lang === 'bn' ? 'bn-BD' : 'en-GB', { day: 'numeric', month: 'short' })}
+                </span>
+              </div>
+              <b className="num">{place ? t(`#${place}`, ['', '১ম', '২য়', '৩য়', '৪র্থ'][place] ?? `${num(place, lang)}`) : <Icon name="crown" size={18} className="coin-text" />}</b>
+            </div>
+          );
+        })}
+      </div>
+      {(online.data?.more || local.length + (online.data?.items.length ?? 0) > pages * 10) && (
+        <button type="button" className="px-more" onClick={() => setPages((p) => p + 1)}>{t('See 10 more', 'আরও ১০টি দেখুন')} <Icon name="chevron-down" size={16} /></button>
+      )}
+    </>
+  );
+}
+
 type Tab = 'matches' | 'stats' | 'achievements';
 
 export default function Profile({ tab: initial }: { tab?: 'stats' | 'achievements' }) {
@@ -94,9 +153,10 @@ export default function Profile({ tab: initial }: { tab?: 'stats' | 'achievement
   const leagues = useLeagues();
   const [tab, setTab] = useState<Tab>(initial === 'achievements' ? 'achievements' : initial === 'stats' ? 'stats' : 'matches');
   const [qr, setQr] = useState(false);
+  const [game, setGame] = useState<'quiz' | 'ludo'>('quiz');
   const pub = useQuery({ queryKey: ['profile', me.uid], queryFn: () => api(`/users/${me.uid}`) });
   const ach = useQuery({ queryKey: ['achievements'], queryFn: async () => (await api<{ items: any[] }>('/me/achievements')).items });
-  const recent = useQuery({ queryKey: ['history-recent'], queryFn: async () => (await api<{ items: any[] }>('/me/matches?page=1&pageSize=6')).items, enabled: tab === 'matches' });
+  const recent = useQuery({ queryKey: ['history-recent'], queryFn: async () => (await api<{ items: any[] }>('/me/matches?page=1&pageSize=6')).items, enabled: tab === 'matches' && game === 'quiz' });
   const stats = useQuery({ queryKey: ['my-stats'], queryFn: () => api('/me/stats'), enabled: tab === 'stats' });
   const seasons = useQuery({ queryKey: ['my-seasons'], queryFn: async () => (await api<{ items: any[] }>('/me/seasons')).items, enabled: tab === 'stats' });
   const friends = useQuery({ queryKey: ['friends'], queryFn: async () => (await api<{ items: any[] }>('/friends')).items });
@@ -130,6 +190,7 @@ export default function Profile({ tab: initial }: { tab?: 'stats' | 'achievement
             </div>
             <Link to="/profile/edit" className="btn px-edit">{t('Edit profile', 'প্রোফাইল এডিট')}</Link>
           </div>
+          <p className="px-greet">{greeting(t)}</p>
           <h1 className="px-name">{me.username}<NameBadges user={me} size={20} /></h1>
           <div className="px-handle">
             <button onClick={copyUid} aria-label={t(`Copy UID ${me.uid}`, `UID কপি করুন ${me.uid}`)}>
@@ -176,7 +237,14 @@ export default function Profile({ tab: initial }: { tab?: 'stats' | 'achievement
           ]}
         />
 
-        {tab === 'matches' &&
+        {tab === 'matches' && (
+          <div className="px-game-switch" role="tablist">
+            <button type="button" role="tab" aria-selected={game === 'quiz'} className={game === 'quiz' ? 'on' : ''} onClick={() => (haptic('tap'), setGame('quiz'))}><Icon name="swords" size={15} /> {t('Quiz', 'কুইজ')}</button>
+            <button type="button" role="tab" aria-selected={game === 'ludo'} className={game === 'ludo' ? 'on' : ''} onClick={() => (haptic('tap'), setGame('ludo'))}><Icon name="gamepad" size={15} /> {t('Ludo', 'লুডু')}</button>
+          </div>
+        )}
+        {tab === 'matches' && game === 'ludo' && <LudoMatches />}
+        {tab === 'matches' && game === 'quiz' &&
           (recent.isLoading ? (
             <Skeleton kind="line" lines={3} />
           ) : !recent.data?.length ? (

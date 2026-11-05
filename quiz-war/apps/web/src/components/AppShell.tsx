@@ -1,6 +1,6 @@
 import { useChatUnread } from '../lib/chat';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Link, NavLink, useLocation, useNavigate } from 'react-router';
+import { Link, NavLink, useLocation, useNavigate, useNavigationType } from 'react-router';
 import { useConfig, useNotifications } from '../hooks/queries';
 import { useOnline } from '../hooks/useOnline';
 import { useAuth } from '../lib/auth';
@@ -184,8 +184,22 @@ function ChatBadge() {
   return n > 0 ? <span className="nav-badge" aria-label={`${n}`}>{n > 99 ? '99+' : n}</span> : null;
 }
 
+/** New pages open at the top (back keeps where you were). Tapping the current tab scrolls up. */
+function useScrollTop() {
+  const { pathname } = useLocation();
+  const type = useNavigationType();
+  useEffect(() => {
+    if (type !== 'POP') window.scrollTo({ top: 0 });
+  }, [pathname, type]);
+}
+const tapTab = (to: string) => () => {
+  haptic('tap');
+  if (window.location.pathname === to) window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
 export function AppShell({ children }: { children: ReactNode }) {
   const t = useT();
+  useScrollTop();
   return (
     <div className="shell">
       <nav className="side-nav" aria-label={t('Main', 'প্রধান মেনু')}>
@@ -215,7 +229,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
       <nav className="bottom-nav" aria-label={t('Main', 'প্রধান মেনু')}>
         {NAV.map((n) => (
-          <NavLink key={n.to} to={n.to} end={n.end} viewTransition onClick={() => haptic('tap')} className={n.to === '/battle' ? 'battle-tab' : undefined}>
+          <NavLink key={n.to} to={n.to} end={n.end} viewTransition onClick={tapTab(n.to)} className={n.to === '/battle' ? 'battle-tab' : undefined}>
             {n.to === '/battle' ? (
               <span className="battle-orb">
                 <Icon name={n.icon} />

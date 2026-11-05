@@ -88,6 +88,33 @@ export async function userRoutes(app: FastifyInstance, ctx: AppContext) {
     const p = parse(paginationSchema, req.query);
     return { items: await ctx.profile.matchHistory(uid(req), p.page, p.pageSize) };
   });
+  /** My online Ludo games, newest first, with who else played. */
+  app.get('/me/ludo-matches', auth, async (req) => {
+    const q = parse(z.object({ page: z.coerce.number().int().min(0).max(500).default(0) }), req.query);
+    const rows = await query<{ game_id: string; mode: string; place: number; won: number; created_at: Date }>(
+      'SELECT game_id, mode, place, won, created_at FROM ludo_results WHERE user_id = ? ORDER BY id DESC LIMIT 11 OFFSET ?',
+      [uid(req), q.page * 10],
+    );
+    const page = rows.slice(0, 10);
+    const others = page.length
+      ? await query<{ game_id: string; uid: string; username: string | null; avatar_thumb_url: string | null; place: number }>(
+          `SELECT r.game_id, u.uid, p.username, p.avatar_thumb_url, r.place FROM ludo_results r JOIN users u ON u.id = r.user_id JOIN user_profiles p ON p.user_id = r.user_id
+           WHERE r.game_id IN (${page.map(() => '?').join(',')}) AND r.user_id <> ?`,
+          [...page.map((r) => r.game_id), uid(req)],
+        )
+      : [];
+    return {
+      items: page.map((r) => ({
+        id: r.game_id,
+        mode: r.mode,
+        place: Number(r.place),
+        won: !!r.won,
+        at: new Date(r.created_at).toISOString(),
+        players: others.filter((o) => o.game_id === r.game_id).map((o) => ({ uid: o.uid, name: o.username ?? 'Player', avatar: o.avatar_thumb_url, place: Number(o.place) })),
+      })),
+      more: rows.length > 10,
+    };
+  });
   app.get('/matches/:id/review', auth, async (req) => ({ items: await ctx.profile.review(uid(req), String((req.params as any).id)) }));
   app.get('/matches/:id/result', auth, async (req) => {
     const m = ctx.engine.get(String((req.params as any).id));
@@ -241,6 +268,10 @@ export async function userRoutes(app: FastifyInstance, ctx: AppContext) {
       plans: { monthly: a.premiumPriceMonthly || '৳150', yearly: a.premiumPriceYearly || '৳1200' },
       locks: { calls: ctx.premium.locked('calls'), voiceMessages: ctx.premium.locked('voiceMessages'), photos: ctx.premium.locked('photos'), liveMic: ctx.premium.locked('liveMic') },
     };
+  });
+  app.get('/premium/referrals', auth, async (req) => {
+    const q = parse(z.object({ page: z.coerce.number().int().min(0).max(1000).default(0) }), req.query);
+    return ctx.premium.referralList(uid(req), q.page);
   });
   app.post('/premium/redeem', { ...auth, config: { rateLimit: { max: 10, timeWindow: '10 minutes' } } }, async (req) => {
     const b = parse(z.object({ code: z.string().trim().min(4).max(40) }), req.body);

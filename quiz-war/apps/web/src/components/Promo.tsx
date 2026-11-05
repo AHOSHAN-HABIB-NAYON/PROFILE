@@ -5,7 +5,7 @@ import { api } from '../lib/api';
 import { useT } from '../lib/i18n';
 import { haptic, isNative } from '../lib/platform';
 import { Icon } from './Icon';
-import { Modal } from './Sheet';
+import { Modal, Sheet } from './Sheet';
 
 export type Promo = { id: number; title: string; body: string; ctaLabel: string; linkUrl: string; logoUrl: string | null; color: string | null; placements: ('home' | 'result')[]; weight: number };
 type Placement = 'home' | 'result';
@@ -54,43 +54,58 @@ export function openPromoLink(url: string) {
 
 const track = (id: number, kind: 'view' | 'click') => void api(`/promos/${id}/${kind}`, { method: 'POST', auth: false }).catch(() => undefined);
 
+function promoHost(url: string) {
+  if (playId(url)) return 'Google Play';
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+}
+
 export function PromoCard({ p, onClose }: { p: Promo; onClose: () => void }) {
   const t = useT();
-  const host = (() => {
-    const pkg = playId(p.linkUrl);
-    if (pkg) return 'Google Play';
-    try {
-      return new URL(p.linkUrl).hostname.replace(/^www\./, '');
-    } catch {
-      return '';
-    }
-  })();
+  const host = promoHost(p.linkUrl);
   const isStore = host === 'Google Play';
+  const go = () => {
+    haptic('tap');
+    track(p.id, 'click');
+    openPromoLink(p.linkUrl);
+    onClose();
+  };
   return (
-    <div className="promo" style={{ ['--promo' as string]: p.color || '#2563eb' }}>
-      <span className="promo-tag">{t('From QUIZ WAR', 'আমাদের অ্যাপ')}</span>
-      <div className="promo-hero" aria-hidden>
-        <span className="promo-ring" />
-        <span className="promo-logo">{p.logoUrl ? <img src={p.logoUrl} alt="" /> : <Icon name={isStore ? 'download' : 'globe'} size={40} />}</span>
+    <div className="promo2" style={{ ['--promo' as string]: p.color || '#22c55e' }}>
+      <div className="pr2-top">
+        <button type="button" className="pr2-x" onClick={onClose} aria-label={t('Close', 'বন্ধ করুন')}><Icon name="close" size={18} /></button>
+        <span className="pr2-tag"><Icon name="sparkles" size={13} /> {t('Our new app', 'আমাদের নতুন অ্যাপ')}</span>
+        <div className="pr2-row">
+          <span className="pr2-logo">{p.logoUrl ? <img src={p.logoUrl} alt="" /> : <Icon name={isStore ? 'download' : 'globe'} size={34} />}</span>
+          <h2>{p.title}</h2>
+        </div>
       </div>
-      <h2>{p.title}</h2>
-      {p.body && <p>{p.body}</p>}
-      {host && <span className="promo-host"><Icon name={isStore ? 'download' : 'external'} size={14} /> {host}</span>}
-      <div className="promo-actions">
-        <button
-          type="button"
-          className="btn primary lg block promo-cta"
-          onClick={() => {
-            haptic('tap');
-            track(p.id, 'click');
-            openPromoLink(p.linkUrl);
-            onClose();
-          }}
-        >
-          {p.ctaLabel || (isStore ? t('Install', 'ইনস্টল করুন') : t('Open', 'ওপেন করুন'))} <Icon name="arrow-right" size={18} />
-        </button>
-        <button type="button" className="btn ghost block" onClick={onClose}>{t('Not now', 'এখন না')}</button>
+      <div className="pr2-body">
+        {p.body && <p>{p.body}</p>}
+        {host && <span className="pr2-host"><Icon name={isStore ? 'download' : 'external'} size={16} /> {host}{isStore ? ` · ${t('Free', 'ফ্রি')}` : ''}</span>}
+        <button type="button" className="pv2-cta" onClick={go}><Icon name={isStore ? 'download' : 'external'} size={18} /> {p.ctaLabel || (isStore ? t('Install', 'ইনস্টল করুন') : t('Open', 'ওপেন করুন'))}</button>
+        <button type="button" className="pg-cancel" onClick={onClose}>{t('Not now', 'এখন না')}</button>
       </div>
+    </div>
+  );
+}
+
+/** After a match: a small bottom sheet instead of a big popup. */
+function PromoMini({ p, onClose }: { p: Promo; onClose: () => void }) {
+  const t = useT();
+  const isStore = promoHost(p.linkUrl) === 'Google Play';
+  return (
+    <div className="pr-mini" style={{ ['--promo' as string]: p.color || '#f59e0b' }}>
+      <div className="prm-row">
+        <span className="pr2-logo sm">{p.logoUrl ? <img src={p.logoUrl} alt="" /> : <Icon name={isStore ? 'download' : 'globe'} size={26} />}</span>
+        <span className="grow"><b>{p.title}</b>{p.body && <small>{p.body}</small>}</span>
+      </div>
+      <button type="button" className="prm-cta" onClick={() => (haptic('tap'), track(p.id, 'click'), openPromoLink(p.linkUrl), onClose())}>
+        <Icon name={isStore ? 'download' : 'external'} size={18} /> {p.ctaLabel || (isStore ? t('Install', 'ইনস্টল করুন') : t('Open', 'ওপেন করুন'))}
+      </button>
     </div>
   );
 }
@@ -103,6 +118,7 @@ export function PromoHost() {
   const { pathname } = useLocation();
   const { data } = useQuery({ queryKey: ['promos'], queryFn: async () => (await api<{ items: Promo[] }>('/promos', { auth: false })).items, staleTime: 5 * 60_000 });
   const [shown, setShown] = useState<Promo | null>(null);
+  const [where, setWhere] = useState<Placement>('home');
 
   const placement: Placement | null = pathname === '/' ? 'home' : pathname.startsWith('/result/') ? 'result' : null;
   const resultKey = placement === 'result' ? pathname : null;
@@ -129,11 +145,19 @@ export function PromoHost() {
       const p = pick(list, m.lastId);
       save({ ...load(), last: Date.now(), lastId: p.id, ...(placement === 'home' ? { home: Date.now() } : {}) });
       track(p.id, 'view');
+      setWhere(placement);
       setShown(p);
     }, placement === 'result' ? 3500 : 5000);
     return () => clearTimeout(timer);
   }, [placement, resultKey, data, shown]);
 
+  const t = useT();
+  if (where === 'result')
+    return (
+      <Sheet open={!!shown} onClose={() => setShown(null)} title={t('Our app', 'আমাদের অ্যাপ')} icon="sparkles">
+        {shown && <PromoMini p={shown} onClose={() => setShown(null)} />}
+      </Sheet>
+    );
   return (
     <Modal open={!!shown} onClose={() => setShown(null)} label={shown?.title ?? ''}>
       {shown && <PromoCard p={shown} onClose={() => setShown(null)} />}

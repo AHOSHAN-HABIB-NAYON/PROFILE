@@ -269,7 +269,7 @@ export default function Battle({ tab: initialTab }: { tab?: 'play' | 'requests' 
               <div className="tabs mt" role="radiogroup" aria-label={t('Room size', 'রুমের আকার')}>
                 {(['duel', 'duo'] as const).map((m) => (
                   <button key={m} role="radio" aria-checked={roomMode === m} aria-selected={roomMode === m} onClick={() => setRoomMode(m)}>
-                    {{ duel: '1v1', duo: '2v2', trio: '3v3', squad: '4v4' }[m]}
+                    <Icon name={m === 'duel' ? 'user' : 'users'} /> {m === 'duel' ? '1 VS 1' : '2 VS 2'}
                   </button>
                 ))}
               </div>
