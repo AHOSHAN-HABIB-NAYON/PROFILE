@@ -31,6 +31,7 @@ import { emit } from '../lib/socket';
 import { toast } from '../lib/toast';
 import { PUBLIC_WEB_URL, share } from '../lib/platform';
 import { Avatar } from '../components/Avatar';
+import { Confetti } from '../components/Confetti';
 import { Icon } from '../components/Icon';
 import { Modal } from '../components/Sheet';
 import { useAuth } from '../lib/auth';
@@ -448,26 +449,18 @@ export function LudoGame() {
       </Modal>
 
       {phase === 'over' && (
-        <div className="ludo-over" role="dialog" aria-label={t('Game over', 'খেলা শেষ')}>
-          <div className="lo-card">
-            <span className="lo-trophy"><Icon name="trophy" size={46} /></span>
-            <h2>{places[0]!.seat.bot ? t(`${places[0]!.seat.name} won`, `${places[0]!.seat.name} জিতেছে`) : mode === 'ai' ? t('You won!', 'আপনি জিতেছেন!') : t(`${places[0]!.seat.name} won!`, `${places[0]!.seat.name} জিতেছে!`)}</h2>
-            <ol className="lo-list">
-              {places.map((p) => (
-                <li key={p.color}>
-                  <span className="lo-place">{num(p.place, lang)}</span>
-                  <i style={{ background: LUDO_COLORS[p.color] }} />
-                  <b className="grow">{p.seat.name}</b>
-                  {p.place === 1 && <Icon name="crown" size={18} />}
-                </li>
-              ))}
-            </ol>
-            <div className="lo-actions">
+        <LudoOverScreen
+          rows={game.players.map((p, i) => ({ name: seats[i]!.name, avatar: seats[i]!.avatar ?? null, color: p.color, place: p.place, home: p.tokens.filter((x) => x >= LUDO_FINISH).length, isMe: mode === 'ai' && i === 0, isBot: seats[i]!.bot, uid: i === 0 && mode === 'ai' ? (me?.uid ?? null) : null, team: null }))}
+          won={mode === 'ai' ? game.players[0]!.place === 1 : true}
+          modeText={mode === 'ai' ? t(`vs computer · ${LEVELS[level][0]}`, `কম্পিউটারের সাথে · ${LEVELS[level][1]}`) : t('one phone', 'এক ফোনে')}
+          coins={0}
+          actions={
+            <>
               <button className="btn primary" onClick={restart}><Icon name="refresh" /> {t('Play again', 'আবার খেলুন')}</button>
               <button className="btn outline" onClick={() => nav('/ludo')}>{t('Menu', 'মেনু')}</button>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        />
       )}
     </div>
   );
@@ -999,24 +992,13 @@ export function LudoOnline() {
       <LeaveModal open={leaving} onClose={() => setLeaving(false)} onLeave={leave} quick={snap.size === 2 && !snap.teams} />
 
       {finished && (
-        <div className="ludo-over" role="dialog" aria-label={t('Game over', 'খেলা শেষ')}>
-          <div className="lo-card">
-            <span className="lo-trophy"><Icon name="trophy" size={46} /></span>
-            <h2>{won ? t('You won!', 'আপনি জিতেছেন!') : snap.teams ? t('Your team lost', 'আপনার দল হেরেছে') : t('Good game!', 'ভালো খেলেছেন!')}</h2>
-            {won && humanGame && (cfg?.ludoWinCoins ?? 0) > 0 && <p className="lo-coins"><Icon name="coins" size={18} /> +{num(cfg?.ludoWinCoins ?? 0, lang)} {t('coins', 'কয়েন')}</p>}
-            <ol className="lo-list">
-              {[...snap.seats.map((s, i) => ({ s, place: snap.state!.players[i]!.place }))]
-                .sort((a, b) => a.place - b.place)
-                .map(({ s, place }) => (
-                  <li key={s.color}>
-                    <span className="lo-place">{num(place, lang)}</span>
-                    <i style={{ background: LUDO_COLORS[s.color] }} />
-                    <b className="grow">{s.userId === me.id ? t('You', 'আপনি') : s.name}</b>
-                    {place === 1 && <Icon name="crown" size={18} />}
-                  </li>
-                ))}
-            </ol>
-            <div className="lo-actions">
+        <LudoOverScreen
+          rows={snap.seats.map((s, i) => ({ name: s.name, avatar: s.avatar, color: s.color, place: snap.state!.players[i]!.place, home: snap.state!.players[i]!.tokens.filter((x) => x >= LUDO_FINISH).length, isMe: s.userId === me.id, isBot: s.bot, uid: s.userId === me.id ? me.uid : null, team: snap.teams ? s.team : null }))}
+          won={won}
+          modeText={snap.teams ? t('2 vs 2', '২ বনাম ২') : snap.size === 2 ? t('1 vs 1', '১ বনাম ১') : t('4 players', '৪ জন')}
+          coins={humanGame ? (cfg?.ludoWinCoins ?? 0) : 0}
+          actions={
+            <>
               {snap.kind === 'room' ? (
                 isHost ? (
                   <button className="btn primary" onClick={() => void ludoAct('ludo:rematch', snap.id)}><Icon name="refresh" /> {t('Play again', 'আবার খেলুন')}</button>
@@ -1027,9 +1009,9 @@ export function LudoOnline() {
                 <button className="btn primary" onClick={() => (nav('/ludo'), void ludoQueue(snap.teams ? '2v2' : '1v1'))}><Icon name="search" /> {t('Play again', 'আবার খেলুন')}</button>
               )}
               <button className="btn outline" onClick={leave}>{t('Menu', 'মেনু')}</button>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        />
       )}
     </div>
   );
@@ -1080,5 +1062,125 @@ function InviteSheet({ open, onClose, gameId, inRoom }: { open: boolean; onClose
         })}
       </div>
     </Sheet>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Game over: celebration + share card (same as quiz results)        */
+/* ------------------------------------------------------------------ */
+
+interface OverRow {
+  name: string;
+  avatar: string | null;
+  color: LudoColor;
+  place: number;
+  home: number;
+  isMe: boolean;
+  isBot: boolean;
+  uid: string | null;
+  team: number | null;
+}
+
+function LudoOverScreen({ rows, won, modeText, coins, actions }: { rows: OverRow[]; won: boolean; modeText: string; coins: number; actions: ReactNode }) {
+  const t = useT();
+  const lang = useLang();
+  const me = useAuth((s) => s.user)!;
+  const cfg = useConfig().data;
+  const [card, setCard] = useState<{ blob: Blob; url: string } | null>(null);
+  const sorted = [...rows].sort((a, b) => a.place - b.place);
+  const teams = rows.some((r) => r.team !== null);
+  const myRow = rows.find((r) => r.isMe);
+  const playUrl = cfg?.playStoreUrl || 'https://play.google.com/store/apps/details?id=app.quizwar.bd';
+
+  useEffect(() => {
+    let alive = true;
+    let url: string | null = null;
+    const two = rows.length === 2;
+    const teamOf = (r: OverRow, i: number) => (teams ? (r.team ?? 0) : two ? (r.isMe ? 0 : 1) : 0);
+    const myTeam = myRow ? teamOf(myRow, rows.indexOf(myRow)) : 0;
+    const teamScores = teams || two ? [0, 1].map((tm) => rows.filter((r, i) => teamOf(r, i) === tm).reduce((s, r) => s + r.home, 0)) : [myRow?.home ?? 0];
+    const date = new Intl.DateTimeFormat(lang === 'bn' ? 'bn-BD' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date());
+    void import('../lib/shareCard').then(({ renderResultCard }) =>
+      renderResultCard({
+        lang,
+        outcome: won ? 'win' : 'loss',
+        headline: won ? t('Ludo win!', 'লুডুতে জয়!') : t('Good game!', 'ভালো খেলেছি!'),
+        subline: `${t('Ludo', 'লুডু')} · ${modeText}`,
+        details: [
+          { label: t('Game', 'খেলা'), value: t('Ludo', 'লুডু') },
+          { label: t('Place', 'স্থান'), value: num(myRow?.place ?? 1, lang) },
+          { label: t('Tokens home', 'ঘরে তোলা'), value: `${num(myRow?.home ?? 0, lang)}/৪` },
+        ],
+        date,
+        teamScores,
+        teams: teams || two ? 2 : 1,
+        myTeam,
+        winnerTeam: teams || two ? (won ? myTeam : 1 - myTeam) : null,
+        players: rows.map((r, i) => ({ name: r.name, uid: r.uid, avatarUrl: r.avatar, score: r.home, correct: r.home, answered: 4, team: teamOf(r, i), isBot: r.isBot, isMe: r.isMe })),
+        appUrl: PUBLIC_WEB_URL,
+        profileUrl: `${PUBLIC_WEB_URL.replace(/\/$/, '')}/u/${me.uid}`,
+        playUrl,
+        ctaText: t(`Play Ludo with me! UID ${me.uid}`, `আমার সাথে লুডু খেলো! UID ${me.uid}`),
+        labels: { correct: t('home', 'ঘরে'), points: t('home', 'ঘরে'), teamBlue: t('Your team', 'আপনার দল'), teamRed: t('Opponent', 'প্রতিপক্ষ'), you: t('You', 'আপনি'), ai: t('Computer', 'কম্পিউটার') },
+      }),
+    ).then((blob) => {
+      if (!alive || !blob) return;
+      url = URL.createObjectURL(blob);
+      setCard({ blob, url });
+    });
+    return () => {
+      alive = false;
+      if (url) URL.revokeObjectURL(url);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const shareText = [
+    won ? t(`I won at Ludo (${modeText}) on QUIZ WAR Bangladesh!`, `QUIZ WAR Bangladesh-এ লুডুতে (${modeText}) জিতেছি!`) : t(`I played Ludo (${modeText}) on QUIZ WAR Bangladesh.`, `QUIZ WAR Bangladesh-এ লুডু (${modeText}) খেললাম।`),
+    won ? t('Can you beat me?', 'পারলে আমাকে হারাও!') : t('Play with me!', 'আমার সাথে খেলো!'),
+    `UID: ${me.uid}`,
+    `${t('Get it on Google Play', 'Google Play থেকে নিন')}: ${playUrl}`,
+    '#QuizWarBangladesh #Ludo',
+  ].join('\n');
+  const fileName = `quizwar-ludo-${Date.now().toString(36)}.png`;
+  const doShare = async () => {
+    haptic('tap');
+    const { shareImage } = await import('../lib/shareImage');
+    const r = await shareImage(card?.blob ?? null, { title: 'QUIZ WAR Bangladesh', text: shareText, url: `${PUBLIC_WEB_URL.replace(/\/$/, '')}/u/${me.uid}`, fileName });
+    if (r === 'copied') toast.success(t('Copied — paste it anywhere', 'কপি হয়েছে — যেকোনো জায়গায় পেস্ট করুন'), undefined, 'copy');
+  };
+  const doSave = async () => {
+    if (!card) return;
+    const { saveImage } = await import('../lib/shareImage');
+    const r = await saveImage(card.blob, fileName);
+    if (r !== 'failed') toast.success(t('Saved to gallery', 'গ্যালারিতে সেভ হয়েছে'), undefined, 'download');
+  };
+
+  return (
+    <div className={`ludo-over${won ? ' won' : ''}`} role="dialog" aria-label={t('Game over', 'খেলা শেষ')}>
+      {won && <Confetti colors={['#facc15', '#f59e0b', '#e53935', '#43a047', '#1e88e5', '#ffffff']} />}
+      <div className="lo-card">
+        <span className={`lo-trophy${won ? ' win' : ''}`}><Icon name={won ? 'trophy' : 'medal'} size={46} /></span>
+        <h2>{won ? t('You won!', 'আপনি জিতেছেন!') : teams ? t('Your team lost', 'আপনার দল হেরেছে') : t('Good game!', 'ভালো খেলেছেন!')}</h2>
+        {won && coins > 0 && <p className="lo-coins"><Icon name="coins" size={18} /> +{num(coins, lang)} {t('coins', 'কয়েন')}</p>}
+        <ol className="lo-list">
+          {sorted.map((r) => (
+            <li key={r.color} className={r.isMe ? 'me' : undefined}>
+              <span className="lo-place">{num(r.place, lang)}</span>
+              <i style={{ background: LUDO_COLORS[r.color] }} />
+              <b className="grow">{r.isMe ? t('You', 'আপনি') : r.name}</b>
+              <small className="lo-home">{num(r.home, lang)}/৪</small>
+              {r.place === 1 && <Icon name="crown" size={18} />}
+            </li>
+          ))}
+        </ol>
+        <div className="lo-share">
+          <button className="btn soft sm" onClick={() => void doShare()}><Icon name="share" /> {t('Share card', 'কার্ড শেয়ার')}</button>
+          <button className="btn soft sm" disabled={!card} onClick={() => void doSave()}><Icon name="download" /> {t('Save', 'সেভ')}</button>
+        </div>
+        {card && <img className="lo-card-preview" src={card.url} alt={t('Your Ludo result card', 'আপনার লুডু ফলাফল কার্ড')} />}
+        <div className="lo-actions">{actions}</div>
+      </div>
+    </div>
   );
 }

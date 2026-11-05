@@ -1633,3 +1633,15 @@
 .game-pick button:active { transform: scale(.97); }
 .game-pick b { font-size: 15px; }
 .game-pick small { font-size: 12px; color: var(--text-3, #64748b); }
+
+/* Ludo game over: celebration + share card */
+.ludo-over { overflow-y: auto; align-items: start; padding-top: calc(24px + env(safe-area-inset-top)); }
+.ludo-over .lo-card { animation: lo-pop .45s var(--ease-spring, cubic-bezier(.34,1.56,.64,1)) both; margin: auto; }
+@keyframes lo-pop { from { transform: scale(.8) translateY(20px); opacity: 0; } }
+.lo-trophy.win { animation: lo-bounce 1.2s ease-in-out infinite; box-shadow: 0 0 0 8px rgba(253,230,138,.35), 0 0 40px rgba(250,204,21,.6); }
+@keyframes lo-bounce { 0%, 100% { transform: translateY(0) rotate(0); } 30% { transform: translateY(-10px) rotate(-6deg); } 60% { transform: translateY(0) rotate(5deg); } }
+.lo-list li.me { background: #dbeafe; }
+.lo-home { font-weight: 800; color: #475569; }
+.lo-share { display: flex; gap: 8px; }
+.lo-card-preview { width: 100%; max-width: 240px; border-radius: 14px; box-shadow: 0 8px 22px rgba(15,23,42,.2); }
+.confetti-canvas { z-index: 91; }

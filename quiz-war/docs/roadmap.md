@@ -229,3 +229,10 @@ Text chat stays free.
   - Lock screen: our own small call screen (`IncomingCallActivity`), the app does not start; Decline works without the app (signed link `POST /api/v1/calls/:id/decline?t=`; the app saves the server address via `QwCall.setApi`).
   - Group calls: anyone in a live call can add friends (max 4, mesh). Each added person gets their own chat record from whoever added them.
   - Smaller call records in chat; faster splash (~0.8 s); player search shows Add friend + Message; no link pop-up on long-press in the app.
+
+## Ludo + design round (November 2026)
+- Ludo built (offline and online) — see ludo-plan.md for details. Win screen with confetti and the same share card as quiz.
+- Rank: Quiz/Ludo switch, monthly premium reward strip (top N from admin), Ludo leaderboard.
+- Quiz rooms: 1v1 and 2v2 only (3v3 / 4v4 hidden; old rooms still work).
+- Calls: WhatsApp-style ringing screen (native on the lock screen, Decline works without opening the app), group calls up to 4.
+- Hostinger env: set ANDROID_SHA256_CERT_FINGERPRINTS (Play Console → App signing SHA-256) so website links open the app.
