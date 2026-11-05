@@ -1427,3 +1427,22 @@
 .cs-tile.ringing .avatar { opacity: .7; }
 .cs-av.sm { width: 78px; height: 78px; }
 .cs-group-title { margin-top: 26px !important; font-size: 22px !important; }
+
+/* Group call, WhatsApp style: a coloured card per person */
+.cs-group { flex: 1; display: flex; flex-direction: column; gap: 12px; padding-top: 14px; min-height: 0; }
+.cs-group .cs-status { text-align: center; font-size: 14px; }
+.cs-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.cs-tile2 { position: relative; aspect-ratio: 0.82; border-radius: 22px; border: 3px solid color-mix(in srgb, var(--tc) 75%, transparent); background: rgba(8, 15, 40, .55); padding: 12px; display: flex; flex-direction: column; justify-content: space-between; color: #fff; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; transition: box-shadow .2s, border-color .2s; touch-action: manipulation; }
+.cs-tile2.talk { border-color: var(--tc); box-shadow: 0 0 0 2px color-mix(in srgb, var(--tc) 35%, transparent), 0 0 22px color-mix(in srgb, var(--tc) 45%, transparent); }
+.cs-tile2.ringing { opacity: .65; border-style: dashed; }
+.ct-name { color: var(--tc); font-size: 20px; font-weight: 800; max-width: 85%; }
+.ct-state { position: absolute; top: 42px; left: 12px; font-size: 12px; opacity: .8; }
+.ct-muted { position: absolute; top: 12px; right: 12px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.14); }
+.ct-foot { display: flex; align-items: center; gap: 8px; }
+.ct-foot .avatar { flex: none; box-shadow: 0 0 0 2px rgba(255,255,255,.85); }
+.ct-wave { flex: 1; height: 34px; display: flex; align-items: center; justify-content: space-evenly; min-width: 0; }
+.ct-wave i { width: 3px; height: 3px; border-radius: 3px; background: var(--tc); opacity: .75; }
+.ct-wave.on i { height: calc(var(--h) * 30px); opacity: 1; animation: ct-wave .5s ease-in-out infinite alternate; }
+@keyframes ct-wave { from { transform: scaleY(.35); } to { transform: scaleY(1); } }
+.cs-hint { text-align: center; font-size: 12px; opacity: .6; margin: 0; }
+.cs-actions.panel { background: rgba(8, 15, 40, .6); border-radius: 26px 26px 0 0; margin: 0 -20px calc(-34px - env(safe-area-inset-bottom)); padding: 18px 20px calc(26px + env(safe-area-inset-bottom)); min-height: 0; align-items: center; }

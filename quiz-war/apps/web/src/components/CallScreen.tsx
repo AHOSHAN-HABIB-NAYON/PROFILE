@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import type { PublicUser } from '@quizwar/shared';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { addToCall, answerCall, declineCall, hangUp, toggleCallMute, toggleLoud, useCall } from '../lib/call';
 import { num, useLang, useT } from '../lib/i18n';
 import { isNative } from '../lib/platform';
-import { useVoice } from '../lib/voice';
+import { haptic } from '../lib/platform';
+import { toggleMuteForMe, useVoice } from '../lib/voice';
 import { Avatar } from './Avatar';
 import { Icon } from './Icon';
 import { Sheet } from './Sheet';
@@ -29,6 +30,9 @@ export function CallScreen() {
   const talking = !!(call && speaking[call.peer.id]);
   const meId = useAuth((s) => s.user?.id ?? 0);
   const [adding, setAdding] = useState(false);
+  const [menuFor, setMenuFor] = useState<PublicUser | null>(null);
+  const mutedForMe = useVoice((s) => s.mutedForMe);
+  const me = useAuth((s) => s.user);
   const [, tick] = useState(0);
 
   useEffect(() => {
@@ -42,6 +46,7 @@ export function CallScreen() {
   const others = (call.members ?? []).filter((m) => m.user.id !== meId);
   const group = others.length >= 2;
   const full = (call.members?.length ?? 2) >= 4;
+  const canAdd = phase === 'live' && !full;
   const time = num(clock(Date.now() - call.startedAt), lang);
   const status =
     phase === 'live'
@@ -83,25 +88,36 @@ export function CallScreen() {
           <span className="cs-round ghost" />
         )}
         <span className="cs-lock"><Icon name="lock" size={13} /> {t('Phone to phone · not recorded', 'সরাসরি ফোনে ফোনে · রেকর্ড হয় না')}</span>
-        <span className="cs-round ghost" />
+        {canAdd ? (
+          <button type="button" className="cs-round" onClick={() => setAdding(true)} aria-label={t('Add people', 'যোগ করুন')}>
+            <Icon name="user-add" size={21} />
+          </button>
+        ) : (
+          <span className="cs-round ghost" />
+        )}
       </div>
 
       {group && phase !== 'ended' ? (
-        <div className="cs-who">
-          <div className={`cs-grid n${others.length}`}>
-            {others.map((m) => (
-              <div key={m.user.id} className={`cs-tile${m.state === 'ringing' ? ' ringing' : ''}`}>
-                <div className={`cs-av sm${m.state === 'ringing' ? ' ring' : ''}${speaking[m.user.id] ? ' talk' : ''}`}>
-                  <i /><i /><i />
-                  <Avatar name={m.user.username} src={m.user.avatarUrl ?? m.user.avatarThumbUrl} size={78} />
-                </div>
-                <b className="ellipsis">{m.user.username}</b>
-                <small>{m.state === 'ringing' ? t('Ringing…', 'রিং হচ্ছে…') : speaking[m.user.id] ? t('Talking…', 'কথা বলছে…') : '\u00a0'}</small>
-              </div>
+        <div className="cs-group">
+          <p className={`cs-status${phase === 'live' ? ' live' : ''}`}>{t('Group call', 'গ্রুপ কল')} · {status}</p>
+          <div className={`cs-tiles n${others.length + 1}`}>
+            {me && (
+              <CallTile color={0} name={t('You', 'আপনি')} user={me as any} talking={!!speaking[0]} muted={!micOn} />
+            )}
+            {others.map((m, i) => (
+              <CallTile
+                key={m.user.id}
+                color={i + 1}
+                name={m.user.username}
+                user={m.user}
+                talking={!!speaking[m.user.id]}
+                ringing={m.state === 'ringing'}
+                muted={!!mutedForMe[m.user.id]}
+                onHold={() => (haptic('heavy'), setMenuFor(m.user))}
+              />
             ))}
           </div>
-          <h2 className="cs-group-title">{t('Group call', 'গ্রুপ কল')}</h2>
-          <p className={`cs-status${phase === 'live' ? ' live' : ''}`}>{status}</p>
+          <p className="cs-hint">{t('Hold a picture to mute that player for you', 'কারো ছবিতে চেপে ধরলে শুধু আপনার জন্য মিউট করা যাবে')}</p>
         </div>
       ) : (
       <div className="cs-who">
@@ -129,7 +145,7 @@ export function CallScreen() {
           </span>
         </div>
       ) : (
-        <div className="cs-actions">
+        <div className={`cs-actions${group ? ' panel' : ''}`}>
           {isNative && (
             <span className="cs-act">
               <button type="button" className={`cs-btn soft${loud ? ' on' : ''}`} onClick={toggleLoud} aria-pressed={loud} aria-label={t('Speaker', 'স্পিকার')}><Icon name="volume" size={26} /></button>
@@ -141,15 +157,28 @@ export function CallScreen() {
             <small>{phase === 'live' && !micOn ? t('Unmute', 'আনমিউট') : t('Mute', 'মিউট')}</small>
           </span>
           <span className="cs-act">
-            <button type="button" className="cs-btn soft" onClick={() => setAdding(true)} disabled={phase !== 'live' || full} aria-label={t('Add people', 'যোগ করুন')}><Icon name="user-add" size={26} /></button>
-            <small>{t('Add', 'যোগ করুন')}</small>
-          </span>
-          <span className="cs-act">
             <button type="button" className="cs-btn end" onClick={hangUp} aria-label={t('End call', 'কল কাটুন')}><Icon name="phone-off" size={30} /></button>
             <small>{t('End', 'কাটুন')}</small>
           </span>
         </div>
       )}
+      <Sheet open={!!menuFor} onClose={() => setMenuFor(null)} title={menuFor?.username ?? ''} icon="volume">
+        {menuFor && (
+          <button
+            className="menu-row"
+            onClick={() => {
+              toggleMuteForMe(menuFor.id);
+              setMenuFor(null);
+            }}
+          >
+            <span className="m-text">
+              <b>{mutedForMe[menuFor.id] ? t('Unmute for me', 'আবার শুনুন (আনমিউট)') : t('Mute for me', 'শুধু আমার জন্য মিউট')}</b>
+              <small>{mutedForMe[menuFor.id] ? t(`You will hear ${menuFor.username} again`, `${menuFor.username}-এর কথা আবার শুনবেন`) : t('Only you stop hearing them; others still can.', 'শুধু আপনি শুনবেন না; অন্যরা শুনবে।')}</small>
+            </span>
+            <Icon name={mutedForMe[menuFor.id] ? 'volume' : 'mute'} size={22} />
+          </button>
+        )}
+      </Sheet>
       <AddPeople open={adding && phase === 'live'} onClose={() => setAdding(false)} inCall={(call.members ?? []).map((m) => m.user.id).concat(peer.id, meId)} />
     </div>
   );
@@ -183,5 +212,43 @@ function AddPeople({ open, onClose, inCall }: { open: boolean; onClose: () => vo
         ))}
       </div>
     </Sheet>
+  );
+}
+
+const TILE_COLORS = ['#38bdf8', '#f59e0b', '#facc15', '#f472b6'];
+
+/** One person in a group call: coloured card, round picture, name, live sound wave. Hold = menu. */
+function CallTile({ name, user, color, talking, ringing, muted, onHold }: { name: string; user: PublicUser; color: number; talking: boolean; ringing?: boolean; muted?: boolean; onHold?: () => void }) {
+  const t = useT();
+  const timer = useRef<number | undefined>(undefined);
+  const c = TILE_COLORS[color % TILE_COLORS.length];
+  const down = () => {
+    if (!onHold) return;
+    window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(onHold, 450);
+  };
+  const up = () => window.clearTimeout(timer.current);
+  return (
+    <div
+      className={`cs-tile2${talking ? ' talk' : ''}${ringing ? ' ringing' : ''}`}
+      style={{ ['--tc' as any]: c }}
+      onPointerDown={down}
+      onPointerUp={up}
+      onPointerLeave={up}
+      onPointerCancel={up}
+      onContextMenu={(e) => (e.preventDefault(), onHold?.())}
+      role={onHold ? 'button' : undefined}
+      aria-label={onHold ? t(`${name}: hold for options`, `${name}: অপশনের জন্য চেপে ধরুন`) : name}
+    >
+      <b className="ct-name ellipsis">{name}</b>
+      {ringing && <small className="ct-state">{t('Ringing…', 'রিং হচ্ছে…')}</small>}
+      {muted && <span className="ct-muted"><Icon name={color === 0 ? 'mic-off' : 'mute'} size={15} /></span>}
+      <div className="ct-foot">
+        <Avatar name={user.username} src={user.avatarUrl ?? user.avatarThumbUrl} size={52} />
+        <span className={`ct-wave${talking && !muted ? ' on' : ''}`} aria-hidden>
+          {[0.3, 0.5, 0.8, 0.45, 1, 0.6, 0.9, 0.4, 0.7, 0.35, 0.55].map((h, i) => <i key={i} style={{ ['--h' as any]: h, animationDelay: `${(i % 5) * 0.09}s` }} />)}
+        </span>
+      </div>
+    </div>
   );
 }
