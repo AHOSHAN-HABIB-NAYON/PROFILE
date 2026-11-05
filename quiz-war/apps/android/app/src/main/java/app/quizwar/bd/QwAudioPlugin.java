@@ -21,6 +21,8 @@ public class QwAudioPlugin extends Plugin {
     @PluginMethod
     public void speaker(PluginCall call) {
         boolean on = Boolean.TRUE.equals(call.getBoolean("on", true));
+        // Audio calls start on the earpiece (phone at the ear), like a normal phone call.
+        boolean earpiece = Boolean.TRUE.equals(call.getBoolean("earpiece", false));
         AudioManager am = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
         if (am == null) {
             call.resolve();
@@ -39,12 +41,12 @@ public class QwAudioPlugin extends Plugin {
                             pick = d;
                             break;
                         }
-                        if (t == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER) pick = d;
+                        if (t == (earpiece ? AudioDeviceInfo.TYPE_BUILTIN_EARPIECE : AudioDeviceInfo.TYPE_BUILTIN_SPEAKER)) pick = d;
                     }
                     if (pick != null) am.setCommunicationDevice(pick);
                 } else {
                     //noinspection deprecation
-                    am.setSpeakerphoneOn(!am.isWiredHeadsetOn() && !am.isBluetoothScoOn());
+                    am.setSpeakerphoneOn(!earpiece && !am.isWiredHeadsetOn() && !am.isBluetoothScoOn());
                 }
             } else {
                 if (Build.VERSION.SDK_INT >= 31) am.clearCommunicationDevice();

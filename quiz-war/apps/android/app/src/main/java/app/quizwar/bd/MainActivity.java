@@ -20,6 +20,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(QwPasskeyPlugin.class);
         registerPlugin(QwBarsPlugin.class);
         registerPlugin(QwAudioPlugin.class);
+        registerPlugin(QwCallPlugin.class);
         super.onCreate(savedInstanceState);
         // Edge-to-edge on every Android version (required look on 15+): the bars are drawn over
         // the app, and the web view's container is padded by their size so nothing hides under them.

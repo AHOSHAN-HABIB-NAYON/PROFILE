@@ -1,4 +1,4 @@
-import type { ChatMessage, ChatThread, PresenceStatus, PublicUser, ServerToClientEvents } from '@quizwar/shared';
+import type { CallStatus, ChatMessage, ChatThread, PresenceStatus, PublicUser, ServerToClientEvents } from '@quizwar/shared';
 import sharp from 'sharp';
 import { exec, query, queryOne } from '../../db/pool';
 import { AppError, badRequest, notFound } from '../../lib/errors';
@@ -25,7 +25,14 @@ const toMsg = (r: any): ChatMessage => ({
   readAt: r.read_at ? new Date(r.read_at).toISOString() : null,
   ...(r.kind === 'voice' && !r.deleted_at ? { kind: 'voice' as const, media: { url: r.media_url ?? null, secs: Number(r.media_secs ?? 0), ...(r.media_gone ? { gone: r.media_gone } : {}) } } : {}),
   ...(r.kind === 'image' && !r.deleted_at ? { kind: 'image' as const, media: { url: r.media_url ?? null, secs: 0, ...dims(r.media_dims), ...(r.media_gone ? { gone: r.media_gone } : {}) } } : {}),
+  ...(r.kind === 'call' && !r.deleted_at ? { kind: 'call' as const, call: { status: (r.call_status ?? 'done') as CallStatus, secs: Number(r.media_secs ?? 0) } } : {}),
 });
+
+/** Plain text kept in `body` for calls, so older app versions show something sensible. */
+export function callBody(status: CallStatus, secs: number) {
+  if (status === 'done') return `অডিও কল · ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+  return status === 'declined' || status === 'busy' ? 'অডিও কল (ধরা হয়নি)' : 'মিসড অডিও কল';
+}
 
 /** Short quote of a replied-to message (voice / photo shown as such, not as text). */
 const quoteOf = (q: any, id: number) =>
@@ -309,6 +316,7 @@ export class ChatService {
     const m = await queryOne<any>('SELECT * FROM chat_messages WHERE id = ? AND (sender_id = ? OR recipient_id = ?)', [messageId, userId, userId]);
     if (!m || m.deleted_at) throw notFound('Message not found');
     if (m.kind === 'text' || !m.kind) return this.send(userId, toId, String(m.body));
+    if (m.kind === 'call') throw badRequest('Calls can’t be forwarded');
     if (!m.media_url) throw new AppError(410, 'expired', 'This file has expired');
     await this.checkCanSend(userId, toId);
     return this.deliver(userId, toId, {
@@ -342,10 +350,24 @@ export class ChatService {
     if (!ok) throw notFound('Player not found');
   }
 
+  /**
+   * Who may call whom: the same rules as chat, and the callee must already trust the caller
+   * (friends or an accepted chat), so strangers can't ring anyone.
+   */
+  async assertCanCall(userId: number, peerId: number) {
+    await this.checkCanSend(userId, peerId);
+    if (!(await this.isTrusted(peerId, userId))) throw new AppError(403, 'call_not_allowed', 'You can call friends, or players who chatted with you.');
+  }
+
+  /** The call record in the chat (from the caller), shown to both. */
+  async logCall(callerId: number, calleeId: number, status: CallStatus, secs: number) {
+    return this.deliver(callerId, calleeId, { body: callBody(status, secs), kind: 'call', secs, callStatus: status });
+  }
+
   private async deliver(
     userId: number,
     peerId: number,
-    m: { body: string; kind?: 'voice' | 'image'; mediaUrl?: string; secs?: number; bytes?: number; dims?: string; forwardOf?: number },
+    m: { body: string; kind?: 'voice' | 'image' | 'call'; mediaUrl?: string; secs?: number; bytes?: number; dims?: string; forwardOf?: number; callStatus?: CallStatus },
     replyToId?: number,
   ): Promise<ChatMessage> {
     if (!m.kind) await this.checkCanSend(userId, peerId);
@@ -359,7 +381,7 @@ export class ChatService {
       );
     }
     const res = m.kind
-      ? await exec('INSERT INTO chat_messages (sender_id, recipient_id, body, reply_to_id, kind, media_url, media_secs, media_bytes, media_dims, forward_of) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [userId, peerId, body, quote ? quote.id : null, m.kind, m.mediaUrl ?? null, m.secs ?? null, m.bytes ?? null, m.dims ?? null, m.forwardOf ?? null])
+      ? await exec('INSERT INTO chat_messages (sender_id, recipient_id, body, reply_to_id, kind, media_url, media_secs, media_bytes, media_dims, forward_of, call_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [userId, peerId, body, quote ? quote.id : null, m.kind, m.mediaUrl ?? null, m.secs ?? null, m.bytes ?? null, m.dims ?? null, m.forwardOf ?? null, m.callStatus ?? null])
       : await exec('INSERT INTO chat_messages (sender_id, recipient_id, body, reply_to_id) VALUES (?, ?, ?, ?)', [userId, peerId, body, quote ? quote.id : null]);
     await exec('INSERT IGNORE INTO chat_accepts (user_id, peer_id) VALUES (?, ?)', [userId, peerId]);
     const isRequest = !(await this.isTrusted(peerId, userId));
@@ -367,6 +389,7 @@ export class ChatService {
       id: res.insertId, from: userId, to: peerId, body, createdAt: new Date().toISOString(), readAt: null,
       ...(m.kind === 'voice' ? { kind: 'voice' as const, media: { url: m.mediaUrl ?? null, secs: m.secs ?? 0 } } : {}),
       ...(m.kind === 'image' ? { kind: 'image' as const, media: { url: m.mediaUrl ?? null, secs: 0, ...dims(m.dims) } } : {}),
+      ...(m.kind === 'call' ? { kind: 'call' as const, call: { status: m.callStatus ?? 'done', secs: m.secs ?? 0 } } : {}),
       ...(quote ? { replyTo: quoteOf(quote, Number(quote.id)) } : {}),
     };
     const [me, them] = await Promise.all([getPublicUser(userId), getPublicUser(peerId)]);
@@ -374,7 +397,9 @@ export class ChatService {
     if (them) this.emitter()?.toUser(userId, 'chat:message', { message, peer: them });
 
     // Phone notification unless they are looking at this chat right now (one per 20s per chat).
-    if (me && this.enabled().push && !this.isViewing(peerId, userId)) {
+    // Calls send their own notifications (ring, then "missed call" in its place).
+    const quietCall = m.kind === 'call';
+    if (me && this.enabled().push && !quietCall && !this.isViewing(peerId, userId)) {
       const key = `${peerId}:${userId}`;
       const now = Date.now();
       if (now - (this.lastPush.get(key) ?? 0) > 20_000) {
@@ -507,7 +532,7 @@ export class ChatService {
       // Expired media rows go too when text is purged (nothing left to show).
       if (r.text) n += (await exec(`DELETE FROM chat_messages WHERE kind = ? AND media_url IS NULL AND created_at < NOW() - INTERVAL ${days} DAY LIMIT 50000`, [kind])).affectedRows;
     }
-    if (r.text) n += (await exec(`DELETE FROM chat_messages WHERE kind = 'text' AND created_at < NOW() - INTERVAL ${days} DAY LIMIT 50000`)).affectedRows;
+    if (r.text) n += (await exec(`DELETE FROM chat_messages WHERE kind IN ('text', 'call') AND created_at < NOW() - INTERVAL ${days} DAY LIMIT 50000`)).affectedRows;
     return n;
   }
 }

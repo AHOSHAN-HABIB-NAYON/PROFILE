@@ -77,6 +77,12 @@
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
 
+        <!-- Audio calls: keeps the mic working with the screen off (stopped when the call ends). -->
+        <service
+            android:name=".QwCallService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
+
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="quizwar_default" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_stat_notify" />
         <meta-data android:name="com.google.firebase.messaging.default_notification_color" android:resource="@color/ic_launcher_background" />
@@ -94,6 +100,10 @@
     <!-- Voice messages in chat and live voice in matches (the mic stays off until the player taps it). -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- Audio calls: keep the call going with the screen off; screen off at the ear. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove" />

@@ -21,6 +21,7 @@ import { useAuth } from '../lib/auth';
 import { emit } from '../lib/socket';
 import { toast } from '../lib/toast';
 import { sfx } from '../lib/sound';
+import { startCall } from '../lib/call';
 
 const EMOJIS = [
   '😀', '😂', '🤣', '😊', '😍', '🥰', '😘', '😎', '🤩', '🥳', '😇', '🙂',
@@ -301,6 +302,11 @@ export default function Chat() {
     }
   };
 
+  const callPeer = () => {
+    if (!peer) return;
+    if (cfg?.callsEnabled === false) return void toast.info(t('Calls are off right now', 'কল এখন বন্ধ আছে'), undefined, 'phone');
+    void startCall(peer);
+  };
   const upcoming = (what: string) => toast.info(t('Coming soon', 'আসছে পরের আপডেটে'), what, 'sparkles');
 
   const act = async (fn: () => Promise<unknown>, done: string) => {
@@ -439,7 +445,7 @@ export default function Chat() {
         ) : (
           <span className="grow" />
         )}
-        <button className="btn icon ghost" aria-label={t('Voice call', 'কল')} onClick={() => upcoming(t('Voice calls', 'ভয়েস কল'))}><Icon name="phone" size={21} /></button>
+        <button className="btn icon ghost" aria-label={t('Audio call', 'অডিও কল')} onClick={() => callPeer()} disabled={!peer}><Icon name="phone" size={21} /></button>
         <button className="btn icon ghost" aria-label={t('Video call', 'ভিডিও কল')} onClick={() => upcoming(t('Video calls', 'ভিডিও কল'))}><Icon name="video" size={23} /></button>
         <button className="btn icon ghost" aria-label={t('More', 'আরও')} onClick={() => setMenu(true)} disabled={!peer}><Icon name="more" size={22} /></button>
       </header>
@@ -509,6 +515,8 @@ export default function Chat() {
                         ) : (
                           <span className="msg-text msg-gone"><Icon name="image" size={15} /> {m.media?.gone === 'owner' ? t('Deleted by the photo owner', 'ছবির মালিক এটি মুছে দিয়েছেন') : t('Photo expired', 'ছবির মেয়াদ শেষ')}</span>
                         )
+                      ) : m.kind === 'call' ? (
+                        <CallRecord mine={mine} status={m.call?.status ?? 'done'} secs={m.call?.secs ?? 0} onCall={() => callPeer()} />
                       ) : m.kind === 'voice' ? (
                         <VoiceBubble url={m.media?.url ?? null} secs={m.media?.secs ?? 0} mine={mine} gone={m.media?.gone} />
                       ) : (
@@ -845,7 +853,7 @@ export function ChatList({ onFind, filter = '' }: { onFind: () => void; filter?:
                       ) : c.last.deleted ? (
                         <><Icon name="ban" size={13} /> {t('Message deleted', 'মেসেজ মুছে ফেলা হয়েছে')}</>
                       ) : (
-                        <>{mine && <Icon name={c.last.readAt ? 'check-check' : 'check'} size={14} className={c.last.readAt ? 'seen' : undefined} />}{mine ? `${t('You', 'আপনি')}: ` : ''}{c.last.kind === 'voice' && <Icon name="mic" size={14} />}{previewText(c.last)}</>
+                        <>{mine && <Icon name={c.last.readAt ? 'check-check' : 'check'} size={14} className={c.last.readAt ? 'seen' : undefined} />}{mine ? `${t('You', 'আপনি')}: ` : ''}{c.last.kind === 'voice' && <Icon name="mic" size={14} />}{c.last.kind === 'call' && <Icon name={c.last.call?.status === 'done' ? 'phone' : 'phone-off'} size={14} />}{previewText(c.last)}</>
                       )}
                     </span>
                     {c.unread > 0 && <span className="chat-badge">{c.unread > 99 ? '99+' : c.unread.toLocaleString(lang === 'bn' ? 'bn-BD' : 'en')}</span>}
@@ -862,7 +870,7 @@ export function ChatList({ onFind, filter = '' }: { onFind: () => void; filter?:
 
 /** Reply quote from a message: voice / photo keep their kind (shown with an icon, not as text). */
 function quoteOf(m: LiveMessage) {
-  return { id: m.id, from: m.from, body: m.kind ? '' : m.body, deleted: m.deleted, ...(m.kind === 'voice' || m.kind === 'image' ? { kind: m.kind, secs: m.media?.secs ?? 0 } : {}) };
+  return { id: m.id, from: m.from, body: m.kind && m.kind !== 'call' ? '' : m.body, deleted: m.deleted, ...(m.kind === 'voice' || m.kind === 'image' ? { kind: m.kind, secs: m.media?.secs ?? 0 } : {}) };
 }
 
 function QuoteText({ q }: { q: { body: string; deleted?: boolean; kind?: string; secs?: number } }) {
@@ -985,4 +993,30 @@ function appPath(href: string): string | null {
   } catch {
     return null;
   }
+}
+
+/** A call in the chat: "Audio call · 3:12" or "Missed call", tap to call back. */
+function CallRecord({ mine, status, secs, onCall }: { mine: boolean; status: string; secs: number; onCall: () => void }) {
+  const t = useT();
+  const lang = useLang();
+  const done = status === 'done';
+  const title = done
+    ? t('Audio call', 'অডিও কল')
+    : mine
+      ? status === 'declined' || status === 'busy'
+        ? t('Call not answered', 'কল ধরেনি')
+        : status === 'cancelled'
+          ? t('You cancelled the call', 'আপনি কল বাতিল করেছেন')
+          : t('No answer', 'কেউ ধরেনি')
+      : t('Missed audio call', 'মিসড অডিও কল');
+  const sub = done ? fmtSecs(secs, lang) : t('Tap to call back', 'আবার কল করতে চাপুন');
+  return (
+    <button type="button" className={`msg-call${done ? '' : ' missed'}`} onClick={(e) => (e.stopPropagation(), onCall())} onPointerDown={(e) => e.stopPropagation()}>
+      <span className="mc-ic"><Icon name={done ? 'phone' : 'phone-off'} size={19} /></span>
+      <span>
+        <b>{title}</b>
+        <small>{sub}</small>
+      </span>
+    </button>
+  );
 }

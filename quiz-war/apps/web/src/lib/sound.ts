@@ -67,14 +67,36 @@ let wanted: { on: boolean; slot: Slot } = { on: false, slot: 'menu' };
 
 /** Tracks the admin switched off. */
 let musicOff: Record<Slot, boolean> = { menu: false, match: false };
+/**
+ * Music waits for the admin settings (so a track switched off in the admin panel never plays for a
+ * moment at start-up). The last known settings are remembered, so returning players don't wait.
+ */
+let configKnown = false;
+const OFF_KEY = 'qw-music-off';
+try {
+  const saved = JSON.parse(localStorage.getItem(OFF_KEY) ?? 'null');
+  if (saved && typeof saved === 'object') {
+    musicOff = { menu: !!saved.menu, match: !!saved.match };
+    configKnown = true;
+  }
+} catch {
+  /* private mode */
+}
 
 export function setMusicSources(s: { menuUrl: string | null; matchUrl: string | null; volume: number; menuEnabled?: boolean; matchEnabled?: boolean }) {
   const prevOff = { ...musicOff };
   musicOff = { menu: s.menuEnabled === false, match: s.matchEnabled === false };
+  const firstTime = !configKnown;
+  configKnown = true;
+  try {
+    localStorage.setItem(OFF_KEY, JSON.stringify(musicOff));
+  } catch {
+    /* private mode */
+  }
   const changed = (s.menuUrl || DEFAULT_MUSIC.menu) !== sources.menu || (s.matchUrl || DEFAULT_MUSIC.match) !== sources.match || prevOff.menu !== musicOff.menu || prevOff.match !== musicOff.match;
   sources = { menu: s.menuUrl || DEFAULT_MUSIC.menu, match: s.matchUrl || DEFAULT_MUSIC.match, volume: s.volume };
   if (current?.audio) current.audio.volume = sources.volume * 0.6;
-  if (changed && wanted.on) {
+  if ((changed || firstTime) && wanted.on) {
     stopCurrent();
     setMusic(true, wanted.slot);
   }
@@ -144,7 +166,7 @@ function playWhenAllowed(a: HTMLAudioElement) {
 
 export function setMusic(on: boolean, slot: Slot = 'menu') {
   wanted = { on, slot };
-  if (!on || musicOff[slot]) return stopCurrent();
+  if (!on || !configKnown || musicOff[slot]) return stopCurrent();
   if (current?.slot === slot) return;
   stopCurrent();
   const url = slot === 'menu' ? sources.menu : sources.match;

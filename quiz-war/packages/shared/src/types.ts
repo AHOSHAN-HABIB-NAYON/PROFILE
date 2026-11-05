@@ -106,10 +106,13 @@ export interface ChatMessage {
   /** Emoji reactions: one per person. */
   reactions?: { u: number; r: string }[];
   /** 'voice' = audio message (text messages leave this out). */
-  kind?: 'text' | 'voice' | 'image';
+  kind?: 'text' | 'voice' | 'image' | 'call';
+  /** Audio call record (kind 'call'): done = talked for `secs`; missed / declined / cancelled. */
+  call?: { status: CallStatus; secs: number };
   /** Audio / photo file (secs for audio, w/h for photos); url is null once the file has expired. */
   media?: { url: string | null; secs: number; w?: number; h?: number; /** 'owner' = the owner deleted the original (forwarded copy). */ gone?: string };
 }
+export type CallStatus = 'done' | 'missed' | 'declined' | 'cancelled' | 'busy';
 export interface ChatThread {
   peer: PublicUser;
   last: ChatMessage;

@@ -58,6 +58,7 @@ export async function initNativePush() {
   if (!isNative || !(await nativePushAvailable())) return;
   void PushNotifications.createChannel?.({ id: 'quizwar_default', name: 'Battles & updates', importance: 4, vibration: true }).catch(() => undefined);
   void PushNotifications.createChannel?.({ id: 'quizwar_messages', name: 'Messages', description: 'Chat messages from players', importance: 5, vibration: true, lights: true, lightColor: '#1D4ED8', visibility: 1 }).catch(() => undefined);
+  void PushNotifications.createChannel?.({ id: 'quizwar_calls', name: 'Calls', description: 'Incoming audio calls', importance: 5, vibration: true, visibility: 1 }).catch(() => undefined);
   void PushNotifications.addListener('registration', (t) => void api('/push/register', { body: { platform: 'android', token: t.value } }).catch(() => undefined));
   void PushNotifications.addListener('pushNotificationActionPerformed', (a) => {
     const url = (a.notification.data as any)?.url;

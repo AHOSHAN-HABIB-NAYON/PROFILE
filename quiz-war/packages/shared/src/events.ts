@@ -180,6 +180,11 @@ export interface ClientToServerEvents {
   'voice:who': (p: { roomId: string }, ack: Ack<{ peers: VoicePeer[] }>) => void;
   'voice:mic': (p: { roomId: string; on: boolean }, ack?: Ack) => void;
   'voice:signal': (p: { roomId: string; to: number; data: VoiceSignal }, ack?: Ack) => void;
+  /** 1-to-1 audio call: the call id doubles as the voice room id. */
+  'call:start': (p: { to: number }, ack: Ack<{ callId: string; peer: PublicUser }>) => void;
+  'call:answer': (p: { callId: string }, ack?: Ack) => void;
+  'call:decline': (p: { callId: string }, ack?: Ack) => void;
+  'call:end': (p: { callId: string }, ack?: Ack) => void;
 }
 
 export interface VoicePeer {
@@ -227,4 +232,10 @@ export interface ServerToClientEvents {
   /** Who is in the voice chat of a match / room (full list on every change). */
   'voice:peers': (p: { roomId: string; peers: VoicePeer[] }) => void;
   'voice:signal': (p: { roomId: string; from: number; data: VoiceSignal }) => void;
+  /** Someone is calling me (also re-sent when I connect while it still rings). */
+  'call:incoming': (p: { callId: string; from: PublicUser }) => void;
+  /** The other side picked up (to the caller), or I picked up on another device. */
+  'call:accepted': (p: { callId: string; elsewhere?: boolean }) => void;
+  'call:ended': (p: { callId: string; reason: CallEndReason; secs?: number }) => void;
 }
+export type CallEndReason = 'ended' | 'missed' | 'declined' | 'cancelled' | 'busy' | 'lost' | 'elsewhere';

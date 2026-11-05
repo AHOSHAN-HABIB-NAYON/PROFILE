@@ -212,3 +212,13 @@ Text chat stays free.
 - War room: each player card shows "Talking…" with a green wave, or "Mic off".
 - Chat: Forward (text, photo, voice) to friends; save / share photos (gallery via QwGallery, JPEG); the message menu shows the photo or "Voice message (0:03)" instead of placeholder text; clearer search box; player search matches any part of a name or a UID.
 - Sign-out popup always centred.
+
+## Update 3 (started early): 1-to-1 audio calls (November 2026)
+- Call from the chat header (friends, or players who already chat). Server rings (socket + push on channel `quizwar_calls`), 35 s then "missed".
+- Picked-up calls use the voice room code (call id = room id); Cloudflare TURN when configured.
+- Call screen: incoming (answer/decline), calling, live timer, mute, speaker/earpiece, minimise to a green bar; Back minimises.
+- Chat shows "Audio call · 0:42" / "Missed audio call" (kind `call`, migration 019); old apps see plain text.
+- Android: foreground service (type microphone) keeps the call alive with the screen off; proximity sensor turns the screen off at the ear.
+  - Play Console: declare the "microphone" foreground service (App content → Foreground service permissions).
+- Admin: App settings → "Audio calls in chat" toggle.
+- Also fixed: menu music played for a moment at start-up even when switched off in the admin panel.

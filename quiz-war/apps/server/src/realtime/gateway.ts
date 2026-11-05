@@ -20,6 +20,7 @@ import { AppError } from '../lib/errors';
 import type { AppContext } from '../context';
 import { loadIdentity } from '../context';
 import { verifyAccessToken } from '../modules/auth/tokens';
+import { CallService } from './calls';
 import { VoiceRooms } from './voice';
 
 interface SocketData {
@@ -119,6 +120,29 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
     }
     target.emit('voice:peers', { roomId, peers });
   };
+  const calls = new CallService({
+    emit: (userId, event, payload, except) => {
+      let t: any = io.to(`user:${userId}`);
+      if (except) t = t.except(except);
+      t.emit(event, payload);
+    },
+    publicUser: (id) => getPublicUser(id),
+    assertCanCall: (a, b) => ctx.chat.assertCanCall(a, b),
+    logCall: (a, b, st, secs) => ctx.chat.logCall(a, b, st, secs),
+    ringPush: (to, from, callId) =>
+      ctx.push.sendToUser(to, { title: from.username, body: 'অডিও কল করছে… ধরতে চাপুন', url: `/chat/${from.uid}`, tag: `call-${callId}`, channel: 'quizwar_calls', image: from.avatarThumbUrl ?? undefined, data: { type: 'call', callId } }),
+    missedPush: (to, from, callId) =>
+      ctx.push.sendToUser(to, { title: from.username, body: 'মিসড অডিও কল', url: `/chat/${from.uid}`, tag: `call-${callId}`, channel: 'quizwar_messages', image: from.avatarThumbUrl ?? undefined }),
+    closeVoice: (callId) => {
+      for (const p of voice.peers(callId)) {
+        const sid = voice.socketOf(callId, p.userId);
+        voice.leave(callId, p.userId);
+        if (sid) io.to(sid).emit('voice:peers', { roomId: callId, peers: [] });
+      }
+    },
+    enabled: () => ctx.settings.app().callsEnabled !== false && ctx.settings.app().chatEnabled,
+    log: ctx.log,
+  });
 
   if (ctx.redis) {
     const pub = ctx.redis.duplicate();
@@ -418,6 +442,11 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
     /* ----------------------------- Live voice ----------------------------- */
     /** Only human players of this match (live, or finished in the last 2 hours: result page). */
     const assertVoiceMember = async (roomId: string) => {
+      if (calls.has(roomId)) {
+        if (!calls.isMember(roomId, userId)) throw new AppError(403, 'not_in_call', 'You are not in this call');
+        calls.bind(roomId, userId, socket.id);
+        return;
+      }
       if (!ctx.settings.app().voiceEnabled) throw new AppError(403, 'voice_disabled', 'Voice chat is turned off');
       const m = ctx.engine.get(roomId);
       if (m) {
@@ -469,11 +498,20 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
       }),
     );
 
+    /* ------------------------------ Audio calls ------------------------------ */
+    const callId = z.object({ callId: voiceRoomId });
+    socket.on('call:start', guard(z.object({ to: z.number().int().positive() }), (p) => calls.start(userId, socket.id, p.to)));
+    socket.on('call:answer', guard(callId, (p) => (calls.answer(userId, socket.id, p.callId), {})));
+    socket.on('call:decline', guard(callId, (p) => (calls.decline(userId, p.callId), {})));
+    socket.on('call:end', guard(callId, (p) => (calls.end(userId, p.callId), {})));
+    void calls.onConnect(userId).catch(() => undefined);
+
     socket.on('time:sync', guard(schemas.timeSync, (p) => ({ serverTime: Date.now(), clientTime: p.clientTime })));
 
     socket.on('disconnect', () => {
       ctx.chat.setFocus(userId, socket.id, null);
       for (const r of voice.leaveSocket(socket.id)) voiceBroadcast(r.roomId);
+      calls.onDisconnect(userId, socket.id);
       const wentOffline = ctx.presence.disconnect(userId, socket.id);
       if (wentOffline) {
         // Remember when they were last online ("active 5 min ago" in friends lists).

@@ -1351,3 +1351,52 @@
 .wr2-vb.talk i:nth-child(3) { animation-delay: .4s; }
 @keyframes wr2-wave { 50% { height: 10px; } }
 .wr2-talk-txt { color: #86efac; font-weight: 700; }
+
+/* ---------------- Audio call ---------------- */
+.call-screen { position: fixed; inset: 0; z-index: 96; display: flex; flex-direction: column; justify-content: space-between; color: #fff; padding: calc(14px + env(safe-area-inset-top)) 20px calc(34px + env(safe-area-inset-bottom)); background: radial-gradient(120% 70% at 50% 18%, #2f5fe0 0%, #1e3a8a 45%, #0b1336 100%); animation: fade-up .25s var(--ease-out) both; }
+.call-screen.ph-ended { background: radial-gradient(120% 70% at 50% 18%, #334155 0%, #1e293b 50%, #0b1020 100%); }
+.cs-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cs-round { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.12); color: #fff; border: 0; }
+.cs-round.ghost { background: none; }
+.cs-lock { font-size: 12px; opacity: .75; display: inline-flex; align-items: center; gap: 5px; text-align: center; }
+.cs-who { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; margin-top: -6vh; }
+.cs-who h2 { margin: 18px 0 0; font-size: 28px; font-weight: 800; color: #fff; }
+.cs-status { margin: 0; font-size: 16px; opacity: .85; font-weight: 600; }
+.cs-status.live { font-variant-numeric: tabular-nums; letter-spacing: .5px; opacity: 1; }
+.cs-muted { margin: 4px 0 0; font-size: 13px; padding: 4px 10px; border-radius: 99px; background: rgba(255,255,255,.12); display: inline-flex; align-items: center; gap: 5px; }
+.cs-av { position: relative; width: 132px; height: 132px; border-radius: 50%; }
+.cs-av > i { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); opacity: 0; pointer-events: none; }
+.cs-av.ring > i { animation: cs-pulse 2.4s ease-out infinite; }
+.cs-av.ring > i:nth-child(2) { animation-delay: .8s; }
+.cs-av.ring > i:nth-child(3) { animation-delay: 1.6s; }
+.cs-av.talk > i:first-child { opacity: 1; inset: -6px; border: 4px solid #22c55e; box-shadow: 0 0 26px rgba(34,197,94,.75); animation: none; }
+.cs-av .avatar { position: relative; box-shadow: 0 10px 40px rgba(0,0,0,.35); }
+@keyframes cs-pulse { 0% { transform: scale(1); opacity: .7; } 100% { transform: scale(1.75); opacity: 0; } }
+.cs-actions { display: flex; justify-content: space-evenly; align-items: flex-start; min-height: 96px; }
+.cs-actions.two { justify-content: space-around; }
+.cs-act { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 13px; opacity: .95; }
+.cs-btn { width: 66px; height: 66px; border-radius: 50%; border: 0; display: grid; place-items: center; color: #fff; transition: transform .15s var(--ease), background .15s; }
+.cs-btn:active { transform: scale(.92); }
+.cs-btn:disabled { opacity: .45; }
+.cs-btn.soft { background: rgba(255,255,255,.16); }
+.cs-btn.soft.on { background: #fff; color: #0f172a; }
+.cs-btn.end { background: #ef4444; box-shadow: 0 8px 24px rgba(239,68,68,.45); }
+.cs-btn.accept { background: #22c55e; box-shadow: 0 8px 24px rgba(34,197,94,.45); animation: cs-nudge 1.2s ease-in-out infinite; }
+@keyframes cs-nudge { 0%, 100% { transform: translateY(0) rotate(0); } 20% { transform: translateY(-5px) rotate(-12deg); } 40% { transform: translateY(0) rotate(10deg); } 60% { transform: rotate(-6deg); } }
+.call-mini { position: fixed; z-index: 94; left: 10px; right: 10px; top: calc(8px + env(safe-area-inset-top)); display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 14px; border-radius: 99px; color: #fff; background: linear-gradient(90deg, #16a34a, #15803d); box-shadow: 0 8px 24px rgba(21,128,61,.4); animation: fade-up .2s var(--ease-out) both; max-width: 560px; margin: 0 auto; }
+.cm-open { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; background: none; border: 0; color: inherit; text-align: left; font-size: 14px; }
+.cm-open b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 40%; }
+.cm-open span { font-variant-numeric: tabular-nums; }
+.cm-open small { margin-left: auto; opacity: .85; font-size: 12px; white-space: nowrap; }
+.cm-dot { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.6); flex: none; }
+.cm-dot.on { background: #fff; box-shadow: 0 0 0 4px rgba(255,255,255,.3); }
+.cm-end { width: 38px; height: 38px; border-radius: 50%; border: 0; background: #ef4444; color: #fff; display: grid; place-items: center; flex: none; }
+
+/* Call record in the chat */
+.msg-call { display: flex; align-items: center; gap: 10px; min-width: 190px; padding: 2px 2px 0; background: none; border: 0; color: inherit; text-align: left; font: inherit; }
+.msg-call .mc-ic { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; flex: none; background: rgba(15,23,42,.08); color: #16a34a; }
+.msg.mine .msg-call .mc-ic { background: rgba(255,255,255,.2); color: #fff; }
+.msg-call.missed .mc-ic { color: #ef4444; background: rgba(239,68,68,.12); }
+.msg.mine .msg-call.missed .mc-ic { color: #fff; background: rgba(239,68,68,.55); }
+.msg-call b { display: block; font-size: 15px; }
+.msg-call small { display: block; font-size: 12.5px; opacity: .75; }

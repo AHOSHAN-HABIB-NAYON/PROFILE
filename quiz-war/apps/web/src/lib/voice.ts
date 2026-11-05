@@ -269,7 +269,7 @@ export function watchVoice(roomId: string) {
 }
 
 /** Join the room's voice: hear everyone at once; my mic stays off unless `mic` (asks permission). */
-export async function joinVoice(roomId: string, mic = false) {
+export async function joinVoice(roomId: string, mic = false, opts: { earpiece?: boolean } = {}) {
   wire();
   const st = useVoice.getState();
   if (st.roomId === roomId) return mic ? setMic(true) : undefined;
@@ -280,6 +280,7 @@ export async function joinVoice(roomId: string, mic = false) {
     useVoice.getState().set({ micOn: mic });
     await connectRoom(roomId, mic);
     startMeter();
+    loud = !opts.earpiece;
     void speaker(true);
   } catch (e) {
     leaveVoice(false);
@@ -306,17 +307,26 @@ export async function setMic(on: boolean) {
   void emit('voice:mic', { roomId: st.roomId, on }).catch(() => undefined);
 }
 
-/** Phones: play voice loud on the speaker (not the earpiece). */
+/** Loud speaker (matches, rooms) or the earpiece (calls, until the player taps "Speaker"). */
+let loud = true;
+
+/** Phones: route voice to the loud speaker or the earpiece (headphones always win). */
 async function speaker(on: boolean) {
   try {
     const { isNative } = await import('./platform');
     if (!isNative) return;
     const { registerPlugin } = await import('@capacitor/core');
-    const Audio = registerPlugin<{ speaker(o: { on: boolean }): Promise<void> }>('QwAudio');
-    await Audio.speaker({ on });
+    const Audio = registerPlugin<{ speaker(o: { on: boolean; earpiece?: boolean }): Promise<void> }>('QwAudio');
+    await Audio.speaker({ on, earpiece: on && !loud });
   } catch {
     /* older app without the plugin */
   }
+}
+
+/** Calls: switch between the earpiece and the loud speaker. */
+export function setLoudSpeaker(on: boolean) {
+  loud = on;
+  if (useVoice.getState().roomId) void speaker(true);
 }
 
 /** Mute / unmute one player for me only. */
@@ -337,6 +347,7 @@ export function leaveVoice(tellServer = true) {
   local = null;
   localAnalyser = null;
   stopMeter();
+  loud = true;
   void speaker(false);
   st.set({ roomId: null, micOn: false, joining: false });
   if (roomId && tellServer) void emit('voice:leave', { roomId }).catch(() => undefined);

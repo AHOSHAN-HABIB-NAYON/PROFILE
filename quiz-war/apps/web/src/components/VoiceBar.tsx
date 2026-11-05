@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useConfig } from '../hooks/queries';
+import { useCall } from '../lib/call';
 import { useT } from '../lib/i18n';
 import { haptic } from '../lib/platform';
 import { toast } from '../lib/toast';
@@ -37,13 +38,16 @@ export function VoiceBar({ roomId, players, className = '' }: { roomId: string; 
   const teams = others.some((p) => p.side === 'mine') && others.some((p) => p.side === 'opp');
 
   // Entering the room / match: listen to everyone right away (my mic stays off until I tap it).
-  const enabled = voiceSupported() && cfg?.voiceEnabled !== false && others.length > 0;
+  // During an audio call the call has the mic; match voice waits until it ends.
+  const inCall = useCall((s) => !!s.call && s.call.phase !== 'ended');
+  const enabled = voiceSupported() && cfg?.voiceEnabled !== false && others.length > 0 && !inCall;
   useEffect(() => {
     watchVoice(roomId);
     if (!enabled) return;
     const st0 = useVoice.getState();
     if (st0.roomId !== roomId && !st0.joining && !skipped.has(roomId)) void joinVoice(roomId, false).catch(() => undefined);
   }, [roomId, enabled]);
+
 
   if (!enabled) return null;
 

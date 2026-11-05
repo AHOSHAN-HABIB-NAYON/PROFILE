@@ -20,8 +20,9 @@ export type ThreadsData = { items: (ChatThread & { status: PresenceStatus; reque
 export type ChatHead = { peer: PublicUser; count: number; last: string; at: number; request?: boolean };
 
 /** Short text for previews (chat list, toasts, chat heads). */
-export const previewText = (m: { body: string; kind?: string }) => {
+export const previewText = (m: { body: string; kind?: string; call?: { status: string } }) => {
   const bn = useSettings.getState().lang === 'bn';
+  if (m.kind === 'call') return m.call?.status === 'done' ? (bn ? 'অডিও কল' : 'Audio call') : bn ? 'মিসড কল' : 'Missed call';
   if (m.kind === 'voice') return bn ? 'ভয়েস মেসেজ' : 'Voice message';
   if (m.kind === 'image') return bn ? 'ছবি' : 'Photo';
   return m.body;

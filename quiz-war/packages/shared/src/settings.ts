@@ -298,6 +298,8 @@ export const appSettingsSchema = z.object({
     .default({ days: 7, text: true, voice: true, images: true }),
   /** Live voice in quiz matches, result page and room lobby. */
   voiceEnabled: z.boolean().default(true),
+  /** 1-to-1 audio calls from the chat. */
+  callsEnabled: z.boolean().default(true),
   /** Home "Collections" (previous-year question sets). */
   collectionsEnabled: z.boolean().default(true),
 });
@@ -336,6 +338,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   chatImagesEnabled: true,
   chatRetention: { days: 7, text: true, voice: true, images: true },
   voiceEnabled: true,
+  callsEnabled: true,
   collectionsEnabled: true,
 };
 

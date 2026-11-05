@@ -25,6 +25,8 @@ import { applyTheme, useSettings } from './lib/settings';
 import { connectSocket, disconnectSocket, emit } from './lib/socket';
 import { setMusic } from './lib/sound';
 import { leaveVoice, resumeVoiceAudio, useVoice, voiceBackground } from './lib/voice';
+import { useCall, wireCalls } from './lib/call';
+import { CallScreen } from './components/CallScreen';
 import { toast } from './lib/toast';
 import { Login, Register } from './pages/Auth';
 import Home from './pages/Home';
@@ -233,12 +235,14 @@ export function App() {
   // chatting from the result page); it ends when the player is really done with it.
   const openRoom = useAuth((s) => s.openRoomId);
   const activeMatch = useAuth((s) => s.activeMatchId);
+  const callId = useCall((s) => s.call?.id);
   useEffect(() => {
     if (!voiceRoom) return;
+    if (voiceRoom === callId) return;
     if (/^\/(match|result|war-room|chat)\//.test(loc.pathname)) return;
     if (voiceRoom === openRoom || voiceRoom === activeMatch) return;
     leaveVoice();
-  }, [loc.pathname, voiceRoom, openRoom, activeMatch]);
+  }, [loc.pathname, voiceRoom, openRoom, activeMatch, callId]);
   // Sound may need one tap to start (browser rule): resume on the next touch.
   useEffect(() => {
     const on = () => resumeVoiceAudio();
@@ -249,7 +253,8 @@ export function App() {
   // (The mic turns off while the app is in the background, for privacy.)
   useEffect(() => {
     const on = () => {
-      if (document.hidden) return voiceBackground();
+      // Calls keep the mic on with the screen off (like a phone call); match voice mutes.
+      if (document.hidden) return useCall.getState().call ? undefined : voiceBackground();
       const id = useAuth.getState().activeMatchId;
       if (!id || window.location.pathname.startsWith(`/match/${id}`)) return;
       void emit('match:resume', { matchId: id }, 5000)
@@ -265,6 +270,7 @@ export function App() {
 
   useEffect(() => {
     if (status === 'authed') {
+      wireCalls();
       connectSocket();
       void initNativePush();
     } else if (status === 'anon') disconnectSocket();
@@ -293,6 +299,9 @@ export function App() {
       const path = window.location.pathname;
       const open = document.querySelector('dialog[open]') as HTMLDialogElement | null;
       if (open) return open.dispatchEvent(new Event('cancel', { cancelable: true }));
+      // Call screen open: Back folds it into the small bar (the call goes on).
+      const cs = useCall.getState();
+      if (cs.call && !cs.small && cs.call.phase !== 'ended' && !(cs.call.dir === 'in' && cs.call.phase === 'ringing')) return cs.set({ small: true });
       // In a running match Back opens the same "Leave match?" popup as the flag button.
       const snap = useGame.getState().snapshot;
       const running = !!snap && path === `/match/${snap.matchId}` && !['finished', 'aborted', 'lobby'].includes(snap.state);
@@ -355,6 +364,7 @@ export function App() {
           <NativeExtras />
           <PromoHost />
           <ChatHeads />
+          <CallScreen />
         </>
       )}
       {status !== 'loading' && (

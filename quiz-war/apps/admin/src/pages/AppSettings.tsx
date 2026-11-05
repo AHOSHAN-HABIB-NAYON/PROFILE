@@ -278,9 +278,10 @@ function Rate({ a }: { a: App }) {
 function Voice({ a }: { a: App }) {
   const s = useSaver();
   return (
-    <Card icon="mic" title="Live voice" desc="Players can talk live in quiz matches with real people, on the result page and in the war room lobby. Audio goes phone-to-phone (not through Hostinger) and is never recorded. Mic is off until the player taps it." saving={s.busy} msg={s.msg} saveLabel="Save voice"
-      onSubmit={(e) => void s.save({ voiceEnabled: new FormData(e.currentTarget).get('voiceEnabled') === 'on' }, 'Voice settings saved.')}>
+    <Card icon="mic" title="Live voice & calls" desc="Players can talk live in quiz matches with real people, on the result page and in the war room lobby, and make 1-to-1 audio calls from the chat. Audio goes phone-to-phone (not through Hostinger) and is never recorded." saving={s.busy} msg={s.msg} saveLabel="Save voice"
+      onSubmit={(e) => { const f = new FormData(e.currentTarget); void s.save({ voiceEnabled: f.get('voiceEnabled') === 'on', callsEnabled: f.get('callsEnabled') === 'on' }, 'Voice settings saved.'); }}>
       <Toggle name="voiceEnabled" label="Live voice on" hint="For a relay on strict mobile networks, add CF_TURN_KEY_ID and CF_TURN_API_TOKEN (Cloudflare Realtime TURN) to the server environment." checked={a.voiceEnabled ?? true} />
+      <Toggle name="callsEnabled" label="Audio calls in chat" hint="Friends (or players who already chat) can call each other. Calls show in the chat as Audio call / Missed call." checked={a.callsEnabled ?? true} />
     </Card>
   );
 }
