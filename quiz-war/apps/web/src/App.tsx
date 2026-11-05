@@ -246,7 +246,7 @@ export function App() {
   useEffect(() => {
     if (!voiceRoom) return;
     if (voiceRoom === callId) return;
-    if (/^\/(match|result|war-room|chat)\//.test(loc.pathname)) return;
+    if (/^\/(match|result|war-room|chat|ludo\/(online|room))\//.test(loc.pathname)) return;
     if (voiceRoom === openRoom || voiceRoom === activeMatch) return;
     leaveVoice();
   }, [loc.pathname, voiceRoom, openRoom, activeMatch, callId]);

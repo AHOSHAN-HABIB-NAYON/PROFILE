@@ -487,7 +487,7 @@ function useBubbles() {
 }
 
 /** Smiley button → emoji tray (same emojis as quiz matches). */
-function LudoReactBar({ onSend }: { onSend: (r: string) => void }) {
+function LudoReactBar({ onSend, inline = false }: { onSend: (r: string) => void; inline?: boolean }) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const [cool, setCool] = useState(false);
@@ -500,7 +500,7 @@ function LudoReactBar({ onSend }: { onSend: (r: string) => void }) {
     onSend(r);
   };
   return (
-    <div className="ludo-react">
+    <div className={`ludo-react${inline ? ' inline' : ''}`}>
       {open && (
         <div className="ludo-react-tray" role="menu" aria-label={t('Send a reaction', 'রিঅ্যাকশন পাঠান')}>
           {MATCH_REACTIONS.map((r) => (
@@ -1421,8 +1421,12 @@ export function LudoOnline() {
               : ' '}
       </p>
 
-      {others.length > 0 && !finished && <VoiceBar className="dark" roomId={snap.id} players={voicePlayers} />}
-      {!finished && mySeat && <LudoReactBar onSend={(r) => void emit('ludo:react', { gameId: snap.id, reaction: r }).catch(() => undefined)} />}
+      {!finished && (others.length > 0 || mySeat) && (
+        <div className="ludo-dock">
+          {others.length > 0 ? <VoiceBar className="dark" roomId={snap.id} players={voicePlayers} /> : <span className="grow" />}
+          {mySeat && <LudoReactBar inline onSend={(r) => void emit('ludo:react', { gameId: snap.id, reaction: r }).catch(() => undefined)} />}
+        </div>
+      )}
 
       <LeaveModal open={leaving} onClose={() => setLeaving(false)} onLeave={leave} quick={snap.size === 2 && !snap.teams} />
 

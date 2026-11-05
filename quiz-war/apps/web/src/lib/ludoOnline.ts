@@ -38,15 +38,20 @@ export function wireLudo() {
       useLudo.getState().set({ snap });
       for (const l of listeners) l(snap);
       // A running game I'm not looking at (came back to the app): offer to return.
-      if (snap.status === 'playing' && !window.location.pathname.startsWith(`/ludo/online/${snap.id}`) && (!cur || cur.id !== snap.id || cur.status !== 'playing')) {
-        toast.custom({
-          kind: 'info',
-          icon: 'gamepad',
-          title: tr('Your Ludo game is on', 'আপনার লুডু খেলা চলছে'),
-          ttl: 8000,
-          actions: [{ label: tr('Back to game', 'খেলায় ফিরুন'), primary: true, onClick: () => navigateTo(`/ludo/online/${snap.id}`) }],
-        });
-      }
+      // (Checked a moment later: right after a match is found the app is still moving to the game.)
+      const fresh = snap.status === 'playing' && (!cur || cur.id !== snap.id || cur.status !== 'playing');
+      if (fresh)
+        window.setTimeout(() => {
+          const now = useLudo.getState().snap;
+          if (window.location.pathname.startsWith('/ludo/') || now?.id !== snap.id || now.status !== 'playing') return;
+          toast.custom({
+            kind: 'info',
+            icon: 'gamepad',
+            title: tr('Your Ludo game is on', 'আপনার লুডু খেলা চলছে'),
+            ttl: 8000,
+            actions: [{ label: tr('Back to game', 'খেলায় ফিরুন'), primary: true, onClick: () => navigateTo(`/ludo/online/${snap.id}`) }],
+          });
+        }, 1500);
     });
     s.on('ludo:matched', ({ gameId }) => {
       useLudo.getState().set({ queue: null });

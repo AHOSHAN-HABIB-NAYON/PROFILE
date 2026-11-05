@@ -1796,3 +1796,10 @@
 .gp2-card small { font-size: 12px; opacity: .9; }
 .gp2-go { margin-top: 10px; display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: 99px; background: #facc15; color: #422006; font-weight: 800; font-size: 13.5px; box-shadow: inset 0 -3px 0 rgba(0,0,0,.15); }
 .podium .p-score small { font-size: 11px; font-weight: 700; opacity: .7; }
+
+/* Online Ludo: voice bar + emoji button on one row (like the quiz match) */
+.ludo-dock { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-bottom: env(safe-area-inset-bottom); }
+.ludo-dock .voice-bar { flex: 1; min-width: 0; margin: 0; }
+.ludo-react.inline { position: relative; right: auto; bottom: auto; z-index: 20; }
+.ludo-react.inline .ludo-react-btn { width: 50px; height: 50px; border-width: 2px; }
+.ludo-react.inline .ludo-react-tray { position: absolute; right: 0; bottom: calc(100% + 8px); }
