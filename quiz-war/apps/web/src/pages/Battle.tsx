@@ -1,3 +1,4 @@
+import { LudoBanner } from '../components/LudoBanner';
 import { AI_LEVEL_DIFFICULTY, AI_LEVELS, type AiLevel, type BattleRequestView, type Difficulty } from '@quizwar/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
@@ -163,6 +164,7 @@ export default function Battle({ tab: initialTab }: { tab?: 'play' | 'requests' 
           <Requests />
         ) : (
           <>
+            <LudoBanner />
             <div className="section-label"><Icon name="grid" size={14} /> {t('Category', 'ক্যাটাগরি')}</div>
             <CategoryPicker value={category} onChange={setCategory} />
 

@@ -39,9 +39,9 @@ function LeagueCard() {
   const pct = next ? Math.round(((me.rating - cur.minRating) / (next.minRating - cur.minRating)) * 100) : 100;
   const days = season.data?.season ? Math.max(0, Math.ceil((new Date(season.data.season.endsAt).getTime() - Date.now()) / 86400000)) : null;
   return (
-    <section className="league-hero">
+    <section className="league-hero compact">
       <div className="lh-top">
-        <span className="lh-emblem"><LeagueEmblem league={cur.key} size={84} /></span>
+        <span className="lh-emblem"><LeagueEmblem league={cur.key} size={52} /></span>
         <div className="grow">
           <p className="xs bold lh-label">{t('YOUR LEAGUE', 'আপনার লীগ')}</p>
           <h2>{cur.name}</h2>
@@ -53,13 +53,6 @@ function LeagueCard() {
       </div>
       <div className="lh-progress" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={t('League progress', 'লীগের অগ্রগতি')}>
         <span style={{ width: `${pct}%` }} />
-      </div>
-      <div className="lh-ladder">
-        {leagues.map((l) => (
-          <span key={l.key} className={`lh-step ${l.key === cur.key ? 'cur' : l.minRating < cur.minRating ? 'done' : ''}`} title={`${l.name} · ${l.minRating}+`}>
-            <LeagueEmblem league={l.key} size={30} />
-          </span>
-        ))}
       </div>
       {season.data?.season && (
         <p className="xs lh-season">
@@ -78,19 +71,12 @@ function RewardBanner({ top, onOpen, active }: { top: number; onOpen: () => void
   const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
   const days = Math.max(1, Math.ceil((end.getTime() - now.getTime()) / 86400000));
   return (
-    <section className="reward-banner" aria-label={t('Monthly reward', 'মাসিক পুরস্কার')}>
-      <span className="rb-crown"><Icon name="crown" size={30} /></span>
-      <div className="grow">
-        <b>{t('Monthly reward', 'মাসিক পুরস্কার')}</b>
-        <p>{t(`The top ${top} of this month's board get free Premium`, `এই মাসের র‍্যাংকে সেরা ${num(top, lang)} জন ফ্রি প্রিমিয়াম পাবে`)}</p>
-        <small><Icon name="clock" size={13} /> {t(`${days} day${days === 1 ? '' : 's'} left`, `আর ${num(days, lang)} দিন বাকি`)}</small>
-      </div>
-      {!active && (
-        <button type="button" className="btn sm white" onClick={onOpen}>
-          {t('See board', 'দেখুন')}
-        </button>
-      )}
-    </section>
+    <button type="button" className="reward-strip" onClick={onOpen} disabled={active} aria-label={t('Monthly reward', 'মাসিক পুরস্কার')}>
+      <Icon name="crown" size={18} />
+      <span className="grow">{t(`Top ${top} this month win Premium`, `এই মাসের সেরা ${num(top, lang)} জন পাবে ফ্রি প্রিমিয়াম`)}</span>
+      <small>{t(`${days}d left`, `${num(days, lang)} দিন বাকি`)}</small>
+      {!active && <Icon name="chevron" size={16} />}
+    </button>
   );
 }
 

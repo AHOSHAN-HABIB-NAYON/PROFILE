@@ -36,6 +36,8 @@ const Bars = registerPlugin<{ set(o: { color: string; dark: boolean }): Promise<
 
 const Intro = lazy(() => import('./pages/Intro'));
 const Battle = lazy(() => import('./pages/Battle'));
+const LudoMenu = lazy(() => import('./pages/Ludo'));
+const LudoGame = lazy(() => import('./pages/Ludo').then((m) => ({ default: m.LudoGame })));
 const Matchmaking = lazy(() => import('./pages/Matchmaking'));
 const WarRoom = lazy(() => import('./pages/WarRoom'));
 const Match = lazy(() => import('./pages/Match'));
@@ -393,6 +395,8 @@ export function App() {
 
             <Route path="/" element={<Shell><Home /></Shell>} />
             <Route path="/battle" element={<Shell><Battle /></Shell>} />
+            <Route path="/ludo" element={<Full><LudoMenu /></Full>} />
+            <Route path="/ludo/play" element={<Full><LudoGame /></Full>} />
             <Route path="/battle/requests" element={<Shell><Battle tab="requests" /></Shell>} />
             <Route path="/friends" element={<Shell><Friends /></Shell>} />
             <Route path="/rank" element={<Shell><Rank /></Shell>} />

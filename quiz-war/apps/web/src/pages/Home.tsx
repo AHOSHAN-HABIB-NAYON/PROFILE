@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router';
 import { Avatar } from '../components/Avatar';
 import { HomeCategories, HomeCollections } from '../components/CategoryPlay';
+import { LudoBanner } from '../components/LudoBanner';
 import { HomeOurApps } from '../components/OurApps';
 import { CountUp, N, Skeleton } from '../components/Feedback';
 import { LeagueBadge, LevelBar } from '../components/Game';
@@ -197,6 +198,7 @@ export default function Home() {
           </button>
         </section>
 
+        <LudoBanner />
         <HomeCategories />
         <HomeCollections />
         <HomeOurApps />

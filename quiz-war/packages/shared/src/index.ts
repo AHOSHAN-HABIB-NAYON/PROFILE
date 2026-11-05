@@ -8,3 +8,4 @@ export * from './rules/levels';
 export * from './rules/rating';
 export * from './rules/uid';
 export * from './rules/username';
+export * from './ludo';
