@@ -27,6 +27,8 @@ interface Deps {
   logCall(caller: number, callee: number, status: CallStatus, secs: number): Promise<unknown>;
   ringPush(to: number, from: PublicUser, callId: string): Promise<void>;
   missedPush(to: number, from: PublicUser, callId: string): Promise<void>;
+  /** Stop the ringing notification on the callee's phones. */
+  endPush(to: number, callId: string): Promise<void>;
   /** Drop both phones from the call's voice room. */
   closeVoice(callId: string): void;
   enabled(): boolean;
@@ -99,6 +101,7 @@ export class CallService {
     c.answeredAt = Date.now();
     c.sockets.set(userId, socketId);
     this.d.emit(c.caller, 'call:accepted', { callId });
+    void this.d.endPush(userId, callId).catch(() => undefined);
     this.d.emit(userId, 'call:accepted', { callId, elsewhere: true }, socketId);
   }
 
@@ -140,6 +143,7 @@ export class CallService {
     for (const t of c.lost.values()) clearTimeout(t);
     if (this.byUser.get(c.caller) === callId) this.byUser.delete(c.caller);
     if (this.byUser.get(c.callee) === callId) this.byUser.delete(c.callee);
+    if (c.state === 'ringing') void this.d.endPush(c.callee, callId).catch(() => undefined);
     const secs = c.state === 'active' ? Math.max(1, Math.round((Date.now() - c.answeredAt) / 1000)) : 0;
     const status: CallStatus = c.state === 'active' ? 'done' : reason === 'declined' ? 'declined' : reason === 'cancelled' ? 'cancelled' : 'missed';
     for (const u of [c.caller, c.callee]) this.d.emit(u, 'call:ended', { callId, reason, secs });

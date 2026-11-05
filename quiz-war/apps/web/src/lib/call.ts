@@ -41,7 +41,7 @@ const patch = (p: Partial<ActiveCall>) => {
 
 /* ------------------------------- Tones ------------------------------- */
 
-let tone: { ctx: AudioContext; stop: () => void } | null = null;
+let tone: { stop: () => void } | null = null;
 
 function stopTone() {
   tone?.stop();
@@ -56,6 +56,30 @@ function stopTone() {
 /** Ringback for the caller ("ring… ring…") or a soft ringtone for the person being called. */
 function playTone(kind: 'ringback' | 'ringtone') {
   stopTone();
+  if (kind === 'ringtone') {
+    // The QUIZ WAR ringtone (same tune as the phone notification), looped, with vibration.
+    const a = new Audio('/audio/ringtone.mp3');
+    a.loop = true;
+    a.volume = 0.9;
+    void a.play().catch(() => undefined);
+    const vib = () => {
+      try {
+        navigator.vibrate?.([700, 500, 700]);
+      } catch {
+        /* ignore */
+      }
+    };
+    vib();
+    const timer = window.setInterval(vib, 2400);
+    tone = {
+      stop: () => {
+        window.clearInterval(timer);
+        a.pause();
+        a.src = '';
+      },
+    };
+    return;
+  }
   const C = window.AudioContext ?? (window as any).webkitAudioContext;
   if (!C) return;
   const ctx: AudioContext = new C();
@@ -82,22 +106,12 @@ function playTone(kind: 'ringback' | 'ringtone') {
   const cycle = () => {
     const t = ctx.currentTime + 0.05;
     if (kind === 'ringback') {
-      beep(t, [425], 1.0);
-    } else {
-      // A short rising melody, twice.
-      [659, 784, 988, 784].forEach((f, i) => beep(t + i * 0.18, [f, f * 2], 0.16));
-      [659, 784, 988, 784].forEach((f, i) => beep(t + 0.9 + i * 0.18, [f, f * 2], 0.16));
-      try {
-        navigator.vibrate?.([600, 400, 600]);
-      } catch {
-        /* ignore */
-      }
+      beep(t, [425, 850], 1.0);
     }
   };
   cycle();
-  const timer = window.setInterval(cycle, kind === 'ringback' ? 3000 : 2600);
+  const timer = window.setInterval(cycle, 3000);
   tone = {
-    ctx,
     stop: () => {
       window.clearInterval(timer);
       void ctx.close().catch(() => undefined);
@@ -128,7 +142,14 @@ function endBeep() {
 
 /* --------------------------- Native helpers --------------------------- */
 
-type CallPlugin = { start(o: { title: string; text: string }): Promise<void>; stop(): Promise<void>; proximity(o: { on: boolean }): Promise<void> };
+type CallPlugin = {
+  start(o: { title: string; text: string }): Promise<void>;
+  stop(): Promise<void>;
+  proximity(o: { on: boolean }): Promise<void>;
+  pending?(): Promise<{ action?: string | null; callId?: string | null }>;
+  cancelIncoming?(): Promise<void>;
+  showOnLock?(o: { on: boolean }): Promise<void>;
+};
 async function native(): Promise<CallPlugin | null> {
   if (!isNative) return null;
   try {
@@ -140,16 +161,43 @@ async function native(): Promise<CallPlugin | null> {
   }
 }
 
-/** Clear the "calling…" notification once the call is answered or over. */
+/** Stop the phone's ringing notification once the call is answered or over. */
 async function clearRingNotification() {
-  if (!isNative) return;
   try {
-    const { PushNotifications } = await import('@capacitor/push-notifications');
-    const { notifications } = await PushNotifications.getDeliveredNotifications();
-    const ring = notifications.filter((n) => String(n.tag ?? '').startsWith('call-') && /অডিও কল করছে/.test(String(n.body ?? '')));
-    if (ring.length) await PushNotifications.removeDeliveredNotifications({ notifications: ring });
+    await (await native())?.cancelIncoming?.();
   } catch {
-    /* older app / no push */
+    /* older app */
+  }
+}
+
+const overLock = (on: boolean) => void native().then((n) => n?.showOnLock?.({ on })).catch(() => undefined);
+
+/** Answer / Decline tapped on the phone's call notification (the app may have just started). */
+let answerWhenRinging: string | null = null;
+let declineOnConnect: string | null = null;
+
+async function nativeAction() {
+  const n = await native();
+  const r = await n?.pending?.().catch(() => null);
+  if (!r?.action || !r.callId) return;
+  if (r.action === 'answer') {
+    answerWhenRinging = r.callId;
+    const c = useCall.getState().call;
+    if (c?.id === r.callId && c.phase === 'ringing') void answerCall();
+  } else if (r.action === 'decline') {
+    const c = useCall.getState().call;
+    if (c?.id === r.callId) declineCall();
+    else {
+      declineOnConnect = r.callId;
+      void emit('call:decline', { callId: r.callId }).then(() => (declineOnConnect = null)).catch(() => undefined);
+    }
+    overLock(false);
+    try {
+      const { App } = await import('@capacitor/app');
+      await App.minimizeApp();
+    } catch {
+      /* ignore */
+    }
   }
 }
 
@@ -163,6 +211,7 @@ function clearCall() {
   useCall.getState().set({ call: null, small: false, loud: false });
   void native().then((n) => n?.stop()).catch(() => undefined);
   void clearRingNotification();
+  overLock(false);
 }
 
 const endTexts = (reason: CallEndReason, dir: 'out' | 'in'): string =>
@@ -289,7 +338,20 @@ let wired = false;
 export function wireCalls() {
   if (wired) return;
   wired = true;
+  // Answer / Decline from the phone's call notification.
+  void nativeAction();
+  window.addEventListener('qwcallaction', () => void nativeAction());
+  // Back in the app while it rings: the in-app ringtone takes over from the notification.
+  document.addEventListener('visibilitychange', () => {
+    const c = useCall.getState().call;
+    if (document.hidden || !c || c.dir !== 'in' || c.phase !== 'ringing') return;
+    void clearRingNotification();
+    if (!tone) playTone('ringtone');
+  });
   onSocket((s) => {
+    s.on('connect', () => {
+      if (declineOnConnect) void emit('call:decline', { callId: declineOnConnect }).then(() => (declineOnConnect = null)).catch(() => undefined);
+    });
     s.on('call:incoming', ({ callId, from }) => {
       const cur = useCall.getState().call;
       if (cur && cur.id === callId) return;
@@ -299,7 +361,14 @@ export function wireCalls() {
       }
       window.clearTimeout(endTimer);
       useCall.getState().set({ call: { id: callId, peer: from, dir: 'in', phase: 'ringing', startedAt: 0 }, small: false, loud: false });
-      playTone('ringtone');
+      if (answerWhenRinging === callId) {
+        answerWhenRinging = null;
+        void answerCall();
+        return;
+      }
+      overLock(true);
+      // App in the background: the phone's own call notification rings (no double ringing).
+      if (!(isNative && document.hidden)) playTone('ringtone');
     });
     s.on('call:accepted', ({ callId, elsewhere }) => {
       const c = useCall.getState().call;

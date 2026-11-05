@@ -6,6 +6,10 @@ import android.os.PowerManager;
 
 import androidx.core.content.ContextCompat;
 
+import android.os.Build;
+import android.view.WindowManager;
+
+import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
@@ -18,6 +22,35 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 @CapacitorPlugin(name = "QwCall")
 public class QwCallPlugin extends Plugin {
     private PowerManager.WakeLock ear;
+    /** Answer / Decline / open tapped on the ringing notification, waiting for the web app. */
+    static volatile String pendingAction = null;
+    static volatile String pendingCallId = null;
+
+    /** The web app asks what the user tapped on the call notification (once). */
+    @PluginMethod
+    public void pending(PluginCall call) {
+        JSObject r = new JSObject();
+        r.put("action", pendingAction);
+        r.put("callId", pendingCallId);
+        pendingAction = null;
+        pendingCallId = null;
+        call.resolve(r);
+    }
+
+    /** Stop the native ringing notification (answered or ended in the app). */
+    @PluginMethod
+    public void cancelIncoming(PluginCall call) {
+        QwCallNotifier.cancel(getContext());
+        call.resolve();
+    }
+
+    /** Show the app over the lock screen while a call rings / goes on; off again afterwards. */
+    @PluginMethod
+    public void showOnLock(PluginCall call) {
+        boolean on = Boolean.TRUE.equals(call.getBoolean("on", false));
+        getActivity().runOnUiThread(() -> MainActivity.setOverLock(getActivity(), on));
+        call.resolve();
+    }
 
     @PluginMethod
     public void start(PluginCall call) {

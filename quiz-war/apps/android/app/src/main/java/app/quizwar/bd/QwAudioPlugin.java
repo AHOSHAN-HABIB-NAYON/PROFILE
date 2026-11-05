@@ -18,6 +18,9 @@ import java.util.List;
  */
 @CapacitorPlugin(name = "QwAudio")
 public class QwAudioPlugin extends Plugin {
+    /** Call volume before voice started (put back afterwards); -1 = not changed. */
+    private int savedVolume = -1;
+
     @PluginMethod
     public void speaker(PluginCall call) {
         boolean on = Boolean.TRUE.equals(call.getBoolean("on", true));
@@ -31,6 +34,14 @@ public class QwAudioPlugin extends Plugin {
         try {
             if (on) {
                 am.setMode(AudioManager.MODE_IN_COMMUNICATION);
+                // Voice comes out clearly loud: lift the call volume to at least ~85% while talking.
+                int max = am.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL);
+                int cur = am.getStreamVolume(AudioManager.STREAM_VOICE_CALL);
+                int want = Math.max(1, Math.round(max * 0.85f));
+                if (cur < want) {
+                    if (savedVolume < 0) savedVolume = cur;
+                    am.setStreamVolume(AudioManager.STREAM_VOICE_CALL, want, 0);
+                }
                 if (Build.VERSION.SDK_INT >= 31) {
                     List<AudioDeviceInfo> devices = am.getAvailableCommunicationDevices();
                     AudioDeviceInfo pick = null;
@@ -55,6 +66,10 @@ public class QwAudioPlugin extends Plugin {
                     am.setSpeakerphoneOn(false);
                 }
                 am.setMode(AudioManager.MODE_NORMAL);
+                if (savedVolume >= 0) {
+                    am.setStreamVolume(AudioManager.STREAM_VOICE_CALL, savedVolume, 0);
+                    savedVolume = -1;
+                }
             }
         } catch (Exception ignored) {
             // Never break the voice chat because of audio routing.

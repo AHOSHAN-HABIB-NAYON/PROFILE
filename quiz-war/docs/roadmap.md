@@ -221,4 +221,7 @@ Text chat stays free.
 - Android: foreground service (type microphone) keeps the call alive with the screen off; proximity sensor turns the screen off at the ear.
   - Play Console: declare the "microphone" foreground service (App content → Foreground service permissions).
 - Admin: App settings → "Audio calls in chat" toggle.
+- Round 2: WhatsApp-style ringing. Ring push is data-only; `QwMessagingService` (replaces the Capacitor push service, forwards other pushes) shows a CallStyle notification with Answer/Decline, full-screen on the lock screen, looping the QUIZ WAR ringtone (`res/raw/qw_ringtone.ogg`, channel `quizwar_ring_v1`). A `call_end` data push stops it.
+  - Play Console: also declare "Full-screen intent" (calling app).
+  - Louder, smoother voice: Opus 56 kbps, 80 ms jitter buffer, high send priority, call volume lifted to ~85% while talking.
 - Also fixed: menu music played for a moment at start-up even when switched off in the admin panel.

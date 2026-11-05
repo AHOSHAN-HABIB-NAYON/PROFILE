@@ -130,7 +130,16 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
     assertCanCall: (a, b) => ctx.chat.assertCanCall(a, b),
     logCall: (a, b, st, secs) => ctx.chat.logCall(a, b, st, secs),
     ringPush: (to, from, callId) =>
-      ctx.push.sendToUser(to, { title: from.username, body: 'অডিও কল করছে… ধরতে চাপুন', url: `/chat/${from.uid}`, tag: `call-${callId}`, channel: 'quizwar_calls', image: from.avatarThumbUrl ?? undefined, data: { type: 'call', callId } }),
+      ctx.push.sendToUser(to, {
+        title: from.username,
+        body: 'অডিও কল করছে… ধরতে চাপুন',
+        url: `/chat/${from.uid}`,
+        tag: `call-${callId}`,
+        dataOnly: true,
+        ttlSecs: 35,
+        data: { type: 'call', callId, name: from.username, avatar: from.avatarThumbUrl ?? '' },
+      }),
+    endPush: (to, callId) => ctx.push.sendToUser(to, { title: '', body: '', dataOnly: true, ttlSecs: 60, data: { type: 'call_end', callId } }),
     missedPush: (to, from, callId) =>
       ctx.push.sendToUser(to, { title: from.username, body: 'মিসড অডিও কল', url: `/chat/${from.uid}`, tag: `call-${callId}`, channel: 'quizwar_messages', image: from.avatarThumbUrl ?? undefined }),
     closeVoice: (callId) => {

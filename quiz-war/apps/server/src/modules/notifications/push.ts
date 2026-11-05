@@ -14,6 +14,13 @@ export interface PushMessage {
   channel?: string;
   /** Small picture shown in the notification (e.g. the sender's avatar). */
   image?: string;
+  /**
+   * Android: send as data only, so the app's own code shows it (incoming calls ring natively).
+   * Browsers get it as a normal notification (or nothing when there is no title).
+   */
+  dataOnly?: boolean;
+  /** How long the message is worth delivering (seconds). */
+  ttlSecs?: number;
 }
 
 interface Logger {
@@ -114,6 +121,21 @@ export class PushService {
 
   private async deliver(t: { id: number; platform: 'android' | 'web'; token: string }, msg: PushMessage) {
     try {
+      // Browsers still get a normal notification for a ringing call; "stop ringing" is Android only.
+      if (t.platform === 'web' && msg.dataOnly && !msg.title) return;
+      if (t.platform === 'android' && this.fcm && msg.dataOnly) {
+        const client = await this.fcm.auth.getClient();
+        const data: Record<string, string> = { ...(msg.data ?? {}), title: msg.title, body: msg.body, url: msg.url ?? '/' };
+        const res = await client.request<any>({
+          url: `https://fcm.googleapis.com/v1/projects/${this.fcm.projectId}/messages:send`,
+          method: 'POST',
+          data: { message: { token: t.token, data, android: { priority: 'high', ...(msg.ttlSecs ? { ttl: `${msg.ttlSecs}s` } : {}) } } },
+          validateStatus: () => true,
+        });
+        if (res.status === 404 || JSON.stringify(res.data ?? '').includes('UNREGISTERED')) await this.drop(t.id);
+        else if (res.status >= 400) this.log.warn({ status: res.status }, 'fcm send failed');
+        return;
+      }
       if (t.platform === 'web' && this.webEnabled) {
         await webpush.sendNotification(JSON.parse(t.token), JSON.stringify(msg), { TTL: 3600, urgency: 'normal' });
       } else if (t.platform === 'android' && this.fcm) {

@@ -1,6 +1,10 @@
 package app.quizwar.bd;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Color;
+import android.os.Build;
+import android.view.WindowManager;
 import android.os.Bundle;
 import android.view.View;
 import android.webkit.WebSettings;
@@ -47,6 +51,56 @@ public class MainActivity extends BridgeActivity {
         settings.setDisplayZoomControls(false);
         // Game UI uses fixed type sizes; cap extreme OS font scaling so layouts don't break.
         if (settings.getTextZoom() > 130) settings.setTextZoom(130);
+        handleCallIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleCallIntent(intent);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        QwCallNotifier.appVisible = true;
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        QwCallNotifier.appVisible = false;
+    }
+
+    /** Tapped Answer / Decline / the ringing call: open over the lock screen and tell the web app. */
+    private void handleCallIntent(Intent intent) {
+        if (intent == null) return;
+        String action = intent.getStringExtra("qw_call_action");
+        if (action == null) return;
+        QwCallPlugin.pendingAction = action;
+        QwCallPlugin.pendingCallId = intent.getStringExtra("qw_call_id");
+        intent.removeExtra("qw_call_action");
+        if (!"open".equals(action)) QwCallNotifier.cancel(this);
+        setOverLock(this, true);
+        try {
+            if (bridge != null) bridge.triggerWindowJSEvent("qwcallaction");
+        } catch (Exception ignored) {
+        }
+    }
+
+    static void setOverLock(Activity a, boolean on) {
+        try {
+            if (Build.VERSION.SDK_INT >= 27) {
+                a.setShowWhenLocked(on);
+                a.setTurnScreenOn(on);
+            } else if (on) {
+                a.getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+            } else {
+                a.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     /**

@@ -135,12 +135,12 @@ function closePeer(uid: number) {
   p.audio.remove();
 }
 
-/** Clear, steady speech: Opus at ~40 kbps with packet-loss protection, mono. */
+/** Clear, steady speech: Opus at ~56 kbps (full-band voice) with packet-loss protection, mono. */
 function tuneOpus(sdp: string) {
   const m = /a=rtpmap:(\d+) opus\/48000/i.exec(sdp);
   if (!m) return sdp;
   const pt = m[1];
-  const extra = 'maxaveragebitrate=40000;useinbandfec=1;stereo=0;sprop-stereo=0;usedtx=0';
+  const extra = 'maxaveragebitrate=56000;useinbandfec=1;stereo=0;sprop-stereo=0;usedtx=0';
   const re = new RegExp(`a=fmtp:${pt} ([^\\r\\n]*)`);
   if (re.test(sdp)) return sdp.replace(re, (_l, p: string) => `a=fmtp:${pt} ${p.split(';').filter((x) => !/^(maxaveragebitrate|useinbandfec|stereo|sprop-stereo|usedtx)=/.test(x)).concat(extra).join(';')}`);
   return sdp.replace(m[0], `${m[0]}\r\na=fmtp:${pt} ${extra}`);
@@ -159,6 +159,17 @@ function attachMic(pc: RTCPeerConnection) {
     if (t.receiver.track?.kind !== 'audio') continue;
     if (t.direction !== 'sendrecv') t.direction = 'sendrecv';
     if (t.sender.track !== track) void t.sender.replaceTrack(track).catch(() => undefined);
+    // Voice first when the network is busy.
+    try {
+      const p = t.sender.getParameters();
+      if (p.encodings?.length && p.encodings[0]!.priority !== 'high') {
+        p.encodings[0]!.priority = 'high';
+        p.encodings[0]!.networkPriority = 'high';
+        void t.sender.setParameters(p).catch(() => undefined);
+      }
+    } catch {
+      /* not supported */
+    }
   }
 }
 
@@ -179,6 +190,12 @@ function peerFor(uid: number, initiator = false): PeerConn {
   attachMic(pc);
   pc.onicecandidate = (e) => e.candidate && signal(uid, { candidate: e.candidate.toJSON() as any });
   pc.ontrack = (e) => {
+    // A small playout buffer (~80 ms) hides network jitter: smooth sound instead of crackles.
+    try {
+      (e.receiver as any).jitterBufferTarget = 80;
+    } catch {
+      /* older WebView */
+    }
     const stream = e.streams[0] ?? new MediaStream([e.track]);
     audio.srcObject = stream;
     audio.volume = 1;
