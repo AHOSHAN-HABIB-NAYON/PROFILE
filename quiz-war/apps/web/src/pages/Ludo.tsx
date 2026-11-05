@@ -34,6 +34,7 @@ import { sfx } from '../lib/sound';
 import { IconTile } from '../components/Icon';
 import { emit, getSocket } from '../lib/socket';
 import { toast } from '../lib/toast';
+import { navigateTo } from '../lib/nav';
 import { PUBLIC_WEB_URL, share } from '../lib/platform';
 import { Avatar } from '../components/Avatar';
 import { Confetti } from '../components/Confetti';
@@ -152,6 +153,7 @@ export function LudoHub({ top = true }: { top?: boolean }) {
       <nav className="lh2-dock" aria-label={t('Ludo shortcuts', 'লুডু শর্টকাট')}>
         <button type="button" onClick={() => nav('/friends')}><span className="d-ic c1"><Icon name="users" size={22} /></span>{t('Friends', 'বন্ধু')}</button>
         <button type="button" onClick={() => nav('/rank?game=ludo')}><span className="d-ic c2"><Icon name="trophy" size={22} /></span>{t('Ranking', 'র‍্যাংকিং')}</button>
+        <button type="button" onClick={() => nav('/shop#ludo')}><span className="d-ic c4"><Icon name="shop" size={22} /></span>{t('Store', 'স্টোর')}</button>
         <button type="button" onClick={() => setRules(true)}><span className="d-ic c3"><Icon name="book" size={22} /></span>{t('Rules', 'নিয়ম')}</button>
       </nav>
 
@@ -397,13 +399,16 @@ function Star({ x, y, color = '#94a3b8' }: { x: number; y: number; color?: strin
 }
 
 function BoardArt() {
+  const b = useLudoLook().board;
+  const cell = b?.cell ?? '#fff';
+  const line = b?.line ?? '#cbd5e1';
   return (
     <>
-      <rect x="0" y="0" width="15" height="15" rx="0.35" fill="#fff" />
+      <rect x="0" y="0" width="15" height="15" rx="0.35" fill={cell} />
       {/* Track squares */}
       {LUDO_TRACK.map(([c, r], i) => {
         const owner = [0, 13, 26, 39].indexOf(i);
-        return <rect key={i} x={c} y={r} width="1" height="1" fill={owner >= 0 ? LUDO_COLORS[owner] : '#fff'} stroke="#cbd5e1" strokeWidth="0.03" />;
+        return <rect key={i} x={c} y={r} width="1" height="1" fill={owner >= 0 ? LUDO_COLORS[owner] : cell} stroke={line} strokeWidth="0.03" />;
       })}
       {/* Home columns */}
       {LUDO_HOME.map((cells, ci) => cells.map(([c, r], k) => <rect key={`${ci}-${k}`} x={c} y={r} width="1" height="1" fill={LUDO_COLORS[ci]} stroke="rgba(0,0,0,.12)" strokeWidth="0.03" />))}
@@ -414,7 +419,7 @@ function BoardArt() {
       {YARD_ORIGIN.map(([x, y], ci) => (
         <g key={ci}>
           <rect x={x} y={y} width="6" height="6" fill={LUDO_COLORS[ci]} />
-          <rect x={x + 0.7} y={y + 0.7} width="4.6" height="4.6" rx="0.5" fill="#fff" />
+          <rect x={x + 0.7} y={y + 0.7} width="4.6" height="4.6" rx="0.5" fill={b?.yard ?? '#fff'} />
           {[[1.5, 1.5], [3.5, 1.5], [1.5, 3.5], [3.5, 3.5]].map(([dx, dy], k) => (
             <circle key={k} cx={x + dx!} cy={y + dy!} r="0.62" fill={LUDO_COLORS[ci]} opacity="0.9" stroke="rgba(0,0,0,.15)" strokeWidth="0.05" />
           ))}
@@ -445,11 +450,12 @@ const PIPS: Record<number, [number, number][]> = {
 
 function Dice({ value, rolling, canRoll, onRoll }: { value: number; rolling: boolean; canRoll: boolean; onRoll: () => void }) {
   const t = useT();
+  const d = useLudoLook().dice;
   return (
     <button type="button" className={`ludo-dice${rolling ? ' rolling' : ''}${canRoll ? ' ready' : ''}`} onClick={onRoll} disabled={!canRoll} aria-label={canRoll ? t('Roll the dice', 'ছক্কা চালুন') : t(`Dice ${value}`, `ছক্কা ${value}`)}>
       <svg viewBox="0 0 100 100">
-        <rect x="4" y="4" width="92" height="92" rx="22" fill="#fff" />
-        {(PIPS[value || 6] ?? []).map(([x, y], i) => <circle key={i} cx={x} cy={y} r="9.5" fill={value === 1 ? '#e53935' : '#1e293b'} />)}
+        <rect x="4" y="4" width="92" height="92" rx="22" fill={d?.face ?? '#fff'} stroke={d?.edge ?? 'none'} strokeWidth={d?.edge ? 5 : 0} />
+        {(PIPS[value || 6] ?? []).map(([x, y], i) => <circle key={i} cx={x} cy={y} r="9.5" fill={value === 1 ? (d?.one ?? '#e53935') : (d?.dot ?? '#1e293b')} />)}
       </svg>
     </button>
   );
@@ -474,6 +480,13 @@ const BOT_NAMES = [['Robi', 'রবি'], ['Mitu', 'মিতু'], ['Tuku', '�
 const CORNER = ['tl', 'tr', 'br', 'bl'] as const;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+type LudoLook = { dice: Record<string, string> | null; board: Record<string, string> | null };
+/** The dice skin and board theme the player picked in the shop (standard look until loaded). */
+export function useLudoLook(): LudoLook {
+  const q = useQuery({ queryKey: ['ludo-look'], queryFn: () => api<LudoLook>('/shop/ludo-look'), staleTime: 5 * 60_000, retry: 1 });
+  return q.data ?? { dice: null, board: null };
+}
 
 /** Emoji bubbles above players' pictures (seat index → emoji), each shown ~2.5 s. */
 function useBubbles() {
@@ -591,6 +604,7 @@ export function LudoGame() {
   useEffect(() => () => void (alive.current = false), []);
   useBackGuard(phase !== 'over', () => setLeaving(true));
   const { bubbles, show: showBubble } = useBubbles();
+  const look = useLudoLook();
   /** Computer players react now and then (only vs computer). */
   const botReact = (seat: number, pool: string[], chance = 0.5) => {
     if (mode !== 'ai' || !seats[seat]?.bot || Math.random() > chance) return;
@@ -770,7 +784,7 @@ export function LudoGame() {
         <div className="ludo-panels top">
           {(['tl', 'tr'] as const).map((corner) => panel(corner))}
         </div>
-        <div className="ludo-board-wrap">
+        <div className="ludo-board-wrap" style={look.board?.wrap ? { background: look.board.wrap } : undefined}>
           <div className="ludo-board">
             <svg viewBox="0 0 15 15" className="ludo-svg"><BoardArt /></svg>
             {tokens.map((tk) => {
@@ -834,12 +848,8 @@ export function LudoGame() {
           won={mode === 'ai' ? game.players[0]!.place === 1 : true}
           modeText={mode === 'ai' ? t(`vs computer · ${LEVELS[level][0]}`, `কম্পিউটারের সাথে · ${LEVELS[level][1]}`) : t('one phone', 'এক ফোনে')}
           coins={0}
-          actions={
-            <>
-              <button className="btn primary" onClick={restart}><Icon name="refresh" /> {t('Play again', 'আবার খেলুন')}</button>
-              <button className="btn outline" onClick={() => exitLudo(nav)}>{t('Menu', 'মেনু')}</button>
-            </>
-          }
+          onHome={() => nav('/', { replace: true })}
+          actions={<button className="btn primary lg grow" onClick={restart}><Icon name="refresh" /> {t('Play again', 'আবার খেলুন')}</button>}
         />
       )}
     </div>
@@ -1114,6 +1124,7 @@ export function LudoOnline() {
   const finishedRef = useRef(false);
   useBackGuard(!!snap && !gone && (snap.status === 'playing' || snap.status === 'lobby'), () => setLeaving(true));
   const { bubbles, show: showBubble } = useBubbles();
+  const look = useLudoLook();
   useEffect(() => {
     const s = getSocket();
     if (!s) return;
@@ -1247,7 +1258,7 @@ export function LudoOnline() {
   const mySeat = snap.seats[mySeatIdx];
   const isHost = snap.hostId === me.id;
   const others = snap.seats.filter((s) => !s.bot && s.userId !== me.id && !s.left);
-  const voicePlayers = others.map((s) => ({ userId: s.userId, name: s.name, avatar: s.avatar, ...(snap.teams && mySeat ? { side: s.team === mySeat.team ? ('mine' as const) : ('opp' as const) } : {}) }));
+  const voicePlayers = others.map((s) => ({ userId: s.userId, name: s.name, avatar: s.avatar, color: LUDO_COLORS[s.color], ...(snap.teams && mySeat ? { side: s.team === mySeat.team ? ('mine' as const) : ('opp' as const) } : {}) }));
   const leave = () => {
     void ludoAct('ludo:leave', snap.id);
     exitLudo(nav);
@@ -1381,7 +1392,7 @@ export function LudoOnline() {
 
       <div className="ludo-table">
         <div className="ludo-panels top">{(['tl', 'tr'] as const).map(panel)}</div>
-        <div className="ludo-board-wrap">
+        <div className="ludo-board-wrap" style={look.board?.wrap ? { background: look.board.wrap } : undefined}>
           <div className="ludo-board">
             <svg viewBox="0 0 15 15" className="ludo-svg"><BoardArt /></svg>
             {tokens.map((tk) => {
@@ -1432,23 +1443,22 @@ export function LudoOnline() {
 
       {finished && (
         <LudoOverScreen
-          rows={snap.seats.map((s, i) => ({ name: s.name, avatar: s.avatar, color: s.color, place: snap.state!.players[i]!.place, home: snap.state!.players[i]!.tokens.filter((x) => x >= LUDO_FINISH).length, isMe: s.userId === me.id, isBot: s.bot, uid: s.userId === me.id ? me.uid : null, team: snap.teams ? s.team : null }))}
+          rows={snap.seats.map((s, i) => ({ name: s.name, avatar: s.avatar, color: s.color, place: snap.state!.players[i]!.place, home: snap.state!.players[i]!.tokens.filter((x) => x >= LUDO_FINISH).length, isMe: s.userId === me.id, isBot: s.bot, uid: s.userId === me.id ? me.uid : (s.uid ?? null), team: snap.teams ? s.team : null }))}
           won={won}
           modeText={snap.teams ? t('2 vs 2', '২ বনাম ২') : snap.size === 2 ? t('1 vs 1', '১ বনাম ১') : t('4 players', '৪ জন')}
           coins={humanGame ? (cfg?.ludoWinCoins ?? 0) : 0}
+          voice={others.length > 0 ? <VoiceBar className="dark" roomId={snap.id} players={voicePlayers} /> : null}
+          onHome={() => (void ludoAct('ludo:leave', snap.id), nav('/', { replace: true }))}
           actions={
-            <>
-              {snap.kind === 'room' ? (
-                isHost ? (
-                  <button className="btn primary" onClick={() => void ludoAct('ludo:rematch', snap.id)}><Icon name="refresh" /> {t('Play again', 'আবার খেলুন')}</button>
-                ) : (
-                  <span className="small muted">{t('The host can start again', 'হোস্ট আবার শুরু করতে পারবে')}</span>
-                )
+            snap.kind === 'room' ? (
+              isHost ? (
+                <button className="btn primary lg grow" onClick={() => void ludoAct('ludo:rematch', snap.id)}><Icon name="refresh" /> {t('Play again', 'আবার খেলুন')}</button>
               ) : (
-                <button className="btn primary" onClick={() => (void ludoAct('ludo:leave', snap.id), nav(`/ludo/find?mode=${snap.teams ? '2v2' : '1v1'}`, { replace: true }))}><Icon name="search" /> {t('Play again', 'আবার খেলুন')}</button>
-              )}
-              <button className="btn outline" onClick={leave}>{t('Menu', 'মেনু')}</button>
-            </>
+                <span className="lo-wait grow"><Icon name="hourglass" size={16} /> {t('The host can start again', 'হোস্ট আবার শুরু করতে পারবে')}</span>
+              )
+            ) : (
+              <button className="btn primary lg grow" onClick={() => (void ludoAct('ludo:leave', snap.id), nav(`/ludo/find?mode=${snap.teams ? '2v2' : '1v1'}`, { replace: true }))}><Icon name="search" /> {t('Play again', 'আবার খেলুন')}</button>
+            )
           }
         />
       )}
@@ -1470,21 +1480,56 @@ function LeaveModal({ open, onClose, onLeave, lobby, quick }: { open: boolean; o
   );
 }
 
+const STATUS_RANK: Record<string, number> = { online: 0, in_match: 1, dnd: 1, away: 2, offline: 3 };
 function InviteSheet({ open, onClose, gameId, inRoom }: { open: boolean; onClose: () => void; gameId: string; inRoom: number[] }) {
   const t = useT();
   const [sent, setSent] = useState<Record<number, boolean>>({});
+  const [q, setQ] = useState('');
+  const [debounced, setDebounced] = useState('');
+  useEffect(() => {
+    const id = window.setTimeout(() => setDebounced(q.trim()), 300);
+    return () => window.clearTimeout(id);
+  }, [q]);
   const friends = useQuery({ queryKey: ['friends'], queryFn: async () => (await api<{ items: { user: PublicUser; status: string }[] }>('/friends')).items, enabled: open });
-  const list = (friends.data ?? []).sort((a, b) => Number(b.status !== 'offline') - Number(a.status !== 'offline'));
+  const found = useQuery({
+    queryKey: ['find-players', debounced.toLowerCase()],
+    queryFn: async () => (await api<{ items: { user: PublicUser; status: string }[] }>(`/users/find?q=${encodeURIComponent(debounced)}`)).items,
+    enabled: open && debounced.length >= 2,
+    staleTime: 30_000,
+  });
+  const searching = debounced.length >= 2;
+  const needle = q.trim().toLowerCase();
+  // Online players first, then in a game, then offline.
+  const byStatus = (a: { status: string }, b: { status: string }) => (STATUS_RANK[a.status] ?? 2) - (STATUS_RANK[b.status] ?? 2);
+  const base = searching ? (found.data ?? []) : (friends.data ?? []).filter((f) => !needle || f.user.username.toLowerCase().includes(needle));
+  const list = [...base].sort(byStatus);
+  const onlineCount = list.filter((f) => (STATUS_RANK[f.status] ?? 2) === 0).length;
   return (
-    <Sheet open={open} onClose={onClose} title={t('Invite friends', 'বন্ধুদের ডাকুন')} icon="user-add">
+    <Sheet open={open} onClose={onClose} title={t('Invite players', 'প্লেয়ারদের ডাকুন')} icon="user-add">
+      <label className="chat-search invite-search">
+        <Icon name="search" size={18} />
+        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Search by name or UID', 'নাম বা UID দিয়ে খুঁজুন')} aria-label={t('Search by name or UID', 'নাম বা UID দিয়ে খুঁজুন')} enterKeyHint="search" />
+        {q && <button type="button" aria-label={t('Clear', 'মুছুন')} onClick={() => setQ('')}><Icon name="close" size={16} /></button>}
+      </label>
+      <p className="invite-label">
+        {searching ? t('Players', 'প্লেয়ার') : t('Friends', 'বন্ধুরা')}
+        {onlineCount > 0 && <span className="invite-online"><i /> {t(`${onlineCount} online`, `${onlineCount} জন অনলাইনে`)}</span>}
+      </p>
       <div className="fwd-list">
-        {!list.length && <p className="small muted" style={{ padding: 12 }}>{t('No friends yet.', 'এখনো কোনো বন্ধু নেই।')}</p>}
+        {(searching ? found.isLoading : friends.isLoading) && <p className="small muted" style={{ padding: 12 }}><span className="spinner" /></p>}
+        {!list.length && !(searching ? found.isLoading : friends.isLoading) && (
+          <p className="small muted" style={{ padding: 12 }}>{searching ? t('No player found with this name or UID.', 'এই নাম বা UID-এ কোনো প্লেয়ার পাওয়া যায়নি।') : t('No friends yet — search a name above.', 'এখনো কোনো বন্ধু নেই — উপরে নাম লিখে খুঁজুন।')}</p>
+        )}
         {list.map((f) => {
           const here = inRoom.includes(f.user.id);
+          const on = (STATUS_RANK[f.status] ?? 2) === 0;
           return (
             <div key={f.user.id} className="fwd-row">
               <Avatar name={f.user.username} src={f.user.avatarThumbUrl} status={f.status as any} size={42} />
-              <b className="grow ellipsis">{f.user.username}</b>
+              <span className="grow" style={{ minWidth: 0 }}>
+                <b className="ellipsis" style={{ display: 'block' }}>{f.user.username}</b>
+                <small className={`invite-st${on ? ' on' : ''}`}>{on ? t('Online', 'অনলাইনে') : f.status === 'offline' ? t('Offline', 'অফলাইন') : t('Playing', 'খেলছে')}</small>
+              </span>
               <button
                 className={`btn sm ${sent[f.user.id] || here ? 'soft' : 'primary'}`}
                 disabled={here || !!sent[f.user.id]}
@@ -1520,7 +1565,7 @@ interface OverRow {
   team: number | null;
 }
 
-function LudoOverScreen({ rows, won, modeText, coins, actions }: { rows: OverRow[]; won: boolean; modeText: string; coins: number; actions: ReactNode }) {
+function LudoOverScreen({ rows, won, modeText, coins, actions, onHome, voice }: { rows: OverRow[]; won: boolean; modeText: string; coins: number; actions: ReactNode; onHome: () => void; /** Live voice keeps going on this screen until it is closed. */ voice?: ReactNode }) {
   const t = useT();
   const lang = useLang();
   const me = useAuth((s) => s.user)!;
@@ -1595,30 +1640,66 @@ function LudoOverScreen({ rows, won, modeText, coins, actions }: { rows: OverRow
     if (r !== 'failed') toast.success(t('Saved to gallery', 'গ্যালারিতে সেভ হয়েছে'), undefined, 'download');
   };
 
+  const local = !myRow;
+  const winner = sorted[0];
+  const chatWith = rows.filter((r) => !r.isMe && !r.isBot && r.uid);
+  const title = local ? t(`${winner?.name ?? ''} won!`, `${winner?.name ?? ''} জিতেছে!`) : won ? (teams ? t('Your team won!', 'আপনার দল জিতেছে!') : t('You won!', 'আপনি জিতেছেন!')) : teams ? t('Your team lost', 'আপনার দল হেরেছে') : t('You lost', 'আপনি হেরেছেন');
+  const sub = local
+    ? t('All tokens home first', 'সবার আগে সব গুটি ঘরে')
+    : won
+      ? t('Brilliant game — you got home first!', 'দারুণ খেলা — সবার আগে ঘরে পৌঁছেছেন!')
+      : t('So close! Try again and win the next one.', 'অল্পের জন্য! আবার খেলুন, পরেরটা আপনার।');
   return (
-    <div className={`ludo-over${won ? ' won' : ''}`} role="dialog" aria-label={t('Game over', 'খেলা শেষ')}>
+    <div className={`ludo-over full ${won ? 'won' : 'lost'}`} role="dialog" aria-label={t('Game over', 'খেলা শেষ')}>
       {won && <Confetti colors={['#facc15', '#f59e0b', '#e53935', '#43a047', '#1e88e5', '#ffffff']} />}
-      <div className="lo-card">
-        <span className={`lo-trophy${won ? ' win' : ''}`}><Icon name={won ? 'trophy' : 'medal'} size={46} /></span>
-        <h2>{won ? t('You won!', 'আপনি জিতেছেন!') : teams ? t('Your team lost', 'আপনার দল হেরেছে') : t('Good game!', 'ভালো খেলেছেন!')}</h2>
-        {won && coins > 0 && <p className="lo-coins"><Icon name="coins" size={18} /> +{num(coins, lang)} {t('coins', 'কয়েন')}</p>}
-        <ol className="lo-list">
-          {sorted.map((r) => (
-            <li key={r.color} className={r.isMe ? 'me' : undefined}>
-              <span className="lo-place">{num(r.place, lang)}</span>
-              <i style={{ background: LUDO_COLORS[r.color] }} />
-              <b className="grow">{r.isMe ? t('You', 'আপনি') : r.name}</b>
-              <small className="lo-home">{num(r.home, lang)}/{num(4, lang)}</small>
-              {r.place === 1 && <Icon name="crown" size={18} />}
-            </li>
-          ))}
-        </ol>
-        <div className="lo-share">
-          <button className="btn soft sm" onClick={() => void doShare()}><Icon name="share" /> {t('Share card', 'কার্ড শেয়ার')}</button>
-          <button className="btn soft sm" disabled={!card} onClick={() => void doSave()}><Icon name="download" /> {t('Save', 'সেভ')}</button>
+      <div className="lo-top">
+        <span className="lo-mode"><Icon name="gamepad" size={14} /> {t('Ludo', 'লুডু')} · {modeText}</span>
+        <div className={`lo-emblem ${won ? 'win' : 'loss'}`} aria-hidden>
+          <svg className="lo-rays" viewBox="0 0 200 200">
+            {Array.from({ length: 16 }, (_, i) => <path key={i} d="M100 100 L94 0 L106 0 Z" transform={`rotate(${i * 22.5} 100 100)`} />)}
+          </svg>
+          <span className="lo-core"><Icon name={won ? 'trophy' : 'shield'} size={60} strokeWidth={1.7} /></span>
+          {won && <><Icon name="sparkles" size={22} className="lo-spark s1" /><Icon name="star" size={16} className="lo-spark s2" /><Icon name="sparkles" size={18} className="lo-spark s3" /></>}
         </div>
-        {card && <img className="lo-card-preview" src={card.url} alt={t('Your Ludo result card', 'আপনার লুডু ফলাফল কার্ড')} />}
-        <div className="lo-actions">{actions}</div>
+        <h1 className="lo-title">{title}</h1>
+        <p className="lo-sub">{sub}</p>
+        {won && coins > 0 && <p className="lo-coins"><Icon name="coin" size={18} /> +{num(coins, lang)} {t('coins', 'কয়েন')}</p>}
+      </div>
+
+      <ol className="lo-list">
+        {sorted.map((r) => (
+          <li key={r.color} className={`${r.isMe ? 'me' : ''}${r.place === 1 ? ' first' : ''}`}>
+            <span className="lo-place">{r.place === 1 ? <Icon name="crown" size={18} /> : num(r.place, lang)}</span>
+            <span className="lo-ava" style={{ ['--pc' as any]: LUDO_COLORS[r.color] }}><Avatar name={r.name} src={r.avatar} size={40} bot={r.isBot} /></span>
+            <span className="grow lo-who">
+              <b className="ellipsis">{r.isMe ? t('You', 'আপনি') : r.name}</b>
+              <small>{num(r.home, lang)}/{num(4, lang)} {t('home', 'ঘরে')}{r.team !== null ? ` · ${t(`Team ${r.team + 1}`, `দল ${num(r.team + 1, lang)}`)}` : ''}</small>
+            </span>
+            {!r.isMe && !r.isBot && r.uid && (
+              <button type="button" className="lo-chat" onClick={() => (haptic('tap'), navigateTo(`/chat/${r.uid}`))} aria-label={t(`Message ${r.name}`, `${r.name}-কে মেসেজ`)}><Icon name="message" size={18} /></button>
+            )}
+          </li>
+        ))}
+      </ol>
+
+      <button type="button" className="lo-share-cta" onClick={() => void doShare()}>
+        <span className="lsc-thumb">{card ? <img src={card.url} alt="" /> : <span className="spinner" />}</span>
+        <span className="grow">
+          <b>{t('Share your result card', 'রেজাল্ট কার্ড শেয়ার করুন')}</b>
+          <small>{t('Send it to friends or save it', 'বন্ধুদের পাঠান বা সেভ করুন')}</small>
+        </span>
+        <span className="lsc-go" role="button" tabIndex={0} aria-label={t('Save', 'সেভ')} onClick={(e) => (e.stopPropagation(), void doSave())}><Icon name="download" size={18} /></span>
+        <span className="lsc-go"><Icon name="share" size={18} /></span>
+      </button>
+
+      {voice}
+
+      <div className="lo-actions">
+        {actions}
+        {chatWith.length === 1 && (
+          <button className="btn soft lg" onClick={() => (haptic('tap'), navigateTo(`/chat/${chatWith[0]!.uid}`))} aria-label={t('Chat', 'চ্যাট')}><Icon name="message" /></button>
+        )}
+        <button className="btn outline lg" onClick={() => (haptic('tap'), onHome())} aria-label={t('Home', 'হোম')}><Icon name="home" /></button>
       </div>
     </div>
   );

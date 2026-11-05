@@ -1803,3 +1803,53 @@
 .ludo-react.inline { position: relative; right: auto; bottom: auto; z-index: 20; }
 .ludo-react.inline .ludo-react-btn { width: 50px; height: 50px; border-width: 2px; }
 .ludo-react.inline .ludo-react-tray { position: absolute; right: 0; bottom: calc(100% + 8px); }
+
+/* Ludo game over: full screen like the quiz result */
+.ludo-over.full { position: fixed; inset: 0; z-index: 90; display: flex; flex-direction: column; align-items: stretch; gap: 12px; overflow-y: auto; padding: calc(18px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); color: #fff; animation: fade-up .3s var(--ease-out) both; place-items: unset; }
+.ludo-over.full.won { background: radial-gradient(120% 70% at 50% 0%, #a855f7 0%, #6d28d9 45%, #3b0764 100%); }
+.ludo-over.full.lost { background: radial-gradient(120% 70% at 50% 0%, #475569 0%, #1e293b 50%, #0f172a 100%); }
+.lo-top { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; }
+.lo-mode { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 99px; background: rgba(255,255,255,.14); font-size: 12.5px; font-weight: 700; }
+.lo-emblem { position: relative; width: 170px; height: 150px; display: grid; place-items: center; }
+.lo-rays { position: absolute; width: 230px; height: 230px; left: 50%; top: 50%; transform: translate(-50%, -50%); fill: rgba(253, 224, 71, .22); animation: lo-spin 14s linear infinite; }
+.lo-emblem.loss .lo-rays { fill: rgba(148, 163, 184, .12); animation-duration: 40s; }
+@keyframes lo-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+.lo-core { position: relative; width: 112px; height: 112px; border-radius: 50%; display: grid; place-items: center; color: #92400e; background: radial-gradient(circle at 35% 30%, #fef9c3, #facc15 60%, #d97706); box-shadow: 0 0 0 6px rgba(255,255,255,.18), 0 14px 34px rgba(0,0,0,.35), 0 0 50px rgba(250,204,21,.55); animation: lo-pop .6s var(--ease-spring, cubic-bezier(.34,1.56,.64,1)) both; }
+.lo-emblem.loss .lo-core { color: #e2e8f0; background: radial-gradient(circle at 35% 30%, #94a3b8, #475569 65%, #334155); box-shadow: 0 0 0 6px rgba(255,255,255,.08), 0 14px 34px rgba(0,0,0,.4); }
+.lo-spark { position: absolute; color: #fde047; animation: lo-twinkle 1.6s ease-in-out infinite; }
+.lo-spark.s1 { top: 8px; right: 18px; } .lo-spark.s2 { bottom: 18px; left: 16px; animation-delay: .5s; } .lo-spark.s3 { top: 26px; left: 10px; animation-delay: 1s; }
+@keyframes lo-twinkle { 0%, 100% { opacity: .3; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.15); } }
+.lo-title { margin: 2px 0 0; font-size: 32px; font-weight: 900; letter-spacing: .3px; text-shadow: 0 3px 0 rgba(0,0,0,.2); }
+.ludo-over.won .lo-title { color: #fde047; }
+.lo-sub { margin: 0; font-size: 14px; opacity: .85; }
+.ludo-over.full .lo-coins { margin-top: 4px; }
+.ludo-over.full .lo-list { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.ludo-over.full .lo-list li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 16px; background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.12); }
+.ludo-over.full .lo-list li.first { background: linear-gradient(90deg, rgba(250,204,21,.28), rgba(255,255,255,.08)); border-color: rgba(250,204,21,.6); }
+.ludo-over.full .lo-list li.me { box-shadow: inset 0 0 0 2px rgba(255,255,255,.55); }
+.ludo-over.full .lo-place { width: 26px; text-align: center; font-weight: 900; color: #fde047; display: grid; place-items: center; }
+.lo-ava { border-radius: 50%; padding: 2px; background: var(--pc); display: inline-flex; }
+.lo-who { min-width: 0; display: flex; flex-direction: column; }
+.lo-who b { color: #fff; }
+.lo-who small { font-size: 12px; opacity: .75; }
+.lo-chat { width: 40px; height: 40px; border-radius: 50%; border: 0; background: #fff; color: #6d28d9; display: grid; place-items: center; box-shadow: 0 4px 10px rgba(0,0,0,.2); }
+.lo-share-cta { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border-radius: 16px; border: 1px dashed rgba(255,255,255,.35); background: rgba(255,255,255,.08); color: #fff; text-align: left; font: inherit; }
+.lo-share-cta b { display: block; font-size: 14px; }
+.lo-share-cta small { font-size: 12px; opacity: .75; }
+.lsc-thumb { width: 46px; height: 46px; border-radius: 10px; overflow: hidden; background: rgba(255,255,255,.15); display: grid; place-items: center; flex: none; }
+.lsc-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.lsc-go { width: 36px; height: 36px; border-radius: 50%; background: #facc15; color: #422006; display: grid; place-items: center; flex: none; }
+.ludo-over.full .voice-bar { margin: 0; }
+.ludo-over.full .lo-actions { display: flex; gap: 8px; margin-top: auto; padding-top: 4px; }
+.ludo-over.full .lo-actions .btn { height: 52px; }
+.ludo-over.full .lo-actions .btn.outline, .ludo-over.full .lo-actions .btn.soft { background: rgba(255,255,255,.14); color: #fff; border-color: rgba(255,255,255,.3); min-width: 52px; }
+.lo-wait { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; opacity: .85; border-radius: 14px; background: rgba(255,255,255,.1); }
+.invite-search { margin: 2px 0 8px; }
+.invite-label { display: flex; align-items: center; justify-content: space-between; margin: 4px 2px 6px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; color: var(--text-3, #64748b); }
+.invite-online { display: inline-flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: 0; color: #16a34a; }
+.invite-online i { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.2); }
+.invite-st { font-size: 12px; color: var(--text-3, #64748b); }
+.invite-st.on { color: #16a34a; font-weight: 700; }
+.vb-ava { display: inline-flex; border-radius: 50%; }
+.d-ic.c4 { background: linear-gradient(180deg, #f9a8d4, #db2777); }
+.si-art.type-ludo_dice, .si-art.type-ludo_board { background: linear-gradient(160deg, #a855f7, #6d28d9); }

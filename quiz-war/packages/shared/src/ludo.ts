@@ -284,6 +284,8 @@ export function chooseAiMove(s: LudoState, moves: number[], level: 0 | 1 | 2, rn
 
 export interface LudoSeat {
   userId: number;
+  /** Public UID (for profile / chat links); missing for computer players. */
+  uid?: string;
   name: string;
   avatar: string | null;
   color: LudoColor;

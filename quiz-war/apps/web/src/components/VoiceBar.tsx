@@ -15,6 +15,8 @@ export interface VoicePlayer {
   avatar?: string | null;
   /** Team games: my teammate or an opponent (colours the chip). */
   side?: 'mine' | 'opp';
+  /** Ludo: the player's token colour, as a ring around the picture. */
+  color?: string;
 }
 
 const EXPLAINED = 'qw-voice-explained';
@@ -119,7 +121,7 @@ export function VoiceBar({ roomId, players, className = '', autoJoin = true }: {
                   }}
                   aria-label={muted ? t(`Unmute ${p.name}`, `${p.name}-কে আনমিউট`) : t(`Mute ${p.name} for me`, `${p.name}-কে আমার জন্য মিউট`)}
                 >
-                  <Avatar name={p.name} src={p.avatar ?? null} size={30} />
+                  <span className="vb-ava" style={p.color ? { boxShadow: `0 0 0 2px ${p.color}` } : undefined}><Avatar name={p.name} src={p.avatar ?? null} size={30} /></span>
                   {!compact && <span className="vb-name">{p.name}</span>}
                   <Icon name={!m ? 'mic-off' : muted ? 'mute' : 'volume'} size={16} />
                 </button>

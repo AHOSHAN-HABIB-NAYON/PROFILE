@@ -10,6 +10,8 @@ export class ShopService {
     const items = await query<any>('SELECT item_key, type, name, description, price, data FROM shop_items WHERE is_active = 1 ORDER BY sort_order, id');
     const inv = await query<{ item_key: string; quantity: number }>('SELECT item_key, quantity FROM user_inventory WHERE user_id = ?', [userId]);
     const owned = new Map(inv.map((i) => [i.item_key, Number(i.quantity)]));
+    const eq = await queryOne<{ ludo_dice: string | null; ludo_board: string | null }>('SELECT ludo_dice, ludo_board FROM user_profiles WHERE user_id = ?', [userId]);
+    const equipped = new Set([eq?.ludo_dice, eq?.ludo_board].filter(Boolean));
     return items.map((i) => ({
       key: i.item_key,
       type: i.type,
@@ -18,7 +20,18 @@ export class ShopService {
       price: i.price,
       data: parseJson(i.data),
       owned: owned.get(i.item_key) ?? 0,
+      ...(i.type === 'ludo_dice' || i.type === 'ludo_board' ? { equipped: equipped.has(i.item_key) } : {}),
     }));
+  }
+
+  /** The Ludo dice and board this player uses (null = the standard look). */
+  async ludoLook(userId: number) {
+    const rows = await query<{ type: string; data: unknown }>(
+      `SELECT s.type, s.data FROM user_profiles p JOIN shop_items s ON s.item_key IN (p.ludo_dice, p.ludo_board) WHERE p.user_id = ?`,
+      [userId],
+    );
+    const pick = (type: string) => parseJson<Record<string, string>>(rows.find((r) => r.type === type)?.data ?? null) ?? null;
+    return { dice: pick('ludo_dice'), board: pick('ludo_board') };
   }
 
   async purchase(userId: number, itemKey: string, quantity = 1) {
@@ -38,7 +51,7 @@ export class ShopService {
   }
 
   /** Equip a frame / title / theme the player owns (or reset with null). */
-  async equip(userId: number, slot: 'frame' | 'title' | 'theme_cosmetic', itemKey: string | null) {
+  async equip(userId: number, slot: 'frame' | 'title' | 'theme_cosmetic' | 'ludo_dice' | 'ludo_board', itemKey: string | null) {
     let value: string | null = null;
     if (itemKey) {
       const row = await queryOne<{ type: string; data: unknown }>(
@@ -50,9 +63,10 @@ export class ShopService {
       if (slot === 'frame' && row.type === 'frame') value = data.css ?? itemKey;
       else if (slot === 'title' && row.type === 'title') value = data.text ?? itemKey;
       else if (slot === 'theme_cosmetic' && row.type === 'theme') value = itemKey;
+      else if ((slot === 'ludo_dice' || slot === 'ludo_board') && row.type === slot) value = itemKey;
       else throw badRequest('This item cannot be equipped here');
     }
-    const column = slot === 'frame' ? 'frame' : slot === 'title' ? 'title' : 'badge';
+    const column = slot === 'frame' ? 'frame' : slot === 'title' ? 'title' : slot === 'ludo_dice' ? 'ludo_dice' : slot === 'ludo_board' ? 'ludo_board' : 'badge';
     await exec(`UPDATE user_profiles SET ${column} = ? WHERE user_id = ?`, [value, userId]);
   }
 }

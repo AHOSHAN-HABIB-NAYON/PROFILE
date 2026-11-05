@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { PageHeader } from '../components/AppShell';
 import { CountUp, Empty, Skeleton } from '../components/Feedback';
@@ -21,7 +21,36 @@ const TYPE_INFO: Record<string, { icon: IconName; en: string; bn: string }> = {
   theme: { icon: 'sun', en: 'Themes', bn: 'থিম' },
   effect: { icon: 'party', en: 'Effects', bn: 'ইফেক্ট' },
   avatar: { icon: 'user-circle', en: 'Avatars', bn: 'অ্যাভাটার' },
+  ludo_dice: { icon: 'gamepad', en: 'Ludo dice', bn: 'লুডু ছক্কা' },
+  ludo_board: { icon: 'grid', en: 'Ludo boards', bn: 'লুডু বোর্ড' },
 };
+
+const PIPS5: [number, number][] = [[28, 28], [72, 28], [50, 50], [28, 72], [72, 72]];
+/** Small picture of a Ludo dice skin or board theme. */
+function LudoPreview({ type, data }: { type: string; data: Record<string, string> | null }) {
+  if (type === 'ludo_dice')
+    return (
+      <svg viewBox="0 0 100 100" width="52" height="52" aria-hidden>
+        <rect x="6" y="6" width="88" height="88" rx="22" fill={data?.face ?? '#fff'} stroke={data?.edge ?? '#cbd5e1'} strokeWidth="5" />
+        {PIPS5.map(([x, y], i) => <circle key={i} cx={x} cy={y} r="9" fill={i === 2 ? (data?.one ?? '#e53935') : (data?.dot ?? '#1e293b')} />)}
+      </svg>
+    );
+  const c = ['#e53935', '#43a047', '#fbc02d', '#1e88e5'];
+  return (
+    <svg viewBox="0 0 60 60" width="56" height="56" aria-hidden>
+      <rect width="60" height="60" rx="8" fill={data?.wrap ?? '#0f172a'} />
+      <rect x="4" y="4" width="52" height="52" rx="4" fill={data?.cell ?? '#fff'} />
+      {[[4, 4], [36, 4], [36, 36], [4, 36]].map(([x, y], i) => (
+        <g key={i}>
+          <rect x={x} y={y} width="20" height="20" fill={c[i]} />
+          <rect x={x! + 4} y={y! + 4} width="12" height="12" rx="2" fill={data?.yard ?? '#fff'} />
+        </g>
+      ))}
+      {[26, 30, 34].map((x) => [4, 10, 16, 40, 46, 52].map((y) => <rect key={`${x}-${y}`} x={x - 2} y={y - 2} width="4" height="4" fill="none" stroke={data?.line ?? '#cbd5e1'} strokeWidth=".6" />))}
+      <polygon points="24,24 36,24 30,30" fill={c[1]} /><polygon points="36,24 36,36 30,30" fill={c[2]} /><polygon points="24,36 36,36 30,30" fill={c[3]} /><polygon points="24,24 24,36 30,30" fill={c[0]} />
+    </svg>
+  );
+}
 const ITEM_ICON: Record<string, IconName> = { pu_fifty_fifty: 'divide', pu_time_boost: 'timer', pu_double_score: 'crosshair', pu_hint: 'bulb' };
 const MISSION_ICON: Record<string, IconName> = { target: 'target', swords: 'swords', trophy: 'trophy', brain: 'brain', calendar: 'calendar', bolt: 'bolt', crown: 'crown', globe: 'globe', users: 'users', star: 'star', medal: 'medal', flame: 'fire', fire: 'fire', gift: 'gift' };
 const PERIOD: Record<Mission['period'], { en: string; bn: string; icon: IconName }> = {
@@ -213,6 +242,20 @@ export default function Shop() {
       setBuying(null);
     }
   };
+  const equip = async (type: string, key: string | null) => {
+    haptic('tap');
+    try {
+      await api('/shop/equip', { body: { slot: type, itemKey: key } });
+      toast.success(key ? t('Equipped — it shows in your Ludo games', 'চালু হয়েছে — লুডু খেলায় দেখাবে') : t('Back to the standard look', 'সাধারণ ডিজাইনে ফিরেছে'), undefined, 'check');
+      void qc.invalidateQueries({ queryKey: ['shop'] });
+      void qc.invalidateQueries({ queryKey: ['ludo-look'] });
+    } catch (e) {
+      toast.error(t('Could not equip', 'চালু করা যায়নি'), friendlyError(e));
+    }
+  };
+  useEffect(() => {
+    if (window.location.hash === '#ludo' && data) document.getElementById('ludo')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [data]);
   const groups = new Map<string, any[]>();
   for (const i of data ?? []) groups.set(i.type, [...(groups.get(i.type) ?? []), i]);
   return (
@@ -247,19 +290,26 @@ export default function Shop() {
               <Skeleton kind="card" lines={3} />
             ) : (
               [...groups].map(([type, items]) => (
-                <section key={type}>
+                <section key={type} id={type === 'ludo_dice' ? 'ludo' : undefined}>
                   <div className="section-label"><Icon name={TYPE_INFO[type]?.icon ?? 'shop'} size={14} /> {t(TYPE_INFO[type]?.en ?? type, TYPE_INFO[type]?.bn ?? type)}</div>
                   <div className="shop-grid">
                     {items.map((i) => {
                       const owned = type !== 'power_up' && i.owned > 0;
+                      const ludo = type === 'ludo_dice' || type === 'ludo_board';
                       return (
                         <div key={i.key} className={`shop-item ${owned ? 'owned' : ''}`}>
                           <div className={`si-art type-${type} ${type === 'frame' ? `frame-${i.data?.css}` : ''}`}>
-                            <Icon name={ITEM_ICON[i.key] ?? TYPE_INFO[type]?.icon ?? 'gift'} size={28} />
+                            {ludo ? <LudoPreview type={type} data={i.data} /> : <Icon name={ITEM_ICON[i.key] ?? TYPE_INFO[type]?.icon ?? 'gift'} size={28} />}
                           </div>
                           <strong>{i.name}</strong>
                           <span className="xs muted">{i.description}</span>
-                          {owned ? (
+                          {owned && ludo ? (
+                            i.equipped ? (
+                              <button className="btn sm success" onClick={() => void equip(type, null)}><Icon name="check" /> {t('In use', 'চালু আছে')}</button>
+                            ) : (
+                              <button className="btn sm primary" onClick={() => void equip(type, i.key)}>{t('Use', 'চালু করুন')}</button>
+                            )
+                          ) : owned ? (
                             <span className="chip success"><Icon name="check" /> {t('Owned', 'আছে')}</span>
                           ) : (
                             <button className="btn sm soft price-btn" disabled={buying === i.key} onClick={() => void buy(i.key, i.price)}>

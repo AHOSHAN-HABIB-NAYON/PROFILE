@@ -122,17 +122,17 @@ export class LudoService {
     return g;
   }
 
-  private seatFor(g: Game, u: { id: number; name: string; avatar: string | null }, bot = false): LudoSeat {
+  private seatFor(g: Game, u: { id: number; name: string; avatar: string | null; uid?: string }, bot = false): LudoSeat {
     const colors = ludoColorsFor(g.size);
     const i = g.seats.length;
-    return { userId: u.id, name: u.name, avatar: u.avatar, color: colors[i]!, team: g.teams ? i % 2 : null, bot, connected: !bot, left: false };
+    return { userId: u.id, ...(u.uid ? { uid: u.uid } : {}), name: u.name, avatar: u.avatar, color: colors[i]!, team: g.teams ? i % 2 : null, bot, connected: !bot, left: false };
   }
 
   private async addUser(g: Game, userId: number) {
     const u = await this.d.publicUser(userId);
     if (!u) throw new AppError(404, 'not_found', 'Player not found');
     if (g.seats.length >= g.size) throw new AppError(409, 'full', 'This room is full');
-    g.seats.push(this.seatFor(g, { id: u.id, name: u.username, avatar: u.avatarThumbUrl ?? null }));
+    g.seats.push(this.seatFor(g, { id: u.id, name: u.username, avatar: u.avatarThumbUrl ?? null, uid: u.uid }));
     this.byUser.set(userId, g.id);
   }
 
