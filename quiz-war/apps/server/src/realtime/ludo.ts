@@ -26,6 +26,8 @@ interface Game extends LudoSnapshot {
 interface Deps {
   emit<E extends keyof ServerToClientEvents>(userId: number, event: E, payload: Parameters<ServerToClientEvents[E]>[0]): void;
   publicUser(id: number): Promise<PublicUser | null>;
+  /** The player's Ludo token design from the shop. */
+  tokenStyle?(id: number): Promise<string | null>;
   settings(): { enabled: boolean; turnSeconds: number; winCoins: number };
   /** Save results (stats, boards, coins). */
   record(game: LudoSnapshot): Promise<void>;
@@ -132,7 +134,10 @@ export class LudoService {
     const u = await this.d.publicUser(userId);
     if (!u) throw new AppError(404, 'not_found', 'Player not found');
     if (g.seats.length >= g.size) throw new AppError(409, 'full', 'This room is full');
-    g.seats.push(this.seatFor(g, { id: u.id, name: u.username, avatar: u.avatarThumbUrl ?? null, uid: u.uid }));
+    const seat = this.seatFor(g, { id: u.id, name: u.username, avatar: u.avatarThumbUrl ?? null, uid: u.uid });
+    const token = await this.d.tokenStyle?.(userId).catch(() => null);
+    if (token) seat.token = token;
+    g.seats.push(seat);
     this.byUser.set(userId, g.id);
   }
 

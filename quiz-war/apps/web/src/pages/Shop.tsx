@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { PageHeader } from '../components/AppShell';
 import { CountUp, Empty, Skeleton } from '../components/Feedback';
+import { Pin } from '../components/LudoPin';
 import { Icon, IconTile, type IconName } from '../components/Icon';
 import { PullToRefresh } from '../components/PullToRefresh';
 import { VerifiedBadge } from '../components/Verified';
@@ -23,11 +24,18 @@ const TYPE_INFO: Record<string, { icon: IconName; en: string; bn: string }> = {
   avatar: { icon: 'user-circle', en: 'Avatars', bn: 'অ্যাভাটার' },
   ludo_dice: { icon: 'gamepad', en: 'Ludo dice', bn: 'লুডু ছক্কা' },
   ludo_board: { icon: 'grid', en: 'Ludo boards', bn: 'লুডু বোর্ড' },
+  ludo_token: { icon: 'gamepad', en: 'Ludo tokens', bn: 'লুডুর গুটি' },
 };
 
 const PIPS5: [number, number][] = [[28, 28], [72, 28], [50, 50], [28, 72], [72, 72]];
 /** Small picture of a Ludo dice skin or board theme. */
 function LudoPreview({ type, data }: { type: string; data: Record<string, string> | null }) {
+  if (type === 'ludo_token')
+    return (
+      <span className="tok-prev" aria-hidden>
+        {['#e53935', '#1e88e5'].map((c) => <span key={c} style={{ ['--tc' as any]: c }}><Pin style={data?.style} /></span>)}
+      </span>
+    );
   if (type === 'ludo_dice')
     return (
       <svg viewBox="0 0 100 100" width="52" height="52" aria-hidden>
@@ -311,7 +319,7 @@ export default function Shop() {
                   <div className="shop-grid">
                     {items.map((i) => {
                       const owned = type !== 'power_up' && i.owned > 0;
-                      const ludo = type === 'ludo_dice' || type === 'ludo_board';
+                      const ludo = type === 'ludo_dice' || type === 'ludo_board' || type === 'ludo_token';
                       return (
                         <div key={i.key} className={`shop-item ${owned ? 'owned' : ''}`}>
                           <div className={`si-art type-${type} ${type === 'frame' ? `frame-${i.data?.css}` : ''}`}>

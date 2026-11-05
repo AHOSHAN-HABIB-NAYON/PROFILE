@@ -295,6 +295,8 @@ export interface LudoSeat {
   connected: boolean;
   /** Left the game: the computer (or the partner in 2 vs 2) plays for them. */
   left: boolean;
+  /** Token design bought in the shop (ball, star, gem, crown); missing = standard pin. */
+  token?: string;
 }
 
 export type LudoLast =

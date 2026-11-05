@@ -36,6 +36,7 @@ import { IconTile } from '../components/Icon';
 import { emit, getSocket } from '../lib/socket';
 import { toast } from '../lib/toast';
 import { navigateTo } from '../lib/nav';
+import { Pin } from '../components/LudoPin';
 import { saveLocalLudo } from '../lib/ludoHistory';
 import { PUBLIC_WEB_URL, share } from '../lib/platform';
 import { Avatar } from '../components/Avatar';
@@ -483,11 +484,11 @@ const CORNER = ['tl', 'tr', 'br', 'bl'] as const;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-type LudoLook = { dice: Record<string, string> | null; board: Record<string, string> | null };
+type LudoLook = { dice: Record<string, string> | null; board: Record<string, string> | null; token?: Record<string, string> | null };
 /** The dice skin and board theme the player picked in the shop (standard look until loaded). */
 export function useLudoLook(): LudoLook {
   const q = useQuery({ queryKey: ['ludo-look'], queryFn: () => api<LudoLook>('/shop/ludo-look'), staleTime: 5 * 60_000, retry: 1 });
-  return q.data ?? { dice: null, board: null };
+  return q.data ?? { dice: null, board: null, token: null };
 }
 
 /** Emoji bubbles above players' pictures (seat index → emoji), each shown ~2.5 s. */
@@ -802,7 +803,7 @@ export function LudoGame() {
                   disabled={!can}
                   aria-label={t('Move this token', 'এই গুটি চালুন')}
                 >
-                  <Pin />
+                  <Pin style={mode === 'ai' && tk.pi === 0 ? look.token?.style : null} />
                 </button>
               );
             })}
@@ -887,19 +888,6 @@ export function LudoGame() {
 }
 
 /** Glossy pin token. */
-function Pin() {
-  return (
-    <svg viewBox="0 0 40 52" className="pin" aria-hidden>
-      <ellipse cx="20" cy="47" rx="12" ry="4" fill="rgba(0,0,0,.28)" />
-      <path d="M8 40 Q20 30 32 40 L30 45 Q20 49 10 45 Z" fill="#e2e8f0" stroke="#64748b" strokeWidth="1.2" />
-      <path d="M14 38 L20 22 L26 38 Z" fill="#cbd5e1" stroke="#64748b" strokeWidth="1" />
-      <circle cx="20" cy="17" r="13" fill="var(--tc)" stroke="rgba(0,0,0,.35)" strokeWidth="1.6" />
-      <circle cx="15.5" cy="12.5" r="4.5" fill="rgba(255,255,255,.65)" />
-      <circle cx="20" cy="17" r="6" fill="none" stroke="rgba(255,255,255,.55)" strokeWidth="1.6" />
-    </svg>
-  );
-}
-
 /* ------------------------------------------------------------------ */
 /*  Online                                                            */
 /* ------------------------------------------------------------------ */
@@ -1459,7 +1447,7 @@ export function LudoOnline() {
                   disabled={!can}
                   aria-label={t('Move this token', 'এই গুটি চালুন')}
                 >
-                  <Pin />
+                  <Pin style={snap.seats[tk.pi]?.token ?? null} />
                 </button>
               );
             })}

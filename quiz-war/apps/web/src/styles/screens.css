@@ -2284,3 +2284,5 @@ button.px-more { width: 100%; border: 0; background: none; font: inherit; cursor
 .onb2-hd { padding-bottom: 64px; }
 .onb2-hd img { display: block; margin: 0 auto; }
 .onb2-photo { margin-top: 0; }
+.tok-prev { display: flex; gap: 2px; } .tok-prev span { width: 26px; display: block; } .tok-prev svg { width: 100%; height: auto; display: block; }
+.si-art.type-ludo_token { background: #f8fafc; box-shadow: inset 0 0 0 1px #e2e8f0; }

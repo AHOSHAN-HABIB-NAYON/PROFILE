@@ -161,6 +161,7 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
   const ludo = new LudoService({
     emit: (userId, event, payload) => ctx.emitter.toUser(userId, event, payload),
     publicUser: (id) => getPublicUser(id),
+    tokenStyle: (id) => ctx.shop.tokenStyle(id),
     settings: () => ({ enabled: ctx.settings.app().ludoEnabled !== false, turnSeconds: ctx.settings.app().ludoTurnSeconds ?? 15, winCoins: ctx.settings.app().ludoWinCoins ?? 20 }),
     record: async (g) => {
       const coins = ctx.settings.app().ludoWinCoins ?? 20;

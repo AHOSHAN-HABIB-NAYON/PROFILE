@@ -289,7 +289,7 @@ export async function userRoutes(app: FastifyInstance, ctx: AppContext) {
     return ctx.shop.purchase(uid(req), b.itemKey, b.quantity ?? 1);
   });
   app.post('/shop/equip', auth, async (req) => {
-    const b = parse(z.object({ slot: z.enum(['frame', 'title', 'theme_cosmetic', 'ludo_dice', 'ludo_board']), itemKey: z.string().max(40).nullable() }), req.body);
+    const b = parse(z.object({ slot: z.enum(['frame', 'title', 'theme_cosmetic', 'ludo_dice', 'ludo_board', 'ludo_token']), itemKey: z.string().max(40).nullable() }), req.body);
     await ctx.shop.equip(uid(req), b.slot, b.itemKey);
     return { user: await getMe(uid(req)) };
   });
