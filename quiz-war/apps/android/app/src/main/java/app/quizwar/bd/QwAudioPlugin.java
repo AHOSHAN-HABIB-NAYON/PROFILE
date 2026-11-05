@@ -34,10 +34,10 @@ public class QwAudioPlugin extends Plugin {
         try {
             if (on) {
                 am.setMode(AudioManager.MODE_IN_COMMUNICATION);
-                // Voice comes out clearly loud: lift the call volume to at least ~85% while talking.
+                // Voice comes out clearly loud: full volume on the loud speaker (games), ~85% at the ear.
                 int max = am.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL);
                 int cur = am.getStreamVolume(AudioManager.STREAM_VOICE_CALL);
-                int want = Math.max(1, Math.round(max * 0.85f));
+                int want = Math.max(1, Math.round(max * (earpiece ? 0.85f : 1f)));
                 if (cur < want) {
                     if (savedVolume < 0) savedVolume = cur;
                     am.setStreamVolume(AudioManager.STREAM_VOICE_CALL, want, 0);

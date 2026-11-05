@@ -54,6 +54,8 @@ interface PeerConn {
 }
 
 let local: MediaStream | null = null;
+/** What the others hear: my mic made louder (falls back to the plain mic). */
+let sendStream: MediaStream | null = null;
 let ice: VoiceIceServer[] = [];
 const peers = new Map<number, PeerConn>();
 /** For checking a voice problem from the browser console. */
@@ -262,7 +264,7 @@ function setRemoteVideo(uid: number, stream: MediaStream | null) {
 
 /** Puts my mic track (or nothing, while listening only) on every connection. */
 function attachMic(pc: RTCPeerConnection) {
-  const track = local?.getAudioTracks()[0] ?? null;
+  const track = (sendStream ?? local)?.getAudioTracks()[0] ?? null;
   for (const t of pc.getTransceivers()) {
     if (t.receiver.track?.kind !== 'audio') continue;
     if (t.direction !== 'sendrecv') t.direction = 'sendrecv';
@@ -426,10 +428,38 @@ export async function joinVoice(roomId: string, mic = false, opts: { earpiece?: 
   }
 }
 
+/**
+ * Makes my voice clearly loud for the others: a gain boost with a compressor so it never
+ * crackles. Echo cancelling already happened on the raw mic, so this doesn't add echo.
+ */
+async function louder(raw: MediaStream): Promise<MediaStream | null> {
+  const c = audioCtx();
+  if (!c || (globalThis as any).__qwNoBoost) return null;
+  try {
+    if (c.state !== 'running') await Promise.race([c.resume(), new Promise((r) => setTimeout(r, 400))]);
+    if (c.state !== 'running') return null;
+    const src = c.createMediaStreamSource(raw);
+    const gain = c.createGain();
+    gain.gain.value = 2;
+    const comp = c.createDynamicsCompressor();
+    comp.threshold.value = -20;
+    comp.knee.value = 10;
+    comp.ratio.value = 4;
+    comp.attack.value = 0.003;
+    comp.release.value = 0.2;
+    const out = c.createMediaStreamDestination();
+    src.connect(gain).connect(comp).connect(out);
+    return out.stream;
+  } catch {
+    return null;
+  }
+}
+
 async function openMic() {
   if (local) return;
   local = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, sampleRate: 48000 } });
   localAnalyser = analyse(local) ?? null;
+  sendStream = await louder(local);
   for (const p of peers.values()) attachMic(p.pc);
 }
 
@@ -487,6 +517,8 @@ export function leaveVoice(tellServer = true) {
   for (const uid of [...peers.keys()]) closePeer(uid);
   local?.getTracks().forEach((tr) => tr.stop());
   local = null;
+  sendStream?.getTracks().forEach((tr) => tr.stop());
+  sendStream = null;
   cam?.getTracks().forEach((tr) => tr.stop());
   cam = null;
   localAnalyser = null;

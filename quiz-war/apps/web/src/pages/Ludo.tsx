@@ -1387,7 +1387,13 @@ export function LudoOnline() {
   const last = snap.last;
   const movable = myTurn && state.dice > 0 && last?.type === 'roll' ? last.moves : [];
   const mover = moverOf(state);
-  const tokens = layoutTokens(state, anim);
+  // Every player sees their own colour at the bottom-left (the board turns, like Ludo King).
+  const turn = mySeat ? (3 - mySeat.color + 4) % 4 : 0;
+  const tokens = layoutTokens(state, anim).map((tk) => {
+    let [x, y] = [tk.x, tk.y];
+    for (let r = 0; r < turn; r++) [x, y] = [15 - y, x];
+    return { ...tk, x, y };
+  });
   const pctLeft = snap.deadline ? Math.max(0, Math.min(100, ((snap.deadline - Date.now()) / (snap.turnSeconds * 1000)) * 100)) : null;
   const curSeat = snap.seats[state.turn];
   const finished = snap.status === 'finished' && !!snap.state;
@@ -1396,7 +1402,7 @@ export function LudoOnline() {
   const humanGame = snap.seats.filter((s) => !s.bot).length > 1;
 
   const panel = (corner: (typeof CORNER)[number]) => {
-    const color = CORNER.indexOf(corner) as LudoColor;
+    const color = ((CORNER.indexOf(corner) - turn + 4) % 4) as LudoColor;
     const pi = snap.seats.findIndex((s) => s.color === color);
     if (pi < 0) return <div key={corner} className="ludo-panel empty" />;
     const seat = snap.seats[pi]!;
@@ -1440,7 +1446,7 @@ export function LudoOnline() {
         <div className="ludo-panels top">{(['tl', 'tr'] as const).map(panel)}</div>
         <div className="ludo-board-wrap" style={look.board?.wrap ? { background: look.board.wrap } : undefined}>
           <div className="ludo-board">
-            <svg viewBox="0 0 15 15" className="ludo-svg"><BoardArt /></svg>
+            <svg viewBox="0 0 15 15" className="ludo-svg"><g transform={`rotate(${turn * 90} 7.5 7.5)`}><BoardArt /></g></svg>
             {tokens.map((tk) => {
               const can = tk.pi === mover && movable.includes(tk.tk);
               return (

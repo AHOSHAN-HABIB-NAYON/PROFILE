@@ -22,7 +22,6 @@ import { haptic, share } from '../lib/platform';
 import { profileLink } from '../lib/qr';
 import { toast } from '../lib/toast';
 import { localLudoHistory } from '../lib/ludoHistory';
-import { greeting } from '../lib/greeting';
 
 /** Old box grid, kept for any screen that still wants it. */
 export function StatsGrid({ stats }: { stats: any }) {
@@ -190,7 +189,6 @@ export default function Profile({ tab: initial }: { tab?: 'stats' | 'achievement
             </div>
             <Link to="/profile/edit" className="btn px-edit">{t('Edit profile', 'প্রোফাইল এডিট')}</Link>
           </div>
-          <p className="px-greet">{greeting(t)}</p>
           <h1 className="px-name">{me.username}<NameBadges user={me} size={20} /></h1>
           <div className="px-handle">
             <button onClick={copyUid} aria-label={t(`Copy UID ${me.uid}`, `UID কপি করুন ${me.uid}`)}>
