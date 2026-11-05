@@ -435,7 +435,6 @@ export default function AppSettings() {
         <AppUpdate a={a} />
         <Rate a={a} />
         <Voice a={a} />
-        <RankReward a={a} />
         <LudoCard a={a} />
         <Legal a={a} />
       </div>

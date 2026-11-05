@@ -3,6 +3,7 @@ import { useConfig } from '../hooks/queries';
 import { useCall } from '../lib/call';
 import { useT } from '../lib/i18n';
 import { haptic } from '../lib/platform';
+import { handlePremiumError, needPremium } from '../lib/premium';
 import { toast } from '../lib/toast';
 import { joinVoice, leaveVoice, setMic, toggleMuteForMe, useVoice, voiceSupported, watchVoice } from '../lib/voice';
 import { Avatar } from './Avatar';
@@ -42,6 +43,7 @@ export function VoiceBar({ roomId, players, className = '', autoJoin = true }: {
   // Entering the room / match: listen to everyone right away (my mic stays off until I tap it).
   // During an audio call the call has the mic; match voice waits until it ends.
   const inCall = useCall((s) => !!s.call && s.call.phase !== 'ended');
+  const inCallRoom = useCall((s) => s.call?.id === roomId);
   const enabled = voiceSupported() && cfg?.voiceEnabled !== false && others.length > 0 && !inCall;
   useEffect(() => {
     watchVoice(roomId);
@@ -59,12 +61,14 @@ export function VoiceBar({ roomId, players, className = '', autoJoin = true }: {
     try {
       if (useVoice.getState().roomId === roomId) await setMic(true);
       else await joinVoice(roomId, true);
-    } catch {
+    } catch (e) {
+      if (handlePremiumError(e, 'liveMic')) return void joinVoice(roomId, false).catch(() => undefined);
       toast.error(t('Microphone blocked', 'মাইক্রোফোনের অনুমতি নেই'), t('Allow the microphone for QUIZ WAR in your phone settings.', 'ফোনের সেটিংসে QUIZ WAR-এর মাইক্রোফোন চালু করুন।'));
     }
   };
   const tapMic = () => {
     if (!joined || !st.micOn) {
+      if (!inCallRoom && needPremium('liveMic')) return;
       let seen = false;
       try {
         seen = !!localStorage.getItem(EXPLAINED);

@@ -8,6 +8,7 @@ import { Icon, IconTile } from '../components/Icon';
 import { Sheet } from '../components/Sheet';
 import { PlayerName } from '../components/Verified';
 import { compressImage } from '../lib/image';
+import { handlePremiumError, needPremium } from '../lib/premium';
 import { saveImage, shareImage } from '../lib/shareImage';
 import { canRecordVoice, fmtSecs, useVoiceRecorder, VoiceBubble } from '../components/Voice';
 import { useConfig } from '../hooks/queries';
@@ -159,6 +160,7 @@ export default function Chat() {
   const [holding, setHolding] = useState(false);
   const micDown = (e: React.PointerEvent) => {
     e.preventDefault();
+    if (needPremium('voiceMessages')) return;
     holdRef.current = { at: Date.now(), hold: false };
     void startVoice();
     const timer = window.setTimeout(() => {
@@ -254,7 +256,7 @@ export default function Chat() {
       void qc.invalidateQueries({ queryKey: ['chats'] });
     } catch (e) {
       qc.setQueryData<ThreadData>(key, (d) => (d ? { ...d, items: d.items.filter((m) => m.id !== tempId) } : d));
-      toast.error(t('Photo not sent', 'ছবি যায়নি'), friendlyError(e));
+      if (!handlePremiumError(e, 'photos')) toast.error(t('Photo not sent', 'ছবি যায়নি'), friendlyError(e));
     }
   };
 
@@ -280,7 +282,7 @@ export default function Chat() {
       void qc.invalidateQueries({ queryKey: ['chats'] });
     } catch (e) {
       qc.setQueryData<ThreadData>(key, (d) => (d ? { ...d, items: d.items.filter((m) => m.id !== tempId) } : d));
-      toast.error(t('Voice message not sent', 'ভয়েস মেসেজ যায়নি'), friendlyError(e));
+      if (!handlePremiumError(e, 'voiceMessages')) toast.error(t('Voice message not sent', 'ভয়েস মেসেজ যায়নি'), friendlyError(e));
     }
   };
 
@@ -305,6 +307,7 @@ export default function Chat() {
   const callPeer = () => {
     if (!peer) return;
     if (cfg?.callsEnabled === false) return void toast.info(t('Calls are off right now', 'কল এখন বন্ধ আছে'), undefined, 'phone');
+    if (needPremium('calls')) return;
     void startCall(peer);
   };
   const upcoming = (what: string) => toast.info(t('Coming soon', 'আসছে পরের আপডেটে'), what, 'sparkles');
@@ -605,7 +608,7 @@ export default function Chat() {
           ) : (
           <form className="chat-compose" onSubmit={submit}>
             <button type="button" className={`btn icon ghost${emojiOpen ? ' on' : ''}`} aria-label={t('Emoji', 'ইমোজি')} aria-pressed={emojiOpen} onClick={() => setEmojiOpen((v) => !v)}><Icon name="smile" size={23} /></button>
-            {imagesOn && <button type="button" className="btn icon ghost" aria-label={t('Send a photo', 'ছবি পাঠান')} disabled={!peer} onClick={() => (haptic('tap'), setPhotoMenu(true))}><Icon name="image" size={22} /></button>}
+            {imagesOn && <button type="button" className="btn icon ghost" aria-label={t('Send a photo', 'ছবি পাঠান')} disabled={!peer} onClick={() => (haptic('tap'), needPremium('photos') || setPhotoMenu(true))}><Icon name="image" size={22} /></button>}
             <textarea
               ref={input}
               className="chat-input"

@@ -1,6 +1,6 @@
 import type { AppContext } from './context';
 import { exec, query } from './db/pool';
-import { addDays, bdDateKey } from './lib/time';
+import { addDays, bdDateKey, bdMonthKey } from './lib/time';
 
 /**
  * Background jobs. Each job is idempotent so running several server instances is safe
@@ -21,6 +21,12 @@ export function startJobs(ctx: AppContext) {
   void every(20 * 60_000, 'app-release-check', () => ctx.appRelease.refresh())();
   every(10 * 60_000, 'season-tick', () => ctx.seasons.tick((m) => ctx.log.info(m)));
   every(6 * 60 * 60_000, 'verified-auto', () => ctx.verified.autoGrant());
+  // Top N of last month's leaderboard get 30 days of premium (once, early in the new month).
+  void every(60 * 60_000, 'premium-month-reward', async () => {
+    const lastMonth = bdMonthKey(new Date(Date.now() - 3 * 86400_000));
+    if (lastMonth === bdMonthKey()) return;
+    await ctx.premium.rewardMonth(lastMonth, ctx.settings.app().monthlyPremiumTop ?? 0);
+  })();
   // Chat messages are kept for 7 days only.
   void every(60 * 60_000, 'chat-purge', () => ctx.chat.purgeOld())();
   every(60 * 60_000, 'cleanup', async () => {

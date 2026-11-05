@@ -54,7 +54,7 @@ export class CategoryService {
     if (!c || !c.isPremium) return true;
     if (!userId) return false;
     const row = await queryOne(
-      `SELECT 1 x FROM user_profiles WHERE user_id = ? AND premium_at IS NOT NULL
+      `SELECT 1 x FROM user_profiles WHERE user_id = ? AND (premium_at IS NOT NULL OR premium_until > UTC_TIMESTAMP())
        UNION SELECT 1 FROM user_collection_unlocks WHERE user_id = ? AND category_id = ? LIMIT 1`,
       [userId, userId, categoryId],
     );

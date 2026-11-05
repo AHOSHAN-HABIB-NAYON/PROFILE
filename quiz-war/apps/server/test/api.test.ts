@@ -30,6 +30,38 @@ d('HTTP API (MySQL)', () => {
     await closePool();
   });
 
+  describe('premium', () => {
+    it('stays free while the sale is off, locks photos when on, and redeem codes unlock', async () => {
+      const a = await newPlayer('prem');
+      const info = await api('GET', '/premium', undefined, a.token);
+      expect(info.status).toBe(200);
+      expect(info.body.enabled).toBe(false);
+      expect(info.body.premium).toBe(false);
+      await t.ctx.settings.updateApp({ premiumEnabled: true }, null);
+      try {
+        expect(t.ctx.premium.locked('photos')).toBe(true);
+        await expect(t.ctx.premium.require(a.user.id, 'photos')).rejects.toMatchObject({ code: 'premium_required' });
+        const [code] = await t.ctx.premium.createCodes(1, 30, 1, 'test', 10);
+        const bad = await api('POST', '/premium/redeem', { code: 'NOPE123456' }, a.token);
+        expect(bad.status).toBe(404);
+        const ok = await api('POST', '/premium/redeem', { code: code!.toLowerCase() }, a.token);
+        expect(ok.status).toBe(200);
+        expect(ok.body.days).toBe(30);
+        expect(ok.body.user.premium).toBe(true);
+        expect(new Date(ok.body.user.premiumUntil).getTime()).toBeGreaterThan(Date.now() + 29 * 86400_000);
+        await expect(t.ctx.premium.require(a.user.id, 'photos')).resolves.toBeUndefined();
+        const again = await api('POST', '/premium/redeem', { code: code! }, a.token);
+        expect(again.status).toBe(409);
+        // A second code adds days on top.
+        const [c2] = await t.ctx.premium.createCodes(1, 10, 5, null, null);
+        const more = await api('POST', '/premium/redeem', { code: c2! }, a.token);
+        expect(new Date(more.body.user.premiumUntil).getTime()).toBeGreaterThan(Date.now() + 39 * 86400_000);
+      } finally {
+        await t.ctx.settings.updateApp({ premiumEnabled: false }, null);
+      }
+    });
+  });
+
   describe('authentication', () => {
     it('registers, assigns a UID and requires onboarding', async () => {
       const r = await api('POST', '/auth/register', { email: 'first@test.dev', password: 'secret123' });

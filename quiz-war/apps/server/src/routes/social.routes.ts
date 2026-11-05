@@ -50,6 +50,7 @@ export async function socialRoutes(app: FastifyInstance, ctx: AppContext) {
   /** Voice message: multipart with the audio file first-or-last plus fields `secs` and optional `replyTo`. */
   app.post('/chats/:uid/voice', { ...auth, config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (req) => {
     const p = parse(z.object({ uid: z.string().max(20) }), req.params);
+    await ctx.premium.require(uid(req), 'voiceMessages');
     const file = await (req as any).file({ limits: { fileSize: VOICE_MAX_BYTES, files: 1 } });
     if (!file) throw badRequest('No recording uploaded');
     const data: Buffer = await file.toBuffer();
@@ -61,6 +62,7 @@ export async function socialRoutes(app: FastifyInstance, ctx: AppContext) {
   /** Photo message: multipart with one image (field `replyTo` optional, before the file). */
   app.post('/chats/:uid/image', { ...auth, config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (req) => {
     const p = parse(z.object({ uid: z.string().max(20) }), req.params);
+    await ctx.premium.require(uid(req), 'photos');
     const file = await (req as any).file({ limits: { fileSize: IMAGE_MAX_IN_BYTES, files: 1 } });
     if (!file) throw badRequest('No photo uploaded');
     const data: Buffer = await file.toBuffer();

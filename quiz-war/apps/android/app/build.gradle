@@ -102,6 +102,8 @@ dependencies {
     implementation project(':capacitor-android')
     // Incoming calls ring natively from push (same version as the push plugin uses).
     implementation "com.google.firebase:firebase-messaging:24.1.0"
+    // Google Play Billing: monthly Premium subscription.
+    implementation "com.android.billingclient:billing:7.1.1"
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"

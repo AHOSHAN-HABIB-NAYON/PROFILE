@@ -503,6 +503,8 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
       'voice:join',
       guard(z.object({ roomId: voiceRoomId, mic: z.boolean() }), async (p) => {
         await assertVoiceMember(p.roomId);
+        // Talking in games and rooms may need premium (listening is free; calls have their own rule).
+        if (p.mic && !calls.has(p.roomId)) await ctx.premium.require(userId, 'liveMic');
         const old = voice.join(p.roomId, userId, socket.id, p.mic);
         if (old) io.to(old).emit('voice:peers', { roomId: p.roomId, peers: [] });
         voiceBroadcast(p.roomId);
@@ -519,7 +521,8 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
     socket.on('voice:who', guard(z.object({ roomId: voiceRoomId }), (p) => ({ peers: voice.peers(p.roomId) })));
     socket.on(
       'voice:mic',
-      guard(z.object({ roomId: voiceRoomId, on: z.boolean() }), (p) => {
+      guard(z.object({ roomId: voiceRoomId, on: z.boolean() }), async (p) => {
+        if (p.on && !calls.has(p.roomId)) await ctx.premium.require(userId, 'liveMic');
         if (voice.setMic(p.roomId, userId, p.on)) voiceBroadcast(p.roomId);
         return {};
       }),
@@ -539,11 +542,11 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
 
     /* ------------------------------ Audio calls ------------------------------ */
     const callId = z.object({ callId: voiceRoomId });
-    socket.on('call:start', guard(z.object({ to: z.number().int().positive() }), (p) => calls.start(userId, socket.id, p.to)));
+    socket.on('call:start', guard(z.object({ to: z.number().int().positive() }), async (p) => (await ctx.premium.require(userId, 'calls'), calls.start(userId, socket.id, p.to))));
     socket.on('call:answer', guard(callId, (p) => (calls.answer(userId, socket.id, p.callId), {})));
     socket.on('call:decline', guard(callId, (p) => (calls.decline(userId, p.callId), {})));
     socket.on('call:end', guard(callId, (p) => (calls.end(userId, p.callId), {})));
-    socket.on('call:add', guard(z.object({ callId: voiceRoomId, to: z.number().int().positive() }), (p) => calls.add(userId, p.callId, p.to)));
+    socket.on('call:add', guard(z.object({ callId: voiceRoomId, to: z.number().int().positive() }), async (p) => (await ctx.premium.require(userId, 'calls'), calls.add(userId, p.callId, p.to))));
     void calls.onConnect(userId).catch(() => undefined);
 
     /* ------------------------------ Online Ludo ------------------------------ */

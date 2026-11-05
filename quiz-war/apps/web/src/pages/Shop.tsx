@@ -1,12 +1,12 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { PageHeader } from '../components/AppShell';
 import { CountUp, Empty, Skeleton } from '../components/Feedback';
 import { Icon, IconTile, type IconName } from '../components/Icon';
 import { PullToRefresh } from '../components/PullToRefresh';
 import { VerifiedBadge } from '../components/Verified';
-import { useMissions, type Mission } from '../hooks/queries';
+import { useConfig, useMissions, type Mission } from '../hooks/queries';
 import { api, friendlyError } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { num, useLang, useT } from '../lib/i18n';
@@ -220,6 +220,9 @@ export default function Shop() {
   const missions = useMissions();
   const claimable = missions.data?.claimable ?? 0;
   const coins = useAuth((s) => s.user?.coins ?? 0);
+  const premiumNow = useAuth((s) => !!s.user?.premium);
+  const cfgPremium = !!useConfig().data?.premiumEnabled;
+  const nav = useNavigate();
   const qc = useQueryClient();
   const { data, isLoading, refetch } = useQuery({ queryKey: ['shop'], queryFn: async () => (await api<{ items: any[] }>('/shop')).items });
   const [buying, setBuying] = useState<string | null>(null);
@@ -281,6 +284,13 @@ export default function Shop() {
           <Missions />
         ) : (
           <>
+            {cfgPremium && (
+              <button type="button" className="premium-entry" onClick={() => (haptic('tap'), nav('/premium'))}>
+                <span className="pe-ic"><Icon name="crown" size={24} /></span>
+                <span className="grow"><b>{premiumNow ? t('You are Premium', 'আপনি প্রিমিয়াম') : t('Get Premium', 'প্রিমিয়াম নিন')}</b><small>{t('Calls, voice, photos and live talk in games', 'কল, ভয়েস, ছবি আর খেলায় লাইভ কথা')}</small></span>
+                <Icon name="chevron" size={20} />
+              </button>
+            )}
             <VerifiedCard />
             <p className="small muted row top gap-sm">
               <Icon name="shield-check" size={18} style={{ color: 'var(--success)', marginTop: 1 }} />

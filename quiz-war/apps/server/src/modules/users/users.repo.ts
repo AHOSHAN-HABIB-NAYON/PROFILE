@@ -1,7 +1,7 @@
 import type { MeUser, PublicUser } from '@quizwar/shared';
 import { query, queryOne, type Conn } from '../../db/pool';
 
-export const PUBLIC_USER_COLUMNS = `u.id, u.uid, p.username, p.avatar_url, p.avatar_thumb_url, p.level, p.rating, p.league, p.frame, p.title, p.verified_at, p.premium_at`;
+export const PUBLIC_USER_COLUMNS = `u.id, u.uid, p.username, p.avatar_url, p.avatar_thumb_url, p.level, p.rating, p.league, p.frame, p.title, p.verified_at, p.premium_at, p.premium_until`;
 
 export interface PublicUserRow {
   id: number;
@@ -16,7 +16,11 @@ export interface PublicUserRow {
   title: string | null;
   verified_at?: Date | null;
   premium_at?: Date | null;
+  premium_until?: Date | null;
 }
+
+/** Premium: given for good (premium_at) or still inside a paid / redeemed period. */
+export const isPremiumRow = (r: { premium_at?: Date | null; premium_until?: Date | null }) => !!r.premium_at || (!!r.premium_until && new Date(r.premium_until).getTime() > Date.now());
 
 export function toPublicUser(r: PublicUserRow): PublicUser {
   return {
@@ -31,7 +35,7 @@ export function toPublicUser(r: PublicUserRow): PublicUser {
     frame: r.frame,
     title: r.title,
     verified: !!r.verified_at,
-    premium: !!r.premium_at,
+    premium: isPremiumRow(r),
   };
 }
 
@@ -87,6 +91,8 @@ export async function getMe(id: number): Promise<MeUser | null> {
     emailActivity: !!r.email_activity,
     hasPassword: !!r.has_password,
     hasGoogle: !!r.has_google,
+    premiumUntil: r.premium_at ? null : r.premium_until && new Date(r.premium_until).getTime() > Date.now() ? new Date(r.premium_until).toISOString() : null,
+    premiumForever: !!r.premium_at,
   };
 }
 

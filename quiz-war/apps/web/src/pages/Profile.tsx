@@ -13,6 +13,7 @@ import { PullToRefresh } from '../components/PullToRefresh';
 import { QrCode } from '../components/Qr';
 import { Sheet } from '../components/Sheet';
 import { NameBadges } from '../components/Verified';
+import { useConfig } from '../hooks/queries';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { num, useLang, useT } from '../lib/i18n';
@@ -100,6 +101,7 @@ export default function Profile({ tab: initial }: { tab?: 'stats' | 'achievement
   const seasons = useQuery({ queryKey: ['my-seasons'], queryFn: async () => (await api<{ items: any[] }>('/me/seasons')).items, enabled: tab === 'stats' });
   const friends = useQuery({ queryKey: ['friends'], queryFn: async () => (await api<{ items: any[] }>('/friends')).items });
   const league = leagueForRating(me.rating, leagues);
+  const premiumOn = !!useConfig().data?.premiumEnabled;
   const s = pub.data?.stats;
   const copyUid = () => void navigator.clipboard?.writeText(me.uid).then(() => (haptic('tap'), toast.success(t('UID copied', 'UID কপি হয়েছে'), me.uid, 'copy')));
 
@@ -143,6 +145,13 @@ export default function Profile({ tab: initial }: { tab?: 'stats' | 'achievement
             )}
           </div>
           <div className="px-level"><LevelBar xp={me.xp} /></div>
+          {premiumOn && (
+            <Link to="/premium" className="premium-entry px-premium" onClick={() => haptic('tap')}>
+              <span className="pe-ic"><Icon name="crown" size={22} /></span>
+              <span className="grow"><b>{me.premium ? t('Premium is on', 'প্রিমিয়াম চালু আছে') : t('Get Premium', 'প্রিমিয়াম নিন')}</b><small>{me.premium && me.premiumUntil ? t(`Until ${new Date(me.premiumUntil).toLocaleDateString('en-GB')}`, `${new Date(me.premiumUntil).toLocaleDateString('bn-BD')} পর্যন্ত`) : t('Calls, voice, photos, live talk', 'কল, ভয়েস, ছবি, লাইভ কথা')}</small></span>
+              <Icon name="chevron" size={18} />
+            </Link>
+          )}
           {s ? (
             <ProfileNumbers
               items={[

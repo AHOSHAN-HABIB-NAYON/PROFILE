@@ -15,6 +15,7 @@ import GameSettings from './pages/GameSettings';
 import AppSettings from './pages/AppSettings';
 import Announcements from './pages/Announcements';
 import Promos from './pages/Promos';
+import Premium from './pages/Premium';
 import OurApps from './pages/OurApps';
 import Messages from './pages/Messages';
 import Content from './pages/Content';
@@ -38,6 +39,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
     { to: '/categories', label: 'Categories', icon: 'folder', perm: 'questions.view' },
     { to: '/collections', label: 'Home collections', icon: 'folder', perm: 'questions.view' },
     { to: '/content', label: 'Achievements & Shop', icon: 'award', perm: 'content.manage' },
+    { to: '/premium', label: 'Premium', icon: 'crown', perm: 'users.view' },
     { to: '/missions', label: 'Missions', icon: 'target', perm: 'content.manage' },
     { to: '/announcements', label: 'Announcements', icon: 'megaphone', perm: 'announcements.send' },
     { to: '/promos', label: 'My app promos', icon: 'sparkles', perm: 'announcements.send' },
@@ -208,6 +210,7 @@ export function App() {
           <Route path="/game-settings" element={<Guard perm="settings.game"><GameSettings /></Guard>} />
           <Route path="/app-settings" element={<Guard perm="settings.app"><AppSettings /></Guard>} />
           <Route path="/announcements" element={<Guard perm="announcements.send"><Announcements /></Guard>} />
+          <Route path="/premium" element={<Guard perm="users.view"><Premium /></Guard>} />
           <Route path="/promos" element={<Guard perm="announcements.send"><Promos /></Guard>} />
           <Route path="/our-apps" element={<Guard perm="announcements.send"><OurApps /></Guard>} />
           <Route path="/messages" element={<Guard perm="reports.view"><Messages /></Guard>} />

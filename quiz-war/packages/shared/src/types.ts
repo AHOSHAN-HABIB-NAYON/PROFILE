@@ -66,6 +66,10 @@ export interface MeUser extends PublicUser {
   emailActivity: boolean;
   hasPassword: boolean;
   hasGoogle: boolean;
+  /** Paid / redeemed premium: when it ends (ISO). Null when not premium or premium for good. */
+  premiumUntil?: string | null;
+  /** Premium given for good by an admin. */
+  premiumForever?: boolean;
 }
 
 export interface QuestionPublic {

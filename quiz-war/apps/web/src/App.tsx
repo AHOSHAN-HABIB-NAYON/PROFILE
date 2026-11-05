@@ -12,6 +12,7 @@ import { OpenInApp } from './components/OpenInApp';
 import { PromoHost } from './components/Promo';
 import { ChatHeads } from './components/ChatHeads';
 import { Splash } from './components/Splash';
+import { Paywall } from './components/Paywall';
 import { Toasts } from './components/Toasts';
 import { IncomingInvites } from './components/Invites';
 import { useOnline } from './hooks/useOnline';
@@ -57,6 +58,7 @@ const EditProfile = lazy(() => import('./pages/EditProfile'));
 const Settings = lazy(() => import('./pages/Settings'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const Shop = lazy(() => import('./pages/Shop'));
+const Premium = lazy(() => import('./pages/Premium'));
 const Squads = lazy(() => import('./pages/Squads'));
 const SquadDetail = lazy(() => import('./pages/SquadDetail'));
 const History = lazy(() => import('./pages/History'));
@@ -388,6 +390,7 @@ export function App() {
           <PromoHost />
           <ChatHeads />
           <CallScreen />
+          <Paywall />
         </>
       )}
       {status !== 'loading' && (
@@ -421,6 +424,7 @@ export function App() {
             <Route path="/about" element={<Shell><About /></Shell>} />
             <Route path="/notifications" element={<Shell><Notifications /></Shell>} />
             <Route path="/shop" element={<Shell><Shop /></Shell>} />
+            <Route path="/premium" element={<Shell><Premium /></Shell>} />
             <Route path="/squads" element={<Shell><Squads /></Shell>} />
             <Route path="/squads/:id" element={<Shell><SquadDetail /></Shell>} />
             <Route path="/history" element={<Shell><History /></Shell>} />

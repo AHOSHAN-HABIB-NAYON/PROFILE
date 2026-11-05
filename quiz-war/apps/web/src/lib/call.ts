@@ -1,4 +1,5 @@
 import type { CallEndReason, PublicUser } from '@quizwar/shared';
+import { handlePremiumError, needPremium } from './premium';
 import { create } from 'zustand';
 import { tr } from './i18n';
 import { isNative } from './platform';
@@ -296,6 +297,11 @@ export async function startCall(peer: PublicUser) {
     patch({ id: r.callId });
   } catch (e: any) {
     const code = e?.code;
+    if (code === 'premium_required') {
+      finish(tr('Calls need Premium', 'কল করতে প্রিমিয়াম লাগবে'));
+      handlePremiumError(e, 'calls');
+      return;
+    }
     finish(
       code === 'busy'
         ? tr('On another call', 'অন্য কলে আছে')
@@ -341,10 +347,12 @@ export function hangUp() {
 export async function addToCall(user: PublicUser) {
   const c = useCall.getState().call;
   if (!c?.id || c.phase !== 'live') return false;
+  if (needPremium('calls')) return false;
   try {
     await emit('call:add', { callId: c.id, to: user.id });
     return true;
   } catch (e: any) {
+    if (handlePremiumError(e, 'calls')) return false;
     toast.error(
       e?.code === 'busy' ? tr('On another call', 'অন্য কলে আছে') : e?.code === 'call_full' ? tr('Up to 4 people in a call', 'একটি কলে সর্বোচ্চ ৪ জন') : tr('Could not add', 'যোগ করা গেল না'),
       e?.code === 'busy' || e?.code === 'call_full' ? undefined : e?.message,

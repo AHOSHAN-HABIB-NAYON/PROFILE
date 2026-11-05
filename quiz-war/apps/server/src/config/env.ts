@@ -67,6 +67,10 @@ const envSchema = z.object({
   VAPID_SUBJECT: z.string().default('mailto:support@quizwar.app'),
   /** Firebase service-account JSON (stringified) for FCM HTTP v1. */
   FCM_SERVICE_ACCOUNT_JSON: z.string().optional(),
+  /** Service account JSON with Play Console access (checks Premium purchases). Falls back to FCM's. */
+  PLAY_SERVICE_ACCOUNT_JSON: z.string().optional(),
+  /** Secret in the Play real-time notification push URL (…/billing/rtdn?key=…). */
+  PLAY_RTDN_SECRET: z.string().optional(),
 
   STORAGE_DRIVER: z.enum(['local']).default('local'),
   STORAGE_LOCAL_DIR: z.string().default('./uploads'),

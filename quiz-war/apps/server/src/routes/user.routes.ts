@@ -210,6 +210,33 @@ export async function userRoutes(app: FastifyInstance, ctx: AppContext) {
   /* --------------------------------- Shop -------------------------------- */
   app.get('/shop', auth, async (req) => ({ items: await ctx.shop.list(uid(req)) }));
   app.get('/shop/ludo-look', auth, async (req) => ctx.shop.ludoLook(uid(req)));
+
+  /* -------------------------------- Premium ------------------------------- */
+  app.get('/premium', auth, async (req) => {
+    const a = ctx.settings.app();
+    const me = await getMe(uid(req));
+    return {
+      enabled: !!a.premiumEnabled,
+      productId: a.premiumProductId || 'premium_monthly',
+      premium: !!me?.premium,
+      until: me?.premiumUntil ?? null,
+      forever: !!me?.premiumForever,
+      canBuy: ctx.premium.canVerifyPlay,
+      subscribed: await ctx.premium.hasPlaySubscription(uid(req)),
+      locks: { calls: ctx.premium.locked('calls'), voiceMessages: ctx.premium.locked('voiceMessages'), photos: ctx.premium.locked('photos'), liveMic: ctx.premium.locked('liveMic') },
+    };
+  });
+  app.post('/premium/redeem', { ...auth, config: { rateLimit: { max: 10, timeWindow: '10 minutes' } } }, async (req) => {
+    const b = parse(z.object({ code: z.string().trim().min(4).max(40) }), req.body);
+    const r = await ctx.premium.redeem(uid(req), b.code);
+    return { ...r, user: await getMe(uid(req)) };
+  });
+  /** The app sends each Play purchase here (after buying, and on start to restore). */
+  app.post('/premium/play/verify', { ...auth, config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (req) => {
+    const b = parse(z.object({ purchaseToken: z.string().min(10).max(4000) }), req.body);
+    const r = await ctx.premium.verifyPlay(uid(req), b.purchaseToken);
+    return { ...r, user: await getMe(uid(req)) };
+  });
   app.post('/shop/purchase', { ...auth, config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (req) => {
     const b = parse(z.object({ itemKey: z.string().max(40), quantity: z.number().int().min(1).max(10).optional() }), req.body);
     return ctx.shop.purchase(uid(req), b.itemKey, b.quantity ?? 1);

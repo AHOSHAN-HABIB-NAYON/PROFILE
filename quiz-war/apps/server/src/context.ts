@@ -31,6 +31,7 @@ import { QuestionAdminService } from './modules/questions/question.admin.service
 import { MysqlQuestionSource } from './modules/questions/question.source';
 import { ReportService } from './modules/reports/report.service';
 import { SettingsService } from './modules/settings/settings.service';
+import { PremiumService } from './modules/premium/premium.service';
 import { ShopService } from './modules/shop/shop.service';
 import { BattleRequestService } from './modules/social/battle.service';
 import { FriendsService } from './modules/social/friends.service';
@@ -157,6 +158,13 @@ export function createContext(env: Env, log: Logger, overrides: { mailer?: Maile
   const images = new ImageService(storage, env.UPLOAD_MAX_BYTES);
   const profile = new ProfileService(images, () => settings.game());
   const shop = new ShopService(progression);
+  const premium = new PremiumService({
+    settings: () => settings.app(),
+    packageName: env.ANDROID_PACKAGE_NAME,
+    serviceAccountJson: env.PLAY_SERVICE_ACCOUNT_JSON || env.FCM_SERVICE_ACCOUNT_JSON,
+    pushAccount: (uid) => progression.pushAccount(uid),
+    log: { info: (o, m) => log.info(o, m), error: (o, m) => log.error(o, m) },
+  });
   const reports = new ReportService();
   const categories = new CategoryService();
   const promos = new PromoService();
@@ -221,6 +229,7 @@ export function createContext(env: Env, log: Logger, overrides: { mailer?: Maile
     images,
     profile,
     shop,
+    premium,
     reports,
     categories,
     promos,

@@ -109,7 +109,26 @@ export default function UserDetail() {
               }}
             >
               <Icon name="crown" size={16} />
-              {u.premium_at ? 'Remove premium' : 'Give premium badge'}
+              {u.premium_at ? 'Remove premium for good' : 'Premium for good'}
+            </button>
+            <button
+              className="btn"
+              onClick={async () => {
+                const v = prompt('Give premium for how many days? (0 = end timed premium now)', '30');
+                if (v === null) return;
+                const days = Math.max(0, Math.min(3650, Math.round(Number(v) || 0)));
+                setMsg({});
+                try {
+                  await api(`/users/${id}/premium-days`, { body: { days } });
+                  setMsg({ ok: days ? `${days} days of premium given.` : 'Timed premium ended.' });
+                  void qc.invalidateQueries({ queryKey: ['user', id] });
+                } catch (e2) {
+                  setMsg({ err: errMsg(e2) });
+                }
+              }}
+            >
+              <Icon name="crown" size={16} />
+              {u.premium_until && new Date(u.premium_until).getTime() > Date.now() ? `Premium till ${new Date(u.premium_until).toLocaleDateString()} · change` : 'Premium days'}
             </button>
             {can('users.reset') && <>
               <span className="faint" aria-hidden>|</span>

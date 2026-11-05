@@ -170,6 +170,40 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     await ctx.progression.pushAccount(id);
     return { ok: true };
   });
+  /** Premium for N days (adds to what is left), or days = 0 to end timed premium now. */
+  app.post('/users/:id/premium-days', can('users.moderate'), async (req) => {
+    const id = Number((req.params as any).id);
+    const b = parse(z.object({ days: z.number().int().min(0).max(3650) }), req.body);
+    if (b.days > 0) await ctx.premium.addDays(id, b.days);
+    else await ctx.premium.removeTimed(id);
+    await log(req, 'user.premium_days', { type: 'user', id, summary: b.days ? `+${b.days} days premium` : 'Timed premium removed' });
+    return { ok: true };
+  });
+
+  /* ------------------------------- Premium ------------------------------- */
+  app.get('/premium', can('users.view'), async () => ({
+    stats: await ctx.premium.stats(),
+    codes: await ctx.premium.listCodes(),
+    purchases: await ctx.premium.recentPurchases(),
+    canVerifyPlay: ctx.premium.canVerifyPlay,
+    rtdn: !!ctx.env.PLAY_RTDN_SECRET,
+  }));
+  app.post('/premium/codes', can('users.moderate'), async (req) => {
+    const b = parse(
+      z.object({ count: z.number().int().min(1).max(100), days: z.number().int().min(1).max(365), maxUses: z.number().int().min(1).max(100000), note: z.string().trim().max(120).nullish(), validDays: z.number().int().min(1).max(3650).nullish() }),
+      req.body,
+    );
+    const codes = await ctx.premium.createCodes(b.count, b.days, b.maxUses, b.note || null, b.validDays ?? null);
+    await log(req, 'premium.codes', { type: 'settings', summary: `${b.count} premium code(s), ${b.days} days, ${b.maxUses} use(s)` });
+    return { codes };
+  });
+  app.delete('/premium/codes/:code', can('users.moderate'), async (req) => {
+    const code = String((req.params as any).code).toUpperCase();
+    await ctx.premium.deleteCode(code);
+    await log(req, 'premium.code_delete', { type: 'settings', summary: code });
+    return { ok: true };
+  });
+
   app.post('/users/:id/verified', can('users.moderate'), async (req) => {
     const id = Number((req.params as any).id);
     const b = parse(z.object({ verified: z.boolean() }), req.body);

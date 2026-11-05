@@ -1,4 +1,5 @@
 import type { VoiceIceServer, VoicePeer, VoiceSignal } from '@quizwar/shared';
+import { handlePremiumError } from './premium';
 import { create } from 'zustand';
 import { useAuth } from './auth';
 import { emit, getSocket, onSocket } from './socket';
@@ -321,7 +322,13 @@ export async function setMic(on: boolean) {
   if (on) await openMic();
   for (const tr of local?.getAudioTracks() ?? []) tr.enabled = on;
   st.set({ micOn: on });
-  void emit('voice:mic', { roomId: st.roomId, on }).catch(() => undefined);
+  void emit('voice:mic', { roomId: st.roomId, on }).catch((e) => {
+    // Talking needs premium here: switch the mic straight back off.
+    if (!on || e?.code !== 'premium_required') return;
+    for (const tr of local?.getAudioTracks() ?? []) tr.enabled = false;
+    useVoice.getState().set({ micOn: false });
+    handlePremiumError(e, 'liveMic');
+  });
 }
 
 /** Loud speaker (matches, rooms) or the earpiece (calls, until the player taps "Speaker"). */

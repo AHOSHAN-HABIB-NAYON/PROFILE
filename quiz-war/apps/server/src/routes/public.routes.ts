@@ -26,6 +26,21 @@ export async function publicRoutes(app: FastifyInstance, ctx: AppContext, static
   });
 
   app.get('/health', async () => ({ ok: true, uptime: Math.round(process.uptime()) }));
+
+  /** Google Play real-time developer notifications (Pub/Sub push subscription). */
+  app.post('/api/v1/billing/rtdn', async (req, reply) => {
+    const secret = ctx.env.PLAY_RTDN_SECRET;
+    if (!secret || (req.query as any)?.key !== secret) return reply.status(403).send({ ok: false });
+    try {
+      const data = (req.body as any)?.message?.data;
+      const n = data ? JSON.parse(Buffer.from(String(data), 'base64').toString('utf8')) : null;
+      if (n && (!n.packageName || n.packageName === ctx.env.ANDROID_PACKAGE_NAME)) await ctx.premium.onPlayNotification(n);
+    } catch (err) {
+      ctx.log.error({ err }, 'play notification failed');
+      return reply.status(500).send({ ok: false });
+    }
+    return reply.status(204).send();
+  });
   app.get('/health/ready', async (_req, reply) => {
     try {
       const { db } = await import('../db/pool');

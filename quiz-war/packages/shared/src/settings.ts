@@ -306,6 +306,16 @@ export const appSettingsSchema = z.object({
   ludoWinCoins: z.number().int().min(0).max(10000).default(20),
   /** Monthly reward shown on the Rank page: the top N of the monthly board get premium (0 = off). */
   monthlyPremiumTop: z.number().int().min(0).max(100).default(5),
+  /** Premium sale: the Premium page, Play subscription and the locks below. Off = everything free. */
+  premiumEnabled: z.boolean().default(false),
+  /** Google Play subscription product id (Play Console > Monetize > Subscriptions). */
+  premiumProductId: z.string().max(100).default('premium_monthly'),
+  /** What needs premium (only while premiumEnabled is on). Text chat always stays free. */
+  premiumCalls: z.boolean().default(true),
+  premiumVoiceMessages: z.boolean().default(true),
+  premiumPhotos: z.boolean().default(true),
+  /** Talking (mic) in quiz / Ludo games and rooms. Listening stays free. */
+  premiumLiveMic: z.boolean().default(true),
   /** Home "Collections" (previous-year question sets). */
   collectionsEnabled: z.boolean().default(true),
 });
@@ -346,6 +356,12 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   voiceEnabled: true,
   callsEnabled: true,
   monthlyPremiumTop: 5,
+  premiumEnabled: false,
+  premiumProductId: 'premium_monthly',
+  premiumCalls: true,
+  premiumVoiceMessages: true,
+  premiumPhotos: true,
+  premiumLiveMic: true,
   ludoEnabled: true,
   ludoTurnSeconds: 15,
   ludoWinCoins: 20,
