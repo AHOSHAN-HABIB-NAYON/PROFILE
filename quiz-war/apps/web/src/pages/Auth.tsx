@@ -375,7 +375,7 @@ function AuthForm({ mode }: { mode: 'login' | 'register' }) {
         )}
       </p>
       <p className="center xs faint">
-        {t('By continuing you agree to the', 'চালিয়ে গেলে আপনি আমাদের')} <Link to="/legal/terms">{t('Terms', 'শর্তাবলি')}</Link> {t('and', 'ও')}{' '}
+        {t('By continuing you confirm you are 18 or older and agree to the', 'চালিয়ে গেলে আপনি নিশ্চিত করছেন যে আপনার বয়স ১৮+ এবং আমাদের')} <Link to="/legal/terms">{t('Terms', 'শর্তাবলি')}</Link> {t('and', 'ও')}{' '}
         <Link to="/legal/privacy">{t('Privacy Policy', 'প্রাইভেসি পলিসি')}</Link>
         {t('.', ' মেনে নিচ্ছেন।')}
       </p>

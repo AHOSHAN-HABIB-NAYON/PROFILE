@@ -180,6 +180,11 @@ export default function About() {
           <span className="m-text"><b>{t('Community guidelines', 'কমিউনিটি নির্দেশিকা')}</b></span>
           <Icon name="chevron" size={20} />
         </Link>
+        <Link to="/legal/child-safety" className="menu-row">
+          <IconTile name="shield" tone="danger" size={40} />
+          <span className="m-text"><b>{t('Child safety standards', 'শিশু সুরক্ষা নীতি')}</b></span>
+          <Icon name="chevron" size={20} />
+        </Link>
       </section>
       <p className="center xs faint">
         {t('Made with care in Bangladesh', 'যত্ন নিয়ে বাংলাদেশে তৈরি')} · © {new Date().getFullYear()} QUIZ WAR

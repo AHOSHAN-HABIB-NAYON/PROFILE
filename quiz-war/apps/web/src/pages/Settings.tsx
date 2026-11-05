@@ -293,6 +293,7 @@ export default function Settings() {
         <Row icon="info" title={t('About QUIZ WAR', 'QUIZ WAR সম্পর্কে')} sub={t('Version, privacy, terms', 'ভার্সন, প্রাইভেসি, শর্তাবলি')} to="/about" />
         <Row icon="shield-check" tone="accent" title={t('Privacy policy', 'প্রাইভেসি পলিসি')} to="/legal/privacy" />
         <Row icon="file" tone="neutral" title={t('Terms of service', 'ব্যবহারের শর্তাবলি')} to="/legal/terms" />
+        <Row icon="shield" tone="danger" title={t('Child safety standards', 'শিশু সুরক্ষা নীতি')} to="/legal/child-safety" />
       </section>
 
       <section className="menu">

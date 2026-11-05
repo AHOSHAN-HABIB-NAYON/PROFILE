@@ -300,7 +300,10 @@ export default function Premium() {
               <Icon name="smartphone" size={18} /> {t('Get Premium in the app', 'অ্যাপে প্রিমিয়াম নিন')}
             </button>
           )}
-          <p className="pv2-fine">{t('Cancel any time · Paid through Google Play', 'যেকোনো সময় বন্ধ করা যায় · Google Play দিয়ে পেমেন্ট')}</p>
+          <p className="pv2-fine">
+            {t('Renews automatically · cancel any time in Google Play', 'নিজে থেকে রিনিউ হয় · Google Play থেকে যেকোনো সময় বন্ধ করা যায়')} ·{' '}
+            <a href="/legal/terms" onClick={(e) => (e.preventDefault(), nav('/legal/terms'))}>{t('Terms', 'শর্তাবলি')}</a> · <a href="/legal/privacy" onClick={(e) => (e.preventDefault(), nav('/legal/privacy'))}>{t('Privacy', 'প্রাইভেসি')}</a>
+          </p>
           <Links onGift={() => setGift(true)} onHelp={() => setHelp(true)} />
         </div>
       )}
