@@ -1,4 +1,5 @@
 import type { ModeKey } from './modes';
+import type { LudoSnapshot } from './ludo';
 import type { AiLevel, ChatMessage, Difficulty, MatchState, MatchType, PowerUp, PresenceStatus, PublicUser, QuestionPublic } from './types';
 
 /* ----------------------------- Match snapshots ----------------------------- */
@@ -187,6 +188,18 @@ export interface ClientToServerEvents {
   'call:end': (p: { callId: string }, ack?: Ack) => void;
   /** Bring a friend into a live call (up to 4 people). */
   'call:add': (p: { callId: string; to: number }, ack?: Ack) => void;
+  /** Online Ludo. */
+  'ludo:queue': (p: { mode: '1v1' | '2v2' }, ack: Ack<{ gameId?: string }>) => void;
+  'ludo:unqueue': (p: Record<string, never>, ack?: Ack) => void;
+  'ludo:create': (p: { size: 2 | 4; teams: boolean }, ack: Ack<{ snapshot: LudoSnapshot }>) => void;
+  'ludo:join': (p: { code: string }, ack: Ack<{ snapshot: LudoSnapshot }>) => void;
+  'ludo:start': (p: { gameId: string }, ack?: Ack) => void;
+  'ludo:leave': (p: { gameId: string }, ack?: Ack) => void;
+  'ludo:roll': (p: { gameId: string }, ack?: Ack) => void;
+  'ludo:move': (p: { gameId: string; token: number }, ack?: Ack) => void;
+  'ludo:resume': (p: { gameId: string }, ack: Ack<{ snapshot: LudoSnapshot }>) => void;
+  'ludo:rematch': (p: { gameId: string }, ack?: Ack) => void;
+  'ludo:invite': (p: { gameId: string; to: number }, ack?: Ack) => void;
 }
 
 export interface VoicePeer {
@@ -241,5 +254,9 @@ export interface ServerToClientEvents {
   /** The other side picked up (to the caller), or I picked up on another device. */
   'call:accepted': (p: { callId: string; elsewhere?: boolean }) => void;
   'call:ended': (p: { callId: string; reason: CallEndReason; secs?: number }) => void;
+  'ludo:snap': (p: LudoSnapshot) => void;
+  /** Auto match found a game. */
+  'ludo:matched': (p: { gameId: string }) => void;
+  'ludo:invited': (p: { gameId: string; code: string; from: PublicUser }) => void;
 }
 export type CallEndReason = 'ended' | 'missed' | 'declined' | 'cancelled' | 'busy' | 'lost' | 'elsewhere';

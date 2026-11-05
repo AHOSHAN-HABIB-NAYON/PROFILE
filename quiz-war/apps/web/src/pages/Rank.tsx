@@ -63,6 +63,54 @@ function LeagueCard() {
   );
 }
 
+/** Ludo board: most online wins (all time / this month / this week). */
+function LudoRank() {
+  const t = useT();
+  const lang = useLang();
+  const me = useAuth((s) => s.user)!;
+  const [scope, setScope] = useState<'global' | 'monthly' | 'weekly'>('monthly');
+  const q = useQuery({ queryKey: ['ludo-lb', scope], queryFn: () => api<{ items: { rank: number; user: any; score: number; games: number }[]; me: { rank: number; score: number; games: number } | null }>(`/ludo/leaderboard?scope=${scope}`) });
+  const items = q.data?.items ?? [];
+  return (
+    <>
+      <div className="tabs" role="tablist">
+        {([['monthly', 'Monthly', 'মাসিক'], ['weekly', 'Weekly', 'সাপ্তাহিক'], ['global', 'All time', 'সব সময়']] as const).map(([k, en, bn]) => (
+          <button key={k} role="tab" aria-selected={scope === k} onClick={() => setScope(k)}>{t(en, bn)}</button>
+        ))}
+      </div>
+      {q.data?.me && (
+        <div className="my-rank">
+          <Avatar name={me.username} src={me.avatarThumbUrl} size={38} />
+          <b className="grow">{t('Your rank', 'আপনার অবস্থান')}</b>
+          <b className="num my-rank-n">#{num(q.data.me.rank, lang)}</b>
+          <span className="chip num">{num(q.data.me.score, lang)} {t('wins', 'জয়')}</span>
+        </div>
+      )}
+      {q.isLoading ? (
+        <ListSkeleton rows={6} />
+      ) : q.error ? (
+        <ErrorBox error={q.error} retry={() => void q.refetch()} />
+      ) : !items.length ? (
+        <Empty icon="gamepad" tone="warning" title={t('No Ludo winners yet', 'এখনো কেউ লুডুতে জেতেনি')} body={t('Win online Ludo games to be the first on this board!', 'অনলাইন লুডুতে জিতে প্রথম হন!')} action={<Link className="btn primary" to="/ludo"><Icon name="gamepad" /> {t('Play Ludo', 'লুডু খেলুন')}</Link>} />
+      ) : (
+        <div className="card lb-card">
+          {items.map((e) => (
+            <Link key={e.user.id} to={`/u/${e.user.uid}`} className={`lb-row ${e.user.id === me.id ? 'me' : ''}`}>
+              <span className="rank">{e.rank <= 3 ? <RankMedal rank={e.rank} size={26} /> : num(e.rank, lang)}</span>
+              <Avatar name={e.user.username} src={e.user.avatarThumbUrl} size={42} frame={e.user.frame} />
+              <div className="grow" style={{ minWidth: 0 }}>
+                <b style={{ display: 'block' }}><PlayerName name={e.user.username} verified={e.user.verified} premium={e.user.premium} /></b>
+                <p className="xs muted">{t(`${e.games} games`, `${num(e.games, lang)}টি খেলা`)}</p>
+              </div>
+              <b className="num">{num(e.score, lang)} <small className="muted">{t('wins', 'জয়')}</small></b>
+            </Link>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
 /** "Top N this month get free premium" (N is set in the admin panel). */
 function RewardBanner({ top, onOpen, active }: { top: number; onOpen: () => void; active: boolean }) {
   const t = useT();
@@ -111,7 +159,7 @@ export default function Rank() {
         </div>
         {rewardTop > 0 && <RewardBanner top={rewardTop} active={game === 'quiz' && scope === 'monthly'} onOpen={() => setParams({ tab: 'monthly' }, { replace: true })} />}
         {game === 'ludo' ? (
-          <Empty icon="gamepad" title={t('Ludo ranking is coming', 'লুডুর র‍্যাংকিং আসছে')} body={t('Ludo arrives in the next update. Win Ludo games to climb this board.', 'পরের আপডেটে লুডু আসছে। লুডুতে জিতে এই বোর্ডে উঠুন।')} />
+          <LudoRank />
         ) : (
         <>
         <LeagueCard />

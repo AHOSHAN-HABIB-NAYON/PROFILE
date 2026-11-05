@@ -94,15 +94,31 @@ export interface LudoState {
   /** Sixes rolled in a row this turn (3 = turn lost). */
   sixes: number;
   finished: boolean;
+  /** 2 vs 2: team of each player (partners sit opposite). Absent = everyone for themselves. */
+  teams?: number[];
 }
 
-export function newLudoGame(colors: LudoColor[]): LudoState {
-  return { players: colors.map((color) => ({ color, tokens: [-1, -1, -1, -1], place: 0 })), turn: 0, dice: 0, sixes: 0, finished: false };
+export function newLudoGame(colors: LudoColor[], teams?: number[]): LudoState {
+  return { players: colors.map((color) => ({ color, tokens: [-1, -1, -1, -1], place: 0 })), turn: 0, dice: 0, sixes: 0, finished: false, ...(teams ? { teams } : {}) };
+}
+
+const allHome = (p: LudoPlayer) => p.tokens.every((x) => x >= LUDO_FINISH);
+const sameTeam = (s: LudoState, a: number, b: number) => a === b || (!!s.teams && s.teams[a] === s.teams[b]);
+
+/**
+ * Whose tokens move this turn: normally the player's own; in 2 vs 2, once a player has all
+ * four home, they keep rolling and move their partner's tokens.
+ */
+export function moverOf(s: LudoState): number {
+  const me = s.turn;
+  if (!s.teams || !allHome(s.players[me]!)) return me;
+  const partner = s.players.findIndex((_, i) => i !== me && s.teams![i] === s.teams![me]);
+  return partner >= 0 && !allHome(s.players[partner]!) ? partner : me;
 }
 
 /** Which tokens can move with this dice. */
 export function legalMoves(s: LudoState, dice: number): number[] {
-  const p = s.players[s.turn]!;
+  const p = s.players[moverOf(s)]!;
   const out: number[] = [];
   p.tokens.forEach((pr, i) => {
     if (pr >= LUDO_FINISH) return;
@@ -119,7 +135,7 @@ export function legalMoves(s: LudoState, dice: number): number[] {
 function othersOn(s: LudoState, idx: number, me: number) {
   const hits: { player: number; token: number }[] = [];
   s.players.forEach((p, pi) => {
-    if (pi === me) return;
+    if (sameTeam(s, pi, me)) return; // partners never capture each other
     p.tokens.forEach((pr, ti) => {
       if (trackIndex(p.color, pr) === idx) hits.push({ player: pi, token: ti });
     });
@@ -141,7 +157,7 @@ export interface LudoMoveResult {
 /** Move one token (must be legal). Returns the new state; the turn passes unless there is a bonus. */
 export function applyMove(s0: LudoState, token: number): LudoMoveResult {
   const s: LudoState = { ...s0, players: s0.players.map((p) => ({ ...p, tokens: [...p.tokens] })) };
-  const me = s.turn;
+  const me = moverOf(s);
   const p = s.players[me]!;
   const from = p.tokens[token]!;
   const dice = s.dice;
@@ -165,15 +181,26 @@ export function applyMove(s0: LudoState, token: number): LudoMoveResult {
     }
   }
   const reachedHome = to === LUDO_FINISH;
-  const playerDone = p.tokens.every((x) => x >= LUDO_FINISH);
-  if (playerDone && !p.place) p.place = s.players.filter((x) => x.place).length + 1;
-
-  const active = s.players.filter((x) => !x.place);
-  if (active.length <= 1) {
-    for (const x of active) x.place = s.players.length;
-    s.finished = true;
+  const playerDone = allHome(p);
+  if (s.teams) {
+    // A team wins when both partners have all their tokens home.
+    const team = s.teams[me]!;
+    const teamDone = s.players.every((x, i) => s.teams![i] !== team || allHome(x));
+    if (teamDone) {
+      s.players.forEach((x, i) => (x.place = s.teams![i] === team ? 1 : 2));
+      s.finished = true;
+    }
+  } else {
+    if (playerDone && !p.place) p.place = s.players.filter((x) => x.place).length + 1;
+    const active = s.players.filter((x) => !x.place);
+    if (active.length <= 1) {
+      for (const x of active) x.place = s.players.length;
+      s.finished = true;
+    }
   }
-  const extraTurn = !s.finished && !playerDone && (dice === 6 || captured.length > 0 || reachedHome);
+  // Team games: finishing your own four doesn't end your turns (you help your partner).
+  const turnOver = s.teams ? false : playerDone;
+  const extraTurn = !s.finished && !turnOver && (dice === 6 || captured.length > 0 || reachedHome);
   if (!extraTurn) nextTurn(s);
   else s.dice = 0;
   return { state: s, path, captured, reachedHome, extraTurn, playerDone };
@@ -210,7 +237,7 @@ export function nextTurn(s: LudoState) {
 function inDanger(s: LudoState, me: number, idx: number) {
   if (LUDO_SAFE.has(idx)) return false;
   return s.players.some((p, pi) => {
-    if (pi === me) return false;
+    if (sameTeam(s, pi, me)) return false;
     return p.tokens.some((pr) => {
       const at = trackIndex(p.color, pr);
       if (at === null) return pr < 0 && idx === startIndex(p.color); // a token can come out onto its start
@@ -224,7 +251,7 @@ function inDanger(s: LudoState, me: number, idx: number) {
 export function chooseAiMove(s: LudoState, moves: number[], level: 0 | 1 | 2, rnd: () => number = Math.random): number {
   if (moves.length === 1) return moves[0]!;
   if (level === 0 && rnd() < 0.5) return moves[Math.floor(rnd() * moves.length)]!;
-  const me = s.turn;
+  const me = moverOf(s);
   const p = s.players[me]!;
   let best = moves[0]!;
   let bestScore = -Infinity;
@@ -252,3 +279,45 @@ export function chooseAiMove(s: LudoState, moves: number[], level: 0 | 1 | 2, rn
   }
   return best;
 }
+
+/* ------------------------------ Online games ------------------------------ */
+
+export interface LudoSeat {
+  userId: number;
+  name: string;
+  avatar: string | null;
+  color: LudoColor;
+  /** 2 vs 2 team (0 or 1), null when everyone plays for themselves. */
+  team: number | null;
+  bot: boolean;
+  connected: boolean;
+  /** Left the game: the computer (or the partner in 2 vs 2) plays for them. */
+  left: boolean;
+}
+
+export type LudoLast =
+  | { type: 'roll'; by: number; dice: number; moves: number[]; lost?: boolean }
+  | { type: 'move'; by: number; mover: number; token: number; path: number[]; captured: { player: number; token: number }[]; home: boolean; extra: boolean }
+  | { type: 'pass'; by: number };
+
+export interface LudoSnapshot {
+  id: string;
+  /** Room code (rooms only). */
+  code: string | null;
+  kind: 'quick' | 'room';
+  status: 'lobby' | 'playing' | 'finished';
+  hostId: number;
+  size: 2 | 4;
+  teams: boolean;
+  seats: LudoSeat[];
+  state: LudoState | null;
+  last: LudoLast | null;
+  /** Grows with every change (the app animates moves in order). */
+  seq: number;
+  /** When the current turn times out (ms since epoch). */
+  deadline: number | null;
+  turnSeconds: number;
+}
+
+/** Seat colours: 2 players sit opposite (blue vs green); 4 go clockwise from blue. */
+export const ludoColorsFor = (size: 2 | 4): LudoColor[] => (size === 2 ? [3, 1] : [3, 0, 1, 2]);

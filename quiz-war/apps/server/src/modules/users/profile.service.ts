@@ -90,7 +90,7 @@ export class ProfileService {
     if (!u) throw notFound('Player not found');
     const p = await queryOne<any>(
       `SELECT bio, xp, wins, losses, draws, total_games, total_correct, total_answered, best_score, current_win_streak, best_win_streak,
-              streak_days, best_streak_days, peak_rating, best_survival, best_speed, badge, u.created_at
+              streak_days, best_streak_days, peak_rating, best_survival, best_speed, badge, ludo_games, ludo_wins, u.created_at
        FROM user_profiles JOIN users u ON u.id = user_profiles.user_id WHERE user_id = ?`,
       [u.id],
     );
@@ -119,6 +119,8 @@ export class ProfileService {
         bestScore: p.best_score,
         currentWinStreak: p.current_win_streak,
         bestWinStreak: p.best_win_streak,
+        ludoGames: Number(p.ludo_games ?? 0),
+        ludoWins: Number(p.ludo_wins ?? 0),
         streakDays: p.streak_days,
         bestStreakDays: p.best_streak_days,
         peakRating: p.peak_rating,

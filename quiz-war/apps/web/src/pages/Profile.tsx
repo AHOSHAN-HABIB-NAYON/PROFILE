@@ -34,6 +34,7 @@ export function StatsGrid({ stats }: { stats: any }) {
     ['medal', 'coin', t('Best streak', 'সেরা টানা জয়'), stats.bestWinStreak],
     ['calendar', 'cyan', t('Best days', 'সেরা টানা দিন'), stats.bestStreakDays],
     ['heart-pulse', 'danger', t('Survival best', 'সারভাইভাল সেরা'), stats.bestSurvival],
+    ['gamepad', 'accent', t('Ludo wins', 'লুডুতে জয়'), `${stats.ludoWins ?? 0}/${stats.ludoGames ?? 0}`],
   ];
   return (
     <div className="stat-tiles">

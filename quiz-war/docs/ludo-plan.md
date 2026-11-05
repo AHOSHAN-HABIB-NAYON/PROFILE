@@ -2,7 +2,11 @@
 
 See also the master list [roadmap.md](roadmap.md) for store, premium, chat calls and the order of updates.
 
-Status: planned only. No code yet. The owner asked to start this after QUIZ WAR is live on Google Play.
+Status: built (November 2026).
+- Offline: vs computer (easy/normal/hard, 2 or 4 players) and friends on one phone.
+- Online: auto match 1 vs 1 / 2 vs 2, rooms (2, 4, 2 vs 2) with code/link/QR/invite, live voice, rejoin, rematch (room host), leaving rules, Ludo leaderboard, coins for online wins (admin), "Quiz or Ludo?" in challenges and Find opponent.
+- Code: rules `packages/shared/src/ludo.ts` (tests in `packages/shared/test/ludo.test.ts`), server `apps/server/src/realtime/ludo.ts`, app `apps/web/src/pages/Ludo.tsx`, sounds `apps/web/src/lib/ludoSound.ts`, migration 020.
+- Not yet: Ludo store items (board themes, token skins, dice), Ludo share card.
 
 ## Rules (same as common Ludo apps)
 - Roll a 6 to bring a token out; a 6 gives another roll.

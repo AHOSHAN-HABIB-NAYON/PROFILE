@@ -1592,3 +1592,44 @@
 .league-hero.compact .lh-top { gap: 12px; }
 .league-hero.compact .lh-label { margin: 0; }
 .league-hero.compact .lh-season { margin: 0; }
+
+/* Ludo online: menu bits, searching, room lobby */
+.lc-ic.c-pink { background: linear-gradient(150deg, #f472b6, #be185d); }
+.ludo-code { display: flex; gap: 8px; align-items: center; }
+.ludo-code input { flex: 1; min-width: 0; height: 40px; border-radius: 12px; border: 1px solid var(--border, #e2e8f0); padding: 0 12px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; background: var(--surface-2, #f8fafc); color: inherit; font-size: 15px; }
+.ludo-search { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 20px; background: rgba(2, 6, 23, .72); animation: fade-up .2s var(--ease-out) both; }
+.ls-card { width: min(320px, 100%); background: #fff; color: #0f172a; border-radius: 24px; padding: 22px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.ls-dice { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 18px; background: #ec4899; }
+.ls-card b { font-size: 18px; }
+.ls-card small { color: #64748b; font-weight: 700; }
+.ls-card .btn { height: 42px; min-width: 220px; }
+.lp-av { position: relative; }
+.lp-timer { position: absolute; inset: -5px; width: calc(100% + 10px); height: calc(100% + 10px); transform: rotate(-90deg); pointer-events: none; }
+.lp-timer circle { fill: none; stroke: #fde047; stroke-width: 3.5; stroke-linecap: round; transition: stroke-dasharray .5s linear; }
+.ludo-panel.you .lp-info b { color: #fde047; }
+.lo-coins { margin: 0; display: inline-flex; align-items: center; gap: 6px; font-weight: 800; color: #b45309; background: #fef3c7; padding: 6px 14px; border-radius: 99px; }
+.lr-code { text-align: center; padding: 16px; border-radius: 22px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.lr-code small { opacity: .8; font-weight: 700; }
+.lr-code-val { display: inline-flex; align-items: center; gap: 10px; border: 0; background: rgba(15,23,42,.35); color: #fff; font-size: 30px; font-weight: 900; letter-spacing: .18em; padding: 8px 18px; border-radius: 16px; font-family: var(--font); }
+.lr-code-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.lr-seats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.lr-seat { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 8px 12px; border-radius: 20px; background: rgba(8,15,40,.45); border: 3px solid var(--pc); min-width: 0; text-align: center; }
+.lr-seat.empty { border-style: dashed; background: rgba(255,255,255,.05); }
+.lr-seat .avatar { box-shadow: 0 0 0 3px var(--pc); }
+.lr-seat b { font-size: 15px; max-width: 100%; margin-top: 4px; display: inline-flex; align-items: center; gap: 4px; justify-content: center; }
+.lr-seat small { font-size: 12px; opacity: .75; }
+.lr-crown { color: #fde047; }
+.lr-team { position: absolute; top: 6px; left: 8px; font-size: 10.5px; font-weight: 800; padding: 2px 8px; border-radius: 99px; background: var(--pc); color: #fff; }
+.lr-add { display: flex; flex-direction: column; align-items: center; gap: 6px; border: 0; background: none; color: #fff; padding: 6px; }
+.lr-add span { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; border: 2px dashed rgba(255,255,255,.5); }
+.lr-note { margin: 0; text-align: center; font-size: 12.5px; opacity: .75; }
+.lr-actions { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-top: auto; }
+.lr-actions .btn.block { width: auto; min-width: min(280px, 100%); height: 48px; display: flex; }
+.lr-wait { margin: 0; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; opacity: .9; }
+.ludo-stage .voice-bar { margin-top: 2px; }
+
+.game-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.game-pick button { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 8px; border-radius: 18px; border: 1px solid var(--border, #e2e8f0); background: var(--surface, #fff); color: inherit; font: inherit; }
+.game-pick button:active { transform: scale(.97); }
+.game-pick b { font-size: 15px; }
+.game-pick small { font-size: 12px; color: var(--text-3, #64748b); }

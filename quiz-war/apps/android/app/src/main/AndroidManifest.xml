@@ -41,6 +41,7 @@
                 <data android:pathPrefix="/war-room/" />
                 <data android:pathPrefix="/squads" />
                 <data android:pathPrefix="/battle" />
+                <data android:pathPrefix="/ludo" />
                 <data android:pathPrefix="/match/" />
                 <data android:pathPrefix="/result/" />
                 <data android:pathPrefix="/review/" />

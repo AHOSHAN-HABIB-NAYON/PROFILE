@@ -275,6 +275,18 @@ function Rate({ a }: { a: App }) {
   );
 }
 
+function LudoCard({ a }: { a: App }) {
+  const s = useSaver();
+  return (
+    <Card icon="gamepad" title="Ludo" desc="Online Ludo (auto match 1 vs 1 / 2 vs 2, rooms with friends) and offline Ludo with the computer." saving={s.busy} msg={s.msg} saveLabel="Save Ludo"
+      onSubmit={(e) => { const f = new FormData(e.currentTarget); void s.save({ ludoEnabled: f.get('ludoEnabled') === 'on', ludoTurnSeconds: int(f, 'ludoTurnSeconds'), ludoWinCoins: int(f, 'ludoWinCoins') }, 'Ludo saved.'); }}>
+      <Toggle name="ludoEnabled" label="Online Ludo on" hint="Off = only offline Ludo (computer / one phone) works." checked={a.ludoEnabled ?? true} />
+      <div className="field" style={{ maxWidth: 260 }}><label htmlFor="ld-turn">Seconds per turn</label><input id="ld-turn" name="ludoTurnSeconds" type="number" min={8} max={60} step={1} className="input" defaultValue={a.ludoTurnSeconds ?? 15} /><span className="small faint">When time runs out the computer plays that turn.</span></div>
+      <div className="field" style={{ maxWidth: 260 }}><label htmlFor="ld-coins">Coins for an online win</label><input id="ld-coins" name="ludoWinCoins" type="number" min={0} max={10000} step={1} className="input" defaultValue={a.ludoWinCoins ?? 20} /><span className="small faint">Only when playing against real people. Game coins only.</span></div>
+    </Card>
+  );
+}
+
 function RankReward({ a }: { a: App }) {
   const s = useSaver();
   return (
@@ -424,6 +436,7 @@ export default function AppSettings() {
         <Rate a={a} />
         <Voice a={a} />
         <RankReward a={a} />
+        <LudoCard a={a} />
         <Legal a={a} />
       </div>
     </>

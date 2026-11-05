@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { applyMove, applyRoll, chooseAiMove, LUDO_FINISH, LUDO_TRACK, newLudoGame, trackIndex, type LudoColor } from '../src/ludo';
+import { applyMove, applyRoll, chooseAiMove, LUDO_FINISH, LUDO_TRACK, moverOf, newLudoGame, trackIndex, type LudoColor } from '../src/ludo';
 
-function play(colors: LudoColor[], seed: number) {
+function play(colors: LudoColor[], seed: number, teams?: number[]) {
   let x = seed;
   const rnd = () => ((x = (x * 1103515245 + 12345) % 2147483648) / 2147483648);
-  let s = newLudoGame(colors);
+  let s = newLudoGame(colors, teams);
   let turns = 0;
   while (!s.finished && turns < 5000) {
     turns++;
@@ -57,5 +57,26 @@ describe('ludo', () => {
       const winner = s.players.find((p) => p.place === 1)!;
       expect(winner.tokens.every((t) => t === LUDO_FINISH)).toBe(true);
     }
+  });
+  it('2 vs 2: partners do not capture each other and win together', () => {
+    const s = newLudoGame([3, 0, 1, 2], [0, 1, 0, 1]);
+    s.players[0]!.tokens[0] = 10; // blue (team 0)
+    s.players[2]!.tokens[0] = 50 - 2; // green (team 0): track (13+48)%52 = 9
+    s.turn = 2;
+    s.dice = 1; // green moves to track 10, where its partner stands
+    expect(applyMove(s, 0).captured).toHaveLength(0);
+    for (let seed = 1; seed <= 30; seed++) {
+      const { s: end, turns } = play([3, 0, 1, 2], seed, [0, 1, 0, 1]);
+      expect(turns).toBeLessThan(6000);
+      expect(end.finished).toBe(true);
+      const winners = end.players.filter((p) => p.place === 1);
+      expect(winners).toHaveLength(2);
+      expect(winners.every((p) => p.tokens.every((x) => x === LUDO_FINISH))).toBe(true);
+    }
+  });
+  it('a finished partner moves the other partner', () => {
+    const s = newLudoGame([3, 0, 1, 2], [0, 1, 0, 1]);
+    s.players[0]!.tokens = [56, 56, 56, 56];
+    expect(moverOf(s)).toBe(2);
   });
 });

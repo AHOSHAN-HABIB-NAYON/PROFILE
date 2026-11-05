@@ -25,7 +25,7 @@ const skipped = new Set<string>();
  * Live voice controls, shown at the bottom of the quiz match, the result page and the war room
  * lobby: my mic, and a speaker button per player (mutes them for me only).
  */
-export function VoiceBar({ roomId, players, className = '' }: { roomId: string; players: VoicePlayer[]; className?: string }) {
+export function VoiceBar({ roomId, players, className = '', autoJoin = true }: { roomId: string; players: VoicePlayer[]; className?: string; /** Strangers (auto match): voice only when you choose. */ autoJoin?: boolean }) {
   const t = useT();
   const cfg = useConfig().data;
   const st = useVoice();
@@ -45,8 +45,8 @@ export function VoiceBar({ roomId, players, className = '' }: { roomId: string; 
     watchVoice(roomId);
     if (!enabled) return;
     const st0 = useVoice.getState();
-    if (st0.roomId !== roomId && !st0.joining && !skipped.has(roomId)) void joinVoice(roomId, false).catch(() => undefined);
-  }, [roomId, enabled]);
+    if (autoJoin && st0.roomId !== roomId && !st0.joining && !skipped.has(roomId)) void joinVoice(roomId, false).catch(() => undefined);
+  }, [roomId, enabled, autoJoin]);
 
 
   if (!enabled) return null;

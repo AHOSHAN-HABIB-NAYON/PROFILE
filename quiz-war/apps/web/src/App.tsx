@@ -26,6 +26,7 @@ import { connectSocket, disconnectSocket, emit } from './lib/socket';
 import { setMusic } from './lib/sound';
 import { leaveVoice, resumeVoiceAudio, useVoice, voiceBackground } from './lib/voice';
 import { useCall, wireCalls } from './lib/call';
+import { wireLudo } from './lib/ludoOnline';
 import { CallScreen } from './components/CallScreen';
 import { toast } from './lib/toast';
 import { Login, Register } from './pages/Auth';
@@ -38,6 +39,8 @@ const Intro = lazy(() => import('./pages/Intro'));
 const Battle = lazy(() => import('./pages/Battle'));
 const LudoMenu = lazy(() => import('./pages/Ludo'));
 const LudoGame = lazy(() => import('./pages/Ludo').then((m) => ({ default: m.LudoGame })));
+const LudoOnline = lazy(() => import('./pages/Ludo').then((m) => ({ default: m.LudoOnline })));
+const LudoJoin = lazy(() => import('./pages/Ludo').then((m) => ({ default: m.LudoJoin })));
 const Matchmaking = lazy(() => import('./pages/Matchmaking'));
 const WarRoom = lazy(() => import('./pages/WarRoom'));
 const Match = lazy(() => import('./pages/Match'));
@@ -283,6 +286,7 @@ export function App() {
   useEffect(() => {
     if (status === 'authed') {
       wireCalls();
+      wireLudo();
       connectSocket();
       void initNativePush();
     } else if (status === 'anon') disconnectSocket();
@@ -397,6 +401,8 @@ export function App() {
             <Route path="/battle" element={<Shell><Battle /></Shell>} />
             <Route path="/ludo" element={<Full><LudoMenu /></Full>} />
             <Route path="/ludo/play" element={<Full><LudoGame /></Full>} />
+            <Route path="/ludo/online/:id" element={<Full><LudoOnline /></Full>} />
+            <Route path="/ludo/room/:code" element={<Full><LudoJoin /></Full>} />
             <Route path="/battle/requests" element={<Shell><Battle tab="requests" /></Shell>} />
             <Route path="/friends" element={<Shell><Friends /></Shell>} />
             <Route path="/rank" element={<Shell><Rank /></Shell>} />

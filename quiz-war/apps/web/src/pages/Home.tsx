@@ -18,6 +18,9 @@ import { sfx } from '../lib/sound';
 import { toast } from '../lib/toast';
 import { PlayerName, NameBadges, VerifiedBadge } from '../components/Verified';
 import { VerifyEmailBanner } from '../components/NativeExtras';
+import { Modal } from '../components/Sheet';
+import { ludoQueue } from '../lib/ludoOnline';
+import { useState } from 'react';
 
 const REWARD_ICON: Record<string, IconName> = { coins: 'coin', xp: 'xp', power_up: 'bolt', mystery: 'gift' };
 
@@ -166,6 +169,8 @@ export default function Home() {
   const online = useConn((s) => s.online);
   const t = useT();
   const nav = useNavigate();
+  // Find opponent: Quiz or Ludo first (so the wrong game never starts).
+  const [pick, setPick] = useState(false);
   const quick = () => {
     haptic('heavy');
     sfx('tap');
@@ -193,7 +198,7 @@ export default function Home() {
           <span className="live"><i /> <CountUp value={online} /> {t(online === 1 ? 'player online' : 'players online', 'জন অনলাইনে')}</span>
           <h2 id="qb">{t('Quick battle', 'কুইক ব্যাটল')}</h2>
           <p>{t('Ranked 1 VS 1 · same questions · fastest correct answer wins', 'র‍্যাংকড ১ বনাম ১ · একই প্রশ্ন · দ্রুত সঠিক উত্তরে জয়')}</p>
-          <button className="btn white lg block" onClick={quick}>
+          <button className="btn white lg block" onClick={() => (haptic('tap'), setPick(true))}>
             <Icon name="search" /> {t('Find opponent', 'প্রতিপক্ষ খুঁজুন')}
           </button>
         </section>
@@ -215,6 +220,21 @@ export default function Home() {
           <Link to="/shop"><b className="row coin-text" style={{ justifyContent: 'center', gap: 4 }}><Icon name="coin" size={20} /><CountUp value={user.coins} /></b><span>{t('Coins', 'কয়েন')}</span></Link>
         </section>
       </div>
+      <Modal open={pick} onClose={() => setPick(false)} label={t('Which game?', 'কোন খেলা?')}>
+        <h2>{t('Which game?', 'কোন খেলা খেলবেন?')}</h2>
+        <div className="game-pick">
+          <button type="button" onClick={() => (setPick(false), quick())}>
+            <IconTile name="brain" tone="primary" size={48} />
+            <b>{t('Quiz battle', 'কুইজ ব্যাটল')}</b>
+            <small>{t('1 vs 1 · ranked', '১ বনাম ১ · র‍্যাংকড')}</small>
+          </button>
+          <button type="button" onClick={() => (setPick(false), nav('/ludo'), void ludoQueue('1v1'))}>
+            <IconTile name="gamepad" tone="accent" size={48} />
+            <b>{t('Ludo battle', 'লুডু ব্যাটল')}</b>
+            <small>{t('1 vs 1 · online', '১ বনাম ১ · অনলাইন')}</small>
+          </button>
+        </div>
+      </Modal>
     </PullToRefresh>
   );
 }

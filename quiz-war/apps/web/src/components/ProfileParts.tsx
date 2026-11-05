@@ -83,6 +83,7 @@ export function StatsNumbers({ stats }: { stats: any }) {
     ['medal', 'amber', t('Best streak', 'সেরা টানা জয়'), stats.bestWinStreak],
     ['calendar', 'cyan', t('Best days', 'সেরা টানা দিন'), stats.bestStreakDays],
     ['heart-pulse', 'pink', t('Survival best', 'সারভাইভাল সেরা'), stats.bestSurvival],
+    ['gamepad', 'violet', t('Ludo wins', 'লুডুতে জয়'), `${stats.ludoWins ?? 0}/${stats.ludoGames ?? 0}`],
   ];
   return (
     <div className="px-grid">

@@ -21,6 +21,7 @@ import type { AppContext } from '../context';
 import { loadIdentity } from '../context';
 import { verifyAccessToken } from '../modules/auth/tokens';
 import { CallService, callRegistry } from './calls';
+import { LudoService } from './ludo';
 import { VoiceRooms } from './voice';
 
 interface SocketData {
@@ -156,6 +157,29 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
     log: ctx.log,
   });
   callRegistry.current = calls;
+  const ludo = new LudoService({
+    emit: (userId, event, payload) => ctx.emitter.toUser(userId, event, payload),
+    publicUser: (id) => getPublicUser(id),
+    settings: () => ({ enabled: ctx.settings.app().ludoEnabled !== false, turnSeconds: ctx.settings.app().ludoTurnSeconds ?? 15, winCoins: ctx.settings.app().ludoWinCoins ?? 20 }),
+    record: async (g) => {
+      const coins = ctx.settings.app().ludoWinCoins ?? 20;
+      const mode = g.teams ? '2v2' : g.size === 2 ? '1v1' : '4p';
+      for (const [i, seat] of g.seats.entries()) {
+        if (seat.bot) continue;
+        const place = g.state?.players[i]?.place ?? 0;
+        const won = place === 1;
+        await exec('INSERT INTO ludo_results (game_id, user_id, mode, place, won) VALUES (?, ?, ?, ?, ?)', [g.id, seat.userId, mode, place, won ? 1 : 0]);
+        await exec('UPDATE user_profiles SET ludo_games = ludo_games + 1, ludo_wins = ludo_wins + ? WHERE user_id = ?', [won ? 1 : 0, seat.userId]);
+        if (won && coins > 0 && g.seats.some((x) => !x.bot && x.userId !== seat.userId)) {
+          await ctx.progression.grantCoins(undefined as any, seat.userId, coins, 'ludo_win', g.id);
+          await ctx.progression.pushAccount(seat.userId).catch(() => undefined);
+        }
+      }
+    },
+    isOnline: (uid) => ctx.presence.isOnline(uid),
+    invitePush: (to, from, code) => ctx.push.sendToUser(to, { title: from.username, body: 'আপনাকে লুডু খেলতে ডেকেছে', url: `/ludo/room/${code}`, tag: `ludo-${code}`, channel: 'quizwar_default', image: from.avatarThumbUrl ?? undefined }),
+    log: ctx.log,
+  });
 
   if (ctx.redis) {
     const pub = ctx.redis.duplicate();
@@ -455,6 +479,7 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
     /* ----------------------------- Live voice ----------------------------- */
     /** Only human players of this match (live, or finished in the last 2 hours: result page). */
     const assertVoiceMember = async (roomId: string) => {
+      if (ludo.isMember(roomId, userId)) return;
       if (calls.has(roomId)) {
         if (!calls.isMember(roomId, userId)) throw new AppError(403, 'not_in_call', 'You are not in this call');
         calls.bind(roomId, userId, socket.id);
@@ -520,6 +545,21 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
     socket.on('call:add', guard(z.object({ callId: voiceRoomId, to: z.number().int().positive() }), (p) => calls.add(userId, p.callId, p.to)));
     void calls.onConnect(userId).catch(() => undefined);
 
+    /* ------------------------------ Online Ludo ------------------------------ */
+    const gid = z.object({ gameId: voiceRoomId });
+    socket.on('ludo:queue', guard(z.object({ mode: z.enum(['1v1', '2v2']) }), (p) => ludo.queue(userId, p.mode)));
+    socket.on('ludo:unqueue', guard(z.object({}), () => (ludo.unqueue(userId), {})));
+    socket.on('ludo:create', guard(z.object({ size: z.union([z.literal(2), z.literal(4)]), teams: z.boolean() }), (p) => ludo.create(userId, p.size, p.teams)));
+    socket.on('ludo:join', guard(z.object({ code: z.string().trim().min(4).max(10) }), (p) => ludo.join(userId, p.code)));
+    socket.on('ludo:start', guard(gid, (p) => (ludo.start(userId, p.gameId), {})));
+    socket.on('ludo:leave', guard(gid, (p) => (ludo.leave(userId, p.gameId), {})));
+    socket.on('ludo:roll', guard(gid, (p) => (ludo.roll(userId, p.gameId), {})));
+    socket.on('ludo:move', guard(z.object({ gameId: voiceRoomId, token: z.number().int().min(0).max(3) }), (p) => (ludo.move(userId, p.gameId, p.token), {})));
+    socket.on('ludo:resume', guard(gid, (p) => ludo.resume(userId, p.gameId)));
+    socket.on('ludo:rematch', guard(gid, (p) => (ludo.rematch(userId, p.gameId), {})));
+    socket.on('ludo:invite', guard(z.object({ gameId: voiceRoomId, to: z.number().int().positive() }), (p) => ludo.invite(userId, p.gameId, p.to).then(() => ({}))));
+    ludo.onConnect(userId);
+
     socket.on('time:sync', guard(schemas.timeSync, (p) => ({ serverTime: Date.now(), clientTime: p.clientTime })));
 
     socket.on('disconnect', () => {
@@ -527,6 +567,7 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
       for (const r of voice.leaveSocket(socket.id)) voiceBroadcast(r.roomId);
       calls.onDisconnect(userId, socket.id);
       const wentOffline = ctx.presence.disconnect(userId, socket.id);
+      if (wentOffline) ludo.onDisconnect(userId);
       if (wentOffline) {
         // Remember when they were last online ("active 5 min ago" in friends lists).
         void exec('UPDATE users SET last_seen_at = UTC_TIMESTAMP() WHERE id = ?', [userId]).catch(() => undefined);

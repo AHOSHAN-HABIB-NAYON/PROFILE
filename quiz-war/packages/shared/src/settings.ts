@@ -300,6 +300,10 @@ export const appSettingsSchema = z.object({
   voiceEnabled: z.boolean().default(true),
   /** 1-to-1 audio calls from the chat. */
   callsEnabled: z.boolean().default(true),
+  /** Ludo: on/off, seconds per turn, coins for an online win. */
+  ludoEnabled: z.boolean().default(true),
+  ludoTurnSeconds: z.number().int().min(8).max(60).default(15),
+  ludoWinCoins: z.number().int().min(0).max(10000).default(20),
   /** Monthly reward shown on the Rank page: the top N of the monthly board get premium (0 = off). */
   monthlyPremiumTop: z.number().int().min(0).max(100).default(5),
   /** Home "Collections" (previous-year question sets). */
@@ -342,6 +346,9 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   voiceEnabled: true,
   callsEnabled: true,
   monthlyPremiumTop: 5,
+  ludoEnabled: true,
+  ludoTurnSeconds: 15,
+  ludoWinCoins: 20,
   collectionsEnabled: true,
 };
 

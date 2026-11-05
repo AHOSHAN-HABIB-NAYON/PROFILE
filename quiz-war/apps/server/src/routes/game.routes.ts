@@ -1,3 +1,4 @@
+import { getPublicUsers } from '../modules/users/users.repo';
 import { LEADERBOARD_SCOPES, paginationSchema } from '@quizwar/shared';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -69,6 +70,25 @@ export async function gameRoutes(app: FastifyInstance, ctx: AppContext) {
     const { scope } = parse(z.object({ scope: z.enum([...LEADERBOARD_SCOPES, 'daily']) }), req.params);
     const q = parse(paginationSchema.extend({ categoryId: z.coerce.number().int().positive().optional() }), req.query);
     return ctx.leaderboard.get(scope, { page: q.page, pageSize: q.pageSize, categoryId: q.categoryId, viewerId: req.user?.id ?? null });
+  });
+
+  /** Ludo boards: most online wins (all time, this month, this week). */
+  app.get('/ludo/leaderboard', { preHandler: optionalUser(ctx) }, async (req) => {
+    const q = parse(z.object({ scope: z.enum(['global', 'monthly', 'weekly']).default('global') }), req.query);
+    const me = req.user?.id ?? null;
+    let rows: { user_id: number; score: number; games: number }[];
+    if (q.scope === 'global') {
+      rows = await query<any>('SELECT user_id, ludo_wins score, ludo_games games FROM user_profiles WHERE ludo_games > 0 ORDER BY ludo_wins DESC, ludo_games ASC, user_id LIMIT 100');
+    } else {
+      const since = q.scope === 'monthly' ? "DATE_FORMAT(UTC_TIMESTAMP(), '%Y-%m-01')" : 'UTC_TIMESTAMP() - INTERVAL 7 DAY';
+      rows = await query<any>(`SELECT user_id, SUM(won) score, COUNT(*) games FROM ludo_results WHERE created_at >= ${since} GROUP BY user_id ORDER BY score DESC, games ASC, user_id LIMIT 100`);
+    }
+    const users = await getPublicUsers(rows.map((r) => Number(r.user_id)));
+    const items = rows
+      .map((r, i) => ({ rank: i + 1, user: users.get(Number(r.user_id)), score: Number(r.score), games: Number(r.games) }))
+      .filter((x) => x.user);
+    const mine = me ? items.find((x) => x.user!.id === me) : null;
+    return { items, me: mine ? { rank: mine.rank, score: mine.score, games: mine.games } : null };
   });
 
   app.get('/seasons/current', async () => {
