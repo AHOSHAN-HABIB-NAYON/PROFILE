@@ -1928,3 +1928,58 @@ video.mirror { transform: scaleX(-1); }
 .pi-stats b { font-size: 15px; }
 .pi-note { margin: 0; opacity: .75; }
 .onb-invite-link { align-self: center; }
+
+/* Premium popup */
+dialog.modal:has(.pp-pop) { padding: 0; overflow: hidden; border-radius: 28px; }
+.pp-pop { margin: 0; }
+.ppp-top { position: relative; overflow: hidden; padding: 18px 18px 26px; text-align: center; color: #fff; background: linear-gradient(135deg, #f59e0b 0%, #ec4899 55%, #7c3aed 100%); }
+.pp-pop.invite .ppp-top { background: linear-gradient(135deg, #22c55e 0%, #0ea5e9 50%, #7c3aed 100%); }
+.ppp-x { position: absolute; top: 12px; right: 12px; width: 38px; height: 38px; border-radius: 50%; border: 0; display: grid; place-items: center; color: #fff; background: rgba(255,255,255,.22); z-index: 2; }
+.ppp-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 99px; font-size: 12.5px; font-weight: 900; letter-spacing: .6px; background: rgba(255,255,255,.22); }
+.ppp-big { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 14px; }
+.ppp-ic { width: 66px; height: 66px; border-radius: 20px; display: grid; place-items: center; background: rgba(255,255,255,.25); animation: lo-bounce 1.6s ease-in-out infinite; }
+.ppp-num { display: flex; flex-direction: column; align-items: flex-start; line-height: 1; }
+.ppp-num b { font-size: 44px; font-weight: 900; text-shadow: 0 3px 0 rgba(0,0,0,.15); }
+.ppp-num small { margin-top: 6px; font-size: 14px; font-weight: 900; letter-spacing: 1.5px; opacity: .95; }
+.ppp-conf { position: absolute; width: 12px; height: 12px; border-radius: 3px; background: rgba(255,255,255,.55); transform: rotate(25deg); animation: lo-twinkle 2s ease-in-out infinite; }
+.ppp-conf.c1 { left: 22px; top: 70px; } .ppp-conf.c2 { right: 40px; bottom: 26px; animation-delay: .6s; } .ppp-conf.c3 { right: 90px; top: 40px; width: 8px; height: 8px; animation-delay: 1.1s; }
+.ppp-body { padding: 18px 18px 14px; text-align: center; display: flex; flex-direction: column; gap: 8px; }
+.ppp-body h3 { margin: 0; font-size: 19px; }
+.ppp-body p { margin: 0 0 6px; font-size: 14px; color: var(--text-3, #64748b); line-height: 1.5; }
+.btn.ppp-cta { height: 54px; border: 0; border-radius: 18px; color: #fff; font-weight: 900; font-size: 16px; background: linear-gradient(90deg, #f97316, #ec4899); box-shadow: 0 10px 22px rgba(236, 72, 153, .35); }
+.pp-pop.invite .btn.ppp-cta { background: linear-gradient(90deg, #16a34a, #0ea5e9); box-shadow: 0 10px 22px rgba(14, 165, 233, .35); }
+
+/* Premium page (full screen, like X/Twitter) */
+.pm2 { min-height: 100dvh; display: flex; flex-direction: column; gap: 14px; padding: calc(10px + env(safe-area-inset-top)) 16px 28px; background: var(--bg, #fff); }
+.pm2.has-buy { padding-bottom: calc(230px + env(safe-area-inset-bottom)); }
+.pm2-top { display: flex; align-items: center; justify-content: space-between; }
+.pm2-x { width: 44px; height: 44px; border-radius: 50%; border: 0; display: grid; place-items: center; color: var(--text, #0f172a); background: var(--surface-2, #eef2f7); }
+.pm2-x.ghost { background: none; }
+.pm2-logo { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; color: #92400e; background: linear-gradient(180deg, #fde68a, #f59e0b); box-shadow: 0 6px 16px rgba(245, 158, 11, .35); }
+.pm2-title { margin: 4px 0 0; text-align: center; font-size: 28px; line-height: 1.2; font-weight: 900; letter-spacing: -.2px; }
+.pm2-sub { margin: -4px 0 0; text-align: center; color: var(--text-3, #64748b); font-size: 14.5px; }
+.pm2-status { align-self: center; display: inline-flex; align-items: center; gap: 6px; margin: -4px 0 0; padding: 7px 14px; border-radius: 99px; font-weight: 800; font-size: 14px; color: #92400e; background: #fef3c7; }
+.pm2-label { display: flex; align-items: center; gap: 6px; margin: 0 0 4px; font-size: 12.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--text-3, #64748b); }
+.pm2-perks ul { list-style: none; margin: 0; padding: 0; }
+.pm2-perks li { display: flex; align-items: center; gap: 12px; padding: 9px 0; }
+.pm2-perks li b { display: block; font-size: 15.5px; }
+.pm2-perks li small { display: block; margin-top: 2px; font-size: 13px; line-height: 1.45; color: var(--text-3, #64748b); }
+.pm2-more { width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; margin: 4px 0 8px; padding: 10px; border: 0; border-radius: 14px; font: inherit; font-weight: 800; color: #b45309; background: #fffbeb; }
+.pm2-more svg { transition: transform .2s; }
+.pm2-more svg.up { transform: rotate(180deg); }
+.pm2-note { margin: 0; padding: 12px; border-radius: 14px; text-align: center; font-size: 14px; color: var(--text-3, #64748b); background: var(--surface-2, #f1f5f9); }
+.pm2 .pm-invite { margin: 0 -4px; }
+.pm2-redeem { display: flex; flex-direction: column; gap: 8px; }
+.pm2-redeem input { text-transform: uppercase; letter-spacing: 1px; font-weight: 800; }
+.pm2-redeem .btn.ghost { align-self: center; }
+.pm2-buy { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--bg, #fff); box-shadow: 0 -10px 30px rgba(15, 23, 42, .12); border-radius: 22px 22px 0 0; display: flex; flex-direction: column; gap: 10px; }
+.pm2-plans { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pm2-plan { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; min-height: 72px; padding: 10px 14px; border-radius: 18px; border: 2px solid var(--border, #e2e8f0); background: var(--bg, #fff); color: inherit; font: inherit; text-align: left; }
+.pm2-plan.on { border-color: #2563eb; background: #eff6ff; }
+.pm2-plan .pp-line b { font-size: 22px; font-weight: 900; }
+.pm2-plan .pp-line small { font-size: 14px; color: var(--text-3, #64748b); }
+.pm2-plan .pp-sub { font-size: 12.5px; color: var(--text-3, #64748b); }
+.pm2-plan .pp-sub em { font-style: normal; font-weight: 800; color: #0ea5e9; }
+.btn.pm2-cta { height: 54px; border: 0; border-radius: 99px; color: #fff; font-weight: 900; font-size: 17px; background: #0f172a; }
+.pm2-legal { margin: 0; text-align: center; font-size: 11.5px; color: var(--text-3, #64748b); }
+@media (prefers-color-scheme: dark) { .pm2-plan.on { background: rgba(37, 99, 235, .15); } .btn.pm2-cta { background: #f8fafc; color: #0f172a; } }

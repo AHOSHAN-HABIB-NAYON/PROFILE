@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { PageHeader } from '../components/AppShell';
+import { useNavigate } from 'react-router';
 import { Icon, type IconName } from '../components/Icon';
 import { useConfig } from '../hooks/queries';
 import { api, friendlyError } from '../lib/api';
@@ -25,14 +25,14 @@ type Info = {
 };
 type PlanId = 'monthly' | 'yearly';
 
-export const PREMIUM_PERKS: { icon: IconName; en: string; bn: string }[] = [
-  { icon: 'video', en: 'Video calls — groups up to 4', bn: 'ভিডিও কল — ৪ জন পর্যন্ত' },
-  { icon: 'phone', en: 'Audio calls & group calls', bn: 'অডিও কল ও গ্রুপ কল' },
-  { icon: 'mic', en: 'Talk live in quiz & Ludo', bn: 'কুইজ ও লুডুতে লাইভ কথা' },
-  { icon: 'message', en: 'Voice messages in chat', bn: 'চ্যাটে ভয়েস মেসেজ' },
-  { icon: 'image', en: 'Send photos in chat', bn: 'চ্যাটে ছবি পাঠানো' },
-  { icon: 'book', en: 'All premium collections', bn: 'সব প্রিমিয়াম কালেকশন' },
-  { icon: 'crown', en: 'Gold premium badge', bn: 'সোনালি প্রিমিয়াম ব্যাজ' },
+export const PREMIUM_PERKS: { icon: IconName; en: string; bn: string; den: string; dbn: string }[] = [
+  { icon: 'video', en: 'Video calls', bn: 'ভিডিও কল', den: 'HD video with friends, groups up to 4. Phone to phone, never recorded.', dbn: 'বন্ধুদের সাথে HD ভিডিও, ৪ জন পর্যন্ত গ্রুপ। সরাসরি ফোনে ফোনে, রেকর্ড হয় না।' },
+  { icon: 'phone', en: 'Audio & group calls', bn: 'অডিও ও গ্রুপ কল', den: 'Call any friend; rings even on a locked phone. Add up to 4 people.', dbn: 'যেকোনো বন্ধুকে কল; লক ফোনেও রিং হয়। ৪ জন পর্যন্ত যোগ করুন।' },
+  { icon: 'mic', en: 'Talk live in quiz & Ludo', bn: 'কুইজ ও লুডুতে লাইভ কথা', den: 'Turn on your mic in matches and rooms. Everyone can always listen.', dbn: 'ম্যাচ আর রুমে নিজের মাইক চালু করুন। শোনা সবার জন্য ফ্রি।' },
+  { icon: 'message', en: 'Voice messages', bn: 'ভয়েস মেসেজ', den: 'Hold the mic in chat to send a voice message.', dbn: 'চ্যাটে মাইক চেপে ধরে ভয়েস মেসেজ পাঠান।' },
+  { icon: 'image', en: 'Photos in chat', bn: 'চ্যাটে ছবি', den: 'Send photos from the gallery or camera.', dbn: 'গ্যালারি বা ক্যামেরা থেকে ছবি পাঠান।' },
+  { icon: 'book', en: 'Premium collections', bn: 'প্রিমিয়াম কালেকশন', den: 'All previous-year question sets unlocked.', dbn: 'আগের বছরের সব প্রশ্নের সেট খোলা।' },
+  { icon: 'crown', en: 'Gold premium badge', bn: 'সোনালি প্রিমিয়াম ব্যাজ', den: 'A gold badge next to your name everywhere.', dbn: 'সব জায়গায় নামের পাশে সোনালি ব্যাজ।' },
 ];
 
 export default function Premium() {
@@ -47,6 +47,8 @@ export default function Premium() {
   const [plan, setPlan] = useState<PlanId>('yearly');
   const [busy, setBusy] = useState<'buy' | 'redeem' | 'restore' | null>(null);
   const [code, setCode] = useState('');
+  const [allPerks, setAllPerks] = useState(false);
+  const nav = useNavigate();
 
   useEffect(() => {
     void restorePremium().then((ok) => ok && void info.refetch());
@@ -123,72 +125,54 @@ export default function Premium() {
   };
 
   const off = info.data?.enabled === false;
+  const canBuy = !off && !info.data?.subscribed && !me.premiumForever && (!premium || me.premiumTrial || daysLeft <= 7);
+  const perks = allPerks ? PREMIUM_PERKS : PREMIUM_PERKS.slice(0, 3);
+  const close = () => (window.history.length > 1 ? nav(-1) : nav('/', { replace: true }));
   return (
-    <div className="page stack premium-page">
-      <PageHeader title={t('Premium', 'প্রিমিয়াম')} back />
-      <section className={`pm-hero${premium ? ' on' : ''}`}>
-        <span className="pm-crown" aria-hidden><Icon name="crown" size={44} strokeWidth={1.8} /></span>
-        <h1>QUIZ WAR <b>Premium</b></h1>
-        {premium ? (
-          <p className="pm-status">
-            <Icon name="check" size={16} />{' '}
-            {me.premiumForever
-              ? t('Premium for good', 'আজীবন প্রিমিয়াম')
-              : me.premiumTrial
-                ? t(`Free trial · ${daysLeft} day${daysLeft === 1 ? '' : 's'} left`, `ফ্রি ট্রায়াল · আর ${num(daysLeft, lang)} দিন`)
-                : t(`Active until ${dateText}`, `${dateText} পর্যন্ত চালু`)}
-          </p>
-        ) : (
-          <p className="pm-sub">{t('Video calls, voice and live talk — everything unlocked.', 'ভিডিও কল, ভয়েস আর লাইভ কথা — সব চালু।')}</p>
-        )}
-      </section>
-
-      {off ? (
-        <p className="card small muted" style={{ textAlign: 'center' }}>{t('Premium is not on sale yet. Everything is free for now!', 'প্রিমিয়াম এখনো বিক্রি শুরু হয়নি। এখন সব ফ্রি!')}</p>
+    <div className={`pm2${canBuy ? ' has-buy' : ''}`}>
+      <header className="pm2-top">
+        <button type="button" className="pm2-x" onClick={close} aria-label={t('Close', 'বন্ধ করুন')}><Icon name="close" size={22} /></button>
+        <span className="pm2-logo"><Icon name="crown" size={26} /></span>
+        <span className="pm2-x ghost" />
+      </header>
+      <h1 className="pm2-title">{t('One subscription.', 'একটা সাবস্ক্রিপশন।')}<br />{t('Everything unlocked.', 'সব সুবিধা চালু।')}</h1>
+      {premium ? (
+        <p className="pm2-status">
+          <Icon name="check" size={16} />{' '}
+          {me.premiumForever
+            ? t('Premium for good', 'আজীবন প্রিমিয়াম')
+            : me.premiumTrial
+              ? t(`Free trial · ${daysLeft} day${daysLeft === 1 ? '' : 's'} left`, `ফ্রি ট্রায়াল · আর ${num(daysLeft, lang)} দিন`)
+              : t(`Premium until ${dateText}`, `${dateText} পর্যন্ত প্রিমিয়াম`)}
+        </p>
       ) : (
-        (!premium || me.premiumTrial || (!info.data?.subscribed && !me.premiumForever && daysLeft <= 7)) && (
-          <section className="pm-plans" aria-label={t('Choose a plan', 'প্ল্যান বাছাই করুন')}>
-            {(['monthly', 'yearly'] as const).map((id) => (
-              <button key={id} type="button" className={`pm-plan${plan === id ? ' on' : ''}${id === 'yearly' ? ' best' : ''}`} onClick={() => (haptic('tap'), setPlan(id))} aria-pressed={plan === id}>
-                {id === 'yearly' && save > 0 && <span className="pp-badge">{t(`Save ${save}%`, `${num(save, lang)}% সাশ্রয়`)}</span>}
-                <span className="pp-name">{id === 'monthly' ? t('1 month', '১ মাস') : t('12 months', '১২ মাস')}</span>
-                <b className="pp-price">{priceOf(id)}</b>
-                <small className="pp-per">{id === 'monthly' ? t('per month', 'প্রতি মাসে') : t('per year · best value', 'প্রতি বছর · সেরা অফার')}</small>
-                <span className="pp-check" aria-hidden><Icon name="check" size={14} /></span>
-              </button>
-            ))}
-          </section>
-        )
+        <p className="pm2-sub">{t('Video calls, voice and live talk in QUIZ WAR.', 'QUIZ WAR-এ ভিডিও কল, ভয়েস আর লাইভ কথা।')}</p>
       )}
 
-      {!off && (premium && info.data?.subscribed ? (
-        <button className="btn outline block" onClick={() => void window.open(manageUrl(productId), '_blank', 'noopener')}><Icon name="settings" /> {t('Manage subscription in Google Play', 'Google Play-তে সাবস্ক্রিপশন দেখুন')}</button>
-      ) : isNative && (!premium || me.premiumTrial || (!me.premiumForever && daysLeft <= 7)) ? (
-        <div className="pm-buy">
-          <button className="btn pm-cta block" disabled={busy !== null} onClick={() => void buy()}>
-            {busy === 'buy' ? <span className="spinner" /> : <Icon name="crown" />} {t(`Get Premium · ${priceOf(plan)}`, `প্রিমিয়াম নিন · ${priceOf(plan)}`)}
-          </button>
-          <p className="xs muted" style={{ textAlign: 'center' }}>
-            {t('Paid through Google Play. Renews automatically until you cancel in Google Play.', 'Google Play-এর মাধ্যমে পেমেন্ট। Google Play থেকে বন্ধ না করা পর্যন্ত নিজে থেকে রিনিউ হবে।')}
-          </p>
-          <button className="btn ghost sm" style={{ alignSelf: 'center' }} disabled={busy !== null} onClick={() => void restore()}>
-            {busy === 'restore' ? <span className="spinner" /> : <Icon name="refresh" size={16} />} {t('Restore purchase', 'আগের কেনা ফিরিয়ে আনুন')}
-          </button>
-        </div>
-      ) : !isNative && !premium ? (
-        <p className="card small" style={{ textAlign: 'center' }}><Icon name="smartphone" size={18} /> {t('Buy Premium in the QUIZ WAR app from Google Play.', 'Google Play থেকে QUIZ WAR অ্যাপে প্রিমিয়াম কিনুন।')}</p>
-      ) : null)}
+      <section className="pm2-perks">
+        <p className="pm2-label"><Icon name="crown" size={14} /> {t('Premium benefits', 'প্রিমিয়াম সুবিধা')}</p>
+        <ul>
+          {perks.map((p) => (
+            <li key={p.en}>
+              <span className="pm-ic"><Icon name={p.icon} size={20} /></span>
+              <span className="grow">
+                <b>{t(p.en, p.bn)}</b>
+                {allPerks && <small>{t(p.den, p.dbn)}</small>}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <button type="button" className="pm2-more" onClick={() => (haptic('tap'), setAllPerks((v) => !v))} aria-expanded={allPerks}>
+          {allPerks ? t('Show less', 'কম দেখুন') : t(`See all ${PREMIUM_PERKS.length} benefits`, `সব ${num(PREMIUM_PERKS.length, lang)}টি সুবিধা দেখুন`)}
+          <Icon name="chevron-down" size={18} className={allPerks ? 'up' : ''} />
+        </button>
+        <p className="xs muted pm-free"><Icon name="message" size={14} /> {t('Text chat and all games stay free for everyone.', 'টেক্সট চ্যাট আর সব খেলা সবার জন্য ফ্রি।')}</p>
+      </section>
 
-      <ul className="pm-perks">
-        {PREMIUM_PERKS.map((p) => (
-          <li key={p.en}>
-            <span className="pm-ic"><Icon name={p.icon} size={20} /></span>
-            <span className="grow">{t(p.en, p.bn)}</span>
-            <Icon name="check" size={18} className="pm-tick" />
-          </li>
-        ))}
-      </ul>
-      <p className="xs muted pm-free"><Icon name="message" size={14} /> {t('Text chat and all games stay free for everyone.', 'টেক্সট চ্যাট আর সব খেলা সবার জন্য ফ্রি থাকবে।')}</p>
+      {off && <p className="pm2-note">{t('Premium is not on sale yet. Everything is free for now!', 'প্রিমিয়াম এখনো বিক্রি শুরু হয়নি। এখন সব ফ্রি!')}</p>}
+      {!off && premium && info.data?.subscribed && (
+        <button className="btn outline block pm2-manage" onClick={() => void window.open(manageUrl(productId), '_blank', 'noopener')}><Icon name="settings" /> {t('Manage subscription in Google Play', 'Google Play-তে সাবস্ক্রিপশন দেখুন')}</button>
+      )}
 
       {ref?.enabled && (
         <section className="pm-invite">
@@ -216,15 +200,47 @@ export default function Premium() {
         </section>
       )}
 
-      <section className="card pm-redeem">
-        <h3 className="row gap-sm"><Icon name="ticket" size={18} /> {t('Have a premium code?', 'প্রিমিয়াম কোড আছে?')}</h3>
+      <section className="pm2-redeem">
+        <p className="pm2-label"><Icon name="ticket" size={14} /> {t('Have a premium code?', 'প্রিমিয়াম কোড আছে?')}</p>
         <form className="row" onSubmit={(e) => (e.preventDefault(), void redeem())}>
           <input className="input grow" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder={t('Enter code', 'কোড লিখুন')} maxLength={24} autoCapitalize="characters" aria-label={t('Premium code', 'প্রিমিয়াম কোড')} />
           <button className="btn primary" disabled={busy !== null || code.trim().length < 6}>{busy === 'redeem' ? <span className="spinner" /> : t('Redeem', 'নিন')}</button>
         </form>
+        {(cfg?.monthlyPremiumTop ?? 0) > 0 && (
+          <p className="xs muted"><Icon name="trophy" size={14} /> {t(`The top ${cfg!.monthlyPremiumTop} players of each month get 30 days free.`, `প্রতি মাসের সেরা ${num(cfg!.monthlyPremiumTop ?? 0, lang)} জন প্লেয়ার ৩০ দিন ফ্রি পায়।`)}</p>
+        )}
+        {isNative && !off && (
+          <button className="btn ghost sm" disabled={busy !== null} onClick={() => void restore()}>
+            {busy === 'restore' ? <span className="spinner" /> : <Icon name="refresh" size={16} />} {t('Restore purchase', 'আগের কেনা ফিরিয়ে আনুন')}
+          </button>
+        )}
       </section>
-      {(cfg?.monthlyPremiumTop ?? 0) > 0 && (
-        <p className="xs muted" style={{ textAlign: 'center' }}><Icon name="trophy" size={14} /> {t(`The top ${cfg!.monthlyPremiumTop} players of each month get 30 days free.`, `প্রতি মাসের সেরা ${num(cfg!.monthlyPremiumTop ?? 0, lang)} জন প্লেয়ার ৩০ দিন ফ্রি পায়।`)}</p>
+
+      {canBuy && (
+        <div className="pm2-buy">
+          <div className="pm2-plans" role="radiogroup" aria-label={t('Choose a plan', 'প্ল্যান বাছাই করুন')}>
+            {(['monthly', 'yearly'] as const).map((id) => (
+              <button key={id} type="button" role="radio" aria-checked={plan === id} className={`pm2-plan${plan === id ? ' on' : ''}`} onClick={() => (haptic('tap'), setPlan(id))}>
+                <span className="pp-line"><b>{priceOf(id)}</b> <small>{id === 'monthly' ? t('monthly', 'মাসিক') : t('yearly', 'বাৎসরিক')}</small></span>
+                {id === 'yearly' ? (
+                  <span className="pp-sub">{t('12 months', '১২ মাস')}{save > 0 && <em> · {t(`Save ${save}%`, `${num(save, lang)}% সাশ্রয়`)}</em>}</span>
+                ) : (
+                  <span className="pp-sub">{t('1 month', '১ মাস')}</span>
+                )}
+              </button>
+            ))}
+          </div>
+          {isNative ? (
+            <button className="btn pm2-cta block" disabled={busy !== null} onClick={() => void buy()}>
+              {busy === 'buy' ? <span className="spinner" /> : <Icon name="crown" />} {t('Get Premium', 'প্রিমিয়াম নিন')}
+            </button>
+          ) : (
+            <button className="btn pm2-cta block" onClick={() => void window.open(cfg?.playStoreUrl || 'https://play.google.com/store/apps/details?id=app.quizwar.bd', '_blank', 'noopener')}>
+              <Icon name="smartphone" /> {t('Get Premium in the app', 'অ্যাপে প্রিমিয়াম নিন')}
+            </button>
+          )}
+          <p className="pm2-legal">{t('Paid through Google Play. Renews automatically until you cancel in Google Play.', 'Google Play-এর মাধ্যমে পেমেন্ট। Google Play থেকে বন্ধ না করা পর্যন্ত নিজে থেকে রিনিউ হবে।')}</p>
+        </div>
       )}
     </div>
   );

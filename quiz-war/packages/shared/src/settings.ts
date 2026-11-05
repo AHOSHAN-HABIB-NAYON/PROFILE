@@ -328,6 +328,8 @@ export const appSettingsSchema = z.object({
   /** Big reward: this many friends who played → this many days. */
   referralBigCount: z.number().int().min(2).max(10000).default(100),
   referralBigDays: z.number().int().min(1).max(3650).default(365),
+  /** "Get Premium / invite friends" popup on Home, every N days (0 = off). */
+  premiumPromoDays: z.number().int().min(0).max(30).default(2),
   /** Home "Collections" (previous-year question sets). */
   collectionsEnabled: z.boolean().default(true),
 });
@@ -382,6 +384,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   referralDays: 7,
   referralBigCount: 100,
   referralBigDays: 365,
+  premiumPromoDays: 2,
   ludoEnabled: true,
   ludoTurnSeconds: 15,
   ludoWinCoins: 20,

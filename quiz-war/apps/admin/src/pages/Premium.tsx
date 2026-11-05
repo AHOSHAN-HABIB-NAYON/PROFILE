@@ -76,6 +76,7 @@ export default function Premium() {
           referralBigDays: n('referralBigDays', 365),
           premiumPriceMonthly: String(f.get('premiumPriceMonthly') || '৳150').trim(),
           premiumPriceYearly: String(f.get('premiumPriceYearly') || '৳1200').trim(),
+          premiumPromoDays: Math.max(0, Math.min(30, Math.round(Number(f.get('premiumPromoDays') ?? 2)))),
         },
       });
       setGrowMsg({ ok: 'Saved.' });
@@ -150,6 +151,7 @@ export default function Premium() {
             <div className="field" style={{ width: 150 }}><label htmlFor="pr-m">Price text: 1 month</label><input id="pr-m" name="premiumPriceMonthly" className="input" maxLength={20} defaultValue={a.premiumPriceMonthly ?? '৳150'} /></div>
             <div className="field" style={{ width: 150 }}><label htmlFor="pr-y">Price text: 12 months</label><input id="pr-y" name="premiumPriceYearly" className="input" maxLength={20} defaultValue={a.premiumPriceYearly ?? '৳1200'} /></div>
           </div>
+          <div className="field" style={{ maxWidth: 260 }}><label htmlFor="pr-pop">"Get Premium / invite" popup every</label><input id="pr-pop" name="premiumPromoDays" type="number" min={0} max={30} className="input" defaultValue={a.premiumPromoDays ?? 2} /><span className="small faint">days, on Home, for players without Premium (and trial users). 0 = off.</span></div>
           <span className="small faint">The app shows Google Play's real price when it can; these texts are shown until then. Set the real prices in Play Console.</span>
           <div className="row"><button className="btn primary">Save trial & invites</button><span className="small" role="status" style={{ color: 'var(--success)', fontWeight: 700 }}>{growMsg.ok}</span></div>
           {growMsg.err && <p className="err" role="alert">{growMsg.err}</p>}

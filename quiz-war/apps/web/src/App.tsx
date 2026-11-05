@@ -13,6 +13,7 @@ import { PromoHost } from './components/Promo';
 import { ChatHeads } from './components/ChatHeads';
 import { Splash } from './components/Splash';
 import { Paywall } from './components/Paywall';
+import { PremiumPromo } from './components/PremiumPromo';
 import { Toasts } from './components/Toasts';
 import { IncomingInvites } from './components/Invites';
 import { useOnline } from './hooks/useOnline';
@@ -391,6 +392,7 @@ export function App() {
           <ChatHeads />
           <CallScreen />
           <Paywall />
+          <PremiumPromo />
         </>
       )}
       {status !== 'loading' && (
@@ -424,7 +426,7 @@ export function App() {
             <Route path="/about" element={<Shell><About /></Shell>} />
             <Route path="/notifications" element={<Shell><Notifications /></Shell>} />
             <Route path="/shop" element={<Shell><Shop /></Shell>} />
-            <Route path="/premium" element={<Shell><Premium /></Shell>} />
+            <Route path="/premium" element={<Full><Premium /></Full>} />
             <Route path="/squads" element={<Shell><Squads /></Shell>} />
             <Route path="/squads/:id" element={<Shell><SquadDetail /></Shell>} />
             <Route path="/history" element={<Shell><History /></Shell>} />
