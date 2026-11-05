@@ -1645,3 +1645,51 @@
 .lo-share { display: flex; gap: 8px; }
 .lo-card-preview { width: 100%; max-width: 240px; border-radius: 14px; box-shadow: 0 8px 22px rgba(15,23,42,.2); }
 .confetti-canvas { z-index: 91; }
+
+/* Ludo hub: logo + four big yellow tiles */
+.ludo-hub { display: flex; flex-direction: column; gap: 14px; }
+.lh-logo { display: grid; place-items: center; }
+.ludo-logo { width: min(330px, 92%); height: auto; filter: drop-shadow(0 10px 18px rgba(0,0,0,.35)); animation: ludo-float 4.5s ease-in-out infinite; }
+.lh-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.lh-tile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0 0 10px; border: 4px solid #facc15; border-radius: 22px; overflow: hidden; color: #1e3a8a; font: inherit; background: linear-gradient(180deg, #fde047, #facc15); box-shadow: 0 6px 0 #ca8a04, 0 12px 22px rgba(0,0,0,.3); transition: transform .12s; }
+.lh-tile:active { transform: translateY(3px); box-shadow: 0 3px 0 #ca8a04, 0 8px 16px rgba(0,0,0,.3); }
+.lt-art { width: 100%; height: 76px; display: grid; place-items: center; background: linear-gradient(180deg, #1d4ed8, #1e3a8a); border-bottom: 3px solid #ca8a04; margin-bottom: 6px; }
+.lt-art svg { width: 82%; height: 100%; }
+.lh-tile b { font-size: 16px; font-weight: 900; color: #1e3a8a; text-shadow: 0 1px 0 rgba(255,255,255,.6); }
+.lh-tile small { font-size: 11.5px; font-weight: 700; color: #713f12; }
+.lt-live { display: inline-flex; align-items: center; gap: 5px; color: #166534 !important; }
+.lt-live i { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.25); }
+.lt-mic { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: #38bdf8; color: #fff; box-shadow: 0 0 0 2px #fff; }
+.lh-or { display: flex; align-items: center; gap: 8px; color: var(--text-3, #64748b); font-size: 12.5px; font-weight: 700; }
+.lh-or::before, .lh-or::after { content: ''; flex: 1; border-top: 1px solid var(--border, #e2e8f0); }
+.ludo-hub .seg { flex: 1; }
+/* Ludo inside the Battle page */
+.ludo-embed { border-radius: 24px; padding: 14px 12px 16px; color: #fff; background-color: #0b2a6b; background-image: radial-gradient(circle at 20% 15%, rgba(96,165,250,.25), transparent 45%), radial-gradient(circle at 80% 85%, rgba(129,140,248,.25), transparent 45%); }
+
+.pending-card { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 12px; border: 0; border-radius: 16px; text-align: left; font: inherit; color: inherit; background: var(--danger-soft, #fee2e2); }
+.pending-card b { display: block; font-size: 14.5px; }
+.pending-card small { font-size: 12px; color: var(--text-2, #475569); }
+
+/* Token home celebration */
+.home-cheer { position: absolute; inset: 0; z-index: 45; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; background: radial-gradient(circle, rgba(15,23,42,.55) 0%, rgba(15,23,42,0) 60%); animation: hc-fade 1.7s ease both; }
+.hc-rays { position: absolute; width: 90%; aspect-ratio: 1; border-radius: 50%; background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--hc) 55%, transparent) 0 10deg, transparent 10deg 20deg); mask-image: radial-gradient(circle, #000 25%, transparent 68%); -webkit-mask-image: radial-gradient(circle, #000 25%, transparent 68%); animation: hc-spin 3s linear infinite; }
+.hc-star { position: relative; width: 30%; filter: drop-shadow(0 6px 14px rgba(0,0,0,.45)); animation: hc-pop .6s cubic-bezier(.34,1.56,.64,1) both; }
+.hc-text { position: relative; margin-top: 4px; font-size: clamp(26px, 8vw, 40px); font-weight: 900; color: #fde047; -webkit-text-stroke: 1.5px #92400e; text-shadow: 0 4px 0 rgba(0,0,0,.3); animation: hc-pop .6s .12s cubic-bezier(.34,1.56,.64,1) both; }
+.hc-sub { position: relative; font-size: 13px; font-weight: 800; color: #fff; background: rgba(15,23,42,.7); padding: 4px 12px; border-radius: 99px; margin-top: 6px; animation: hc-pop .5s .25s ease both; }
+.hc-spark { position: absolute; left: 50%; top: 45%; width: 10px; height: 10px; border-radius: 50%; background: #fde047; box-shadow: 0 0 10px #fde047; transform: rotate(var(--a)) translateY(0); animation: hc-spark 1s var(--d) ease-out both; }
+.hc-spark:nth-child(odd) { background: var(--hc); box-shadow: 0 0 10px var(--hc); }
+@keyframes hc-spin { to { transform: rotate(360deg); } }
+@keyframes hc-pop { from { transform: scale(0); opacity: 0; } }
+@keyframes hc-fade { 0% { opacity: 0; } 10%, 80% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes hc-spark { from { transform: rotate(var(--a)) translateY(0) scale(1); opacity: 1; } to { transform: rotate(var(--a)) translateY(-120px) scale(.3); opacity: 0; } }
+
+.lf-pawn { background: none !important; box-shadow: none !important; }
+.lf-pawn svg { width: 24px; height: 31px; overflow: visible; }
+
+/* Home quick battle: slimmer card */
+.hero-battle { padding: 14px 16px 16px; }
+.hero-battle h2 { font-size: 21px; margin-top: 8px; }
+.hero-battle p { font-size: 12.5px; margin-top: 2px; max-width: 64%; }
+.hero-battle .btn { margin-top: 12px; height: 44px; font-size: 15px; }
+.hb-art { width: 76px; height: 76px; top: 14px; right: 10px; }
+.hb-art .qw-icon { width: 42px; height: 42px; }

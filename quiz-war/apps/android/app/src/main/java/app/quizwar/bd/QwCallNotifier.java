@@ -106,7 +106,7 @@ public final class QwCallNotifier {
         }).start();
     }
 
-    static void showIncoming(Context ctx, String callId, String name, String avatarUrl, String url, String declineToken) {
+    static void showIncoming(Context ctx, String callId, String name, String avatarUrl, String url, String declineToken, boolean en) {
         try {
             ensureChannel(ctx);
             NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -126,6 +126,7 @@ public final class QwCallNotifier {
             fi.putExtra("qw_call_name", name);
             fi.putExtra("qw_call_avatar", avatarUrl);
             fi.putExtra("qw_call_decline", declineToken);
+            fi.putExtra("qw_call_en", en);
             PendingIntent full = PendingIntent.getActivity(ctx, 4, fi, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
             // Decline: handled in the background, no app.
             Intent di = new Intent(ctx, QwCallActionReceiver.class);
@@ -136,7 +137,7 @@ public final class QwCallNotifier {
             NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CHANNEL)
                     .setSmallIcon(R.drawable.ic_stat_notify)
                     .setContentTitle(name)
-                    .setContentText("QUIZ WAR অডিও কল")
+                    .setContentText(en ? "QUIZ WAR audio call" : "QUIZ WAR অডিও কল")
                     .setCategory(NotificationCompat.CATEGORY_CALL)
                     .setPriority(NotificationCompat.PRIORITY_MAX)
                     .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
@@ -151,7 +152,7 @@ public final class QwCallNotifier {
             try {
                 b.setStyle(NotificationCompat.CallStyle.forIncomingCall(caller, decline, answer));
             } catch (Exception e) {
-                b.addAction(0, "কেটে দিন", decline).addAction(0, "ধরুন", answer);
+                b.addAction(0, en ? "Decline" : "কেটে দিন", decline).addAction(0, en ? "Answer" : "ধরুন", answer);
             }
             Notification n = b.build();
             n.flags |= Notification.FLAG_INSISTENT; // keep ringing until answered

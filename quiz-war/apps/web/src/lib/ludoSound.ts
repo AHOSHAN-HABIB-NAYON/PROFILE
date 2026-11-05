@@ -48,7 +48,7 @@ function tone(freq: number, at: number, len: number, vol: number, type: Oscillat
 }
 
 /** Short filtered noise (wood / dice clicks). */
-function click(at: number, vol: number, freq = 2400, len = 0.05) {
+function click(at: number, vol: number, freq = 2400, len = 0.05, q = 1.4) {
   const c = ac();
   const n = Math.floor(c.sampleRate * len);
   const buf = c.createBuffer(1, n, c.sampleRate);
@@ -59,7 +59,7 @@ function click(at: number, vol: number, freq = 2400, len = 0.05) {
   const f = c.createBiquadFilter();
   f.type = 'bandpass';
   f.frequency.value = freq;
-  f.Q.value = 1.4;
+  f.Q.value = q;
   const g = c.createGain();
   g.gain.value = vol;
   src.connect(f);
@@ -81,11 +81,15 @@ export function ludoSfx(name: LudoSfx, n = 0) {
         click(t + 0.45, 0.9, 900, 0.08);
         tone(220, t + 0.45, 0.12, 0.25, 'triangle');
         break;
-      case 'step':
-        // Light wooden hop, slightly higher each step.
-        click(t, 0.5, 1500 + n * 60, 0.035);
-        tone(520 + n * 28, t, 0.09, 0.22, 'triangle');
+      case 'step': {
+        // A soft wooden "tock" (same note every hop, tiny natural variation).
+        const v = 1 + (Math.random() - 0.5) * 0.04;
+        click(t, 0.7, 950 * v, 0.04, 2.2);
+        tone(430 * v, t, 0.07, 0.26, 'sine');
+        tone(165, t, 0.06, 0.2, 'sine');
+        if (n === 0) click(t, 0.25, 3200, 0.02, 1);
         break;
+      }
       case 'out':
         tone(392, t, 0.14, 0.3, 'triangle');
         tone(587, t + 0.08, 0.2, 0.3, 'triangle');
@@ -100,9 +104,13 @@ export function ludoSfx(name: LudoSfx, n = 0) {
         click(t + 0.3, 1, 300, 0.12);
         tone(110, t + 0.3, 0.25, 0.45, 'sine', 60);
         break;
-      case 'home':
-        [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.09, 0.45, 0.28, 'triangle'));
+      case 'home': {
+        // Congratulations: bright arpeggio, a warm chord and a little sparkle on top.
+        [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, t + i * 0.075, 0.5, 0.26, 'triangle'));
+        [523, 659, 784].forEach((f) => tone(f, t + 0.42, 0.9, 0.16, 'sine'));
+        for (let i = 0; i < 6; i++) tone(1800 + Math.random() * 1400, t + 0.45 + i * 0.07, 0.18, 0.08, 'sine');
         break;
+      }
       case 'six':
         [1047, 1319, 1568].forEach((f, i) => tone(f, t + i * 0.06, 0.3, 0.18));
         break;

@@ -19,7 +19,6 @@ import { toast } from '../lib/toast';
 import { PlayerName, NameBadges, VerifiedBadge } from '../components/Verified';
 import { VerifyEmailBanner } from '../components/NativeExtras';
 import { Modal } from '../components/Sheet';
-import { ludoQueue } from '../lib/ludoOnline';
 import { useState } from 'react';
 
 const REWARD_ICON: Record<string, IconName> = { coins: 'coin', xp: 'xp', power_up: 'bolt', mystery: 'gift' };
@@ -228,7 +227,7 @@ export default function Home() {
             <b>{t('Quiz battle', 'কুইজ ব্যাটল')}</b>
             <small>{t('1 vs 1 · ranked', '১ বনাম ১ · র‍্যাংকড')}</small>
           </button>
-          <button type="button" onClick={() => (setPick(false), nav('/ludo'), void ludoQueue('1v1'))}>
+          <button type="button" onClick={() => (setPick(false), nav('/ludo/find?mode=1v1'))}>
             <IconTile name="gamepad" tone="accent" size={48} />
             <b>{t('Ludo battle', 'লুডু ব্যাটল')}</b>
             <small>{t('1 vs 1 · online', '১ বনাম ১ · অনলাইন')}</small>

@@ -21,6 +21,8 @@ export interface PushMessage {
   dataOnly?: boolean;
   /** How long the message is worth delivering (seconds). */
   ttlSecs?: number;
+  /** English text for players who use the app in English (title/body above are Bangla). */
+  en?: { title?: string; body?: string; data?: Record<string, string> };
 }
 
 interface Logger {
@@ -110,8 +112,23 @@ export class PushService {
     await exec('DELETE FROM device_tokens WHERE user_id = ? AND token_hash = ?', [userId, sha256(token)]);
   }
 
-  async sendToUser(userId: number, msg: PushMessage) {
+  private langs = new Map<number, { en: boolean; at: number }>();
+  private async isEnglish(userId: number) {
+    const c = this.langs.get(userId);
+    if (c && Date.now() - c.at < 60_000) return c.en;
+    const r = await query<{ lang: string }>('SELECT lang FROM user_profiles WHERE user_id = ?', [userId]).catch(() => []);
+    const en = r[0]?.lang === 'en';
+    if (this.langs.size > 5000) this.langs.clear();
+    this.langs.set(userId, { en, at: Date.now() });
+    return en;
+  }
+
+  async sendToUser(userId: number, msg0: PushMessage) {
     if (!this.enabled) return;
+    let msg = msg0;
+    if (msg0.en && (await this.isEnglish(userId))) {
+      msg = { ...msg0, title: msg0.en.title ?? msg0.title, body: msg0.en.body ?? msg0.body, data: { ...(msg0.data ?? {}), ...(msg0.en.data ?? {}) } };
+    }
     const tokens = await query<{ id: number; platform: 'android' | 'web'; token: string }>(
       'SELECT id, platform, token FROM device_tokens WHERE user_id = ? ORDER BY last_seen_at DESC LIMIT 10',
       [userId],

@@ -44,19 +44,20 @@ function BattleArt() {
 }
 
 function LearnArt() {
+  const lang = useLang();
   return (
     <div className="intro-art art-learn" aria-hidden>
       <div className="al-book">
         <IconTile name="book-check" tone="primary" size={96} />
       </div>
       <span className="al-chip c1"><IconTile name="landmark" color="#1d4ed8" size={26} /> BCS</span>
-      <span className="al-chip c2"><IconTile name="banknote" color="#15803d" size={26} /> ব্যাংক</span>
+      <span className="al-chip c2"><IconTile name="banknote" color="#15803d" size={26} /> {lang === 'en' ? 'Bank' : 'ব্যাংক'}</span>
       <span className="al-chip c3"><IconTile name="cpu" color="#4f46e5" size={26} /> ICT</span>
-      <span className="al-chip c4"><IconTile name="building" color="#0f766e" size={26} /> সরকারি চাকরি</span>
+      <span className="al-chip c4"><IconTile name="building" color="#0f766e" size={26} /> {lang === 'en' ? 'Govt jobs' : 'সরকারি চাকরি'}</span>
       <div className="al-answer">
         <Icon name="check-circle" size={20} />
         <div>
-          <b>সঠিক উত্তর!</b>
+          <b>{lang === 'en' ? 'Correct!' : 'সঠিক উত্তর!'}</b>
           <span className="ab-line w80" />
         </div>
       </div>

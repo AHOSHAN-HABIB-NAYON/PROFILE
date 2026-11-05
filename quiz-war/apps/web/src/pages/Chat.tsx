@@ -468,7 +468,7 @@ export default function Chat() {
                 <b>{peer.username}</b>
                 <span className="small muted">{t('Say hi and start the conversation!', 'হাই বলে কথা শুরু করুন!')}</span>
                 <div className="row gap-sm" style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
-                  {['👋 Hi!', 'আসসালামু আলাইকুম', '⚔️ খেলবে?'].map((q) => <button key={q} className="chip" onClick={() => void send(q)}>{q}</button>)}
+                  {(lang === 'en' ? ['👋 Hi!', 'Assalamu Alaikum', '⚔️ Play?'] : ['👋 Hi!', 'আসসালামু আলাইকুম', '⚔️ খেলবে?']).map((q) => <button key={q} className="chip" onClick={() => void send(q)}>{q}</button>)}
                 </div>
               </div>
             )}

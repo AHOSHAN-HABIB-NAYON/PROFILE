@@ -1,3 +1,4 @@
+import { useSettings } from '../lib/settings';
 import { useEffect, useState } from 'react';
 
 /** The brand mark, drawn with SVG so it can animate (ring draws, swords cross, core pops). */
@@ -61,7 +62,7 @@ export function Splash({ onDone, ready = true }: { onDone?: () => void; ready?: 
           <i className="flag-line r" />
         </div>
       </div>
-      <p className="splash-foot">জ্ঞানের যুদ্ধে স্বাগতম</p>
+      <p className="splash-foot">{useSettings.getState().lang === 'en' ? 'Welcome to the battle of minds' : 'জ্ঞানের যুদ্ধে স্বাগতম'}</p>
     </div>
   );
 }

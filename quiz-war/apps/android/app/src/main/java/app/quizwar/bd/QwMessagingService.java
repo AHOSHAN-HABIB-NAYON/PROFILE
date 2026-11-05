@@ -19,7 +19,7 @@ public class QwMessagingService extends MessagingService {
         if ("call".equals(type)) {
             // On screen already: the in-app call screen rings.
             if (!QwCallNotifier.appVisible) {
-                QwCallNotifier.showIncoming(this, d.get("callId"), d.containsKey("name") ? d.get("name") : "QUIZ WAR", d.get("avatar"), d.containsKey("url") ? d.get("url") : "/", d.get("decline"));
+                QwCallNotifier.showIncoming(this, d.get("callId"), d.containsKey("name") ? d.get("name") : "QUIZ WAR", d.get("avatar"), d.containsKey("url") ? d.get("url") : "/", d.get("decline"), "en".equals(d.get("lang")));
             }
             return;
         }

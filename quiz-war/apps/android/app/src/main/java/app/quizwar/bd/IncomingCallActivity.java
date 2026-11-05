@@ -66,6 +66,7 @@ public class IncomingCallActivity extends Activity {
         callId = in.getStringExtra("qw_call_id");
         url = in.getStringExtra("qw_call_url");
         decline = in.getStringExtra("qw_call_decline");
+        final boolean en = in.getBooleanExtra("qw_call_en", false);
         String name = in.getStringExtra("qw_call_name");
         if (name == null) name = "QUIZ WAR";
 
@@ -94,7 +95,7 @@ public class IncomingCallActivity extends Activity {
         head.addView(who, new LinearLayout.LayoutParams(-1, -2));
 
         TextView app = new TextView(this);
-        app.setText("QUIZ WAR অডিও কল");
+        app.setText(en ? "QUIZ WAR audio call" : "QUIZ WAR অডিও কল");
         app.setTextColor(Color.parseColor("#B3FFFFFF"));
         app.setTextSize(15);
         app.setGravity(Gravity.CENTER);
@@ -144,9 +145,9 @@ public class IncomingCallActivity extends Activity {
         rowLp.leftMargin = dp(16);
         rowLp.rightMargin = dp(16);
         root.addView(row, rowLp);
-        row.addView(button("কেটে দিন", "#E11D48", R.drawable.qw_ic_call_end, v -> onDecline()), new LinearLayout.LayoutParams(0, -2, 1));
-        row.addView(button("ধরুন", "#16A34A", R.drawable.qw_ic_call, v -> onAnswer()), new LinearLayout.LayoutParams(0, -2, 1));
-        row.addView(button("মেসেজ", "#2B3550", R.drawable.qw_ic_message, v -> onMessage()), new LinearLayout.LayoutParams(0, -2, 1));
+        row.addView(button(en ? "Decline" : "কেটে দিন", "#E11D48", R.drawable.qw_ic_call_end, v -> onDecline()), new LinearLayout.LayoutParams(0, -2, 1));
+        row.addView(button(en ? "Answer" : "ধরুন", "#16A34A", R.drawable.qw_ic_call, v -> onAnswer()), new LinearLayout.LayoutParams(0, -2, 1));
+        row.addView(button(en ? "Message" : "মেসেজ", "#2B3550", R.drawable.qw_ic_message, v -> onMessage()), new LinearLayout.LayoutParams(0, -2, 1));
 
         setContentView(root);
 

@@ -406,8 +406,9 @@ export class ChatService {
         this.lastPush.set(key, now);
         if (this.lastPush.size > 20_000) this.lastPush.clear();
         const text = m.kind === 'voice' ? 'ভয়েস মেসেজ পাঠিয়েছে' : m.kind === 'image' ? 'ছবি পাঠিয়েছে' : body.length > 140 ? `${body.slice(0, 137)}…` : body;
+        const textEn = m.kind === 'voice' ? 'Sent a voice message' : m.kind === 'image' ? 'Sent a photo' : text;
         void this.push
-          .sendToUser(peerId, { title: isRequest ? `${me.username} · মেসেজ রিকোয়েস্ট` : me.username, body: text, url: `/chat/${me.uid}`, tag: `chat-${userId}`, channel: 'quizwar_messages', image: me.avatarThumbUrl ?? undefined })
+          .sendToUser(peerId, { en: { title: isRequest ? `${me.username} · Message request` : me.username, body: textEn }, title: isRequest ? `${me.username} · মেসেজ রিকোয়েস্ট` : me.username, body: text, url: `/chat/${me.uid}`, tag: `chat-${userId}`, channel: 'quizwar_messages', image: me.avatarThumbUrl ?? undefined })
           .catch(() => undefined);
       }
     }

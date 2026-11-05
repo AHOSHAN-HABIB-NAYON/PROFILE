@@ -40,6 +40,7 @@ const Battle = lazy(() => import('./pages/Battle'));
 const LudoMenu = lazy(() => import('./pages/Ludo'));
 const LudoGame = lazy(() => import('./pages/Ludo').then((m) => ({ default: m.LudoGame })));
 const LudoOnline = lazy(() => import('./pages/Ludo').then((m) => ({ default: m.LudoOnline })));
+const LudoFind = lazy(() => import('./pages/Ludo').then((m) => ({ default: m.LudoFind })));
 const LudoJoin = lazy(() => import('./pages/Ludo').then((m) => ({ default: m.LudoJoin })));
 const Matchmaking = lazy(() => import('./pages/Matchmaking'));
 const WarRoom = lazy(() => import('./pages/WarRoom'));
@@ -183,7 +184,7 @@ function WelcomeRedirect() {
   return <Navigate to={`${introSeen ? '/login' : '/intro'}${next ? `?next=${encodeURIComponent(next)}` : ''}`} replace />;
 }
 
-const DARK_TOP = /^\/(intro|login|register|forgot-password|reset-password|verify-email|match|war-room|matchmaking)/;
+const DARK_TOP = /^\/(intro|login|register|forgot-password|reset-password|verify-email|match|war-room|matchmaking|ludo)/;
 
 export function App() {
   const nav = useNavigate();
@@ -231,8 +232,9 @@ export function App() {
   const gameType = useGame((s) => s.snapshot?.type);
   const voiceRoom = useVoice((s) => s.roomId);
   useEffect(() => {
-    const inGame = /^\/(match|war-room|matchmaking)/.test(loc.pathname);
-    const withPeople = /^\/war-room/.test(loc.pathname) || (/^\/(match|result)\//.test(loc.pathname) && gameType === 'pvp');
+    const inGame = /^\/(match|war-room|matchmaking|ludo\/find)/.test(loc.pathname);
+    // Ludo games: only game sounds, no background music (as planned).
+    const withPeople = /^\/(war-room|ludo\/(online|play|room))/.test(loc.pathname) || (/^\/(match|result)\//.test(loc.pathname) && gameType === 'pvp');
     setMusic(music && status === 'authed' && !splash && !withPeople && !voiceRoom, inGame ? 'match' : 'menu');
   }, [music, loc.pathname, status, splash, gameType, voiceRoom]);
 
@@ -318,6 +320,11 @@ export function App() {
       // Call screen open: Back folds it into the small bar (the call goes on).
       const cs = useCall.getState();
       if (cs.call && !cs.small && cs.call.phase !== 'ended' && !(cs.call.dir === 'in' && cs.call.phase === 'ringing')) return cs.set({ small: true });
+      // Ludo game / room: Back asks "Leave?" first (like a quiz match).
+      if (/^\/ludo\/(play|online|find)/.test(path)) {
+        window.dispatchEvent(new Event('qw:leave-ludo'));
+        return;
+      }
       // In a running match Back opens the same "Leave match?" popup as the flag button.
       const snap = useGame.getState().snapshot;
       const running = !!snap && path === `/match/${snap.matchId}` && !['finished', 'aborted', 'lobby'].includes(snap.state);
@@ -403,6 +410,7 @@ export function App() {
             <Route path="/ludo/play" element={<Full><LudoGame /></Full>} />
             <Route path="/ludo/online/:id" element={<Full><LudoOnline /></Full>} />
             <Route path="/ludo/room/:code" element={<Full><LudoJoin /></Full>} />
+            <Route path="/ludo/find" element={<Full><LudoFind /></Full>} />
             <Route path="/battle/requests" element={<Shell><Battle tab="requests" /></Shell>} />
             <Route path="/friends" element={<Shell><Friends /></Shell>} />
             <Route path="/rank" element={<Shell><Rank /></Shell>} />

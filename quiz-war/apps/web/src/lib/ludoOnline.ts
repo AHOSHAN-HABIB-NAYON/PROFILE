@@ -23,6 +23,10 @@ export function onLudoSnap(fn: Listener) {
   return () => void listeners.delete(fn);
 }
 
+/** The "finding players" screen handles a match itself (replaces itself with the game). */
+let matchedHook: ((gameId: string) => void) | null = null;
+export const onLudoMatched = (fn: ((gameId: string) => void) | null) => (matchedHook = fn);
+
 let wired = false;
 export function wireLudo() {
   if (wired) return;
@@ -46,7 +50,8 @@ export function wireLudo() {
     });
     s.on('ludo:matched', ({ gameId }) => {
       useLudo.getState().set({ queue: null });
-      navigateTo(`/ludo/online/${gameId}`);
+      matchedHook?.(gameId);
+      if (!matchedHook) navigateTo(`/ludo/online/${gameId}`);
     });
     s.on('ludo:invited', ({ code, from }) => {
       toast.custom({
@@ -60,17 +65,26 @@ export function wireLudo() {
   });
 }
 
-export async function ludoQueue(mode: '1v1' | '2v2') {
+/** Join the auto match. Returns an error message to show (or null). */
+export async function ludoQueue(mode: '1v1' | '2v2'): Promise<string | null> {
   useLudo.getState().set({ queue: { mode, since: Date.now() } });
   try {
     const r = await emit('ludo:queue', { mode });
     if (r.gameId) {
       useLudo.getState().set({ queue: null });
-      navigateTo(`/ludo/online/${r.gameId}`);
+      if (matchedHook) matchedHook(r.gameId);
+      else navigateTo(`/ludo/online/${r.gameId}`);
     }
+    return null;
   } catch (e: any) {
     useLudo.getState().set({ queue: null });
-    toast.error(tr('Could not start', 'শুরু করা গেল না'), e?.message);
+    // Already playing a game: go back to it.
+    if (e?.code === 'in_ludo' && /^[0-9A-Z]{26}$/.test(String(e?.message))) {
+      toast.info(tr('You have a Ludo game running', 'আপনার একটি লুডু খেলা চলছে'), undefined, 'gamepad');
+      navigateTo(`/ludo/online/${e.message}`);
+      return null;
+    }
+    return e?.message ?? tr('Could not start', 'শুরু করা গেল না');
   }
 }
 

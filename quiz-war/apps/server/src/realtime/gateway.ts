@@ -134,6 +134,7 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
       ctx.push.sendToUser(to, {
         title: from.username,
         body: 'অডিও কল করছে… ধরতে চাপুন',
+        en: { body: 'Audio call… tap to answer', data: { lang: 'en' } },
         url: `/chat/${from.uid}`,
         tag: `call-${callId}`,
         dataOnly: true,
@@ -142,7 +143,7 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
       }),
     endPush: (to, callId) => ctx.push.sendToUser(to, { title: '', body: '', dataOnly: true, ttlSecs: 60, data: { type: 'call_end', callId } }),
     missedPush: (to, from, callId) =>
-      ctx.push.sendToUser(to, { title: from.username, body: 'মিসড অডিও কল', url: `/chat/${from.uid}`, tag: `call-${callId}`, channel: 'quizwar_messages', image: from.avatarThumbUrl ?? undefined }),
+      ctx.push.sendToUser(to, { title: from.username, body: 'মিসড অডিও কল', en: { body: 'Missed audio call' }, url: `/chat/${from.uid}`, tag: `call-${callId}`, channel: 'quizwar_messages', image: from.avatarThumbUrl ?? undefined }),
     closeVoice: (callId, only) => {
       for (const p of voice.peers(callId)) {
         if (only && p.userId !== only) continue;
@@ -177,7 +178,7 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
       }
     },
     isOnline: (uid) => ctx.presence.isOnline(uid),
-    invitePush: (to, from, code) => ctx.push.sendToUser(to, { title: from.username, body: 'আপনাকে লুডু খেলতে ডেকেছে', url: `/ludo/room/${code}`, tag: `ludo-${code}`, channel: 'quizwar_default', image: from.avatarThumbUrl ?? undefined }),
+    invitePush: (to, from, code) => ctx.push.sendToUser(to, { title: from.username, body: 'আপনাকে লুডু খেলতে ডেকেছে', en: { body: 'invited you to play Ludo' }, url: `/ludo/room/${code}`, tag: `ludo-${code}`, channel: 'quizwar_default', image: from.avatarThumbUrl ?? undefined }),
     log: ctx.log,
   });
 

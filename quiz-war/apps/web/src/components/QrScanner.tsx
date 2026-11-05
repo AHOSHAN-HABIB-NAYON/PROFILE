@@ -30,7 +30,7 @@ async function makeDetector(): Promise<(v: HTMLVideoElement) => Promise<string[]
 }
 
 /** QR scanner (rear camera + BarcodeDetector, or jsQR where that's missing) shown in a sheet. */
-export function QrScanner({ open, onClose, onCode }: { open: boolean; onClose: () => void; onCode: (code: string) => void }) {
+export function QrScanner({ open, onClose, onCode }: { open: boolean; onClose: () => void; onCode: (code: string, raw: string) => void }) {
   const t = useT();
   const video = useRef<HTMLVideoElement>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -52,10 +52,12 @@ export function QrScanner({ open, onClose, onCode }: { open: boolean; onClose: (
         const tick = async () => {
           if (stopped) return;
           try {
-            const code = (await detect(v)).map((raw) => roomCodeFrom(raw)).find(Boolean);
-            if (code) {
+            const raws = await detect(v);
+            const raw = raws.find((r) => roomCodeFrom(r));
+            const code = raw ? roomCodeFrom(raw) : null;
+            if (code && raw) {
               haptic('success');
-              onCode(code);
+              onCode(code, raw);
               return;
             }
           } catch {

@@ -81,13 +81,15 @@ export class LudoService {
     if (!this.d.settings().enabled) throw new AppError(403, 'ludo_off', 'Ludo is turned off right now');
   }
 
+  /** Starting something new: leave a waiting room automatically; a running game must be finished first. */
   private assertFree(userId: number) {
     const id = this.byUser.get(userId);
     const g = id ? this.games.get(id) : null;
-    if (g && g.status !== 'finished') {
-      const seat = g.seats.find((s) => s.userId === userId);
-      if (seat && !seat.left) throw new AppError(409, 'in_ludo', 'You are already in a Ludo game');
-    }
+    if (!g || g.status === 'finished') return;
+    const seat = g.seats.find((s) => s.userId === userId);
+    if (!seat || seat.left) return;
+    if (g.status === 'lobby') return this.leave(userId, g.id);
+    throw new AppError(409, 'in_ludo', g.id);
   }
 
   private newGame(kind: 'quick' | 'room', hostId: number, size: 2 | 4, teams: boolean): Game {
@@ -185,13 +187,12 @@ export class LudoService {
     return { snapshot: this.snap(g) };
   }
 
-  /** Host starts: empty seats get computer players. */
+  /** Host starts — only when the room is full (every seat a real player). */
   start(userId: number, gameId: string) {
     const g = this.get(gameId);
     if (g.hostId !== userId) throw new AppError(403, 'not_host', 'Only the host can start');
     if (g.status !== 'lobby') return;
-    let b = 0;
-    while (g.seats.length < g.size) g.seats.push(this.seatFor(g, { id: -(++b), name: BOT_NAMES[b - 1] ?? 'রোবট', avatar: null }, true));
+    if (g.seats.length < g.size) throw new AppError(409, 'not_full', 'Wait until the room is full');
     this.begin(g);
   }
 
@@ -388,19 +389,23 @@ export class LudoService {
     if (g.code) this.codes.delete(g.code);
   }
 
-  /** Same players again (host of a room). */
+  /** Same players again (host of a room). If someone left, the room opens again for a new player. */
   rematch(userId: number, gameId: string) {
     const g = this.get(gameId);
     if (g.status !== 'finished' || g.kind !== 'room') throw new AppError(409, 'cannot_rematch', 'Start a new game from the menu');
     if (g.hostId !== userId) throw new AppError(403, 'not_host', 'Only the host can start again');
-    g.seats = g.seats.filter((s) => s.bot || !s.left);
-    for (const s of g.seats) if (!s.bot) this.byUser.set(s.userId, g.id);
+    g.seats = g.seats.filter((s) => !s.bot && !s.left);
+    for (const s of g.seats) this.byUser.set(s.userId, g.id);
     const colors = ludoColorsFor(g.size);
-    while (g.seats.length < g.size) {
-      const b = g.seats.filter((s) => s.bot).length + 1;
-      g.seats.push({ userId: -b - 10, name: BOT_NAMES[(b - 1) % 3]!, avatar: null, color: colors[g.seats.length]!, team: null, bot: true, connected: false, left: false });
-    }
     g.seats.forEach((s, k) => ((s.color = colors[k]!), (s.team = g.teams ? k % 2 : null)));
+    if (g.seats.length < g.size) {
+      g.status = 'lobby';
+      g.state = null;
+      g.last = null;
+      g.deadline = null;
+      this.send(g);
+      return;
+    }
     this.begin(g);
   }
 
