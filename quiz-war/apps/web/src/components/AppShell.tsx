@@ -32,7 +32,8 @@ export function ConnectionPill() {
   const [show, setShow] = useState(false);
   useEffect(() => {
     if (!bad) return setShow(false);
-    const id = setTimeout(() => setShow(true), online ? 3500 : 1200);
+    // Phones often report "offline" for a moment when the app wakes up: wait before showing it.
+    const id = setTimeout(() => setShow(true), online ? 5000 : 4000);
     return () => clearTimeout(id);
   }, [bad, online]);
   if (!show) return null;

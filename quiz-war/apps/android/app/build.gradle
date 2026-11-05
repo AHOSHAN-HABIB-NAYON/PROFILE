@@ -30,6 +30,8 @@ android {
         versionCode qwVersionCode
         versionName qwVersionName
         manifestPlaceholders = [appLinkHost: qwAppLinkHost]
+        // Lets the website see that the app is installed (getInstalledRelatedApps) and offer "Open in app".
+        resValue "string", "asset_statements", "[{\\\"include\\\": \\\"https://${qwAppLinkHost}/.well-known/assetlinks.json\\\"}]"
         // Push only works when Firebase's google-services.json is bundled (see docs/android-release.md).
         buildConfigField "boolean", "PUSH_ENABLED", file('google-services.json').exists() ? "true" : "false"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

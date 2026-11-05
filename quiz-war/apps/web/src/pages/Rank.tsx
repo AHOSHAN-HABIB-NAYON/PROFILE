@@ -1,6 +1,6 @@
 import { leagueForRating } from '@quizwar/shared';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { PageHeader } from '../components/AppShell';
 import { Avatar } from '../components/Avatar';
@@ -13,6 +13,7 @@ import { PlayerName } from '../components/Verified';
 import { PullToRefresh } from '../components/PullToRefresh';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
+import { useConfig } from '../hooks/queries';
 import { num, useLang, useT } from '../lib/i18n';
 
 const SCOPES: [string, string, string, IconName][] = [
@@ -69,11 +70,37 @@ function LeagueCard() {
   );
 }
 
+/** "Top N this month get free premium" (N is set in the admin panel). */
+function RewardBanner({ top, onOpen, active }: { top: number; onOpen: () => void; active: boolean }) {
+  const t = useT();
+  const lang = useLang();
+  const now = new Date();
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const days = Math.max(1, Math.ceil((end.getTime() - now.getTime()) / 86400000));
+  return (
+    <section className="reward-banner" aria-label={t('Monthly reward', 'মাসিক পুরস্কার')}>
+      <span className="rb-crown"><Icon name="crown" size={30} /></span>
+      <div className="grow">
+        <b>{t('Monthly reward', 'মাসিক পুরস্কার')}</b>
+        <p>{t(`The top ${top} of this month's board get free Premium`, `এই মাসের র‍্যাংকে সেরা ${num(top, lang)} জন ফ্রি প্রিমিয়াম পাবে`)}</p>
+        <small><Icon name="clock" size={13} /> {t(`${days} day${days === 1 ? '' : 's'} left`, `আর ${num(days, lang)} দিন বাকি`)}</small>
+      </div>
+      {!active && (
+        <button type="button" className="btn sm white" onClick={onOpen}>
+          {t('See board', 'দেখুন')}
+        </button>
+      )}
+    </section>
+  );
+}
+
 export default function Rank() {
   const t = useT();
   const lang = useLang();
   const [params, setParams] = useSearchParams();
+  const game = params.get('game') === 'ludo' ? 'ludo' : 'quiz';
   const scope = params.get('tab') ?? 'global';
+  const rewardTop = useConfig().data?.monthlyPremiumTop ?? 0;
   const [category, setCategory] = useState<number | null>(null);
   const me = useAuth((s) => s.user)!;
   const q = useInfiniteQuery({
@@ -92,6 +119,15 @@ export default function Rank() {
     <PullToRefresh onRefresh={() => q.refetch()}>
       <div className="page stack">
         <PageHeader title={t('Rank', 'র‍্যাংক')} />
+        <div className="game-switch" role="tablist" aria-label={t('Game', 'গেম')}>
+          <button role="tab" aria-selected={game === 'quiz'} onClick={() => setParams({ tab: scope }, { replace: true })}><Icon name="brain" /> {t('Quiz', 'কুইজ')}</button>
+          <button role="tab" aria-selected={game === 'ludo'} onClick={() => setParams({ game: 'ludo' }, { replace: true })}><Icon name="gamepad" /> {t('Ludo', 'লুডু')}</button>
+        </div>
+        {rewardTop > 0 && <RewardBanner top={rewardTop} active={game === 'quiz' && scope === 'monthly'} onOpen={() => setParams({ tab: 'monthly' }, { replace: true })} />}
+        {game === 'ludo' ? (
+          <Empty icon="gamepad" title={t('Ludo ranking is coming', 'লুডুর র‍্যাংকিং আসছে')} body={t('Ludo arrives in the next update. Win Ludo games to climb this board.', 'পরের আপডেটে লুডু আসছে। লুডুতে জিতে এই বোর্ডে উঠুন।')} />
+        ) : (
+        <>
         <LeagueCard />
         <div className="tabs" role="tablist" aria-label={t('Leaderboard', 'লিডারবোর্ড')}>
           {SCOPES.map(([k, en, bn, icon]) => (
@@ -104,7 +140,18 @@ export default function Rank() {
         {myRank && (
           <div className="my-rank">
             <Avatar name={me.username} src={me.avatarThumbUrl} size={38} />
-            <b className="grow">{t('Your rank', 'আপনার অবস্থান')}</b>
+            <span className="grow" style={{ minWidth: 0 }}>
+              <b>{t('Your rank', 'আপনার অবস্থান')}</b>
+              {scope === 'monthly' && rewardTop > 0 && (
+                <small className="my-rank-hint">
+                  {myRank.rank <= rewardTop
+                    ? t('You are in the premium reward zone!', 'আপনি প্রিমিয়াম পুরস্কারের তালিকায় আছেন!')
+                    : items[rewardTop - 1]
+                      ? t(`${Math.max(1, items[rewardTop - 1].score - myRank.score + 1)} more to reach the top ${rewardTop}`, `সেরা ${num(rewardTop, lang)}-এ যেতে আর ${num(Math.max(1, items[rewardTop - 1].score - myRank.score + 1), lang)} পয়েন্ট`)
+                      : null}
+                </small>
+              )}
+            </span>
             <b className="num my-rank-n">#{num(myRank.rank, lang)}</b>
             <span className="chip num">{num(myRank.score, lang)}</span>
           </div>
@@ -150,15 +197,19 @@ export default function Rank() {
                     <b className="num">{num(e.squad.score, lang)} XP</b>
                   </Link>
                 ) : (
-                  <Link key={e.user.id} to={`/u/${e.user.uid}`} className={`lb-row ${e.user.id === me.id ? 'me' : ''}`}>
+                  <Fragment key={e.user.id}>
+                  <Link to={`/u/${e.user.uid}`} className={`lb-row ${e.user.id === me.id ? 'me' : ''}${scope === 'monthly' && e.rank <= rewardTop ? ' prize' : ''}`}>
                     <span className="rank">{num(e.rank, lang)}</span>
                     <Avatar name={e.user.username} src={e.user.avatarThumbUrl} size={42} frame={e.user.frame} />
                     <div className="grow" style={{ minWidth: 0 }}>
                       <b style={{ display: 'block' }}><PlayerName name={e.user.username} verified={e.user.verified} premium={e.user.premium} /></b>
                       <p className="xs muted">{t('Lv', 'লেভেল')} {num(e.user.level, lang)}{e.wins ? t(` · ${e.wins} wins`, ` · ${num(e.wins, lang)} জয়`) : ''}</p>
                     </div>
+                    {scope === 'monthly' && e.rank <= rewardTop && <span className="prize-chip"><Icon name="crown" size={13} /> {t('Premium', 'প্রিমিয়াম')}</span>}
                     <b className="num">{num(e.score, lang)}</b>
                   </Link>
+                  {scope === 'monthly' && rewardTop > 3 && e.rank === rewardTop && <div className="prize-line"><span>{t(`Top ${rewardTop} win Premium`, `সেরা ${num(rewardTop, lang)} জন প্রিমিয়াম পাবে`)}</span></div>}
+                  </Fragment>
                 ),
               )}
             </div>
@@ -168,6 +219,8 @@ export default function Rank() {
               </button>
             )}
           </>
+        )}
+        </>
         )}
       </div>
     </PullToRefresh>

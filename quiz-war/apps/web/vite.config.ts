@@ -28,6 +28,9 @@ export default defineConfig(({ mode }) => {
           background_color: '#f4f6fb',
           theme_color: '#1d4ed8',
           categories: ['games', 'education', 'trivia'],
+          // The Android app: lets the site know it is installed and open it ("Open in app").
+          related_applications: [{ platform: 'play', id: 'app.quizwar.bd', url: 'https://play.google.com/store/apps/details?id=app.quizwar.bd' }],
+          prefer_related_applications: false,
           icons: [
             { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
             { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },

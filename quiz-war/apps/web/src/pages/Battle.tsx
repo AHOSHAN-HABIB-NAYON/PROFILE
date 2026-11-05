@@ -259,7 +259,7 @@ export default function Battle({ tab: initialTab }: { tab?: 'play' | 'requests' 
               <div className="card-title"><h2 id="wr-h"><IconTile name="shield" tone="primary" size={34} /> {t('Custom war room', 'কাস্টম ওয়ার রুম')}</h2></div>
               <p className="small muted">{t('Pick the size and create the room — set questions, time and difficulty inside. Friends join with the code or QR.', 'সাইজ বাছাই করে রুম বানান — প্রশ্ন, সময় ও কঠিনতা রুমের ভিতরে ঠিক করবেন। বন্ধুরা কোড বা QR দিয়ে যোগ দেবে।')}</p>
               <div className="tabs mt" role="radiogroup" aria-label={t('Room size', 'রুমের আকার')}>
-                {(['duel', 'duo', 'trio', 'squad'] as const).map((m) => (
+                {(['duel', 'duo'] as const).map((m) => (
                   <button key={m} role="radio" aria-checked={roomMode === m} aria-selected={roomMode === m} onClick={() => setRoomMode(m)}>
                     {{ duel: '1v1', duo: '2v2', trio: '3v3', squad: '4v4' }[m]}
                   </button>

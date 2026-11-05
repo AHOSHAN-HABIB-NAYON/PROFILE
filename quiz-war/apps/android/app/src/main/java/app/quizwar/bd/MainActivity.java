@@ -80,9 +80,11 @@ public class MainActivity extends BridgeActivity {
         if (action == null) return;
         QwCallPlugin.pendingAction = action;
         QwCallPlugin.pendingCallId = intent.getStringExtra("qw_call_id");
+        QwCallPlugin.pendingUrl = intent.getStringExtra("qw_call_url");
         intent.removeExtra("qw_call_action");
         if (!"open".equals(action)) QwCallNotifier.cancel(this);
-        setOverLock(this, true);
+        // "Message" needs the phone unlocked (like WhatsApp); the call itself shows over the lock screen.
+        if (!"message".equals(action)) setOverLock(this, true);
         try {
             if (bridge != null) bridge.triggerWindowJSEvent("qwcallaction");
         } catch (Exception ignored) {

@@ -190,9 +190,9 @@ p { margin: 0; }
 .btn:active:not(:disabled) { transform: scale(.965); }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .btn .qw-icon { width: 19px; height: 19px; }
-.btn.primary { background: var(--grad-brand); color: #fff; box-shadow: 0 6px 16px rgba(29, 78, 216, .32), inset 0 1px 0 rgba(255, 255, 255, .18); }
+.btn.primary { background: var(--grad-brand); color: #fff; box-shadow: 0 4px 12px rgba(29, 78, 216, .26), inset 0 1px 0 rgba(255, 255, 255, .18); }
 .btn.primary:hover:not(:disabled) { box-shadow: 0 8px 20px rgba(29, 78, 216, .4), inset 0 1px 0 rgba(255, 255, 255, .18); }
-.btn.accent { background: linear-gradient(150deg, #8b5cf6, #6d28d9); color: #fff; box-shadow: 0 6px 16px rgba(124, 58, 237, .3); }
+.btn.accent { background: linear-gradient(150deg, #8b5cf6, #6d28d9); color: #fff; box-shadow: 0 4px 12px rgba(124, 58, 237, .24); }
 .btn.success { background: linear-gradient(150deg, #22c55e, #15803d); color: #fff; box-shadow: 0 6px 16px rgba(22, 163, 74, .3); }
 .btn.danger { background: linear-gradient(150deg, #ef4444, #b91c1c); color: #fff; box-shadow: 0 6px 16px rgba(220, 38, 38, .28); }
 .btn.soft { background: var(--primary-soft); color: var(--primary); }
@@ -202,7 +202,12 @@ p { margin: 0; }
 .btn.outline { background: var(--surface); border-color: var(--border-strong); }
 .btn.white { background: #fff; color: var(--blue-700); box-shadow: 0 8px 20px rgba(0, 0, 0, .18); }
 .btn.block { width: 100%; }
-.btn.lg { height: 54px; font-size: var(--fs-md); border-radius: 16px; }
+/* Main action buttons on pages: sized to their text and centred, not stretched edge to edge.
+   Forms and popups keep full-width buttons. */
+.page .btn.block, .war-room .btn.block { width: auto; min-width: min(250px, 100%); max-width: 100%; display: flex; margin-left: auto; margin-right: auto; padding: 0 30px; }
+.page form .btn.block, .page dialog .btn.block, .page .btn.block.full, .war-room dialog .btn.block { width: 100%; min-width: 0; }
+.war-room .btn.block { min-width: min(280px, 100%); }
+.btn.lg { height: 50px; font-size: var(--fs-md); border-radius: 16px; }
 .btn.sm { height: 36px; padding: 0 12px; font-size: var(--fs-sm); border-radius: 11px; gap: 6px; }
 .btn.sm .qw-icon { width: 16px; height: 16px; }
 .btn.icon { width: 42px; padding: 0; height: 42px; }

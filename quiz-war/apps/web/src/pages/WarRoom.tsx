@@ -222,12 +222,9 @@ export default function WarRoom() {
       <div className="war-room wr2">
         <header className="wr2-top">
           <button className="wr2-round" aria-label={t('Back', 'ফিরে যান')} onClick={() => nav('/battle')}><Icon name="back" size={22} /></button>
-          <div className="wr2-brand">
-            <span className="wr2-cup" aria-hidden><Icon name="trophy" size={26} /></span>
-            <span>
-              <b>QUIZ WAR</b>
-              <small>{t('Bangladesh’s ultimate quiz battle', 'বাংলাদেশের সেরা কুইজ ব্যাটল')}</small>
-            </span>
+          <div className="wr2-title">
+            <b>{t('War room', 'ওয়ার রুম')}</b>
+            <small>{modeLabel(snap.mode)} · {isHost ? t('You are the host', 'আপনি হোস্ট') : t(`Host: ${hostName ?? '—'}`, `হোস্ট: ${hostName ?? '—'}`)}</small>
           </div>
           {isHost ? (
             <button className="wr2-round" aria-label={t('Room settings', 'রুম সেটিংস')} onClick={() => (haptic('tap'), setSetup(!setup))}><Icon name="settings" size={22} /></button>
@@ -243,34 +240,21 @@ export default function WarRoom() {
               <b aria-label={(snap.roomCode ?? '').split('').join(' ')}>{snap.roomCode ?? '—'}</b>
               <button aria-label={t('Copy room code', 'রুম কোড কপি')} onClick={copyCode}><Icon name="copy" size={18} /></button>
             </div>
+            <p className="wr2-code-hint">{t('Give this code to friends, or share the link', 'বন্ধুদের এই কোড দিন, বা লিংক শেয়ার করুন')}</p>
             <div className="wr2-code-chips">
-              <span><Icon name={modeIcon(snap.mode)} size={15} /> {modeLabel(snap.mode)}</span>
-              <span className={full ? 'full' : undefined}><Icon name="users" size={15} /> {num(snap.players.length, lang)}/{num(maxPlayers, lang)}</span>
+              <button onClick={shareLink}><Icon name="share" size={15} /> {t('Share', 'শেয়ার')}</button>
               <button onClick={() => setQrOpen(true)} aria-label={t('Show QR code', 'QR কোড দেখান')}><Icon name="qr" size={15} /> QR</button>
+              <span className={full ? 'full' : undefined}><Icon name="users" size={15} /> {num(snap.players.length, lang)}/{num(maxPlayers, lang)}</span>
             </div>
           </div>
-          <svg className="wr2-art" viewBox="0 0 120 120" aria-hidden>
-            <defs>
-              <linearGradient id="wrBlade1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#bfdbfe" /><stop offset="1" stopColor="#3b82f6" /></linearGradient>
-              <linearGradient id="wrBlade2" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fecaca" /><stop offset="1" stopColor="#ef4444" /></linearGradient>
-              <radialGradient id="wrGlow"><stop offset="0" stopColor="#818cf8" stopOpacity=".55" /><stop offset="1" stopColor="#818cf8" stopOpacity="0" /></radialGradient>
-            </defs>
-            <circle cx="60" cy="60" r="56" fill="url(#wrGlow)" />
-            <path d="M22 20 L70 68 L64 74 L16 26 Z" fill="url(#wrBlade1)" />
-            <path d="M98 20 L50 68 L56 74 L104 26 Z" fill="url(#wrBlade2)" />
-            <path d="M58 70 l8 8 M62 66 l-8 8" stroke="#facc15" strokeWidth="6" strokeLinecap="round" />
-            <path d="M20 92 q-8 -16 4 -30 M100 92 q8 -16 -4 -30" fill="none" stroke="#facc15" strokeWidth="4" strokeLinecap="round" />
-            <polygon points="60,48 76,58 76,78 60,88 44,78 44,58" fill="#f59e0b" stroke="#fde68a" strokeWidth="3" />
-            <path d="M60 58 l3.5 7 7.5 1 -5.5 5 1.5 7.5 -7 -3.8 -7 3.8 1.5 -7.5 -5.5 -5 7.5 -1 z" fill="#fff7cc" />
-            <circle cx="30" cy="40" r="2" fill="#fff" opacity=".8" /><circle cx="92" cy="44" r="2" fill="#fff" opacity=".8" /><circle cx="88" cy="96" r="1.6" fill="#fff" opacity=".7" />
-          </svg>
         </section>
 
-        <div className="wr2-pills">
-          <span className="wr2-pill open"><i /> {t('Room open', 'রুম খোলা')}</span>
-          <span className="wr2-pill">{isHost ? t('You are the host', 'আপনি হোস্ট') : t(`Host: ${hostName ?? '—'}`, `হোস্ট: ${hostName ?? '—'}`)}</span>
-          <span className={`wr2-pill ${conn === 'connected' ? 'on' : 'off'}`}><Icon name={conn === 'connected' ? 'wifi' : 'wifi-off'} size={15} /> {conn === 'connected' ? t('Online', 'অনলাইন') : t('Offline', 'অফলাইন')}</span>
-        </div>
+        <ol className="wr2-steps" aria-label={t('How to start', 'কীভাবে শুরু করবেন')}>
+          <li className={full ? 'done' : 'now'}><i>{full ? <Icon name="check" size={14} /> : num(1, lang)}</i><span>{t('Invite friends', 'বন্ধু ডাকুন')}</span></li>
+          <li className={allReady && full ? 'done' : full ? 'now' : ''}><i>{allReady && full ? <Icon name="check" size={14} /> : num(2, lang)}</i><span>{t('All ready', 'সবাই প্রস্তুত')}</span></li>
+          <li className={allReady && full ? 'now' : ''}><i>{num(3, lang)}</i><span>{isHost ? t('Start', 'শুরু করুন') : t('Host starts', 'হোস্ট শুরু করবে')}</span></li>
+        </ol>
+        {conn !== 'connected' && <p className="wr2-offline"><Icon name="wifi-off" size={15} /> {t('Reconnecting…', 'আবার সংযোগ হচ্ছে…')}</p>}
 
         <VoiceBar className="dark" roomId={snap.matchId} players={snap.players.filter((p) => !p.isBot && p.userId !== me.id).map((p) => ({ userId: p.userId, name: p.username, avatar: p.avatarUrl, ...(MODES[snap.mode].teams > 1 && MODES[snap.mode].teamSize > 1 ? { side: p.team === mine?.team ? ('mine' as const) : ('opp' as const) } : {}) }))} />
 

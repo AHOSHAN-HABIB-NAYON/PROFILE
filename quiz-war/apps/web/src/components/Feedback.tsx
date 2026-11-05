@@ -53,6 +53,16 @@ export function Empty({ icon, title, body, action, tone = 'primary', anim = 'flo
 export function ErrorBox({ error, retry }: { error: unknown; retry?: () => void }) {
   const t = useT();
   const offline = (error as any)?.code === 'network';
+  // Connection problem: keep trying by itself (every 6 s, and as soon as the phone is back online).
+  useEffect(() => {
+    if (!offline || !retry) return;
+    const id = window.setInterval(retry, 6000);
+    window.addEventListener('online', retry);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener('online', retry);
+    };
+  }, [offline, retry]);
   return (
     <Empty
       icon={offline ? 'wifi-off' : 'alert'}

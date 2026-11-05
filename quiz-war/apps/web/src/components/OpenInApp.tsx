@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router';
 import { useConfig } from '../hooks/queries';
 import { useT } from '../lib/i18n';
@@ -28,11 +28,30 @@ export function OpenInApp() {
   });
   const android = /Android/i.test(navigator.userAgent);
   const standalone = window.matchMedia?.('(display-mode: standalone)').matches;
-  if (isNative || !android || standalone || hidden) return null;
+  // Is the app on this phone? (Chrome on Android can tell, via the site's related app.)
+  const [installed, setInstalled] = useState(false);
+  useEffect(() => {
+    if (isNative || !android) return;
+    const get = (navigator as any).getInstalledRelatedApps as undefined | (() => Promise<{ id?: string }[]>);
+    void get?.call(navigator).then((apps) => setInstalled(apps.some((a) => a.id === PACKAGE))).catch(() => undefined);
+  }, [android]);
+  const here = `${window.location.host}${loc.pathname}${loc.search}`;
+  // App installed: try to open it straight away (once per visit; some browsers allow it).
+  useEffect(() => {
+    if (!installed || isNative) return;
+    try {
+      if (sessionStorage.getItem('qw-tried-app')) return;
+      sessionStorage.setItem('qw-tried-app', '1');
+    } catch {
+      return;
+    }
+    window.location.href = `intent://${here}#Intent;scheme=https;package=${PACKAGE};end`;
+  }, [installed]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (isNative || !android || standalone || (hidden && !installed)) return null;
   if (/^\/(match|war-room|matchmaking|result|review)\b/.test(loc.pathname)) return null;
 
-  const fallback = cfg?.playStoreUrl || PLAY_URL;
-  const href = `intent://${window.location.host}${loc.pathname}${loc.search}#Intent;scheme=https;package=${PACKAGE};S.browser_fallback_url=${encodeURIComponent(fallback)};end`;
+  const fallback = installed ? `https://${here}` : cfg?.playStoreUrl || PLAY_URL;
+  const href = `intent://${here}#Intent;scheme=https;package=${PACKAGE};S.browser_fallback_url=${encodeURIComponent(fallback)};end`;
   const hide = () => {
     setHidden(true);
     try {
@@ -47,10 +66,10 @@ export function OpenInApp() {
       <BrandMark size={38} animate={false} />
       <div className="grow">
         <b>QUIZ WAR</b>
-        <span>{t('Free on Google Play · smoother, with notifications', 'Google Play-তে ফ্রি · আরো স্মুথ, নোটিফিকেশন সহ')}</span>
+        <span>{installed ? t('The app is on this phone', 'অ্যাপটি এই ফোনে আছে') : t('Free on Google Play · smoother, with notifications', 'Google Play-তে ফ্রি · আরো স্মুথ, নোটিফিকেশন সহ')}</span>
       </div>
       <a className="btn sm primary" href={href}>
-        {t('Get app', 'অ্যাপ নিন')}
+        {installed ? t('Open app', 'অ্যাপে খুলুন') : t('Get app', 'অ্যাপ নিন')}
       </a>
       <button className="btn icon sm ghost" onClick={hide} aria-label={t('Close', 'বন্ধ করুন')}>
         <Icon name="close" size={18} />

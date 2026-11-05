@@ -78,9 +78,7 @@ export default function SquadDetail() {
           <div className="card-title"><h3><IconTile name="swords" tone="danger" size={30} /> {t('Squad battle room', 'স্কোয়াড ব্যাটল রুম')}</h3></div>
           <p className="xs muted mb">{t('Create a War Room for squad members. Squad Wars between squads are coming soon.', 'স্কোয়াড সদস্যদের জন্য ওয়ার রুম তৈরি করুন। স্কোয়াড বনাম স্কোয়াড যুদ্ধ শীঘ্রই আসছে।')}</p>
           <div className="row">
-            <button className="btn soft grow" onClick={() => void squadBattle('duo')}>2v2</button>
-            <button className="btn soft grow" onClick={() => void squadBattle('trio')}>3v3</button>
-            <button className="btn soft grow" onClick={() => void squadBattle('squad')}>4v4</button>
+            <button className="btn soft grow" onClick={() => void squadBattle('duo')}>{t('Create 2v2 room', '২ বনাম ২ রুম তৈরি করুন')}</button>
           </div>
         </section>
       )}

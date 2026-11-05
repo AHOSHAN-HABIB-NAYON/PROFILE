@@ -1363,7 +1363,7 @@
 .wr2-talk-txt { color: #86efac; font-weight: 700; }
 
 /* ---------------- Audio call ---------------- */
-.call-screen { position: fixed; inset: 0; z-index: 96; display: flex; flex-direction: column; justify-content: space-between; color: #fff; padding: calc(14px + env(safe-area-inset-top)) 20px calc(34px + env(safe-area-inset-bottom)); background: radial-gradient(120% 70% at 50% 18%, #2f5fe0 0%, #1e3a8a 45%, #0b1336 100%); animation: fade-up .25s var(--ease-out) both; }
+.call-screen { position: fixed; inset: 0; z-index: 96; display: flex; flex-direction: column; justify-content: space-between; color: #fff; padding: calc(14px + env(safe-area-inset-top)) 20px calc(40px + env(safe-area-inset-bottom)); background: radial-gradient(110% 60% at 50% 30%, #1f3a8a 0%, #13204a 50%, #070c1c 100%); animation: fade-up .25s var(--ease-out) both; }
 .call-screen.ph-ended { background: radial-gradient(120% 70% at 50% 18%, #334155 0%, #1e293b 50%, #0b1020 100%); }
 .cs-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .cs-round { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.12); color: #fff; border: 0; }
@@ -1385,7 +1385,7 @@
 .cs-actions { display: flex; justify-content: space-evenly; align-items: flex-start; min-height: 96px; }
 .cs-actions.two { justify-content: space-around; }
 .cs-act { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 13px; opacity: .95; }
-.cs-btn { width: 66px; height: 66px; border-radius: 50%; border: 0; display: grid; place-items: center; color: #fff; transition: transform .15s var(--ease), background .15s; }
+.cs-btn { width: 62px; height: 62px; border-radius: 50%; border: 0; display: grid; place-items: center; color: #fff; transition: transform .15s var(--ease), background .15s; }
 .cs-btn:active { transform: scale(.92); }
 .cs-btn:disabled { opacity: .45; }
 .cs-btn.soft { background: rgba(255,255,255,.16); }
@@ -1446,3 +1446,37 @@
 @keyframes ct-wave { from { transform: scaleY(.35); } to { transform: scaleY(1); } }
 .cs-hint { text-align: center; font-size: 12px; opacity: .6; margin: 0; }
 .cs-actions.panel { background: rgba(8, 15, 40, .6); border-radius: 26px 26px 0 0; margin: 0 -20px calc(-34px - env(safe-area-inset-bottom)); padding: 18px 20px calc(26px + env(safe-area-inset-bottom)); min-height: 0; align-items: center; }
+
+/* Rank: game switch, monthly reward */
+.game-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 16px; background: var(--surface-2); }
+.game-switch button { height: 42px; border: 0; border-radius: 12px; background: transparent; color: var(--text-2); font-weight: 800; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: var(--fs); }
+.game-switch button[aria-selected='true'] { background: var(--surface); color: var(--primary); box-shadow: 0 2px 8px rgba(15, 23, 42, .08); }
+.reward-banner { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 20px; color: #3b2300; background: linear-gradient(120deg, #fde68a, #fbbf24 55%, #f59e0b); box-shadow: 0 8px 22px rgba(245, 158, 11, .28); position: relative; overflow: hidden; }
+.reward-banner::after { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.45) 45%, transparent 60%); transform: translateX(-100%); animation: rb-shine 3.5s ease-in-out infinite; pointer-events: none; }
+@keyframes rb-shine { 60%, 100% { transform: translateX(100%); } }
+.rb-crown { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; background: rgba(255,255,255,.55); color: #b45309; flex: none; }
+.reward-banner b { display: block; font-size: 16px; }
+.reward-banner p { margin: 2px 0 4px; font-size: 13.5px; font-weight: 600; line-height: 1.35; }
+.reward-banner small { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; opacity: .85; }
+.my-rank-hint { display: block; font-size: 12px; color: #b45309; font-weight: 700; }
+.lb-row.prize { background: linear-gradient(90deg, rgba(251, 191, 36, .14), transparent 70%); }
+.prize-chip { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 800; color: #b45309; background: rgba(251, 191, 36, .2); padding: 3px 8px; border-radius: 99px; flex: none; }
+.prize-line { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 11.5px; font-weight: 800; color: #b45309; }
+.prize-line::before, .prize-line::after { content: ''; flex: 1; border-top: 2px dashed rgba(245, 158, 11, .5); }
+
+/* War room: simpler, friendlier top */
+.wr2-title { flex: 1; min-width: 0; text-align: center; display: flex; flex-direction: column; color: #fff; }
+.wr2-title b { font-size: 19px; font-weight: 800; }
+.wr2-title small { font-size: 12.5px; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wr2-code { justify-content: center; text-align: center; }
+.wr2-code-main { align-items: center; width: 100%; }
+.wr2-code-hint { margin: 2px 0 8px; font-size: 12.5px; color: rgba(255,255,255,.75); }
+.wr2-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.wr2-steps li { display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; color: rgba(255,255,255,.55); text-align: center; position: relative; }
+.wr2-steps li i { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-weight: 800; background: rgba(255,255,255,.1); border: 2px solid rgba(255,255,255,.2); }
+.wr2-steps li.now { color: #fff; }
+.wr2-steps li.now i { border-color: #facc15; color: #facc15; box-shadow: 0 0 0 4px rgba(250,204,21,.15); }
+.wr2-steps li.done { color: #86efac; }
+.wr2-steps li.done i { background: #22c55e; border-color: #22c55e; color: #052e16; }
+.wr2-steps li + li::before { content: ''; position: absolute; top: 14px; right: calc(50% + 18px); width: calc(100% - 36px); border-top: 2px dashed rgba(255,255,255,.18); }
+.wr2-offline { margin: 0; text-align: center; font-size: 12.5px; color: #fca5a5; display: flex; align-items: center; justify-content: center; gap: 6px; }

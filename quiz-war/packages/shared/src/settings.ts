@@ -300,6 +300,8 @@ export const appSettingsSchema = z.object({
   voiceEnabled: z.boolean().default(true),
   /** 1-to-1 audio calls from the chat. */
   callsEnabled: z.boolean().default(true),
+  /** Monthly reward shown on the Rank page: the top N of the monthly board get premium (0 = off). */
+  monthlyPremiumTop: z.number().int().min(0).max(100).default(5),
   /** Home "Collections" (previous-year question sets). */
   collectionsEnabled: z.boolean().default(true),
 });
@@ -339,6 +341,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   chatRetention: { days: 7, text: true, voice: true, images: true },
   voiceEnabled: true,
   callsEnabled: true,
+  monthlyPremiumTop: 5,
   collectionsEnabled: true,
 };
 

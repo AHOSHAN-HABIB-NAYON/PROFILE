@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { PublicUser } from '@quizwar/shared';
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api';
+import { navigateTo } from '../lib/nav';
 import { useAuth } from '../lib/auth';
 import { addToCall, answerCall, declineCall, hangUp, toggleCallMute, toggleLoud, useCall } from '../lib/call';
 import { num, useLang, useT } from '../lib/i18n';
@@ -134,14 +135,18 @@ export function CallScreen() {
       {phase === 'ended' ? (
         <div className="cs-actions" />
       ) : dir === 'in' && phase === 'ringing' ? (
-        <div className="cs-actions two">
+        <div className="cs-actions">
           <span className="cs-act">
-            <button type="button" className="cs-btn end" onClick={declineCall} aria-label={t('Decline', 'কেটে দিন')}><Icon name="phone-off" size={30} /></button>
+            <button type="button" className="cs-btn end" onClick={declineCall} aria-label={t('Decline', 'কেটে দিন')}><Icon name="phone-off" size={26} /></button>
             <small>{t('Decline', 'কেটে দিন')}</small>
           </span>
           <span className="cs-act">
-            <button type="button" className="cs-btn accept" onClick={() => void answerCall()} aria-label={t('Answer', 'ধরুন')}><Icon name="phone" size={30} /></button>
+            <button type="button" className="cs-btn accept" onClick={() => void answerCall()} aria-label={t('Answer', 'ধরুন')}><Icon name="phone" size={26} /></button>
             <small>{t('Answer', 'ধরুন')}</small>
+          </span>
+          <span className="cs-act">
+            <button type="button" className="cs-btn soft" onClick={() => (declineCall(), navigateTo(`/chat/${peer.uid}`))} aria-label={t('Message', 'মেসেজ')}><Icon name="message" size={24} /></button>
+            <small>{t('Message', 'মেসেজ')}</small>
           </span>
         </div>
       ) : (
@@ -157,7 +162,7 @@ export function CallScreen() {
             <small>{phase === 'live' && !micOn ? t('Unmute', 'আনমিউট') : t('Mute', 'মিউট')}</small>
           </span>
           <span className="cs-act">
-            <button type="button" className="cs-btn end" onClick={hangUp} aria-label={t('End call', 'কল কাটুন')}><Icon name="phone-off" size={30} /></button>
+            <button type="button" className="cs-btn end" onClick={hangUp} aria-label={t('End call', 'কল কাটুন')}><Icon name="phone-off" size={26} /></button>
             <small>{t('End', 'কাটুন')}</small>
           </span>
         </div>

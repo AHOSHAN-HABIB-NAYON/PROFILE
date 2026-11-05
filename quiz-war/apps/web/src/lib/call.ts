@@ -152,7 +152,7 @@ type CallPlugin = {
   start(o: { title: string; text: string }): Promise<void>;
   stop(): Promise<void>;
   proximity(o: { on: boolean }): Promise<void>;
-  pending?(): Promise<{ action?: string | null; callId?: string | null }>;
+  pending?(): Promise<{ action?: string | null; callId?: string | null; url?: string | null }>;
   cancelIncoming?(): Promise<void>;
   showOnLock?(o: { on: boolean }): Promise<void>;
   setApi?(o: { base: string }): Promise<void>;
@@ -187,6 +187,15 @@ async function nativeAction() {
   const n = await native();
   const r = await n?.pending?.().catch(() => null);
   if (!r?.action || !r.callId) return;
+  if (r.action === 'message') {
+    // Declined from the ringing screen; open the chat with the caller.
+    if (useCall.getState().call?.id === r.callId) clearCall();
+    if (r.url?.startsWith('/')) {
+      const { navigateTo } = await import('./nav');
+      navigateTo(r.url);
+    }
+    return;
+  }
   if (r.action === 'answer') {
     answerWhenRinging = r.callId;
     const c = useCall.getState().call;

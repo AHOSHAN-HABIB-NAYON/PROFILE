@@ -25,6 +25,7 @@ public class QwCallPlugin extends Plugin {
     /** Answer / Decline / open tapped on the ringing notification, waiting for the web app. */
     static volatile String pendingAction = null;
     static volatile String pendingCallId = null;
+    static volatile String pendingUrl = null;
 
     /** The web app asks what the user tapped on the call notification (once). */
     @PluginMethod
@@ -32,6 +33,8 @@ public class QwCallPlugin extends Plugin {
         JSObject r = new JSObject();
         r.put("action", pendingAction);
         r.put("callId", pendingCallId);
+        r.put("url", pendingUrl);
+        pendingUrl = null;
         pendingAction = null;
         pendingCallId = null;
         call.resolve(r);

@@ -59,8 +59,8 @@ public class IncomingCallActivity extends Activity {
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
         }
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        getWindow().setStatusBarColor(Color.parseColor("#1E3A8A"));
-        getWindow().setNavigationBarColor(Color.parseColor("#0B1336"));
+        getWindow().setStatusBarColor(Color.parseColor("#15224A"));
+        getWindow().setNavigationBarColor(Color.parseColor("#070C1C"));
 
         Intent in = getIntent();
         callId = in.getStringExtra("qw_call_id");
@@ -70,34 +70,51 @@ public class IncomingCallActivity extends Activity {
         if (name == null) name = "QUIZ WAR";
 
         FrameLayout root = new FrameLayout(this);
-        GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{Color.parseColor("#2F5FE0"), Color.parseColor("#1E3A8A"), Color.parseColor("#0B1336")});
+        GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{Color.parseColor("#15224A"), Color.parseColor("#0E1733"), Color.parseColor("#070C1C")});
         root.setBackground(bg);
 
-        LinearLayout col = new LinearLayout(this);
-        col.setOrientation(LinearLayout.VERTICAL);
-        col.setGravity(Gravity.CENTER_HORIZONTAL);
-        FrameLayout.LayoutParams colLp = new FrameLayout.LayoutParams(-1, -2, Gravity.TOP);
-        colLp.topMargin = dp(120);
-        root.addView(col, colLp);
+        // Name and "QUIZ WAR audio call" at the top, centred (like a phone call).
+        LinearLayout head = new LinearLayout(this);
+        head.setOrientation(LinearLayout.VERTICAL);
+        head.setGravity(Gravity.CENTER_HORIZONTAL);
+        FrameLayout.LayoutParams headLp = new FrameLayout.LayoutParams(-1, -2, Gravity.TOP);
+        headLp.topMargin = dp(110);
+        headLp.leftMargin = dp(24);
+        headLp.rightMargin = dp(24);
+        root.addView(head, headLp);
+
+        TextView who = new TextView(this);
+        who.setText(name);
+        who.setTextColor(Color.WHITE);
+        who.setTextSize(30);
+        who.setTypeface(Typeface.DEFAULT_BOLD);
+        who.setGravity(Gravity.CENTER);
+        who.setSingleLine(true);
+        who.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        head.addView(who, new LinearLayout.LayoutParams(-1, -2));
 
         TextView app = new TextView(this);
-        app.setText("QUIZ WAR · অডিও কল");
-        app.setTextColor(Color.parseColor("#CCFFFFFF"));
-        app.setTextSize(14);
-        col.addView(app);
+        app.setText("QUIZ WAR অডিও কল");
+        app.setTextColor(Color.parseColor("#B3FFFFFF"));
+        app.setTextSize(15);
+        app.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams appLp = new LinearLayout.LayoutParams(-1, -2);
+        appLp.topMargin = dp(8);
+        head.addView(app, appLp);
 
+        // Big round picture in the middle with a soft pulse.
         FrameLayout avWrap = new FrameLayout(this);
-        LinearLayout.LayoutParams avLp = new LinearLayout.LayoutParams(dp(150), dp(150));
-        avLp.topMargin = dp(36);
-        col.addView(avWrap, avLp);
+        FrameLayout.LayoutParams wrapLp = new FrameLayout.LayoutParams(dp(250), dp(250), Gravity.CENTER);
+        wrapLp.topMargin = dp(10);
+        root.addView(avWrap, wrapLp);
         View pulse = new View(this);
         GradientDrawable ring = new GradientDrawable();
         ring.setShape(GradientDrawable.OVAL);
-        ring.setStroke(dp(2), Color.parseColor("#66FFFFFF"));
+        ring.setColor(Color.parseColor("#1AFFFFFF"));
         pulse.setBackground(ring);
         avWrap.addView(pulse, new FrameLayout.LayoutParams(-1, -1));
-        ScaleAnimation sa = new ScaleAnimation(0.85f, 1.15f, 0.85f, 1.15f, Animation.RELATIVE_TO_SELF, .5f, Animation.RELATIVE_TO_SELF, .5f);
-        sa.setDuration(1100);
+        ScaleAnimation sa = new ScaleAnimation(0.86f, 1f, 0.86f, 1f, Animation.RELATIVE_TO_SELF, .5f, Animation.RELATIVE_TO_SELF, .5f);
+        sa.setDuration(1200);
         sa.setRepeatMode(Animation.REVERSE);
         sa.setRepeatCount(Animation.INFINITE);
         sa.setInterpolator(new AccelerateDecelerateInterpolator());
@@ -109,41 +126,27 @@ public class IncomingCallActivity extends Activity {
         avBg.setColor(Color.parseColor("#E0E7FF"));
         av.setBackground(avBg);
         av.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        FrameLayout.LayoutParams ivLp = new FrameLayout.LayoutParams(dp(120), dp(120), Gravity.CENTER);
-        avWrap.addView(av, ivLp);
+        avWrap.addView(av, new FrameLayout.LayoutParams(dp(210), dp(210), Gravity.CENTER));
         TextView initial = new TextView(this);
         initial.setText(name.substring(0, 1).toUpperCase());
         initial.setTextColor(Color.parseColor("#1D4ED8"));
-        initial.setTextSize(48);
+        initial.setTextSize(72);
         initial.setTypeface(Typeface.DEFAULT_BOLD);
         initial.setGravity(Gravity.CENTER);
-        avWrap.addView(initial, new FrameLayout.LayoutParams(dp(120), dp(120), Gravity.CENTER));
+        avWrap.addView(initial, new FrameLayout.LayoutParams(dp(210), dp(210), Gravity.CENTER));
 
-        TextView who = new TextView(this);
-        who.setText(name);
-        who.setTextColor(Color.WHITE);
-        who.setTextSize(30);
-        who.setTypeface(Typeface.DEFAULT_BOLD);
-        who.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams whoLp = new LinearLayout.LayoutParams(-2, -2);
-        whoLp.topMargin = dp(24);
-        col.addView(who, whoLp);
-        TextView sub = new TextView(this);
-        sub.setText("অডিও কল আসছে…");
-        sub.setTextColor(Color.parseColor("#D9FFFFFF"));
-        sub.setTextSize(16);
-        LinearLayout.LayoutParams subLp = new LinearLayout.LayoutParams(-2, -2);
-        subLp.topMargin = dp(6);
-        col.addView(sub, subLp);
-
+        // Decline · Answer · Message, evenly spaced, normal phone-button size.
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER);
         FrameLayout.LayoutParams rowLp = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
-        rowLp.bottomMargin = dp(80);
+        rowLp.bottomMargin = dp(64);
+        rowLp.leftMargin = dp(16);
+        rowLp.rightMargin = dp(16);
         root.addView(row, rowLp);
-        row.addView(button("কেটে দিন", "#EF4444", R.drawable.qw_ic_call_end, v -> onDecline()), new LinearLayout.LayoutParams(0, -2, 1));
-        row.addView(button("ধরুন", "#22C55E", R.drawable.qw_ic_call, v -> onAnswer()), new LinearLayout.LayoutParams(0, -2, 1));
+        row.addView(button("কেটে দিন", "#E11D48", R.drawable.qw_ic_call_end, v -> onDecline()), new LinearLayout.LayoutParams(0, -2, 1));
+        row.addView(button("ধরুন", "#16A34A", R.drawable.qw_ic_call, v -> onAnswer()), new LinearLayout.LayoutParams(0, -2, 1));
+        row.addView(button("মেসেজ", "#2B3550", R.drawable.qw_ic_message, v -> onMessage()), new LinearLayout.LayoutParams(0, -2, 1));
 
         setContentView(root);
 
@@ -174,11 +177,12 @@ public class IncomingCallActivity extends Activity {
         b.setElevation(dp(6));
         b.setOnClickListener(click);
         b.setContentDescription(label);
-        box.addView(b, new LinearLayout.LayoutParams(dp(72), dp(72)));
+        box.addView(b, new LinearLayout.LayoutParams(dp(64), dp(64)));
         TextView t = new TextView(this);
         t.setText(label);
         t.setTextColor(Color.WHITE);
-        t.setTextSize(14);
+        t.setTextSize(13);
+        t.setTextColor(Color.parseColor("#D9FFFFFF"));
         LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(-2, -2);
         tl.topMargin = dp(10);
         box.addView(t, tl);
@@ -190,6 +194,19 @@ public class IncomingCallActivity extends Activity {
         Intent i = new Intent(this, MainActivity.class);
         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         i.putExtra("qw_call_action", "answer");
+        i.putExtra("qw_call_id", callId);
+        i.putExtra("qw_call_url", url);
+        startActivity(i);
+        finish();
+    }
+
+    /** Decline and open the chat with the caller (to send a quick message). */
+    private void onMessage() {
+        QwCallNotifier.cancel(this);
+        QwCallNotifier.declineInBackground(this, callId, decline);
+        Intent i = new Intent(this, MainActivity.class);
+        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        i.putExtra("qw_call_action", "message");
         i.putExtra("qw_call_id", callId);
         i.putExtra("qw_call_url", url);
         startActivity(i);

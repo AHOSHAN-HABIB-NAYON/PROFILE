@@ -275,6 +275,16 @@ function Rate({ a }: { a: App }) {
   );
 }
 
+function RankReward({ a }: { a: App }) {
+  const s = useSaver();
+  return (
+    <Card icon="crown" title="Monthly premium reward" desc="Shown on the Rank page: the top players of the monthly leaderboard get free premium. Give it from Users at the start of each month." saving={s.busy} msg={s.msg} saveLabel="Save reward"
+      onSubmit={(e) => void s.save({ monthlyPremiumTop: int(new FormData(e.currentTarget), 'monthlyPremiumTop') }, 'Reward saved.')}>
+      <div className="field" style={{ maxWidth: 260 }}><label htmlFor="rw-top">How many top players (each month)</label><input id="rw-top" name="monthlyPremiumTop" type="number" min={0} max={100} step={1} className="input" defaultValue={a.monthlyPremiumTop ?? 5} /><span className="small faint">For example 3, 5 or 10. 0 = hide the reward.</span></div>
+    </Card>
+  );
+}
+
 function Voice({ a }: { a: App }) {
   const s = useSaver();
   return (
@@ -413,6 +423,7 @@ export default function AppSettings() {
         <AppUpdate a={a} />
         <Rate a={a} />
         <Voice a={a} />
+        <RankReward a={a} />
         <Legal a={a} />
       </div>
     </>
