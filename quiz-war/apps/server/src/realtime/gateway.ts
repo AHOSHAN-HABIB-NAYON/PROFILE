@@ -20,7 +20,7 @@ import { AppError } from '../lib/errors';
 import type { AppContext } from '../context';
 import { loadIdentity } from '../context';
 import { verifyAccessToken } from '../modules/auth/tokens';
-import { CallService } from './calls';
+import { CallService, callRegistry } from './calls';
 import { VoiceRooms } from './voice';
 
 interface SocketData {
@@ -129,7 +129,7 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
     publicUser: (id) => getPublicUser(id),
     assertCanCall: (a, b) => ctx.chat.assertCanCall(a, b),
     logCall: (a, b, st, secs) => ctx.chat.logCall(a, b, st, secs),
-    ringPush: (to, from, callId) =>
+    ringPush: (to, from, callId, declineToken) =>
       ctx.push.sendToUser(to, {
         title: from.username,
         body: 'অডিও কল করছে… ধরতে চাপুন',
@@ -137,21 +137,25 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
         tag: `call-${callId}`,
         dataOnly: true,
         ttlSecs: 35,
-        data: { type: 'call', callId, name: from.username, avatar: from.avatarThumbUrl ?? '' },
+        data: { type: 'call', callId, name: from.username, avatar: from.avatarThumbUrl ?? '', decline: declineToken },
       }),
     endPush: (to, callId) => ctx.push.sendToUser(to, { title: '', body: '', dataOnly: true, ttlSecs: 60, data: { type: 'call_end', callId } }),
     missedPush: (to, from, callId) =>
       ctx.push.sendToUser(to, { title: from.username, body: 'মিসড অডিও কল', url: `/chat/${from.uid}`, tag: `call-${callId}`, channel: 'quizwar_messages', image: from.avatarThumbUrl ?? undefined }),
-    closeVoice: (callId) => {
+    closeVoice: (callId, only) => {
       for (const p of voice.peers(callId)) {
+        if (only && p.userId !== only) continue;
         const sid = voice.socketOf(callId, p.userId);
         voice.leave(callId, p.userId);
         if (sid) io.to(sid).emit('voice:peers', { roomId: callId, peers: [] });
       }
+      if (only) voiceBroadcast(callId);
     },
     enabled: () => ctx.settings.app().callsEnabled !== false && ctx.settings.app().chatEnabled,
+    secret: ctx.env.JWT_SECRET,
     log: ctx.log,
   });
+  callRegistry.current = calls;
 
   if (ctx.redis) {
     const pub = ctx.redis.duplicate();
@@ -513,6 +517,7 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
     socket.on('call:answer', guard(callId, (p) => (calls.answer(userId, socket.id, p.callId), {})));
     socket.on('call:decline', guard(callId, (p) => (calls.decline(userId, p.callId), {})));
     socket.on('call:end', guard(callId, (p) => (calls.end(userId, p.callId), {})));
+    socket.on('call:add', guard(z.object({ callId: voiceRoomId, to: z.number().int().positive() }), (p) => calls.add(userId, p.callId, p.to)));
     void calls.onConnect(userId).catch(() => undefined);
 
     socket.on('time:sync', guard(schemas.timeSync, (p) => ({ serverTime: Date.now(), clientTime: p.clientTime })));

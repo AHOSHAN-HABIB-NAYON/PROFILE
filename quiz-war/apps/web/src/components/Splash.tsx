@@ -30,7 +30,7 @@ export function BrandMark({ size = 112, animate = true }: { size?: number; anima
 
 /**
  * Animated launch screen. Matches the native Android splash colours so the hand-off is
- * seamless, then reveals the name. Kept short (~1.6 s) and skipped for reduced motion.
+ * seamless, then reveals the name. Kept short (~0.8 s, the app is usually ready by then) and skipped for reduced motion.
  */
 export function Splash({ onDone, ready = true }: { onDone?: () => void; ready?: boolean }) {
   const [leaving, setLeaving] = useState(false);
@@ -38,9 +38,9 @@ export function Splash({ onDone, ready = true }: { onDone?: () => void; ready?: 
   useEffect(() => {
     if (!ready) return;
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const wait = Math.max(0, (reduce ? 200 : 1750) - (performance.now() - mountedAt));
+    const wait = Math.max(0, (reduce ? 150 : 800) - (performance.now() - mountedAt));
     const t1 = setTimeout(() => setLeaving(true), wait);
-    const t2 = setTimeout(() => onDone?.(), wait + 340);
+    const t2 = setTimeout(() => onDone?.(), wait + 260);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);

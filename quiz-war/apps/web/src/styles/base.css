@@ -430,3 +430,7 @@ dialog.modal[open]:not([data-closing])::backdrop { background: rgba(8, 12, 28, .
 @media (max-width: 380px) { .topbar .brand { gap: 7px; font-size: 14px; letter-spacing: .01em; } .topbar .brand small { font-size: 8px; letter-spacing: .14em; } .topbar .brand img { width: 30px; height: 30px; } }
 @media (max-width: 330px) { .topbar .brand .hide-narrow { display: none; } }
 .league-chip { background: var(--surface-2); color: var(--text); gap: 6px; padding-left: 5px; }
+
+/* App (not browser): no link pop-ups or text selection on menus, links and pictures. */
+.native-app a, .native-app nav, .native-app button, .native-app img { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.native-app a[href] { -webkit-user-drag: none; }

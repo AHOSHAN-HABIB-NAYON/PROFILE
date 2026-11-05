@@ -243,6 +243,16 @@ export function App() {
     if (voiceRoom === openRoom || voiceRoom === activeMatch) return;
     leaveVoice();
   }, [loc.pathname, voiceRoom, openRoom, activeMatch, callId]);
+  // In the app, holding a menu item or link must not pop up its web address (https://localhost/rank).
+  useEffect(() => {
+    if (!isNative) return;
+    document.documentElement.classList.add('native-app');
+    const stop = (e: Event) => {
+      if ((e.target as Element | null)?.closest?.('a, nav, button, img')) e.preventDefault();
+    };
+    document.addEventListener('contextmenu', stop);
+    return () => document.removeEventListener('contextmenu', stop);
+  }, []);
   // Sound may need one tap to start (browser rule): resume on the next touch.
   useEffect(() => {
     const on = () => resumeVoiceAudio();

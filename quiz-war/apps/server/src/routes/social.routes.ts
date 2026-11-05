@@ -1,3 +1,4 @@
+import { callRegistry } from '../realtime/calls';
 import { DIFFICULTIES, normalizeUid, paginationSchema, SQUAD_ROLES } from '@quizwar/shared';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -218,5 +219,12 @@ export async function socialRoutes(app: FastifyInstance, ctx: AppContext) {
     const b = parse(z.object({ role: z.enum(SQUAD_ROLES) }), req.body);
     await ctx.squads.setRole(uid(req), p.id, p.userId, b.role);
     return { ok: true };
+  });
+
+  /** Decline from the phone's ringing call screen (signed link from the ring push; no login). */
+  app.post('/calls/:id/decline', { config: { rateLimit: { max: 20, timeWindow: '1 minute' } } }, async (req) => {
+    const p = parse(z.object({ id: z.string().regex(/^[0-9A-Z]{26}$/) }), req.params);
+    const q = parse(z.object({ t: z.string().min(10).max(80) }), req.query);
+    return { declined: callRegistry.current?.declineWithToken(p.id, q.t) ?? false };
   });
 }

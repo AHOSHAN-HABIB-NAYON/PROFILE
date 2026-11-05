@@ -144,7 +144,24 @@ export async function userRoutes(app: FastifyInstance, ctx: AppContext) {
     }
     const blocked = await ctx.friends.blockedSet(me);
     const users = await getPublicUsers(ids.filter((id) => id !== me && !blocked.has(id)));
-    return { items: [...users.values()].map((user) => ({ user, status: ctx.presence.status(user.id) })) };
+    // Friend or not (and requests either way), so the list can show "Add friend".
+    const list = [...users.keys()];
+    const friendSet = new Set<number>();
+    const sent = new Set<number>();
+    const got = new Set<number>();
+    if (list.length) {
+      const marks = list.map(() => '?').join(',');
+      for (const r of await query<{ friend_id: number }>(`SELECT friend_id FROM friends WHERE user_id = ? AND friend_id IN (${marks})`, [me, ...list])) friendSet.add(Number(r.friend_id));
+      for (const r of await query<{ from_user_id: number; to_user_id: number }>(
+        `SELECT from_user_id, to_user_id FROM friend_requests WHERE status = 'pending' AND ((from_user_id = ? AND to_user_id IN (${marks})) OR (to_user_id = ? AND from_user_id IN (${marks})))`,
+        [me, ...list, me, ...list],
+      )) {
+        if (Number(r.from_user_id) === me) sent.add(Number(r.to_user_id));
+        else got.add(Number(r.from_user_id));
+      }
+    }
+    const rel = (id: number) => (friendSet.has(id) ? 'friend' : sent.has(id) ? 'sent' : got.has(id) ? 'received' : 'none');
+    return { items: [...users.values()].map((user) => ({ user, status: ctx.presence.status(user.id), friend: rel(user.id) })) };
   });
 
   app.post('/reports', { ...auth, config: { rateLimit: { max: 10, timeWindow: '1 minute' } } }, async (req) => {

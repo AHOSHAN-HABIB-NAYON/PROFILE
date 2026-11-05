@@ -2,6 +2,8 @@ import type { CallEndReason, PublicUser } from '@quizwar/shared';
 import { create } from 'zustand';
 import { tr } from './i18n';
 import { isNative } from './platform';
+import { API_URL } from './api';
+import { useAuth } from './auth';
 import { emit, onSocket } from './socket';
 import { toast } from './toast';
 import { joinVoice, leaveVoice, setLoudSpeaker, setMic, useVoice } from './voice';
@@ -22,6 +24,10 @@ export interface ActiveCall {
   startedAt: number;
   /** Shown for a moment after the call ends. */
   endText?: string;
+  /** Everyone in the call, me included (group calls; empty until the server says). */
+  members?: { user: PublicUser; state: 'ringing' | 'active' }[];
+  /** Incoming group call: who is already talking. */
+  with?: string[];
 }
 
 interface CallState {
@@ -149,6 +155,7 @@ type CallPlugin = {
   pending?(): Promise<{ action?: string | null; callId?: string | null }>;
   cancelIncoming?(): Promise<void>;
   showOnLock?(o: { on: boolean }): Promise<void>;
+  setApi?(o: { base: string }): Promise<void>;
 };
 async function native(): Promise<CallPlugin | null> {
   if (!isNative) return null;
@@ -321,6 +328,22 @@ export function hangUp() {
   finish(tr('Call ended', 'কল শেষ'));
 }
 
+/** Bring a friend into the live call (group call, up to 4 people). */
+export async function addToCall(user: PublicUser) {
+  const c = useCall.getState().call;
+  if (!c?.id || c.phase !== 'live') return false;
+  try {
+    await emit('call:add', { callId: c.id, to: user.id });
+    return true;
+  } catch (e: any) {
+    toast.error(
+      e?.code === 'busy' ? tr('On another call', 'অন্য কলে আছে') : e?.code === 'call_full' ? tr('Up to 4 people in a call', 'একটি কলে সর্বোচ্চ ৪ জন') : tr('Could not add', 'যোগ করা গেল না'),
+      e?.code === 'busy' || e?.code === 'call_full' ? undefined : e?.message,
+    );
+    return false;
+  }
+}
+
 export function toggleCallMute() {
   const v = useVoice.getState();
   void setMic(!v.micOn).catch(() => undefined);
@@ -340,6 +363,8 @@ export function wireCalls() {
   wired = true;
   // Answer / Decline from the phone's call notification.
   void nativeAction();
+  // The phone needs the server address to decline from the lock screen without opening the app.
+  if (/^https:\/\//.test(API_URL)) void native().then((n) => n?.setApi?.({ base: API_URL })).catch(() => undefined);
   window.addEventListener('qwcallaction', () => void nativeAction());
   // Back in the app while it rings: the in-app ringtone takes over from the notification.
   document.addEventListener('visibilitychange', () => {
@@ -352,7 +377,15 @@ export function wireCalls() {
     s.on('connect', () => {
       if (declineOnConnect) void emit('call:decline', { callId: declineOnConnect }).then(() => (declineOnConnect = null)).catch(() => undefined);
     });
-    s.on('call:incoming', ({ callId, from }) => {
+    s.on('call:members', ({ callId, members }) => {
+      const c = useCall.getState().call;
+      if (c?.id !== callId) return;
+      // Back to two people: the screen shows whoever is left.
+      const me = useAuth.getState().user?.id;
+      const others = members.filter((m) => m.user.id !== me);
+      patch({ members, ...(others.length === 1 ? { peer: others[0]!.user } : {}) });
+    });
+    s.on('call:incoming', ({ callId, from, with: others }) => {
       const cur = useCall.getState().call;
       if (cur && cur.id === callId) return;
       if (cur && cur.phase !== 'ended') {
@@ -360,7 +393,7 @@ export function wireCalls() {
         return;
       }
       window.clearTimeout(endTimer);
-      useCall.getState().set({ call: { id: callId, peer: from, dir: 'in', phase: 'ringing', startedAt: 0 }, small: false, loud: false });
+      useCall.getState().set({ call: { id: callId, peer: from, dir: 'in', phase: 'ringing', startedAt: 0, ...(others?.length ? { with: others } : {}) }, small: false, loud: false });
       if (answerWhenRinging === callId) {
         answerWhenRinging = null;
         void answerCall();

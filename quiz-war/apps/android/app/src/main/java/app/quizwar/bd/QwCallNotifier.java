@@ -67,7 +67,46 @@ public final class QwCallNotifier {
         return PendingIntent.getActivity(ctx, req, i, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
-    static void showIncoming(Context ctx, String callId, String name, String avatarUrl, String url) {
+    private static final String PREFS = "qw_call";
+
+    /** Server address (saved by the web app), used for "Decline" without opening the app. */
+    static void setApiBase(Context ctx, String base) {
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString("api", base).apply();
+    }
+
+    static Bitmap loadAvatarPublic(String url) {
+        return loadAvatar(url);
+    }
+
+    /** Tell the server "declined" (signed link from the ring push); runs off the main thread. */
+    static void declineInBackground(Context ctx, String callId, String token) {
+        declineInBackground(ctx, callId, token, null);
+    }
+
+    static void declineInBackground(Context ctx, String callId, String token, Runnable done) {
+        final String base = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("api", null);
+        new Thread(() -> {
+            HttpURLConnection c = null;
+            try {
+                if (base != null && callId != null && token != null) {
+                    c = (HttpURLConnection) new URL(base + "/api/v1/calls/" + Uri.encode(callId) + "/decline?t=" + Uri.encode(token)).openConnection();
+                    c.setRequestMethod("POST");
+                    c.setConnectTimeout(6000);
+                    c.setReadTimeout(6000);
+                    c.setDoOutput(true);
+                    c.setRequestProperty("content-type", "application/json");
+                    c.getOutputStream().write("{}".getBytes());
+                    c.getResponseCode();
+                }
+            } catch (Exception ignored) {
+            } finally {
+                if (c != null) c.disconnect();
+                if (done != null) done.run();
+            }
+        }).start();
+    }
+
+    static void showIncoming(Context ctx, String callId, String name, String avatarUrl, String url, String declineToken) {
         try {
             ensureChannel(ctx);
             NotificationManager nm = (NotificationManager) ctx.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -77,9 +116,22 @@ public final class QwCallNotifier {
             if (avatar != null) pb.setIcon(IconCompat.createWithBitmap(avatar));
             Person caller = pb.build();
 
-            PendingIntent full = open(ctx, "open", callId, url, 1);
+            PendingIntent tap = open(ctx, "open", callId, url, 1);
             PendingIntent answer = open(ctx, "answer", callId, url, 2);
-            PendingIntent decline = open(ctx, "decline", callId, url, 3);
+            // Lock screen / screen off: our own small call screen (the app does not start).
+            Intent fi = new Intent(ctx, IncomingCallActivity.class);
+            fi.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_USER_ACTION);
+            fi.putExtra("qw_call_id", callId);
+            fi.putExtra("qw_call_url", url);
+            fi.putExtra("qw_call_name", name);
+            fi.putExtra("qw_call_avatar", avatarUrl);
+            fi.putExtra("qw_call_decline", declineToken);
+            PendingIntent full = PendingIntent.getActivity(ctx, 4, fi, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+            // Decline: handled in the background, no app.
+            Intent di = new Intent(ctx, QwCallActionReceiver.class);
+            di.putExtra("qw_call_id", callId);
+            di.putExtra("qw_call_decline", declineToken);
+            PendingIntent decline = PendingIntent.getBroadcast(ctx, 3, di, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
             NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CHANNEL)
                     .setSmallIcon(R.drawable.ic_stat_notify)
@@ -91,7 +143,7 @@ public final class QwCallNotifier {
                     .setOngoing(true)
                     .setAutoCancel(true)
                     .setTimeoutAfter(35_000)
-                    .setContentIntent(full)
+                    .setContentIntent(tap)
                     .setFullScreenIntent(full, true)
                     .setSound(Uri.parse("android.resource://" + ctx.getPackageName() + "/" + R.raw.qw_ringtone), android.media.AudioManager.STREAM_RING)
                     .setVibrate(new long[]{0, 700, 500, 700, 500});
@@ -115,6 +167,7 @@ public final class QwCallNotifier {
             if (nm != null) nm.cancel(TAG, ID);
         } catch (Exception ignored) {
         }
+        IncomingCallActivity.closeIfOpen();
     }
 
     /** Small round avatar (3 s max; the call rings without it if slow). */

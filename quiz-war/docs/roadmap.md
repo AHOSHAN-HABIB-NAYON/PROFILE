@@ -225,3 +225,7 @@ Text chat stays free.
   - Play Console: also declare "Full-screen intent" (calling app).
   - Louder, smoother voice: Opus 56 kbps, 80 ms jitter buffer, high send priority, call volume lifted to ~85% while talking.
 - Also fixed: menu music played for a moment at start-up even when switched off in the admin panel.
+- Round 3 (owner feedback):
+  - Lock screen: our own small call screen (`IncomingCallActivity`), the app does not start; Decline works without the app (signed link `POST /api/v1/calls/:id/decline?t=`; the app saves the server address via `QwCall.setApi`).
+  - Group calls: anyone in a live call can add friends (max 4, mesh). Each added person gets their own chat record from whoever added them.
+  - Smaller call records in chat; faster splash (~0.8 s); player search shows Add friend + Message; no link pop-up on long-press in the app.

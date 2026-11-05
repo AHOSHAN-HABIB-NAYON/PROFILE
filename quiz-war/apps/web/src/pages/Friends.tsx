@@ -154,7 +154,7 @@ export default function Friends() {
             <ChatSearch value={chatQ} onChange={setChatQ} />
             {chatQ.trim().length < 2 && <OnlineStrip friends={sorted.filter((f) => f.status !== 'offline')} />}
             <ChatList onFind={() => setTab('friends')} filter={chatQ} />
-            {chatQ.trim().length >= 2 && <PlayerResults q={chatQ.trim()} />}
+            {chatQ.trim().length >= 2 && <PlayerResults q={chatQ.trim()} onAdd={addFriend} />}
           </>
         )}
 
@@ -402,9 +402,14 @@ function ChatSearch({ value, onChange }: { value: string; onChange: (v: string) 
 }
 
 /** Players matching the search (name starts with, or exact UID). Tap opens the chat. */
-function PlayerResults({ q }: { q: string }) {
+function PlayerResults({ q, onAdd: addFriend }: { q: string; onAdd: (u: PublicUser) => Promise<void> }) {
   const t = useT();
   const nav = useNavigate();
+  const qc = useQueryClient();
+  const onAdd = async (u: PublicUser) => {
+    await addFriend(u);
+    void qc.invalidateQueries({ queryKey: ['find-players'] });
+  };
   const [debounced, setDebounced] = useState(q);
   useEffect(() => {
     const id = setTimeout(() => setDebounced(q), 300);
@@ -412,7 +417,7 @@ function PlayerResults({ q }: { q: string }) {
   }, [q]);
   const r = useQuery({
     queryKey: ['find-players', debounced.toLowerCase()],
-    queryFn: async () => (await api<{ items: { user: PublicUser; status: string }[] }>(`/users/find?q=${encodeURIComponent(debounced)}`)).items,
+    queryFn: async () => (await api<{ items: { user: PublicUser; status: string; friend?: 'friend' | 'sent' | 'received' | 'none' }[] }>(`/users/find?q=${encodeURIComponent(debounced)}`)).items,
     enabled: debounced.length >= 2,
     staleTime: 30_000,
   });
@@ -425,15 +430,24 @@ function PlayerResults({ q }: { q: string }) {
         <p className="small muted find-empty">{t('No player found with this name or UID.', 'এই নাম বা UID-এ কোনো প্লেয়ার পাওয়া যায়নি।')}</p>
       ) : (
         <div className="list chat-threads flat">
-          {r.data.map(({ user, status }) => (
-            <button key={user.id} type="button" className="list-row chat-row" onClick={() => (haptic('tap'), nav(`/chat/${user.uid}`))}>
-              <Avatar name={user.username} src={user.avatarThumbUrl} status={status as any} size={48} frame={user.frame} />
-              <span className="grow" style={{ minWidth: 0, textAlign: 'left' }}>
-                <b className="ellipsis" style={{ display: 'block' }}><PlayerName name={user.username} verified={user.verified} premium={user.premium} /></b>
-                <small className="muted">{user.uid}</small>
-              </span>
-              <Icon name="message" size={20} />
-            </button>
+          {r.data.map(({ user, status, friend }) => (
+            <div key={user.id} className="list-row chat-row find-row">
+              <button type="button" className="find-who" onClick={() => (haptic('tap'), nav(`/u/${user.uid}`))}>
+                <Avatar name={user.username} src={user.avatarThumbUrl} status={status as any} size={48} frame={user.frame} />
+                <span className="grow" style={{ minWidth: 0, textAlign: 'left' }}>
+                  <b className="ellipsis" style={{ display: 'block' }}><PlayerName name={user.username} verified={user.verified} premium={user.premium} /></b>
+                  <small className="muted">{friend === 'friend' ? t('Friend', 'বন্ধু') : friend === 'sent' ? t('Request sent', 'রিকোয়েস্ট পাঠানো হয়েছে') : friend === 'received' ? t('Sent you a request', 'আপনাকে রিকোয়েস্ট পাঠিয়েছে') : user.uid}</small>
+                </span>
+              </button>
+              {friend && friend !== 'friend' && friend !== 'sent' && (
+                <button type="button" className="find-act add" aria-label={friend === 'received' ? t('Accept friend', 'বন্ধু হোন') : t('Add friend', 'বন্ধু যোগ করুন')} onClick={() => void onAdd(user)}>
+                  <Icon name="user-add" size={19} />
+                </button>
+              )}
+              <button type="button" className="find-act" aria-label={t('Message', 'মেসেজ')} onClick={() => (haptic('tap'), nav(`/chat/${user.uid}`))}>
+                <Icon name="message" size={19} />
+              </button>
+            </div>
           ))}
         </div>
       )}

@@ -37,6 +37,14 @@ public class QwCallPlugin extends Plugin {
         call.resolve(r);
     }
 
+    /** The web app tells the phone the server address (for Decline from the lock screen). */
+    @PluginMethod
+    public void setApi(PluginCall call) {
+        String base = call.getString("base");
+        if (base != null && base.startsWith("https://")) QwCallNotifier.setApiBase(getContext(), base);
+        call.resolve();
+    }
+
     /** Stop the native ringing notification (answered or ended in the app). */
     @PluginMethod
     public void cancelIncoming(PluginCall call) {

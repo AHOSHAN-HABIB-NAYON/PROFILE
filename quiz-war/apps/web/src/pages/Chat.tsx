@@ -495,7 +495,7 @@ export default function Chat() {
                     )}
                     {swipe?.id === m.id && <span className={`swipe-hint${Math.abs(swipe.dx) >= 64 ? ' ready' : ''}`} style={{ opacity: Math.min(1, Math.abs(swipe.dx) / 64) }} aria-hidden><Icon name="reply" size={18} /></span>}
                     <div
-                      className={`bubble${picked?.id === m.id ? ' picked' : ''}${m.kind === 'image' && m.media?.url ? ' photo' : ''}`}
+                      className={`bubble${picked?.id === m.id ? ' picked' : ''}${m.kind === 'image' && m.media?.url ? ' photo' : ''}${m.kind === 'call' ? ' call-rec' : ''}`}
                       style={swipe?.id === m.id ? { transform: `translateX(${swipe.dx}px)`, transition: 'none' } : undefined}
                       onPointerDown={(e) => swipeDown(e, m)}
                       onPointerMove={(e) => swipeMove(e, mine)}
@@ -1003,16 +1003,14 @@ function CallRecord({ mine, status, secs, onCall }: { mine: boolean; status: str
   const title = done
     ? t('Audio call', 'অডিও কল')
     : mine
-      ? status === 'declined' || status === 'busy'
-        ? t('Call not answered', 'কল ধরেনি')
-        : status === 'cancelled'
-          ? t('You cancelled the call', 'আপনি কল বাতিল করেছেন')
-          : t('No answer', 'কেউ ধরেনি')
-      : t('Missed audio call', 'মিসড অডিও কল');
-  const sub = done ? fmtSecs(secs, lang) : t('Tap to call back', 'আবার কল করতে চাপুন');
+      ? status === 'cancelled'
+        ? t('Call cancelled', 'কল বাতিল')
+        : t('No answer', 'ধরেনি')
+      : t('Missed call', 'মিসড কল');
+  const sub = done ? fmtSecs(secs, lang) : t('Call back', 'আবার কল করুন');
   return (
     <button type="button" className={`msg-call${done ? '' : ' missed'}`} onClick={(e) => (e.stopPropagation(), onCall())} onPointerDown={(e) => e.stopPropagation()}>
-      <span className="mc-ic"><Icon name={done ? 'phone' : 'phone-off'} size={19} /></span>
+      <span className="mc-ic"><Icon name={done ? 'phone' : 'phone-off'} size={15} /></span>
       <span>
         <b>{title}</b>
         <small>{sub}</small>

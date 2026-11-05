@@ -77,6 +77,21 @@
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
 
+        <!-- Ringing call on the lock screen (its own small screen, like WhatsApp). -->
+        <activity
+            android:name=".IncomingCallActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleTop"
+            android:taskAffinity="app.quizwar.bd.call"
+            android:screenOrientation="portrait"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <receiver
+            android:name=".QwCallActionReceiver"
+            android:exported="false" />
+
         <!-- Push: incoming calls ring natively; everything else goes to the Capacitor push plugin. -->
         <service
             android:name="com.capacitorjs.plugins.pushnotifications.MessagingService"

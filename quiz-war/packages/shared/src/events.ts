@@ -185,6 +185,8 @@ export interface ClientToServerEvents {
   'call:answer': (p: { callId: string }, ack?: Ack) => void;
   'call:decline': (p: { callId: string }, ack?: Ack) => void;
   'call:end': (p: { callId: string }, ack?: Ack) => void;
+  /** Bring a friend into a live call (up to 4 people). */
+  'call:add': (p: { callId: string; to: number }, ack?: Ack) => void;
 }
 
 export interface VoicePeer {
@@ -233,7 +235,9 @@ export interface ServerToClientEvents {
   'voice:peers': (p: { roomId: string; peers: VoicePeer[] }) => void;
   'voice:signal': (p: { roomId: string; from: number; data: VoiceSignal }) => void;
   /** Someone is calling me (also re-sent when I connect while it still rings). */
-  'call:incoming': (p: { callId: string; from: PublicUser }) => void;
+  'call:incoming': (p: { callId: string; from: PublicUser; /** Others already talking (group call). */ with?: string[] }) => void;
+  /** Who is in the call now (group calls: someone joined, left or is being rung). */
+  'call:members': (p: { callId: string; members: { user: PublicUser; state: 'ringing' | 'active' }[] }) => void;
   /** The other side picked up (to the caller), or I picked up on another device. */
   'call:accepted': (p: { callId: string; elsewhere?: boolean }) => void;
   'call:ended': (p: { callId: string; reason: CallEndReason; secs?: number }) => void;
