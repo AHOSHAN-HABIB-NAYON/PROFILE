@@ -185,6 +185,7 @@ export async function adminRoutes(app: FastifyInstance, ctx: AppContext) {
     stats: await ctx.premium.stats(),
     codes: await ctx.premium.listCodes(),
     purchases: await ctx.premium.recentPurchases(),
+    inviters: await ctx.premium.topInviters(),
     canVerifyPlay: ctx.premium.canVerifyPlay,
     rtdn: !!ctx.env.PLAY_RTDN_SECRET,
   }));

@@ -70,6 +70,8 @@ export interface MeUser extends PublicUser {
   premiumUntil?: string | null;
   /** Premium given for good by an admin. */
   premiumForever?: boolean;
+  /** The current premium is a free trial (ends at premiumUntil). */
+  premiumTrial?: boolean;
 }
 
 export interface QuestionPublic {

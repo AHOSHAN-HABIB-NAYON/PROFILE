@@ -171,6 +171,7 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
         const won = place === 1;
         await exec('INSERT INTO ludo_results (game_id, user_id, mode, place, won) VALUES (?, ?, ?, ?, ?)', [g.id, seat.userId, mode, place, won ? 1 : 0]);
         await exec('UPDATE user_profiles SET ludo_games = ludo_games + 1, ludo_wins = ludo_wins + ? WHERE user_id = ?', [won ? 1 : 0, seat.userId]);
+        void ctx.premium.onGamePlayed(seat.userId).catch(() => undefined);
         if (won && coins > 0 && g.seats.some((x) => !x.bot && x.userId !== seat.userId)) {
           await ctx.progression.grantCoins(undefined as any, seat.userId, coins, 'ludo_win', g.id);
           await ctx.progression.pushAccount(seat.userId).catch(() => undefined);

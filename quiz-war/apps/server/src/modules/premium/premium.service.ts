@@ -1,4 +1,4 @@
-import type { AppSettings } from '@quizwar/shared';
+import { normalizeUid, type AppSettings } from '@quizwar/shared';
 import { createHash, randomInt } from 'node:crypto';
 import { GoogleAuth } from 'google-auth-library';
 import { exec, query, queryOne } from '../../db/pool';
@@ -24,6 +24,9 @@ interface Deps {
   /** Tell the player's app their account changed (premium on / off). */
   pushAccount: (userId: number) => Promise<void>;
   log: { info: (o: object, m: string) => void; error: (o: object, m: string) => void };
+  /** Hashes phone ids (so raw ids are never stored). */
+  secret: string;
+  notify: (userId: number, n: { type: string; title: { en: string; bn: string }; body: { en: string; bn: string }; url?: string }) => Promise<unknown>;
 }
 
 /**
@@ -235,12 +238,149 @@ export class PremiumService {
     return ids;
   }
 
+  /* --------------------------- Trials and referrals -------------------------- */
+
+  private deviceHash(raw: string | null | undefined) {
+    const v = String(raw ?? '').trim();
+    return v.length >= 6 ? createHash('sha256').update(`${this.d.secret}:device:${v}`).digest('hex') : null;
+  }
+
+  /**
+   * A new account finished its profile: remember the phone, save who invited them and start the
+   * free trial (once per phone, while premium is on sale and trials are on).
+   */
+  async onNewAccount(userId: number, rawDevice: string | null | undefined, inviteCode: string | null | undefined) {
+    const s = this.d.settings();
+    const dev = this.deviceHash(rawDevice);
+    if (dev) await exec('UPDATE user_profiles SET device_hash = COALESCE(device_hash, ?) WHERE user_id = ?', [dev, userId]);
+    let referred = false;
+    if (inviteCode) referred = await this.setReferrer(userId, inviteCode).catch(() => false);
+    let trialDays = 0;
+    if (s.premiumEnabled && s.premiumTrialEnabled && dev) {
+      const r = await exec('INSERT IGNORE INTO device_rewards (device_hash, kind, user_id) VALUES (?, ?, ?)', [dev, 'trial', userId]);
+      if (r.affectedRows) {
+        trialDays = s.premiumTrialDays ?? 7;
+        await this.addDays(userId, trialDays);
+        await exec('UPDATE user_profiles SET premium_trial_until = premium_until WHERE user_id = ?', [userId]);
+        this.cache.delete(userId);
+      }
+    }
+    return { trialDays, referred };
+  }
+
+  /** Save the friend who invited this player (their UID). */
+  async setReferrer(userId: number, code: string) {
+    const uid = normalizeUid(code);
+    if (!uid) throw new AppError(400, 'bad_invite', 'This invite code is not valid');
+    const inviter = await queryOne<{ id: number }>("SELECT id FROM users WHERE uid = ? AND status = 'active'", [uid]);
+    if (!inviter) throw new AppError(404, 'invite_not_found', 'No player with this invite code');
+    if (Number(inviter.id) === userId) throw new AppError(400, 'own_invite', 'You can’t use your own code');
+    const r = await exec('UPDATE user_profiles SET referred_by = ? WHERE user_id = ? AND referred_by IS NULL', [inviter.id, userId]);
+    return r.affectedRows > 0;
+  }
+
+  private checkedFirstGame = new Set<number>();
+  /**
+   * A player finished a game. The first time, the friend who invited them gets premium days
+   * (only once per phone, so one person can't make many accounts for it).
+   */
+  async onGamePlayed(userId: number) {
+    if (this.checkedFirstGame.has(userId)) return;
+    if (this.checkedFirstGame.size > 100_000) this.checkedFirstGame.clear();
+    this.checkedFirstGame.add(userId);
+    const s = this.d.settings();
+    const p = await queryOne<{ referred_by: number | null; referral_rewarded: number; device_hash: string | null; username: string | null }>(
+      'SELECT referred_by, referral_rewarded, device_hash, username FROM user_profiles WHERE user_id = ?',
+      [userId],
+    );
+    if (!p?.referred_by || p.referral_rewarded || !s.referralEnabled || !s.premiumEnabled) return;
+    const take = await exec('UPDATE user_profiles SET referral_rewarded = 1 WHERE user_id = ? AND referral_rewarded = 0', [userId]);
+    if (!take.affectedRows) return;
+    if (p.device_hash) {
+      const dev = await exec('INSERT IGNORE INTO device_rewards (device_hash, kind, user_id) VALUES (?, ?, ?)', [p.device_hash, 'referral', userId]);
+      if (!dev.affectedRows) {
+        // This phone already earned someone a reward.
+        await exec('UPDATE user_profiles SET referral_rewarded = 2 WHERE user_id = ?', [userId]);
+        return;
+      }
+    }
+    const inviter = Number(p.referred_by);
+    const days = s.referralDays ?? 7;
+    await this.addDays(inviter, days);
+    const count = Number((await queryOne<{ n: number }>('SELECT COUNT(*) n FROM user_profiles WHERE referred_by = ? AND referral_rewarded = 1', [inviter]))?.n ?? 0);
+    const big = s.referralBigCount ?? 100;
+    const name = p.username ?? 'Player';
+    if (count === big) {
+      await this.addDays(inviter, s.referralBigDays ?? 365);
+      await this.d.notify(inviter, {
+        type: 'premium',
+        title: { en: `${big} friends joined — you won!`, bn: `${big} জন বন্ধু খেলেছে — আপনি জিতেছেন!` },
+        body: { en: `${s.referralBigDays ?? 365} days of Premium added. Thank you!`, bn: `${s.referralBigDays ?? 365} দিনের প্রিমিয়াম যোগ হয়েছে। ধন্যবাদ!` },
+        url: '/premium',
+      }).catch(() => undefined);
+    } else {
+      await this.d.notify(inviter, {
+        type: 'premium',
+        title: { en: `${name} played — +${days} days Premium`, bn: `${name} খেলেছে — +${days} দিন প্রিমিয়াম` },
+        body: { en: `Thanks for inviting! ${count}/${big} friends so far.`, bn: `ইনভাইটের জন্য ধন্যবাদ! এখন পর্যন্ত ${count}/${big} জন।` },
+        url: '/premium',
+      }).catch(() => undefined);
+    }
+    this.d.log.info({ inviter, friend: userId, count }, 'referral reward');
+  }
+
+  async referralInfo(userId: number) {
+    const s = this.d.settings();
+    const r = await queryOne<{ joined: number; played: number }>(
+      'SELECT COUNT(*) AS joined, COALESCE(SUM(referral_rewarded = 1), 0) AS played FROM user_profiles WHERE referred_by = ?',
+      [userId],
+    );
+    return {
+      enabled: !!s.referralEnabled && !!s.premiumEnabled,
+      days: s.referralDays ?? 7,
+      bigCount: s.referralBigCount ?? 100,
+      bigDays: s.referralBigDays ?? 365,
+      joined: Number(r?.joined ?? 0),
+      played: Number(r?.played ?? 0),
+    };
+  }
+
+  /** "Premium ends tomorrow" (trials, codes, gifts — not auto-renewing Play subscriptions). */
+  async remindEnding() {
+    const rows = await query<{ user_id: number; premium_until: Date; trial: number }>(
+      `SELECT p.user_id, p.premium_until, (p.premium_trial_until IS NOT NULL AND p.premium_until <= DATE_ADD(p.premium_trial_until, INTERVAL 1 SECOND)) AS trial
+       FROM user_profiles p
+       WHERE p.premium_at IS NULL AND p.premium_until BETWEEN UTC_TIMESTAMP() AND DATE_ADD(UTC_TIMESTAMP(), INTERVAL 1 DAY)
+         AND (p.premium_reminded_for IS NULL OR p.premium_reminded_for <> p.premium_until)
+         AND NOT EXISTS (SELECT 1 FROM premium_purchases pp WHERE pp.user_id = p.user_id AND pp.auto_renew = 1 AND pp.expiry_at > UTC_TIMESTAMP())
+       LIMIT 500`,
+    );
+    for (const r of rows) {
+      await exec('UPDATE user_profiles SET premium_reminded_for = premium_until WHERE user_id = ?', [r.user_id]);
+      await this.d.notify(Number(r.user_id), {
+        type: 'premium',
+        title: r.trial ? { en: 'Your free trial ends tomorrow', bn: 'আপনার ফ্রি ট্রায়াল কাল শেষ হবে' } : { en: 'Your Premium ends tomorrow', bn: 'আপনার প্রিমিয়াম কাল শেষ হবে' },
+        body: { en: 'Keep calls, video and live talk — get Premium from ৳150/month.', bn: 'কল, ভিডিও আর লাইভ কথা চালু রাখতে প্রিমিয়াম নিন — মাসে ৳১৫০ থেকে।' },
+        url: '/premium',
+      }).catch(() => undefined);
+    }
+    return rows.length;
+  }
+
   /** Admin: who bought premium recently. */
   async recentPurchases() {
     return query<any>(
       `SELECT pp.user_id AS userId, u.uid, p.username, pp.product_id AS productId, pp.state, pp.expiry_at AS expiresAt, pp.auto_renew AS autoRenew, pp.updated_at AS updatedAt
        FROM premium_purchases pp JOIN users u ON u.id = pp.user_id JOIN user_profiles p ON p.user_id = pp.user_id
        ORDER BY pp.updated_at DESC LIMIT 100`,
+    );
+  }
+
+  async topInviters() {
+    return query<any>(
+      `SELECT p.referred_by AS userId, u.uid, q.username, COUNT(*) AS joined, SUM(p.referral_rewarded = 1) AS played
+       FROM user_profiles p JOIN users u ON u.id = p.referred_by JOIN user_profiles q ON q.user_id = p.referred_by
+       WHERE p.referred_by IS NOT NULL GROUP BY p.referred_by, u.uid, q.username ORDER BY played DESC, joined DESC LIMIT 50`,
     );
   }
 

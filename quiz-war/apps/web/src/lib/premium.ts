@@ -9,8 +9,8 @@ const SETTING: Record<PremiumFeature, keyof AppSettings> = { calls: 'premiumCall
 
 interface Purchase { token: string; products: string[]; purchased: boolean; acknowledged: boolean }
 interface BillingPlugin {
-  details(o: { productId: string }): Promise<{ productId: string; title?: string; price?: string; period?: string; introPrice?: string; introPeriod?: string }>;
-  buy(o: { productId: string; accountId?: string }): Promise<{ purchases: Purchase[] }>;
+  details(o: { productId: string }): Promise<{ productId: string; title?: string; plans?: { basePlanId: string; price: string; micros: number; period: string }[] }>;
+  buy(o: { productId: string; basePlanId?: string; accountId?: string }): Promise<{ purchases: Purchase[] }>;
   owned(): Promise<{ purchases: Purchase[] }>;
 }
 /** Google Play Billing (Android app only). */
@@ -57,10 +57,10 @@ async function verify(token: string) {
 }
 
 /** Buy the monthly subscription in Google Play, then let the server check it. */
-export async function buyPremium(productId: string) {
+export async function buyPremium(productId: string, basePlanId?: string) {
   if (!billing) throw Object.assign(new Error('Buy Premium in the QUIZ WAR Android app'), { code: 'not_android' });
   const me = useAuth.getState().user;
-  const r = await billing.buy({ productId, ...(me ? { accountId: accountId(me.uid) } : {}) });
+  const r = await billing.buy({ productId, ...(basePlanId ? { basePlanId } : {}), ...(me ? { accountId: accountId(me.uid) } : {}) });
   let ok = false;
   for (const p of r.purchases) {
     if (!p.purchased) continue;

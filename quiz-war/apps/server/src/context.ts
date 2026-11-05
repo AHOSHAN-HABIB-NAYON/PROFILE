@@ -164,6 +164,12 @@ export function createContext(env: Env, log: Logger, overrides: { mailer?: Maile
     serviceAccountJson: env.PLAY_SERVICE_ACCOUNT_JSON || env.FCM_SERVICE_ACCOUNT_JSON,
     pushAccount: (uid) => progression.pushAccount(uid),
     log: { info: (o, m) => log.info(o, m), error: (o, m) => log.error(o, m) },
+    secret: env.JWT_SECRET,
+    notify: (uid, n) => notifications.notify(uid, n, { push: true }),
+  });
+  // A friend who joined with an invite code played their first game.
+  hooks.finished.push((m: any) => {
+    for (const p of m?.players ?? []) if (!p.isBot && p.userId) void premium.onGamePlayed(p.userId).catch((err) => log.error({ err }, 'referral check failed'));
   });
   const reports = new ReportService();
   const categories = new CategoryService();

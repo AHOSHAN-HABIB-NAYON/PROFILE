@@ -21,6 +21,8 @@ export function startJobs(ctx: AppContext) {
   void every(20 * 60_000, 'app-release-check', () => ctx.appRelease.refresh())();
   every(10 * 60_000, 'season-tick', () => ctx.seasons.tick((m) => ctx.log.info(m)));
   every(6 * 60 * 60_000, 'verified-auto', () => ctx.verified.autoGrant());
+  // "Your trial / premium ends tomorrow" reminders.
+  every(60 * 60_000, 'premium-reminder', () => ctx.premium.remindEnding());
   // Top N of last month's leaderboard get 30 days of premium (once, early in the new month).
   void every(60 * 60_000, 'premium-month-reward', async () => {
     const lastMonth = bdMonthKey(new Date(Date.now() - 3 * 86400_000));

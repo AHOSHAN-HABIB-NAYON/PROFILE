@@ -11,6 +11,8 @@ import { useImageCropper } from '../components/ImageCropper';
 import { haptic } from '../lib/platform';
 import { sfx } from '../lib/sound';
 import { toast } from '../lib/toast';
+import { clearInvite, deviceId, savedInvite } from '../lib/device';
+import { useConfig } from '../hooks/queries';
 
 /**
  * New account: one short screen — photo (optional) + battle name — then straight to Home.
@@ -26,6 +28,10 @@ export default function Onboarding() {
   const [uploading, setUploading] = useState(false);
   const [avatar, setAvatar] = useState<string | null>(user.avatarUrl);
   const cropper = useImageCropper();
+  const cfg = useConfig().data;
+  const [invite, setInvite] = useState(savedInvite());
+  const [showInvite, setShowInvite] = useState(!!savedInvite());
+  const referralOn = !!cfg?.premiumEnabled && cfg?.referralEnabled !== false;
 
   async function finish(e: FormEvent) {
     e.preventDefault();
@@ -34,14 +40,20 @@ export default function Onboarding() {
     setBusy(true);
     setErr(null);
     try {
+      let trialDays = 0;
       if (user.needsOnboarding || r.data !== user.username) {
-        const res = await api('/me/onboarding', { body: { username: r.data } });
+        const code = invite.trim();
+        const res = await api('/me/onboarding', { body: { username: r.data, deviceId: await deviceId(), ...(code && referralOn ? { inviteCode: code } : {}) } });
         useAuth.getState().setUser(res.user);
+        trialDays = res.trialDays ?? 0;
+        clearInvite();
       }
       await api('/me/preferences', { method: 'PATCH', body: { tutorialDone: true } }).catch(() => undefined);
       haptic('success');
       sfx('reward');
-      toast.success(t(`Welcome, ${r.data}!`, `স্বাগতম, ${r.data}!`), t('Tap Find opponent to play your first battle.', 'প্রথম ব্যাটল খেলতে "প্রতিপক্ষ খুঁজুন" চাপুন।'), 'party');
+      if (trialDays > 0)
+        toast.success(t(`Welcome! ${trialDays} days of Premium free`, `স্বাগতম! ${trialDays} দিন প্রিমিয়াম ফ্রি`), t('Calls, video and live talk are on. Enjoy!', 'কল, ভিডিও আর লাইভ কথা চালু। উপভোগ করুন!'), 'crown');
+      else toast.success(t(`Welcome, ${r.data}!`, `স্বাগতম, ${r.data}!`), t('Tap Find opponent to play your first battle.', 'প্রথম ব্যাটল খেলতে "প্রতিপক্ষ খুঁজুন" চাপুন।'), 'party');
       nav('/', { replace: true });
     } catch (e2) {
       setErr(friendlyError(e2));
@@ -86,6 +98,20 @@ export default function Onboarding() {
           </div>
           <span className="field-hint">{t('Other players see this name. Your email stays private.', 'অন্য প্লেয়াররা এই নাম দেখবে। আপনার ইমেইল গোপন থাকবে।')}</span>
         </div>
+        {referralOn && user.needsOnboarding && (
+          showInvite ? (
+            <div className="field onb-invite" style={{ width: '100%' }}>
+              <label htmlFor="inv">{t('Invite code (optional)', 'ইনভাইট কোড (ঐচ্ছিক)')}</label>
+              <div className="input-wrap">
+                <Icon name="gift" size={20} />
+                <input id="inv" className="input" autoCapitalize="characters" spellCheck={false} maxLength={12} value={invite} onChange={(e) => (setInvite(e.target.value.toUpperCase()), setErr(null))} placeholder={t('Friend’s UID, e.g. QW-8F29K7', 'বন্ধুর UID, যেমন QW-8F29K7')} />
+              </div>
+              <span className="field-hint">{t('Your friend gets free Premium when you play your first game.', 'আপনি প্রথম খেলা খেললে আপনার বন্ধু ফ্রি প্রিমিয়াম পাবে।')}</span>
+            </div>
+          ) : (
+            <button type="button" className="btn ghost sm onb-invite-link" onClick={() => setShowInvite(true)}><Icon name="gift" size={16} /> {t('Have an invite code?', 'ইনভাইট কোড আছে?')}</button>
+          )
+        )}
         {err && <p className="form-error" role="alert"><Icon name="alert-circle" size={18} /> {err}</p>}
         <button className="btn primary lg block" disabled={busy || uploading || name.trim().length < 3}>
           {busy ? <span className="spinner" /> : null} {t('Start playing', 'খেলা শুরু করুন')} <Icon name="arrow-right" />

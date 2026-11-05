@@ -8,6 +8,7 @@ import { registerRealtime } from './lib/realtime';
 import { registerChat } from './lib/chat';
 import { applyTheme, useSettings } from './lib/settings';
 import { initPlatformInfo } from './lib/platform';
+import { rememberInviteFromUrl } from './lib/device';
 import '@fontsource/hind-siliguri/bengali-400.css';
 import '@fontsource/hind-siliguri/bengali-500.css';
 import '@fontsource/hind-siliguri/bengali-600.css';
@@ -21,6 +22,7 @@ registerRealtime();
 registerChat();
 void initPlatformInfo();
 
+rememberInviteFromUrl();
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>

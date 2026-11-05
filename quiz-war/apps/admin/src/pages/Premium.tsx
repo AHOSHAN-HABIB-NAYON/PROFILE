@@ -7,7 +7,8 @@ import { api, errMsg } from '../lib/api';
 
 type Code = { code: string; days: number; maxUses: number; uses: number; note: string | null; expiresAt: string | null; createdAt: string };
 type Purchase = { userId: number; uid: string; username: string | null; productId: string; state: string; expiresAt: string | null; autoRenew: number; updatedAt: string };
-type Data = { stats: { active: number; forever: number; paying: number }; codes: Code[]; purchases: Purchase[]; canVerifyPlay: boolean; rtdn: boolean };
+type Inviter = { userId: number; uid: string; username: string | null; joined: number; played: number };
+type Data = { stats: { active: number; forever: number; paying: number }; codes: Code[]; purchases: Purchase[]; inviters: Inviter[]; canVerifyPlay: boolean; rtdn: boolean };
 
 const STATE: Record<string, string> = {
   SUBSCRIPTION_STATE_ACTIVE: 'Active',
@@ -29,6 +30,7 @@ export default function Premium() {
   const [msg, setMsg] = useState<{ ok?: string; err?: string }>({});
   const [codeMsg, setCodeMsg] = useState<{ ok?: string; err?: string }>({});
   const [newCodes, setNewCodes] = useState<string[]>([]);
+  const [growMsg, setGrowMsg] = useState<{ ok?: string; err?: string }>({});
   if (settings.isLoading || data.isLoading) return <Loading rows={8} />;
   if (settings.error || !settings.data) return <p className="err">{errMsg(settings.error)}</p>;
   const a = settings.data.app as App;
@@ -55,6 +57,31 @@ export default function Premium() {
       void qc.invalidateQueries({ queryKey: ['settings'] });
     } catch (e2) {
       setMsg({ err: errMsg(e2) });
+    }
+  };
+  const saveGrow = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    const n = (k: string, d: number) => Math.max(1, Math.round(Number(f.get(k) || d)));
+    setGrowMsg({});
+    try {
+      await api('/settings/app', {
+        method: 'PUT',
+        body: {
+          premiumTrialEnabled: f.get('premiumTrialEnabled') === 'on',
+          premiumTrialDays: n('premiumTrialDays', 7),
+          referralEnabled: f.get('referralEnabled') === 'on',
+          referralDays: n('referralDays', 7),
+          referralBigCount: n('referralBigCount', 100),
+          referralBigDays: n('referralBigDays', 365),
+          premiumPriceMonthly: String(f.get('premiumPriceMonthly') || '৳150').trim(),
+          premiumPriceYearly: String(f.get('premiumPriceYearly') || '৳1200').trim(),
+        },
+      });
+      setGrowMsg({ ok: 'Saved.' });
+      void qc.invalidateQueries({ queryKey: ['settings'] });
+    } catch (e2) {
+      setGrowMsg({ err: errMsg(e2) });
     }
   };
   const makeCodes = async (e: FormEvent<HTMLFormElement>) => {
@@ -92,7 +119,7 @@ export default function Premium() {
         <form className="card form" onSubmit={(e) => void saveSettings(e)} aria-label="Premium settings">
           <div className="card-head"><span className="cat-ic"><Icon name="crown" size={20} /></span><div><h2>Sell premium</h2><p className="small muted">Turn on after the subscription is active in Play Console. While off, everything stays free and the Premium page is hidden.</p></div></div>
           <label className="switch"><input type="checkbox" name="premiumEnabled" defaultChecked={!!a.premiumEnabled} /><span>Premium on (sell + lock the features below)</span></label>
-          <div className="field" style={{ maxWidth: 320 }}><label htmlFor="pr-id">Play subscription product ID</label><input id="pr-id" name="premiumProductId" className="input" defaultValue={a.premiumProductId ?? 'premium_monthly'} maxLength={100} /><span className="small faint">Play Console → Monetize → Subscriptions. Must match exactly.</span></div>
+          <div className="field" style={{ maxWidth: 320 }}><label htmlFor="pr-id">Play subscription product ID</label><input id="pr-id" name="premiumProductId" className="input" defaultValue={a.premiumProductId ?? 'quizwar_premium'} maxLength={100} /><span className="small faint">Play Console → Monetize → Subscriptions. One subscription with two base plans: <b>monthly</b> and <b>yearly</b>.</span></div>
           <p className="small bold" style={{ marginTop: 8 }}>Needs premium (text chat is always free):</p>
           <label className="switch"><input type="checkbox" name="premiumCalls" defaultChecked={a.premiumCalls !== false} /><span>Audio calls<small>Starting or adding people to a call. Answering stays free.</small></span></label>
           <label className="switch"><input type="checkbox" name="premiumVoiceMessages" defaultChecked={a.premiumVoiceMessages !== false} /><span>Voice messages in chat</span></label>
@@ -107,6 +134,25 @@ export default function Premium() {
           )}
           <div className="row"><button className="btn primary">Save premium</button><span className="small" role="status" style={{ color: 'var(--success)', fontWeight: 700 }}>{msg.ok}</span></div>
           {msg.err && <p className="err" role="alert">{msg.err}</p>}
+        </form>
+
+        <form className="card form" onSubmit={(e) => void saveGrow(e)} aria-label="Trial and invites">
+          <div className="card-head"><span className="cat-ic"><Icon name="users" size={20} /></span><div><h2>Free trial & invite friends</h2><p className="small muted">Each is given once per phone. Turn either off any time.</p></div></div>
+          <label className="switch"><input type="checkbox" name="premiumTrialEnabled" defaultChecked={a.premiumTrialEnabled !== false} /><span>Free trial for new accounts</span></label>
+          <div className="field" style={{ maxWidth: 200 }}><label htmlFor="tr-d">Trial days</label><input id="tr-d" name="premiumTrialDays" type="number" min={1} max={60} className="input" defaultValue={a.premiumTrialDays ?? 7} /></div>
+          <label className="switch"><input type="checkbox" name="referralEnabled" defaultChecked={a.referralEnabled !== false} /><span>Invite friends (show on Premium page + invite code at sign-up)<small>The friend joins with the player's UID as code and plays 1 game → the player gets the days below.</small></span></label>
+          <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
+            <div className="field" style={{ width: 150 }}><label htmlFor="rf-d">Days per friend</label><input id="rf-d" name="referralDays" type="number" min={1} max={60} className="input" defaultValue={a.referralDays ?? 7} /></div>
+            <div className="field" style={{ width: 150 }}><label htmlFor="rf-c">Big reward at</label><input id="rf-c" name="referralBigCount" type="number" min={2} max={10000} className="input" defaultValue={a.referralBigCount ?? 100} /><span className="small faint">friends</span></div>
+            <div className="field" style={{ width: 150 }}><label htmlFor="rf-b">Big reward days</label><input id="rf-b" name="referralBigDays" type="number" min={1} max={3650} className="input" defaultValue={a.referralBigDays ?? 365} /></div>
+          </div>
+          <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
+            <div className="field" style={{ width: 150 }}><label htmlFor="pr-m">Price text: 1 month</label><input id="pr-m" name="premiumPriceMonthly" className="input" maxLength={20} defaultValue={a.premiumPriceMonthly ?? '৳150'} /></div>
+            <div className="field" style={{ width: 150 }}><label htmlFor="pr-y">Price text: 12 months</label><input id="pr-y" name="premiumPriceYearly" className="input" maxLength={20} defaultValue={a.premiumPriceYearly ?? '৳1200'} /></div>
+          </div>
+          <span className="small faint">The app shows Google Play's real price when it can; these texts are shown until then. Set the real prices in Play Console.</span>
+          <div className="row"><button className="btn primary">Save trial & invites</button><span className="small" role="status" style={{ color: 'var(--success)', fontWeight: 700 }}>{growMsg.ok}</span></div>
+          {growMsg.err && <p className="err" role="alert">{growMsg.err}</p>}
         </form>
 
         <form className="card form" onSubmit={(e) => void makeCodes(e)} aria-label="Redeem codes">
@@ -141,6 +187,20 @@ export default function Premium() {
                   <td className="small">{c.note}</td>
                   <td><button className="btn sm" onClick={() => void del(c)}><Icon name="trash" size={14} /></button></td>
                 </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <h2>Top inviters</h2>
+        {!d?.inviters?.length ? <p className="small muted">Nobody has invited friends yet.</p> : (
+          <table className="table">
+            <thead><tr><th>Player</th><th>Joined with their code</th><th>Played (rewarded)</th></tr></thead>
+            <tbody>
+              {d.inviters.map((x) => (
+                <tr key={x.userId}><td><a href={`users/${x.userId}`}>{x.username ?? 'Player'}</a> <span className="small faint">{x.uid}</span></td><td>{x.joined}</td><td>{Number(x.played)}</td></tr>
               ))}
             </tbody>
           </table>

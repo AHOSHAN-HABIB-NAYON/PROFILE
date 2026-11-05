@@ -71,7 +71,7 @@ export async function getUserByUid(uid: string): Promise<PublicUser | null> {
 export async function getMe(id: number): Promise<MeUser | null> {
   const r = await queryOne<any>(
     `SELECT ${PUBLIC_USER_COLUMNS}, u.email, u.email_verified_at, p.xp, p.coins, p.streak_days,
-            p.available_for_battle, p.dnd, p.bio, p.onboarded_at, p.lang, p.email_activity, (u.password_hash IS NOT NULL) AS has_password, (u.google_sub IS NOT NULL) AS has_google
+            p.available_for_battle, p.dnd, p.bio, p.onboarded_at, p.lang, p.email_activity, p.premium_trial_until, (u.password_hash IS NOT NULL) AS has_password, (u.google_sub IS NOT NULL) AS has_google
      FROM users u JOIN user_profiles p ON p.user_id = u.id WHERE u.id = ? AND u.status <> 'deleted'`,
     [id],
   );
@@ -93,6 +93,7 @@ export async function getMe(id: number): Promise<MeUser | null> {
     hasGoogle: !!r.has_google,
     premiumUntil: r.premium_at ? null : r.premium_until && new Date(r.premium_until).getTime() > Date.now() ? new Date(r.premium_until).toISOString() : null,
     premiumForever: !!r.premium_at,
+    premiumTrial: !r.premium_at && !!r.premium_trial_until && !!r.premium_until && new Date(r.premium_until).getTime() <= new Date(r.premium_trial_until).getTime() + 1000 && new Date(r.premium_until).getTime() > Date.now(),
   };
 }
 

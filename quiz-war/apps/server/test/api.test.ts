@@ -62,6 +62,39 @@ d('HTTP API (MySQL)', () => {
     });
   });
 
+  describe('referral and trial', () => {
+    it('gives a 7-day trial once per phone and 7 days to the inviter after the friend plays', async () => {
+      await t.ctx.settings.updateApp({ premiumEnabled: true }, null);
+      try {
+        const a = await newPlayer('inviter');
+        const reg = async (name: string, device: string, invite?: string) => {
+          const email = `${name}-${Math.random().toString(36).slice(2, 7)}@test.dev`;
+          const r = await api('POST', '/auth/register', { email, password: 'secret123' });
+          return { r: await api('POST', '/me/onboarding', { username: `${name}${Math.floor(Math.random() * 1e5)}`, deviceId: device, ...(invite ? { inviteCode: invite } : {}) }, r.body.accessToken), token: r.body.accessToken as string };
+        };
+        const bad = await reg('badcode', 'phone-x1', 'QW-ZZZZZZ');
+        expect(bad.r.status).toBe(404);
+        const b = await reg('friend', 'phone-aaa111', a.user.uid);
+        expect(b.r.status).toBe(200);
+        expect(b.r.body.trialDays).toBe(7);
+        expect(b.r.body.user.premium).toBe(true);
+        expect(b.r.body.user.premiumTrial).toBe(true);
+        // Same phone, second account: no second trial, no second reward.
+        const c = await reg('friend2', 'phone-aaa111', a.user.uid);
+        expect(c.r.body.trialDays).toBe(0);
+        await t.ctx.premium.onGamePlayed(b.r.body.user.id);
+        await t.ctx.premium.onGamePlayed(c.r.body.user.id);
+        const info = await api('GET', '/premium', undefined, a.token);
+        expect(info.body.referral.joined).toBe(2);
+        expect(info.body.referral.played).toBe(1);
+        expect(info.body.premium).toBe(true);
+        expect(new Date(info.body.until).getTime()).toBeGreaterThan(Date.now() + 6 * 86400_000);
+      } finally {
+        await t.ctx.settings.updateApp({ premiumEnabled: false }, null);
+      }
+    });
+  });
+
   describe('authentication', () => {
     it('registers, assigns a UID and requires onboarding', async () => {
       const r = await api('POST', '/auth/register', { email: 'first@test.dev', password: 'secret123' });

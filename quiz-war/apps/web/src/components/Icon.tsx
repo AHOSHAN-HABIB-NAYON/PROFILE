@@ -1,4 +1,5 @@
 import {
+  Ticket,
   SwitchCamera,
   VideoOff,
   ArrowLeft,
@@ -262,6 +263,7 @@ const LINE = {
   video: Video,
   'video-off': VideoOff,
   'switch-camera': SwitchCamera,
+  ticket: Ticket,
   'check-check': CheckCheck,
   more: EllipsisVertical,
   like: ThumbsUp,

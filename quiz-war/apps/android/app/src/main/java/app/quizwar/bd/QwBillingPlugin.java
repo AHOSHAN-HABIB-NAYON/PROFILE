@@ -66,11 +66,17 @@ public class QwBillingPlugin extends Plugin implements PurchasesUpdatedListener 
         });
     }
 
-    /** The cheapest-looking offer: base plan last (offers with a trial come first in Play's list). */
-    private static ProductDetails.SubscriptionOfferDetails offer(ProductDetails pd) {
+    /** The plain offer of a base plan (e.g. "monthly" / "yearly"); any offer of the product if none given. */
+    private static ProductDetails.SubscriptionOfferDetails offer(ProductDetails pd, String basePlan) {
         List<ProductDetails.SubscriptionOfferDetails> offers = pd.getSubscriptionOfferDetails();
         if (offers == null || offers.isEmpty()) return null;
-        return offers.get(0);
+        ProductDetails.SubscriptionOfferDetails any = null;
+        for (ProductDetails.SubscriptionOfferDetails o : offers) {
+            if (basePlan != null && !basePlan.equals(o.getBasePlanId())) continue;
+            if (o.getOfferId() == null) return o;
+            if (any == null) any = o;
+        }
+        return any != null ? any : (basePlan == null ? offers.get(0) : null);
     }
 
     /** Price text for the Premium page, e.g. "BDT 49.00" per "P1M". */
@@ -78,21 +84,25 @@ public class QwBillingPlugin extends Plugin implements PurchasesUpdatedListener 
     public void details(PluginCall call) {
         String id = call.getString("productId", "premium_monthly");
         ready(call, () -> product(call, id, (pd) -> {
-            ProductDetails.SubscriptionOfferDetails o = offer(pd);
             JSObject ret = new JSObject();
             ret.put("productId", pd.getProductId());
             ret.put("title", pd.getName());
-            if (o != null) {
-                List<ProductDetails.PricingPhase> phases = o.getPricingPhases().getPricingPhaseList();
-                ProductDetails.PricingPhase last = phases.get(phases.size() - 1);
-                ret.put("price", last.getFormattedPrice());
-                ret.put("period", last.getBillingPeriod());
-                if (phases.size() > 1) {
-                    ProductDetails.PricingPhase first = phases.get(0);
-                    ret.put("introPrice", first.getPriceAmountMicros() == 0 ? "free" : first.getFormattedPrice());
-                    ret.put("introPeriod", first.getBillingPeriod());
+            JSArray plans = new JSArray();
+            List<ProductDetails.SubscriptionOfferDetails> offers = pd.getSubscriptionOfferDetails();
+            if (offers != null) {
+                for (ProductDetails.SubscriptionOfferDetails o : offers) {
+                    if (o.getOfferId() != null) continue;
+                    List<ProductDetails.PricingPhase> phases = o.getPricingPhases().getPricingPhaseList();
+                    ProductDetails.PricingPhase last = phases.get(phases.size() - 1);
+                    JSObject plan = new JSObject();
+                    plan.put("basePlanId", o.getBasePlanId());
+                    plan.put("price", last.getFormattedPrice());
+                    plan.put("micros", last.getPriceAmountMicros());
+                    plan.put("period", last.getBillingPeriod());
+                    plans.put(plan);
                 }
             }
+            ret.put("plans", plans);
             call.resolve(ret);
         }));
     }
@@ -102,8 +112,9 @@ public class QwBillingPlugin extends Plugin implements PurchasesUpdatedListener 
     public void buy(PluginCall call) {
         String id = call.getString("productId", "premium_monthly");
         String account = call.getString("accountId", null);
+        String basePlan = call.getString("basePlanId", null);
         ready(call, () -> product(call, id, (pd) -> {
-            ProductDetails.SubscriptionOfferDetails o = offer(pd);
+            ProductDetails.SubscriptionOfferDetails o = offer(pd, basePlan);
             if (o == null) { call.reject("No plan for this subscription", "not_found"); return; }
             BillingFlowParams.Builder b = BillingFlowParams.newBuilder().setProductDetailsParamsList(Collections.singletonList(
                 BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(pd).setOfferToken(o.getOfferToken()).build()));

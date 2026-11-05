@@ -8,7 +8,7 @@ import { Icon, type IconName } from './Icon';
 import { Sheet } from './Sheet';
 
 const WHY: Record<PremiumFeature, { icon: IconName; en: string; bn: string }> = {
-  calls: { icon: 'phone', en: 'Calls are a Premium feature', bn: 'কল করা প্রিমিয়াম ফিচার' },
+  calls: { icon: 'phone', en: 'Audio & video calls are Premium', bn: 'অডিও ও ভিডিও কল প্রিমিয়াম ফিচার' },
   voiceMessages: { icon: 'mic', en: 'Voice messages are a Premium feature', bn: 'ভয়েস মেসেজ প্রিমিয়াম ফিচার' },
   photos: { icon: 'image', en: 'Sending photos is a Premium feature', bn: 'ছবি পাঠানো প্রিমিয়াম ফিচার' },
   liveMic: { icon: 'mic', en: 'Talking live is a Premium feature', bn: 'লাইভ কথা বলা প্রিমিয়াম ফিচার' },

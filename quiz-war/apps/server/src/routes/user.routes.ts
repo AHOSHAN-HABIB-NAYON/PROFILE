@@ -6,7 +6,7 @@ import { optionalUser, requireUser, uid } from '../http/guards';
 import { AppError, badRequest, notFound } from '../lib/errors';
 import { parse } from '../lib/validate';
 import { getMe, getPublicUsers, getUserByUid } from '../modules/users/users.repo';
-import { query } from '../db/pool';
+import { query, queryOne } from '../db/pool';
 
 async function readUpload(req: any, maxBytes: number): Promise<Buffer> {
   const file = await req.file({ limits: { fileSize: maxBytes, files: 1 } });
@@ -30,10 +30,24 @@ export async function userRoutes(app: FastifyInstance, ctx: AppContext) {
   });
 
   app.post('/me/onboarding', auth, async (req) => {
-    const b = parse(z.object({ username: usernameSchema }), req.body);
-    const user = await ctx.profile.completeOnboarding(uid(req), b.username);
-    void ctx.emails.welcome(uid(req)).catch(() => undefined);
-    return { user };
+    const b = parse(z.object({ username: usernameSchema, inviteCode: z.string().trim().max(20).nullish(), deviceId: z.string().trim().max(200).nullish() }), req.body);
+    const before = await queryOne<{ onboarded_at: Date | null }>('SELECT onboarded_at FROM user_profiles WHERE user_id = ?', [uid(req)]);
+    // A wrong invite code is said before anything is saved (the field is optional).
+    if (b.inviteCode && !before?.onboarded_at) {
+      const code = normalizeUid(b.inviteCode);
+      const inviter = code ? await getUserByUid(code) : null;
+      if (!inviter) throw new AppError(404, 'invite_not_found', 'No player with this invite code');
+      if (inviter.id === uid(req)) throw new AppError(400, 'own_invite', 'You can’t use your own code');
+    }
+    let user = await ctx.profile.completeOnboarding(uid(req), b.username);
+    let trialDays = 0;
+    if (!before?.onboarded_at) {
+      const r = await ctx.premium.onNewAccount(uid(req), b.deviceId, b.inviteCode);
+      trialDays = r.trialDays;
+      if (trialDays) user = await getMe(uid(req));
+      void ctx.emails.welcome(uid(req)).catch(() => undefined);
+    }
+    return { user, trialDays };
   });
 
   app.patch('/me', auth, async (req) => {
@@ -217,12 +231,14 @@ export async function userRoutes(app: FastifyInstance, ctx: AppContext) {
     const me = await getMe(uid(req));
     return {
       enabled: !!a.premiumEnabled,
-      productId: a.premiumProductId || 'premium_monthly',
+      productId: a.premiumProductId || 'quizwar_premium',
       premium: !!me?.premium,
       until: me?.premiumUntil ?? null,
       forever: !!me?.premiumForever,
       canBuy: ctx.premium.canVerifyPlay,
       subscribed: await ctx.premium.hasPlaySubscription(uid(req)),
+      referral: await ctx.premium.referralInfo(uid(req)),
+      plans: { monthly: a.premiumPriceMonthly || '৳150', yearly: a.premiumPriceYearly || '৳1200' },
       locks: { calls: ctx.premium.locked('calls'), voiceMessages: ctx.premium.locked('voiceMessages'), photos: ctx.premium.locked('photos'), liveMic: ctx.premium.locked('liveMic') },
     };
   });

@@ -309,13 +309,25 @@ export const appSettingsSchema = z.object({
   /** Premium sale: the Premium page, Play subscription and the locks below. Off = everything free. */
   premiumEnabled: z.boolean().default(false),
   /** Google Play subscription product id (Play Console > Monetize > Subscriptions). */
-  premiumProductId: z.string().max(100).default('premium_monthly'),
+  premiumProductId: z.string().max(100).default('quizwar_premium'),
   /** What needs premium (only while premiumEnabled is on). Text chat always stays free. */
   premiumCalls: z.boolean().default(true),
   premiumVoiceMessages: z.boolean().default(true),
   premiumPhotos: z.boolean().default(true),
   /** Talking (mic) in quiz / Ludo games and rooms. Listening stays free. */
   premiumLiveMic: z.boolean().default(true),
+  /** Prices shown on the Premium page before Google Play answers (Play's price wins). */
+  premiumPriceMonthly: z.string().max(20).default('৳150'),
+  premiumPriceYearly: z.string().max(20).default('৳1200'),
+  /** Free trial for new accounts (once per phone). */
+  premiumTrialEnabled: z.boolean().default(true),
+  premiumTrialDays: z.number().int().min(1).max(60).default(7),
+  /** Invite friends: the friend joins with your code and plays 1 game → you get days of premium. */
+  referralEnabled: z.boolean().default(true),
+  referralDays: z.number().int().min(1).max(60).default(7),
+  /** Big reward: this many friends who played → this many days. */
+  referralBigCount: z.number().int().min(2).max(10000).default(100),
+  referralBigDays: z.number().int().min(1).max(3650).default(365),
   /** Home "Collections" (previous-year question sets). */
   collectionsEnabled: z.boolean().default(true),
 });
@@ -357,11 +369,19 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   callsEnabled: true,
   monthlyPremiumTop: 5,
   premiumEnabled: false,
-  premiumProductId: 'premium_monthly',
+  premiumProductId: 'quizwar_premium',
   premiumCalls: true,
   premiumVoiceMessages: true,
   premiumPhotos: true,
   premiumLiveMic: true,
+  premiumPriceMonthly: '৳150',
+  premiumPriceYearly: '৳1200',
+  premiumTrialEnabled: true,
+  premiumTrialDays: 7,
+  referralEnabled: true,
+  referralDays: 7,
+  referralBigCount: 100,
+  referralBigDays: 365,
   ludoEnabled: true,
   ludoTurnSeconds: 15,
   ludoWinCoins: 20,
