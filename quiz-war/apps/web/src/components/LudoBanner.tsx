@@ -4,11 +4,11 @@ import { haptic } from '../lib/platform';
 import { Icon } from './Icon';
 
 /** Small "Play Ludo" banner (Home and Battle). */
-export function LudoBanner() {
+export function LudoBanner({ slim = false }: { slim?: boolean }) {
   const t = useT();
   const nav = useNavigate();
   return (
-    <button type="button" className="ludo-banner-card" onClick={() => (haptic('tap'), nav('/ludo'))}>
+    <button type="button" className={`ludo-banner-card${slim ? ' slim' : ''}`} onClick={() => (haptic('tap'), nav('/ludo'))}>
       <span className="lbc-art" aria-hidden>
         <svg viewBox="0 0 40 40">
           <rect x="1" y="1" width="18" height="18" rx="3" fill="#e53935" />
@@ -21,7 +21,7 @@ export function LudoBanner() {
       </span>
       <span className="grow">
         <b>{t('Ludo', 'লুডু')} <em>{t('New', 'নতুন')}</em></b>
-        <small>{t('Play with the computer or friends on one phone', 'কম্পিউটার বা এক ফোনে বন্ধুদের সাথে খেলুন')}</small>
+        <small>{slim ? t('Online · friends · computer', 'অনলাইন · বন্ধু · কম্পিউটার') : t('Play online, with friends or the computer', 'অনলাইনে, বন্ধু বা কম্পিউটারের সাথে খেলুন')}</small>
       </span>
       <Icon name="chevron" size={20} />
     </button>

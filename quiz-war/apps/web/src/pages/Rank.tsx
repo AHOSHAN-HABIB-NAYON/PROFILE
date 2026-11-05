@@ -63,6 +63,33 @@ function LeagueCard() {
   );
 }
 
+/** Top 3 on steps (2 · 1 · 3), used by the Quiz and Ludo boards. */
+function Podium({ top, unit }: { top: any[]; unit?: string }) {
+  const t = useT();
+  const lang = useLang();
+  const me = useAuth((s) => s.user)!;
+  return (
+    <div className="podium" role="list" aria-label={t('Top 3', 'সেরা ৩')}>
+      {[top[1], top[0], top[2]].map((e, i) => {
+        const place = [2, 1, 3][i]!;
+        if (!e) return <div key={`empty-${place}`} className={`p p${place} empty`} aria-hidden />;
+        return (
+          <Link key={e.user.id} to={`/u/${e.user.uid}`} className={`p p${place} ${e.user.id === me.id ? 'me' : ''}`} role="listitem">
+            <span className="p-ava">
+              {place === 1 && <Icon name="crown" size={28} className="p-crown" />}
+              <span className="p-ring"><Avatar name={e.user.username} src={e.user.avatarThumbUrl} size={place === 1 ? 72 : 58} frame={e.user.frame} /></span>
+              <span className="p-medal"><RankMedal rank={place} size={26} /></span>
+            </span>
+            <b className="p-name"><PlayerName name={e.user.username} verified={e.user.verified} premium={e.user.premium} size={14} /></b>
+            <span className="p-score num">{num(e.score, lang)}{unit ? <small> {unit}</small> : null}</span>
+            <span className="p-base"><b>{num(place, lang)}</b></span>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
 /** Ludo board: most online wins (all time / this month / this week). */
 function LudoRank() {
   const t = useT();
@@ -93,10 +120,13 @@ function LudoRank() {
       ) : !items.length ? (
         <Empty icon="gamepad" tone="warning" title={t('No Ludo winners yet', 'এখনো কেউ লুডুতে জেতেনি')} body={t('Win online Ludo games to be the first on this board!', 'অনলাইন লুডুতে জিতে প্রথম হন!')} action={<Link className="btn primary" to="/ludo"><Icon name="gamepad" /> {t('Play Ludo', 'লুডু খেলুন')}</Link>} />
       ) : (
+        <>
+        <Podium top={items.slice(0, 3)} unit={t('wins', 'জয়')} />
+        {items.length > 3 && (
         <div className="card lb-card">
-          {items.map((e) => (
+          {items.slice(3).map((e) => (
             <Link key={e.user.id} to={`/u/${e.user.uid}`} className={`lb-row ${e.user.id === me.id ? 'me' : ''}`}>
-              <span className="rank">{e.rank <= 3 ? <RankMedal rank={e.rank} size={26} /> : num(e.rank, lang)}</span>
+              <span className="rank">{num(e.rank, lang)}</span>
               <Avatar name={e.user.username} src={e.user.avatarThumbUrl} size={42} frame={e.user.frame} />
               <div className="grow" style={{ minWidth: 0 }}>
                 <b style={{ display: 'block' }}><PlayerName name={e.user.username} verified={e.user.verified} premium={e.user.premium} /></b>
@@ -106,6 +136,8 @@ function LudoRank() {
             </Link>
           ))}
         </div>
+        )}
+        </>
       )}
     </>
   );
@@ -201,26 +233,7 @@ export default function Rank() {
           <Empty icon="trophy" tone="warning" title={t('No rankings yet', 'এখনো কোনো র‍্যাংকিং নেই')} body={t('Play battles to get on the board!', 'ব্যাটল খেলে লিডারবোর্ডে নাম তুলুন!')} />
         ) : (
           <>
-            {top.length > 0 && (
-              <div className="podium" role="list" aria-label={t('Top 3', 'সেরা ৩')}>
-                {[top[1], top[0], top[2]].map((e, i) => {
-                  const place = [2, 1, 3][i];
-                  if (!e) return <div key={`empty-${place}`} className={`p p${place} empty`} aria-hidden />;
-                  return (
-                    <Link key={e.user.id} to={`/u/${e.user.uid}`} className={`p p${place} ${e.user.id === me.id ? 'me' : ''}`} role="listitem">
-                      <span className="p-ava">
-                        {place === 1 && <Icon name="crown" size={28} className="p-crown" />}
-                        <span className="p-ring"><Avatar name={e.user.username} src={e.user.avatarThumbUrl} size={place === 1 ? 72 : 58} frame={e.user.frame} /></span>
-                        <span className="p-medal"><RankMedal rank={place} size={26} /></span>
-                      </span>
-                      <b className="p-name"><PlayerName name={e.user.username} verified={e.user.verified} premium={e.user.premium} size={14} /></b>
-                      <span className="p-score num">{num(e.score, lang)}</span>
-                      <span className="p-base"><b>{num(place, lang)}</b></span>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
+            {top.length > 0 && <Podium top={top} />}
             <div className="card lb-card">
               {(top.length > 0 ? rest : items).map((e: any) =>
                 scope === 'squad' ? (

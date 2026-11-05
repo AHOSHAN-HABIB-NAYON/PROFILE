@@ -1774,3 +1774,25 @@
 .ludo-panels.top .lp-bubble { bottom: auto; top: calc(100% + 6px); }
 .ludo-panels.top .lp-bubble::after { top: auto; bottom: 100%; border-top-color: transparent; border-bottom-color: #fff; }
 @keyframes bubble-pop { 0% { transform: translateX(-50%) scale(0); opacity: 0; } 12% { transform: translateX(-50%) scale(1.15); opacity: 1; } 20%, 85% { transform: translateX(-50%) scale(1); opacity: 1; } 100% { transform: translateX(-50%) translateY(-8px); opacity: 0; } }
+
+/* Slim Ludo banner (Battle page) */
+.ludo-banner-card.slim { padding: 8px 12px; border-radius: 14px; gap: 10px; }
+.ludo-banner-card.slim .lbc-art svg { width: 30px; height: 30px; }
+.ludo-banner-card.slim b { font-size: 14.5px; }
+.ludo-banner-card.slim small { font-size: 11.5px; margin-top: 0; }
+
+/* Home: which game? */
+.gp2-head { text-align: center; margin-bottom: 4px; }
+.gp2-head h2 { margin: 0; }
+.gp2-head p { margin: 4px 0 0; font-size: 13px; color: var(--text-3, #64748b); }
+.gp2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+.gp2-card { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 8px 14px; border: 0; border-radius: 22px; color: #fff; font: inherit; box-shadow: 0 10px 22px rgba(30, 27, 75, .28), inset 0 -4px 0 rgba(0,0,0,.18); transition: transform .15s ease; }
+.gp2-card:active { transform: scale(.96); }
+.gp2-card.quiz { background: linear-gradient(160deg, #3b82f6, #4338ca); }
+.gp2-card.ludo { background: linear-gradient(160deg, #a855f7, #6d28d9); }
+.gp2-card::before { content: ''; position: absolute; inset: 0; background: radial-gradient(circle at 30% 0%, rgba(255,255,255,.35), transparent 55%); pointer-events: none; }
+.gp2-art svg { width: 112px; height: 84px; display: block; filter: drop-shadow(0 6px 8px rgba(0,0,0,.25)); }
+.gp2-card b { font-size: 18px; font-weight: 900; letter-spacing: .3px; text-shadow: 0 2px 0 rgba(0,0,0,.2); }
+.gp2-card small { font-size: 12px; opacity: .9; }
+.gp2-go { margin-top: 10px; display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border-radius: 99px; background: #facc15; color: #422006; font-weight: 800; font-size: 13.5px; box-shadow: inset 0 -3px 0 rgba(0,0,0,.15); }
+.podium .p-score small { font-size: 11px; font-weight: 700; opacity: .7; }

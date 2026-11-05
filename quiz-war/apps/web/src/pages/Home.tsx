@@ -220,17 +220,52 @@ export default function Home() {
         </section>
       </div>
       <Modal open={pick} onClose={() => setPick(false)} label={t('Which game?', 'কোন খেলা?')}>
-        <h2>{t('Which game?', 'কোন খেলা খেলবেন?')}</h2>
-        <div className="game-pick">
-          <button type="button" onClick={() => (setPick(false), quick())}>
-            <IconTile name="brain" tone="primary" size={48} />
-            <b>{t('Quiz battle', 'কুইজ ব্যাটল')}</b>
+        <div className="gp2-head">
+          <h2>{t('Choose your battle', 'কোন খেলা খেলবেন?')}</h2>
+          <p>{t('Find a real opponent online', 'অনলাইনে আসল প্রতিপক্ষ খুঁজুন')}</p>
+        </div>
+        <div className="gp2">
+          <button type="button" className="gp2-card quiz" onClick={() => (setPick(false), quick())}>
+            <span className="gp2-art" aria-hidden>
+              <svg viewBox="0 0 120 90">
+                <circle cx="60" cy="46" r="34" fill="rgba(255,255,255,.14)" />
+                <rect x="30" y="22" width="60" height="46" rx="10" fill="#fff" />
+                <rect x="38" y="31" width="44" height="6" rx="3" fill="#c7d2fe" />
+                <rect x="38" y="42" width="20" height="8" rx="4" fill="#22c55e" />
+                <rect x="62" y="42" width="20" height="8" rx="4" fill="#e0e7ff" />
+                <rect x="38" y="54" width="20" height="8" rx="4" fill="#e0e7ff" />
+                <rect x="62" y="54" width="20" height="8" rx="4" fill="#e0e7ff" />
+                <circle cx="94" cy="20" r="11" fill="#facc15" />
+                <path d="M94 13v8l5 3" stroke="#92400e" strokeWidth="2.6" fill="none" strokeLinecap="round" />
+                <path d="M18 70l14-14M18 56l14 14" stroke="#fde047" strokeWidth="4" strokeLinecap="round" />
+              </svg>
+            </span>
+            <b>{t('Quiz', 'কুইজ')}</b>
             <small>{t('1 vs 1 · ranked', '১ বনাম ১ · র‍্যাংকড')}</small>
+            <span className="gp2-go"><Icon name="search" size={16} /> {t('Find', 'খুঁজুন')}</span>
           </button>
-          <button type="button" onClick={() => (setPick(false), nav('/ludo/find?mode=1v1'))}>
-            <IconTile name="gamepad" tone="accent" size={48} />
-            <b>{t('Ludo battle', 'লুডু ব্যাটল')}</b>
+          <button type="button" className="gp2-card ludo" onClick={() => (setPick(false), nav('/ludo/find?mode=1v1'))}>
+            <span className="gp2-art" aria-hidden>
+              <svg viewBox="0 0 120 90">
+                <circle cx="60" cy="46" r="34" fill="rgba(255,255,255,.14)" />
+                <g transform="translate(32 18)">
+                  <rect width="56" height="56" rx="8" fill="#fff" />
+                  <rect x="3" y="3" width="23" height="23" rx="4" fill="#ef4444" />
+                  <rect x="30" y="3" width="23" height="23" rx="4" fill="#22c55e" />
+                  <rect x="3" y="30" width="23" height="23" rx="4" fill="#3b82f6" />
+                  <rect x="30" y="30" width="23" height="23" rx="4" fill="#facc15" />
+                  <circle cx="14.5" cy="14.5" r="5" fill="#fff" /><circle cx="41.5" cy="41.5" r="5" fill="#fff" />
+                </g>
+                <g transform="translate(86 46) rotate(14)">
+                  <rect x="-12" y="-12" width="24" height="24" rx="6" fill="#fff" stroke="#e9d5ff" strokeWidth="1.5" />
+                  <circle cx="-5" cy="-5" r="2.4" fill="#7c3aed" /><circle cx="5" cy="5" r="2.4" fill="#7c3aed" /><circle cx="0" cy="0" r="2.4" fill="#ec4899" />
+                </g>
+                <path d="M22 72a6 6 0 1 1 8 0l3 8H19z" fill="#3b82f6" stroke="#fff" strokeWidth="1.5" />
+              </svg>
+            </span>
+            <b>{t('Ludo', 'লুডু')}</b>
             <small>{t('1 vs 1 · online', '১ বনাম ১ · অনলাইন')}</small>
+            <span className="gp2-go"><Icon name="search" size={16} /> {t('Find', 'খুঁজুন')}</span>
           </button>
         </div>
       </Modal>

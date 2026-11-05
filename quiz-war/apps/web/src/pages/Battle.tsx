@@ -1,5 +1,5 @@
 import { isLudoLink } from '../lib/scanner';
-import { LudoHub } from './Ludo';
+import { LudoBanner } from '../components/LudoBanner';
 import { AI_LEVEL_DIFFICULTY, AI_LEVELS, type AiLevel, type BattleRequestView, type Difficulty } from '@quizwar/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
@@ -128,13 +128,8 @@ function Requests() {
 export default function Battle({ tab: initialTab }: { tab?: 'play' | 'requests' }) {
   const t = useT();
   const lang = useLang();
-  const [params, setParams] = useSearchParams();
-  // The tab lives in the address (?game=ludo), so Back from a Ludo screen returns to Ludo.
-  const [tab, setTabState] = useState<'play' | 'ludo' | 'requests'>(params.get('game') === 'ludo' ? 'ludo' : (initialTab ?? 'play'));
-  const setTab = (v: 'play' | 'ludo' | 'requests') => {
-    setTabState(v);
-    if (v !== 'requests') setParams(v === 'ludo' ? { game: 'ludo' } : {}, { replace: true });
-  };
+  const [params] = useSearchParams();
+  const [tab, setTab] = useState<'play' | 'requests'>(params.get('tab') === 'requests' ? 'requests' : (initialTab ?? 'play'));
   const pending = useQuery({ queryKey: ['battle-requests'], queryFn: () => api<{ incoming: any[]; outgoing: any[] }>('/battles/requests'), refetchInterval: 30000 });
   const pendingCount = (pending.data?.incoming.length ?? 0) + (pending.data?.outgoing.length ?? 0);
   const loc = useLocation();
@@ -165,25 +160,17 @@ export default function Battle({ tab: initialTab }: { tab?: 'play' | 'requests' 
       <div className="page stack battle-page">
         <PageHeader title={t('Battle', 'ব্যাটল')} />
         <div className="tabs" role="tablist">
-          <button role="tab" aria-selected={tab === 'play'} onClick={() => setTab('play')}><Icon name="brain" /> {t('Quiz', 'কুইজ')}</button>
-          <button role="tab" aria-selected={tab === 'ludo'} onClick={() => setTab('ludo')}><Icon name="gamepad" /> {t('Ludo', 'লুডু')}</button>
-        </div>
-        {tab !== 'requests' && pendingCount > 0 && (
-          <button type="button" className="pending-card" onClick={() => setTab('requests')}>
-            <IconTile name="swords" tone="danger" size={36} />
-            <span className="grow"><b>{t('Challenges waiting', 'চ্যালেঞ্জ অপেক্ষায়')}</b><small>{t(`${pendingCount} pending`, `${num(pendingCount, lang)}টি চ্যালেঞ্জ`)}</small></span>
-            <Icon name="chevron" />
+          <button role="tab" aria-selected={tab === 'play'} onClick={() => setTab('play')}><Icon name="gamepad" /> {t('Play', 'খেলুন')}</button>
+          <button role="tab" aria-selected={tab === 'requests'} onClick={() => setTab('requests')}>
+            <Icon name="swords" /> {t('Challenges', 'চ্যালেঞ্জ')}
+            {pendingCount > 0 && <span className="tab-badge">{num(pendingCount, lang)}</span>}
           </button>
-        )}
+        </div>
         {tab === 'requests' ? (
-          <>
-            <button type="button" className="btn sm soft" style={{ alignSelf: 'flex-start' }} onClick={() => setTab('play')}><Icon name="back" /> {t('Back to games', 'খেলায় ফিরুন')}</button>
-            <Requests />
-          </>
-        ) : tab === 'ludo' ? (
-          <div className="ludo-embed"><LudoHub top={false} /></div>
+          <Requests />
         ) : (
           <>
+            <LudoBanner slim />
             <div className="section-label"><Icon name="grid" size={14} /> {t('Category', 'ক্যাটাগরি')}</div>
             <CategoryPicker value={category} onChange={setCategory} />
 

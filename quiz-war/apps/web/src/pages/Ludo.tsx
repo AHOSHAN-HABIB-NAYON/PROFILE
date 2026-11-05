@@ -61,7 +61,7 @@ export default function LudoMenu() {
   return (
     <div className="ludo-stage hub">
       <header className="ludo-top">
-        <button className="ludo-round" aria-label={t('Back', 'ফিরে যান')} onClick={() => (history.length > 1 ? nav(-1) : nav('/battle?game=ludo'))}><Icon name="back" size={22} /></button>
+        <button className="ludo-round" aria-label={t('Back', 'ফিরে যান')} onClick={() => (history.length > 1 ? nav(-1) : nav('/'))}><Icon name="back" size={22} /></button>
         <b>{t('Ludo', 'লুডু')}</b>
         <span className="ludo-round ghost" />
       </header>
@@ -519,6 +519,19 @@ function LudoReactBar({ onSend }: { onSend: (r: string) => void }) {
  * Browser / phone Back during a game: stay on the page and ask first (like a quiz match).
  * An extra history entry with the same address absorbs the Back press; it re-arms each time.
  */
+let ludoExiting = false;
+/**
+ * Leave a game screen by going BACK to where the player came from (hub, Home, Battle…),
+ * so the finished game is not left behind in history (Back would open it again).
+ */
+function exitLudo(nav: ReturnType<typeof useNavigate>) {
+  ludoExiting = true;
+  window.setTimeout(() => (ludoExiting = false), 800);
+  const st = history.state as { idx?: number; qwLudoGuard?: boolean } | null;
+  if ((st?.idx ?? 0) >= 1) history.go(st?.qwLudoGuard ? -2 : -1);
+  else nav('/ludo', { replace: true });
+}
+
 function useBackGuard(active: boolean, onBack: () => void) {
   const cb = useRef(onBack);
   cb.current = onBack;
@@ -527,13 +540,14 @@ function useBackGuard(active: boolean, onBack: () => void) {
     const marker = { ...(history.state ?? {}), qwLudoGuard: true };
     history.pushState(marker, '');
     const onPop = () => {
+      if (ludoExiting) return;
       history.pushState(marker, '');
       cb.current();
     };
     window.addEventListener('popstate', onPop);
     return () => {
       window.removeEventListener('popstate', onPop);
-      if (history.state?.qwLudoGuard) history.back();
+      if (!ludoExiting && history.state?.qwLudoGuard) history.back();
     };
   }, [active]);
 }
@@ -586,7 +600,7 @@ export function LudoGame() {
   const overRef = useRef(false);
   overRef.current = phase === 'over';
   useEffect(() => {
-    const on = () => (overRef.current ? nav('/ludo') : setLeaving(true));
+    const on = () => (overRef.current ? exitLudo(nav) : setLeaving(true));
     window.addEventListener('qw:leave-ludo', on);
     return () => window.removeEventListener('qw:leave-ludo', on);
   }, [nav]);
@@ -747,7 +761,7 @@ export function LudoGame() {
   return (
     <div className="ludo-stage play">
       <header className="ludo-top">
-        <button className="ludo-round" aria-label={t('Leave game', 'খেলা ছাড়ুন')} onClick={() => (phase === 'over' ? nav('/ludo') : setLeaving(true))}><Icon name="back" size={22} /></button>
+        <button className="ludo-round" aria-label={t('Leave game', 'খেলা ছাড়ুন')} onClick={() => (phase === 'over' ? exitLudo(nav) : setLeaving(true))}><Icon name="back" size={22} /></button>
         <b>{mode === 'ai' ? t(`Ludo · ${LEVELS[level][0]}`, `লুডু · ${LEVELS[level][1]}`) : t('Ludo · one phone', 'লুডু · এক ফোনে')}</b>
         <button className="ludo-round" aria-label={sound ? t('Sound off', 'সাউন্ড বন্ধ') : t('Sound on', 'সাউন্ড চালু')} onClick={() => setSettings({ sound: !sound })}><Icon name={sound ? 'volume' : 'mute'} size={20} /></button>
       </header>
@@ -810,7 +824,7 @@ export function LudoGame() {
         <p>{t('The game will end.', 'খেলাটি শেষ হয়ে যাবে।')}</p>
         <div className="modal-actions">
           <button className="btn outline" onClick={() => setLeaving(false)}>{t('Stay', 'থাকুন')}</button>
-          <button className="btn danger" onClick={() => nav('/ludo', { replace: true })}>{t('Leave', 'ছেড়ে যান')}</button>
+          <button className="btn danger" onClick={() => exitLudo(nav)}>{t('Leave', 'ছেড়ে যান')}</button>
         </div>
       </Modal>
 
@@ -823,7 +837,7 @@ export function LudoGame() {
           actions={
             <>
               <button className="btn primary" onClick={restart}><Icon name="refresh" /> {t('Play again', 'আবার খেলুন')}</button>
-              <button className="btn outline" onClick={() => nav('/ludo')}>{t('Menu', 'মেনু')}</button>
+              <button className="btn outline" onClick={() => exitLudo(nav)}>{t('Menu', 'মেনু')}</button>
             </>
           }
         />
@@ -999,7 +1013,7 @@ export function LudoJoin() {
         } catch (e: any) {
           if (e?.code !== 'network') {
             toast.error(t('Could not join', 'যোগ দেওয়া গেল না'), e?.message);
-            if (!off) nav('/ludo', { replace: true });
+            if (!off) exitLudo(nav);
             return;
           }
           await sleep(800);
@@ -1112,7 +1126,7 @@ export function LudoOnline() {
     return () => void s.off('ludo:reaction', on);
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    const on = () => (finishedRef.current ? nav('/ludo') : setLeaving(true));
+    const on = () => (finishedRef.current ? exitLudo(nav) : setLeaving(true));
     window.addEventListener('qw:leave-ludo', on);
     return () => window.removeEventListener('qw:leave-ludo', on);
   }, [nav]);
@@ -1218,7 +1232,7 @@ export function LudoOnline() {
       <div className="ludo-stage" style={{ display: 'grid', placeItems: 'center' }}>
         <div className="lo-card">
           <h2>{t('This game is over', 'খেলাটি শেষ হয়ে গেছে')}</h2>
-          <button className="btn primary" onClick={() => nav('/ludo', { replace: true })}>{t('Ludo menu', 'লুডু মেনু')}</button>
+          <button className="btn primary" onClick={() => exitLudo(nav)}>{t('Ludo menu', 'লুডু মেনু')}</button>
         </div>
       </div>
     );
@@ -1236,7 +1250,7 @@ export function LudoOnline() {
   const voicePlayers = others.map((s) => ({ userId: s.userId, name: s.name, avatar: s.avatar, ...(snap.teams && mySeat ? { side: s.team === mySeat.team ? ('mine' as const) : ('opp' as const) } : {}) }));
   const leave = () => {
     void ludoAct('ludo:leave', snap.id);
-    nav('/ludo', { replace: true });
+    exitLudo(nav);
   };
 
   /* ------------------------------ Lobby ------------------------------ */
@@ -1360,7 +1374,7 @@ export function LudoOnline() {
   return (
     <div className="ludo-stage play">
       <header className="ludo-top">
-        <button className="ludo-round" aria-label={t('Leave game', 'খেলা ছাড়ুন')} onClick={() => (finished ? nav('/ludo') : setLeaving(true))}><Icon name="back" size={22} /></button>
+        <button className="ludo-round" aria-label={t('Leave game', 'খেলা ছাড়ুন')} onClick={() => (finished ? exitLudo(nav) : setLeaving(true))}><Icon name="back" size={22} /></button>
         <b>{snap.teams ? t('Ludo · 2 vs 2', 'লুডু · ২ বনাম ২') : snap.kind === 'quick' ? t('Ludo · online', 'লুডু · অনলাইন') : t('Ludo · room', 'লুডু · রুম')}</b>
         <button className="ludo-round" aria-label={sound ? t('Sound off', 'সাউন্ড বন্ধ') : t('Sound on', 'সাউন্ড চালু')} onClick={() => setSettings({ sound: !sound })}><Icon name={sound ? 'volume' : 'mute'} size={20} /></button>
       </header>
@@ -1407,7 +1421,7 @@ export function LudoOnline() {
               : ' '}
       </p>
 
-      {others.length > 0 && !finished && <VoiceBar className="dark" roomId={snap.id} players={voicePlayers} autoJoin={snap.kind === 'room'} />}
+      {others.length > 0 && !finished && <VoiceBar className="dark" roomId={snap.id} players={voicePlayers} />}
       {!finished && mySeat && <LudoReactBar onSend={(r) => void emit('ludo:react', { gameId: snap.id, reaction: r }).catch(() => undefined)} />}
 
       <LeaveModal open={leaving} onClose={() => setLeaving(false)} onLeave={leave} quick={snap.size === 2 && !snap.teams} />
