@@ -36,6 +36,7 @@ public class QwBillingPlugin extends Plugin implements PurchasesUpdatedListener 
         client = BillingClient.newBuilder(getContext())
             .setListener(this)
             .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
+            .enableAutoServiceReconnection()
             .build();
     }
 
@@ -57,7 +58,8 @@ public class QwBillingPlugin extends Plugin implements PurchasesUpdatedListener 
             .setProductList(Collections.singletonList(
                 QueryProductDetailsParams.Product.newBuilder().setProductId(id).setProductType(BillingClient.ProductType.SUBS).build()))
             .build();
-        client.queryProductDetailsAsync(params, (r, list) -> {
+        client.queryProductDetailsAsync(params, (r, result) -> {
+            List<ProductDetails> list = result == null ? null : result.getProductDetailsList();
             if (r.getResponseCode() != BillingClient.BillingResponseCode.OK || list == null || list.isEmpty()) {
                 call.reject("Subscription not found: " + id, "not_found");
                 return;
