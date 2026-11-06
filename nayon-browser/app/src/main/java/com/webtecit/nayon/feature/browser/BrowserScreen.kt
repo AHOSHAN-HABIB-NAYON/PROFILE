@@ -81,7 +81,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-private val TopBarHeight = 56.dp
+private val TopBarHeight = TOOLBAR_HEIGHT
 private val BottomBarHeight = 52.dp
 
 @Composable

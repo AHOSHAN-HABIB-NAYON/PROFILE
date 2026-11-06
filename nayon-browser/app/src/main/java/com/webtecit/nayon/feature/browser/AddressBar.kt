@@ -124,11 +124,11 @@ fun TopToolbar(
 
     Box(modifier.background(if (isPrivate) scheme.surfaceContainerHigh else scheme.surface)) {
         Row(
-            Modifier.fillMaxWidth().height(56.dp).padding(horizontal = Spacing.xs).animateContentSize(tween(180)),
+            Modifier.fillMaxWidth().height(TOOLBAR_HEIGHT).padding(horizontal = Spacing.xs).animateContentSize(tween(180)),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             SideButtons(visible = compact && !focused) {
-                IconButton(onClick = onHome) { Icon(Icons.Outlined.Home, stringResource(R.string.action_home)) }
+                IconButton(onClick = onHome, modifier = Modifier.size(44.dp)) { Icon(Icons.Outlined.Home, stringResource(R.string.action_home), modifier = Modifier.size(22.dp)) }
             }
             if (!(compact && !focused)) Spacer(Modifier.width(Spacing.sm))
 
@@ -136,7 +136,7 @@ fun TopToolbar(
             Row(
                 Modifier
                     .weight(1f)
-                    .height(44.dp)
+                    .height(40.dp)
                     .clip(CircleShape)
                     .background(if (isPrivate) scheme.surfaceContainerHighest else scheme.surfaceContainerHigh)
                     .then(if (focused) Modifier.border(1.5.dp, scheme.primary, CircleShape) else Modifier),
@@ -148,7 +148,7 @@ fun TopToolbar(
                         value = if (focused) field else TextFieldValue(UrlResolver.displayHost(pageUrl)),
                         onValueChange = { if (focused) { field = it; onTextChange(it.text) } },
                         singleLine = true,
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = scheme.onSurface, fontSize = 16.sp),
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = scheme.onSurface, fontSize = 15.sp),
                         cursorBrush = SolidColor(scheme.primary),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go, autoCorrectEnabled = false),
                         keyboardActions = KeyboardActions(onGo = { onSubmit(field.text) }),
@@ -168,7 +168,7 @@ fun TopToolbar(
                                 isPrivate -> R.string.address_hint_private
                                 else -> R.string.address_hint
                             }),
-                            style = MaterialTheme.typography.bodyLarge,
+                            style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp),
                             color = scheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
@@ -191,9 +191,9 @@ fun TopToolbar(
 
             SideButtons(visible = compact && !focused) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onNewTab) { Icon(Icons.Outlined.Add, stringResource(R.string.action_new_tab)) }
+                    IconButton(onClick = onNewTab, modifier = Modifier.size(44.dp)) { Icon(Icons.Outlined.Add, stringResource(R.string.action_new_tab), modifier = Modifier.size(22.dp)) }
                     TabsCountButton(tabCount, onTabs)
-                    IconButton(onClick = onMenu) { Icon(Icons.Filled.MoreVert, stringResource(R.string.action_menu)) }
+                    IconButton(onClick = onMenu, modifier = Modifier.size(44.dp)) { Icon(Icons.Filled.MoreVert, stringResource(R.string.action_menu), modifier = Modifier.size(22.dp)) }
                 }
             }
             if (!(compact && !focused)) Spacer(Modifier.width(Spacing.sm))
@@ -284,9 +284,9 @@ private fun PillTrailing(
 fun TabsCountButton(count: Int, onClick: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     val label = stringResource(R.string.action_tabs, count)
-    IconButton(onClick = onClick, modifier = Modifier.semantics { contentDescription = label }) {
+    IconButton(onClick = onClick, modifier = Modifier.size(44.dp).semantics { contentDescription = label }) {
         Box(
-            Modifier.size(22.dp).border(2.dp, scheme.onSurface, RoundedCornerShape(6.dp)).clearAndSetSemantics { },
+            Modifier.size(21.dp).border(2.dp, scheme.onSurface, RoundedCornerShape(6.dp)).clearAndSetSemantics { },
             contentAlignment = Alignment.Center,
         ) {
             Text(
@@ -298,3 +298,6 @@ fun TabsCountButton(count: Int, onClick: () -> Unit) {
         }
     }
 }
+
+/** Chrome-like slim toolbar height. */
+val TOOLBAR_HEIGHT = 52.dp
