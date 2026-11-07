@@ -2383,13 +2383,5 @@ button.px-more { width: 100%; border: 0; background: none; font: inherit; cursor
 .call-screen.wa-in .csw-arrows { top: -112px; gap: 12px; }
 .call-screen.wa-in .csw-arrows svg { margin: 0; width: 20px; height: 20px; }
 .call-screen.wa-in .wa-actions { padding-top: 120px; }
-/* Ludo result: nothing squeezes into each other; the page scrolls instead (bottom buttons always reachable). */
+/* Ludo result: rows never squeeze into each other; the page scrolls instead. */
 .ludo-over.full > * { flex-shrink: 0; }
-.ludo-over.full .lo-actions { position: sticky; bottom: calc(-16px - env(safe-area-inset-bottom)); margin-left: -16px; margin-right: -16px; padding: 10px 16px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, transparent, rgba(30,10,60,.85) 35%); z-index: 3; }
-@media (max-height: 820px) {
-  .ludo-over.full .lo-emblem { width: 130px; height: 112px; }
-  .ludo-over.full .lo-emblem .lo-core { transform: scale(.8); }
-  .ludo-over.full .lo-title { font-size: 27px; }
-  .ludo-over.full .lo-list li { padding: 6px 10px; }
-}
-.ludo-over.full .lo-list li b { color: #fff; }
