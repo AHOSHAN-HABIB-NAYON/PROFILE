@@ -10,6 +10,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)   // org.json comes from the Android framework
+@org.robolectric.annotation.Config(sdk = [34])
 class WebHubTest {
 
     @Test
