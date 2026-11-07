@@ -17,6 +17,9 @@ data class SitePermission(val origin: String, val kind: SiteKind, val allowed: B
 /** What happened when a site's sign-in was offered for saving. */
 enum class SaveCheck { NEW, UPDATE, SAME, NEVER }
 
+/** What a password import did. */
+data class ImportResult(val found: Int, val added: Int, val updated: Int, val unchanged: Int)
+
 /** Password vault and website permissions. All disk work runs off the main thread. */
 class SecurityRepository(db: SecurityDatabase, private val crypto: VaultCrypto = VaultCrypto()) {
     private val credentials = db.credentials()
@@ -97,6 +100,32 @@ class SecurityRepository(db: SecurityDatabase, private val crypto: VaultCrypto =
 
     suspend fun deleteAllPasswords() = withContext(Dispatchers.IO) {
         credentials.clear()
+    }
+
+    /** Every saved sign-in as a Chrome-compatible CSV file (passwords in plain text). */
+    suspend fun exportCsv(): String = withContext(Dispatchers.IO) {
+        PasswordCsv.write(credentials.allOnce().mapNotNull { c ->
+            val user = decrypt(c.usernameCipher) ?: return@mapNotNull null
+            val pass = decrypt(c.passwordCipher) ?: return@mapNotNull null
+            CsvLogin(name = c.origin.substringAfter("://"), url = c.origin + "/", username = user, password = pass)
+        })
+    }
+
+    /** Adds sign-ins from a password CSV. Same site + username replaces the stored password. */
+    suspend fun importCsv(text: String): ImportResult = withContext(Dispatchers.IO) {
+        val rows = PasswordCsv.read(text)
+        var added = 0
+        var updated = 0
+        var same = 0
+        rows.forEach { r ->
+            val origin = PasswordCsv.originOf(r.url) ?: return@forEach
+            when (check(origin, r.username, r.password)) {
+                SaveCheck.SAME -> same++
+                SaveCheck.UPDATE -> { save(origin, r.username, r.password); updated++ }
+                else -> { save(origin, r.username, r.password); added++ }
+            }
+        }
+        ImportResult(found = rows.size, added = added, updated = updated, unchanged = same)
     }
 
     private fun decrypt(cipher: String): String? = runCatching { crypto.decrypt(cipher) }.getOrNull()

@@ -3,7 +3,7 @@
 Status values: **Implemented**, **Partial**, **Planned**, **Unsupported**.
 "Testing evidence" lists only checks that actually run. CI = `.github/workflows/nayon-android.yml`.
 
-_Last updated: Stage 3 (storage & security)._
+_Last updated: home redesign, WebHub and password import/download._
 
 **Verification:** every push runs `.github/workflows/nayon-android.yml` (debug build, unit + Robolectric
 UI tests, lint, minified release APK and AAB). Items marked "Manual" in the evidence column still need
@@ -66,7 +66,9 @@ checking by hand on a real device.
 | Google account button (home) | Implemented | Shows the Google account signed in on the web (photo, name, email); sign in, manage account, sign out and Google apps. No sync of passwords/bookmarks/history | — | Manual |
 | AI Mode and Incognito buttons (home) | Implemented | AI Mode sends your question to Google AI Mode (google.com/search?udm=50) | — | Manual |
 | Real site icons (favicons), high resolution | Implemented | Uses the site's declared apple-touch/manifest icons (checked once a week per site) | — | Manual |
-| Home page: time-of-day sky scene, search, editable shortcuts, Quick access, Recent | Implemented | — | — | `newTabPageRendersInEveryThemeAndBrightness` |
+| Home page: time-of-day sky scene, search, editable shortcuts, Quick access, Recent | Implemented | Morning / afternoon / evening / night skies with a realistic sun (moon and twinkling stars at night), clouds, flying birds and layered hills | — | `newTabPageRendersInEveryThemeAndBrightness`; Manual |
+| Home bottom bar (Home, Downloads, WebHub, Passwords, Settings) | Implemented | Shown on the home page of normal tabs with the compact (top) toolbar layout | — | Manual |
+| WebHub: your own list of websites | Implemented | Add a site with name, address and optional category; name and category fill in automatically; the site's own logo is fetched from the site in the background (no page load). List or grid view (list by default), search, categories, edit, move to top, delete, open in new tab. Long-press any link → "Add to WebHub". Stored only on this phone | — | `WebHubTest`; Manual |
 | Downloads page (speed, time left, connections, pause/resume, type filters, date groups, thumbnails, storage use) | Implemented | — | — | Manual |
 | Clear browsing data time range | Implemented | Only history can be limited by date; cookies and cache are cleared completely | — | Manual |
 | Long-press menu for links and images (new tab, private tab, copy link/text, download, share, Lens) | Implemented | Uses WebView hit-testing; text long-press keeps the normal selection menu | — | Manual |
@@ -124,6 +126,8 @@ checking by hand on a real device.
 | Website permission prompts | Implemented | Camera, microphone, location and protected content. Chrome-style prompt: Allow while visiting / Allow this time / Don't allow, then Android's own permission dialog if needed. Private tabs never remember answers | Android permissions (asked only when a site needs them) | Manual |
 | Site settings | Implemented | Settings → Site settings lists every remembered decision; change or reset per site, or reset all. Also in Site information (tap the icon in the address bar) | — | Manual |
 | Password manager | Implemented | Settings → Passwords. Opening it needs fingerprint, face or screen lock. Search, show, copy (marked sensitive), open site, delete, delete all, "Never saved" list | Phone screen lock | Manual |
+| Password import / download | Implemented | Import from CSV (Chrome / Google Password Manager format; Firefox, Bitwarden and similar column names also read). Download as a Chrome-compatible CSV. Both ask for fingerprint, face or screen lock first; the downloaded file is not encrypted and the app warns about it | Phone screen lock | `PasswordCsvTest`; Manual |
+| Saving passwords to the Google account | Planned | Needs Google sign-in and sync (Stage 4). Until then passwords stay only on this phone | Google Cloud project, backend | — |
 | Password encryption | Implemented | AES-256-GCM with a key in the Android Keystore (hardware-backed where available). Usernames and passwords are both encrypted. Stored only on this phone; never uploaded | — | Manual |
 | Save password after sign-in | Implemented | Detects sign-in form submits on https pages (normal tabs only) through WebView's message channel; no Java object is exposed to pages. Save / Update / Never for this site / Not now | WebView with WEB_MESSAGE_LISTENER + DOCUMENT_START_SCRIPT (Android System WebView 86+) | Manual |
 | Fill saved password | Implemented | On a sign-in page of a site with saved passwords, a "Sign in as …" bar appears; filling happens only when you tap it and only if the tab is still on the same site | Same as above | Manual |

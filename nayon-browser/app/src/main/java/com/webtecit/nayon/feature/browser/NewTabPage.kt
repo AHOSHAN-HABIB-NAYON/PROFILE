@@ -102,6 +102,15 @@ import kotlinx.coroutines.delay
 import androidx.compose.ui.res.painterResource
 import androidx.compose.runtime.produceState
 import kotlin.random.Random
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.outlined.Bolt
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.Key
+import androidx.compose.material.icons.outlined.Language
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import kotlinx.coroutines.launch
 
 /** Everything the home page can do, grouped to keep the call site readable. */
 class HomeActions(
@@ -119,6 +128,9 @@ class HomeActions(
     val onRemoveRecent: (id: Long) -> Unit,
     val onAccount: () -> Unit = {},
     val onAiMode: () -> Unit = {},
+    val onOpenWebHub: () -> Unit = {},
+    val onOpenPasswords: () -> Unit = {},
+    val onOpenSettings: () -> Unit = {},
 )
 
 @Composable
@@ -134,11 +146,15 @@ fun NewTabPage(
     searchEngine: SearchEngine = SearchEngine.GOOGLE,
     googleSignedIn: Boolean = false,
     googleAccount: GoogleAccount? = null,
+    /** NAYON's bottom bar (Home, Downloads, WebHub, Passwords, Settings) on normal tabs. */
+    showNavBar: Boolean = false,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val scroll = rememberScrollState()
+    val nav = showNavBar && !isPrivate
     Box(modifier.fillMaxSize().background(scheme.surface), contentAlignment = Alignment.TopCenter) {
         Column(
-            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+            Modifier.fillMaxWidth().verticalScroll(scroll).padding(bottom = if (nav) 92.dp else 0.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (isPrivate) {
@@ -164,6 +180,89 @@ fun NewTabPage(
                     QuickAccess(actions)
                     if (recent.isNotEmpty()) RecentCard(recent, actions)
                     Footer(actions.onOpenAbout)
+                }
+            }
+        }
+        if (nav) {
+            val scope = androidx.compose.runtime.rememberCoroutineScope()
+            HomeNavBar(
+                onHome = { scope.launch { scroll.animateScrollTo(0) } },
+                actions = actions,
+                modifier = Modifier.align(Alignment.BottomCenter).widthIn(max = Layout.maxContentWidth)
+                    .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+            )
+        }
+    }
+}
+
+// ---- Bottom bar ------------------------------------------------------------------------
+
+/** Floating bar with WebHub raised in the middle. */
+@Composable
+private fun HomeNavBar(onHome: () -> Unit, actions: HomeActions, modifier: Modifier = Modifier) {
+    val scheme = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(26.dp)
+    Box(modifier.fillMaxWidth().height(84.dp), contentAlignment = Alignment.BottomCenter) {
+        Surface(
+            shape = shape, color = scheme.surfaceContainerLowest, tonalElevation = 2.dp,
+            border = androidx.compose.foundation.BorderStroke(1.dp, scheme.outlineVariant.copy(alpha = 0.35f)),
+            modifier = Modifier.fillMaxWidth().height(66.dp)
+                .shadow(14.dp, shape, ambientColor = scheme.primary.copy(alpha = 0.18f), spotColor = scheme.primary.copy(alpha = 0.22f)),
+        ) {}
+        Row(Modifier.fillMaxWidth().height(84.dp), verticalAlignment = Alignment.Bottom) {
+            NavItem(Icons.Filled.Home, stringResource(R.string.action_home), selected = true, onClick = onHome, modifier = Modifier.weight(1f))
+            NavItem(Icons.Outlined.Download, stringResource(R.string.action_downloads), onClick = actions.onOpenDownloads, modifier = Modifier.weight(1f))
+            Column(
+                Modifier.weight(1f).clip(RoundedCornerShape(20.dp)).clickable(role = Role.Button, onClick = actions.onOpenWebHub).padding(bottom = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Box(
+                    Modifier.size(58.dp).shadow(10.dp, CircleShape, spotColor = Color(0xFF5B3DF5)).clip(CircleShape)
+                        .background(Brush.linearGradient(listOf(Color(0xFF25B0FF), Color(0xFF5B3DF5), Color(0xFF8B3CFF))))
+                        .border(3.dp, scheme.surfaceContainerLowest, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) { Icon(Icons.Outlined.Language, null, tint = Color.White, modifier = Modifier.size(28.dp)) }
+                Spacer(Modifier.height(2.dp))
+                Text(stringResource(R.string.webhub_title), style = MaterialTheme.typography.labelSmall, color = scheme.primary,
+                    fontWeight = FontWeight.SemiBold, maxLines = 1)
+            }
+            NavItem(Icons.Outlined.Key, stringResource(R.string.nav_passwords), onClick = actions.onOpenPasswords, modifier = Modifier.weight(1f))
+            NavItem(Icons.Outlined.Settings, stringResource(R.string.action_settings), onClick = actions.onOpenSettings, modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun NavItem(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier, selected: Boolean = false) {
+    val scheme = MaterialTheme.colorScheme
+    Box(modifier.height(66.dp), contentAlignment = Alignment.Center) {
+        Column(
+            Modifier.clip(RoundedCornerShape(16.dp)).background(if (selected) scheme.primary.copy(alpha = 0.12f) else Color.Transparent)
+                .clickable(role = Role.Button, onClick = onClick).padding(horizontal = Spacing.md, vertical = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(icon, null, tint = if (selected) scheme.primary else scheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
+            Spacer(Modifier.height(2.dp))
+            Text(label, style = MaterialTheme.typography.labelSmall, color = if (selected) scheme.primary else scheme.onSurface,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+/** Section title with a small coloured icon, and an optional "See all". */
+@Composable
+private fun SectionTitle(icon: ImageVector, title: String, onSeeAll: (() -> Unit)? = null) {
+    val scheme = MaterialTheme.colorScheme
+    Row(Modifier.fillMaxWidth().padding(start = Spacing.xs), verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, null, tint = scheme.primary, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(Spacing.sm))
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+        if (onSeeAll != null) {
+            Surface(onClick = onSeeAll, shape = CircleShape, color = scheme.primary.copy(alpha = 0.1f)) {
+                Row(Modifier.padding(horizontal = Spacing.md, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.ntp_see_all), style = MaterialTheme.typography.labelLarge, color = scheme.primary)
+                    Spacer(Modifier.width(4.dp))
+                    Icon(Icons.AutoMirrored.Outlined.ArrowForward, null, tint = scheme.primary, modifier = Modifier.size(16.dp))
                 }
             }
         }
@@ -196,22 +295,56 @@ private fun rememberNow(periodMs: Long): Long {
     return now
 }
 
-/** Sky-and-mountains scene that follows the time of day, like the NAYON mock-up. */
+/** Colours and light for one time of day. */
+private class SkyStyle(
+    val sky: List<Color>,
+    val waves: List<Color>,
+    val text: Color,
+    val sub: Color,
+    val core: List<Color>,
+    val glow: Color,
+    val birds: Color?,
+    val cloud: Float,
+    val cloudShade: Color,
+)
+
+private fun styleOf(scene: Scene): SkyStyle = when (scene) {
+    Scene.MORNING -> SkyStyle(
+        listOf(Color(0xFF8EC5FF), Color(0xFFC3B5FF), Color(0xFFFFD6C4)),
+        listOf(Color(0x8CF3DCEF), Color(0xFFC7B4EC), Color(0xFF9A86D6), Color(0xFF6E5BB8)),
+        Color(0xFF1B1838), Color(0xFF2D2752),
+        listOf(Color(0xFFFFFAF0), Color(0xFFFFE2B0), Color(0xFFFFC285)), Color(0xFFFFE6C8), Color(0xFF2C2550), 0.85f, Color(0xFFE3D6F4),
+    )
+    Scene.DAY -> SkyStyle(
+        listOf(Color(0xFF5AB4F0), Color(0xFF86CDF6), Color(0xFFB9E3FB), Color(0xFFDCF1FD)),
+        listOf(Color(0x8CC6E8FB), Color(0xFF6FB8F0), Color(0xFF2F86E6), Color(0xFF1A5FD8)),
+        Color(0xFF13265C), Color(0xFF1D3270),
+        listOf(Color(0xFFFFFDF0), Color(0xFFFFF1B0), Color(0xFFFFD970)), Color(0xFFFFF6C8), Color(0xFF1B2A55), 0.92f, Color(0xFFD4E9F8),
+    )
+    Scene.EVENING -> SkyStyle(
+        listOf(Color(0xFF35205F), Color(0xFF9C3F86), Color(0xFFF08A5D), Color(0xFFFFC07A)),
+        listOf(Color(0x8CE98A8A), Color(0xFFC45A8C), Color(0xFF7A2F84), Color(0xFF3F1A5C)),
+        Color.White, Color(0xFFFFE9F2),
+        listOf(Color(0xFFFFF1C8), Color(0xFFFFB057), Color(0xFFFF6A2E)), Color(0xFFFFB36B), Color(0xFF2B1240), 0.5f, Color(0xFFD98FA6),
+    )
+    Scene.NIGHT -> SkyStyle(
+        listOf(Color(0xFF0B1030), Color(0xFF1D1B56), Color(0xFF3A2C7A)),
+        listOf(Color(0x8C4A3C8F), Color(0xFF2F2870), Color(0xFF211C55), Color(0xFF141038)),
+        Color.White, Color(0xFFD9D6FF),
+        emptyList(), Color(0xFFDCD8FF), null, 0f, Color.Transparent,
+    )
+}
+
+/**
+ * Sky card that follows the time of day: a realistic sun (or moon and stars at night) sitting
+ * in open sky below the account button, soft clouds, flying birds and layered hills.
+ */
 @Composable
 private fun SkyHero(signedIn: Boolean, account: GoogleAccount?, onAccount: () -> Unit, search: @Composable () -> Unit) {
     val context = LocalContext.current
     val minute = rememberNow(30_000L)
     val scene = remember(minute / 60_000L) { sceneNow() }
-    val (sky, orbColor, hills, textColor) = when (scene) {
-        Scene.MORNING -> Quad(listOf(Color(0xFF7DB7FF), Color(0xFFB9A8FF), Color(0xFFFFCFBF)), Color(0xFFFFF1C1),
-            listOf(Color(0xFF8E7CC3), Color(0xFF6C5CA8), Color(0xFF4B3F86)), Color(0xFF1B1530))
-        Scene.DAY -> Quad(listOf(Color(0xFF2F7CF0), Color(0xFF69AEFC), Color(0xFFC3DCFF)), Color(0xFFFFF3C4),
-            listOf(Color(0xFF5F86D8), Color(0xFF4A6FC4), Color(0xFF2F4F9E)), Color(0xFF0F1B3D))
-        Scene.EVENING -> Quad(listOf(Color(0xFF3B1E6E), Color(0xFFB83E8A), Color(0xFFF6A15A)), Color(0xFFFFD08A),
-            listOf(Color(0xFF6B2E7A), Color(0xFF4A1F5E), Color(0xFF2B1240)), Color.White)
-        Scene.NIGHT -> Quad(listOf(Color(0xFF0B1030), Color(0xFF1D1B56), Color(0xFF3A2C7A)), Color(0xFFF1EFFF),
-            listOf(Color(0xFF2A2563), Color(0xFF1C1847), Color(0xFF110E30)), Color.White)
-    }
+    val style = remember(scene) { styleOf(scene) }
     val greeting = when (scene) {
         Scene.MORNING -> R.string.ntp_greeting_morning
         Scene.DAY -> R.string.ntp_greeting_afternoon
@@ -219,80 +352,113 @@ private fun SkyHero(signedIn: Boolean, account: GoogleAccount?, onAccount: () ->
         Scene.NIGHT -> R.string.ntp_greeting_night
     }
     val date = remember(minute / 3_600_000L) { DateUtils.formatDateTime(context, System.currentTimeMillis(), DateUtils.FORMAT_SHOW_WEEKDAY or DateUtils.FORMAT_SHOW_DATE) }
-    val stars = remember { List(18) { Offset(0.3f + Random.nextFloat() * 0.65f, 0.05f + Random.nextFloat() * 0.5f) } }
-    val shape = RoundedCornerShape(28.dp)
-    // A small flock crossing the sky by day; at night the stars twinkle instead.
+    val stars = remember { List(28) { Offset(Random.nextFloat(), Random.nextFloat()) } }
+    val shape = RoundedCornerShape(26.dp)
     val motion = rememberInfiniteTransition(label = "sky")
-    val flight by motion.animateFloat(0f, 1f, infiniteRepeatable(tween(16_000, easing = LinearEasing)), label = "flight")
+    val flight by motion.animateFloat(0f, 1f, infiniteRepeatable(tween(18_000, easing = LinearEasing)), label = "flight")
     val flap by motion.animateFloat(0f, 1f, infiniteRepeatable(tween(520, easing = LinearEasing), RepeatMode.Reverse), label = "flap")
-    val twinkle by motion.animateFloat(0.45f, 0.95f, infiniteRepeatable(tween(1_800), RepeatMode.Reverse), label = "twinkle")
-    val birdColor = if (scene == Scene.EVENING) Color(0xFF2B1240) else Color(0xFF1E2A4A)
+    val twinkle by motion.animateFloat(0.35f, 1f, infiniteRepeatable(tween(1_600), RepeatMode.Reverse), label = "twinkle")
 
     Box(
-        Modifier.fillMaxWidth().widthIn(max = Layout.maxContentWidth).padding(horizontal = Spacing.md).padding(top = Spacing.sm)
-            .height(192.dp).shadow(6.dp, shape, ambientColor = sky.first().copy(alpha = 0.4f), spotColor = sky.first().copy(alpha = 0.4f))
+        Modifier.fillMaxWidth().widthIn(max = Layout.maxContentWidth).padding(horizontal = Spacing.md).padding(top = Spacing.xs)
+            .height(214.dp).shadow(8.dp, shape, ambientColor = style.sky.first().copy(alpha = 0.45f), spotColor = style.sky.first().copy(alpha = 0.45f))
             .clip(shape),
     ) {
         Canvas(Modifier.fillMaxSize()) {
-            drawRect(Brush.linearGradient(sky, start = Offset.Zero, end = Offset(size.width * 0.6f, size.height)))
-            if (scene == Scene.NIGHT) stars.forEachIndexed { i, it ->
-                val a = if (i % 3 == 0) twinkle else 0.75f
-                drawCircle(Color.White.copy(alpha = a), radius = 1.5.dp.toPx(), center = Offset(it.x * size.width, it.y * size.height))
+            val u = 1.dp.toPx()
+            val w = size.width
+            val h = size.height
+            drawRect(Brush.verticalGradient(style.sky))
+            // Sun / moon: in open sky to the right, clear of the account button.
+            val (ox, oy, r) = when (scene) {
+                Scene.MORNING -> Triple(w - 66 * u, 98 * u, 15 * u)
+                Scene.DAY -> Triple(w - 70 * u, 88 * u, 15 * u)
+                Scene.EVENING -> Triple(w - 62 * u, 128 * u, 21 * u)
+                Scene.NIGHT -> Triple(w - 70 * u, 88 * u, 14 * u)
             }
-            // Sun by day, a crescent moon at night — to the left of the account button.
-            val r = 15.dp.toPx()
-            val orb = Offset(size.width - 88.dp.toPx(), 40.dp.toPx())
-            drawCircle(Brush.radialGradient(listOf(orbColor.copy(alpha = 0.5f), Color.Transparent), center = orb, radius = r * 3.2f),
-                radius = r * 3.2f, center = orb)
+            val orb = Offset(ox, oy)
             if (scene == Scene.NIGHT) {
-                val moon = Path().apply { addOval(Rect(orb, r)) }
-                val bite = Path().apply { addOval(Rect(orb + Offset(r * 0.55f, -r * 0.35f), r * 0.9f)) }
-                drawPath(Path().apply { op(moon, bite, PathOperation.Difference) }, orbColor)
-            } else {
-                drawCircle(orbColor, radius = r, center = orb)
-            }
-            // Two soft hills along the bottom, behind the search bar.
-            fun ridge(baseY: Float, amp: Float, phase: Int, color: Color) {
-                val p = Path().apply {
-                    moveTo(0f, size.height)
-                    lineTo(0f, size.height * baseY)
-                    val steps = 4
-                    for (i in 1..steps) {
-                        val x = size.width * i / steps
-                        val peak = size.height * (baseY - amp * (if ((i + phase) % 2 == 0) 1f else 0.4f))
-                        quadraticTo(x - size.width / steps / 2, peak, x, size.height * baseY)
-                    }
-                    lineTo(size.width, size.height)
-                    close()
+                stars.forEachIndexed { i, s ->
+                    val p = Offset(w - 160 * u + s.x * 156 * u, 6 * u + s.y * 102 * u)
+                    if ((p - orb).getDistance() < 30 * u || (p.x > w - 70 * u && p.y < 66 * u)) return@forEachIndexed
+                    val a = if (i % 3 == 0) twinkle else 0.55f + (i % 4) * 0.1f
+                    drawCircle(Color.White.copy(alpha = a), radius = (0.6f + (i % 4) * 0.35f) * u, center = p)
                 }
-                drawPath(p, color)
+                drawSoftGlow(orb, r * 3.4f, style.glow, 0.5f)
+                drawCircle(
+                    Brush.radialGradient(listOf(Color(0xFFFBFAF5), Color(0xFFE6E3D8), Color(0xFFC9C5B8)), center = orb - Offset(r * 0.2f, r * 0.24f), radius = r * 1.25f),
+                    radius = r, center = orb,
+                )
+                val crater = Color(0xFF9D9888).copy(alpha = 0.28f)
+                drawOval(crater, topLeft = orb + Offset(-10 * u, -8 * u), size = androidx.compose.ui.geometry.Size(10 * u, 8 * u))
+                drawOval(crater, topLeft = orb + Offset(0f, -0.2f * u), size = androidx.compose.ui.geometry.Size(8 * u, 6.4f * u))
+                drawCircle(crater, radius = 2 * u, center = orb + Offset(-3 * u, 7 * u))
+                drawCircle(crater, radius = 1.6f * u, center = orb + Offset(6 * u, -7 * u))
+            } else {
+                // Sunlit sky, then the bloom, then the white-hot disc.
+                drawCircle(
+                    Brush.radialGradient(0f to style.glow.copy(alpha = 0.55f), 0.5f to style.glow.copy(alpha = 0.15f), 1f to Color.Transparent,
+                        center = orb, radius = 170 * u),
+                    radius = 170 * u, center = orb,
+                )
+                drawCircle(
+                    Brush.radialGradient(0f to Color.White.copy(alpha = 0.95f), 0.35f to style.glow.copy(alpha = 0.55f), 1f to Color.Transparent,
+                        center = orb, radius = r * 3.6f),
+                    radius = r * 3.6f, center = orb,
+                )
+                drawCircle(
+                    Brush.radialGradient(0f to Color.White, 0.55f to style.core[0], 0.85f to style.core[1], 1f to style.core[2], center = orb, radius = r),
+                    radius = r, center = orb,
+                )
+                drawCircle(Color(0xFFBFF7D0).copy(alpha = 0.18f), radius = 6 * u, center = orb + Offset(-46 * u, 20 * u))
+                drawCircle(Color(0xFFCFE3FF).copy(alpha = 0.18f), radius = 3 * u, center = orb + Offset(-70 * u, 31 * u))
             }
-            ridge(0.80f, 0.10f, 0, hills[0].copy(alpha = 0.55f))
-            ridge(0.88f, 0.07f, 1, hills[1].copy(alpha = 0.65f))
-            if (scene != Scene.NIGHT) {
-                // Each bird: start offset, height, size, flap phase. They drift across with a gentle rise and fall.
+            if (style.cloud > 0f) {
+                drawCloud(Offset(w - 30 * u, 134 * u), 0.9f * u, style.cloud, style.cloudShade)
+                drawCloud(Offset(w - 126 * u, 124 * u), 0.55f * u, style.cloud * 0.85f, style.cloudShade)
+            }
+            style.birds?.let { color ->
                 BIRDS.forEach { b ->
                     val p = (flight + b.delay) % 1f
-                    val x = -24.dp.toPx() + p * (size.width + 48.dp.toPx())
-                    val y = size.height * b.y + kotlin.math.sin((p * 6.283f * 1.5f) + b.delay * 10f) * 5.dp.toPx()
-                    val wing = if (b.flip) 1f - flap else flap
-                    drawBird(Offset(x, y), b.size.dp.toPx(), wing, birdColor.copy(alpha = 0.72f))
+                    val x = -24 * u + p * (w + 48 * u)
+                    val y = h * b.y + kotlin.math.sin((p * 6.283f * 1.5f) + b.delay * 10f) * 5 * u
+                    drawBird(Offset(x, y), b.size * u, if (b.flip) 1f - flap else flap, color.copy(alpha = 0.72f))
                 }
             }
+            // Four layered hills; the evening sun sets behind them.
+            val sx = w / 388f
+            val top = h - 106 * u
+            fun wave(y0: Float, c1: Offset, p1: Offset, c2: Offset, p2: Offset, color: Color) {
+                val path = Path().apply {
+                    moveTo(0f, top + y0 * u)
+                    quadraticTo(c1.x * sx, top + c1.y * u, p1.x * sx, top + p1.y * u)
+                    quadraticTo(c2.x * sx, top + c2.y * u, p2.x * sx, top + p2.y * u)
+                    lineTo(w, h); lineTo(0f, h); close()
+                }
+                drawPath(path, color)
+            }
+            wave(34f, Offset(90f, 6f), Offset(190f, 26f), Offset(290f, 46f), Offset(388f, 18f), style.waves[0])
+            wave(52f, Offset(110f, 24f), Offset(214f, 46f), Offset(318f, 68f), Offset(388f, 36f), style.waves[1])
+            wave(70f, Offset(130f, 46f), Offset(240f, 64f), Offset(350f, 82f), Offset(388f, 54f), style.waves[2])
+            wave(86f, Offset(150f, 68f), Offset(270f, 82f), Offset(390f, 96f), Offset(388f, 76f), style.waves[3])
         }
-        Column(Modifier.fillMaxSize().padding(start = Spacing.lg, end = Spacing.md, top = Spacing.md, bottom = Spacing.md)) {
+        Column(Modifier.fillMaxSize().padding(start = Spacing.lg + Spacing.xs, end = Spacing.md, top = Spacing.md, bottom = Spacing.md)) {
             Row(verticalAlignment = Alignment.Top) {
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        NayonLogo(size = 24.dp)
-                        Spacer(Modifier.width(Spacing.sm))
-                        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleSmall, color = textColor,
-                            fontWeight = FontWeight.Bold)
+                        com.webtecit.nayon.core.designsystem.component.NayonLogoBadge(size = 40.dp)
+                        Spacer(Modifier.width(Spacing.md))
+                        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium, color = style.text, fontWeight = FontWeight.Bold)
                     }
-                    Spacer(Modifier.height(Spacing.xs))
-                    Text(stringResource(greeting), style = MaterialTheme.typography.headlineSmall, color = textColor,
-                        fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.semantics { heading() })
-                    Text(date, style = MaterialTheme.typography.bodySmall, color = textColor.copy(alpha = 0.85f))
+                    Spacer(Modifier.height(Spacing.sm))
+                    Text(stringResource(greeting), style = MaterialTheme.typography.headlineMedium, color = style.text,
+                        fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.semantics { heading() })
+                    Spacer(Modifier.height(2.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.CalendarMonth, null, tint = style.sub, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text(date, style = MaterialTheme.typography.bodyMedium, color = style.sub, maxLines = 1)
+                    }
                 }
                 AccountButton(signedIn, account, onAccount)
             }
@@ -300,6 +466,21 @@ private fun SkyHero(signedIn: Boolean, account: GoogleAccount?, onAccount: () ->
             search()
         }
     }
+}
+
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawSoftGlow(c: Offset, radius: Float, color: Color, alpha: Float) {
+    drawCircle(Brush.radialGradient(listOf(color.copy(alpha = alpha), Color.Transparent), center = c, radius = radius), radius = radius, center = c)
+}
+
+/** A soft cumulus cloud; [s] is pixels per design unit. */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCloud(c: Offset, s: Float, alpha: Float, shade: Color) {
+    val white = Color.White.copy(alpha = alpha)
+    drawOval(shade.copy(alpha = alpha), topLeft = c + Offset(-34 * s, -1 * s), size = androidx.compose.ui.geometry.Size(68 * s, 18 * s))
+    drawCircle(white, 11 * s, c + Offset(-18 * s, 2 * s))
+    drawCircle(white, 15 * s, c + Offset(-2 * s, -6 * s))
+    drawCircle(white, 11 * s, c + Offset(16 * s, 0f))
+    drawCircle(white, 7 * s, c + Offset(28 * s, 5 * s))
+    drawOval(white, topLeft = c + Offset(-28 * s, 0f), size = androidx.compose.ui.geometry.Size(60 * s, 12 * s))
 }
 
 /** Chrome-style account avatar: Google account sign-in, management and Google apps. */
@@ -341,11 +522,11 @@ private class Bird(val delay: Float, val y: Float, val size: Float, val flip: Bo
 
 /** A loose flock: different heights, sizes and wing timing so it looks natural. */
 private val BIRDS = listOf(
-    Bird(0.00f, 0.30f, 9f, false),
-    Bird(0.04f, 0.24f, 7f, true),
-    Bird(0.07f, 0.34f, 6f, false),
-    Bird(0.52f, 0.20f, 8f, true),
-    Bird(0.56f, 0.27f, 5.5f, false),
+    Bird(0.00f, 0.22f, 8f, false),
+    Bird(0.04f, 0.17f, 6.5f, true),
+    Bird(0.07f, 0.26f, 5.5f, false),
+    Bird(0.52f, 0.15f, 7f, true),
+    Bird(0.56f, 0.21f, 5f, false),
 )
 
 /** A bird seen from afar: two curved wings that flap ([wing] 0 = down, 1 = up). */
@@ -359,7 +540,6 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawBird(c: Offset,
     drawPath(p, color, style = androidx.compose.ui.graphics.drawscope.Stroke(width = span * 0.22f, cap = androidx.compose.ui.graphics.StrokeCap.Round))
 }
 
-private data class Quad(val sky: List<Color>, val sun: Color, val hills: List<Color>, val text: Color)
 
 @Composable
 private fun PrivateHero() {
@@ -473,7 +653,12 @@ private fun ModeButton(icon: ImageVector, label: String, onClick: () -> Unit, mo
 private fun ShortcutsCard(shortcuts: List<HomeShortcut>, actions: HomeActions) {
     val scheme = MaterialTheme.colorScheme
     var adding by rememberSaveable { mutableStateOf(false) }
-    Surface(shape = RoundedCornerShape(28.dp), color = scheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
+    Surface(
+        shape = RoundedCornerShape(26.dp), color = scheme.surfaceContainerLowest,
+        border = androidx.compose.foundation.BorderStroke(1.dp, scheme.outlineVariant.copy(alpha = 0.35f)),
+        modifier = Modifier.fillMaxWidth().shadow(6.dp, RoundedCornerShape(26.dp), ambientColor = scheme.primary.copy(alpha = 0.12f),
+            spotColor = scheme.primary.copy(alpha = 0.12f)),
+    ) {
         BoxWithConstraints(Modifier.padding(vertical = Spacing.md, horizontal = Spacing.xs)) {
             val columns = if (maxWidth < 300.dp) 3 else if (maxWidth > 520.dp) 6 else 4
             val tiles: List<HomeShortcut?> = shortcuts + listOf(null)   // null = "Add"
@@ -495,7 +680,8 @@ private fun ShortcutsCard(shortcuts: List<HomeShortcut>, actions: HomeActions) {
                                     verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                                 ) {
                                     Box(
-                                        Modifier.size(56.dp).clip(CircleShape).background(scheme.surfaceContainerLowest)
+                                        Modifier.size(56.dp).shadow(3.dp, CircleShape, spotColor = scheme.primary.copy(alpha = 0.3f))
+                                            .clip(CircleShape).background(scheme.surfaceContainerLowest)
                                             .border(1.dp, scheme.outlineVariant.copy(alpha = 0.5f), CircleShape),
                                         contentAlignment = Alignment.Center,
                                     ) {
@@ -549,26 +735,26 @@ private fun AddShortcutDialog(onDismiss: () -> Unit, onAdd: (String, String) -> 
 @Composable
 private fun QuickAccess(actions: HomeActions) {
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-        Text(stringResource(R.string.ntp_quick_access), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(start = Spacing.xs))
+        SectionTitle(Icons.Outlined.Bolt, stringResource(R.string.ntp_quick_access))
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            QuickTile(Icons.Outlined.Bookmarks, stringResource(R.string.action_bookmarks), Color(0xFF6366F1), actions.onOpenBookmarks, Modifier.weight(1f))
-            QuickTile(Icons.Outlined.History, stringResource(R.string.action_history), Color(0xFF0EA5E9), actions.onSeeHistory, Modifier.weight(1f))
-            QuickTile(Icons.Outlined.Download, stringResource(R.string.action_downloads), Color(0xFF10B981), actions.onOpenDownloads, Modifier.weight(1f))
-            QuickTile(Icons.Outlined.Translate, stringResource(R.string.ntp_translate), Color(0xFFA855F7),
+            QuickTile(Icons.Outlined.Bookmarks, stringResource(R.string.action_bookmarks), Color(0xFF7B2FF2), actions.onOpenBookmarks, Modifier.weight(1f))
+            QuickTile(Icons.Outlined.History, stringResource(R.string.action_history), Color(0xFF1D7FE0), actions.onSeeHistory, Modifier.weight(1f))
+            QuickTile(Icons.Outlined.Download, stringResource(R.string.action_downloads), Color(0xFF12A776), actions.onOpenDownloads, Modifier.weight(1f))
+            QuickTile(Icons.Outlined.Translate, stringResource(R.string.ntp_translate), Color(0xFF6A35E8),
                 { actions.onOpenUrl("https://translate.google.com") }, Modifier.weight(1f))
         }
     }
 }
 
+/** A soft tinted tile in the icon's own colour, readable in light and dark themes. */
 @Composable
 private fun QuickTile(icon: ImageVector, label: String, color: Color, onClick: () -> Unit, modifier: Modifier) {
-    Surface(onClick = onClick, shape = RoundedCornerShape(22.dp), color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = modifier) {
-        Column(Modifier.padding(vertical = Spacing.md), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-            Box(Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(Brush.linearGradient(listOf(color, color.copy(alpha = 0.7f)))),
-                contentAlignment = Alignment.Center) {
-                Icon(icon, null, tint = Color.White, modifier = Modifier.size(22.dp))
-            }
-            Text(label, style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Surface(onClick = onClick, shape = RoundedCornerShape(20.dp), color = color.copy(alpha = 0.12f), modifier = modifier.height(76.dp)) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            Icon(icon, null, tint = color, modifier = Modifier.size(26.dp))
+            Spacer(Modifier.height(6.dp))
+            Text(label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(horizontal = Spacing.xs))
         }
     }
 }
@@ -581,11 +767,11 @@ private fun RecentCard(recent: List<HistoryEntry>, actions: HomeActions) {
     val newest = recent.maxOfOrNull { it.visitedAt } ?: 0L
     val now = rememberNow(if (System.currentTimeMillis() - newest < 60_000L) 1_000L else 30_000L)
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.ntp_recent), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f).padding(start = Spacing.xs))
-            TextButton(onClick = actions.onSeeHistory) { Text(stringResource(R.string.ntp_see_all)) }
-        }
-        Surface(shape = RoundedCornerShape(24.dp), color = scheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
+        SectionTitle(Icons.Outlined.Schedule, stringResource(R.string.ntp_recent), onSeeAll = actions.onSeeHistory)
+        Surface(
+            shape = RoundedCornerShape(22.dp), color = scheme.surfaceContainerLowest,
+            border = androidx.compose.foundation.BorderStroke(1.dp, scheme.outlineVariant.copy(alpha = 0.35f)), modifier = Modifier.fillMaxWidth(),
+        ) {
             Column {
                 recent.forEach { e ->
                     var menu by remember { mutableStateOf(false) }

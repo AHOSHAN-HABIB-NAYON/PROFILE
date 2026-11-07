@@ -553,4 +553,42 @@
     <string name="af_set_other_apps_desc">Google, 1Password and others can also fill in NAYON pages (new tabs)</string>
     <string name="af_set_provider">Android autofill provider</string>
     <string name="af_set_provider_desc">Change your phone\'s autofill and password service</string>
+
+    <!-- Home bottom bar & WebHub -->
+    <string name="action_ok">OK</string>
+    <string name="nav_passwords">Passwords</string>
+    <string name="webhub_title">WebHub</string>
+    <string name="webhub_subtitle">Your websites, one tap away</string>
+    <string name="webhub_add">Add site</string>
+    <string name="webhub_add_link">Add to WebHub</string>
+    <string name="webhub_added">Added to WebHub</string>
+    <string name="webhub_open">Open</string>
+    <string name="webhub_edit">Edit site</string>
+    <string name="webhub_all">All %1$d</string>
+    <string name="webhub_search">Search your websites</string>
+    <string name="webhub_site_name">Site name</string>
+    <string name="webhub_category">Category (optional)</string>
+    <string name="webhub_logo_note">The name and category fill in by themselves, and the site's own logo is added automatically. You can change any of them.</string>
+    <string name="webhub_move_top">Move to top</string>
+    <string name="webhub_view_list">Show as list</string>
+    <string name="webhub_view_grid">Show as grid</string>
+    <string name="webhub_empty_title">No websites yet</string>
+    <string name="webhub_no_match">No matching websites</string>
+    <string name="webhub_empty_body">Add the sites you use most and open any of them with one tap.</string>
+
+    <!-- Password import / download -->
+    <string name="passwords_import">Import passwords</string>
+    <string name="passwords_import_desc">From a CSV file exported by Chrome, Google Password Manager, Firefox, Bitwarden and others</string>
+    <string name="passwords_import_done">Imported: %1$d new, %2$d updated, %3$d already saved.</string>
+    <string name="passwords_import_failed">No passwords were found in that file. Choose a password CSV file.</string>
+    <string name="passwords_export">Download passwords</string>
+    <string name="passwords_export_desc">Save all passwords as a CSV file you can import into Chrome or another password manager</string>
+    <string name="passwords_export_warning">The downloaded file is NOT encrypted. Anyone who can open the file can read every password in it. Keep it somewhere safe and delete it when you no longer need it.</string>
+    <string name="passwords_export_confirm">Download</string>
+    <string name="passwords_export_done">Passwords downloaded</string>
+    <string name="passwords_storage">Saved on this device</string>
+    <string name="passwords_storage_desc">Passwords are encrypted and stored only on this phone. Saving to your Google account will come with sign-in and sync in a later version.</string>
+    <string name="password_use_saved_title">Use saved password?</string>
+    <string name="password_sign_in_to">You\'ll sign in to %1$s</string>
+    <string name="password_manage">Manage passwords</string>
 </resources>

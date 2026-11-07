@@ -56,6 +56,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
 import com.webtecit.nayon.R
 import com.webtecit.nayon.core.browser.UrlResolver
 import com.webtecit.nayon.core.designsystem.component.SiteIcon
@@ -185,36 +187,69 @@ fun SavePasswordSheet(offer: PasswordOffer, onSave: () -> Unit, onNever: () -> U
     }
 }
 
-/** A slim bar on sign-in pages: "Sign in as …" with the saved accounts for this site. */
+/**
+ * "Use saved password?" sheet on sign-in pages, like Chrome's: the site it signs in to, then each
+ * saved account for this site as a card with the site's logo. One tap fills and signs in.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FillPasswordBar(offer: FillOffer, onFill: (Long) -> Unit, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+fun FillPasswordBar(
+    offer: FillOffer,
+    onFill: (Long) -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    onManage: () -> Unit = {},
+) {
     val scheme = MaterialTheme.colorScheme
-    var menu by remember { mutableStateOf(false) }
-    val first = offer.logins.first()
-    Surface(shape = RoundedCornerShape(28.dp), color = scheme.inverseSurface, shadowElevation = 8.dp, modifier = modifier) {
-        Row(Modifier.padding(start = Spacing.lg, end = Spacing.xs).height(52.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Outlined.Key, null, tint = scheme.inversePrimary, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(Spacing.md))
-            Box(Modifier.weight(1f)) {
-                Text(
-                    stringResource(R.string.password_fill_as, first.username.ifBlank { stringResource(R.string.password_no_username) }),
-                    color = scheme.inverseOnSurface, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(role = Role.Button) {
-                        if (offer.logins.size == 1) onFill(first.id) else menu = true
-                    }.padding(vertical = Spacing.sm),
-                )
-                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                    offer.logins.forEach { login ->
-                        DropdownMenuItem(
-                            text = { Text(login.username.ifBlank { stringResource(R.string.password_no_username) }) },
-                            leadingIcon = { Icon(Icons.Outlined.Key, null) },
-                            onClick = { menu = false; onFill(login.id) },
-                        )
+    val host = UrlResolver.displayHost(offer.origin)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = scheme.surfaceContainerLow,
+    ) {
+        Column(
+            modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = Spacing.lg).padding(bottom = Spacing.md),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(
+                Modifier.size(56.dp).clip(CircleShape)
+                    .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(0xFF25B0FF), Color(0xFF5B3DF5), Color(0xFF8B3CFF)))),
+                contentAlignment = Alignment.Center,
+            ) { Icon(Icons.Filled.Key, null, tint = Color.White, modifier = Modifier.size(28.dp)) }
+            Spacer(Modifier.height(Spacing.lg))
+            Text(stringResource(R.string.password_use_saved_title), style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(Spacing.xs))
+            Text(stringResource(R.string.password_sign_in_to, host), style = MaterialTheme.typography.bodyLarge,
+                color = scheme.onSurfaceVariant, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(Spacing.xl))
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp)), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                offer.logins.forEach { login ->
+                    val loginHost = UrlResolver.displayHost(login.origin)
+                    Row(
+                        Modifier.fillMaxWidth().background(scheme.surfaceContainerHighest.copy(alpha = 0.6f))
+                            .clickable(role = Role.Button) { onFill(login.id) }
+                            .padding(horizontal = Spacing.lg, vertical = Spacing.lg),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        SiteIcon(login.origin, loginHost, size = 40.dp)
+                        Spacer(Modifier.width(Spacing.lg))
+                        Column(Modifier.weight(1f)) {
+                            if (loginHost != host) {
+                                Text(loginHost, style = MaterialTheme.typography.bodyMedium, color = scheme.onSurfaceVariant,
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                            Text(login.username.ifBlank { stringResource(R.string.password_no_username) }, style = MaterialTheme.typography.titleMedium,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text("•••••••••••", style = MaterialTheme.typography.titleMedium, color = scheme.onSurfaceVariant, letterSpacing = 2.sp)
+                        }
                     }
                 }
             }
-            IconButton(onClick = onDismiss) { Icon(Icons.Filled.Close, stringResource(R.string.action_close), tint = scheme.inverseOnSurface) }
+            Spacer(Modifier.height(Spacing.md))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                TextButton(onClick = { onDismiss(); onManage() }) { Text(stringResource(R.string.password_manage)) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.password_not_now)) }
+            }
         }
     }
 }

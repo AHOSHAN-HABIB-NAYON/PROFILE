@@ -38,7 +38,7 @@ Private tabs are never written to history or saved tabs.
 - **Translate** opens the page through Google Translate's website, so Google receives the page address.
 - **Google Safe Browsing**: when available, Android System WebView may check addresses with Google to warn about dangerous sites.
 - **Downloads** are fetched by Android's download manager.
-- **Site icons**: to show sharp icons, NAYON Browser asks each site you visit (and each home shortcut) once a week for its own declared icon — the site's home page and icon files. No third-party icon service is used. Never for private tabs.
+- **Site icons**: to show sharp icons, NAYON Browser asks each site you visit (and each home shortcut or WebHub site) once a week for its own declared icon — the site's home page and icon files. No third-party icon service is used. Never for private tabs.
 - **Google Lens**: the camera is used only while the Lens screen is open (Android asks you for camera permission first). A photo you take or choose for Lens is shared with the Google app (or opens lens.google.com) only when you use the Lens button. Lens photos are kept in the app's cache and deleted after about an hour.
 - **Google account**: signing in to Google happens on Google's own web pages, like on any website. When you are signed in, NAYON asks accounts.google.com which account is signed in (sending only Google's own cookies, the same request Chrome makes) to show your name, email and photo on the home page. This stays in memory only; NAYON does not store or sync your account data.
 - Nothing is sent to the developer. There are **no analytics, advertising, crash-reporting or tracking SDKs**.
@@ -68,6 +68,10 @@ published yet.)_
 
 - Passwords you choose to save stay encrypted on your phone. NAYON does not upload, sync or
   share them. Uninstalling the app or "Delete all passwords" removes them.
+- "Download passwords" writes a CSV file to a place you choose. That file is **not encrypted**;
+  NAYON asks for your screen lock first and warns you. "Import passwords" reads a CSV file you
+  choose, also only after your screen lock. Neither sends anything over the internet.
+- WebHub sites (name, address, category) are stored only on your phone.
 - Camera, microphone and location are used only by websites you allow, only while you use them.
   NAYON itself does not record, store or send this data. Your allow/block choices are stored on
   your phone and can be reset in Settings → Site settings.

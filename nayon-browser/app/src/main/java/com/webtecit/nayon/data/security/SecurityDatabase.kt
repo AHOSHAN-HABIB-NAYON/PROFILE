@@ -65,6 +65,9 @@ interface CredentialDao {
     @Query("SELECT * FROM credentials ORDER BY origin, id")
     fun all(): Flow<List<CredentialEntity>>
 
+    @Query("SELECT * FROM credentials ORDER BY origin, id")
+    suspend fun allOnce(): List<CredentialEntity>
+
     @Query("SELECT * FROM credentials WHERE origin = :origin ORDER BY lastUsedAt DESC, id")
     suspend fun forOrigin(origin: String): List<CredentialEntity>
 

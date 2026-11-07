@@ -46,6 +46,7 @@ object Routes {
     const val AUTOFILL_SETTINGS = "autofill_settings"
     const val AUTOFILL_GROUP = "autofill_group/{group}"
     const val AUTOFILL_EDIT = "autofill_edit/{kind}/{id}"
+    const val WEBHUB = "webhub"
 }
 
 private const val NAV_ANIM_MS = 220
@@ -89,7 +90,12 @@ fun NayonNavHost(
                 onOpenDownloads = { go(Routes.DOWNLOADS) },
                 onOpenSettings = { go(Routes.SETTINGS) },
                 onOpenAbout = { go(Routes.ABOUT) },
+                onOpenWebHub = { go(Routes.WEBHUB) },
+                onOpenPasswords = { go(Routes.PASSWORDS) },
             )
+        }
+        composable(Routes.WEBHUB) {
+            com.webtecit.nayon.feature.webhub.WebHubScreen(onBack = back, onOpen = openHere, onOpenNewTab = openNewTab)
         }
         // The tab switcher zooms in and out of the page, like a card stack.
         composable(

@@ -133,8 +133,8 @@ full-screen video, splash screen, landscape, large font sizes, TalkBack, and 60/
 
 - Websites must ask before using the camera, microphone or location; you can allow, allow once or block (Settings → Site settings).
 - Private-tab cookie isolation needs a WebView version with multi-profile support; older devices are told on the private page.
-- Downloads are handled by Android's download manager; there is no in-app downloads page yet.
-- Bookmark folders, import/export and the password manager are not built yet.
+- Bookmark folders and bookmark import/export are not built yet.
+- Passwords are saved only on this phone; saving them to a Google account needs sign-in and sync (planned).
 - Material You colours need Android 12+; the option is hidden on older versions.
 - Scheduled theme switches while the app is open; it does not run in the background.
 - See [FEATURES_STATUS.md](FEATURES_STATUS.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)

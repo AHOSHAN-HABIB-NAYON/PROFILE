@@ -33,6 +33,9 @@ class AppContainer(context: Context) {
 
     val browserPreferences = BrowserPreferencesRepository(context.settingsDataStore)
 
+    /** WebHub: the user's own list of websites. */
+    val webHub = com.webtecit.nayon.data.webhub.WebHubRepository(context.settingsDataStore)
+
     private val database: BrowserDatabase by lazy {
         Room.databaseBuilder(context, BrowserDatabase::class.java, "nayon_browser.db").build()
     }

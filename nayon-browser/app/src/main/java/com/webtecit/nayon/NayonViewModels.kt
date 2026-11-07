@@ -37,6 +37,7 @@ object NayonViewModelFactory {
             com.webtecit.nayon.feature.security.PasswordsViewModel(app().container.securityRepository, app().container.browserPreferences)
         }
         initializer { com.webtecit.nayon.feature.security.SiteSettingsViewModel(app().container.securityRepository) }
+        initializer { com.webtecit.nayon.feature.webhub.WebHubViewModel(app().container.webHub, app().container.faviconStore) }
         initializer {
             com.webtecit.nayon.feature.security.AutofillViewModel(app().container.securityRepository, app().container.browserPreferences)
         }

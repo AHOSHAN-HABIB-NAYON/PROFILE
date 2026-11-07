@@ -93,8 +93,13 @@ fun BrowserScreen(
     onOpenDownloads: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenAbout: () -> Unit,
+    onOpenWebHub: () -> Unit = {},
+    onOpenPasswords: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val webHub: com.webtecit.nayon.feature.webhub.WebHubViewModel =
+        androidx.lifecycle.viewmodel.compose.viewModel(factory = com.webtecit.nayon.NayonViewModelFactory.Factory)
+    var webHubDraft by remember { mutableStateOf<Pair<String, String>?>(null) }
     val focusManager = LocalFocusManager.current
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
@@ -249,6 +254,9 @@ fun BrowserScreen(
             onRemoveShortcut = { viewModel.removeShortcut(it) },
             onRemoveRecent = { viewModel.removeFromHistory(it) },
             onAccount = { showAccount = true },
+            onOpenWebHub = onOpenWebHub,
+            onOpenPasswords = onOpenPasswords,
+            onOpenSettings = onOpenSettings,
             onAiMode = { aiMode = true; focusRequester.requestFocus() },
         )
     }
@@ -388,6 +396,7 @@ fun BrowserScreen(
                                 searchEngine = prefs.searchEngine,
                                 googleSignedIn = remember(current.id, current.url, showAccount, googleAccount) { viewModel.googleSignedIn() },
                                 googleAccount = googleAccount,
+                                showNavBar = compact,
                             )
                         } else {
                             Box(Modifier.fillMaxSize()) {
@@ -421,8 +430,7 @@ fun BrowserScreen(
                         offer = fill,
                         onFill = viewModel::fillLogin,
                         onDismiss = viewModel::dismissFillOffer,
-                        modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = Spacing.lg, vertical = Spacing.lg)
-                            .widthIn(max = 520.dp).fillMaxWidth(),
+                        onManage = onOpenPasswords,
                     )
                 }
                 val af = autofillOffer
@@ -581,6 +589,28 @@ fun BrowserScreen(
             onDownload = { viewModel.downloadUrl(it, target.isPrivate) },
             onShare = { url -> shareText(context, url) },
             onLens = { url -> viewModel.newTab(LENS_BY_URL + java.net.URLEncoder.encode(url, "UTF-8")) },
+            onAddToWebHub = { url ->
+                val text = target.linkText?.trim()?.takeIf { it.isNotBlank() && it.length <= 40 }
+                webHubDraft = (text ?: com.webtecit.nayon.data.webhub.WebHubRepository.nameFor(url)) to url
+            },
+        )
+    }
+    webHubDraft?.let { (name, url) ->
+        val added = stringResource(R.string.webhub_added)
+        val open = stringResource(R.string.webhub_open)
+        com.webtecit.nayon.feature.webhub.WebSiteDialog(
+            title = stringResource(R.string.webhub_add_link),
+            initialName = name,
+            initialUrl = url,
+            initialCategory = "",
+            onDismiss = { webHubDraft = null },
+            onSave = { n, u, c ->
+                webHub.save(null, n, u, c)
+                webHubDraft = null
+                scope.launch {
+                    if (snackbar.showSnackbar(added, actionLabel = open, duration = SnackbarDuration.Short) == SnackbarResult.ActionPerformed) onOpenWebHub()
+                }
+            },
         )
     }
 

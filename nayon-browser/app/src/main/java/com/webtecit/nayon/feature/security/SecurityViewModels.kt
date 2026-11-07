@@ -26,6 +26,8 @@ class PasswordsViewModel(
     fun delete(id: Long) = viewModelScope.launch { security.delete(id) }
     fun allowSaving(origin: String) = viewModelScope.launch { security.allowSaving(origin) }
     fun deleteAll() = viewModelScope.launch { security.deleteAllPasswords() }
+    suspend fun exportCsv(): String = security.exportCsv()
+    suspend fun importCsv(text: String) = security.importCsv(text)
     fun setOfferToSave(enabled: Boolean) = viewModelScope.launch { prefs.setSavePasswords(enabled) }
 }
 

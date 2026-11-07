@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AddLink
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.CenterFocusWeak
 import androidx.compose.material.icons.outlined.Download
@@ -51,6 +52,7 @@ fun LinkContextSheet(
     onDownload: (String) -> Unit,
     onShare: (String) -> Unit,
     onLens: (String) -> Unit,
+    onAddToWebHub: (String) -> Unit = {},
 ) {
     val scheme = MaterialTheme.colorScheme
     val link = target.linkUrl
@@ -83,6 +85,7 @@ fun LinkContextSheet(
                 }
                 SettingsRow(stringResource(R.string.ctx_open_private), { act { onOpenPrivate(link) } }, icon = Icons.Outlined.VisibilityOff, showChevron = false)
                 SettingsRow(stringResource(R.string.ctx_open_here), { act { onOpenHere(link) } }, icon = Icons.Outlined.OpenInBrowser, showChevron = false)
+                SettingsRow(stringResource(R.string.webhub_add_link), { act { onAddToWebHub(link) } }, icon = Icons.Outlined.AddLink, showChevron = false)
                 SettingsRow(stringResource(R.string.ctx_copy_link), { act { onCopy(link) } }, icon = Icons.Outlined.ContentCopy, showChevron = false)
                 target.linkText?.let { text ->
                     SettingsRow(stringResource(R.string.ctx_copy_link_text), { act { onCopyText(text) } }, icon = Icons.Outlined.TextFields, showChevron = false)

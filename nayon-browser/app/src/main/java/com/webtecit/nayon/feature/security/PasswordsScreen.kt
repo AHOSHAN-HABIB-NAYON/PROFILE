@@ -7,6 +7,13 @@ import android.content.Context
 import android.os.Build
 import android.os.PersistableBundle
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.outlined.FileDownload
+import androidx.compose.material.icons.outlined.FileUpload
+import androidx.compose.material.icons.outlined.PhoneAndroid
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -100,6 +107,36 @@ fun PasswordsScreen(
     val unlockSubtitle = stringResource(R.string.passwords_unlock_subtitle)
 
     fun unlock() = DeviceLock.confirm(context, title, unlockSubtitle) { ok -> if (ok) unlocked = true }
+    var confirmExport by remember { mutableStateOf(false) }
+    var importMessage by remember { mutableStateOf<String?>(null) }
+    val exportTitle = stringResource(R.string.passwords_export)
+    val importTitle = stringResource(R.string.passwords_import)
+    val importFailed = stringResource(R.string.passwords_import_failed)
+    val exportDone = stringResource(R.string.passwords_export_done)
+    val res = context.resources
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
+        if (uri != null) scope.launch {
+            val ok = runCatching {
+                val csv = viewModel.exportCsv()
+                withContext(Dispatchers.IO) { context.contentResolver.openOutputStream(uri, "wt")!!.use { it.write(csv.toByteArray()) } }
+            }.isSuccess
+            Toast.makeText(context, if (ok) exportDone else importFailed, Toast.LENGTH_SHORT).show()
+        }
+    }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) scope.launch {
+            val result = runCatching {
+                val text = withContext(Dispatchers.IO) {
+                    context.contentResolver.openInputStream(uri)!!.use { it.readBytes().toString(Charsets.UTF_8) }
+                }
+                viewModel.importCsv(text)
+            }.getOrNull()
+            importMessage = when {
+                result == null || result.found == 0 -> importFailed
+                else -> res.getString(R.string.passwords_import_done, result.added, result.updated, result.unchanged)
+            }
+        }
+    }
     LaunchedEffect(Unit) { if (lockAvailable && !unlocked) unlock() }
 
     ScreenScaffold(title = title, onBack = onBack) {
@@ -136,6 +173,30 @@ fun PasswordsScreen(
                 SettingsRow(
                     stringResource(R.string.passwords_protection), {}, icon = Icons.Outlined.Shield,
                     subtitle = stringResource(R.string.passwords_protection_desc), showChevron = false,
+                )
+            }
+        }
+
+        item {
+            SettingsGroup(Modifier.padding(top = Spacing.md)) {
+                SettingsRow(
+                    importTitle, {
+                        // Every import asks for the phone's lock again, so nobody else can add or overwrite passwords.
+                        DeviceLock.confirm(context, importTitle, unlockSubtitle) { ok ->
+                            if (ok) importLauncher.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel", "application/octet-stream"))
+                        }
+                    },
+                    icon = Icons.Outlined.FileUpload, subtitle = stringResource(R.string.passwords_import_desc),
+                )
+                GroupDivider()
+                SettingsRow(
+                    exportTitle, { confirmExport = true },
+                    icon = Icons.Outlined.FileDownload, subtitle = stringResource(R.string.passwords_export_desc),
+                )
+                GroupDivider()
+                SettingsRow(
+                    stringResource(R.string.passwords_storage), {}, icon = Icons.Outlined.PhoneAndroid,
+                    subtitle = stringResource(R.string.passwords_storage_desc), showChevron = false,
                 )
             }
         }
@@ -223,6 +284,27 @@ fun PasswordsScreen(
             onConfirm = { viewModel.delete(login.id); revealed.remove(login.id); confirmDelete = null },
             onDismiss = { confirmDelete = null },
             destructive = true,
+        )
+    }
+    if (confirmExport) {
+        ConfirmDialog(
+            title = exportTitle,
+            body = stringResource(R.string.passwords_export_warning),
+            confirmLabel = stringResource(R.string.passwords_export_confirm),
+            dismissLabel = stringResource(R.string.action_cancel),
+            onConfirm = {
+                confirmExport = false
+                DeviceLock.confirm(context, exportTitle, unlockSubtitle) { ok -> if (ok) exportLauncher.launch("NAYON Passwords.csv") }
+            },
+            onDismiss = { confirmExport = false },
+        )
+    }
+    importMessage?.let { msg ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { importMessage = null },
+            title = { Text(stringResource(R.string.passwords_import)) },
+            text = { Text(msg) },
+            confirmButton = { TextButton(onClick = { importMessage = null }) { Text(stringResource(R.string.action_ok)) } },
         )
     }
     if (confirmDeleteAll) {
