@@ -63,14 +63,26 @@ function UpdatePrompt() {
     const id = setTimeout(() => void playUpdateCode().then(setPlayCode), 4000);
     return () => clearTimeout(id);
   }, []);
-  if (!isNative || !cfg) return null;
-  const code = appVersionCode();
+  // Dev only: /?previewUpdate=1 (or =force) shows the popup in a browser.
+  const preview = import.meta.env.DEV ? new URLSearchParams(location.search).get('previewUpdate') : null;
+  if ((!isNative && !preview) || !cfg) return null;
+  const code = preview ? 1 : appVersionCode();
   if (!code) return null;
-  const latest = Math.max(cfg.latestAppVersionCode, playCode ?? 0);
-  const forced = code < cfg.minAppVersionCode || (cfg.forceUpdate && code < cfg.latestAppVersionCode);
+  const latest = Math.max(cfg.latestAppVersionCode, playCode ?? 0, preview ? 2 : 0);
+  const forced = preview === 'force' || code < cfg.minAppVersionCode || (cfg.forceUpdate && code < cfg.latestAppVersionCode);
   const optional = !forced && code < latest && dismissed < latest;
   if (!forced && !optional) return null;
   const url = cfg.playStoreUrl || PLAY_URL;
+  // Admin writes "what's new" one item per line; a single sentence stays a sentence.
+  const lines = (cfg.updateMessage ?? '').split(/\n+/).map((l) => l.replace(/^[\s•\-*✓✔]+/, '').trim()).filter(Boolean);
+  const list = lines.length > 1 ? lines.slice(0, 5) : [];
+  const intro = lines.length === 1 ? lines[0] : null;
+  const defaults: [string, string, string][] = [
+    ['bolt', t('Faster and smoother', 'আরও দ্রুত আর স্মুথ'), 'c0'],
+    ['shield-check', t('Bugs fixed', 'সমস্যা ঠিক করা হয়েছে'), 'c1'],
+    ['sparkles', t('New features', 'নতুন ফিচার'), 'c2'],
+  ];
+  const later = () => (document.querySelector('dialog.modal[open]') as HTMLDialogElement | null)?.dispatchEvent(new Event('cancel', { cancelable: true }));
   return (
     <Modal
       open
@@ -85,21 +97,39 @@ function UpdatePrompt() {
         setDismissed(latest);
       }}
     >
-      <div className="m-art">
-        <IconTile name="rocket" tone="primary" size={76} anim="float" />
-      </div>
-      <h2>{forced ? t('Please update QUIZ WAR', 'QUIZ WAR আপডেট করুন') : t('A new version is here!', 'নতুন ভার্সন এসেছে!')}</h2>
-      <p>{cfg.updateMessage || t('New features and improvements are waiting for you.', 'নতুন ফিচার আর উন্নতি আপনার অপেক্ষায়।')}</p>
-      {forced && <p className="xs faint">{t('This version is no longer supported.', 'এই ভার্সনটি আর চালানো যাবে না।')}</p>}
-      <div className={`modal-actions ${forced ? 'one' : ''}`}>
-        {!forced && (
-          <button className="btn outline" onClick={() => (document.querySelector('dialog.modal[open]') as HTMLDialogElement | null)?.dispatchEvent(new Event('cancel', { cancelable: true }))}>
-            {t('Later', 'পরে')}
+      <div className={`pq upd${forced ? ' must' : ''}`}>
+        <div className="pq-top">
+          {!forced && <button type="button" className="pq-x" onClick={later} aria-label={t('Close', 'বন্ধ করুন')}><Icon name="close" size={18} /></button>}
+          <span className="pq-chip"><Icon name={forced ? 'shield' : 'sparkles'} size={14} /> {forced ? t('Important update', 'জরুরি আপডেট') : t('New update', 'নতুন আপডেট')}</span>
+          <div className="pq-row">
+            <div className="grow">
+              <h3>{forced ? t('Please update QUIZ WAR', 'QUIZ WAR আপডেট করুন') : t('A new version is here!', 'নতুন ভার্সন এসেছে!')}</h3>
+              <p>{intro ?? (forced ? t('This version is no longer supported. Update to keep playing.', 'এই ভার্সনটি আর চলবে না। খেলা চালিয়ে যেতে আপডেট করুন।') : t('Update now for the best experience.', 'সেরা অভিজ্ঞতার জন্য এখনই আপডেট করুন।'))}</p>
+            </div>
+            <span className="pq-big"><Icon name="rocket" size={34} /></span>
+          </div>
+        </div>
+        <div className="pq-body">
+          <b className="upd-h">{t("What's new", 'নতুন যা আছে')}</b>
+          {list.length ? (
+            <ul className="upd-list">
+              {list.map((l, i) => (
+                <li key={i}><i><Icon name="check" size={14} /></i>{l}</li>
+              ))}
+            </ul>
+          ) : (
+            <div className="pq-perks">
+              {defaults.map(([ic, label, c]) => (
+                <span key={c}><i className={c}><Icon name={ic} size={17} /></i>{label}</span>
+              ))}
+            </div>
+          )}
+          <button className="pv2-cta upd-cta" onClick={() => void openPlayUpdate(url)}>
+            <Icon name="download" size={20} /> {t('Update on Google Play', 'Google Play-তে আপডেট করুন')}
           </button>
-        )}
-        <button className="btn primary" onClick={() => void openPlayUpdate(url)}>
-          <Icon name="download" /> {t('Update on Google Play', 'Google Play-তে আপডেট')}
-        </button>
+          <small className="upd-note"><Icon name="shield-check" size={13} /> {t('Free · safe from Google Play · your data stays', 'ফ্রি · Google Play থেকে নিরাপদ · আপনার সব ডেটা থাকবে')}</small>
+          {!forced && <button className="pg-cancel" onClick={later}>{t('Later', 'পরে')}</button>}
+        </div>
       </div>
     </Modal>
   );

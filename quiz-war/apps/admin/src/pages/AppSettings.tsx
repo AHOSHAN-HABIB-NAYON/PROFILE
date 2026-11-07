@@ -260,7 +260,7 @@ function AppUpdate({ a }: { a: App }) {
       </div>
       <Toggle name="forceUpdate" label="Force update below the minimum version" hint="Players on older versions cannot play until they update." checked={a.forceUpdate} />
       <div className="field"><label htmlFor="up-url">Play Store URL</label><input id="up-url" name="playStoreUrl" type="url" className="input" maxLength={500} defaultValue={a.playStoreUrl || 'https://play.google.com/store/apps/details?id=app.quizwar.bd'} placeholder="https://play.google.com/store/apps/details?id=…" /></div>
-      <div className="field"><label htmlFor="up-msg">Update message</label><textarea id="up-msg" name="updateMessage" className="input" maxLength={300} rows={2} defaultValue={a.updateMessage} style={{ fontFamily: 'var(--font-bn)' }} /></div>
+      <div className="field"><label htmlFor="up-msg">What's new (one item per line)</label><textarea id="up-msg" name="updateMessage" className="input" maxLength={300} rows={4} placeholder={"কল ধরা এখন আরও সহজ\nলুডুতে সাথী বেছে নিন"} defaultValue={a.updateMessage} style={{ fontFamily: 'var(--font-bn)' }} /></div>
     </Card>
   );
 }
