@@ -94,7 +94,7 @@ class AppearanceScreenTest {
         for (f in families) for (b in Brightness.entries) {
             family = f; brightness = b
             compose.waitForIdle()
-            compose.onNodeWithText("Search or type web address").assertIsDisplayed()
+            compose.onNodeWithText("Search or type URL").assertIsDisplayed()
         }
     }
 }
