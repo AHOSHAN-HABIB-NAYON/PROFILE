@@ -74,7 +74,7 @@ public class MainActivity extends Activity {
 
     private static final int TEAL = 0xFF0F766E;
     private static final int REQ_FILE = 7, REQ_NOTIFY = 8, REQ_STORE = 9;
-    private String pendingDl;       // অনুমতির অপেক্ষায় থাকা ডাউনলোড (Android 9 ও আগের)
+    private String pendingDl, pendingName;   // অনুমতির অপেক্ষায় থাকা ডাউনলোড (Android 9 ও আগের)
 
     private final Handler ui = new Handler(Looper.getMainLooper());
     private FrameLayout frame;
@@ -282,23 +282,39 @@ public class MainActivity extends Activity {
 
         web.setDownloadListener(new DownloadListener() {
             @Override public void onDownloadStart(String url, String ua, String cd, String mime, long len) {
-                openOutside(url);
+                /* <a download> চাপলে WebView এখানে পাঠায় — আমাদের ছবি হলে গ্যালারিতে সেভ */
+                if (isOurImage(url)) download(url);
+                else openOutside(url);
             }
         });
     }
 
+    /** আমাদের সাইটের আপলোড করা ছবি কিনা */
+    private static boolean isOurImage(String url) {
+        try {
+            Uri u = Uri.parse(url);
+            String h = u.getHost() == null ? "" : u.getHost().toLowerCase();
+            String p = u.getPath() == null ? "" : u.getPath().toLowerCase();
+            return (h.equals(HOST) || h.endsWith("." + HOST)) && p.startsWith("/uploads/")
+                    && p.matches(".*\\.(jpe?g|png|webp|gif)$");
+        } catch (Exception e) { return false; }
+    }
+
+    private void download(String url) { download(url, null); }
+
     /** ছবি নামানো — Android-এর ডাউনলোড ম্যানেজার দিয়ে, নোটিফিকেশনে অগ্রগতি দেখায় */
-    private void download(String url) {
+    private void download(String url, String wantName) {
         if (Build.VERSION.SDK_INT < 29
                 && checkSelfPermission("android.permission.WRITE_EXTERNAL_STORAGE") != PackageManager.PERMISSION_GRANTED) {
-            pendingDl = url;
+            pendingDl = url; pendingName = wantName;
             requestPermissions(new String[]{"android.permission.WRITE_EXTERNAL_STORAGE"}, REQ_STORE);
             return;
         }
         try {
             Uri u = Uri.parse(url);
             String last = u.getLastPathSegment() == null ? "image.jpg" : u.getLastPathSegment();
-            String name = "chakri-circular-" + last.replaceAll("[^A-Za-z0-9._-]", "");
+            String name = (wantName != null && wantName.matches("[A-Za-z0-9._-]{3,120}"))
+                    ? wantName : "chakri-circular-" + last.replaceAll("[^A-Za-z0-9._-]", "");
             DownloadManager.Request r = new DownloadManager.Request(u)
                     .setTitle("চাকরি সার্কুলার — বিজ্ঞপ্তির ছবি")
                     .setDescription(name)
@@ -323,7 +339,7 @@ public class MainActivity extends Activity {
         String path = u.getPath() == null ? "" : u.getPath().toLowerCase();
         boolean ours = (sc.equals("https") || sc.equals("http")) && (h.equals(HOST) || h.endsWith("." + HOST));
         /* বিজ্ঞপ্তির ছবি "ডাউনলোড" — ফোনের গ্যালারিতে (Pictures/ChakriCircular) সেভ */
-        if (ours && path.startsWith("/uploads/") && path.matches(".*\\.(jpe?g|png|webp|gif)$")) {
+        if (isOurImage(url)) {
             download(url);
             return true;
         }
@@ -453,6 +469,13 @@ public class MainActivity extends Activity {
                 Intent s = new Intent(Intent.ACTION_SEND).setType("text/plain")
                         .putExtra(Intent.EXTRA_TEXT, (text == null ? "" : text + "\n") + url);
                 try { startActivity(Intent.createChooser(s, "অ্যাপ শেয়ার করুন")); } catch (Exception ignored) { }
+            } });
+        }
+        /** সাইটের ছবি ভিউয়ারের "ডাউনলোড" বোতাম — সরাসরি এখানে */
+        @JavascriptInterface public void download(final String url, final String name) {
+            ui.post(new Runnable() { public void run() {
+                if (isOurImage(url)) MainActivity.this.download(url, name);
+                else openOutside(url);
             } });
         }
         @JavascriptInterface public void rate() {
@@ -968,9 +991,9 @@ public class MainActivity extends Activity {
     public void onRequestPermissionsResult(int req, String[] perms, int[] res) {
         super.onRequestPermissionsResult(req, perms, res);
         if (req == REQ_STORE) {
-            String u = pendingDl; pendingDl = null;
+            String u = pendingDl, nm = pendingName; pendingDl = null; pendingName = null;
             if (u == null) return;
-            if (res.length > 0 && res[0] == PackageManager.PERMISSION_GRANTED) download(u);
+            if (res.length > 0 && res[0] == PackageManager.PERMISSION_GRANTED) download(u, nm);
             else Toast.makeText(this, "ছবি সেভ করতে স্টোরেজের অনুমতি লাগে", Toast.LENGTH_SHORT).show();
             return;
         }
