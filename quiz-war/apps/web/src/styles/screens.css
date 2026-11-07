@@ -2074,7 +2074,7 @@ dialog.modal:has(.pp-pop) { padding: 0; overflow: hidden; border-radius: 28px; }
 .pq.inv .pq-big { background: linear-gradient(160deg, #f472b6, #db2777); box-shadow: 0 10px 22px rgba(219,39,119,.3); }
 .pq-body { padding: 14px 16px 10px; display: flex; flex-direction: column; }
 .pq-perks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.pq-perks span { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px; border-radius: 16px; font-size: 12.5px; font-weight: 800; background: var(--surface-2, #f5f6fb); }
+.pq-perks span { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 10px 4px; border-radius: 16px; font-size: 12.5px; font-weight: 800; background: var(--surface-2, #f5f6fb); }
 .pq-perks i { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; color: #fff; }
 .pq-perks .c0 { background: #ec4899; } .pq-perks .c1 { background: #3b82f6; } .pq-perks .c2 { background: #10b981; }
 .pq-price { display: flex; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
