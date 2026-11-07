@@ -98,10 +98,29 @@ fun TopToolbar(
     onSiteInfo: () -> Unit,
     modifier: Modifier = Modifier,
     aiMode: Boolean = false,
+    /** Best earlier site or search starting with the typed text ("ca" → "cakricircular.com"). */
+    completion: (String) -> String? = { null },
+    onNewPrivateTab: () -> Unit = {},
 ) {
     val scheme = MaterialTheme.colorScheme
     var focused by remember { mutableStateOf(false) }
     var field by remember { mutableStateOf(TextFieldValue("")) }
+    // Length of what the user typed when the rest of the text is an inline completion (-1 = none).
+    var typedLength by remember { mutableStateOf(-1) }
+    fun onEdit(v: TextFieldValue) {
+        val oldTyped = if (typedLength >= 0) field.text.take(typedLength) else field.text
+        val atEnd = v.selection.collapsed && v.selection.end == v.text.length
+        val grew = v.text.length > oldTyped.length && v.text.startsWith(oldTyped)
+        val done = if (atEnd && grew && !aiMode) completion(v.text) else null
+        if (done != null && done.startsWith(v.text, ignoreCase = true)) {
+            field = TextFieldValue(v.text + done.substring(v.text.length), TextRange(v.text.length, done.length))
+            typedLength = v.text.length
+        } else {
+            field = v
+            typedLength = -1
+        }
+        onTextChange(v.text)
+    }
     val isPrivate = tab?.isPrivate == true
     val pageUrl = tab?.url?.takeIf { tab.isWebPage }
 
@@ -109,6 +128,7 @@ fun TopToolbar(
         if (focused) {
             val text = pageUrl.orEmpty()
             field = TextFieldValue(text, TextRange(0, text.length))
+            typedLength = -1
             onTextChange(text)
         }
     }
@@ -142,11 +162,11 @@ fun TopToolbar(
                     .then(if (focused) Modifier.border(1.5.dp, scheme.primary, CircleShape) else Modifier),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                SiteButton(tab, focused, onSiteInfo)
+                if (focused) PlusMenu(isPrivate, onNewTab, onNewPrivateTab, onLens) else SiteButton(tab, focused, onSiteInfo)
                 Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
                     BasicTextField(
                         value = if (focused) field else TextFieldValue(UrlResolver.displayHost(pageUrl)),
-                        onValueChange = { if (focused) { field = it; onTextChange(it.text) } },
+                        onValueChange = { if (focused) onEdit(it) },
                         singleLine = true,
                         textStyle = MaterialTheme.typography.bodyLarge.copy(color = scheme.onSurface, fontSize = 15.sp),
                         cursorBrush = SolidColor(scheme.primary),
@@ -181,7 +201,7 @@ fun TopToolbar(
                     tab = tab,
                     showReload = !compact,
                     voiceAvailable = voiceAvailable,
-                    onClear = { field = TextFieldValue(""); onTextChange("") },
+                    onClear = { field = TextFieldValue(""); typedLength = -1; onTextChange("") },
                     onVoice = onVoice,
                     onLens = onLens,
                     onReload = onReload,
@@ -206,6 +226,34 @@ fun TopToolbar(
                 color = scheme.primary,
                 trackColor = scheme.surface.copy(alpha = 0f),
                 drawStopIndicator = {},
+            )
+        }
+    }
+}
+
+/** "+" at the start of the focused address bar, like Chrome: new tab, Incognito tab, Lens. */
+@Composable
+private fun PlusMenu(isPrivate: Boolean, onNewTab: () -> Unit, onNewPrivateTab: () -> Unit, onLens: () -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box(Modifier.padding(start = 4.dp)) {
+        IconButton(onClick = { open = true }, modifier = Modifier.size(36.dp)) {
+            Icon(Icons.Outlined.Add, stringResource(R.string.action_new_tab), modifier = Modifier.size(22.dp))
+        }
+        androidx.compose.material3.DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            androidx.compose.material3.DropdownMenuItem(
+                text = { Text(stringResource(R.string.action_new_tab)) }, leadingIcon = { Icon(Icons.Outlined.Add, null) },
+                onClick = { open = false; if (isPrivate) onNewPrivateTab() else onNewTab() },
+            )
+            if (!isPrivate) {
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text(stringResource(R.string.ntp_incognito)) }, leadingIcon = { Icon(Icons.Outlined.VisibilityOff, null) },
+                    onClick = { open = false; onNewPrivateTab() },
+                )
+            }
+            androidx.compose.material3.DropdownMenuItem(
+                text = { Text(stringResource(R.string.action_lens)) },
+                leadingIcon = { Icon(painterResource(R.drawable.ic_google_lens), null, tint = Color.Unspecified, modifier = Modifier.size(22.dp)) },
+                onClick = { open = false; onLens() },
             )
         }
     }

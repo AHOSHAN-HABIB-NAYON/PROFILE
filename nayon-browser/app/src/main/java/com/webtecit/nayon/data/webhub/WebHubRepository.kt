@@ -14,7 +14,7 @@ import org.json.JSONObject
 import java.io.IOException
 
 /** A website saved in WebHub. [category] is optional ("" = none). */
-data class WebSite(val id: Long, val name: String, val url: String, val category: String = "", val addedAt: Long = 0)
+data class WebSite(val id: Long, val name: String, val url: String, val category: String = "", val addedAt: Long = 0, val pinned: Boolean = false)
 
 enum class WebHubView { LIST, GRID }
 
@@ -36,7 +36,9 @@ class WebHubRepository(private val dataStore: DataStore<Preferences>) {
 
     private val data = dataStore.data.catch { e -> if (e is IOException) emit(emptyPreferences()) else throw e }
 
-    val sites: Flow<List<WebSite>> = data.map { p -> p[sitesKey]?.let(::decode) ?: DefaultWebSites }.distinctUntilChanged()
+    /** Pinned sites first, each group in the user's order. */
+    val sites: Flow<List<WebSite>> = data.map { p -> (p[sitesKey]?.let(::decode) ?: DefaultWebSites).sortedByDescending { it.pinned } }
+        .distinctUntilChanged()
 
     /** List is the default. */
     val view: Flow<WebHubView> = data.map { p ->
@@ -56,8 +58,8 @@ class WebHubRepository(private val dataStore: DataStore<Preferences>) {
 
     suspend fun remove(id: Long) = update { list -> list.filterNot { it.id == id } }
 
-    /** Moves a site to the top of the list. */
-    suspend fun pin(id: Long) = update { list -> list.sortedByDescending { it.id == id } }
+    /** Pins a site to the top, or unpins it. */
+    suspend fun setPinned(id: Long, pinned: Boolean) = update { list -> list.map { if (it.id == id) it.copy(pinned = pinned) else it } }
 
     private suspend fun update(change: (List<WebSite>) -> List<WebSite>) = dataStore.edit { p ->
         val current = p[sitesKey]?.let(::decode) ?: DefaultWebSites
@@ -67,7 +69,7 @@ class WebHubRepository(private val dataStore: DataStore<Preferences>) {
     companion object {
         fun encode(list: List<WebSite>): String = JSONArray().apply {
             list.forEach { s ->
-                put(JSONObject().put("id", s.id).put("name", s.name).put("url", s.url).put("category", s.category).put("addedAt", s.addedAt))
+                put(JSONObject().put("id", s.id).put("name", s.name).put("url", s.url).put("category", s.category).put("addedAt", s.addedAt).put("pinned", s.pinned))
             }
         }.toString()
 
@@ -75,7 +77,7 @@ class WebHubRepository(private val dataStore: DataStore<Preferences>) {
             val arr = JSONArray(json)
             (0 until arr.length()).map { i ->
                 val o = arr.getJSONObject(i)
-                WebSite(o.getLong("id"), o.getString("name"), o.getString("url"), o.optString("category"), o.optLong("addedAt"))
+                WebSite(o.getLong("id"), o.getString("name"), o.getString("url"), o.optString("category"), o.optLong("addedAt"), o.optBoolean("pinned"))
             }
         }.getOrNull()
 

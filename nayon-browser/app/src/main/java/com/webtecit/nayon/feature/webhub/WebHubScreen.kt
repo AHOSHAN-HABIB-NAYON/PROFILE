@@ -35,6 +35,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.automirrored.outlined.ViewList
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Edit
@@ -103,7 +104,7 @@ class WebHubViewModel(private val repo: WebHubRepository, private val favicons: 
 
     fun setView(v: WebHubView) = viewModelScope.launch { repo.setView(v) }
     fun remove(id: Long) = viewModelScope.launch { repo.remove(id) }
-    fun pin(id: Long) = viewModelScope.launch { repo.pin(id) }
+    fun setPinned(id: Long, pinned: Boolean) = viewModelScope.launch { repo.setPinned(id, pinned) }
 
     /** Saves the site and fetches its own logo straight away, without opening the page. */
     fun save(existing: WebSite?, name: String, address: String, category: String) = viewModelScope.launch {
@@ -201,8 +202,8 @@ fun WebHubScreen(
                 }
                 val bottom = PaddingValues(start = Spacing.md, end = Spacing.md, top = Spacing.sm, bottom = 96.dp)
                 val menu: @Composable (WebSite, Boolean, () -> Unit) -> Unit = { s, open, close ->
-                    SiteMenu(open, close, onNewTab = { onOpenNewTab(s.url) }, onEdit = { editing = s },
-                        onPin = { viewModel.pin(s.id) }, onDelete = { viewModel.remove(s.id) })
+                    SiteMenu(open, close, s.pinned, onNewTab = { onOpenNewTab(s.url) }, onEdit = { editing = s },
+                        onPin = { viewModel.setPinned(s.id, !s.pinned) }, onDelete = { viewModel.remove(s.id) })
                 }
                 if (view == WebHubView.GRID) {
                     LazyVerticalGrid(GridCells.Adaptive(92.dp), contentPadding = bottom,
@@ -233,16 +234,16 @@ fun WebHubScreen(
 
 @Composable
 private fun AddSiteButton(onClick: () -> Unit) {
-    val brand = Brush.linearGradient(listOf(Color(0xFF25B0FF), Color(0xFF5B3DF5), Color(0xFF8B3CFF)))
+    val scheme = MaterialTheme.colorScheme
     Box(
-        Modifier.shadow(10.dp, CircleShape, spotColor = Color(0xFF5B3DF5))
-            .clip(CircleShape).background(brand).combinedClickable(role = Role.Button, onClick = onClick)
+        Modifier.shadow(10.dp, CircleShape, spotColor = scheme.primary)
+            .clip(CircleShape).background(scheme.primary).combinedClickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = Spacing.xl, vertical = Spacing.md),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Outlined.Add, null, tint = Color.White)
+            Icon(Icons.Outlined.Add, null, tint = scheme.onPrimary)
             Spacer(Modifier.width(Spacing.sm))
-            Text(stringResource(R.string.webhub_add), color = Color.White, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.webhub_add), color = scheme.onPrimary, fontWeight = FontWeight.SemiBold)
         }
     }
 }
@@ -281,7 +282,14 @@ private fun ListRow(site: WebSite, onClick: () -> Unit, menu: @Composable (WebSi
             Logo(site, 46.dp)
             Spacer(Modifier.width(Spacing.md))
             Column(Modifier.weight(1f)) {
-                Text(site.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(site.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1,
+                        overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                    if (site.pinned) {
+                        Spacer(Modifier.width(6.dp))
+                        Icon(Icons.Filled.PushPin, stringResource(R.string.webhub_pinned), tint = scheme.primary, modifier = Modifier.size(14.dp))
+                    }
+                }
                 Text(UrlResolver.displayHost(site.url), style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant,
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
@@ -312,6 +320,10 @@ private fun GridTile(site: WebSite, onClick: () -> Unit, menu: @Composable (WebS
             Logo(site, 54.dp)
             Text(site.name, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
         }
+        if (site.pinned) {
+            Icon(Icons.Filled.PushPin, stringResource(R.string.webhub_pinned), tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp).size(14.dp))
+        }
         menu(site, open) { open = false }
     }
 }
@@ -328,12 +340,13 @@ private fun Logo(site: WebSite, size: androidx.compose.ui.unit.Dp) {
 }
 
 @Composable
-private fun SiteMenu(open: Boolean, onClose: () -> Unit, onNewTab: () -> Unit, onEdit: () -> Unit, onPin: () -> Unit, onDelete: () -> Unit) {
+private fun SiteMenu(open: Boolean, onClose: () -> Unit, pinned: Boolean, onNewTab: () -> Unit, onEdit: () -> Unit, onPin: () -> Unit, onDelete: () -> Unit) {
     DropdownMenu(expanded = open, onDismissRequest = onClose) {
         DropdownMenuItem({ Text(stringResource(R.string.ctx_open_new_tab)) }, { onClose(); onNewTab() },
             leadingIcon = { Icon(Icons.AutoMirrored.Outlined.OpenInNew, null) })
         DropdownMenuItem({ Text(stringResource(R.string.action_edit)) }, { onClose(); onEdit() }, leadingIcon = { Icon(Icons.Outlined.Edit, null) })
-        DropdownMenuItem({ Text(stringResource(R.string.webhub_move_top)) }, { onClose(); onPin() }, leadingIcon = { Icon(Icons.Outlined.PushPin, null) })
+        DropdownMenuItem({ Text(stringResource(if (pinned) R.string.webhub_unpin else R.string.webhub_pin)) }, { onClose(); onPin() },
+            leadingIcon = { Icon(if (pinned) Icons.Outlined.PushPin else Icons.Outlined.PushPin, null) })
         DropdownMenuItem({ Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) }, { onClose(); onDelete() },
             leadingIcon = { Icon(Icons.Outlined.DeleteOutline, null, tint = MaterialTheme.colorScheme.error) })
     }

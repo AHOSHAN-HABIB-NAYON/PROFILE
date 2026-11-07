@@ -489,6 +489,8 @@ fun BrowserScreen(
                 onTabs = openTabs,
                 onMenu = { showMenu = true },
                 onSiteInfo = { showPageInfo = true },
+                completion = viewModel::completionFor,
+                onNewPrivateTab = { viewModel.newTab(private = true) },
                 modifier = Modifier.fillMaxWidth().graphicsLayer { translationY = barOffset.value },
             )
 

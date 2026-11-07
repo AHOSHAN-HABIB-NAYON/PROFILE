@@ -212,10 +212,9 @@ fun FillPasswordBar(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Box(
-                Modifier.size(56.dp).clip(CircleShape)
-                    .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(0xFF25B0FF), Color(0xFF5B3DF5), Color(0xFF8B3CFF)))),
+                Modifier.size(56.dp).clip(CircleShape).background(scheme.primaryContainer),
                 contentAlignment = Alignment.Center,
-            ) { Icon(Icons.Filled.Key, null, tint = Color.White, modifier = Modifier.size(28.dp)) }
+            ) { Icon(Icons.Filled.Key, null, tint = scheme.onPrimaryContainer, modifier = Modifier.size(28.dp)) }
             Spacer(Modifier.height(Spacing.lg))
             Text(stringResource(R.string.password_use_saved_title), style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
             Spacer(Modifier.height(Spacing.xs))

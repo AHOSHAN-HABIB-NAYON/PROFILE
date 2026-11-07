@@ -757,6 +757,24 @@ class BrowserViewModel(
         .map { list -> list.mapNotNull { UrlResolver.searchQueryOf(it.url) }.distinctBy { it.lowercase() }.take(12) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /** Sites and searches typed before, most used first (ties: most recent), for inline completion. */
+    private val completions: StateFlow<List<String>> = browsing.recentHistory(1000)
+        .map { list ->
+            val counts = LinkedHashMap<String, Int>()
+            list.forEach { e ->
+                val key = (UrlResolver.searchQueryOf(e.url)?.trim() ?: UrlResolver.displayHost(e.url)).trim()
+                if (key.isNotBlank()) counts[key] = (counts[key] ?: 0) + 1
+            }
+            counts.entries.sortedByDescending { it.value }.map { it.key }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** "ca" → "cakricircular.com": the most used earlier site or search that starts with [typed]. */
+    fun completionFor(typed: String): String? {
+        if (typed.isBlank() || typed.endsWith(' ') || activeTab.value?.isPrivate == true) return null
+        return bestCompletion(completions.value, typed)
+    }
+
     // ---- Page info --------------------------------------------------------------------
 
     fun certificateFor(id: String): SslCertificate? = webViews[id]?.certificate
@@ -786,6 +804,7 @@ class BrowserViewModel(
     }
 
     fun selectTab(id: String) {
+        if (_activeId.value != id) captureActiveThumbnail()
         val previous = _activeId.value
         if (previous != null && previous != id) {
             // Background tabs keep running (videos, chats, timers), like on a computer. Their
@@ -888,7 +907,17 @@ class BrowserViewModel(
         load(id, url)
     }
 
+    /** Tabs whose first page was opened from the home page (Back from it returns home). */
+    private val homeBefore = mutableSetOf<String>()
+    /** Tabs where Home was pressed on top of a page (Back from home returns to the page). */
+    private val homeOnTop = mutableSetOf<String>()
+
     fun load(id: String, url: String) {
+        val before = _tabs.value.firstOrNull { it.id == id }
+        if (before != null && before.showingHome) {
+            homeOnTop.remove(id)
+            if (before.url == null) homeBefore.add(id)
+        }
         updateTab(id) { it.copy(url = url, showingHome = false, error = null, certificateError = false) }
         ensureWebView(id)?.loadUrl(url)
     }
@@ -905,11 +934,20 @@ class BrowserViewModel(
     fun handleBack(): BackResult {
         val tab = activeTab.value ?: return BackResult.NOTHING_LEFT
         if (tab.showingHome) {
-            if (tab.url != null) { updateTab(tab.id) { it.copy(showingHome = false) }; ensureWebView(tab.id); return BackResult.HANDLED }
+            // Home opened with the Home button on top of a page: Back returns to that page.
+            if (tab.url != null && tab.id in homeOnTop) {
+                homeOnTop.remove(tab.id)
+                updateTab(tab.id) { it.copy(showingHome = false) }; ensureWebView(tab.id); return BackResult.HANDLED
+            }
             return BackResult.NOTHING_LEFT
         }
         val wv = ensureWebView(tab.id)
         if (wv != null && wv.canGoBack()) { wv.goBack(); return BackResult.HANDLED }
+        // The first page of a tab that was opened from the home page goes back to home, like Chrome.
+        if (tab.id in homeBefore && tab.id !in externalTabs) {
+            updateTab(tab.id) { it.copy(showingHome = true) }
+            return BackResult.HANDLED
+        }
         if (tab.id in externalTabs) { closeTab(tab.id); return BackResult.LEAVE_APP }
         val opener = openers[tab.id]
         if (opener != null && _tabs.value.any { it.id == opener }) {
@@ -930,6 +968,7 @@ class BrowserViewModel(
         if (!tab.showingHome && wv.canGoBack()) {
             wv.goBack(); return true
         }
+        if (!tab.showingHome && tab.id in homeBefore) { updateTab(tab.id) { it.copy(showingHome = true) }; return true }
         return false
     }
 
@@ -954,7 +993,11 @@ class BrowserViewModel(
     }
 
     fun goHome() {
-        activeTab.value?.let { tab -> updateTab(tab.id) { it.copy(showingHome = true) } }
+        captureActiveThumbnail()
+        activeTab.value?.let { tab ->
+            if (!tab.showingHome && tab.url != null) homeOnTop.add(tab.id)
+            updateTab(tab.id) { it.copy(showingHome = true) }
+        }
     }
 
     fun toggleDesktopMode() {
@@ -1468,6 +1511,12 @@ class BrowserViewModel(
     }
 
     companion object {
+        /** Case-insensitive prefix match; [candidates] are ordered best first. */
+        fun bestCompletion(candidates: List<String>, typed: String): String? {
+            val t = typed.trim()
+            if (t.isEmpty()) return null
+            return candidates.firstOrNull { it.length > t.length && it.startsWith(t, ignoreCase = true) }
+        }
         /** How long a closed tab's page stays alive for Undo. */
         const val UNDO_KEEP_MS = 15_000L
         /** Silences a closed tab's audio and video while it waits for Undo. */

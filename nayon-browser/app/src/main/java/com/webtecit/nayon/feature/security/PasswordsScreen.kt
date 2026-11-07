@@ -35,6 +35,7 @@ import androidx.compose.material.icons.outlined.Key
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Password
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
@@ -49,6 +50,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -98,6 +100,7 @@ fun PasswordsScreen(
     val lockAvailable = remember { DeviceLock.available(context) }
     var unlocked by rememberSaveable { mutableStateOf(false) }
     var query by rememberSaveable { mutableStateOf("") }
+    var page by rememberSaveable { mutableIntStateOf(0) }
     var expanded by rememberSaveable { mutableStateOf<Long?>(null) }
     var confirmDelete by remember { mutableStateOf<SavedLogin?>(null) }
     var confirmDeleteAll by remember { mutableStateOf(false) }
@@ -164,44 +167,84 @@ fun PasswordsScreen(
         }
 
         item {
-            SettingsGroup(Modifier.padding(top = Spacing.sm)) {
-                SettingsSwitchRow(
-                    stringResource(R.string.passwords_offer_to_save), offer, { viewModel.setOfferToSave(it) },
-                    icon = Icons.Outlined.Key, subtitle = stringResource(R.string.passwords_offer_to_save_desc),
-                )
-                GroupDivider()
-                SettingsRow(
-                    stringResource(R.string.passwords_protection), {}, icon = Icons.Outlined.Shield,
-                    subtitle = stringResource(R.string.passwords_protection_desc), showChevron = false,
-                )
+            androidx.compose.material3.PrimaryTabRow(selectedTabIndex = page, containerColor = MaterialTheme.colorScheme.surface) {
+                androidx.compose.material3.Tab(page == 0, { page = 0 }, text = { Text(stringResource(R.string.passwords_tab_list)) },
+                    icon = { Icon(Icons.Outlined.Password, null) })
+                androidx.compose.material3.Tab(page == 1, { page = 1 }, text = { Text(stringResource(R.string.passwords_tab_settings)) },
+                    icon = { Icon(Icons.Outlined.Settings, null) })
             }
         }
-
-        item {
-            SettingsGroup(Modifier.padding(top = Spacing.md)) {
-                SettingsRow(
-                    importTitle, {
-                        // Every import asks for the phone's lock again, so nobody else can add or overwrite passwords.
-                        DeviceLock.confirm(context, importTitle, unlockSubtitle) { ok ->
-                            if (ok) importLauncher.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel", "application/octet-stream"))
-                        }
-                    },
-                    icon = Icons.Outlined.FileUpload, subtitle = stringResource(R.string.passwords_import_desc),
-                )
-                GroupDivider()
-                SettingsRow(
-                    exportTitle, { confirmExport = true },
-                    icon = Icons.Outlined.FileDownload, subtitle = stringResource(R.string.passwords_export_desc),
-                )
-                GroupDivider()
-                SettingsRow(
-                    stringResource(R.string.passwords_storage), {}, icon = Icons.Outlined.PhoneAndroid,
-                    subtitle = stringResource(R.string.passwords_storage_desc), showChevron = false,
-                )
-            }
-        }
-
         val all = logins
+        if (page == 1) {
+            item {
+                SettingsGroup(Modifier.padding(top = Spacing.sm)) {
+                    SettingsSwitchRow(
+                        stringResource(R.string.passwords_offer_to_save), offer, { viewModel.setOfferToSave(it) },
+                        icon = Icons.Outlined.Key, subtitle = stringResource(R.string.passwords_offer_to_save_desc),
+                    )
+                    GroupDivider()
+                    SettingsRow(
+                        stringResource(R.string.passwords_protection), {}, icon = Icons.Outlined.Shield,
+                        subtitle = stringResource(R.string.passwords_protection_desc), showChevron = false,
+                    )
+                }
+            }
+
+            item {
+                SettingsGroup(Modifier.padding(top = Spacing.md)) {
+                    SettingsRow(
+                        importTitle, {
+                            // Every import asks for the phone's lock again, so nobody else can add or overwrite passwords.
+                            DeviceLock.confirm(context, importTitle, unlockSubtitle) { ok ->
+                                if (ok) importLauncher.launch(arrayOf("text/*", "application/csv", "application/vnd.ms-excel", "application/octet-stream"))
+                            }
+                        },
+                        icon = Icons.Outlined.FileUpload, subtitle = stringResource(R.string.passwords_import_desc),
+                    )
+                    GroupDivider()
+                    SettingsRow(
+                        exportTitle, { confirmExport = true },
+                        icon = Icons.Outlined.FileDownload, subtitle = stringResource(R.string.passwords_export_desc),
+                    )
+                    GroupDivider()
+                    SettingsRow(
+                        stringResource(R.string.passwords_storage), {}, icon = Icons.Outlined.PhoneAndroid,
+                        subtitle = stringResource(R.string.passwords_storage_desc), showChevron = false,
+                    )
+                }
+            }
+            if (never.isNotEmpty()) {
+                item { SectionHeader(stringResource(R.string.passwords_never_saved)) }
+                item {
+                    SettingsGroup {
+                        never.forEachIndexed { i, origin ->
+                            if (i > 0) GroupDivider()
+                            Row(Modifier.fillMaxWidth().padding(start = Spacing.lg, end = Spacing.xs, top = Spacing.xs, bottom = Spacing.xs),
+                                verticalAlignment = Alignment.CenterVertically) {
+                                SiteIcon(origin, UrlResolver.displayHost(origin), size = 32.dp)
+                                Spacer(Modifier.width(Spacing.md))
+                                Text(UrlResolver.displayHost(origin), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                                TextButton(onClick = { viewModel.allowSaving(origin) }) { Text(stringResource(R.string.action_remove)) }
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!all.isNullOrEmpty()) {
+                item {
+                    TextButton(
+                        onClick = { confirmDeleteAll = true },
+                        modifier = Modifier.fillMaxWidth().padding(Spacing.md),
+                    ) {
+                        Icon(Icons.Outlined.DeleteOutline, null, tint = MaterialTheme.colorScheme.error)
+                        Spacer(Modifier.width(Spacing.sm))
+                        Text(stringResource(R.string.passwords_delete_all), color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
+            return@ScreenScaffold
+        }
         if (all == null) return@ScreenScaffold
         if (all.isEmpty()) {
             item {
@@ -209,6 +252,8 @@ fun PasswordsScreen(
                     icon = Icons.Outlined.Password,
                     title = stringResource(R.string.passwords_empty_title),
                     body = stringResource(R.string.passwords_empty_body),
+                    actionLabel = importTitle,
+                    onAction = { page = 1 },
                 )
             }
         } else {
@@ -243,36 +288,6 @@ fun PasswordsScreen(
             }
         }
 
-        if (never.isNotEmpty()) {
-            item { SectionHeader(stringResource(R.string.passwords_never_saved)) }
-            item {
-                SettingsGroup {
-                    never.forEachIndexed { i, origin ->
-                        if (i > 0) GroupDivider()
-                        Row(Modifier.fillMaxWidth().padding(start = Spacing.lg, end = Spacing.xs, top = Spacing.xs, bottom = Spacing.xs),
-                            verticalAlignment = Alignment.CenterVertically) {
-                            SiteIcon(origin, UrlResolver.displayHost(origin), size = 32.dp)
-                            Spacer(Modifier.width(Spacing.md))
-                            Text(UrlResolver.displayHost(origin), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                            TextButton(onClick = { viewModel.allowSaving(origin) }) { Text(stringResource(R.string.action_remove)) }
-                        }
-                    }
-                }
-            }
-        }
-
-        if (!all.isNullOrEmpty()) {
-            item {
-                TextButton(
-                    onClick = { confirmDeleteAll = true },
-                    modifier = Modifier.fillMaxWidth().padding(Spacing.md),
-                ) {
-                    Icon(Icons.Outlined.DeleteOutline, null, tint = MaterialTheme.colorScheme.error)
-                    Spacer(Modifier.width(Spacing.sm))
-                    Text(stringResource(R.string.passwords_delete_all), color = MaterialTheme.colorScheme.error)
-                }
-            }
-        }
     }
 
     confirmDelete?.let { login ->

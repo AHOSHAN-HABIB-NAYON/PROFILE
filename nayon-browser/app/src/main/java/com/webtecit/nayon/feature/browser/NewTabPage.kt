@@ -154,7 +154,7 @@ fun NewTabPage(
     val nav = showNavBar && !isPrivate
     Box(modifier.fillMaxSize().background(scheme.surface), contentAlignment = Alignment.TopCenter) {
         Column(
-            Modifier.fillMaxWidth().verticalScroll(scroll).padding(bottom = if (nav) 92.dp else 0.dp),
+            Modifier.fillMaxWidth().verticalScroll(scroll).padding(bottom = if (nav) 88.dp else 0.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (isPrivate) {
@@ -197,19 +197,19 @@ fun NewTabPage(
 
 // ---- Bottom bar ------------------------------------------------------------------------
 
-/** Floating bar with WebHub raised in the middle. */
+/** Floating bar in the app's own colours, with WebHub raised in the middle. */
 @Composable
 private fun HomeNavBar(onHome: () -> Unit, actions: HomeActions, modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
-    val shape = RoundedCornerShape(26.dp)
-    Box(modifier.fillMaxWidth().height(84.dp), contentAlignment = Alignment.BottomCenter) {
+    val shape = RoundedCornerShape(24.dp)
+    Box(modifier.fillMaxWidth().height(80.dp), contentAlignment = Alignment.BottomCenter) {
         Surface(
-            shape = shape, color = scheme.surfaceContainerLowest, tonalElevation = 2.dp,
-            border = androidx.compose.foundation.BorderStroke(1.dp, scheme.outlineVariant.copy(alpha = 0.35f)),
-            modifier = Modifier.fillMaxWidth().height(66.dp)
-                .shadow(14.dp, shape, ambientColor = scheme.primary.copy(alpha = 0.18f), spotColor = scheme.primary.copy(alpha = 0.22f)),
+            shape = shape, color = scheme.surfaceContainer,
+            border = androidx.compose.foundation.BorderStroke(1.dp, scheme.outlineVariant.copy(alpha = 0.3f)),
+            modifier = Modifier.fillMaxWidth().height(64.dp)
+                .shadow(12.dp, shape, ambientColor = scheme.primary.copy(alpha = 0.15f), spotColor = scheme.primary.copy(alpha = 0.2f)),
         ) {}
-        Row(Modifier.fillMaxWidth().height(84.dp), verticalAlignment = Alignment.Bottom) {
+        Row(Modifier.fillMaxWidth().height(80.dp), verticalAlignment = Alignment.Bottom) {
             NavItem(Icons.Filled.Home, stringResource(R.string.action_home), selected = true, onClick = onHome, modifier = Modifier.weight(1f))
             NavItem(Icons.Outlined.Download, stringResource(R.string.action_downloads), onClick = actions.onOpenDownloads, modifier = Modifier.weight(1f))
             Column(
@@ -217,14 +217,13 @@ private fun HomeNavBar(onHome: () -> Unit, actions: HomeActions, modifier: Modif
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box(
-                    Modifier.size(58.dp).shadow(10.dp, CircleShape, spotColor = Color(0xFF5B3DF5)).clip(CircleShape)
-                        .background(Brush.linearGradient(listOf(Color(0xFF25B0FF), Color(0xFF5B3DF5), Color(0xFF8B3CFF))))
-                        .border(3.dp, scheme.surfaceContainerLowest, CircleShape),
+                    Modifier.size(52.dp).shadow(8.dp, CircleShape, spotColor = scheme.primary).clip(CircleShape)
+                        .background(scheme.primary).border(3.dp, scheme.surfaceContainer, CircleShape),
                     contentAlignment = Alignment.Center,
-                ) { Icon(Icons.Outlined.Language, null, tint = Color.White, modifier = Modifier.size(28.dp)) }
-                Spacer(Modifier.height(2.dp))
+                ) { Icon(Icons.Outlined.Language, null, tint = scheme.onPrimary, modifier = Modifier.size(24.dp)) }
+                Spacer(Modifier.height(3.dp))
                 Text(stringResource(R.string.webhub_title), style = MaterialTheme.typography.labelSmall, color = scheme.primary,
-                    fontWeight = FontWeight.SemiBold, maxLines = 1)
+                    fontWeight = FontWeight.SemiBold, maxLines = 1, softWrap = false)
             }
             NavItem(Icons.Outlined.Key, stringResource(R.string.nav_passwords), onClick = actions.onOpenPasswords, modifier = Modifier.weight(1f))
             NavItem(Icons.Outlined.Settings, stringResource(R.string.action_settings), onClick = actions.onOpenSettings, modifier = Modifier.weight(1f))
@@ -232,20 +231,24 @@ private fun HomeNavBar(onHome: () -> Unit, actions: HomeActions, modifier: Modif
     }
 }
 
+/** Material-style item: the icon sits in a pill when selected; the label never gets cut off. */
 @Composable
 private fun NavItem(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier, selected: Boolean = false) {
     val scheme = MaterialTheme.colorScheme
-    Box(modifier.height(66.dp), contentAlignment = Alignment.Center) {
-        Column(
-            Modifier.clip(RoundedCornerShape(16.dp)).background(if (selected) scheme.primary.copy(alpha = 0.12f) else Color.Transparent)
-                .clickable(role = Role.Button, onClick = onClick).padding(horizontal = Spacing.md, vertical = 6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Icon(icon, null, tint = if (selected) scheme.primary else scheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
-            Spacer(Modifier.height(2.dp))
-            Text(label, style = MaterialTheme.typography.labelSmall, color = if (selected) scheme.primary else scheme.onSurface,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
+    Column(
+        modifier.height(64.dp).clip(RoundedCornerShape(16.dp)).clickable(role = Role.Button, onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Box(
+            Modifier.size(width = 48.dp, height = 28.dp).clip(CircleShape)
+                .background(if (selected) scheme.secondaryContainer else Color.Transparent),
+            contentAlignment = Alignment.Center,
+        ) { Icon(icon, null, tint = if (selected) scheme.onSecondaryContainer else scheme.onSurfaceVariant, modifier = Modifier.size(21.dp)) }
+        Spacer(Modifier.height(3.dp))
+        Text(label, fontSize = 11.sp, color = if (selected) scheme.onSurface else scheme.onSurfaceVariant,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium, maxLines = 1, softWrap = false,
+            overflow = TextOverflow.Visible)
     }
 }
 
@@ -254,9 +257,9 @@ private fun NavItem(icon: ImageVector, label: String, onClick: () -> Unit, modif
 private fun SectionTitle(icon: ImageVector, title: String, onSeeAll: (() -> Unit)? = null) {
     val scheme = MaterialTheme.colorScheme
     Row(Modifier.fillMaxWidth().padding(start = Spacing.xs), verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, null, tint = scheme.primary, modifier = Modifier.size(20.dp))
+        Icon(icon, null, tint = scheme.primary, modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(Spacing.sm))
-        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+        Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
         if (onSeeAll != null) {
             Surface(onClick = onSeeAll, shape = CircleShape, color = scheme.primary.copy(alpha = 0.1f)) {
                 Row(Modifier.padding(horizontal = Spacing.md, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -361,7 +364,7 @@ private fun SkyHero(signedIn: Boolean, account: GoogleAccount?, onAccount: () ->
 
     Box(
         Modifier.fillMaxWidth().widthIn(max = Layout.maxContentWidth).padding(horizontal = Spacing.md).padding(top = Spacing.xs)
-            .height(214.dp).shadow(8.dp, shape, ambientColor = style.sky.first().copy(alpha = 0.45f), spotColor = style.sky.first().copy(alpha = 0.45f))
+            .height(200.dp).shadow(8.dp, shape, ambientColor = style.sky.first().copy(alpha = 0.45f), spotColor = style.sky.first().copy(alpha = 0.45f))
             .clip(shape),
     ) {
         Canvas(Modifier.fillMaxSize()) {
@@ -446,12 +449,12 @@ private fun SkyHero(signedIn: Boolean, account: GoogleAccount?, onAccount: () ->
             Row(verticalAlignment = Alignment.Top) {
                 Column(Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        com.webtecit.nayon.core.designsystem.component.NayonLogoBadge(size = 40.dp)
+                        com.webtecit.nayon.core.designsystem.component.NayonLogoBadge(size = 32.dp)
                         Spacer(Modifier.width(Spacing.md))
-                        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium, color = style.text, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleSmall, color = style.text, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(Spacing.sm))
-                    Text(stringResource(greeting), style = MaterialTheme.typography.headlineMedium, color = style.text,
+                    Text(stringResource(greeting), style = MaterialTheme.typography.headlineSmall, color = style.text,
                         fontWeight = FontWeight.ExtraBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.semantics { heading() })
                     Spacer(Modifier.height(2.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -637,7 +640,7 @@ private fun ModeButtons(actions: HomeActions) {
 
 @Composable
 private fun ModeButton(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier) {
-    Surface(onClick = onClick, shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = modifier.height(48.dp)) {
+    Surface(onClick = onClick, shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = modifier.height(44.dp)) {
         Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(Spacing.sm))
@@ -675,22 +678,22 @@ private fun ShortcutsCard(shortcuts: List<HomeShortcut>, actions: HomeActions) {
                                             onClick = { if (s == null) adding = true else actions.onOpenUrl(s.url) },
                                             onLongClick = { if (s != null) menu = true },
                                         )
-                                        .padding(vertical = Spacing.md),
+                                        .padding(vertical = Spacing.sm),
                                     horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp),
                                 ) {
                                     Box(
-                                        Modifier.size(56.dp).shadow(3.dp, CircleShape, spotColor = scheme.primary.copy(alpha = 0.3f))
+                                        Modifier.size(46.dp).shadow(2.dp, CircleShape, spotColor = scheme.primary.copy(alpha = 0.3f))
                                             .clip(CircleShape).background(scheme.surfaceContainerLowest)
                                             .border(1.dp, scheme.outlineVariant.copy(alpha = 0.5f), CircleShape),
                                         contentAlignment = Alignment.Center,
                                     ) {
                                         if (s == null) Icon(Icons.Outlined.Add, null, tint = scheme.primary)
-                                        else SiteIcon(s.url, s.label, size = 56.dp, downloadIcon = true, background = scheme.primary)
+                                        else SiteIcon(s.url, s.label, size = 46.dp, downloadIcon = true, background = scheme.primary)
                                     }
                                     Text(
                                         if (s == null) stringResource(R.string.ntp_add_shortcut) else s.label,
-                                        style = MaterialTheme.typography.labelMedium, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                        style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis,
                                         textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = Spacing.xs),
                                     )
                                 }
@@ -749,11 +752,11 @@ private fun QuickAccess(actions: HomeActions) {
 /** A soft tinted tile in the icon's own colour, readable in light and dark themes. */
 @Composable
 private fun QuickTile(icon: ImageVector, label: String, color: Color, onClick: () -> Unit, modifier: Modifier) {
-    Surface(onClick = onClick, shape = RoundedCornerShape(20.dp), color = color.copy(alpha = 0.12f), modifier = modifier.height(76.dp)) {
+    Surface(onClick = onClick, shape = RoundedCornerShape(18.dp), color = color.copy(alpha = 0.12f), modifier = modifier.height(64.dp)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Icon(icon, null, tint = color, modifier = Modifier.size(26.dp))
-            Spacer(Modifier.height(6.dp))
-            Text(label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            Icon(icon, null, tint = color, modifier = Modifier.size(22.dp))
+            Spacer(Modifier.height(4.dp))
+            Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(horizontal = Spacing.xs))
         }
     }
@@ -780,7 +783,7 @@ private fun RecentCard(recent: List<HistoryEntry>, actions: HomeActions) {
                             .padding(start = Spacing.lg, top = Spacing.sm, bottom = Spacing.sm),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        SiteIcon(e.url, e.title, size = 40.dp)
+                        SiteIcon(e.url, e.title, size = 32.dp)
                         Spacer(Modifier.width(Spacing.md))
                         Column(Modifier.weight(1f)) {
                             Text(e.title.ifBlank { UrlResolver.displayHost(e.url) }, style = MaterialTheme.typography.titleSmall,

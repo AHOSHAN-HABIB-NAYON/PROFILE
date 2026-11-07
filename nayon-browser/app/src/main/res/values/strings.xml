@@ -85,7 +85,7 @@
     <string name="licenses_apache">Apache License 2.0</string>
 
     <!-- Browser -->
-    <string name="address_hint">Search or type web address</string>
+    <string name="address_hint">Search or type URL</string>
     <string name="address_hint_private">Search privately or type address</string>
     <string name="action_clear">Clear</string>
     <string name="action_reload">Reload</string>
@@ -569,7 +569,9 @@
     <string name="webhub_site_name">Site name</string>
     <string name="webhub_category">Category (optional)</string>
     <string name="webhub_logo_note">The name and category fill in by themselves, and the site\'s own logo is added automatically. You can change any of them.</string>
-    <string name="webhub_move_top">Move to top</string>
+    <string name="webhub_pin">Pin to top</string>
+    <string name="webhub_unpin">Unpin</string>
+    <string name="webhub_pinned">Pinned</string>
     <string name="webhub_view_list">Show as list</string>
     <string name="webhub_view_grid">Show as grid</string>
     <string name="webhub_empty_title">No websites yet</string>
@@ -591,4 +593,6 @@
     <string name="password_use_saved_title">Use saved password?</string>
     <string name="password_sign_in_to">You\'ll sign in to %1$s</string>
     <string name="password_manage">Manage passwords</string>
+    <string name="passwords_tab_list">Passwords</string>
+    <string name="passwords_tab_settings">Settings</string>
 </resources>

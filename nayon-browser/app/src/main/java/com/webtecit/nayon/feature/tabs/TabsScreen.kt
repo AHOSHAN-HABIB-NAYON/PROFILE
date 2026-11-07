@@ -242,10 +242,11 @@ private fun TabCard(tab: TabState, selected: Boolean, onClick: () -> Unit, onClo
     ) {
         Column {
             Row(Modifier.fillMaxWidth().height(44.dp).padding(start = Spacing.md), verticalAlignment = Alignment.CenterVertically) {
-                SiteIcon(tab.url, tab.title, favicon = tab.favicon, size = 20.dp)
+                if (tab.showingHome) com.webtecit.nayon.core.designsystem.component.NayonLogoBadge(size = 20.dp)
+                else SiteIcon(tab.url, tab.title, favicon = tab.favicon, size = 20.dp)
                 Spacer(Modifier.width(Spacing.sm))
                 Text(
-                    if (tab.showingHome && tab.url == null) stringResource(R.string.tabs_new_page) else tab.displayTitle,
+                    if (tab.showingHome) stringResource(R.string.tabs_new_page) else tab.displayTitle,
                     style = MaterialTheme.typography.labelLarge, color = onFrame,
                     maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
                 )
@@ -264,13 +265,46 @@ private fun TabCard(tab: TabState, selected: Boolean, onClick: () -> Unit, onClo
                         remember(thumb) { thumb.asImageBitmap() }, contentDescription = null,
                         contentScale = ContentScale.Crop, alignment = Alignment.TopCenter, modifier = Modifier.fillMaxSize(),
                     )
-                    tab.showingHome || tab.url == null -> NayonLogo(size = 48.dp)
+                    tab.showingHome -> HomePreview(tab.isPrivate)
+                    tab.url == null -> NayonLogo(size = 48.dp)
                     else -> Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                         SiteIcon(tab.url, tab.title, favicon = tab.favicon, size = 44.dp)
                         Text(UrlResolver.displayHost(tab.url), style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
                     }
                 }
             }
+        }
+    }
+}
+
+/** A small picture of the home page for tabs that show it (instead of the last site). */
+@Composable
+private fun HomePreview(isPrivate: Boolean) {
+    val scheme = MaterialTheme.colorScheme
+    Column(Modifier.fillMaxSize().background(scheme.surface)) {
+        Box(
+            Modifier.fillMaxWidth().weight(0.42f).padding(6.dp).clip(RoundedCornerShape(12.dp)).background(
+                androidx.compose.ui.graphics.Brush.verticalGradient(
+                    if (isPrivate) listOf(androidx.compose.ui.graphics.Color(0xFF14102B), androidx.compose.ui.graphics.Color(0xFF3B2F73))
+                    else listOf(androidx.compose.ui.graphics.Color(0xFF5AB4F0), androidx.compose.ui.graphics.Color(0xFFB9E3FB)),
+                ),
+            ),
+        ) {
+            if (!isPrivate) {
+                Box(Modifier.align(Alignment.TopEnd).padding(10.dp).size(14.dp).clip(CircleShape)
+                    .background(androidx.compose.ui.graphics.Color(0xFFFFE680)))
+            }
+            Box(Modifier.align(Alignment.BottomCenter).padding(8.dp).fillMaxWidth().height(14.dp).clip(CircleShape)
+                .background(androidx.compose.ui.graphics.Color.White))
+        }
+        Column(Modifier.fillMaxWidth().weight(0.58f).padding(horizontal = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            repeat(2) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                    repeat(4) { Box(Modifier.size(16.dp).clip(CircleShape).background(scheme.surfaceContainerHighest)) }
+                }
+            }
+            Box(Modifier.fillMaxWidth().height(10.dp).clip(CircleShape).background(scheme.surfaceContainerHigh))
+            Box(Modifier.fillMaxWidth(0.7f).height(10.dp).clip(CircleShape).background(scheme.surfaceContainerHigh))
         }
     }
 }
