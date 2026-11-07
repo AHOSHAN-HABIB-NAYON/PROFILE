@@ -99,6 +99,28 @@ export function CallScreen() {
     );
 
   const ringing = phase === 'calling' || phase === 'ringing';
+  // Incoming call: WhatsApp-style screen (name on top, big photo, three swipe buttons).
+  if (dir === 'in' && phase === 'ringing' && !group) {
+    return (
+      <div className="call-screen wa-in" role="dialog" aria-modal="true" aria-label={call.video ? t('Video call', 'ভিডিও কল') : t('Audio call', 'অডিও কল')}>
+        <div className="wa-head">
+          <h2>{peer.username}</h2>
+          <p><img src="/icons/icon-192.png" alt="" /> {call.video ? t('QUIZ WAR video call', 'QUIZ WAR ভিডিও কল') : t('QUIZ WAR audio call', 'QUIZ WAR অডিও কল')}</p>
+        </div>
+        <div className="wa-photo">
+          <Avatar name={peer.username} src={peer.avatarUrl ?? peer.avatarThumbUrl} size={230} />
+        </div>
+        <div className="cs-actions wa-actions">
+          <SwipeButton kind="decline" label={t('Decline', 'কেটে দিন')} hintText={t('Swipe up to decline', 'কাটতে উপরে টানুন')} onDone={declineCall} />
+          <SwipeButton kind="answer" video={!!call.video} label={t('Swipe up to accept', 'উপরে টেনে ধরুন')} hintText="" onDone={() => void answerCall()} />
+          <span className="cs-act">
+            <button type="button" className="cs-btn wa-msg" onClick={() => (declineCall(), navigateTo(`/chat/${peer.uid}`))} aria-label={t('Message', 'মেসেজ')}><WaIcon kind="msg" /></button>
+            <small>{t('Message', 'মেসেজ')}</small>
+          </span>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={`call-screen ph-${phase}${stage ? ' has-video' : ''}${vgrid ? ' vgrid' : ''}`} role="dialog" aria-modal="true" aria-label={call.video ? t('Video call', 'ভিডিও কল') : t('Audio call', 'অডিও কল')}>
       {stage && <VideoView stream={stage} mirror={stageIsMe && facing === 'user'} className="cv-stage" />}
@@ -374,6 +396,24 @@ function SelfPip({ stream, mirror, onTap }: { stream: MediaStream; mirror?: bool
 }
 
 /** WhatsApp-style answer: slide the green button up to answer (down to decline). Tap shows the hint. */
+/** Filled phone-style icons for the incoming call buttons. */
+function WaIcon({ kind }: { kind: 'call' | 'end' | 'msg' }) {
+  if (kind === 'msg')
+    return (
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="#fff" aria-hidden>
+        <path d="M5 3h14a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H9l-4.5 3.6c-.5.4-1.2 0-1.2-.6V18A3 3 0 0 1 2 15V6a3 3 0 0 1 3-3z" />
+        <rect x="7" y="8" width="10" height="1.8" rx=".9" fill="#2b3442" />
+        <rect x="7" y="11.4" width="7" height="1.8" rx=".9" fill="#2b3442" />
+      </svg>
+    );
+  const phone = 'M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1z';
+  return (
+    <svg width={kind === 'end' ? 32 : 28} height={kind === 'end' ? 32 : 28} viewBox="0 0 24 24" fill="#fff" aria-hidden style={kind === 'end' ? { rotate: '135deg' } : undefined}>
+      <path d={phone} />
+    </svg>
+  );
+}
+
 /**
  * WhatsApp-style call button: slide it up to act (answer or decline), so a pocket touch does nothing.
  * The green one rises by itself now and then to show how; a tap nudges it and shows the hint.
@@ -419,7 +459,7 @@ function SwipeButton({ kind, video, label, hintText, onDone }: { kind: 'answer' 
         onPointerCancel={() => (setDrag(false), setDy(0))}
         onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onDone()}
       >
-        <Icon name={answer ? (video ? 'video' : 'phone') : 'phone-off'} size={answer ? 28 : 26} />
+        {answer ? (video ? <Icon name="video" size={26} /> : <WaIcon kind="call" />) : <WaIcon kind="end" />}
       </button>
       <small key={`h${hint}`} className={hint ? 'csw-hint pop' : 'csw-hint'}>{hint && !answer ? hintText : label}</small>
     </span>

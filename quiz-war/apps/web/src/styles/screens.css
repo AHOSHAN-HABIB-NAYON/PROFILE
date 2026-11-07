@@ -1496,7 +1496,7 @@
 .ludo-stage { min-height: 100dvh; color: #fff; padding: calc(10px + env(safe-area-inset-top)) 12px calc(20px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 14px;
   background-color: #0b2a6b;
   background-image: radial-gradient(circle at 20% 15%, rgba(96,165,250,.25), transparent 45%), radial-gradient(circle at 80% 85%, rgba(129,140,248,.25), transparent 45%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='.06' stroke-width='2'%3E%3Crect x='8' y='8' width='16' height='16' rx='4'/%3E%3Ccircle cx='45' cy='45' r='8'/%3E%3C/g%3E%3C/svg%3E");
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='.045' stroke-width='2'%3E%3Crect x='8' y='8' width='16' height='16' rx='4'/%3E%3Ccircle cx='45' cy='45' r='8'/%3E%3C/g%3E%3C/svg%3E");
 }
 .ludo-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .ludo-top > b { font-size: 18px; font-weight: 800; letter-spacing: .02em; }
@@ -2353,3 +2353,33 @@ button.px-more { width: 100%; border: 0; background: none; font: inherit; cursor
 .pq .upd-cta { display: flex; align-items: center; justify-content: center; gap: 8px; }
 .upd-note { display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 8px; font-size: 11.5px; font-weight: 700; color: var(--text-3); }
 .cs-actions:has(.cs-swipe) { align-items: flex-end; padding-top: 56px; }
+
+/* Incoming call, WhatsApp style: dark doodle background, name on top, big photo, three equal buttons. */
+.call-screen.wa-in {
+  justify-content: flex-start; padding: calc(70px + env(safe-area-inset-top)) 20px calc(34px + env(safe-area-inset-bottom));
+}
+.wa-head { text-align: center; }
+.wa-head h2 { margin: 0; font-size: 30px; font-weight: 700; color: #fff; letter-spacing: .2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wa-head p { margin: 10px 0 0; display: inline-flex; align-items: center; gap: 7px; font-size: 16px; color: rgba(255,255,255,.7); }
+.wa-head p img { width: 18px; height: 18px; border-radius: 5px; }
+.wa-photo { flex: 1; display: grid; place-items: center; }
+.wa-photo .avatar { box-shadow: none !important; }
+.call-screen.wa-in .wa-actions { align-items: flex-end; padding-top: 70px; min-height: 0; }
+.call-screen.wa-in .cs-act small { color: rgba(255,255,255,.75); font-size: 15px; margin-top: 6px; white-space: nowrap; }
+.call-screen.wa-in .csw-btn, .call-screen.wa-in .cs-swipe.decline .csw-btn, .call-screen.wa-in .wa-msg { width: 66px; height: 66px; box-shadow: none; }
+.call-screen.wa-in .cs-swipe.answer .csw-btn { background: color-mix(in srgb, #fff calc(var(--p, 0) * 18%), #1daa61); }
+.call-screen.wa-in .cs-swipe.decline .csw-btn { background: color-mix(in srgb, #fff calc(var(--p, 0) * 18%), #ea0038); }
+.csw-hang { rotate: 135deg; }
+.call-screen.wa-in .wa-msg { background: rgba(255,255,255,.14); }
+.call-screen.wa-in .csw-arrows { color: #c4ccd1; top: -64px; }
+.call-screen.wa-in .csw-arrows svg { margin: -6px 0; }
+.call-screen.wa-in .wa-actions { justify-content: space-between; padding-left: 4px; padding-right: 4px; }
+.call-screen.wa-in .wa-actions > .cs-act { flex: 1; }
+/* Same spacing and size as WhatsApp: three columns across the full width, 56px buttons. */
+.call-screen.wa-in .wa-actions { margin: 0 -20px; padding-left: 0; padding-right: 0; }
+.call-screen.wa-in .csw-btn, .call-screen.wa-in .cs-swipe.decline .csw-btn, .call-screen.wa-in .wa-msg { width: 58px; height: 58px; }
+.call-screen.wa-in .cs-act small { font-size: 15px; margin-top: 10px; }
+/* WhatsApp chevrons: three thin arrows, well spaced, high above the green button. */
+.call-screen.wa-in .csw-arrows { top: -112px; gap: 12px; }
+.call-screen.wa-in .csw-arrows svg { margin: 0; width: 20px; height: 20px; }
+.call-screen.wa-in .wa-actions { padding-top: 120px; }
