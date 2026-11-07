@@ -2392,3 +2392,4 @@ button.px-more { width: 100%; border: 0; background: none; font: inherit; cursor
   .ludo-over.full .lo-title { font-size: 27px; }
   .ludo-over.full .lo-list li { padding: 6px 10px; }
 }
+.ludo-over.full .lo-list li b { color: #fff; }
