@@ -10,8 +10,8 @@ android {
         applicationId 'com.cakricircular.app'
         minSdk 24
         targetSdk 36
-        versionCode 11
-        versionName '2.6'
+        versionCode 12
+        versionName '2.7'
         // শুধু বাংলা আর ইংরেজি — লাইব্রেরির অন্য ভাষার লেখা বাদ (সাইজ কমে)
         resourceConfigurations += ['bn', 'en']
     }

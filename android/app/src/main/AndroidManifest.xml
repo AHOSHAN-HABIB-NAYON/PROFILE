@@ -28,8 +28,8 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- ফেসবুক/মেসেঞ্জারে শেয়ার করা সাইটের লিংক অ্যাপেই খুলবে -->
-            <intent-filter>
+            <!-- ফেসবুক/মেসেঞ্জারে শেয়ার করা সাইটের লিংক অ্যাপেই খুলবে (যাচাই করা App Links — জিজ্ঞেস না করেই অ্যাপে) -->
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
