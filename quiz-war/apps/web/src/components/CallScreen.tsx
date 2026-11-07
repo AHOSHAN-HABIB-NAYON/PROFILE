@@ -170,11 +170,8 @@ export function CallScreen() {
         <div className="cs-actions" />
       ) : dir === 'in' && phase === 'ringing' ? (
         <div className="cs-actions">
-          <span className="cs-act">
-            <button type="button" className="cs-btn end" onClick={declineCall} aria-label={t('Decline', 'কেটে দিন')}><Icon name="phone-off" size={26} /></button>
-            <small>{t('Decline', 'কেটে দিন')}</small>
-          </span>
-          <SwipeAnswer video={!!call.video} onAnswer={() => void answerCall()} onDecline={declineCall} />
+          <SwipeButton kind="decline" label={t('Decline', 'কেটে দিন')} hintText={t('Swipe up to decline', 'কাটতে উপরে টানুন')} onDone={declineCall} />
+          <SwipeButton kind="answer" video={!!call.video} label={t('Swipe up to accept', 'উপরে টেনে ধরুন')} hintText="" onDone={() => void answerCall()} />
           <span className="cs-act">
             <button type="button" className="cs-btn soft" onClick={() => (declineCall(), navigateTo(`/chat/${peer.uid}`))} aria-label={t('Message', 'মেসেজ')}><Icon name="message" size={24} /></button>
             <small>{t('Message', 'মেসেজ')}</small>
@@ -377,51 +374,54 @@ function SelfPip({ stream, mirror, onTap }: { stream: MediaStream; mirror?: bool
 }
 
 /** WhatsApp-style answer: slide the green button up to answer (down to decline). Tap shows the hint. */
-function SwipeAnswer({ video, onAnswer, onDecline }: { video: boolean; onAnswer: () => void; onDecline: () => void }) {
-  const t = useT();
+/**
+ * WhatsApp-style call button: slide it up to act (answer or decline), so a pocket touch does nothing.
+ * The green one rises by itself now and then to show how; a tap nudges it and shows the hint.
+ */
+function SwipeButton({ kind, video, label, hintText, onDone }: { kind: 'answer' | 'decline'; video?: boolean; label: string; hintText: string; onDone: () => void }) {
   const [dy, setDy] = useState(0);
   const [drag, setDrag] = useState(false);
   const [hint, setHint] = useState(0);
   const start = useRef(0);
-  const UP = 110, DOWN = 90;
-  const p = Math.min(1, Math.abs(dy) / (dy < 0 ? UP : DOWN));
+  const UP = kind === 'answer' ? 110 : 100;
+  const p = Math.min(1, -dy / UP);
+  const answer = kind === 'answer';
   return (
-    <span className="cs-act cs-swipe">
-      <span className="csw-arrows" style={{ opacity: drag ? 1 - p : 1 }} aria-hidden>
-        <Icon name="chevron-down" size={22} /><Icon name="chevron-down" size={22} /><Icon name="chevron-down" size={22} />
-      </span>
+    <span className={`cs-act cs-swipe ${kind}`}>
+      {answer && (
+        <span className="csw-arrows" style={{ opacity: drag ? 1 - p : 1 }} aria-hidden>
+          <Icon name="chevron-down" size={22} /><Icon name="chevron-down" size={22} /><Icon name="chevron-down" size={22} />
+        </span>
+      )}
       <button
         type="button"
-        className={`cs-btn accept csw-btn${drag ? ' drag' : ''}${dy > 0 ? ' down' : ''}`}
-        style={{ transform: `translateY(${dy}px) scale(${drag ? 1.1 : 1})`, ['--p' as any]: dy > 0 ? p : 0 }}
-        aria-label={t('Slide up to answer', 'ধরতে উপরে টানুন')}
+        className={`cs-btn ${answer ? 'accept' : 'end'} csw-btn${drag ? ' drag' : ''}${hint ? ' nudge' : ''}`}
+        key={hint}
+        style={{ transform: `translateY(${dy}px) scale(${drag ? 1.1 : 1})`, ['--p' as any]: p }}
+        aria-label={label}
         onPointerDown={(e) => {
           (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
           start.current = e.clientY;
           setDrag(true);
         }}
-        onPointerMove={(e) => drag && setDy(Math.max(-UP * 1.3, Math.min(DOWN * 1.2, e.clientY - start.current)))}
+        onPointerMove={(e) => drag && setDy(Math.max(-UP * 1.3, Math.min(0, e.clientY - start.current)))}
         onPointerUp={(e) => {
           const d = e.clientY - start.current;
           setDrag(false);
           if (d <= -UP) {
-            haptic('success');
+            haptic(answer ? 'success' : 'heavy');
             setDy(-UP * 1.6);
-            return onAnswer();
-          }
-          if (d >= DOWN) {
-            haptic('heavy');
-            return onDecline();
+            return onDone();
           }
           setDy(0);
           setHint((n) => n + 1);
         }}
         onPointerCancel={() => (setDrag(false), setDy(0))}
-        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onAnswer()}
+        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onDone()}
       >
-        <Icon name={video ? 'video' : 'phone'} size={28} />
+        <Icon name={answer ? (video ? 'video' : 'phone') : 'phone-off'} size={answer ? 28 : 26} />
       </button>
-      <small key={hint} className={hint ? 'csw-hint pop' : 'csw-hint'}>{t('Slide up to answer', 'ধরতে উপরে টানুন')}</small>
+      <small key={`h${hint}`} className={hint ? 'csw-hint pop' : 'csw-hint'}>{hint && !answer ? hintText : label}</small>
     </span>
   );
 }

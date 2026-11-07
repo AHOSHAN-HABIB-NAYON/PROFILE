@@ -25,4 +25,11 @@
         <item name="android:statusBarColor">@color/ic_launcher_background</item>
         <item name="android:navigationBarColor">@color/ic_launcher_background</item>
     </style>
+    <!-- Incoming call screen: drawn edge to edge, bars see-through over the dark background. -->
+    <style name="AppTheme.Call" parent="AppTheme.NoActionBar">
+        <item name="android:windowBackground">#FF0E1733</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
 </resources>

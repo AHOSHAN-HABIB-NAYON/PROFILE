@@ -59,8 +59,8 @@ public class IncomingCallActivity extends Activity {
             getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
         }
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        getWindow().setStatusBarColor(Color.parseColor("#15224A"));
-        getWindow().setNavigationBarColor(Color.parseColor("#070C1C"));
+        // Edge to edge (Android 15 way): the background runs behind the status and navigation bars.
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
         Intent in = getIntent();
         callId = in.getStringExtra("qw_call_id");
@@ -148,10 +148,16 @@ public class IncomingCallActivity extends Activity {
         rowLp.leftMargin = dp(16);
         rowLp.rightMargin = dp(16);
         root.addView(row, rowLp);
-        row.addView(button(en ? "Decline" : "কেটে দিন", "#E11D48", R.drawable.qw_ic_call_end, v -> onDecline()), new LinearLayout.LayoutParams(0, -2, 1));
-        row.addView(swipeAnswer(en), new LinearLayout.LayoutParams(0, -2, 1));
+        row.addView(swipe(en ? "Decline" : "কেটে দিন", "#E11D48", R.drawable.qw_ic_call_end, false, this::onDecline), new LinearLayout.LayoutParams(0, -2, 1));
+        row.addView(swipe(en ? "Swipe up to accept" : "উপরে টেনে ধরুন", "#16A34A", R.drawable.qw_ic_call, true, this::onAnswer), new LinearLayout.LayoutParams(0, -2, 1));
         row.addView(button(en ? "Message" : "মেসেজ", "#2B3550", R.drawable.qw_ic_message, v -> onMessage()), new LinearLayout.LayoutParams(0, -2, 1));
 
+        // Keep the name and the buttons clear of the system bars.
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            androidx.core.graphics.Insets bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars());
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            return insets;
+        });
         setContentView(root);
 
         // Caller's picture (the ring does not wait for it).
@@ -168,78 +174,97 @@ public class IncomingCallActivity extends Activity {
     }
 
     /**
-     * WhatsApp-style answer: a green call button that you slide up to answer (down to decline).
-     * A slide can't happen by accident in a pocket; a tap just shows the hint.
+     * WhatsApp-style call buttons: slide up to answer (green) or to decline (red), so nothing
+     * happens by accident in a pocket. The green one rises by itself now and then to show how;
+     * a tap on either just nudges it and shows the hint.
      */
-    private View swipeAnswer(boolean en) {
+    private View swipe(String label, String color, int icon, boolean answer, Runnable action) {
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
-        box.setGravity(Gravity.CENTER_HORIZONTAL);
+        box.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM);
         box.setClipChildren(false);
         box.setClipToPadding(false);
-        // Three chevrons above the button, glowing one after another.
-        LinearLayout arrows = new LinearLayout(this);
+        // Green: three chevrons above the button, glowing one after another.
+        final LinearLayout arrows = new LinearLayout(this);
         arrows.setOrientation(LinearLayout.VERTICAL);
         arrows.setGravity(Gravity.CENTER_HORIZONTAL);
-        for (int i = 0; i < 3; i++) {
-            TextView a = new TextView(this);
-            a.setText("\u2303");
-            a.setTextColor(Color.WHITE);
-            a.setTextSize(22);
-            a.setIncludeFontPadding(false);
-            a.setGravity(Gravity.CENTER);
-            a.setAlpha(0.25f);
-            arrows.addView(a, new LinearLayout.LayoutParams(-2, dp(16)));
-            android.animation.ObjectAnimator g = android.animation.ObjectAnimator.ofFloat(a, "alpha", 0.2f, 1f, 0.2f);
-            g.setDuration(1200);
-            g.setStartDelay((2 - i) * 180L);
-            g.setRepeatCount(android.animation.ValueAnimator.INFINITE);
-            g.start();
+        if (answer) {
+            for (int i = 0; i < 3; i++) {
+                TextView a = new TextView(this);
+                a.setText("⌃");
+                a.setTextColor(Color.WHITE);
+                a.setTextSize(22);
+                a.setIncludeFontPadding(false);
+                a.setGravity(Gravity.CENTER);
+                a.setAlpha(0.25f);
+                arrows.addView(a, new LinearLayout.LayoutParams(-2, dp(16)));
+                android.animation.ObjectAnimator g = android.animation.ObjectAnimator.ofFloat(a, "alpha", 0.2f, 1f, 0.2f);
+                g.setDuration(1200);
+                g.setStartDelay((2 - i) * 180L);
+                g.setRepeatCount(android.animation.ValueAnimator.INFINITE);
+                g.start();
+            }
+            LinearLayout.LayoutParams arLp = new LinearLayout.LayoutParams(-2, -2);
+            arLp.bottomMargin = dp(10);
+            box.addView(arrows, arLp);
         }
-        LinearLayout.LayoutParams arLp = new LinearLayout.LayoutParams(-2, -2);
-        arLp.bottomMargin = dp(8);
-        box.addView(arrows, arLp);
 
         final ImageView b = new ImageView(this);
-        GradientDrawable d = new GradientDrawable();
+        final GradientDrawable d = new GradientDrawable();
         d.setShape(GradientDrawable.OVAL);
-        d.setColor(Color.parseColor("#16A34A"));
+        d.setColor(Color.parseColor(color));
         b.setBackground(d);
-        b.setImageResource(R.drawable.qw_ic_call);
+        b.setImageResource(icon);
         b.setScaleType(ImageView.ScaleType.CENTER);
-        b.setElevation(dp(10));
-        b.setContentDescription(en ? "Slide up to answer" : "ধরতে উপরে টানুন");
-        box.addView(b, new LinearLayout.LayoutParams(dp(76), dp(76)));
-        // Gentle bounce so people see it moves.
-        final android.animation.ObjectAnimator bounce = android.animation.ObjectAnimator.ofFloat(b, "translationY", 0f, -dp(10), 0f);
-        bounce.setDuration(1300);
-        bounce.setRepeatCount(android.animation.ValueAnimator.INFINITE);
-        bounce.setInterpolator(new AccelerateDecelerateInterpolator());
-        bounce.start();
+        b.setElevation(dp(answer ? 10 : 6));
+        b.setContentDescription(label);
+        int size = dp(answer ? 74 : 66);
+        box.addView(b, new LinearLayout.LayoutParams(size, size));
+
+        // Green rises by itself and drops back, then rests (like WhatsApp).
+        android.animation.ObjectAnimator lift = null;
+        if (answer) {
+            android.animation.Keyframe k0 = android.animation.Keyframe.ofFloat(0f, 0f);
+            android.animation.Keyframe k1 = android.animation.Keyframe.ofFloat(0.22f, -dp(44));
+            android.animation.Keyframe k2 = android.animation.Keyframe.ofFloat(0.45f, 0f);
+            android.animation.Keyframe k3 = android.animation.Keyframe.ofFloat(0.55f, -dp(8));
+            android.animation.Keyframe k4 = android.animation.Keyframe.ofFloat(0.65f, 0f);
+            android.animation.Keyframe k5 = android.animation.Keyframe.ofFloat(1f, 0f);
+            k1.setInterpolator(new android.view.animation.DecelerateInterpolator());
+            k2.setInterpolator(new android.view.animation.AccelerateInterpolator());
+            lift = android.animation.ObjectAnimator.ofPropertyValuesHolder(b, android.animation.PropertyValuesHolder.ofKeyframe("translationY", k0, k1, k2, k3, k4, k5));
+            lift.setDuration(2000);
+            lift.setRepeatCount(android.animation.ValueAnimator.INFINITE);
+            lift.setStartDelay(500);
+            lift.start();
+        }
+        final android.animation.ObjectAnimator hint = lift;
 
         final TextView t = new TextView(this);
-        t.setText(en ? "Slide up to answer" : "ধরতে উপরে টানুন");
+        t.setText(label);
         t.setTextColor(Color.parseColor("#D9FFFFFF"));
         t.setTextSize(13);
+        t.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(-2, -2);
         tl.topMargin = dp(10);
         box.addView(t, tl);
 
-        final float upAt = dp(110), downAt = dp(90);
+        final int base = Color.parseColor(color);
+        final float upAt = dp(answer ? 110 : 100);
         final float[] start = new float[1];
         b.setOnTouchListener((v, ev) -> {
             switch (ev.getActionMasked()) {
                 case android.view.MotionEvent.ACTION_DOWN:
-                    bounce.cancel();
+                    if (hint != null) hint.cancel();
+                    v.setTranslationY(0);
                     start[0] = ev.getRawY();
                     v.animate().scaleX(1.12f).scaleY(1.12f).setDuration(120).start();
                     return true;
                 case android.view.MotionEvent.ACTION_MOVE: {
-                    float dy = ev.getRawY() - start[0];
-                    dy = Math.max(-upAt * 1.3f, Math.min(downAt * 1.2f, dy));
+                    float dy = Math.max(-upAt * 1.3f, Math.min(0f, ev.getRawY() - start[0]));
                     v.setTranslationY(dy);
-                    float p = Math.min(1f, Math.abs(dy) / (dy < 0 ? upAt : downAt));
-                    ((GradientDrawable) v.getBackground()).setColor(dy > 0 ? blend("#16A34A", "#E11D48", p) : Color.parseColor("#16A34A"));
+                    float p = Math.min(1f, -dy / upAt);
+                    d.setColor(blend(base, Color.WHITE, p * 0.18f));
                     arrows.setAlpha(1f - p);
                     return true;
                 }
@@ -247,20 +272,19 @@ public class IncomingCallActivity extends Activity {
                 case android.view.MotionEvent.ACTION_CANCEL: {
                     float dy = ev.getRawY() - start[0];
                     if (dy <= -upAt) {
-                        v.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
-                        v.animate().translationY(-upAt * 1.6f).alpha(0f).setDuration(160).withEndAction(this::onAnswer).start();
+                        v.performHapticFeedback(answer ? android.view.HapticFeedbackConstants.LONG_PRESS : android.view.HapticFeedbackConstants.VIRTUAL_KEY);
+                        v.animate().translationY(-upAt * 1.6f).alpha(0f).setDuration(160).withEndAction(action).start();
                         return true;
                     }
-                    if (dy >= downAt) {
-                        v.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY);
-                        onDecline();
-                        return true;
-                    }
-                    // Not far enough: spring back and show the hint.
-                    v.animate().translationY(0).scaleX(1f).scaleY(1f).setDuration(220).setInterpolator(new android.view.animation.OvershootInterpolator()).withEndAction(bounce::start).start();
-                    ((GradientDrawable) v.getBackground()).setColor(Color.parseColor("#16A34A"));
+                    // Not far enough (or a tap): small nudge up, spring back, show the hint.
+                    d.setColor(base);
                     arrows.setAlpha(1f);
-                    t.animate().scaleX(1.1f).scaleY(1.1f).setDuration(120).withEndAction(() -> t.animate().scaleX(1f).scaleY(1f).setDuration(120).start()).start();
+                    v.animate().translationY(-dp(18)).scaleX(1f).scaleY(1f).setDuration(140).withEndAction(() ->
+                        v.animate().translationY(0).setDuration(260).setInterpolator(new android.view.animation.OvershootInterpolator(2.5f)).withEndAction(() -> {
+                            if (hint != null) hint.start();
+                        }).start()).start();
+                    if (!answer) t.setText("Decline".equals(label) ? "Swipe up to decline" : "কাটতে উপরে টানুন");
+                    t.animate().scaleX(1.12f).scaleY(1.12f).setDuration(120).withEndAction(() -> t.animate().scaleX(1f).scaleY(1f).setDuration(120).start()).start();
                     return true;
                 }
             }
@@ -269,8 +293,7 @@ public class IncomingCallActivity extends Activity {
         return box;
     }
 
-    private static int blend(String a, String b, float p) {
-        int ca = Color.parseColor(a), cb = Color.parseColor(b);
+    private static int blend(int ca, int cb, float p) {
         int r = (int) (Color.red(ca) + (Color.red(cb) - Color.red(ca)) * p);
         int g = (int) (Color.green(ca) + (Color.green(cb) - Color.green(ca)) * p);
         int bl = (int) (Color.blue(ca) + (Color.blue(cb) - Color.blue(ca)) * p);
