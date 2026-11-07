@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Google Play services না থাকা ফোনে বিকল্প চেক রিস্টার্টের পরেও চালু থাকে -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- শুধু Android 9 ও আগের ফোনে ছবি সেভ করতে (নতুন ফোনে লাগে না) -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
 
     <application
         android:name=".App"

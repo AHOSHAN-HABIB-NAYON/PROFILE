@@ -7,6 +7,7 @@ import android.animation.PropertyValuesHolder;
 import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.DownloadManager;
 import android.content.DialogInterface;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
@@ -22,6 +23,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Environment;
 import android.os.Looper;
 import android.view.Gravity;
 import android.view.View;
@@ -43,6 +45,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.firebase.messaging.FirebaseMessaging;
 
@@ -70,7 +73,8 @@ public class MainActivity extends Activity {
     static final String PKG = "com.cakricircular.app";
 
     private static final int TEAL = 0xFF0F766E;
-    private static final int REQ_FILE = 7, REQ_NOTIFY = 8;
+    private static final int REQ_FILE = 7, REQ_NOTIFY = 8, REQ_STORE = 9;
+    private String pendingDl;       // অনুমতির অপেক্ষায় থাকা ডাউনলোড (Android 9 ও আগের)
 
     private final Handler ui = new Handler(Looper.getMainLooper());
     private FrameLayout frame;
@@ -158,8 +162,22 @@ public class MainActivity extends Activity {
     }
 
     @Override
-    public void onBackPressed() {
-        if (web.canGoBack()) web.goBack(); else super.onBackPressed();
+    public void onBackPressed() { handleBack(); }
+
+    /** ব্যাক: আগে খোলা ছবি/পপআপ বন্ধ, তারপর আগের পেজ, শেষে অ্যাপ থেকে বের হওয়া */
+    private static final String CLOSE_OVERLAY_JS =
+        "(function(){var g=document.querySelector('.gv');if(g){var c=g.querySelector('[data-a=close]');"
+      + "if(c)c.click();else g.remove();return 1}var l=document.querySelector('.lb');if(l){l.click();return 1}"
+      + "var d=document.querySelector('.ntp-wrap,.ntp');if(d){var n=d.querySelector('.ntp-no,.ntp-x');if(n){n.click();return 1}}return 0})()";
+    private void handleBack() {
+        if (web == null) { finish(); return; }
+        web.evaluateJavascript(CLOSE_OVERLAY_JS, new ValueCallback<String>() {
+            @Override public void onReceiveValue(String v) {
+                if ("1".equals(v)) return;
+                if (web.canGoBack()) { web.goBack(); updateBack(); }
+                else finish();
+            }
+        });
     }
 
     /** নোটিফিকেশন বা শেয়ার করা লিংক থেকে খোলা হলে সেই পেজ */
@@ -269,14 +287,47 @@ public class MainActivity extends Activity {
         });
     }
 
+    /** ছবি নামানো — Android-এর ডাউনলোড ম্যানেজার দিয়ে, নোটিফিকেশনে অগ্রগতি দেখায় */
+    private void download(String url) {
+        if (Build.VERSION.SDK_INT < 29
+                && checkSelfPermission("android.permission.WRITE_EXTERNAL_STORAGE") != PackageManager.PERMISSION_GRANTED) {
+            pendingDl = url;
+            requestPermissions(new String[]{"android.permission.WRITE_EXTERNAL_STORAGE"}, REQ_STORE);
+            return;
+        }
+        try {
+            Uri u = Uri.parse(url);
+            String last = u.getLastPathSegment() == null ? "image.jpg" : u.getLastPathSegment();
+            String name = "chakri-circular-" + last.replaceAll("[^A-Za-z0-9._-]", "");
+            DownloadManager.Request r = new DownloadManager.Request(u)
+                    .setTitle("চাকরি সার্কুলার — বিজ্ঞপ্তির ছবি")
+                    .setDescription(name)
+                    .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                    .setDestinationInExternalPublicDir(Environment.DIRECTORY_PICTURES, "ChakriCircular/" + name);
+            r.addRequestHeader("User-Agent", UA);
+            String ck = CookieManager.getInstance().getCookie(url);
+            if (ck != null) r.addRequestHeader("Cookie", ck);
+            if (Build.VERSION.SDK_INT < 29) r.allowScanningByMediaScanner();
+            ((DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE)).enqueue(r);
+            Toast.makeText(this, "ডাউনলোড শুরু হয়েছে — গ্যালারিতে পাবেন", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            openOutside(url);           // কোনো কারণে না হলে ব্রাউজারে
+        }
+    }
+
     /** সাইটের পেজ অ্যাপে, বাকি সব (PDF, অন্য সাইট, ফোন, হোয়াটসঅ্যাপ) বাইরের অ্যাপে */
     private boolean handleLink(String url) {
         Uri u = Uri.parse(url);
         String sc = u.getScheme() == null ? "" : u.getScheme().toLowerCase();
         String h = u.getHost() == null ? "" : u.getHost().toLowerCase();
         String path = u.getPath() == null ? "" : u.getPath().toLowerCase();
-        if ((sc.equals("https") || sc.equals("http")) && (h.equals(HOST) || h.endsWith("." + HOST))
-                && !path.endsWith(".pdf") && !path.startsWith("/v2admin")) {
+        boolean ours = (sc.equals("https") || sc.equals("http")) && (h.equals(HOST) || h.endsWith("." + HOST));
+        /* বিজ্ঞপ্তির ছবি "ডাউনলোড" — ফোনের গ্যালারিতে (Pictures/ChakriCircular) সেভ */
+        if (ours && path.startsWith("/uploads/") && path.matches(".*\\.(jpe?g|png|webp|gif)$")) {
+            download(url);
+            return true;
+        }
+        if (ours && !path.endsWith(".pdf") && !path.startsWith("/v2admin")) {
             offline.setVisibility(View.GONE);
             return false;
         }
@@ -318,7 +369,7 @@ public class MainActivity extends Activity {
     /** Android 13+ এ নতুন ব্যাক সিস্টেম: পেছনে পেজ থাকলে ব্যাক = আগের পেজ */
     private void updateBack() {
         if (Build.VERSION.SDK_INT < 33) return;
-        boolean want = web.canGoBack();
+        boolean want = true;            // সবসময় নিজে সামলাই — খোলা ছবি আগে বন্ধ হবে
         if (want == backOn) return;
         try {
             Object disp = getClass().getMethod("getOnBackInvokedDispatcher").invoke(this);
@@ -327,8 +378,7 @@ public class MainActivity extends Activity {
                 backCb = Proxy.newProxyInstance(cbCls.getClassLoader(), new Class<?>[]{cbCls}, new InvocationHandler() {
                     @Override public Object invoke(Object p, Method m, Object[] a) {
                         if ("onBackInvoked".equals(m.getName())) {
-                            if (web.canGoBack()) web.goBack();
-                            updateBack();
+                            handleBack();
                             return null;
                         }
                         if ("hashCode".equals(m.getName())) return System.identityHashCode(p);
@@ -917,6 +967,13 @@ public class MainActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int req, String[] perms, int[] res) {
         super.onRequestPermissionsResult(req, perms, res);
+        if (req == REQ_STORE) {
+            String u = pendingDl; pendingDl = null;
+            if (u == null) return;
+            if (res.length > 0 && res[0] == PackageManager.PERMISSION_GRANTED) download(u);
+            else Toast.makeText(this, "ছবি সেভ করতে স্টোরেজের অনুমতি লাগে", Toast.LENGTH_SHORT).show();
+            return;
+        }
         if (req != REQ_NOTIFY) return;
         boolean denied = res.length == 0 || res[0] != PackageManager.PERMISSION_GRANTED;
         // ইউজার চালু করতে চাইলেন, কিন্তু আগে দুবার "Don't allow" দেওয়ায় সিস্টেম আর জিজ্ঞেস করেনি → সেটিংস খুলে দিই
