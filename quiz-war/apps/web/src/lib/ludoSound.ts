@@ -30,6 +30,12 @@ function ac() {
 
 const on = () => useSettings.getState().sound !== false;
 
+/** Quieter while someone talks in live voice, back to normal when they stop. */
+export function setLudoDuck(f: number) {
+  if (!ctx || !out) return;
+  out.gain.setTargetAtTime(0.9 * f, ctx.currentTime, 0.12);
+}
+
 /** Soft tone with a smooth attack and decay (no clicks). */
 function tone(freq: number, at: number, len: number, vol: number, type: OscillatorType = 'sine', glideTo?: number) {
   const c = ac();
@@ -68,7 +74,7 @@ function click(at: number, vol: number, freq = 2400, len = 0.05, q = 1.4) {
   src.start(at);
 }
 
-export type LudoSfx = 'roll' | 'step' | 'out' | 'capture' | 'home' | 'six' | 'win' | 'turn' | 'safe';
+export type LudoSfx = 'roll' | 'step' | 'out' | 'capture' | 'home' | 'six' | 'win' | 'turn' | 'safe' | 'warn';
 
 export function ludoSfx(name: LudoSfx, n = 0) {
   if (!on()) return;
@@ -117,6 +123,14 @@ export function ludoSfx(name: LudoSfx, n = 0) {
       case 'turn':
         tone(660, t, 0.12, 0.16, 'sine');
         break;
+      case 'warn': {
+        // Last seconds of my turn: a clock "tick-tock" that gets higher and brighter (n = seconds left).
+        const f = 740 + (5 - Math.max(1, Math.min(5, n))) * 90;
+        click(t, 0.5, 2600, 0.03, 2);
+        tone(f, t, 0.16, 0.22, 'triangle');
+        if (n <= 2) tone(f * 1.5, t + 0.09, 0.14, 0.16, 'sine');
+        break;
+      }
       case 'win': {
         const notes = [523, 659, 784, 1047, 784, 1047, 1319];
         notes.forEach((f, i) => tone(f, t + i * 0.13, 0.5, 0.3, 'triangle'));

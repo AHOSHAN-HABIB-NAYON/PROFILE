@@ -20,6 +20,8 @@ interface Member {
   lost?: NodeJS.Timeout;
   /** The device (socket) this person is in the call on. */
   socket?: string;
+  /** Their phone showed the call (the caller heard "ringing"). */
+  rang?: boolean;
 }
 
 interface Call {
@@ -80,6 +82,29 @@ export class CallService {
         this.removeMember(c, uid, 'declined');
         return true;
       }
+    }
+    return false;
+  }
+
+  /** The called phone shows the call (app open, or the ring push arrived): tell whoever invited them. */
+  ringing(callId: string, userId: number) {
+    const c = this.calls.get(callId);
+    const m = c?.members.get(userId);
+    if (!c || m?.state !== 'ringing' || m.rang) return false;
+    m.rang = true;
+    this.d.emit(m.inviter, 'call:ringing', { callId, userId });
+    return true;
+  }
+
+  /** Ring push arrived (signed link, no login). */
+  ringingWithToken(callId: string, token: string) {
+    const c = this.calls.get(callId);
+    if (!c) return false;
+    const got = Buffer.from(String(token));
+    for (const [uid, m] of c.members) {
+      if (m.state !== 'ringing') continue;
+      const want = Buffer.from(this.declineToken(callId, uid));
+      if (want.length === got.length && timingSafeEqual(want, got)) return this.ringing(callId, uid);
     }
     return false;
   }

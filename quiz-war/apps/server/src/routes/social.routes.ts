@@ -229,4 +229,10 @@ export async function socialRoutes(app: FastifyInstance, ctx: AppContext) {
     const q = parse(z.object({ t: z.string().min(10).max(80) }), req.query);
     return { declined: callRegistry.current?.declineWithToken(p.id, q.t) ?? false };
   });
+  /** The ring push reached the phone (it rings there): the caller sees "Ringing…". */
+  app.post('/calls/:id/ringing', { config: { rateLimit: { max: 30, timeWindow: '1 minute' } } }, async (req) => {
+    const p = parse(z.object({ id: z.string().regex(/^[0-9A-Z]{26}$/) }), req.params);
+    const q = parse(z.object({ t: z.string().min(10).max(80) }), req.query);
+    return { ok: callRegistry.current?.ringingWithToken(p.id, q.t) ?? false };
+  });
 }

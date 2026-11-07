@@ -17,6 +17,11 @@ export const tokenStore = {
       return null;
     }
   },
+  /** Like get(), but throws when the storage can't be read (instead of acting as signed out). */
+  async read(): Promise<string | null> {
+    if (!isNative) return null;
+    return ((await SecureStorage.get(KEY)) as string | null) ?? null;
+  },
   async set(token: string | undefined) {
     if (!isNative || !token) return;
     await SecureStorage.set(KEY, token).catch(() => undefined);

@@ -186,6 +186,8 @@ export interface ClientToServerEvents {
   /** 1-to-1 audio call: the call id doubles as the voice room id. */
   'call:start': (p: { to: number; /** Video call (camera on from the start). */ video?: boolean }, ack: Ack<{ callId: string; peer: PublicUser }>) => void;
   'call:answer': (p: { callId: string }, ack?: Ack) => void;
+  /** My phone shows the incoming call (so the caller hears "ringing" instead of "calling"). */
+  'call:ring': (p: { callId: string }, ack?: Ack) => void;
   'call:decline': (p: { callId: string }, ack?: Ack) => void;
   'call:end': (p: { callId: string }, ack?: Ack) => void;
   /** Bring a friend into a live call (up to 4 people). */
@@ -196,6 +198,7 @@ export interface ClientToServerEvents {
   'ludo:create': (p: { size: 2 | 4; teams: boolean }, ack: Ack<{ snapshot: LudoSnapshot }>) => void;
   'ludo:join': (p: { code: string }, ack: Ack<{ snapshot: LudoSnapshot }>) => void;
   'ludo:start': (p: { gameId: string }, ack?: Ack) => void;
+  'ludo:partner': (p: { gameId: string; userId: number }, ack?: Ack) => void;
   'ludo:leave': (p: { gameId: string }, ack?: Ack) => void;
   'ludo:roll': (p: { gameId: string }, ack?: Ack) => void;
   'ludo:move': (p: { gameId: string; token: number }, ack?: Ack) => void;
@@ -259,6 +262,8 @@ export interface ServerToClientEvents {
   'call:members': (p: { callId: string; members: { user: PublicUser; state: 'ringing' | 'active' }[] }) => void;
   /** The other side picked up (to the caller), or I picked up on another device. */
   'call:accepted': (p: { callId: string; elsewhere?: boolean }) => void;
+  /** The person I call has the call on their phone now (it rings there). */
+  'call:ringing': (p: { callId: string; userId: number }) => void;
   'call:ended': (p: { callId: string; reason: CallEndReason; secs?: number }) => void;
   'ludo:snap': (p: LudoSnapshot) => void;
   /** Auto match found a game. */

@@ -39,6 +39,8 @@ interface ChatState {
   setViewing: (peerId: number | null) => void;
   dropHead: (peerId: number) => void;
   clearHeads: () => void;
+  /** Keep a quiet head for a chat that was minimized. */
+  pinHead: (peer: ChatHead['peer']) => void;
 }
 
 function sendFocus() {
@@ -56,6 +58,8 @@ export const useChat = create<ChatState>((set) => ({
   },
   dropHead: (peerId) => set((st) => ({ heads: st.heads.filter((h) => h.peer.id !== peerId) })),
   clearHeads: () => set({ heads: [] }),
+  pinHead: (peer) =>
+    set((st) => (st.heads.some((h) => h.peer.id === peer.id) ? st : { heads: [{ peer, count: 0, last: '', at: 0, request: false }, ...st.heads].slice(0, 4) })),
 }));
 
 function patchThread(uid: string, fn: (d: ThreadData) => ThreadData) {
@@ -105,9 +109,12 @@ export function registerChat() {
         return;
       }
       if (!request) queryClient.setQueryData<number>(['chats-unread'], (n) => (n ?? 0) + 1);
-      if (location.pathname.startsWith('/match/')) return;
-      sfx('message');
-      haptic('tap');
+      // During a quiz stay quiet: no sound, only a chat head the player can open over the game.
+      const inQuiz = location.pathname.startsWith('/match/');
+      if (!inQuiz) {
+        sfx('message');
+        haptic('tap');
+      } else if (!useSettings.getState().chatHeads) return;
       if (useSettings.getState().chatHeads) {
         useChat.setState((st) => {
           const old = st.heads.find((h) => h.peer.id === peer.id);

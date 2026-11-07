@@ -67,9 +67,11 @@ export function CallScreen() {
               : call.video
                 ? t('Incoming video call', 'ভিডিও কল আসছে')
                 : t('Incoming audio call', 'অডিও কল আসছে')
-            : call.video
-              ? t('Video calling…', 'ভিডিও কল হচ্ছে…')
-              : t('Calling…', 'কল হচ্ছে…');
+            : call.rang
+              ? t('Ringing…', 'রিং হচ্ছে…')
+              : call.video
+                ? t('Video calling…', 'ভিডিও কল হচ্ছে…')
+                : t('Calling…', 'কল হচ্ছে…');
   const remote = videos[peer.id] ?? null;
   const hasVideo = !!call.video || camOn || Object.keys(videos).length > 0;
   /** 1-to-1 video: their picture fills the screen; while it rings, my own camera does. */
@@ -172,10 +174,7 @@ export function CallScreen() {
             <button type="button" className="cs-btn end" onClick={declineCall} aria-label={t('Decline', 'কেটে দিন')}><Icon name="phone-off" size={26} /></button>
             <small>{t('Decline', 'কেটে দিন')}</small>
           </span>
-          <span className="cs-act">
-            <button type="button" className="cs-btn accept" onClick={() => void answerCall()} aria-label={t('Answer', 'ধরুন')}><Icon name={call.video ? 'video' : 'phone'} size={26} /></button>
-            <small>{t('Answer', 'ধরুন')}</small>
-          </span>
+          <SwipeAnswer video={!!call.video} onAnswer={() => void answerCall()} onDecline={declineCall} />
           <span className="cs-act">
             <button type="button" className="cs-btn soft" onClick={() => (declineCall(), navigateTo(`/chat/${peer.uid}`))} aria-label={t('Message', 'মেসেজ')}><Icon name="message" size={24} /></button>
             <small>{t('Message', 'মেসেজ')}</small>
@@ -374,6 +373,56 @@ function SelfPip({ stream, mirror, onTap }: { stream: MediaStream; mirror?: bool
       <i className="cv-pip-grip" />
       {hint && <span className="cv-pip-hint"><Icon name="arrow-right" size={13} /> {t('Drag to any corner', 'টেনে যেকোনো কোণে নিন')}</span>}
     </div>
+  );
+}
+
+/** WhatsApp-style answer: slide the green button up to answer (down to decline). Tap shows the hint. */
+function SwipeAnswer({ video, onAnswer, onDecline }: { video: boolean; onAnswer: () => void; onDecline: () => void }) {
+  const t = useT();
+  const [dy, setDy] = useState(0);
+  const [drag, setDrag] = useState(false);
+  const [hint, setHint] = useState(0);
+  const start = useRef(0);
+  const UP = 110, DOWN = 90;
+  const p = Math.min(1, Math.abs(dy) / (dy < 0 ? UP : DOWN));
+  return (
+    <span className="cs-act cs-swipe">
+      <span className="csw-arrows" style={{ opacity: drag ? 1 - p : 1 }} aria-hidden>
+        <Icon name="chevron-down" size={22} /><Icon name="chevron-down" size={22} /><Icon name="chevron-down" size={22} />
+      </span>
+      <button
+        type="button"
+        className={`cs-btn accept csw-btn${drag ? ' drag' : ''}${dy > 0 ? ' down' : ''}`}
+        style={{ transform: `translateY(${dy}px) scale(${drag ? 1.1 : 1})`, ['--p' as any]: dy > 0 ? p : 0 }}
+        aria-label={t('Slide up to answer', 'ধরতে উপরে টানুন')}
+        onPointerDown={(e) => {
+          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+          start.current = e.clientY;
+          setDrag(true);
+        }}
+        onPointerMove={(e) => drag && setDy(Math.max(-UP * 1.3, Math.min(DOWN * 1.2, e.clientY - start.current)))}
+        onPointerUp={(e) => {
+          const d = e.clientY - start.current;
+          setDrag(false);
+          if (d <= -UP) {
+            haptic('success');
+            setDy(-UP * 1.6);
+            return onAnswer();
+          }
+          if (d >= DOWN) {
+            haptic('heavy');
+            return onDecline();
+          }
+          setDy(0);
+          setHint((n) => n + 1);
+        }}
+        onPointerCancel={() => (setDrag(false), setDy(0))}
+        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onAnswer()}
+      >
+        <Icon name={video ? 'video' : 'phone'} size={28} />
+      </button>
+      <small key={hint} className={hint ? 'csw-hint pop' : 'csw-hint'}>{t('Slide up to answer', 'ধরতে উপরে টানুন')}</small>
+    </span>
   );
 }
 

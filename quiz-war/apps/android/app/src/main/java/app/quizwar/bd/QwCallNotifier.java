@@ -83,13 +83,22 @@ public final class QwCallNotifier {
         declineInBackground(ctx, callId, token, null);
     }
 
+    /** Tell the server the call rings on this phone (the caller then sees "Ringing…"). */
+    static void ringingInBackground(Context ctx, String callId, String token) {
+        postSigned(ctx, callId, token, "ringing", null);
+    }
+
     static void declineInBackground(Context ctx, String callId, String token, Runnable done) {
+        postSigned(ctx, callId, token, "decline", done);
+    }
+
+    private static void postSigned(Context ctx, String callId, String token, String what, Runnable done) {
         final String base = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("api", null);
         new Thread(() -> {
             HttpURLConnection c = null;
             try {
                 if (base != null && callId != null && token != null) {
-                    c = (HttpURLConnection) new URL(base + "/api/v1/calls/" + Uri.encode(callId) + "/decline?t=" + Uri.encode(token)).openConnection();
+                    c = (HttpURLConnection) new URL(base + "/api/v1/calls/" + Uri.encode(callId) + "/" + what + "?t=" + Uri.encode(token)).openConnection();
                     c.setRequestMethod("POST");
                     c.setConnectTimeout(6000);
                     c.setReadTimeout(6000);

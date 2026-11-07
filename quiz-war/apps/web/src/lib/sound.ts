@@ -13,7 +13,15 @@ function ac() {
   return ctx;
 }
 
+/** Game sounds get quieter while someone talks in live voice (1 = normal). */
+let duck = 1;
+export function setSfxDuck(f: number) {
+  duck = f;
+  if (current?.audio && !current.audio.paused) current.audio.volume = Math.max(0, Math.min(1, sources.volume * 0.6 * f));
+}
+
 function tone(freq: number, start: number, dur: number, type: OscillatorType = 'sine', gain = 0.12) {
+  gain = Math.max(0.0002, gain * duck);
   const c = ac();
   const o = c.createOscillator();
   const g = c.createGain();

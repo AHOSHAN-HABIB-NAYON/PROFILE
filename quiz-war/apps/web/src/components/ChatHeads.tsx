@@ -1,13 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useChat } from '../lib/chat';
+
+type ChatPeer = ReturnType<typeof useChat.getState>['heads'][number]['peer'];
 import { useT } from '../lib/i18n';
 import { haptic } from '../lib/platform';
 import { useSettings } from '../lib/settings';
 import { Avatar } from './Avatar';
 import { Icon } from './Icon';
 
-const HIDE_ON = ['/chat/', '/match/', '/matchmaking', '/war-room/', '/intro', '/login', '/register', '/onboarding'];
+const HIDE_ON = ['/chat/', '/intro', '/login', '/register', '/onboarding'];
+/** In these screens a tap opens the chat as a popup, so the game keeps running. */
+const GAME = /^\/(match|war-room|matchmaking|ludo|result)/;
+const Chat = lazy(() => import('../pages/Chat'));
 
 /**
  * Messenger-style chat heads: round avatars that float over the app when someone messages
@@ -23,6 +28,7 @@ export function ChatHeads() {
   const [drag, setDrag] = useState<{ x: number; y: number } | null>(null);
   const [overClose, setOverClose] = useState(false);
   const [preview, setPreview] = useState<number | null>(null);
+  const [open, setOpen] = useState<ChatPeer | null>(null);
   const start = useRef<{ x: number; y: number; moved: boolean; id: number } | null>(null);
 
   const newest = heads[0];
@@ -33,6 +39,33 @@ export function ChatHeads() {
     const id = setTimeout(() => setPreview(null), 4500);
     return () => clearTimeout(id);
   }, [newest?.at]);
+
+  const inGame = GAME.test(pathname);
+  // Leaving the game closes the popup but keeps its head.
+  useEffect(() => {
+    if (!inGame && open) {
+      useChat.getState().pinHead(open);
+      setOpen(null);
+    }
+  }, [inGame]);
+
+  const minimize = () => {
+    if (open) useChat.getState().pinHead(open);
+    setOpen(null);
+  };
+
+  if (open) {
+    return (
+      <div className="chat-pop" role="dialog" aria-label={open.username}>
+        <button type="button" className="chat-pop-back" aria-label={t('Minimize', 'ছোট করুন')} onClick={minimize} />
+        <div className="chat-pop-card">
+          <Suspense fallback={<div className="chat-pop-wait" />}>
+            <Chat peerUid={open.uid} onClose={minimize} />
+          </Suspense>
+        </div>
+      </div>
+    );
+  }
 
   if (!enabled || !heads.length || HIDE_ON.some((p) => pathname.startsWith(p))) return null;
 
@@ -63,7 +96,8 @@ export function ChatHeads() {
       if (h) {
         haptic('tap');
         useChat.getState().dropHead(h.peer.id);
-        nav(`/chat/${h.peer.uid}`);
+        if (inGame) setOpen(h.peer);
+        else nav(`/chat/${h.peer.uid}`);
       }
       return;
     }
@@ -101,7 +135,7 @@ export function ChatHeads() {
             {i === 0 && preview === h.at && !drag && (
               <span className="ch-preview">
                 <b>{h.request ? t('Message request', 'মেসেজ রিকোয়েস্ট') : h.peer.username}</b>
-                <span>{h.last}</span>
+                <span>{h.last || t('Tap to chat', 'চ্যাট করতে চাপুন')}</span>
               </span>
             )}
           </button>

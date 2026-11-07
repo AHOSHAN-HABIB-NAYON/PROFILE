@@ -245,19 +245,30 @@ export class AuthService {
       [hash],
     );
     if (!session) {
-      const reused = await queryOne<{ id: number; user_id: number; last_used_at: Date; revoked_at: Date | null }>(
-        `SELECT id, user_id, last_used_at, revoked_at FROM user_sessions WHERE previous_hash = ?`,
+      const reused = await queryOne<{ id: number; user_id: number; last_used_at: Date; revoked_at: Date | null; expires_at: Date }>(
+        `SELECT id, user_id, last_used_at, revoked_at, expires_at FROM user_sessions WHERE previous_hash = ?`,
         [hash],
       );
-      if (reused && !reused.revoked_at) {
-        if (Date.now() - reused.last_used_at.getTime() < REFRESH_RACE_GRACE_MS) {
-          // Two tabs refreshed at the same time; the other one already rotated the cookie.
-          throw new AppError(409, 'refresh_race', 'Session refreshed elsewhere, retry');
-        }
-        await exec(`UPDATE user_sessions SET revoked_at = UTC_TIMESTAMP(), revoke_reason = 'token_reuse' WHERE id = ?`, [reused.id]);
-        await this.logLogin(reused.user_id, 'refresh', false, 'token_reuse', meta);
+      if (!reused || reused.revoked_at || reused.expires_at.getTime() < Date.now()) throw unauthorized();
+      if (Date.now() - reused.last_used_at.getTime() < REFRESH_RACE_GRACE_MS) {
+        // Two tabs refreshed at the same time; the other one already rotated the cookie.
+        throw new AppError(409, 'refresh_race', 'Session refreshed elsewhere, retry');
       }
-      throw unauthorized();
+      // The phone sent this token before, but the answer never arrived (bad network, app closed by an
+      // incoming call…), so it still holds the previous token. The newer token was never used (or this
+      // would not be the previous one), so continue the session instead of signing the player out.
+      const next = randomToken(48);
+      const upd = await exec(
+        `UPDATE user_sessions SET refresh_hash = ?, last_used_at = UTC_TIMESTAMP(), ip = ?, user_agent = ?
+         WHERE id = ? AND previous_hash = ? AND revoked_at IS NULL`,
+        [sha256(next), meta.ip ?? null, meta.userAgent?.slice(0, 300) ?? null, reused.id, hash],
+      );
+      if (upd.affectedRows !== 1) throw new AppError(409, 'refresh_race', 'Session refreshed elsewhere, retry');
+      const u0 = await queryOne<UserAuthRow>(`SELECT ${AUTH_COLUMNS} FROM users WHERE id = ?`, [reused.user_id]);
+      if (!u0) throw unauthorized();
+      this.assertCanLogin(u0);
+      const access = await signAccessToken(this.cfg.jwtSecret, { sub: u0.id, sid: reused.id }, this.cfg.accessTtlSec);
+      return { accessToken: access, refreshToken: next, expiresIn: this.cfg.accessTtlSec, userId: u0.id };
     }
     if (session.revoked_at || session.expires_at.getTime() < Date.now()) throw unauthorized();
     const u = await queryOne<UserAuthRow>(`SELECT ${AUTH_COLUMNS} FROM users WHERE id = ?`, [session.user_id]);

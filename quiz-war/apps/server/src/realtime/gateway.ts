@@ -554,6 +554,7 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
     const callId = z.object({ callId: voiceRoomId });
     socket.on('call:start', guard(z.object({ to: z.number().int().positive(), video: z.boolean().optional() }), async (p) => (await ctx.premium.require(userId, 'calls'), calls.start(userId, socket.id, p.to, !!p.video))));
     socket.on('call:answer', guard(callId, (p) => (calls.answer(userId, socket.id, p.callId), {})));
+    socket.on('call:ring', guard(callId, (p) => (calls.ringing(p.callId, userId), {})));
     socket.on('call:decline', guard(callId, (p) => (calls.decline(userId, p.callId), {})));
     socket.on('call:end', guard(callId, (p) => (calls.end(userId, p.callId), {})));
     socket.on('call:add', guard(z.object({ callId: voiceRoomId, to: z.number().int().positive() }), async (p) => (await ctx.premium.require(userId, 'calls'), calls.add(userId, p.callId, p.to))));
@@ -565,6 +566,7 @@ export function createGateway(ctx: AppContext, http: HttpServer, corsOrigins: st
     socket.on('ludo:unqueue', guard(z.object({}), () => (ludo.unqueue(userId), {})));
     socket.on('ludo:create', guard(z.object({ size: z.union([z.literal(2), z.literal(4)]), teams: z.boolean() }), (p) => ludo.create(userId, p.size, p.teams)));
     socket.on('ludo:join', guard(z.object({ code: z.string().trim().min(4).max(10) }), (p) => ludo.join(userId, p.code)));
+    socket.on('ludo:partner', guard(z.object({ gameId: voiceRoomId, userId: z.number().int().positive() }), (p) => (ludo.partner(userId, p.gameId, p.userId), {})));
     socket.on('ludo:start', guard(gid, (p) => (ludo.start(userId, p.gameId), {})));
     socket.on('ludo:leave', guard(gid, (p) => (ludo.leave(userId, p.gameId), {})));
     socket.on('ludo:roll', guard(gid, (p) => (ludo.roll(userId, p.gameId), {})));

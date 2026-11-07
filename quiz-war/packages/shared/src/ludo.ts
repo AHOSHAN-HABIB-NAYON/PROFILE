@@ -321,6 +321,8 @@ export interface LudoSnapshot {
   /** When the current turn times out (ms since epoch). */
   deadline: number | null;
   turnSeconds: number;
+  /** 2 vs 2 room: the player the host picked as teammate. */
+  partnerId?: number | null;
 }
 
 /** Seat colours: 2 players sit opposite (blue vs green); 4 go clockwise from blue. */

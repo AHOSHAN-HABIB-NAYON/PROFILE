@@ -11,6 +11,7 @@ import { NativeExtras } from './components/NativeExtras';
 import { OpenInApp } from './components/OpenInApp';
 import { PromoHost } from './components/Promo';
 import { ChatHeads } from './components/ChatHeads';
+import { LudoMini } from './components/LudoMini';
 import { Splash } from './components/Splash';
 import { Paywall } from './components/Paywall';
 import { PremiumPromo } from './components/PremiumPromo';
@@ -390,6 +391,7 @@ export function App() {
           <NativeExtras />
           <PromoHost />
           <ChatHeads />
+          <LudoMini />
           <CallScreen />
           <Paywall />
           <PremiumPromo />

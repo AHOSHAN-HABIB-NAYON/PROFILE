@@ -49,8 +49,11 @@ let tempSeq = -1;
 /** Messenger-style reactions: like, haha, love, angry, sad, wow. */
 const REACTIONS = ['👍', '😆', '❤️', '😡', '😢', '😮'];
 
-export default function Chat() {
-  const { uid = '' } = useParams();
+/** The chat screen. With `peerUid` + `onClose` it runs as a popup over a game (no page change). */
+export default function Chat({ peerUid, onClose }: { peerUid?: string; onClose?: () => void } = {}) {
+  const params = useParams();
+  const uid = peerUid ?? params.uid ?? '';
+  const popup = !!onClose;
   const t = useT();
   const lang = useLang();
   const nav = useNavigate();
@@ -422,7 +425,7 @@ export default function Chat() {
     return (
       <div className="page stack">
         <ErrorBox error={thread.error} retry={thread.refetch} />
-        <button className="btn outline block" onClick={() => nav('/friends')}><Icon name="arrow-left" /> {t('Back to chats', 'চ্যাটে ফিরে যান')}</button>
+        <button className="btn outline block" onClick={() => (onClose ? onClose() : nav('/friends'))}><Icon name="arrow-left" /> {t('Back to chats', 'চ্যাটে ফিরে যান')}</button>
       </div>
     );
   }
@@ -432,13 +435,13 @@ export default function Chat() {
   const chatOff = cfg && cfg.chatEnabled === false;
 
   return (
-    <div className="chat-page">
+    <div className={`chat-page${popup ? ' popup' : ''}`}>
       <header className="chat-head">
-        <button className="btn icon ghost" aria-label={t('Back', 'ফিরে যান')} onClick={() => (history.length > 1 ? nav(-1) : nav('/friends'))}>
-          <Icon name="back" size={24} />
+        <button className="btn icon ghost" aria-label={popup ? t('Minimize', 'ছোট করুন') : t('Back', 'ফিরে যান')} onClick={() => (onClose ? onClose() : history.length > 1 ? nav(-1) : nav('/friends'))}>
+          <Icon name={popup ? 'chevron-down' : 'back'} size={24} />
         </button>
         {peer ? (
-          <Link to={`/u/${peer.uid}`} className="chat-peer">
+          <Link to={`/u/${peer.uid}`} className="chat-peer" onClick={(e) => popup && e.preventDefault()}>
             <Avatar name={peer.username} src={peer.avatarThumbUrl} status={data?.status} size={42} frame={peer.frame} />
             <span className="grow">
               <b><PlayerName name={peer.username} verified={peer.verified} premium={peer.premium} /></b>
@@ -574,7 +577,7 @@ export default function Chat() {
           <span className="small muted">{t('You are not friends. Accept to reply — they won’t see that you read it until you do.', 'আপনারা বন্ধু নন। উত্তর দিতে Accept করুন — Accept না করা পর্যন্ত সে জানবে না যে আপনি দেখেছেন।')}</span>
           <div className="row">
             <button className="btn danger grow" onClick={() => void act(() => api(`/chats/${peer.uid}/block`, { method: 'POST' }), t('Chat blocked', 'চ্যাট ব্লক করা হয়েছে'))}><Icon name="ban" /> {t('Block', 'ব্লক')}</button>
-            <button className="btn soft grow" onClick={() => void act(() => api(`/chats/${peer.uid}/clear`, { method: 'POST' }), t('Request deleted', 'রিকোয়েস্ট মুছে ফেলা হয়েছে')).then(() => nav('/friends'))}><Icon name="trash" /> {t('Delete', 'মুছুন')}</button>
+            <button className="btn soft grow" onClick={() => void act(() => api(`/chats/${peer.uid}/clear`, { method: 'POST' }), t('Request deleted', 'রিকোয়েস্ট মুছে ফেলা হয়েছে')).then(() => (onClose ? onClose() : nav('/friends')))}><Icon name="trash" /> {t('Delete', 'মুছুন')}</button>
             <button className="btn primary grow" onClick={() => void act(() => api(`/chats/${peer.uid}/accept`, { method: 'POST' }), t('Accepted — you can reply now', 'গ্রহণ করা হয়েছে — এখন উত্তর দিতে পারবেন'))}><Icon name="check" /> {t('Accept', 'Accept')}</button>
           </div>
         </div>

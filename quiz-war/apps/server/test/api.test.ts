@@ -138,16 +138,21 @@ d('HTTP API (MySQL)', () => {
       expect(locked.body.error.code).toBe('account_locked');
     });
 
-    it('rotates refresh tokens and revokes the session on reuse', async () => {
+    it('rotates refresh tokens and survives a lost refresh answer', async () => {
       const p = await newPlayer('rot');
       const r1 = await api('POST', '/auth/refresh', { refreshToken: p.refresh });
       expect(r1.status).toBe(200);
       expect(r1.body.refreshToken).not.toBe(p.refresh);
-      // pretend the rotation happened a while ago, then replay the old token (theft scenario)
+      // the answer was lost: the phone still has the old token a while later -> session continues
       await exec('UPDATE user_sessions SET last_used_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 5 MINUTE) WHERE user_id = ?', [p.user.id]);
-      expect((await api('POST', '/auth/refresh', { refreshToken: p.refresh })).status).toBe(401);
-      // whole session family is now dead
+      const r2 = await api('POST', '/auth/refresh', { refreshToken: p.refresh });
+      expect(r2.status).toBe(200);
+      // the token from the lost answer no longer works, the new one does
       expect((await api('POST', '/auth/refresh', { refreshToken: r1.body.refreshToken })).status).toBe(401);
+      const r3 = await api('POST', '/auth/refresh', { refreshToken: r2.body.refreshToken });
+      expect(r3.status).toBe(200);
+      // a token two steps old is rejected
+      expect((await api('POST', '/auth/refresh', { refreshToken: p.refresh })).status).toBe(401);
     });
 
     it('verifies email and resets password (revoking sessions)', async () => {

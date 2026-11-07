@@ -188,9 +188,40 @@ export class LudoService {
       this.assertFree(userId);
       this.unqueue(userId);
       await this.addUser(g, userId);
+      this.arrange(g);
       this.send(g);
     }
     return { snapshot: this.snap(g) };
+  }
+
+  /**
+   * Seat order decides colours and teams (seats 0+2 vs 1+3). If the host picked a teammate,
+   * the host sits first and the teammate opposite; everyone else keeps their join order.
+   */
+  private arrange(g: Game) {
+    const partner = g.teams && g.partnerId ? g.seats.find((s) => s.userId === g.partnerId) : undefined;
+    if (g.partnerId && !partner) g.partnerId = null;
+    if (partner) {
+      const host = g.seats.find((s) => s.userId === g.hostId);
+      const others = g.seats.filter((s) => s !== host && s !== partner);
+      g.seats = [host, others[0], partner, others[1]].filter((s): s is LudoSeat => !!s);
+    }
+    const colors = ludoColorsFor(g.size);
+    g.seats.forEach((s, k) => {
+      s.color = colors[k]!;
+      s.team = !g.teams ? null : partner ? (s === partner || s.userId === g.hostId ? 0 : 1) : k % 2;
+    });
+  }
+
+  /** 2 vs 2 room: the host chooses a teammate (tap again to undo). */
+  partner(userId: number, gameId: string, partnerId: number) {
+    const g = this.get(gameId);
+    if (g.hostId !== userId) throw new AppError(403, 'not_host', 'Only the host can pick teams');
+    if (g.status !== 'lobby' || !g.teams) return;
+    if (partnerId === userId || !g.seats.some((s) => s.userId === partnerId)) return;
+    g.partnerId = g.partnerId === partnerId ? null : partnerId;
+    this.arrange(g);
+    this.send(g);
   }
 
   /** Host starts — only when the room is full (every seat a real player). */
@@ -276,7 +307,7 @@ export class LudoService {
   private auto(gameId: string) {
     const g = this.games.get(gameId);
     if (!g || g.status !== 'playing') return;
-    if (!g.state!.dice) return this.doRoll(g);
+    if (!g.state!.dice) return this.doRoll(g, true);
     const moves = g.last?.type === 'roll' ? g.last.moves : [];
     if (!moves.length) return this.pass(g);
     this.doMove(g, chooseAiMove(g.state!, moves, 1));
@@ -291,7 +322,10 @@ export class LudoService {
     this.doRoll(g);
   }
 
-  private doRoll(g: Game) {
+  /** Seconds a player gets to pick a token after rolling (then the computer picks). */
+  private static PICK_SECONDS = 10;
+
+  private doRoll(g: Game, auto = false) {
     const dice = randomInt(1, 7);
     const by = g.state!.turn;
     const r = applyRoll(g.state!, dice);
@@ -320,8 +354,10 @@ export class LudoService {
       g.timer = setTimeout(() => this.doMove(g, pick), this.controller(g) === null ? 700 : 450);
       return;
     }
-    g.deadline = Date.now() + g.turnSeconds * 1000;
-    g.timer = setTimeout(() => this.timeout(g.id), g.turnSeconds * 1000);
+    // The player didn't roll (computer rolled for them): move quickly too. Otherwise 10 s to pick.
+    const pick = auto ? 1.5 : Math.min(LudoService.PICK_SECONDS, g.turnSeconds);
+    g.deadline = Date.now() + pick * 1000;
+    g.timer = setTimeout(() => this.timeout(g.id), pick * 1000);
   }
 
   private pass(g: Game) {
@@ -378,8 +414,7 @@ export class LudoService {
     if (g.status === 'lobby') {
       if (userId === g.hostId) return this.close(g);
       g.seats.splice(i, 1);
-      const colors = ludoColorsFor(g.size);
-      g.seats.forEach((s, k) => ((s.color = colors[k]!), (s.team = g.teams ? k % 2 : null)));
+      this.arrange(g);
       this.send(g);
       return;
     }
@@ -415,8 +450,7 @@ export class LudoService {
     if (g.hostId !== userId) throw new AppError(403, 'not_host', 'Only the host can start again');
     g.seats = g.seats.filter((s) => !s.bot && !s.left);
     for (const s of g.seats) this.byUser.set(s.userId, g.id);
-    const colors = ludoColorsFor(g.size);
-    g.seats.forEach((s, k) => ((s.color = colors[k]!), (s.team = g.teams ? k % 2 : null)));
+    this.arrange(g);
     if (g.seats.length < g.size) {
       g.status = 'lobby';
       g.state = null;

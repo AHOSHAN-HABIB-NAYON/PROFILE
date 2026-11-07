@@ -22,6 +22,24 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 @CapacitorPlugin(name = "QwCall")
 public class QwCallPlugin extends Plugin {
     private PowerManager.WakeLock ear;
+    private static volatile QwCallPlugin instance;
+
+    @Override
+    public void load() {
+        instance = this;
+    }
+
+    /** "Hang up" tapped on the ongoing-call notification. False when the app isn't running. */
+    static boolean hangUp() {
+        QwCallPlugin p = instance;
+        if (p == null || p.bridge == null) return false;
+        try {
+            p.bridge.triggerWindowJSEvent("qwcallhangup");
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
     /** Answer / Decline / open tapped on the ringing notification, waiting for the web app. */
     static volatile String pendingAction = null;
     static volatile String pendingCallId = null;
@@ -69,6 +87,9 @@ public class QwCallPlugin extends Plugin {
             Intent i = new Intent(getContext(), QwCallService.class);
             i.putExtra("title", call.getString("title", "QUIZ WAR"));
             i.putExtra("text", call.getString("text", "Call in progress"));
+            i.putExtra("live", Boolean.TRUE.equals(call.getBoolean("live", true)));
+            i.putExtra("avatar", call.getString("avatar"));
+            i.putExtra("hang", call.getString("hang", "Hang up"));
             ContextCompat.startForegroundService(getContext(), i);
         } catch (Exception ignored) {
             // The call still works while the app is open.

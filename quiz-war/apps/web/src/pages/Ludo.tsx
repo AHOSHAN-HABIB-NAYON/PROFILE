@@ -30,7 +30,8 @@ import { useVoiceControls, VoiceBar, type VoicePlayer } from '../components/Voic
 import { toggleMuteForMe, useVoice } from '../lib/voice';
 import { useConfig } from '../hooks/queries';
 import { api } from '../lib/api';
-import { ludoAct, ludoQueue, ludoUnqueue, onLudoMatched, onLudoSnap } from '../lib/ludoOnline';
+import { ludoAct, ludoQueue, ludoUnqueue, onLudoMatched, onLudoSnap, useLudo } from '../lib/ludoOnline';
+import { serverNow } from '../lib/game';
 import { sfx } from '../lib/sound';
 import { IconTile } from '../components/Icon';
 import { emit, getSocket } from '../lib/socket';
@@ -1152,6 +1153,7 @@ export function LudoOnline() {
   const queue = useRef<LudoSnapshot[]>([]);
   const busy = useRef(false);
   const shown = useRef(0);
+  const lastSnapAt = useRef(Date.now());
   const alive = useRef(true);
   useEffect(() => () => void (alive.current = false), []);
   const finishedRef = useRef(false);
@@ -1194,7 +1196,9 @@ export function LudoOnline() {
     while (queue.current.length && alive.current) {
       const s = queue.current.shift()!;
       if (s.seq <= shown.current) continue;
-      const fresh = s.seq === shown.current + 1 && shown.current > 0;
+      lastSnapAt.current = Date.now();
+      // Behind (weak network / app was in the background): jump to the latest without animations.
+      const fresh = s.seq === shown.current + 1 && shown.current > 0 && queue.current.length < 2 && !document.hidden;
       const L = s.last;
       if (fresh && s.status === 'playing' && L?.type === 'roll') {
         setRolling(true);
@@ -1263,11 +1267,52 @@ export function LudoOnline() {
       }
     };
     void load();
-    const i = window.setInterval(() => tick((n) => n + 1), 500);
+    // Last 5 seconds of my turn: a ticking warning each second.
+    let warned = '';
+    const i = window.setInterval(() => {
+      tick((n) => n + 1);
+      const cur = useLudo.getState().snap;
+      if (!cur || cur.id !== id || cur.status !== 'playing' || !cur.deadline || controllerOf(cur) !== me.id) return;
+      const left = Math.ceil((cur.deadline - serverNow()) / 1000);
+      const key = `${cur.deadline}:${left}`;
+      if (left >= 1 && left <= 5 && warned !== key) {
+        warned = key;
+        ludoSfx('warn', left);
+        if (left <= 3) haptic('tap');
+      }
+    }, 250);
+    // A missed update (weak internet) would freeze the board: fetch the latest again when the
+    // connection comes back, when the app returns to the screen, and if nothing came for a while.
+    const resync = async () => {
+      if (stop || busy.current) return;
+      try {
+        const r = await emit('ludo:resume', { gameId: id }, 6000);
+        if (!stop && r.snapshot.seq > shown.current) {
+          queue.current.push(r.snapshot);
+          void process();
+        }
+      } catch {
+        /* try again on the next tick */
+      }
+    };
+    const sock = getSocket();
+    const onConnect = () => void resync();
+    sock?.on('connect', onConnect);
+    const onVis = () => !document.hidden && void resync();
+    document.addEventListener('visibilitychange', onVis);
+    const dog = window.setInterval(() => {
+      const cur = useLudo.getState().snap;
+      if (!cur || cur.id !== id || cur.status === 'finished') return;
+      const late = cur.deadline ? serverNow() > cur.deadline + 2500 : true;
+      if (late && Date.now() - lastSnapAt.current > 6000) void resync();
+    }, 3000);
     return () => {
       stop = true;
       offSnap();
       window.clearInterval(i);
+      window.clearInterval(dog);
+      sock?.off('connect', onConnect);
+      document.removeEventListener('visibilitychange', onVis);
     };
   }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1327,12 +1372,17 @@ export function LudoOnline() {
             const seat = snap.seats[i];
             return (
               <div key={i} className={`lr-seat${seat ? '' : ' empty'}`} style={{ ['--pc' as any]: LUDO_COLORS[c] }}>
-                {snap.teams && <span className="lr-team">{t(`Team ${(i % 2) + 1}`, `দল ${num((i % 2) + 1, lang)}`)}</span>}
+                {snap.teams && <span className="lr-team">{t(`Team ${(seat?.team ?? i % 2) + 1}`, `দল ${num((seat?.team ?? i % 2) + 1, lang)}`)}</span>}
                 {seat ? (
                   <>
                     <Avatar name={seat.name} src={seat.avatar} size={56} />
                     <b className="ellipsis">{seat.name}{seat.userId === snap.hostId && <Icon name="crown" size={14} className="lr-crown" />}</b>
                     <small>{seat.userId === me.id ? t('You', 'আপনি') : seat.connected ? t('Ready', 'প্রস্তুত') : t('Offline', 'অফলাইন')}</small>
+                    {snap.teams && isHost && seat.userId !== me.id && (
+                      <button type="button" className={`lr-mate${snap.partnerId === seat.userId ? ' on' : ''}`} onClick={() => (haptic('tap'), void emit('ludo:partner', { gameId: snap.id, userId: seat.userId }).catch((e: any) => toast.error(t('Not now', 'এখন হবে না'), e?.message)))}>
+                        <Icon name={snap.partnerId === seat.userId ? 'check' : 'users'} size={14} /> {snap.partnerId === seat.userId ? t('Teammate', 'আমার সাথী') : t('Make teammate', 'সাথী বানাও')}
+                      </button>
+                    )}
                   </>
                 ) : (
                   <button type="button" className="lr-add" onClick={() => setInviteOpen(true)}>
@@ -1344,6 +1394,7 @@ export function LudoOnline() {
             );
           })}
         </div>
+        {snap.teams && <p className="lr-note">{isHost ? t('Tap “Make teammate” to choose who plays on your team.', '“সাথী বানাও” চাপুন — কে আপনার দলে খেলবে বেছে নিন।') : t('The host chooses the teams.', 'কে কার দলে খেলবে, হোস্ট বেছে নেবে।')}</p>}
         <p className="lr-note">{snap.seats.length < snap.size ? t(`Waiting for players: ${snap.seats.length}/${snap.size} — the game starts when the room is full.`, `প্লেয়ারের অপেক্ষা: ${num(snap.seats.length, lang)}/${num(snap.size, lang)} — রুম পূর্ণ হলে খেলা শুরু হবে।`) : t('Everyone is here!', 'সবাই চলে এসেছে!')}</p>
 
         {others.length > 0 && <VoiceBar className="dark" roomId={snap.id} players={voicePlayers} />}
@@ -1382,7 +1433,7 @@ export function LudoOnline() {
     for (let r = 0; r < turn; r++) [x, y] = [15 - y, x];
     return { ...tk, x, y };
   });
-  const pctLeft = snap.deadline ? Math.max(0, Math.min(100, ((snap.deadline - Date.now()) / (snap.turnSeconds * 1000)) * 100)) : null;
+  const pctLeft = snap.deadline ? Math.max(0, Math.min(100, ((snap.deadline - serverNow()) / ((state.dice > 0 ? Math.min(10, snap.turnSeconds) : snap.turnSeconds) * 1000)) * 100)) : null;
   const curSeat = snap.seats[state.turn];
   const finished = snap.status === 'finished' && !!snap.state;
   finishedRef.current = finished;
@@ -1427,7 +1478,10 @@ export function LudoOnline() {
       <header className="ludo-top">
         <button className="ludo-round" aria-label={t('Leave game', 'খেলা ছাড়ুন')} onClick={() => (finished ? exitLudo(nav) : setLeaving(true))}><Icon name="back" size={22} /></button>
         <b>{snap.teams ? t('Ludo · 2 vs 2', 'লুডু · ২ বনাম ২') : snap.kind === 'quick' ? t('Ludo · online', 'লুডু · অনলাইন') : t('Ludo · room', 'লুডু · রুম')}</b>
-        <button className="ludo-round" aria-label={sound ? t('Sound off', 'সাউন্ড বন্ধ') : t('Sound on', 'সাউন্ড চালু')} onClick={() => setSettings({ sound: !sound })}><Icon name={sound ? 'volume' : 'mute'} size={20} /></button>
+        <span className="ludo-top-r">
+          {!finished && <button className="ludo-round" aria-label={t('Minimize (game keeps going)', 'ছোট করুন (খেলা চলবে)')} onClick={() => (haptic('tap'), exitLudo(nav))}><Icon name="chevron-down" size={22} /></button>}
+          <button className="ludo-round" aria-label={sound ? t('Sound off', 'সাউন্ড বন্ধ') : t('Sound on', 'সাউন্ড চালু')} onClick={() => setSettings({ sound: !sound })}><Icon name={sound ? 'volume' : 'mute'} size={20} /></button>
+        </span>
       </header>
 
       <div className="ludo-table">

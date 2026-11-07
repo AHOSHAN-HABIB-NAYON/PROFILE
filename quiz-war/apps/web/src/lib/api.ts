@@ -52,10 +52,15 @@ async function raw(path: string, init: RequestInit & { json?: unknown } = {}) {
     headers['Content-Type'] = 'application/json';
     body = JSON.stringify(init.json);
   }
+  // A stuck connection (weak mobile data) must not hang forever: give up after a while and retry later.
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), init.body instanceof FormData ? 120_000 : 20_000);
   try {
-    return await fetch(`${API_URL}/api/v1${path}`, { ...init, body, headers, credentials: 'include' });
+    return await fetch(`${API_URL}/api/v1${path}`, { ...init, body, headers, credentials: 'include', signal: init.signal ?? ctl.signal });
   } catch {
     throw new ApiError(0, 'network', FRIENDLY.network);
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -77,8 +82,18 @@ export function refreshSession(): Promise<boolean> {
   refreshing ??= (async () => {
     try {
       for (let attempt = 0; attempt < 2; attempt++) {
-        const stored = await tokenStore.get();
-        if (isNative && !stored) return false;
+        let stored: string | null = null;
+        try {
+          stored = await tokenStore.read();
+        } catch {
+          // Secure storage not ready (e.g. app opened on the lock screen by a call): try again later.
+          lastRefreshFailure = 'network';
+          return false;
+        }
+        if (isNative && !stored) {
+          lastRefreshFailure = null;
+          return false;
+        }
         const res = await raw('/auth/refresh', { method: 'POST', json: isNative ? { refreshToken: stored } : {} });
         if (res.status === 409) continue; // another tab rotated the cookie first — retry once
         if (!res.ok) {

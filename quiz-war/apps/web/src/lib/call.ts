@@ -31,6 +31,8 @@ export interface ActiveCall {
   with?: string[];
   /** Started as a video call. */
   video?: boolean;
+  /** Outgoing: the other phone shows the call ("Ringing…"; before that "Calling…"). */
+  rang?: boolean;
 }
 
 interface CallState {
@@ -62,8 +64,11 @@ function stopTone() {
   }
 }
 
-/** Ringback for the caller ("ring… ring…") or a soft ringtone for the person being called. */
-function playTone(kind: 'ringback' | 'ringtone') {
+/**
+ * Caller sounds: 'calling' (soft "tu-tu" while we try to reach the other phone) and 'ringback'
+ * (the normal phone "ring… ring…" once it rings there). 'ringtone' for the person being called.
+ */
+function playTone(kind: 'calling' | 'ringback' | 'ringtone') {
   stopTone();
   if (kind === 'ringtone') {
     // The QUIZ WAR ringtone (same tune as the phone notification), looped, with vibration.
@@ -94,8 +99,10 @@ function playTone(kind: 'ringback' | 'ringtone') {
   const ctx: AudioContext = new C();
   void ctx.resume().catch(() => undefined);
   const out = ctx.createGain();
-  out.gain.value = kind === 'ringback' ? 0.09 : 0.16;
-  out.connect(ctx.destination);
+  out.gain.value = kind === 'ringback' ? 0.22 : 0.14;
+  const comp = ctx.createDynamicsCompressor();
+  out.connect(comp);
+  comp.connect(ctx.destination);
   const beep = (at: number, freqs: number[], len: number) => {
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, at);
@@ -115,11 +122,17 @@ function playTone(kind: 'ringback' | 'ringtone') {
   const cycle = () => {
     const t = ctx.currentTime + 0.05;
     if (kind === 'ringback') {
-      beep(t, [425, 850], 1.0);
+      // Classic phone ringback: two rings, then a pause.
+      beep(t, [440, 480], 0.4);
+      beep(t + 0.6, [440, 480], 0.4);
+    } else {
+      // Calling (not reached yet): soft short "tu… tu…".
+      beep(t, [480], 0.22);
+      beep(t + 0.45, [480], 0.22);
     }
   };
   cycle();
-  const timer = window.setInterval(cycle, 3000);
+  const timer = window.setInterval(cycle, kind === 'ringback' ? 3000 : 1800);
   tone = {
     stop: () => {
       window.clearInterval(timer);
@@ -152,7 +165,7 @@ function endBeep() {
 /* --------------------------- Native helpers --------------------------- */
 
 type CallPlugin = {
-  start(o: { title: string; text: string }): Promise<void>;
+  start(o: { title: string; text: string; live?: boolean; avatar?: string | null; hang?: string }): Promise<void>;
   stop(): Promise<void>;
   proximity(o: { on: boolean }): Promise<void>;
   pending?(): Promise<{ action?: string | null; callId?: string | null; url?: string | null }>;
@@ -180,6 +193,26 @@ async function clearRingNotification() {
   }
 }
 
+/** WhatsApp-style call notification (Calling… / Ringing… / Ongoing call, with Hang up). */
+function callNotice(text: string, live: boolean) {
+  const c = useCall.getState().call;
+  if (!c) return;
+  void native()
+    .then((n) => n?.start({ title: c.peer.username, text, live, avatar: c.peer.avatarThumbUrl ?? c.peer.avatarUrl ?? null, hang: tr('Hang up', 'কল কাটুন') }))
+    .catch(() => undefined);
+}
+
+/** Wait (briefly) for the server connection, e.g. right after the app opened from a call. */
+async function connected(ms = 12000) {
+  const { getSocket } = await import('./socket');
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    if (getSocket()?.connected) return true;
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  return !!getSocket()?.connected;
+}
+
 const overLock = (on: boolean) => void native().then((n) => n?.showOnLock?.({ on })).catch(() => undefined);
 
 /** Answer / Decline tapped on the phone's call notification (the app may have just started). */
@@ -190,6 +223,7 @@ async function nativeAction() {
   const n = await native();
   const r = await n?.pending?.().catch(() => null);
   if (!r?.action || !r.callId) return;
+  if (r.action === 'hangup') return hangUp();
   if (r.action === 'message') {
     // Declined from the ringing screen; open the chat with the caller.
     if (useCall.getState().call?.id === r.callId) clearCall();
@@ -271,7 +305,7 @@ async function goLive(id: string) {
     if (c.video) await setCamera(true).catch(() => toast.error(tr('Camera blocked', 'ক্যামেরার অনুমতি নেই'), tr('Allow the camera for QUIZ WAR to show your video.', 'ভিডিও দেখাতে QUIZ WAR-এর ক্যামেরা চালু করুন।')));
     patch({ phase: 'live', startedAt: Date.now() });
     const n = await native();
-    await n?.start({ title: c.peer.username, text: c.video ? tr('Video call · tap to return', 'ভিডিও কল চলছে · ফিরতে চাপুন') : tr('Audio call · tap to return', 'অডিও কল চলছে · ফিরতে চাপুন') });
+    callNotice(c.video ? tr('Video call', 'ভিডিও কল চলছে') : tr('Ongoing call', 'কল চলছে'), true);
     if (!c.video) await n?.proximity({ on: true });
   } catch {
     toast.error(tr('Microphone blocked', 'মাইক্রোফোনের অনুমতি নেই'), tr('Allow the microphone for QUIZ WAR to talk on calls.', 'কলে কথা বলতে QUIZ WAR-এর মাইক্রোফোন চালু করুন।'));
@@ -306,7 +340,8 @@ export async function startCall(peer: PublicUser, opts: { video?: boolean } = {}
     }
   }
   useCall.getState().set({ call: { id: null, peer, dir: 'out', phase: 'calling', startedAt: 0, ...(video ? { video: true } : {}) }, small: false, loud: video });
-  playTone('ringback');
+  playTone('calling');
+  callNotice(tr('Calling…', 'কল হচ্ছে…'), false);
   try {
     const r = await emit('call:start', { to: peer.id, ...(video ? { video: true } : {}) });
     if (!useCall.getState().call) return void emit('call:end', { callId: r.callId }).catch(() => undefined);
@@ -339,7 +374,8 @@ export async function answerCall() {
   void clearRingNotification();
   patch({ phase: 'connecting' });
   try {
-    await emit('call:answer', { callId: c.id });
+    await connected();
+    await emit('call:answer', { callId: c.id }, 10000);
   } catch {
     return finish(tr('Call ended', 'কল শেষ'));
   }
@@ -412,10 +448,12 @@ export function wireCalls() {
   // The phone needs the server address to decline from the lock screen without opening the app.
   if (/^https:\/\//.test(API_URL)) void native().then((n) => n?.setApi?.({ base: API_URL })).catch(() => undefined);
   window.addEventListener('qwcallaction', () => void nativeAction());
+  window.addEventListener('qwcallhangup', () => hangUp());
   // Back in the app while it rings: the in-app ringtone takes over from the notification.
   document.addEventListener('visibilitychange', () => {
     // My camera picture pauses while the app is in the background (privacy).
     if (useVoice.getState().camOn) pauseCamera(document.hidden);
+    if (!document.hidden) void nativeAction();
     const c = useCall.getState().call;
     if (document.hidden || !c || c.dir !== 'in' || c.phase !== 'ringing') return;
     void clearRingNotification();
@@ -423,6 +461,8 @@ export function wireCalls() {
   });
   onSocket((s) => {
     s.on('connect', () => {
+      // Answer tapped on the phone's call screen while the app was starting: do it now.
+      void nativeAction();
       if (declineOnConnect) void emit('call:decline', { callId: declineOnConnect }).then(() => (declineOnConnect = null)).catch(() => undefined);
     });
     s.on('call:members', ({ callId, members }) => {
@@ -442,6 +482,8 @@ export function wireCalls() {
       }
       window.clearTimeout(endTimer);
       useCall.getState().set({ call: { id: callId, peer: from, dir: 'in', phase: 'ringing', startedAt: 0, ...(others?.length ? { with: others } : {}), ...(video ? { video: true } : {}) }, small: false, loud: !!video });
+      // Tell the caller it rings here ("Ringing…").
+      void emit('call:ring', { callId }).catch(() => undefined);
       if (answerWhenRinging === callId) {
         answerWhenRinging = null;
         void answerCall();
@@ -450,6 +492,13 @@ export function wireCalls() {
       overLock(true);
       // App in the background: the phone's own call notification rings (no double ringing).
       if (!(isNative && document.hidden)) playTone('ringtone');
+    });
+    s.on('call:ringing', ({ callId }) => {
+      const c = useCall.getState().call;
+      if (!c || (c.id !== null && c.id !== callId) || c.dir !== 'out' || c.rang || c.phase !== 'calling') return;
+      patch({ rang: true });
+      playTone('ringback');
+      callNotice(tr('Ringing…', 'রিং হচ্ছে…'), false);
     });
     s.on('call:accepted', ({ callId, elsewhere }) => {
       const c = useCall.getState().call;
