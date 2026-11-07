@@ -282,27 +282,28 @@ public class MainActivity extends Activity {
 
         web.setDownloadListener(new DownloadListener() {
             @Override public void onDownloadStart(String url, String ua, String cd, String mime, long len) {
-                /* <a download> চাপলে WebView এখানে পাঠায় — আমাদের ছবি হলে গ্যালারিতে সেভ */
+                /* <a download> চাপলে WebView এখানে পাঠায় — আমাদের ছবি/পিডিএফ হলে ফোনে সেভ */
                 if (isOurImage(url)) download(url);
                 else openOutside(url);
             }
         });
     }
 
-    /** আমাদের সাইটের আপলোড করা ছবি কিনা */
+    /** আমাদের সাইটের আপলোড করা ছবি বা পিডিএফ কিনা */
     private static boolean isOurImage(String url) {
         try {
             Uri u = Uri.parse(url);
             String h = u.getHost() == null ? "" : u.getHost().toLowerCase();
             String p = u.getPath() == null ? "" : u.getPath().toLowerCase();
             return (h.equals(HOST) || h.endsWith("." + HOST)) && p.startsWith("/uploads/")
-                    && p.matches(".*\\.(jpe?g|png|webp|gif)$");
+                    && p.matches(".*\\.(jpe?g|png|webp|gif|pdf)$");
         } catch (Exception e) { return false; }
     }
 
     private void download(String url) { download(url, null); }
 
-    /** ছবি নামানো — Android-এর ডাউনলোড ম্যানেজার দিয়ে, নোটিফিকেশনে অগ্রগতি দেখায় */
+    /** ছবি/পিডিএফ নামানো — Android-এর ডাউনলোড ম্যানেজার দিয়ে, নোটিফিকেশনে অগ্রগতি দেখায়।
+        ছবি → গ্যালারি (Pictures/ChakriCircular), পিডিএফ → Download/ChakriCircular */
     private void download(String url, String wantName) {
         if (Build.VERSION.SDK_INT < 29
                 && checkSelfPermission("android.permission.WRITE_EXTERNAL_STORAGE") != PackageManager.PERMISSION_GRANTED) {
@@ -315,17 +316,21 @@ public class MainActivity extends Activity {
             String last = u.getLastPathSegment() == null ? "image.jpg" : u.getLastPathSegment();
             String name = (wantName != null && wantName.matches("[A-Za-z0-9._-]{3,120}"))
                     ? wantName : "chakri-circular-" + last.replaceAll("[^A-Za-z0-9._-]", "");
+            boolean pdf = name.toLowerCase().endsWith(".pdf");
             DownloadManager.Request r = new DownloadManager.Request(u)
-                    .setTitle("চাকরি সার্কুলার — বিজ্ঞপ্তির ছবি")
+                    .setTitle(pdf ? "চাকরি সার্কুলার — বিজ্ঞপ্তির পিডিএফ" : "চাকরি সার্কুলার — বিজ্ঞপ্তির ছবি")
                     .setDescription(name)
                     .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                    .setDestinationInExternalPublicDir(Environment.DIRECTORY_PICTURES, "ChakriCircular/" + name);
+                    .setDestinationInExternalPublicDir(pdf ? Environment.DIRECTORY_DOWNLOADS : Environment.DIRECTORY_PICTURES,
+                                                       "ChakriCircular/" + name);
+            if (pdf) r.setMimeType("application/pdf");
             r.addRequestHeader("User-Agent", UA);
             String ck = CookieManager.getInstance().getCookie(url);
             if (ck != null) r.addRequestHeader("Cookie", ck);
             if (Build.VERSION.SDK_INT < 29) r.allowScanningByMediaScanner();
             ((DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE)).enqueue(r);
-            Toast.makeText(this, "ডাউনলোড শুরু হয়েছে — গ্যালারিতে পাবেন", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, pdf ? "পিডিএফ ডাউনলোড হচ্ছে — Download ফোল্ডারে পাবেন"
+                                     : "ডাউনলোড শুরু হয়েছে — গ্যালারিতে পাবেন", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
             openOutside(url);           // কোনো কারণে না হলে ব্রাউজারে
         }
@@ -338,7 +343,7 @@ public class MainActivity extends Activity {
         String h = u.getHost() == null ? "" : u.getHost().toLowerCase();
         String path = u.getPath() == null ? "" : u.getPath().toLowerCase();
         boolean ours = (sc.equals("https") || sc.equals("http")) && (h.equals(HOST) || h.endsWith("." + HOST));
-        /* বিজ্ঞপ্তির ছবি "ডাউনলোড" — ফোনের গ্যালারিতে (Pictures/ChakriCircular) সেভ */
+        /* বিজ্ঞপ্তির ছবি/পিডিএফ "ডাউনলোড" — ফোনে সেভ (ছবি গ্যালারিতে, পিডিএফ Download-এ) */
         if (isOurImage(url)) {
             download(url);
             return true;
@@ -994,7 +999,7 @@ public class MainActivity extends Activity {
             String u = pendingDl, nm = pendingName; pendingDl = null; pendingName = null;
             if (u == null) return;
             if (res.length > 0 && res[0] == PackageManager.PERMISSION_GRANTED) download(u, nm);
-            else Toast.makeText(this, "ছবি সেভ করতে স্টোরেজের অনুমতি লাগে", Toast.LENGTH_SHORT).show();
+            else Toast.makeText(this, "ফাইল সেভ করতে স্টোরেজের অনুমতি লাগে", Toast.LENGTH_SHORT).show();
             return;
         }
         if (req != REQ_NOTIFY) return;
