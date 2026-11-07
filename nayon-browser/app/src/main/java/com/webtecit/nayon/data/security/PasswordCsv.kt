@@ -11,6 +11,8 @@ data class CsvLogin(val name: String, val url: String, val username: String, val
  * Firefox, Edge, Samsung Pass exports, Bitwarden and 1Password.
  */
 object PasswordCsv {
+    /** Byte-order mark some spreadsheet apps put at the start of the file. */
+    private val BOM = 0xFEFF.toChar().toString()
     private val HEADER = listOf("name", "url", "username", "password", "note")
 
     fun write(logins: List<CsvLogin>): String = buildString {
@@ -20,7 +22,7 @@ object PasswordCsv {
 
     /** Reads every row that has a web address and a password. Unknown columns are ignored. */
     fun read(text: String): List<CsvLogin> {
-        val rows = parse(text.removePrefix("﻿"))
+        val rows = parse(text.removePrefix(BOM))
         if (rows.isEmpty()) return emptyList()
         val header = rows.first().map { it.trim().lowercase() }
         fun col(vararg names: String) = names.firstNotNullOfOrNull { n -> header.indexOf(n).takeIf { it >= 0 } }
