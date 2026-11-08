@@ -207,7 +207,7 @@ public class IncomingCallActivity extends Activity {
         b.setScaleType(ImageView.ScaleType.CENTER);
         b.setElevation(0);
         b.setContentDescription(label);
-        int size = dp(58);
+        int size = dp(52);
         box.addView(b, new LinearLayout.LayoutParams(size, size));
 
         // Green rises by itself and drops back, then rests (like WhatsApp).
@@ -232,9 +232,10 @@ public class IncomingCallActivity extends Activity {
         final TextView t = new TextView(this);
         t.setText(label);
         t.setTextColor(Color.parseColor("#C8FFFFFF"));
-        t.setTextSize(15);
+        t.setTextSize(12);
         t.setGravity(Gravity.CENTER);
         t.setSingleLine(true);
+        t.setEllipsize(android.text.TextUtils.TruncateAt.END);
         LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(-2, -2);
         tl.topMargin = dp(12);
         box.addView(t, tl);
@@ -273,7 +274,6 @@ public class IncomingCallActivity extends Activity {
                         v.animate().translationY(0).setDuration(260).setInterpolator(new android.view.animation.OvershootInterpolator(2.5f)).withEndAction(() -> {
                             if (hint != null) hint.start();
                         }).start()).start();
-                    if (!answer) t.setText("Decline".equals(label) ? "Swipe up to decline" : "কাটতে উপরে টানুন");
                     t.animate().scaleX(1.12f).scaleY(1.12f).setDuration(120).withEndAction(() -> t.animate().scaleX(1f).scaleY(1f).setDuration(120).start()).start();
                     return true;
                 }
@@ -303,10 +303,10 @@ public class IncomingCallActivity extends Activity {
         b.setScaleType(ImageView.ScaleType.CENTER);
         b.setOnClickListener(click);
         b.setContentDescription(label);
-        box.addView(b, new LinearLayout.LayoutParams(dp(58), dp(58)));
+        box.addView(b, new LinearLayout.LayoutParams(dp(52), dp(52)));
         TextView t = new TextView(this);
         t.setText(label);
-        t.setTextSize(15);
+        t.setTextSize(12);
         t.setTextColor(Color.parseColor("#C8FFFFFF"));
         LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(-2, -2);
         tl.topMargin = dp(12);

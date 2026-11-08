@@ -461,7 +461,7 @@ function SwipeButton({ kind, video, label, hintText, onDone }: { kind: 'answer' 
       >
         {answer ? (video ? <Icon name="video" size={26} /> : <WaIcon kind="call" />) : <WaIcon kind="end" />}
       </button>
-      <small key={`h${hint}`} className={hint ? 'csw-hint pop' : 'csw-hint'}>{hint && !answer ? hintText : label}</small>
+      <small key={`h${hint}`} className={hint ? 'csw-hint pop' : 'csw-hint'}>{label}</small>
     </span>
   );
 }

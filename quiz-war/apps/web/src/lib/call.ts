@@ -119,12 +119,40 @@ function playTone(kind: 'calling' | 'ringback' | 'ringtone') {
       o.stop(at + len + 0.02);
     }
   };
+  // A soft trill (like a phone ringing): 400 + 450 Hz with a gentle 25 Hz flutter.
+  const trill = (at: number, len: number) => {
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, at);
+    g.gain.exponentialRampToValueAtTime(1, at + 0.04);
+    g.gain.setValueAtTime(1, at + len - 0.08);
+    g.gain.exponentialRampToValueAtTime(0.0001, at + len);
+    const flutter = ctx.createGain();
+    flutter.gain.value = 0.65;
+    const lfo = ctx.createOscillator();
+    const depth = ctx.createGain();
+    lfo.frequency.value = 25;
+    depth.gain.value = 0.35;
+    lfo.connect(depth);
+    depth.connect(flutter.gain);
+    flutter.connect(g);
+    g.connect(out);
+    for (const f of [400, 450]) {
+      const o = ctx.createOscillator();
+      o.type = 'sine';
+      o.frequency.value = f;
+      o.connect(flutter);
+      o.start(at);
+      o.stop(at + len + 0.02);
+    }
+    lfo.start(at);
+    lfo.stop(at + len + 0.02);
+  };
   const cycle = () => {
     const t = ctx.currentTime + 0.05;
     if (kind === 'ringback') {
-      // Classic phone ringback: two rings, then a pause.
-      beep(t, [440, 480], 0.4);
-      beep(t + 0.6, [440, 480], 0.4);
+      // Phone-style "ring-ring … ring-ring": two warm trills, then a pause.
+      trill(t, 0.42);
+      trill(t + 0.62, 0.42);
     } else {
       // Calling (not reached yet): soft short "tu… tu…".
       beep(t, [480], 0.22);
@@ -132,7 +160,7 @@ function playTone(kind: 'calling' | 'ringback' | 'ringtone') {
     }
   };
   cycle();
-  const timer = window.setInterval(cycle, kind === 'ringback' ? 3000 : 1800);
+  const timer = window.setInterval(cycle, kind === 'ringback' ? 3200 : 1800);
   tone = {
     stop: () => {
       window.clearInterval(timer);

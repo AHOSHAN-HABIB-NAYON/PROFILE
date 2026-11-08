@@ -22,7 +22,7 @@ import androidx.core.graphics.drawable.IconCompat;
  * "call in progress" notification; tapping it returns to the app. Stopped when the call ends.
  */
 public class QwCallService extends Service {
-    static final String CHANNEL = "quizwar_call_ongoing";
+    static final String CHANNEL = "quizwar_call_active"; // shown in the list like WhatsApp, but silent
     private static final int ID = 4242;
 
     @Override
@@ -35,8 +35,11 @@ public class QwCallService extends Service {
         try {
             NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
             if (Build.VERSION.SDK_INT >= 26 && nm != null && nm.getNotificationChannel(CHANNEL) == null) {
-                NotificationChannel ch = new NotificationChannel(CHANNEL, "Ongoing call", NotificationManager.IMPORTANCE_LOW);
+                NotificationChannel ch = new NotificationChannel(CHANNEL, "Ongoing call", NotificationManager.IMPORTANCE_DEFAULT);
                 ch.setShowBadge(false);
+                ch.setSound(null, null);
+                ch.enableVibration(false);
+                ch.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
                 nm.createNotificationChannel(ch);
             }
             Intent open = new Intent(this, MainActivity.class);
@@ -55,7 +58,10 @@ public class QwCallService extends Service {
                     .setCategory(NotificationCompat.CATEGORY_CALL)
                     .setUsesChronometer(live)
                     .setContentIntent(pi)
-                    .setPriority(NotificationCompat.PRIORITY_LOW);
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                    .setSilent(true)
+                    .setShowWhen(true);
             Notification n = withStyle(b, title, text, null, hangPi, hangText).build();
             if (Build.VERSION.SDK_INT >= 29) startForeground(ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
             else startForeground(ID, n);

@@ -1353,7 +1353,10 @@ export function LudoOnline() {
         <header className="ludo-top">
           <button className="ludo-round" aria-label={t('Leave room', 'রুম ছাড়ুন')} onClick={() => setLeaving(true)}><Icon name="back" size={22} /></button>
           <b>{snap.teams ? t('Ludo room · 2 vs 2', 'লুডু রুম · ২ বনাম ২') : t(`Ludo room · ${snap.size} players`, `লুডু রুম · ${num(snap.size, lang)} জন`)}</b>
-          <button className="ludo-round" aria-label={t('QR code', 'QR কোড')} onClick={() => setQr(true)}><Icon name="qr" size={20} /></button>
+          <span className="ludo-top-r">
+            <button className="ludo-round" aria-label={t('Minimize (room stays open)', 'ছোট করুন (রুম খোলা থাকবে)')} onClick={() => (haptic('tap'), exitLudo(nav))}><Icon name="chevron-down" size={22} /></button>
+            <button className="ludo-round" aria-label={t('QR code', 'QR কোড')} onClick={() => setQr(true)}><Icon name="qr" size={20} /></button>
+          </span>
         </header>
 
         <section className="lr-code">

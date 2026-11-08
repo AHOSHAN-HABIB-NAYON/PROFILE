@@ -66,7 +66,8 @@ export default function Premium() {
   const daysLeft = until ? Math.max(0, Math.ceil((until.getTime() - Date.now()) / 86400_000)) : 0;
   const dateText = until ? new Intl.DateTimeFormat(lang === 'bn' ? 'bn-BD' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' }).format(until) : '';
   const playPlan = (id: PlanId) => play.data?.plans?.find((p) => p.basePlanId === id || (id === 'yearly' ? p.period === 'P1Y' : p.period === 'P1M'));
-  const priceOf = (id: PlanId) => playPlan(id)?.price ?? (id === 'monthly' ? info.data?.plans?.monthly ?? '৳150' : info.data?.plans?.yearly ?? '৳1200');
+  // "BDT 150.00" → "BDT 150" (shorter, fits the card).
+  const priceOf = (id: PlanId) => (playPlan(id)?.price ?? (id === 'monthly' ? info.data?.plans?.monthly ?? '৳150' : info.data?.plans?.yearly ?? '৳1200')).replace(/[.,]00(?=\D*$)/, '');
   const save = (() => {
     const m = playPlan('monthly')?.micros, y = playPlan('yearly')?.micros;
     const pct = m && y ? Math.round((1 - y / (m * 12)) * 100) : 33;
