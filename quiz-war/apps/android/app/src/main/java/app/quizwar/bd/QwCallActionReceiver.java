@@ -10,7 +10,9 @@ public class QwCallActionReceiver extends BroadcastReceiver {
     public void onReceive(Context ctx, Intent intent) {
         if (intent.getBooleanExtra("qw_hangup", false)) {
             // Hang up from the ongoing-call notification: the app (running in the background) ends the call.
-            if (!QwCallPlugin.hangUp()) ctx.stopService(new Intent(ctx, QwCallService.class));
+            // The app (running in the background) ends the call; the notification goes away at once.
+            QwCallPlugin.hangUp();
+            ctx.stopService(new Intent(ctx, QwCallService.class));
             return;
         }
         QwCallNotifier.cancel(ctx);

@@ -18,6 +18,10 @@ export function Confetti({ colors = ['#1d4ed8', '#7c3aed', '#22d3ee', '#16a34a',
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     c.width = W * dpr;
     c.height = H * dpr;
+    // The drawing is sharper than the screen, but the canvas itself must stay screen-sized
+    // (otherwise it is 2-3× wider than the phone and the page can be dragged around).
+    c.style.width = `${W}px`;
+    c.style.height = `${H}px`;
     ctx.scale(dpr, dpr);
     const { colors: cols, pieces: n } = opts.current;
     const parts = Array.from({ length: n }, (_, i) => {

@@ -90,7 +90,9 @@ public class QwCallPlugin extends Plugin {
             i.putExtra("live", Boolean.TRUE.equals(call.getBoolean("live", true)));
             i.putExtra("avatar", call.getString("avatar"));
             i.putExtra("hang", call.getString("hang", "Hang up"));
-            ContextCompat.startForegroundService(getContext(), i);
+            // Already showing (Calling… → Ringing… → Ongoing): just change the text.
+            if (QwCallService.running) QwCallService.update(getContext(), i);
+            else ContextCompat.startForegroundService(getContext(), i);
         } catch (Exception ignored) {
             // The call still works while the app is open.
         }

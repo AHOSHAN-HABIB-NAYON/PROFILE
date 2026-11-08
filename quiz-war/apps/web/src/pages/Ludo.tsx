@@ -1666,6 +1666,13 @@ function LudoOverScreen({ rows, won, modeText, coins, actions, onHome, voice }: 
   const t = useT();
   const lang = useLang();
   const me = useAuth((s) => s.user)!;
+  // While the result is open the game page behind it stays still (older phones too).
+  useEffect(() => {
+    const els = [document.documentElement, document.body];
+    const before = els.map((e) => e.style.overflow);
+    els.forEach((e) => (e.style.overflow = 'hidden'));
+    return () => els.forEach((e, k) => (e.style.overflow = before[k]!));
+  }, []);
   const cfg = useConfig().data;
   const [card, setCard] = useState<{ blob: Blob; url: string } | null>(null);
   const [preview, setPreview] = useState(false);
