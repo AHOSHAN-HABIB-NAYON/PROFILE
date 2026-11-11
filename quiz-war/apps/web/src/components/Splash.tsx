@@ -1,4 +1,3 @@
-import { useSettings } from '../lib/settings';
 import { useEffect, useState } from 'react';
 
 /** The brand mark, drawn with SVG so it can animate (ring draws, swords cross, core pops). */
@@ -30,39 +29,37 @@ export function BrandMark({ size = 112, animate = true }: { size?: number; anima
 }
 
 /**
- * Animated launch screen. Matches the native Android splash colours so the hand-off is
- * seamless, then reveals the name. Kept short (~0.8 s, the app is usually ready by then) and skipped for reduced motion.
+ * Launch screen, WhatsApp style: the app icon in the middle and the name at the bottom, on the
+ * same colour as the native Android splash (so there is no flash). It leaves as soon as the app
+ * is ready — usually at once, because the saved profile opens without waiting for the network.
  */
 export function Splash({ onDone, ready = true }: { onDone?: () => void; ready?: boolean }) {
   const [leaving, setLeaving] = useState(false);
   const [mountedAt] = useState(() => performance.now());
   useEffect(() => {
-    if (!ready) return;
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const wait = Math.max(0, (reduce ? 150 : 800) - (performance.now() - mountedAt));
-    const t1 = setTimeout(() => setLeaving(true), wait);
-    const t2 = setTimeout(() => onDone?.(), wait + 260);
+    // Never longer than 2 s, even on a slow first start.
+    const cap = setTimeout(() => setLeaving(true), Math.max(0, 2000 - (performance.now() - mountedAt)));
+    if (!ready) return () => clearTimeout(cap);
+    const t1 = setTimeout(() => setLeaving(true), Math.max(0, 250 - (performance.now() - mountedAt)));
     return () => {
+      clearTimeout(cap);
       clearTimeout(t1);
-      clearTimeout(t2);
     };
-  }, [ready, onDone, mountedAt]);
+  }, [ready, mountedAt]);
+  useEffect(() => {
+    if (!leaving) return;
+    const t = setTimeout(() => onDone?.(), 180);
+    return () => clearTimeout(t);
+  }, [leaving, onDone]);
   return (
-    <div className={`splash ${leaving ? 'leaving' : ''}`} role="status" aria-label="QUIZ WAR Bangladesh">
-      <div className="splash-glow" />
+    <div className={`splash wa${leaving ? ' leaving' : ''}`} role="status" aria-label="QUIZ WAR Bangladesh">
       <div className="splash-center">
-        <BrandMark size={120} />
-        <div className="splash-name">
-          <span className="sn-word">QUIZ</span>
-          <span className="sn-word sn-war">WAR</span>
-        </div>
-        <div className="splash-tag">
-          <i className="flag-line" />
-          BANGLADESH
-          <i className="flag-line r" />
-        </div>
+        <BrandMark size={96} animate={false} />
       </div>
-      <p className="splash-foot">{useSettings.getState().lang === 'en' ? 'Welcome to the battle of minds' : 'জ্ঞানের যুদ্ধে স্বাগতম'}</p>
+      <div className="splash-from">
+        <b>QUIZ WAR</b>
+        <small>BANGLADESH</small>
+      </div>
     </div>
   );
 }

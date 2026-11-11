@@ -247,6 +247,14 @@ const overLock = (on: boolean) => void native().then((n) => n?.showOnLock?.({ on
 let answerWhenRinging: string | null = null;
 let declineOnConnect: string | null = null;
 
+/** If the call that was answered on the phone's screen is ringing here, answer it now. */
+function autoAnswer() {
+  const c = useCall.getState().call;
+  if (!answerWhenRinging || !c || c.id !== answerWhenRinging || c.dir !== 'in') return;
+  answerWhenRinging = null;
+  if (c.phase === 'ringing') void answerCall();
+}
+
 async function nativeAction() {
   const n = await native();
   const r = await n?.pending?.().catch(() => null);
@@ -262,9 +270,10 @@ async function nativeAction() {
     return;
   }
   if (r.action === 'answer') {
+    // Answered on the phone's call screen: answer here as soon as the call is known —
+    // whichever comes first (no second "answer" tap in the app).
     answerWhenRinging = r.callId;
-    const c = useCall.getState().call;
-    if (c?.id === r.callId && c.phase === 'ringing') void answerCall();
+    autoAnswer();
   } else if (r.action === 'decline') {
     const c = useCall.getState().call;
     if (c?.id === r.callId) declineCall();
@@ -471,6 +480,8 @@ let wired = false;
 export function wireCalls() {
   if (wired) return;
   wired = true;
+  // Safety net: the moment the answered call shows up as ringing (in any order), answer it.
+  useCall.subscribe(() => answerWhenRinging && autoAnswer());
   // Answer / Decline from the phone's call notification.
   void nativeAction();
   // The phone needs the server address to decline from the lock screen without opening the app.
@@ -503,7 +514,7 @@ export function wireCalls() {
     });
     s.on('call:incoming', ({ callId, from, with: others, video }) => {
       const cur = useCall.getState().call;
-      if (cur && cur.id === callId) return;
+      if (cur && cur.id === callId) return autoAnswer();
       if (cur && cur.phase !== 'ended') {
         // Already talking to someone: the server marks the other call busy; nothing to show.
         return;
@@ -512,11 +523,7 @@ export function wireCalls() {
       useCall.getState().set({ call: { id: callId, peer: from, dir: 'in', phase: 'ringing', startedAt: 0, ...(others?.length ? { with: others } : {}), ...(video ? { video: true } : {}) }, small: false, loud: !!video });
       // Tell the caller it rings here ("Ringing…").
       void emit('call:ring', { callId }).catch(() => undefined);
-      if (answerWhenRinging === callId) {
-        answerWhenRinging = null;
-        void answerCall();
-        return;
-      }
+      if (answerWhenRinging === callId) return autoAnswer();
       overLock(true);
       // App in the background: the phone's own call notification rings (no double ringing).
       if (!(isNative && document.hidden)) playTone('ringtone');

@@ -31,6 +31,16 @@ export const useAuth = create<AuthState>((set, get) => ({
     if (u) set({ user: { ...u, ...p } });
   },
   bootstrap: async () => {
+    // Open instantly (like WhatsApp): a signed-in player sees their saved profile and screens
+    // right away, while the session is refreshed in the background.
+    let wasSignedIn = false;
+    try {
+      wasSignedIn = localStorage.getItem('qw-signed-in') === '1';
+    } catch {
+      /* storage blocked */
+    }
+    const early = wasSignedIn ? cachedUser() : null;
+    if (early) set({ status: 'authed', user: early });
     // Restore the session from the refresh cookie (web) or secure storage (Android).
     // A network failure never signs the player out: we keep the session and retry.
     const ok = await refreshSession();
@@ -51,7 +61,7 @@ export const useAuth = create<AuthState>((set, get) => ({
     }
     await get()
       .loadMe()
-      .catch(() => set({ status: 'offline' }));
+      .catch(() => (early ? scheduleRetry() : set({ status: 'offline' })));
   },
   loadMe: async () => {
     const me = await api<{ user: MeUser; squadId: number | null; activeMatchId: string | null; openRoomId?: string | null }>('/me');

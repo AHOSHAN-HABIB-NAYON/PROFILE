@@ -683,6 +683,7 @@ export function LudoGame() {
     setPhase('roll');
   };
 
+  const bags = useRef<number[][]>([]);
   const roll = async () => {
     if (phase !== 'roll') return;
     setPhase('rolling');
@@ -692,12 +693,7 @@ export function LudoGame() {
       setFaces(1 + Math.floor(Math.random() * 6));
       await sleep(55);
     }
-    const buf = new Uint8Array(1);
-    let dice = 0;
-    while (!dice) {
-      crypto.getRandomValues(buf);
-      if (buf[0]! < 252) dice = (buf[0]! % 6) + 1; // fair 1–6
-    }
+    const dice = fairDice(bags.current, gameRef.current.turn);
     setFaces(dice);
     if (!alive.current) return;
     const r = applyRoll(gameRef.current, dice);
@@ -754,25 +750,7 @@ export function LudoGame() {
   };
 
   // Token positions (with small offsets when several share a square).
-  const tokens = useMemo(() => {
-    const list = game.players.flatMap((p, pi) =>
-      p.tokens.map((pr0, tk) => {
-        const pr = anim && anim.p === pi && anim.tk === tk ? anim.pr : pr0;
-        const [x, y] = cellOf(p.color, pr, tk);
-        return { pi, tk, color: p.color, pr, x, y, key: `${x.toFixed(2)},${y.toFixed(2)}` };
-      }),
-    );
-    const groups = new Map<string, number>();
-    const seen = new Map<string, number>();
-    for (const tkn of list) if (tkn.pr >= 0) groups.set(tkn.key, (groups.get(tkn.key) ?? 0) + 1);
-    return list.map((tkn) => {
-      const count = tkn.pr >= 0 ? (groups.get(tkn.key) ?? 1) : 1;
-      const i = seen.get(tkn.key) ?? 0;
-      seen.set(tkn.key, i + 1);
-      const off = count > 1 ? [[-0.2, -0.12], [0.2, -0.12], [-0.2, 0.18], [0.2, 0.18]][i % 4]! : [0, 0];
-      return { ...tkn, x: tkn.x + off[0]!, y: tkn.y + off[1]!, small: count > 1 };
-    });
-  }, [game, anim]);
+  const tokens = useMemo(() => layoutTokens(game, anim), [game, anim]);
 
   const canRoll = phase === 'roll' && !isBot;
   const places = [...game.players.map((p, i) => ({ ...p, seat: seats[i]! }))].sort((a, b) => a.place - b.place);
@@ -1047,6 +1025,31 @@ function controllerOf(s: LudoSnapshot): number | null {
   return null;
 }
 
+/** Secure random whole number 0..n-1. */
+function rnd(n: number) {
+  const buf = new Uint32Array(1);
+  crypto.getRandomValues(buf);
+  return buf[0]! % n;
+}
+
+/**
+ * Fair dice (same rule as online): each player draws from a shuffled bag of 1–6, so nobody gets
+ * all the sixes; one roll in five is fully random so the order can't be counted.
+ */
+function fairDice(bags: number[][], seat: number) {
+  if (rnd(5) === 0) return rnd(6) + 1;
+  let bag = bags[seat];
+  if (!bag || !bag.length) {
+    bag = [1, 2, 3, 4, 5, 6];
+    for (let i = bag.length - 1; i > 0; i--) {
+      const j = rnd(i + 1);
+      [bag[i], bag[j]] = [bag[j]!, bag[i]!];
+    }
+    bags[seat] = bag;
+  }
+  return bag.pop()!;
+}
+
 /** Token positions with small offsets when several share a square. */
 function layoutTokens(state: LudoState, anim: { p: number; tk: number; pr: number } | null) {
   const list = state.players.flatMap((p, pi) =>
@@ -1056,10 +1059,14 @@ function layoutTokens(state: LudoState, anim: { p: number; tk: number; pr: numbe
       return { pi, tk, color: p.color, pr, x, y, key: `${x.toFixed(2)},${y.toFixed(2)}` };
     }),
   );
+  // The token that is hopping right now passes over others without pushing them aside
+  // (otherwise the tokens it passes jump left/right — the "shaking").
+  const moving = (k: { pi: number; tk: number }) => !!anim && anim.p === k.pi && anim.tk === k.tk;
   const groups = new Map<string, number>();
   const seen = new Map<string, number>();
-  for (const k of list) if (k.pr >= 0) groups.set(k.key, (groups.get(k.key) ?? 0) + 1);
+  for (const k of list) if (k.pr >= 0 && !moving(k)) groups.set(k.key, (groups.get(k.key) ?? 0) + 1);
   return list.map((k) => {
+    if (moving(k)) return { ...k, small: false };
     const count = k.pr >= 0 ? (groups.get(k.key) ?? 1) : 1;
     const i = seen.get(k.key) ?? 0;
     seen.set(k.key, i + 1);
@@ -1154,6 +1161,7 @@ export function LudoOnline() {
   const busy = useRef(false);
   const shown = useRef(0);
   const lastSnapAt = useRef(Date.now());
+  const busySince = useRef(0);
   const alive = useRef(true);
   useEffect(() => () => void (alive.current = false), []);
   const finishedRef = useRef(false);
@@ -1193,6 +1201,8 @@ export function LudoOnline() {
   const process = async () => {
     if (busy.current) return;
     busy.current = true;
+    busySince.current = Date.now();
+    try {
     while (queue.current.length && alive.current) {
       const s = queue.current.shift()!;
       if (s.seq <= shown.current) continue;
@@ -1235,7 +1245,10 @@ export function LudoOnline() {
       if (fresh && s.status === 'finished' && s.state?.finished) ludoSfx('win');
       shown.current = s.seq;
     }
-    busy.current = false;
+    } finally {
+      // Never leave the board locked (an error in an animation used to freeze the turn).
+      busy.current = false;
+    }
   };
 
   useEffect(() => {
@@ -1301,6 +1314,12 @@ export function LudoOnline() {
     const onVis = () => !document.hidden && void resync();
     document.addEventListener('visibilitychange', onVis);
     const dog = window.setInterval(() => {
+      // An animation that never finished (phone slept mid-move): unlock and catch up.
+      if (busy.current && Date.now() - busySince.current > 12000) {
+        busy.current = false;
+        setAnim(null);
+        void process();
+      }
       const cur = useLudo.getState().snap;
       if (!cur || cur.id !== id || cur.status === 'finished') return;
       const late = cur.deadline ? serverNow() > cur.deadline + 2500 : true;

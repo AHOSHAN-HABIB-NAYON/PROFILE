@@ -20,6 +20,8 @@ interface Game extends LudoSnapshot {
   timer?: NodeJS.Timeout;
   /** Missed turns in a row per seat (auto-played). */
   missed: number[];
+  /** Fair dice: each seat draws from its own shuffled bag (never sent to players). */
+  bags?: number[][];
   updatedAt: number;
 }
 
@@ -62,7 +64,7 @@ export class LudoService {
   }
 
   private snap(g: Game): LudoSnapshot {
-    const { timer: _t, missed: _m, updatedAt: _u, ...rest } = g;
+    const { timer: _t, missed: _m, updatedAt: _u, bags: _b, ...rest } = g;
     return rest;
   }
 
@@ -240,6 +242,7 @@ export class LudoService {
       g.teams ? g.seats.map((s) => s.team ?? 0) : undefined,
     );
     g.missed = g.seats.map(() => 0);
+    g.bags = [];
     g.last = null;
     this.armTurn(g, 900);
     this.send(g);
@@ -325,8 +328,29 @@ export class LudoService {
   /** Seconds a player gets to pick a token after rolling (then the computer picks). */
   private static PICK_SECONDS = 10;
 
+  /**
+   * Fair dice. Pure random lets one player get six after six while another waits 20 rolls.
+   * Each seat draws from its own shuffled bag holding 1–6 once each (refilled when empty),
+   * so everyone gets every number — sixes included — at the same rate, in an unpredictable
+   * order. One roll in five is fully random so the pattern can't be counted.
+   */
+  private fairDice(g: Game, seat: number) {
+    if (randomInt(5) === 0) return randomInt(1, 7);
+    g.bags ??= [];
+    let bag = g.bags[seat];
+    if (!bag || !bag.length) {
+      bag = [1, 2, 3, 4, 5, 6];
+      for (let i = bag.length - 1; i > 0; i--) {
+        const j = randomInt(i + 1);
+        [bag[i], bag[j]] = [bag[j]!, bag[i]!];
+      }
+      g.bags[seat] = bag;
+    }
+    return bag.pop()!;
+  }
+
   private doRoll(g: Game, auto = false) {
-    const dice = randomInt(1, 7);
+    const dice = this.fairDice(g, g.state!.turn);
     const by = g.state!.turn;
     const r = applyRoll(g.state!, dice);
     g.state = r.state;

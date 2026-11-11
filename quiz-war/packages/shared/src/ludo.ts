@@ -171,11 +171,14 @@ export function applyMove(s0: LudoState, token: number): LudoMoveResult {
   const idx = trackIndex(p.color, to);
   if (idx !== null && !LUDO_SAFE.has(idx)) {
     const hits = othersOn(s, idx, me);
-    // Two or more tokens of one colour make a block: it can't be captured.
-    const byPlayer = new Map<number, number>();
-    for (const h of hits) byPlayer.set(h.player, (byPlayer.get(h.player) ?? 0) + 1);
+    // Two or more tokens of one side on a square make a "joda" (block): it can't be captured.
+    // In 2 vs 2 that includes partners standing together (e.g. one red + one yellow). Once one
+    // of them moves away, the one left behind can be captured again.
+    const side = (pi: number) => (s.teams ? s.teams[pi]! : pi);
+    const bySide = new Map<number, number>();
+    for (const h of hits) bySide.set(side(h.player), (bySide.get(side(h.player)) ?? 0) + 1);
     for (const h of hits) {
-      if ((byPlayer.get(h.player) ?? 0) >= 2) continue;
+      if ((bySide.get(side(h.player)) ?? 0) >= 2) continue;
       s.players[h.player]!.tokens[h.token] = -1;
       captured.push(h);
     }
