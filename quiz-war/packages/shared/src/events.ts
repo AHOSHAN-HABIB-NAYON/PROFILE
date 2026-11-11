@@ -195,7 +195,8 @@ export interface ClientToServerEvents {
   /** Online Ludo. */
   'ludo:queue': (p: { mode: '1v1' | '2v2' }, ack: Ack<{ gameId?: string }>) => void;
   'ludo:unqueue': (p: Record<string, never>, ack?: Ack) => void;
-  'ludo:create': (p: { size: 2 | 4; teams: boolean }, ack: Ack<{ snapshot: LudoSnapshot }>) => void;
+  'ludo:create': (p: { size: 2 | 3 | 4; teams: boolean }, ack: Ack<{ snapshot: LudoSnapshot }>) => void;
+  'ludo:seat': (p: { gameId: string; color: number }, ack?: Ack) => void;
   'ludo:join': (p: { code: string }, ack: Ack<{ snapshot: LudoSnapshot }>) => void;
   'ludo:start': (p: { gameId: string }, ack?: Ack) => void;
   'ludo:partner': (p: { gameId: string; userId: number }, ack?: Ack) => void;

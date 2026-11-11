@@ -88,13 +88,13 @@ export function LudoHub({ top = true }: { top?: boolean }) {
   const [sheet, setSheet] = useState<HubSheet>(null);
   const [rules, setRules] = useState(false);
   const [mode, setMode] = useState<'1v1' | '2v2'>('1v1');
-  const [room, setRoom] = useState<'2' | '4' | 'teams'>('2');
+  const [room, setRoom] = useState<'2' | '3' | '4' | 'teams'>('2');
   const [code, setCode] = useState('');
   const [scan, setScan] = useState(false);
   const [busy, setBusy] = useState(false);
   const [players, setPlayers] = useState<2 | 4>(2);
   const [level, setLevel] = useState<0 | 1 | 2>(1);
-  const [localN, setLocalN] = useState<2 | 3 | 4>(2);
+  const [localN, setLocalN] = useState<2 | 3 | 4 | 'teams'>(2);
   const onlineOff = cfg?.ludoEnabled === false;
   const open = (k: HubSheet) => {
     haptic('tap');
@@ -105,7 +105,7 @@ export function LudoHub({ top = true }: { top?: boolean }) {
   const makeRoom = async () => {
     setBusy(true);
     try {
-      const r = await emit('ludo:create', { size: room === '2' ? 2 : 4, teams: room === 'teams' });
+      const r = await emit('ludo:create', { size: room === '2' ? 2 : room === '3' ? 3 : 4, teams: room === 'teams' });
       setSheet(null);
       nav(`/ludo/online/${r.snapshot.id}`);
     } catch (e: any) {
@@ -174,8 +174,9 @@ export function LudoHub({ top = true }: { top?: boolean }) {
 
       <Sheet open={sheet === 'friends'} onClose={() => setSheet(null)} title={t('Play with friends', 'বন্ধুদের সাথে')} icon="users">
         <div className="pick">
-          <div className="pick-grid three">
+          <div className="pick-grid two">
             <ModeCard on={room === '2'} onPick={() => setRoom('2')} title={t('1 vs 1', '১ বনাম ১')} sub={t('2 players', '২ জন')} art={<PawnsArt groups={[[B[3]], [B[1]]]} />} tone="t-blue" />
+            <ModeCard on={room === '3'} onPick={() => setRoom('3')} title={t('3 players', '৩ জন')} sub={t('Everyone', 'সবাই আলাদা')} art={<PawnsArt groups={[[B[3], B[0], B[1]]]} />} tone="t-orange" />
             <ModeCard on={room === '4'} onPick={() => setRoom('4')} title={t('4 players', '৪ জন')} sub={t('Everyone', 'সবাই আলাদা')} art={<PawnsArt groups={[[B[3], B[0], B[1], B[2]]]} />} tone="t-green" />
             <ModeCard on={room === 'teams'} onPick={() => setRoom('teams')} title={t('2 vs 2', '২ বনাম ২')} sub={t('Teams', 'দলে')} art={<PawnsArt groups={[[B[3], B[1]], [B[0], B[2]]]} />} tone="t-purple" />
           </div>
@@ -209,12 +210,13 @@ export function LudoHub({ top = true }: { top?: boolean }) {
       <Sheet open={sheet === 'local'} onClose={() => setSheet(null)} title={t('Pass & play', 'এক ফোনে খেলুন')} icon="users">
         <div className="pick">
           <p className="pick-note">{t('Everyone plays on this phone — pass it on each turn.', 'সবাই এই ফোনেই খেলবে — চাল শেষে ফোন হাতবদল করুন।')}</p>
-          <div className="pick-grid three">
+          <div className="pick-grid two">
             {([2, 3, 4] as const).map((n) => (
-              <ModeCard key={n} on={localN === n} onPick={() => setLocalN(n)} title={t(`${n} players`, `${num(n, lang)} জন`)} sub="" art={<PawnsArt groups={[[B[3], B[0], B[1], B[2]].slice(0, n)]} />} tone={n === 2 ? 't-blue' : n === 3 ? 't-green' : 't-purple'} />
+              <ModeCard key={n} on={localN === n} onPick={() => setLocalN(n)} title={t(`${n} players`, `${num(n, lang)} জন`)} sub="" art={<PawnsArt groups={[[B[3], B[0], B[1], B[2]].slice(0, n)]} />} tone={n === 2 ? 't-blue' : n === 3 ? 't-green' : 't-orange'} />
             ))}
+            <ModeCard on={localN === 'teams'} onPick={() => setLocalN('teams')} title={t('2 vs 2', '২ বনাম ২')} sub={t('Teams', 'দলে')} art={<PawnsArt groups={[[B[3], B[1]], [B[0], B[2]]]} />} tone="t-purple" />
           </div>
-          <button className="pick-go" onClick={() => (setSheet(null), nav(`/ludo/play?mode=local&n=${localN}`))}><Icon name="play" /> {t('Start', 'শুরু করুন')}</button>
+          <button className="pick-go" onClick={() => (setSheet(null), nav(localN === 'teams' ? '/ludo/play?mode=local&n=4&t=1' : `/ludo/play?mode=local&n=${localN}`))}><Icon name="play" /> {t('Start', 'শুরু করুন')}</button>
         </div>
       </Sheet>
 
@@ -581,6 +583,8 @@ export function LudoGame() {
   const n = Math.min(4, Math.max(2, Number(params.get('n') ?? 4))) as 2 | 3 | 4;
   const level = Math.min(2, Math.max(0, Number(params.get('lv') ?? 1))) as 0 | 1 | 2;
   const colors = n === 2 ? ORDER_2 : n === 3 ? ORDER_3 : ORDER_4;
+  // Pass & play 2 vs 2: players 1+3 against 2+4 (partners sit opposite).
+  const localTeams = mode === 'local' && n === 4 && params.get('t') === '1';
 
   const seats: Seat[] = useMemo(
     () =>
@@ -594,7 +598,7 @@ export function LudoGame() {
     [colors, mode, me, t],
   );
 
-  const [game, setGame] = useState<LudoState>(() => newLudoGame(colors));
+  const [game, setGame] = useState<LudoState>(() => newLudoGame(colors, localTeams ? [0, 1, 0, 1] : undefined));
   const [phase, setPhase] = useState<'roll' | 'rolling' | 'pick' | 'moving' | 'over'>('roll');
   const [faces, setFaces] = useState(6);
   const [movable, setMovable] = useState<number[]>([]);
@@ -705,6 +709,13 @@ export function LudoGame() {
       setPhase('roll');
       return;
     }
+    if (r.again) {
+      // No token out yet: up to 3 tries to roll a six.
+      flash(t(`Need a six — try ${(r.state.tries ?? 1) + 1} of 3`, `ছক্কা লাগবে — আবার চেষ্টা (${num((r.state.tries ?? 1) + 1, 'bn')}/৩)`));
+      await sleep(700);
+      setPhase('roll');
+      return;
+    }
     if (!r.moves.length) {
       await sleep(750);
       const s = { ...r.state, players: r.state.players.map((p) => ({ ...p, tokens: [...p.tokens] })) };
@@ -717,7 +728,8 @@ export function LudoGame() {
     setMovable(r.moves);
     setPhase('pick');
     // Only one choice: it moves by itself (like Ludo King).
-    const allSame = r.moves.every((m) => r.state.players[r.state.turn]!.tokens[m] === r.state.players[r.state.turn]!.tokens[r.moves[0]!]);
+    const mv = r.state.players[moverOf(r.state)]!;
+    const allSame = r.moves.every((m) => mv.tokens[m] === mv.tokens[r.moves[0]!]);
     if (r.moves.length === 1 || allSame) {
       await sleep(350);
       gameRef.current = r.state;
@@ -771,10 +783,11 @@ export function LudoGame() {
           <div className="ludo-board">
             <svg viewBox="0 0 15 15" className="ludo-svg"><BoardArt /></svg>
             {tokens.map((tk) => {
-              const can = tk.pi === cur && phase === 'pick' && movable.includes(tk.tk) && !isBot;
+              const can = tk.pi === moverOf(game) && phase === 'pick' && movable.includes(tk.tk) && !isBot;
               return (
                 <button
                   key={`${tk.pi}-${tk.tk}`}
+                  data-tk={`${tk.pi}-${tk.tk}`}
                   type="button"
                   className={`ludo-token${can ? ' can' : ''}${tk.small ? ' small' : ''}${tk.pr >= LUDO_FINISH ? ' done' : ''}${anim && anim.p === tk.pi && anim.tk === tk.tk ? ' hop' : ''}`}
                   style={{ left: `${(tk.x / 15) * 100}%`, top: `${(tk.y / 15) * 100}%`, ['--tc' as any]: LUDO_COLORS[tk.color], zIndex: can ? 30 : Math.round(tk.y * 2) }}
@@ -827,7 +840,7 @@ export function LudoGame() {
 
       {phase === 'over' && (
         <LudoOverScreen
-          rows={game.players.map((p, i) => ({ name: seats[i]!.name, avatar: seats[i]!.avatar ?? null, color: p.color, place: p.place, home: p.tokens.filter((x) => x >= LUDO_FINISH).length, isMe: mode === 'ai' && i === 0, isBot: seats[i]!.bot, uid: i === 0 && mode === 'ai' ? (me?.uid ?? null) : null, team: null }))}
+          rows={game.players.map((p, i) => ({ name: seats[i]!.name, avatar: seats[i]!.avatar ?? null, color: p.color, place: p.place, home: p.tokens.filter((x) => x >= LUDO_FINISH).length, isMe: mode === 'ai' && i === 0, isBot: seats[i]!.bot, uid: i === 0 && mode === 'ai' ? (me?.uid ?? null) : null, team: localTeams ? i % 2 : null }))}
           won={mode === 'ai' ? game.players[0]!.place === 1 : true}
           modeText={mode === 'ai' ? t(`vs computer · ${LEVELS[level][0]}`, `কম্পিউটারের সাথে · ${LEVELS[level][1]}`) : t('one phone', 'এক ফোনে')}
           coins={0}
@@ -1162,6 +1175,8 @@ export function LudoOnline() {
   const shown = useRef(0);
   const lastSnapAt = useRef(Date.now());
   const busySince = useRef(0);
+  /** Last game action already shown (see LudoLast.n). */
+  const animN = useRef(0);
   const alive = useRef(true);
   useEffect(() => () => void (alive.current = false), []);
   const finishedRef = useRef(false);
@@ -1208,8 +1223,13 @@ export function LudoOnline() {
       if (s.seq <= shown.current) continue;
       lastSnapAt.current = Date.now();
       // Behind (weak network / app was in the background): jump to the latest without animations.
-      const fresh = s.seq === shown.current + 1 && shown.current > 0 && queue.current.length < 2 && !document.hidden;
       const L = s.last;
+      // Animate each game action exactly once (connection updates re-send the last action —
+      // replaying it made tokens jump back and forth). Behind (weak network / app was in the
+      // background): jump to the latest without animations.
+      const actN = L?.n ?? 0;
+      const fresh = actN > animN.current && shown.current > 0 && queue.current.length < 2 && !document.hidden;
+      if (actN > animN.current) animN.current = actN;
       if (fresh && s.status === 'playing' && L?.type === 'roll') {
         setRolling(true);
         ludoSfx('roll');
@@ -1221,6 +1241,7 @@ export function LudoOnline() {
         setRolling(false);
         if (L.dice === 6) ludoSfx('six');
         if (L.lost) flash(t('Three sixes — turn lost', 'তিনবার ছক্কা — চাল বাতিল'));
+        else if (L.again) flash(t(`Need a six — try ${(s.state?.tries ?? 1) + 1} of 3`, `ছক্কা লাগবে — আবার চেষ্টা (${num((s.state?.tries ?? 1) + 1, 'bn')}/৩)`));
       } else if (fresh && L?.type === 'move' && s.state) {
         const from = L.path[0] === 0 && L.path.length === 1;
         if (from) ludoSfx('out');
@@ -1239,6 +1260,7 @@ export function LudoOnline() {
           cheerFor(s.state.players[L.mover]!.color);
         } else if (L.extra) flash(t('Six! Roll again', 'ছক্কা! আবার চাল'));
       } else if (fresh && L?.type === 'pass') ludoSfx('turn');
+      else if (!fresh && L?.type === 'roll' && L.dice) setFaces(L.dice);
       if (s.status === 'finished' && !s.state && shown.current > 0) setGone(true);
       setSnap(s);
       if (s.state) setView(s.state);
@@ -1265,6 +1287,7 @@ export function LudoOnline() {
           if (stop) return;
           if (r.snapshot.seq > shown.current) {
             shown.current = r.snapshot.seq;
+            animN.current = Math.max(animN.current, r.snapshot.last?.n ?? 0);
             setSnap(r.snapshot);
             setView(r.snapshot.state);
             if (r.snapshot.last?.type === 'roll') setFaces(r.snapshot.last.dice);
@@ -1391,7 +1414,8 @@ export function LudoOnline() {
 
         <div className={`lr-seats n${snap.size}`}>
           {colors.map((c, i) => {
-            const seat = snap.seats[i];
+            // Seats sit at their colour's corner (players can move to a free corner).
+            const seat = snap.seats.find((x) => x.color === c);
             return (
               <div key={i} className={`lr-seat${seat ? '' : ' empty'}`} style={{ ['--pc' as any]: LUDO_COLORS[c] }}>
                 {snap.teams && <span className="lr-team">{t(`Team ${(seat?.team ?? i % 2) + 1}`, `দল ${num((seat?.team ?? i % 2) + 1, lang)}`)}</span>}
@@ -1407,10 +1431,17 @@ export function LudoOnline() {
                     )}
                   </>
                 ) : (
-                  <button type="button" className="lr-add" onClick={() => setInviteOpen(true)}>
-                    <span><Icon name="user-plus" size={22} /></span>
-                    <small>{t('Invite', 'ডাকুন')}</small>
-                  </button>
+                  <>
+                    <button type="button" className="lr-add" onClick={() => setInviteOpen(true)}>
+                      <span><Icon name="user-plus" size={22} /></span>
+                      <small>{t('Invite', 'ডাকুন')}</small>
+                    </button>
+                    {!snap.teams && mySeat && (
+                      <button type="button" className="lr-mate" onClick={() => (haptic('tap'), void emit('ludo:seat', { gameId: snap.id, color: c }).catch(() => undefined))}>
+                        <Icon name="arrow-right" size={14} /> {t('Sit here', 'এখানে বসুন')}
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             );
@@ -1516,6 +1547,7 @@ export function LudoOnline() {
               return (
                 <button
                   key={`${tk.pi}-${tk.tk}`}
+                  data-tk={`${tk.pi}-${tk.tk}`}
                   type="button"
                   className={`ludo-token${can ? ' can' : ''}${tk.small ? ' small' : ''}${tk.pr >= LUDO_FINISH ? ' done' : ''}${anim && anim.p === tk.pi && anim.tk === tk.tk ? ' hop' : ''}`}
                   style={{ left: `${(tk.x / 15) * 100}%`, top: `${(tk.y / 15) * 100}%`, ['--tc' as any]: LUDO_COLORS[tk.color], zIndex: can ? 30 : Math.round(tk.y * 2) }}

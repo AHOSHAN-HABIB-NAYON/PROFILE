@@ -42,3 +42,20 @@ describe('ludo capture rules', () => {
     expect(r.state.players[1]!.tokens[0]).toBe(-1);
   });
 });
+
+describe('ludo yard tries', () => {
+  it('a player with no token out gets 3 tries to roll a six', async () => {
+    const { applyRoll } = await import('@quizwar/shared');
+    let s = newLudoGame([3, 1]);
+    let r = applyRoll(s, 2);
+    expect(r.again).toBe(true);
+    expect(r.state.turn).toBe(0);
+    r = applyRoll(r.state, 3);
+    expect(r.again).toBe(true);
+    r = applyRoll(r.state, 4);
+    expect(r.again).toBe(false); // third miss: the turn passes
+    s = newLudoGame([3, 1]);
+    r = applyRoll(s, 6);
+    expect(r.moves.length).toBe(4);
+  });
+});

@@ -22,6 +22,8 @@ interface Game extends LudoSnapshot {
   missed: number[];
   /** Fair dice: each seat draws from its own shuffled bag (never sent to players). */
   bags?: number[][];
+  /** Counts game actions (roll / move / pass): the app animates each one exactly once. */
+  actNo?: number;
   updatedAt: number;
 }
 
@@ -64,7 +66,7 @@ export class LudoService {
   }
 
   private snap(g: Game): LudoSnapshot {
-    const { timer: _t, missed: _m, updatedAt: _u, bags: _b, ...rest } = g;
+    const { timer: _t, missed: _m, updatedAt: _u, bags: _b, actNo: _n, ...rest } = g;
     return rest;
   }
 
@@ -97,7 +99,7 @@ export class LudoService {
     throw new AppError(409, 'in_ludo', g.id);
   }
 
-  private newGame(kind: 'quick' | 'room', hostId: number, size: 2 | 4, teams: boolean): Game {
+  private newGame(kind: 'quick' | 'room', hostId: number, size: 2 | 3 | 4, teams: boolean): Game {
     if (this.games.size > 3000) throw new AppError(503, 'busy', 'Too many games right now, try again soon');
     let code: string | null = null;
     if (kind === 'room') {
@@ -170,7 +172,7 @@ export class LudoService {
 
   /* --------------------------------- Rooms --------------------------------- */
 
-  async create(userId: number, size: 2 | 4, teams: boolean) {
+  async create(userId: number, size: 2 | 3 | 4, teams: boolean) {
     this.assertOn();
     this.assertFree(userId);
     this.unqueue(userId);
@@ -209,10 +211,35 @@ export class LudoService {
       g.seats = [host, others[0], partner, others[1]].filter((s): s is LudoSeat => !!s);
     }
     const colors = ludoColorsFor(g.size);
+    if (!g.teams) {
+      // Everyone keeps the corner they picked; newcomers get a free one.
+      const taken = new Set<number>();
+      for (const s of g.seats) {
+        if (colors.includes(s.color) && !taken.has(s.color)) taken.add(s.color);
+        else s.color = -1 as never;
+      }
+      for (const s of g.seats) {
+        if ((s.color as number) !== -1) continue;
+        s.color = colors.find((c) => !taken.has(c))!;
+        taken.add(s.color);
+      }
+      for (const s of g.seats) s.team = null;
+      return;
+    }
     g.seats.forEach((s, k) => {
       s.color = colors[k]!;
-      s.team = !g.teams ? null : partner ? (s === partner || s.userId === g.hostId ? 0 : 1) : k % 2;
+      s.team = partner ? (s === partner || s.userId === g.hostId ? 0 : 1) : k % 2;
     });
+  }
+
+  /** Room lobby: sit in another free corner (not in 2 vs 2, where seats decide the teams). */
+  seat(userId: number, gameId: string, color: number) {
+    const g = this.get(gameId);
+    if (g.status !== 'lobby' || g.teams) return;
+    const me = g.seats.find((s) => s.userId === userId);
+    if (!me || !ludoColorsFor(g.size).includes(color as never) || g.seats.some((s) => s.color === color)) return;
+    me.color = color as never;
+    this.send(g);
   }
 
   /** 2 vs 2 room: the host chooses a teammate (tap again to undo). */
@@ -237,12 +264,18 @@ export class LudoService {
 
   private begin(g: Game) {
     g.status = 'playing';
+    // Turns go clockwise around the board (blue → red → green → yellow).
+    if (!g.teams) {
+      const order = [3, 0, 1, 2];
+      g.seats.sort((a, b) => order.indexOf(a.color) - order.indexOf(b.color));
+    }
     g.state = newLudoGame(
       g.seats.map((s) => s.color),
       g.teams ? g.seats.map((s) => s.team ?? 0) : undefined,
     );
     g.missed = g.seats.map(() => 0);
     g.bags = [];
+    g.actNo = 0;
     g.last = null;
     this.armTurn(g, 900);
     this.send(g);
@@ -325,6 +358,11 @@ export class LudoService {
     this.doRoll(g);
   }
 
+  private nextAct(g: Game) {
+    g.actNo = (g.actNo ?? 0) + 1;
+    return g.actNo;
+  }
+
   /** Seconds a player gets to pick a token after rolling (then the computer picks). */
   private static PICK_SECONDS = 10;
 
@@ -354,13 +392,20 @@ export class LudoService {
     const by = g.state!.turn;
     const r = applyRoll(g.state!, dice);
     g.state = r.state;
-    g.last = { type: 'roll', by, dice, moves: r.moves, ...(r.lost ? { lost: true } : {}) };
+    g.last = { n: this.nextAct(g), type: 'roll', by, dice, moves: r.moves, ...(r.lost ? { lost: true } : {}), ...(r.again ? { again: true } : {}) };
     clearTimeout(g.timer);
     if (r.lost) {
       // applyRoll already passed the turn.
       g.deadline = null;
       this.send(g);
       this.armTurn(g, 900);
+      return;
+    }
+    if (r.again) {
+      // No token out yet and no six: the same player rolls again (up to 3 tries).
+      g.deadline = null;
+      this.send(g);
+      this.armTurn(g, 700);
       return;
     }
     if (!r.moves.length) {
@@ -390,7 +435,7 @@ export class LudoService {
     const s = { ...g.state!, players: g.state!.players.map((p) => ({ ...p, tokens: [...p.tokens] })) };
     nextTurn(s);
     g.state = s;
-    g.last = { type: 'pass', by };
+    g.last = { n: this.nextAct(g), type: 'pass', by };
     this.armTurn(g);
     this.send(g);
   }
@@ -413,7 +458,7 @@ export class LudoService {
     const mover = moverOf(g.state!);
     const r = applyMove(g.state!, token);
     g.state = r.state;
-    g.last = { type: 'move', by, mover, token, path: r.path, captured: r.captured, home: r.reachedHome, extra: r.extraTurn };
+    g.last = { n: this.nextAct(g), type: 'move', by, mover, token, path: r.path, captured: r.captured, home: r.reachedHome, extra: r.extraTurn };
     if (r.state.finished) return this.finish(g);
     this.armTurn(g, moveShowMs(r.path.length));
     this.send(g);
@@ -490,7 +535,18 @@ export class LudoService {
     const g = this.get(gameId);
     const seat = g.seats.find((s) => s.userId === userId);
     if (!seat) throw new AppError(403, 'not_in_game', 'You are not in this game');
-    if (!seat.connected) {
+    // Came back after leaving: take the seat back from the computer (not in a finished game,
+    // and not if another game was started in between).
+    const elsewhere = this.byUser.get(userId);
+    if (seat.left && g.status === 'playing' && (!elsewhere || elsewhere === g.id || this.games.get(elsewhere)?.status === 'finished')) {
+      seat.left = false;
+      seat.connected = true;
+      this.byUser.set(userId, g.id);
+      const i = g.seats.indexOf(seat);
+      g.missed[i] = 0;
+      if (g.state!.turn === i) this.armTurn(g);
+      this.send(g);
+    } else if (!seat.connected) {
       seat.connected = true;
       this.send(g);
     }

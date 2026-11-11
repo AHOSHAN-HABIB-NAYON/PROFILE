@@ -33,8 +33,11 @@ export function LudoMini() {
   if (!snap || !meId || pathname.startsWith('/ludo/') || /^\/(match|war-room|login|intro|onboarding)/.test(pathname)) return null;
   if (snap.status !== 'playing' && snap.status !== 'lobby') return null;
   const mine = snap.seats.findIndex((s) => s.userId === meId);
-  if (mine < 0 || snap.seats[mine]!.left) return null;
-  const myTurn = snap.status === 'playing' && snap.state?.turn === mine;
+  if (mine < 0) return null;
+  // Left a running game: the bubble offers to take the seat back from the computer.
+  const left = snap.seats[mine]!.left;
+  if (left && snap.status !== 'playing') return null;
+  const myTurn = !left && snap.status === 'playing' && snap.state?.turn === mine;
   const lobby = snap.status === 'lobby';
 
   const onUp = (e: React.PointerEvent) => {
@@ -85,7 +88,7 @@ export function LudoMini() {
         <b />
       </span>
       {!drag && (
-        <span className="lm-tag">{myTurn ? t('Your turn!', 'আপনার চাল!') : lobby ? t('Room', 'রুম') : t('Ludo', 'লুডু')}</span>
+        <span className="lm-tag">{left ? t('Back to game', 'খেলায় ফিরুন') : myTurn ? t('Your turn!', 'আপনার চাল!') : lobby ? t('Room', 'রুম') : t('Ludo', 'লুডু')}</span>
       )}
     </button>
   );
