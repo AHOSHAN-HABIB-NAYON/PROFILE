@@ -44,18 +44,34 @@ public class QwCallPlugin extends Plugin {
     static volatile String pendingAction = null;
     static volatile String pendingCallId = null;
     static volatile String pendingUrl = null;
+    static volatile long pendingAt = 0;
 
-    /** The web app asks what the user tapped on the call notification (once). */
+    /**
+     * The web app asks what the user tapped on the call notification. Kept (for up to a minute)
+     * until the web app says it handled it: the page can load twice while the app starts from a
+     * call, and the second load must still know "Answer" was tapped (no second answer needed).
+     */
     @PluginMethod
     public void pending(PluginCall call) {
+        if (pendingAction != null && System.currentTimeMillis() - pendingAt > 60_000) clear();
         JSObject r = new JSObject();
         r.put("action", pendingAction);
         r.put("callId", pendingCallId);
         r.put("url", pendingUrl);
+        call.resolve(r);
+    }
+
+    private static void clear() {
         pendingUrl = null;
         pendingAction = null;
         pendingCallId = null;
-        call.resolve(r);
+    }
+
+    /** The web app handled the tapped action. */
+    @PluginMethod
+    public void clearPending(PluginCall call) {
+        clear();
+        call.resolve();
     }
 
     /** The web app tells the phone the server address (for Decline from the lock screen). */
@@ -92,7 +108,11 @@ public class QwCallPlugin extends Plugin {
             i.putExtra("hang", call.getString("hang", "Hang up"));
             // Already showing (Calling… → Ringing… → Ongoing): just change the text.
             if (QwCallService.running) QwCallService.update(getContext(), i);
-            else ContextCompat.startForegroundService(getContext(), i);
+            else {
+                // Show the text at once (plain fallback in the list), then try the call service.
+                if (QwCallService.plainShown) QwCallService.update(getContext(), i);
+                ContextCompat.startForegroundService(getContext(), i);
+            }
         } catch (Exception ignored) {
             // The call still works while the app is open.
         }
@@ -105,6 +125,7 @@ public class QwCallPlugin extends Plugin {
             getContext().stopService(new Intent(getContext(), QwCallService.class));
         } catch (Exception ignored) {
         }
+        QwCallService.clearPlain(getContext());
         setEar(false);
         call.resolve();
     }

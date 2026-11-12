@@ -13,6 +13,7 @@ public class QwCallActionReceiver extends BroadcastReceiver {
             // The app (running in the background) ends the call; the notification goes away at once.
             QwCallPlugin.hangUp();
             ctx.stopService(new Intent(ctx, QwCallService.class));
+            QwCallService.clearPlain(ctx);
             return;
         }
         QwCallNotifier.cancel(ctx);

@@ -197,6 +197,7 @@ type CallPlugin = {
   stop(): Promise<void>;
   proximity(o: { on: boolean }): Promise<void>;
   pending?(): Promise<{ action?: string | null; callId?: string | null; url?: string | null }>;
+  clearPending?(): Promise<void>;
   cancelIncoming?(): Promise<void>;
   showOnLock?(o: { on: boolean }): Promise<void>;
   setApi?(o: { base: string }): Promise<void>;
@@ -252,6 +253,7 @@ function autoAnswer() {
   const c = useCall.getState().call;
   if (!answerWhenRinging || !c || c.id !== answerWhenRinging || c.dir !== 'in') return;
   answerWhenRinging = null;
+  void native().then((n) => n?.clearPending?.()).catch(() => undefined);
   if (c.phase === 'ringing') void answerCall();
 }
 
@@ -259,6 +261,8 @@ async function nativeAction() {
   const n = await native();
   const r = await n?.pending?.().catch(() => null);
   if (!r?.action || !r.callId) return;
+  // "Answer" stays waiting until the call is really answered (see autoAnswer); the rest are done now.
+  if (r.action !== 'answer') void n?.clearPending?.().catch(() => undefined);
   if (r.action === 'hangup') return hangUp();
   if (r.action === 'message') {
     // Declined from the ringing screen; open the chat with the caller.
@@ -530,6 +534,8 @@ export function wireCalls() {
         return;
       }
       window.clearTimeout(endTimer);
+      // Opened from "Answer" on the notification: make sure that tap is known before ringing here.
+      if (!answerWhenRinging) void nativeAction();
       useCall.getState().set({ call: { id: callId, peer: from, dir: 'in', phase: 'ringing', startedAt: 0, ...(others?.length ? { with: others } : {}), ...(video ? { video: true } : {}) }, small: false, loud: !!video });
       // Tell the caller it rings here ("Ringing…").
       void emit('call:ring', { callId }).catch(() => undefined);

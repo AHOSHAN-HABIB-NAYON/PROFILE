@@ -39,7 +39,14 @@ public class QwCallService extends Service {
             holdLocks(this);
             loadAvatarLater(this, intent);
         } catch (Exception e) {
-            // Not allowed right now (e.g. no mic permission): the call still works while the app is open.
+            // Not allowed as a call service on this phone: still show "Calling… / Ongoing call"
+            // in the notification list (plain style), so the user sees the call and can return to it.
+            try {
+                NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                if (nm != null) nm.notify(ID, plain(this, intent));
+                plainShown = true;
+            } catch (Exception ignored) {
+            }
             stopSelf();
         }
         return START_NOT_STICKY;
@@ -53,6 +60,10 @@ public class QwCallService extends Service {
         try {
             NotificationManager nm = (NotificationManager) ctx.getSystemService(NOTIFICATION_SERVICE);
             if (nm == null) return;
+            if (plainShown && !running) {
+                nm.notify(ID, plain(ctx, intent));
+                return;
+            }
             nm.notify(ID, build(ctx, intent, null));
             loadAvatarLater(ctx, intent);
         } catch (Exception ignored) {
@@ -110,6 +121,35 @@ public class QwCallService extends Service {
                 .setShowWhen(true);
         if (avatar != null) b.setLargeIcon(avatar);
         return withStyle(b, title, text, avatar, hangPi, hangText).build();
+    }
+
+    /** True when the plain fallback notification is up (removed when the call ends). */
+    static volatile boolean plainShown = false;
+
+    private static Notification plain(Context ctx, Intent intent) {
+        Notification full = build(ctx, intent, null);
+        NotificationCompat.Builder b = new NotificationCompat.Builder(ctx, CHANNEL)
+                .setSmallIcon(R.drawable.ic_stat_notify)
+                .setContentTitle(full.extras.getCharSequence(Notification.EXTRA_TITLE))
+                .setContentText(intent != null && intent.getStringExtra("text") != null ? intent.getStringExtra("text") : "Call in progress")
+                .setOngoing(true)
+                .setSilent(true)
+                .setCategory(NotificationCompat.CATEGORY_CALL)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setContentIntent(full.contentIntent);
+        if (full.actions != null) for (Notification.Action a : full.actions) b.addAction(0, a.title, a.actionIntent);
+        return b.build();
+    }
+
+    /** Remove the plain fallback notification (call over). */
+    static void clearPlain(Context ctx) {
+        if (!plainShown) return;
+        plainShown = false;
+        try {
+            NotificationManager nm = (NotificationManager) ctx.getSystemService(NOTIFICATION_SERVICE);
+            if (nm != null) nm.cancel(ID);
+        } catch (Exception ignored) {
+        }
     }
 
     /** WhatsApp-style ongoing call: caller name, status and a red Hang up button. */
