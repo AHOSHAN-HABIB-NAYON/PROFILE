@@ -9,19 +9,24 @@ on:
 permissions:
   actions: write
 
+concurrency:
+  group: cleanup-artifacts
+  cancel-in-progress: true
+
 jobs:
   cleanup:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - name: Delete all artifacts
+      - name: Delete all artifacts (one pass)
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
-          n=0
-          while :; do
-            ids=$(gh api "repos/$REPO/actions/artifacts?per_page=100" --jq '.artifacts[].id')
-            [ -z "$ids" ] && break
-            for id in $ids; do gh api -X DELETE "repos/$REPO/actions/artifacts/$id" && n=$((n+1)); done
+          ids=$(gh api --paginate "repos/$REPO/actions/artifacts?per_page=100" --jq '.artifacts[].id')
+          echo "Found $(echo "$ids" | grep -c . ) artifacts"
+          ok=0; bad=0
+          for id in $ids; do
+            if gh api -X DELETE "repos/$REPO/actions/artifacts/$id" >/dev/null 2>&1; then ok=$((ok+1)); else bad=$((bad+1)); fi
           done
-          echo "Deleted $n artifacts"
+          echo "Deleted $ok, failed $bad"
