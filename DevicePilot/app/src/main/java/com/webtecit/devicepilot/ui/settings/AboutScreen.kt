@@ -109,16 +109,7 @@ fun PrivacyScreen(navigate: (String) -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        listOf(
-            R.string.privacy_s1_title to R.string.privacy_s1_text,
-            R.string.privacy_s2_title to R.string.privacy_s2_text,
-            R.string.privacy_s3_title to R.string.privacy_s3_text,
-            R.string.privacy_s4_title to R.string.privacy_s4_text,
-            R.string.privacy_s5_title to R.string.privacy_s5_text,
-            R.string.privacy_s6_title to R.string.privacy_s6_text,
-            R.string.privacy_s7_title to R.string.privacy_s7_text,
-            R.string.privacy_s8_title to R.string.privacy_s8_text,
-        ).forEach { (t, b) -> item { LegalSection(Icons.Outlined.PrivacyTip, t, b) } }
+        LegalSections.privacy.forEach { (t, b) -> item { LegalSection(Icons.Outlined.PrivacyTip, t, b) } }
         item {
             Text(stringResource(R.string.privacy_contact, Attribution.developerName, Attribution.website),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -139,14 +130,7 @@ fun DisclaimerScreen(navigate: (String) -> Unit) {
                 }
             }
         }
-        listOf(
-            R.string.disc_s1_title to R.string.disc_s1_text,
-            R.string.disc_s2_title to R.string.disc_s2_text,
-            R.string.disc_s3_title to R.string.disc_s3_text,
-            R.string.disc_s4_title to R.string.disc_s4_text,
-            R.string.disc_s5_title to R.string.disc_s5_text,
-            R.string.disc_s6_title to R.string.disc_s6_text,
-        ).forEach { (t, b) -> item { LegalSection(Icons.Outlined.Gavel, t, b) } }
+        LegalSections.disclaimer.forEach { (t, b) -> item { LegalSection(Icons.Outlined.Gavel, t, b) } }
         item { OutlinedButton(onClick = { navigate(Routes.PRIVACY) }) { Text(stringResource(R.string.title_privacy)) } }
     }
 }

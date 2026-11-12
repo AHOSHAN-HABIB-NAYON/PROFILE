@@ -115,12 +115,13 @@ private fun HiderContent(lockReady: Boolean) {
     var busy by remember { mutableStateOf<String?>(null) }
     var query by remember { mutableStateOf("") }
     var confirmRemove by remember { mutableStateOf(false) }
-    val owner = remember(reload) { hider.isDeviceOwner() }
+    val owner = remember(reload) { com.webtecit.devicepilot.BuildConfig.FULL && hider.isDeviceOwner() }
     val apps by produceState<List<HideableApp>?>(null, reload, owner) { value = if (owner) hider.apps() else emptyList() }
     val failMsg = stringResource(R.string.hider_failed)
 
     ScreenList {
-        item { HeroCard(R.drawable.ill_apps, stringResource(R.string.hider_hero_title), stringResource(R.string.hider_hero_text)) }
+        item { HeroCard(R.drawable.ill_apps, stringResource(R.string.hider_hero_title),
+            stringResource(if (com.webtecit.devicepilot.BuildConfig.FULL) R.string.hider_hero_text else R.string.hider_hero_text_play)) }
         if (!lockReady) item {
             DpCard(color = levelColor(Level.WARN).copy(alpha = 0.10f)) {
                 Text(stringResource(R.string.hider_no_lock), style = MaterialTheme.typography.bodySmall)
@@ -230,15 +231,16 @@ private fun SetupCards(context: Context) {
     val c = LocalContainer.current
     val copied = stringResource(R.string.hider_copied)
     Column {
-        DpCard {
+        if (com.webtecit.devicepilot.BuildConfig.FULL) DpCard {
             Text(stringResource(R.string.hider_why_title), style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.height(4.dp))
             Text(stringResource(R.string.hider_why_text), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Spacer(Modifier.height(12.dp))
+        if (com.webtecit.devicepilot.BuildConfig.FULL) Spacer(Modifier.height(12.dp))
         DpCard {
-            Text(stringResource(R.string.hider_opt_builtin_title), style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(if (com.webtecit.devicepilot.BuildConfig.FULL) R.string.hider_opt_builtin_title else R.string.hider_opt_builtin_title_play),
+                style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.height(4.dp))
             Text(stringResource(R.string.hider_opt_builtin_text), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -253,8 +255,8 @@ private fun SetupCards(context: Context) {
                 }
             }
         }
-        Spacer(Modifier.height(12.dp))
-        DpCard {
+        if (com.webtecit.devicepilot.BuildConfig.FULL) Spacer(Modifier.height(12.dp))
+        if (com.webtecit.devicepilot.BuildConfig.FULL) DpCard {
             Text(stringResource(R.string.hider_opt_owner_title), style = MaterialTheme.typography.titleSmall)
             Spacer(Modifier.height(4.dp))
             Text(stringResource(R.string.hider_opt_owner_text), style = MaterialTheme.typography.bodySmall,

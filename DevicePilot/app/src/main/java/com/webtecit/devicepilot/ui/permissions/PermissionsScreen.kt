@@ -74,9 +74,9 @@ fun PermissionsScreen(onDone: () -> Unit) {
                 R.string.perm_notif_title, R.string.perm_notif_why, Notifier.canPost(context)))
             add(PermItem(Perm.USAGE, Icons.Outlined.DataUsage, R.string.perm_usage_title, R.string.perm_usage_why,
                 c.usage.hasUsageAccess()))
-            if (Build.VERSION.SDK_INT >= 26) add(PermItem(Perm.INSTALL, Icons.Outlined.InstallMobile,
+            if (com.webtecit.devicepilot.BuildConfig.FULL && Build.VERSION.SDK_INT >= 26) add(PermItem(Perm.INSTALL, Icons.Outlined.InstallMobile,
                 R.string.perm_install_title, R.string.perm_install_why, c.installer.canRequestInstalls()))
-            add(PermItem(Perm.VPN, Icons.Outlined.VpnKey, R.string.perm_vpn_title, R.string.perm_vpn_why,
+            if (com.webtecit.devicepilot.BuildConfig.FULL) add(PermItem(Perm.VPN, Icons.Outlined.VpnKey, R.string.perm_vpn_title, R.string.perm_vpn_why,
                 FirewallController.consentIntent(context) == null))
         }
     val items = remember(tick) { computeItems() }

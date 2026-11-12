@@ -188,7 +188,8 @@ fun HomeScreen(navigate: (String) -> Unit) {
                     QuickAction(Icons.Outlined.PhoneAndroid, R.string.qa_device_info) { navigate(Routes.DEVICE_INFO) },
                     QuickAction(Icons.Outlined.PlayCircle, R.string.qa_running) { navigate(Routes.RUNNING) },
                     QuickAction(Icons.Outlined.Apps, R.string.qa_apps) { navigate(Routes.APPS) },
-                    QuickAction(Icons.Outlined.Security, R.string.qa_firewall) { navigate(Routes.FIREWALL) },
+                    if (com.webtecit.devicepilot.BuildConfig.FULL) QuickAction(Icons.Outlined.Security, R.string.qa_firewall) { navigate(Routes.FIREWALL) }
+                    else QuickAction(Icons.Outlined.DataUsage, R.string.qa_network) { navigate(Routes.NETWORK) },
                     QuickAction(Icons.Outlined.CleaningServices, R.string.qa_boost) { navigate(Routes.BOOST) },
                     QuickAction(Icons.Outlined.MenuBook, R.string.qa_guide) { navigate(Routes.GUIDE) },
                     QuickAction(Icons.Outlined.VisibilityOff, R.string.qa_hider) { navigate(Routes.HIDER) },

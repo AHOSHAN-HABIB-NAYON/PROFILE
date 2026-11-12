@@ -126,7 +126,8 @@ fun DeviceInfoScreen() {
             Details(
                 name = r.deviceName(), memory = c.monitor.memory(), storage = c.monitor.storage(),
                 battery = battery, extras = r.batteryExtras(battery), display = r.display(),
-                sims = r.sims(), imeis = r.imeis(), operator = r.networkOperator(),
+                sims = if (com.webtecit.devicepilot.BuildConfig.FULL) r.sims() else emptyList(), imeis = if (com.webtecit.devicepilot.BuildConfig.FULL) r.imeis() else null,
+                operator = if (com.webtecit.devicepilot.BuildConfig.FULL) r.networkOperator() else null,
                 cores = cpu.cores, maxFreq = cpu.maxFreqMhz.filterNotNull().maxOrNull(), soc = r.soc(),
                 kernel = r.kernel(), baseband = r.baseband(), bootTime = r.bootTime(), uptime = r.uptimeMs(),
                 sensors = r.sensorCount(), cameras = r.cameraCount(), features = r.features(),
@@ -182,7 +183,7 @@ fun DeviceInfoScreen() {
             }
         }
         item {
-            Section(Icons.Outlined.SimCard, stringResource(R.string.dd_phone_sim)) {
+            Section(Icons.Outlined.SimCard, stringResource(if (com.webtecit.devicepilot.BuildConfig.FULL) R.string.dd_phone_sim else R.string.dd_imei)) {
                 if (d.imeis != null && d.imeis.isNotEmpty()) {
                     d.imeis.forEachIndexed { i, imei -> InfoRow("IMEI ${i + 1}", imei) }
                 } else {
@@ -193,9 +194,11 @@ fun DeviceInfoScreen() {
                         SystemSettings.open(context, Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode("*#06#"))))
                     }
                 }
+                if (com.webtecit.devicepilot.BuildConfig.FULL) {
                 Spacer(Modifier.height(8.dp))
                 InfoRow(stringResource(R.string.dd_network_operator), d.operator ?: na)
                 InfoRow(stringResource(R.string.dd_sim_slots), d.sims.size.toString())
+                }
                 d.sims.forEach { sim ->
                     Spacer(Modifier.height(6.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -207,7 +210,7 @@ fun DeviceInfoScreen() {
                     sim.country?.let { InfoRow(stringResource(R.string.dd_country), it) }
                     sim.roaming?.let { InfoRow(stringResource(R.string.dd_roaming), stringResource(if (it) R.string.yes else R.string.no)) }
                 }
-                if (!d.phonePermission) {
+                if (com.webtecit.devicepilot.BuildConfig.FULL && !d.phonePermission) {
                     Spacer(Modifier.height(6.dp))
                     FilledTonalButton(onClick = { phoneLauncher.launch(Manifest.permission.READ_PHONE_STATE) }) {
                         Text(stringResource(R.string.dd_allow_phone))

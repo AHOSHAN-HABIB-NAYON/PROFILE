@@ -78,7 +78,7 @@ class MainActivity : AppCompatActivity() {
             // Settings (theme, onboarding, lock) are loaded: the first frame can be drawn.
             ready = true
             // Resume the firewall if the user left it on and consent is still valid.
-            if (s.firewallWanted && s.firewallRules.isNotEmpty() &&
+            if (com.webtecit.devicepilot.BuildConfig.FULL && s.firewallWanted && s.firewallRules.isNotEmpty() &&
                 FirewallState.status.value.phase == FirewallPhase.OFF &&
                 FirewallController.consentIntent(this@MainActivity) == null
             ) {

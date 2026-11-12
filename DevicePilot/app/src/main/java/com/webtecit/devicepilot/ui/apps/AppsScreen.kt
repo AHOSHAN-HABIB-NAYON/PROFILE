@@ -73,9 +73,9 @@ fun AppsScreen(navigate: (String) -> Unit) {
     ScreenList {
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                ShortcutButton(stringResource(R.string.apps_install), Icons.Outlined.InstallMobile, Modifier.weight(1f)) { navigate(Routes.INSTALL) }
+                if (com.webtecit.devicepilot.BuildConfig.FULL) ShortcutButton(stringResource(R.string.apps_install), Icons.Outlined.InstallMobile, Modifier.weight(1f)) { navigate(Routes.INSTALL) }
                 ShortcutButton(stringResource(R.string.apps_uninstall), Icons.Outlined.DeleteSweep, Modifier.weight(1f)) { navigate(Routes.UNINSTALL) }
-                ShortcutButton(stringResource(R.string.apps_apk_files), Icons.Outlined.FolderZip, Modifier.weight(1f)) { navigate(Routes.APKS) }
+                if (com.webtecit.devicepilot.BuildConfig.FULL) ShortcutButton(stringResource(R.string.apps_apk_files), Icons.Outlined.FolderZip, Modifier.weight(1f)) { navigate(Routes.APKS) }
             }
             Spacer(Modifier.height(8.dp))
             ShortcutButton(stringResource(R.string.title_hider), Icons.Outlined.VisibilityOff, Modifier.fillMaxWidth()) { navigate(Routes.HIDER) }

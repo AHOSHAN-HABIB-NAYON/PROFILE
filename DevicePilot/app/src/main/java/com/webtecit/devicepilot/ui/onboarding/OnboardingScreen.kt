@@ -45,8 +45,9 @@ private data class Page(val image: Int, val title: Int, val text: Int)
 
 private val pages = listOf(
     Page(R.drawable.ill_dashboard, R.string.onb_1_title, R.string.onb_1_text),
-    Page(R.drawable.ill_apps, R.string.onb_2_title, R.string.onb_2_text),
-    Page(R.drawable.ill_firewall, R.string.onb_3_title, R.string.onb_3_text),
+    Page(R.drawable.ill_apps, R.string.onb_2_title, if (com.webtecit.devicepilot.BuildConfig.FULL) R.string.onb_2_text else R.string.onb_2p_text),
+    if (com.webtecit.devicepilot.BuildConfig.FULL) Page(R.drawable.ill_firewall, R.string.onb_3_title, R.string.onb_3_text)
+    else Page(R.drawable.ill_speed, R.string.onb_3p_title, R.string.onb_3p_text),
     Page(R.drawable.ill_temperature, R.string.onb_4_title, R.string.onb_4_text),
     Page(R.drawable.ill_permission, R.string.onb_5_title, R.string.onb_5_text),
 )
@@ -114,16 +115,8 @@ fun OnboardingScreen(onFinish: () -> Unit) {
         }
     }
     reading?.let { which ->
-        val sections = if (which == 0) listOf(
-            R.string.privacy_s1_title to R.string.privacy_s1_text, R.string.privacy_s2_title to R.string.privacy_s2_text,
-            R.string.privacy_s3_title to R.string.privacy_s3_text, R.string.privacy_s4_title to R.string.privacy_s4_text,
-            R.string.privacy_s5_title to R.string.privacy_s5_text, R.string.privacy_s6_title to R.string.privacy_s6_text,
-            R.string.privacy_s7_title to R.string.privacy_s7_text, R.string.privacy_s8_title to R.string.privacy_s8_text,
-        ) else listOf(
-            R.string.disc_s1_title to R.string.disc_s1_text, R.string.disc_s2_title to R.string.disc_s2_text,
-            R.string.disc_s3_title to R.string.disc_s3_text, R.string.disc_s4_title to R.string.disc_s4_text,
-            R.string.disc_s5_title to R.string.disc_s5_text, R.string.disc_s6_title to R.string.disc_s6_text,
-        )
+        val sections = if (which == 0) com.webtecit.devicepilot.ui.settings.LegalSections.privacy
+            else com.webtecit.devicepilot.ui.settings.LegalSections.disclaimer
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { reading = null },
             title = { Text(stringResource(if (which == 0) R.string.title_privacy else R.string.title_disclaimer)) },

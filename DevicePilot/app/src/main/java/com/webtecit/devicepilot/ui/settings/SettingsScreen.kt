@@ -146,7 +146,7 @@ fun SettingsScreen(navigate: (String) -> Unit) {
                         Text(stringResource(R.string.notif_data_needs_access))
                     }
                 }
-                ToggleRow(stringResource(R.string.notif_opt_firewall), s.notifyFirewall) { on ->
+                if (com.webtecit.devicepilot.BuildConfig.FULL) ToggleRow(stringResource(R.string.notif_opt_firewall), s.notifyFirewall) { on ->
                     if (on) enableAlert { c.settings.setNotifyFirewall(true) } else scope.launch { c.settings.setNotifyFirewall(false) }
                 }
             }
@@ -154,7 +154,7 @@ fun SettingsScreen(navigate: (String) -> Unit) {
         item { SectionTitle(stringResource(R.string.settings_more)) }
         item {
             DpCard(contentPadding = 8.dp) {
-                NavRow(Icons.Outlined.Security, stringResource(R.string.settings_firewall_rules),
+                if (com.webtecit.devicepilot.BuildConfig.FULL) NavRow(Icons.Outlined.Security, stringResource(R.string.settings_firewall_rules),
                     stringResource(R.string.firewall_rules_count, s.firewallRules.size)) { navigate(Routes.FIREWALL) }
                 NavRow(Icons.Outlined.VerifiedUser, stringResource(R.string.title_permissions),
                     stringResource(R.string.settings_permissions_sub)) { navigate(Routes.PERMISSIONS) }

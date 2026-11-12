@@ -12,6 +12,15 @@ Native Android app (Kotlin, Jetpack Compose, Material 3) for monitoring and mana
 | Language | English |
 | Backend | None — works fully offline |
 
+## Editions
+
+| Edition | Gradle flavor | Application id | For |
+|---|---|---|---|
+| **Play** | `play` | `com.webtecit.devicepilot` | Google Play. Leaves out the APK installer, APK file manager, device-owner App Hider, IMEI reading, the VPN firewall and SIM/operator details. Their permissions (`REQUEST_INSTALL_PACKAGES`, `READ_PHONE_STATE`, VPN service, device admin) are not in its manifest. |
+| **Full** | `full` | `com.webtecit.devicepilot.full` | Direct download (website / GitHub). Every feature. Extra declarations live in `app/src/full/AndroidManifest.xml`. |
+
+UI for removed features is hidden with `BuildConfig.FULL`. Build commands: `./gradlew bundlePlayRelease` (Play `.aab`), `./gradlew assembleFullRelease` (direct-download APK).
+
 ## Features
 
 | Area | What it does | Source of data |
@@ -71,9 +80,9 @@ Requirements: JDK 17, Android SDK with platform 36 (Android Studio Narwhal or ne
 
 ```bash
 cd DevicePilot
-./gradlew testDebugUnitTest          # unit tests
-./gradlew assembleDebug              # app/build/outputs/apk/debug/app-debug.apk
-./gradlew connectedDebugAndroidTest  # instrumented tests (device/emulator attached)
+./gradlew testPlayDebugUnitTest testFullDebugUnitTest   # unit tests
+./gradlew assemblePlayDebug assembleFullDebug           # debug APKs (app/build/outputs/apk/<edition>/debug/)
+./gradlew connectedFullDebugAndroidTest                 # instrumented tests (device/emulator attached)
 ```
 
 The GitHub Actions workflow `.github/workflows/devicepilot-android.yml` runs unit tests, builds the debug APK and release bundle, then runs the instrumented tests on an API 34 emulator. The debug APK is uploaded as the `DevicePilot-debug-apk` artifact of each run.
@@ -98,8 +107,8 @@ The debug build uses the application id `com.webtecit.devicepilot.debug`, so it 
    ```
 3. Build:
    ```bash
-   ./gradlew assembleRelease   # app/build/outputs/apk/release/app-release.apk
-   ./gradlew bundleRelease     # app/build/outputs/bundle/release/app-release.aab (upload this to Play)
+   ./gradlew bundlePlayRelease    # app/build/outputs/bundle/playRelease/app-play-release.aab (upload this to Play)
+   ./gradlew assembleFullRelease  # app/build/outputs/apk/full/release/app-full-release.apk (direct download)
    ```
    Without the variables the release outputs are unsigned. In Android Studio you can also use *Build › Generate Signed App Bundle / APK*.
 4. For Play, enrol in Play App Signing and upload the `.aab`.

@@ -147,7 +147,7 @@ fun StorageScreen(navigate: (String) -> Unit) {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     ShortcutButton(stringResource(R.string.action_storage_settings), Icons.Outlined.Settings) { SystemSettings.storage(context) }
                     ShortcutButton(stringResource(R.string.action_downloads), Icons.Outlined.Download) { SystemSettings.downloads(context) }
-                    ShortcutButton(stringResource(R.string.apps_apk_files), Icons.Outlined.FolderZip) { navigate(Routes.APKS) }
+                    if (com.webtecit.devicepilot.BuildConfig.FULL) ShortcutButton(stringResource(R.string.apps_apk_files), Icons.Outlined.FolderZip) { navigate(Routes.APKS) }
                     ShortcutButton(stringResource(R.string.action_uninstall_unused), Icons.Outlined.Apps) { navigate(Routes.UNINSTALL) }
                 }
             }

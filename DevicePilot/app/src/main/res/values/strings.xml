@@ -776,4 +776,14 @@
     <string name="cool_tips_title">Cool your phone faster</string>
     <string name="cool_tips">• Stop games, camera and navigation for a few minutes.\n• Unplug the charger and remove a thick case.\n• Keep the phone out of direct sun, on a hard surface.\n• Lower screen brightness or turn on Battery saver.</string>
     <string name="cool_note">No app can cool hardware directly. Less background work lowers heat; the numbers above are the real readings from Android.</string>
+    <string name="qa_network">Network usage</string>
+    <string name="dd_imei">IMEI</string>
+    <string name="hider_hero_text_play">Hide apps from your app drawer using the privacy features built into Android and your phone\'s launcher.</string>
+    <string name="hider_opt_builtin_title_play">Built into your phone</string>
+    <string name="privacy_s6_title_play">Uninstalling apps</string>
+    <string name="privacy_s6_text_play">Uninstalls always go through Android\'s own confirmation screen. DevicePilot cannot remove apps silently.</string>
+    <string name="onb_2p_text">Search your apps, see their details and uninstall what you don\'t need through Android\'s own screens.</string>
+    <string name="onb_3p_title">Boost &amp; cool down</string>
+    <string name="onb_3p_text">Close background apps in one tap and watch your phone\'s real temperature as it cools down.</string>
+    <string name="running_hero_text_play">See apps with active background services or recent activity and close them in one tap.</string>
 </resources>

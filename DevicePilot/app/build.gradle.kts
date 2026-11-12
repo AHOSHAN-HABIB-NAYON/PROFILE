@@ -51,6 +51,24 @@ android {
         }
     }
 
+    // Two editions from one codebase:
+    //  - play: Google Play edition (no APK installer, APK manager, device-owner App Hider,
+    //          IMEI, VPN firewall or SIM details; their permissions are not declared)
+    //  - full: direct-download edition with every feature
+    flavorDimensions += "edition"
+    productFlavors {
+        create("play") {
+            dimension = "edition"
+            buildConfigField("boolean", "FULL", "false")
+        }
+        create("full") {
+            dimension = "edition"
+            applicationIdSuffix = ".full"
+            versionNameSuffix = "-full"
+            buildConfigField("boolean", "FULL", "true")
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

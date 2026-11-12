@@ -128,7 +128,7 @@ fun AppDetailsScreen(packageName: String, navigate: (String) -> Unit, onRemoved:
                         SystemSettings.shareText(context, context.getString(R.string.share_app_text, a.label,
                             "https://play.google.com/store/apps/details?id=${a.packageName}"), shareTitle)
                     }
-                    ShortcutButton(stringResource(R.string.action_firewall_rule), Icons.Outlined.Shield) { navigate(Routes.FIREWALL) }
+                    if (com.webtecit.devicepilot.BuildConfig.FULL) ShortcutButton(stringResource(R.string.action_firewall_rule), Icons.Outlined.Shield) { navigate(Routes.FIREWALL) }
                 }
             }
         }

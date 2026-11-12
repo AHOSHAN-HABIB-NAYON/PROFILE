@@ -125,7 +125,7 @@ fun RunningAppsScreen(navigate: (String) -> Unit) {
     val closable = list.filter { it.state != RunState.FOREGROUND }.map { it.packageName }
 
     ScreenList {
-        item { HeroCard(R.drawable.ill_memory, stringResource(R.string.running_hero_title), stringResource(R.string.running_hero_text)) }
+        item { HeroCard(R.drawable.ill_memory, stringResource(R.string.running_hero_title), stringResource(if (com.webtecit.devicepilot.BuildConfig.FULL) R.string.running_hero_text else R.string.running_hero_text_play)) }
         if (!ui.access) item {
             PermissionCard(stringResource(R.string.perm_usage_title), stringResource(R.string.running_needs_access),
                 stringResource(R.string.perm_grant_in_settings), onClick = { SystemSettings.usageAccess(context) })
@@ -190,13 +190,13 @@ fun RunningAppsScreen(navigate: (String) -> Unit) {
                         })
                     }
                     Spacer(Modifier.height(8.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (com.webtecit.devicepilot.BuildConfig.FULL) Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(stringResource(R.string.running_internet), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
                         Switch(checked = internetOn, onCheckedChange = { on ->
                             scope.launch { c.settings.setRule(AppRule(app.packageName, !on, !on)) }
                         })
                     }
-                    if (!internetOn && fw.phase != FirewallPhase.ACTIVE) {
+                    if (com.webtecit.devicepilot.BuildConfig.FULL && !internetOn && fw.phase != FirewallPhase.ACTIVE) {
                         TextButton(onClick = { navigate(Routes.FIREWALL) }) {
                             Text(stringResource(R.string.running_firewall_off), color = levelColor(Level.WARN))
                         }

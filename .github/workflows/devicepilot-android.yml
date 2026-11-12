@@ -33,23 +33,28 @@ jobs:
           java-version: "17"
       - uses: gradle/actions/setup-gradle@v4
       - name: Unit tests
-        run: ./gradlew --stacktrace testDebugUnitTest
-      - name: Build debug APK
-        run: ./gradlew --stacktrace assembleDebug
-      - name: Build optimized release APK and bundle
-        run: ./gradlew --stacktrace assembleRelease bundleRelease
+        run: ./gradlew --stacktrace testPlayDebugUnitTest testFullDebugUnitTest
+      - name: Build debug APKs (Play + Full)
+        run: ./gradlew --stacktrace assemblePlayDebug assembleFullDebug
+      - name: Build release APKs and the Play Store bundle
+        run: ./gradlew --stacktrace assemblePlayRelease bundlePlayRelease assembleFullRelease
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: DevicePilot-debug-apk
-          path: DevicePilot/app/build/outputs/apk/debug/*.apk
+          path: DevicePilot/app/build/outputs/apk/*/debug/*.apk
       - name: Upload optimized release APK
         uses: actions/upload-artifact@v4
         with:
           name: DevicePilot-release-apk
-          path: DevicePilot/app/build/outputs/apk/release/*.apk
+          path: |
+            DevicePilot/app/build/outputs/apk/*/release/*.apk
+            DevicePilot/app/build/outputs/bundle/playRelease/*.aab
       - name: Prepare direct-download APK
-        run: cp app/build/outputs/apk/release/app-release.apk DevicePilot.apk
+        run: |
+          cp app/build/outputs/apk/full/release/app-full-release.apk DevicePilot.apk
+          cp app/build/outputs/apk/play/release/app-play-release.apk DevicePilot-Play.apk
+          cp app/build/outputs/bundle/playRelease/app-play-release.aab DevicePilot-Play.aab
       - name: Publish test build (direct download link)
         if: github.event_name == 'push'
         uses: softprops/action-gh-release@v2
@@ -57,10 +62,14 @@ jobs:
           tag_name: devicepilot-test
           name: DevicePilot test build
           prerelease: true
-          files: DevicePilot/DevicePilot.apk
+          files: |
+            DevicePilot/DevicePilot.apk
+            DevicePilot/DevicePilot-Play.apk
+            DevicePilot/DevicePilot-Play.aab
           body: |
-            Latest DevicePilot test build (optimized release APK, signed with a test key — not for Play Store upload).
-            Direct download: https://github.com/${{ github.repository }}/releases/download/devicepilot-test/DevicePilot.apk
+            Latest DevicePilot test builds (signed with a test key — the .aab must be re-built with your release key before uploading to Play).
+            Full edition (all features): https://github.com/${{ github.repository }}/releases/download/devicepilot-test/DevicePilot.apk
+            Play edition: https://github.com/${{ github.repository }}/releases/download/devicepilot-test/DevicePilot-Play.apk
             Built from commit ${{ github.sha }}.
       - name: Upload unit test reports
         if: always()
@@ -96,7 +105,7 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           working-directory: DevicePilot
-          script: ./gradlew --stacktrace connectedDebugAndroidTest
+          script: ./gradlew --stacktrace connectedFullDebugAndroidTest connectedPlayDebugAndroidTest
       - name: Upload instrumented test reports
         if: always()
         uses: actions/upload-artifact@v4

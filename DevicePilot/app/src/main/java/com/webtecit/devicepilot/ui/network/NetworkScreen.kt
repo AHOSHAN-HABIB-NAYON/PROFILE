@@ -145,7 +145,7 @@ fun NetworkScreen(navigate: (String) -> Unit) {
                 }
             }
         }
-        item {
+        if (com.webtecit.devicepilot.BuildConfig.FULL) item {
             DpCard(contentPadding = 6.dp) {
                 NavRow(Icons.Outlined.Security, stringResource(R.string.title_firewall), stringResource(R.string.firewall_row_sub)) {
                     navigate(Routes.FIREWALL)
