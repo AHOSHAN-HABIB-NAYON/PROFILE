@@ -410,11 +410,21 @@ export async function answerCall() {
   stopTone();
   void clearRingNotification();
   patch({ phase: 'connecting' });
-  try {
-    await connected();
-    await emit('call:answer', { callId: c.id }, 10000);
-  } catch {
-    return finish(tr('Call ended', 'কল শেষ'));
+  // Answered from the notification after the app slept in the background: the old connection
+  // can look "connected" but be dead. One failed try → reconnect fresh and try again.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await connected();
+      await emit('call:answer', { callId: c.id }, attempt ? 10000 : 6000);
+      break;
+    } catch (e: any) {
+      const gone = e?.status === 400; // the server says the call is over
+      if (gone || attempt >= 1 || useCall.getState().call?.id !== c.id) return finish(tr('Call ended', 'কল শেষ'));
+      const { getSocket } = await import('./socket');
+      const s = getSocket();
+      s?.disconnect();
+      s?.connect();
+    }
   }
   await goLive(c.id);
 }

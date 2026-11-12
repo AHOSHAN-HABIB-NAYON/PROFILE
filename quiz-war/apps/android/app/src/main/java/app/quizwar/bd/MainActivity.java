@@ -72,6 +72,38 @@ public class MainActivity extends BridgeActivity {
     public void onPause() {
         super.onPause();
         QwCallNotifier.appVisible = false;
+        keepAwakeForCall();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        keepAwakeForCall();
+    }
+
+    /**
+     * During a call the voice lives in the web view. When the app leaves the screen, Android
+     * marks the web view hidden and it stops playing / sending sound. While a call is running,
+     * tell the web view it is still on screen (and keep its timers running) so the call goes on
+     * from the background, like a phone call. Without a call nothing changes (normal sleep).
+     */
+    private void keepAwakeForCall() {
+        if (!QwCallService.running || bridge == null) return;
+        final android.webkit.WebView wv = bridge.getWebView();
+        if (wv == null) return;
+        final android.os.Handler h = new android.os.Handler(android.os.Looper.getMainLooper());
+        // Android sends "hidden" right after pause/stop: answer it a moment later, twice to be safe.
+        for (long delay : new long[] {300, 1200}) {
+            h.postDelayed(() -> {
+                try {
+                    if (!QwCallService.running) return;
+                    wv.onResume();
+                    wv.resumeTimers();
+                    wv.dispatchWindowVisibilityChanged(View.VISIBLE);
+                } catch (Exception ignored) {
+                }
+            }, delay);
+        }
     }
 
     /** Tapped Answer / Decline / the ringing call: open over the lock screen and tell the web app. */

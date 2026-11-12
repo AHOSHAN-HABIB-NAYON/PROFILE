@@ -36,6 +36,7 @@ public class QwCallService extends Service {
             if (Build.VERSION.SDK_INT >= 29) startForeground(ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
             else startForeground(ID, n);
             running = true;
+            holdLocks(this);
             loadAvatarLater(this, intent);
         } catch (Exception e) {
             // Not allowed right now (e.g. no mic permission): the call still works while the app is open.
@@ -130,9 +131,47 @@ public class QwCallService extends Service {
         stopSelf();
     }
 
+    /** Keep the CPU and Wi-Fi awake while the call runs (screen off / app in the background). */
+    private static android.os.PowerManager.WakeLock cpu;
+    private static android.net.wifi.WifiManager.WifiLock wifi;
+
+    private static void holdLocks(Context ctx) {
+        try {
+            if (cpu == null) {
+                android.os.PowerManager pm = (android.os.PowerManager) ctx.getSystemService(POWER_SERVICE);
+                cpu = pm.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "quizwar:call");
+                cpu.setReferenceCounted(false);
+            }
+            cpu.acquire(4 * 60 * 60 * 1000L); // safety cap: 4 hours
+        } catch (Exception ignored) {
+        }
+        try {
+            if (wifi == null) {
+                android.net.wifi.WifiManager wm = (android.net.wifi.WifiManager) ctx.getApplicationContext().getSystemService(WIFI_SERVICE);
+                int mode = Build.VERSION.SDK_INT >= 29 ? android.net.wifi.WifiManager.WIFI_MODE_FULL_LOW_LATENCY : android.net.wifi.WifiManager.WIFI_MODE_FULL_HIGH_PERF;
+                wifi = wm.createWifiLock(mode, "quizwar:call");
+                wifi.setReferenceCounted(false);
+            }
+            wifi.acquire();
+        } catch (Exception ignored) {
+        }
+    }
+
+    private static void releaseLocks() {
+        try {
+            if (cpu != null && cpu.isHeld()) cpu.release();
+        } catch (Exception ignored) {
+        }
+        try {
+            if (wifi != null && wifi.isHeld()) wifi.release();
+        } catch (Exception ignored) {
+        }
+    }
+
     @Override
     public void onDestroy() {
         running = false;
+        releaseLocks();
         super.onDestroy();
     }
 
