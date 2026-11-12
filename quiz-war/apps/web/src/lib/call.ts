@@ -198,6 +198,7 @@ type CallPlugin = {
   proximity(o: { on: boolean }): Promise<void>;
   pending?(): Promise<{ action?: string | null; callId?: string | null; url?: string | null }>;
   clearPending?(): Promise<void>;
+  status?(): Promise<{ running: boolean; error?: string | null }>;
   cancelIncoming?(): Promise<void>;
   showOnLock?(o: { on: boolean }): Promise<void>;
   setApi?(o: { base: string }): Promise<void>;
@@ -347,6 +348,16 @@ async function goLive(id: string) {
     patch({ phase: 'live', startedAt: Date.now() });
     const n = await native();
     callNotice(c.video ? tr('Video call', 'ভিডিও কল চলছে') : tr('Ongoing call', 'কল চলছে'), true);
+    // The phone must let the call run in the background; if it refused, say so (with the reason).
+    window.setTimeout(() => {
+      void n?.status?.().then((st) => {
+        if (st && !st.running && useCall.getState().call?.phase === 'live')
+          toast.error(
+            tr('Call may stop in the background', 'অ্যাপ থেকে বের হলে কল থেমে যেতে পারে'),
+            tr('This phone blocked the background call. ', 'এই ফোন ব্যাকগ্রাউন্ডে কল চালাতে দিচ্ছে না। ') + (st.error ?? ''),
+          );
+      }).catch(() => undefined);
+    }, 2500);
     if (!c.video) await n?.proximity({ on: true });
   } catch {
     toast.error(tr('Microphone blocked', 'মাইক্রোফোনের অনুমতি নেই'), tr('Allow the microphone for QUIZ WAR to talk on calls.', 'কলে কথা বলতে QUIZ WAR-এর মাইক্রোফোন চালু করুন।'));

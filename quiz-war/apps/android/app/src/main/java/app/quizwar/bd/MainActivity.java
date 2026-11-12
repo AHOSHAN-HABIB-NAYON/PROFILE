@@ -88,7 +88,7 @@ public class MainActivity extends BridgeActivity {
      * from the background, like a phone call. Without a call nothing changes (normal sleep).
      */
     private void keepAwakeForCall() {
-        if (!QwCallService.running || bridge == null) return;
+        if (!QwCallPlugin.callActive || bridge == null) return;
         final android.webkit.WebView wv = bridge.getWebView();
         if (wv == null) return;
         final android.os.Handler h = new android.os.Handler(android.os.Looper.getMainLooper());
@@ -96,7 +96,7 @@ public class MainActivity extends BridgeActivity {
         for (long delay : new long[] {300, 1200}) {
             h.postDelayed(() -> {
                 try {
-                    if (!QwCallService.running) return;
+                    if (!QwCallPlugin.callActive) return;
                     wv.onResume();
                     wv.resumeTimers();
                     wv.dispatchWindowVisibilityChanged(View.VISIBLE);

@@ -28,6 +28,8 @@ public class QwCallService extends Service {
 
     /** True while the call service (and its notification) is up. */
     static volatile boolean running = false;
+    /** Why the call service could not start last time (shown to help find phone-specific blocks). */
+    static volatile String lastError = null;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -36,9 +38,11 @@ public class QwCallService extends Service {
             if (Build.VERSION.SDK_INT >= 29) startForeground(ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);
             else startForeground(ID, n);
             running = true;
+            lastError = null;
             holdLocks(this);
             loadAvatarLater(this, intent);
         } catch (Exception e) {
+            lastError = e.getClass().getSimpleName() + ": " + e.getMessage();
             // Not allowed as a call service on this phone: still show "Calling… / Ongoing call"
             // in the notification list (plain style), so the user sees the call and can return to it.
             try {

@@ -97,8 +97,21 @@ public class QwCallPlugin extends Plugin {
         call.resolve();
     }
 
+    /** True from the first "Calling… / Ongoing" until the call ends (keeps the web view awake). */
+    static volatile boolean callActive = false;
+
+    /** Is the background call service up? (and why not, if it failed) */
+    @PluginMethod
+    public void status(PluginCall call) {
+        JSObject r = new JSObject();
+        r.put("running", QwCallService.running);
+        r.put("error", QwCallService.lastError);
+        call.resolve(r);
+    }
+
     @PluginMethod
     public void start(PluginCall call) {
+        callActive = true;
         try {
             Intent i = new Intent(getContext(), QwCallService.class);
             i.putExtra("title", call.getString("title", "QUIZ WAR"));
@@ -121,6 +134,7 @@ public class QwCallPlugin extends Plugin {
 
     @PluginMethod
     public void stop(PluginCall call) {
+        callActive = false;
         try {
             getContext().stopService(new Intent(getContext(), QwCallService.class));
         } catch (Exception ignored) {
