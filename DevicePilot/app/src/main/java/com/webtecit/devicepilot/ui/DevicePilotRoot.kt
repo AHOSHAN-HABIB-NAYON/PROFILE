@@ -108,11 +108,12 @@ object Routes {
     const val HIDER = "hider"
     const val BOOST = "boost"
     const val COOL = "cool"
+    const val CLEANER = "cleaner"
 
     fun appDetails(pkg: String) = "app/$pkg"
 
     val all = setOf(HOME, APPS, NETWORK, TEMPERATURE, OPTIMIZE, INSTALL, UNINSTALL, APKS, FIREWALL, BATTERY,
-        STORAGE, MEMORY, GUIDE, SETTINGS, ABOUT, PRIVACY, RUNNING, PERMISSIONS, DISCLAIMER, DEVICE_INFO, HIDER, BOOST, COOL)
+        STORAGE, MEMORY, GUIDE, SETTINGS, ABOUT, PRIVACY, RUNNING, PERMISSIONS, DISCLAIMER, DEVICE_INFO, HIDER, BOOST, COOL, CLEANER)
 }
 
 private data class Tab(val route: String, val label: Int, val icon: ImageVector, val selectedIcon: ImageVector)
@@ -127,7 +128,7 @@ private val tabs = listOf(
 
 private fun tabFor(route: String?): String? = when (route) {
     null -> null
-    Routes.HOME, Routes.BATTERY, Routes.STORAGE, Routes.MEMORY, Routes.RUNNING, Routes.DEVICE_INFO, Routes.BOOST, Routes.COOL -> Routes.HOME
+    Routes.HOME, Routes.BATTERY, Routes.STORAGE, Routes.MEMORY, Routes.RUNNING, Routes.DEVICE_INFO, Routes.BOOST, Routes.COOL, Routes.CLEANER -> Routes.HOME
     Routes.APPS, Routes.APP_DETAILS, Routes.INSTALL, Routes.UNINSTALL, Routes.APKS, Routes.HIDER -> Routes.APPS
     Routes.NETWORK, Routes.FIREWALL -> Routes.NETWORK
     Routes.TEMPERATURE -> Routes.TEMPERATURE
@@ -159,6 +160,7 @@ private fun titleFor(route: String?): Int = when (route) {
     Routes.HIDER -> R.string.title_hider
     Routes.BOOST -> R.string.title_boost
     Routes.COOL -> R.string.title_cool
+    Routes.CLEANER -> R.string.title_cleaner
     else -> R.string.app_name
 }
 
@@ -343,6 +345,7 @@ private fun MainScaffold(
                 })
             }
             composable(Routes.BOOST) { com.webtecit.devicepilot.ui.boost.BoostScreen() }
+            composable(Routes.CLEANER) { com.webtecit.devicepilot.ui.cleaner.CleanerScreen() }
             composable(Routes.COOL) { com.webtecit.devicepilot.ui.boost.CoolDownScreen() }
             composable(Routes.HIDER) { com.webtecit.devicepilot.ui.hider.AppHiderScreen() }
             composable(Routes.DEVICE_INFO) { com.webtecit.devicepilot.ui.device.DeviceInfoScreen() }

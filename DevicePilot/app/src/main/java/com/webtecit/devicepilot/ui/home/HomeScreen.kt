@@ -29,6 +29,7 @@ import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material.icons.outlined.PlayCircle
 import androidx.compose.material.icons.outlined.Radar
+import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.AcUnit
 import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material.icons.outlined.Bolt
@@ -191,7 +192,7 @@ fun HomeScreen(navigate: (String) -> Unit) {
                     if (com.webtecit.devicepilot.BuildConfig.FULL) QuickAction(Icons.Outlined.Security, R.string.qa_firewall) { navigate(Routes.FIREWALL) }
                     else QuickAction(Icons.Outlined.DataUsage, R.string.qa_network) { navigate(Routes.NETWORK) },
                     QuickAction(Icons.Outlined.CleaningServices, R.string.qa_boost) { navigate(Routes.BOOST) },
-                    QuickAction(Icons.Outlined.MenuBook, R.string.qa_guide) { navigate(Routes.GUIDE) },
+                    QuickAction(Icons.Outlined.DeleteSweep, R.string.qa_cleaner) { navigate(Routes.CLEANER) },
                     QuickAction(Icons.Outlined.VisibilityOff, R.string.qa_hider) { navigate(Routes.HIDER) },
                 )
                 actions.chunked(4).forEach { row ->
@@ -391,6 +392,8 @@ private fun SpeedUpCard(s: HomeState, navigate: (String) -> Unit, modifier: Modi
                 listOf(Color(0xFF2A7BFF), Color(0xFF12B5E5)), Modifier.weight(1f)) { navigate(Routes.BOOST) }
             GradientAction(Icons.Outlined.AcUnit, stringResource(R.string.cool_button),
                 listOf(Color(0xFF12B5E5), Color(0xFF14B8A6)), Modifier.weight(1f)) { navigate(Routes.COOL) }
+            GradientAction(Icons.Outlined.CleaningServices, stringResource(R.string.clean_button),
+                listOf(Color(0xFF14B8A6), Color(0xFF16A34A)), Modifier.weight(1f)) { navigate(Routes.CLEANER) }
         }
     }
 }
@@ -399,13 +402,13 @@ private fun SpeedUpCard(s: HomeState, navigate: (String) -> Unit, modifier: Modi
 private fun GradientAction(icon: ImageVector, label: String, colors: List<Color>, modifier: Modifier, onClick: () -> Unit) {
     Row(
         modifier.clip(RoundedCornerShape(14.dp)).background(Brush.linearGradient(colors)).clickable(onClick = onClick)
-            .padding(vertical = 14.dp, horizontal = 12.dp),
+            .padding(vertical = 14.dp, horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
-        Icon(icon, null, tint = Color.White, modifier = Modifier.size(22.dp))
-        Spacer(Modifier.width(8.dp))
-        Text(label, style = MaterialTheme.typography.titleSmall, color = Color.White, fontWeight = FontWeight.SemiBold)
+        Icon(icon, null, tint = Color.White, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(6.dp))
+        Text(label, style = MaterialTheme.typography.labelLarge, color = Color.White, fontWeight = FontWeight.SemiBold, maxLines = 1)
     }
 }
 

@@ -39,6 +39,7 @@ data class AppSettings(
     val apkUris: Set<String> = emptySet(),
     val permissionsSetupDone: Boolean = false,
     val appLockEnabled: Boolean = false,
+    val scanFolders: Set<String> = emptySet(),
 ) {
     val anyNotification: Boolean get() = notifyTemperature || notifyThermal || notifyStorage || notifyData
 }
@@ -67,6 +68,7 @@ class SettingsRepository(private val context: Context) {
         val lastDataAlert = stringPreferencesKey("last_data_alert")
         val permissionsDone = booleanPreferencesKey("permissions_setup_done")
         val appLock = booleanPreferencesKey("app_lock")
+        val scanFolders = stringSetPreferencesKey("scan_folders")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data
@@ -91,6 +93,7 @@ class SettingsRepository(private val context: Context) {
                 apkUris = p[Keys.apkUris] ?: emptySet(),
                 permissionsSetupDone = p[Keys.permissionsDone] ?: false,
                 appLockEnabled = p[Keys.appLock] ?: false,
+                scanFolders = p[Keys.scanFolders] ?: emptySet(),
             )
         }
 
@@ -108,6 +111,8 @@ class SettingsRepository(private val context: Context) {
     suspend fun setDataThresholdMb(v: Int) = context.dataStore.edit { it[Keys.dataThreshold] = v }
     suspend fun setNotifyFirewall(v: Boolean) = context.dataStore.edit { it[Keys.notifyFirewall] = v }
     suspend fun setBillingDay(v: Int) = context.dataStore.edit { it[Keys.billingDay] = v.coerceIn(1, 28) }
+    suspend fun addScanFolder(uri: String) = context.dataStore.edit { it[Keys.scanFolders] = (it[Keys.scanFolders] ?: emptySet()) + uri }
+    suspend fun removeScanFolder(uri: String) = context.dataStore.edit { it[Keys.scanFolders] = (it[Keys.scanFolders] ?: emptySet()) - uri }
     suspend fun setAppLock(v: Boolean) = context.dataStore.edit { it[Keys.appLock] = v }
     suspend fun setPermissionsSetupDone() = context.dataStore.edit { it[Keys.permissionsDone] = true }
     suspend fun setFirewallWanted(v: Boolean) = context.dataStore.edit { it[Keys.firewallWanted] = v }

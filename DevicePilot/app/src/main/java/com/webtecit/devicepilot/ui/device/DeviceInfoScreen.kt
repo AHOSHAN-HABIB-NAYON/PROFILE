@@ -226,6 +226,12 @@ fun DeviceInfoScreen() {
                 InfoRow(stringResource(R.string.battery_cycles), x.cycleCount?.toString() ?: stringResource(R.string.battery_cycles_unavailable))
                 InfoRow(stringResource(R.string.dd_design_capacity), x.designCapacityMah?.let { "$it mAh" } ?: na)
                 InfoRow(stringResource(R.string.dd_estimated_capacity), (x.fullCapacityMah ?: x.estimatedFullMah)?.let { "$it mAh" } ?: na)
+                InfoRow(stringResource(R.string.dd_health_percent), x.healthPercent?.let { "$it%" } ?: na)
+                InfoRow(stringResource(R.string.battery_charge_counter), b.chargeCounterMah?.let { "$it mAh" } ?: na)
+                InfoRow(stringResource(R.string.battery_current), b.currentNowMa?.let { "$it mA" } ?: na)
+                if (b.isCharging) InfoRow(stringResource(R.string.dd_time_to_full), timeToFull(context) ?: na)
+                b.powerSave?.let { InfoRow(stringResource(R.string.action_battery_saver),
+                    stringResource(if (it) R.string.enabled else R.string.not_enabled)) }
                 InfoRow(stringResource(R.string.dd_state), stringResource(chargeStateRes(b.state)) + (b.plugged?.let { " · $it" } ?: ""))
                 InfoRow(stringResource(R.string.dd_charging_power), x.chargingPowerW?.let { String.format(Locale.US, "%.1f W", it) }
                     ?: stringResource(R.string.dd_not_charging))
@@ -254,6 +260,14 @@ fun DeviceInfoScreen() {
         item {
             Section(Icons.Outlined.PhotoCamera, stringResource(R.string.dd_cameras_section)) {
                 if (d.cameraSpecs.isEmpty()) Text(na, style = MaterialTheme.typography.bodySmall)
+                else {
+                    fun group(facing: String) = d.cameraSpecs.filter { it.facing == facing }.mapNotNull { it.megapixels }
+                        .joinToString(" + ") { String.format(Locale.US, "%.0f MP", it) }
+                    Text(stringResource(R.string.dd_camera_count, d.cameraSpecs.size), style = MaterialTheme.typography.titleMedium)
+                    group("Rear").takeIf { it.isNotBlank() }?.let { InfoRow(stringResource(R.string.dd_rear), it) }
+                    group("Front").takeIf { it.isNotBlank() }?.let { InfoRow(stringResource(R.string.dd_front), it) }
+                    Spacer(Modifier.height(8.dp))
+                }
                 d.cameraSpecs.forEachIndexed { i, cam ->
                     if (i > 0) Spacer(Modifier.height(8.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -393,4 +407,15 @@ private fun OnlineSection() {
         }
         SourceNote(stringResource(R.string.dd_online_note))
     }
+}
+
+
+/** Android's own estimate (Android 9+), formatted as "1 h 20 m". */
+private fun timeToFull(context: android.content.Context): String? {
+    if (Build.VERSION.SDK_INT < 28) return null
+    val bm = context.getSystemService(android.content.Context.BATTERY_SERVICE) as android.os.BatteryManager
+    val ms = bm.computeChargeTimeRemaining()
+    if (ms <= 0) return null
+    val m = ms / 60_000
+    return if (m >= 60) "${m / 60} h ${m % 60} m" else "$m m"
 }

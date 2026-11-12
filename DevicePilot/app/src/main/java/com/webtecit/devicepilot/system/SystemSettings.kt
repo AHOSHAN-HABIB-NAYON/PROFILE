@@ -117,6 +117,17 @@ object SystemSettings {
         Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps")),
     )
 
+    /** Runs a launcher call, showing the "not available" message if no activity handles it. */
+    fun runCatchingLaunch(context: Context, block: () -> Unit) {
+        try {
+            block()
+        } catch (_: ActivityNotFoundException) {
+            Toast.makeText(context, R.string.settings_unavailable, Toast.LENGTH_LONG).show()
+        } catch (_: SecurityException) {
+            Toast.makeText(context, R.string.settings_unavailable, Toast.LENGTH_LONG).show()
+        }
+    }
+
     fun url(context: Context, url: String) = open(context, Intent(Intent.ACTION_VIEW, Uri.parse(url)))
 
     fun launchApp(context: Context, pkg: String): Boolean {

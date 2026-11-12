@@ -145,6 +145,7 @@ fun StorageScreen(navigate: (String) -> Unit) {
         item {
             DpCard {
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ShortcutButton(stringResource(R.string.title_cleaner), Icons.Outlined.Apps) { navigate(Routes.CLEANER) }
                     ShortcutButton(stringResource(R.string.action_storage_settings), Icons.Outlined.Settings) { SystemSettings.storage(context) }
                     ShortcutButton(stringResource(R.string.action_downloads), Icons.Outlined.Download) { SystemSettings.downloads(context) }
                     if (com.webtecit.devicepilot.BuildConfig.FULL) ShortcutButton(stringResource(R.string.apps_apk_files), Icons.Outlined.FolderZip) { navigate(Routes.APKS) }

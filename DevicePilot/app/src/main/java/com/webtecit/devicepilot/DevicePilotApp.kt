@@ -17,6 +17,8 @@ class AppContainer(context: Context) {
     val apps = AppsRepository(context)
     val usage = UsageRepository(context, apps)
     val hider = com.webtecit.devicepilot.hider.AppHider(context)
+    val brightness = com.webtecit.devicepilot.data.BrightnessControl(context)
+    val cleaner = com.webtecit.devicepilot.data.StorageCleaner(context, apps)
     val booster = com.webtecit.devicepilot.data.Booster(context, monitor)
     val online = com.webtecit.devicepilot.data.OnlineLookup(context)
     val hardware = com.webtecit.devicepilot.data.HardwareInfo(context)

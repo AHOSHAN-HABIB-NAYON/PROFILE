@@ -24,6 +24,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AcUnit
 import androidx.compose.material.icons.outlined.BatterySaver
+import androidx.compose.material.icons.outlined.Bluetooth
+import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Wifi
 import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -182,6 +185,7 @@ private fun ResultBox(label: String, value: String, modifier: Modifier) {
  * Cool down: closes background apps (less CPU load), then shows the real battery temperature
  * and Android thermal status for two minutes so the user can see the actual change.
  */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun CoolDownScreen() {
     val c = LocalContainer.current
@@ -190,6 +194,15 @@ fun CoolDownScreen() {
     var working by remember { mutableStateOf(false) }
     var runId by remember { androidx.compose.runtime.mutableIntStateOf(0) }
     var closed by remember { mutableStateOf<Int?>(null) }
+    var dimScreen by remember { mutableStateOf(true) }
+    var dimmed by remember { mutableStateOf(false) }
+    var canWrite by remember { mutableStateOf(c.brightness.canWrite()) }
+    var canRestore by remember { mutableStateOf(c.brightness.hasSaved()) }
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+        canWrite = c.brightness.canWrite()
+        canRestore = c.brightness.hasSaved()
+        onPauseOrDispose { }
+    }
     val temps = remember { mutableStateListOf<Float>() }
     var thermal by remember { mutableStateOf(c.monitor.thermal()) }
     var secondsLeft by remember { mutableStateOf(0) }
@@ -220,6 +233,7 @@ fun CoolDownScreen() {
                     temps.clear()
                     scope.launch {
                         closed = c.booster.boost().appsClosed
+                        dimmed = if (dimScreen) c.brightness.lower() else false
                         working = false
                         runId++
                     }
@@ -227,6 +241,40 @@ fun CoolDownScreen() {
                 Spacer(Modifier.height(8.dp))
                 Text(stringResource(R.string.cool_hint), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+            }
+        }
+        item {
+            DpCard {
+                Text(stringResource(R.string.cool_actions_title), style = MaterialTheme.typography.titleSmall)
+                Spacer(Modifier.height(6.dp))
+                CoolOption(stringResource(R.string.cool_opt_close), stringResource(R.string.cool_opt_close_hint), true, enabled = false) {}
+                CoolOption(stringResource(R.string.cool_opt_dim), stringResource(
+                    if (canWrite) R.string.cool_opt_dim_hint else R.string.cool_opt_dim_needs), dimScreen && canWrite, enabled = canWrite) { dimScreen = it }
+                if (!canWrite) androidx.compose.material3.TextButton(onClick = {
+                    SystemSettings.open(context, android.content.Intent(android.provider.Settings.ACTION_MANAGE_WRITE_SETTINGS,
+                        android.net.Uri.parse("package:${context.packageName}")))
+                }) { Text(stringResource(R.string.cool_allow_dim)) }
+                if (canRestore || dimmed) androidx.compose.material3.OutlinedButton(onClick = {
+                    c.brightness.restore(); dimmed = false; canRestore = false
+                }) { Text(stringResource(R.string.cool_restore_brightness)) }
+                Spacer(Modifier.height(8.dp))
+                Text(stringResource(R.string.cool_switches), style = MaterialTheme.typography.labelLarge)
+                Spacer(Modifier.height(6.dp))
+                androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ShortcutButton(stringResource(R.string.cool_bluetooth), Icons.Outlined.Bluetooth) {
+                        SystemSettings.open(context, android.content.Intent(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS))
+                    }
+                    ShortcutButton(stringResource(R.string.cool_location), Icons.Outlined.LocationOn) {
+                        SystemSettings.open(context, android.content.Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                    }
+                    ShortcutButton(stringResource(R.string.cool_connectivity), Icons.Outlined.Wifi) {
+                        if (android.os.Build.VERSION.SDK_INT >= 29)
+                            SystemSettings.open(context, android.content.Intent(android.provider.Settings.Panel.ACTION_INTERNET_CONNECTIVITY))
+                        else SystemSettings.open(context, android.content.Intent(android.provider.Settings.ACTION_WIRELESS_SETTINGS))
+                    }
+                    ShortcutButton(stringResource(R.string.action_battery_saver), Icons.Outlined.BatterySaver) { SystemSettings.batterySaver(context) }
+                }
             }
         }
         if (closed != null) item {
@@ -237,6 +285,8 @@ fun CoolDownScreen() {
                 }
                 Spacer(Modifier.height(6.dp))
                 InfoRow(stringResource(R.string.boost_apps_closed), closed.toString())
+                InfoRow(stringResource(R.string.cool_brightness), stringResource(if (dimmed) R.string.cool_brightness_lowered else R.string.cool_brightness_unchanged))
+                thermal.headroom?.let { InfoRow(stringResource(R.string.temp_headroom), String.format(java.util.Locale.US, "%.2f", it)) }
                 temps.firstOrNull()?.let { InfoRow(stringResource(R.string.cool_start_temp), TemperatureUtils.format(it, unit)) }
                 temps.lastOrNull()?.let { InfoRow(stringResource(R.string.cool_now_temp), TemperatureUtils.format(it, unit)) }
                 if (temps.size >= 2) {
@@ -254,10 +304,20 @@ fun CoolDownScreen() {
                 Spacer(Modifier.height(4.dp))
                 Text(stringResource(R.string.cool_tips), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.height(8.dp))
-                ShortcutButton(stringResource(R.string.action_battery_saver), Icons.Outlined.BatterySaver) { SystemSettings.batterySaver(context) }
             }
         }
         item { SourceNote(stringResource(R.string.cool_note)) }
+    }
+}
+
+
+@Composable
+private fun CoolOption(title: String, hint: String, checked: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        androidx.compose.material3.Checkbox(checked, onCheckedChange = onChange, enabled = enabled)
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyMedium)
+            Text(hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
