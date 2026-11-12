@@ -12,6 +12,17 @@ Native Android app (Kotlin, Jetpack Compose, Material 3) for monitoring and mana
 | Language | English |
 | Backend | None — works fully offline |
 
+## Screenshots
+
+Real screenshots from a Pixel 6 emulator (generated in CI by `ScreenshotTest`).
+
+| | | |
+|---|---|---|
+| ![Home](screenshots/01-home.png) | ![Device details](screenshots/02-device-details.png) | ![Boost](screenshots/03-boost.png) |
+| ![Cool down](screenshots/04-cool-down.png) | ![Cleaner](screenshots/05-cleaner.png) | ![Battery](screenshots/06-battery.png) |
+| ![Temperature](screenshots/07-temperature.png) | ![Apps](screenshots/08-apps.png) | ![Running apps](screenshots/09-running-apps.png) |
+| ![Optimize](screenshots/10-optimize.png) | ![Settings](screenshots/11-settings.png) | ![About](screenshots/12-about.png) |
+
 ## Editions
 
 | Edition | Gradle flavor | Application id | For |
