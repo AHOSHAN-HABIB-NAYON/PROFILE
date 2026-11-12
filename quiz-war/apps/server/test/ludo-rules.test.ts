@@ -43,19 +43,26 @@ describe('ludo capture rules', () => {
   });
 });
 
-describe('ludo yard tries', () => {
-  it('a player with no token out gets 3 tries to roll a six', async () => {
+describe('ludo fair dice', () => {
+  const rnd = (n: number) => Math.floor(Math.random() * n);
+  it('nobody waits more than 5 rolls for a six (3 with all tokens in the yard)', async () => {
+    const { fairDice } = await import('@quizwar/shared');
+    for (const [yard, limit] of [[false, 5], [true, 3]] as const) {
+      const st = { bags: [] as number[][], sinceSix: [] as number[] };
+      let since = 0, worst = 0, sixes = 0;
+      for (let i = 0; i < 3000; i++) {
+        const d = fairDice(st, 0, yard, rnd);
+        if (d === 6) (sixes++, (since = 0));
+        else worst = Math.max(worst, ++since);
+      }
+      expect(worst).toBeLessThanOrEqual(limit);
+      expect(sixes).toBeGreaterThan(400); // every player gets plenty of sixes
+    }
+  });
+  it('the turn passes on a miss (no extra tries)', async () => {
     const { applyRoll } = await import('@quizwar/shared');
-    let s = newLudoGame([3, 1]);
-    let r = applyRoll(s, 2);
-    expect(r.again).toBe(true);
-    expect(r.state.turn).toBe(0);
-    r = applyRoll(r.state, 3);
-    expect(r.again).toBe(true);
-    r = applyRoll(r.state, 4);
-    expect(r.again).toBe(false); // third miss: the turn passes
-    s = newLudoGame([3, 1]);
-    r = applyRoll(s, 6);
-    expect(r.moves.length).toBe(4);
+    const r = applyRoll(newLudoGame([3, 1]), 2);
+    expect(r.moves).toEqual([]);
+    expect(r.lost).toBe(false);
   });
 });

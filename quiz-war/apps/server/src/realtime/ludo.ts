@@ -3,7 +3,9 @@ import {
   applyMove,
   applyRoll,
   chooseAiMove,
+  fairDice,
   ludoColorsFor,
+  onlyInYard,
   MATCH_REACTIONS,
   moverOf,
   newLudoGame,
@@ -20,8 +22,8 @@ interface Game extends LudoSnapshot {
   timer?: NodeJS.Timeout;
   /** Missed turns in a row per seat (auto-played). */
   missed: number[];
-  /** Fair dice: each seat draws from its own shuffled bag (never sent to players). */
-  bags?: number[][];
+  /** Fair dice state (never sent to players). */
+  dice?: { bags: number[][]; sinceSix: number[] };
   /** Counts game actions (roll / move / pass): the app animates each one exactly once. */
   actNo?: number;
   updatedAt: number;
@@ -66,7 +68,7 @@ export class LudoService {
   }
 
   private snap(g: Game): LudoSnapshot {
-    const { timer: _t, missed: _m, updatedAt: _u, bags: _b, actNo: _n, ...rest } = g;
+    const { timer: _t, missed: _m, updatedAt: _u, dice: _b, actNo: _n, ...rest } = g;
     return rest;
   }
 
@@ -141,6 +143,8 @@ export class LudoService {
     const seat = this.seatFor(g, { id: u.id, name: u.username, avatar: u.avatarThumbUrl ?? null, uid: u.uid });
     const token = await this.d.tokenStyle?.(userId).catch(() => null);
     if (token) seat.token = token;
+    // Rooms: the host decides the teams; a newcomer first joins the smaller team (see arrange).
+    if (g.kind === 'room' && g.teams) seat.team = null;
     g.seats.push(seat);
     this.byUser.set(userId, g.id);
   }
@@ -178,6 +182,7 @@ export class LudoService {
     this.unqueue(userId);
     const g = this.newGame('room', userId, size, teams);
     await this.addUser(g, userId);
+    this.arrange(g);
     this.send(g);
     return { snapshot: this.snap(g) };
   }
@@ -203,13 +208,6 @@ export class LudoService {
    * the host sits first and the teammate opposite; everyone else keeps their join order.
    */
   private arrange(g: Game) {
-    const partner = g.teams && g.partnerId ? g.seats.find((s) => s.userId === g.partnerId) : undefined;
-    if (g.partnerId && !partner) g.partnerId = null;
-    if (partner) {
-      const host = g.seats.find((s) => s.userId === g.hostId);
-      const others = g.seats.filter((s) => s !== host && s !== partner);
-      g.seats = [host, others[0], partner, others[1]].filter((s): s is LudoSeat => !!s);
-    }
     const colors = ludoColorsFor(g.size);
     if (!g.teams) {
       // Everyone keeps the corner they picked; newcomers get a free one.
@@ -226,10 +224,39 @@ export class LudoService {
       for (const s of g.seats) s.team = null;
       return;
     }
-    g.seats.forEach((s, k) => {
-      s.color = colors[k]!;
-      s.team = partner ? (s === partner || s.userId === g.hostId ? 0 : 1) : k % 2;
-    });
+    // 2 vs 2: keep the teams the host made; a newcomer joins the smaller team.
+    const t0 = g.seats.filter((s) => s.team === 0);
+    const t1 = g.seats.filter((s) => s.team === 1);
+    for (const s of g.seats) if (s.team !== 0 && s.team !== 1) (t0.length <= t1.length ? t0 : t1).push(s);
+    while (t0.length > 2) t1.push(t0.pop()!);
+    while (t1.length > 2) t0.push(t1.pop()!);
+    t0.forEach((s) => (s.team = 0));
+    t1.forEach((s) => (s.team = 1));
+    // Partners sit opposite each other (seats 0+2 and 1+3), like Ludo King.
+    g.seats = [t0[0], t1[0], t0[1], t1[1]].filter((s): s is LudoSeat => !!s);
+    g.seats.forEach((s, k) => (s.color = colors[k]!));
+  }
+
+  /**
+   * 2 vs 2 room: the host moves a player to the other team. If that team is full, the player
+   * swaps places with someone from it, so the teams stay two and two.
+   */
+  team(userId: number, gameId: string, targetId: number) {
+    const g = this.get(gameId);
+    if (g.hostId !== userId) throw new AppError(403, 'not_host', 'Only the host can pick teams');
+    if (g.status !== 'lobby' || !g.teams) return;
+    const target = g.seats.find((s) => s.userId === targetId);
+    if (!target) return;
+    const from = target.team === 1 ? 1 : 0;
+    const dest = 1 - from;
+    const there = g.seats.filter((s) => s.team === dest);
+    if (there.length >= 2) {
+      const other = there.find((s) => s.userId !== g.hostId) ?? there[there.length - 1]!;
+      other.team = from;
+    }
+    target.team = dest;
+    this.arrange(g);
+    this.send(g);
   }
 
   /** Room lobby: sit in another free corner (not in 2 vs 2, where seats decide the teams). */
@@ -242,16 +269,7 @@ export class LudoService {
     this.send(g);
   }
 
-  /** 2 vs 2 room: the host chooses a teammate (tap again to undo). */
-  partner(userId: number, gameId: string, partnerId: number) {
-    const g = this.get(gameId);
-    if (g.hostId !== userId) throw new AppError(403, 'not_host', 'Only the host can pick teams');
-    if (g.status !== 'lobby' || !g.teams) return;
-    if (partnerId === userId || !g.seats.some((s) => s.userId === partnerId)) return;
-    g.partnerId = g.partnerId === partnerId ? null : partnerId;
-    this.arrange(g);
-    this.send(g);
-  }
+
 
   /** Host starts — only when the room is full (every seat a real player). */
   start(userId: number, gameId: string) {
@@ -274,7 +292,7 @@ export class LudoService {
       g.teams ? g.seats.map((s) => s.team ?? 0) : undefined,
     );
     g.missed = g.seats.map(() => 0);
-    g.bags = [];
+    g.dice = { bags: [], sinceSix: [] };
     g.actNo = 0;
     g.last = null;
     this.armTurn(g, 900);
@@ -366,46 +384,19 @@ export class LudoService {
   /** Seconds a player gets to pick a token after rolling (then the computer picks). */
   private static PICK_SECONDS = 10;
 
-  /**
-   * Fair dice. Pure random lets one player get six after six while another waits 20 rolls.
-   * Each seat draws from its own shuffled bag holding 1–6 once each (refilled when empty),
-   * so everyone gets every number — sixes included — at the same rate, in an unpredictable
-   * order. One roll in five is fully random so the pattern can't be counted.
-   */
-  private fairDice(g: Game, seat: number) {
-    if (randomInt(5) === 0) return randomInt(1, 7);
-    g.bags ??= [];
-    let bag = g.bags[seat];
-    if (!bag || !bag.length) {
-      bag = [1, 2, 3, 4, 5, 6];
-      for (let i = bag.length - 1; i > 0; i--) {
-        const j = randomInt(i + 1);
-        [bag[i], bag[j]] = [bag[j]!, bag[i]!];
-      }
-      g.bags[seat] = bag;
-    }
-    return bag.pop()!;
-  }
-
   private doRoll(g: Game, auto = false) {
-    const dice = this.fairDice(g, g.state!.turn);
+    g.dice ??= { bags: [], sinceSix: [] };
+    const dice = fairDice(g.dice, g.state!.turn, onlyInYard(g.state!, moverOf(g.state!)), randomInt);
     const by = g.state!.turn;
     const r = applyRoll(g.state!, dice);
     g.state = r.state;
-    g.last = { n: this.nextAct(g), type: 'roll', by, dice, moves: r.moves, ...(r.lost ? { lost: true } : {}), ...(r.again ? { again: true } : {}) };
+    g.last = { n: this.nextAct(g), type: 'roll', by, dice, moves: r.moves, ...(r.lost ? { lost: true } : {}) };
     clearTimeout(g.timer);
     if (r.lost) {
       // applyRoll already passed the turn.
       g.deadline = null;
       this.send(g);
       this.armTurn(g, 900);
-      return;
-    }
-    if (r.again) {
-      // No token out yet and no six: the same player rolls again (up to 3 tries).
-      g.deadline = null;
-      this.send(g);
-      this.armTurn(g, 700);
       return;
     }
     if (!r.moves.length) {

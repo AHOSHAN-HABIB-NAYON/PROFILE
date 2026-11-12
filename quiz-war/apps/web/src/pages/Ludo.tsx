@@ -4,6 +4,8 @@ import {
   MATCH_REACTIONS,
   ludoColorsFor,
   moverOf,
+  fairDice,
+  onlyInYard,
   cellOf,
   chooseAiMove,
   LUDO_COLORS,
@@ -95,6 +97,7 @@ export function LudoHub({ top = true }: { top?: boolean }) {
   const [players, setPlayers] = useState<2 | 4>(2);
   const [level, setLevel] = useState<0 | 1 | 2>(1);
   const [localN, setLocalN] = useState<2 | 3 | 4 | 'teams'>(2);
+  const [localNames, setLocalNames] = useState(['', '', '', '']);
   const onlineOff = cfg?.ludoEnabled === false;
   const open = (k: HubSheet) => {
     haptic('tap');
@@ -216,7 +219,39 @@ export function LudoHub({ top = true }: { top?: boolean }) {
             ))}
             <ModeCard on={localN === 'teams'} onPick={() => setLocalN('teams')} title={t('2 vs 2', '২ বনাম ২')} sub={t('Teams', 'দলে')} art={<PawnsArt groups={[[B[3], B[1]], [B[0], B[2]]]} />} tone="t-purple" />
           </div>
-          <button className="pick-go" onClick={() => (setSheet(null), nav(localN === 'teams' ? '/ludo/play?mode=local&n=4&t=1' : `/ludo/play?mode=local&n=${localN}`))}><Icon name="play" /> {t('Start', 'শুরু করুন')}</button>
+          {localN === 'teams' && (
+            // Who plays with whom: partners sit opposite each other on the board (like Ludo King).
+            <div className="lt-setup">
+              {[0, 1].map((tm) => (
+                <div key={tm} className={`lr-tm t${tm}`}>
+                  <b className="lr-tm-h">{tm === 0 ? t('Team 1', 'দল ১') : t('Team 2', 'দল ২')}</b>
+                  {[0, 1].map((k) => {
+                    const i = tm + k * 2; // seats 0+2 = team 1, 1+3 = team 2
+                    return (
+                      <input
+                        key={k}
+                        className="lt-name"
+                        value={localNames[i]}
+                        maxLength={16}
+                        placeholder={t(`Player ${i + 1}`, `প্লেয়ার ${num(i + 1, lang)}`)}
+                        onChange={(e) => setLocalNames((v) => v.map((x, j) => (j === i ? e.target.value : x)))}
+                      />
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          )}
+          <button
+            className="pick-go"
+            onClick={() => {
+              setSheet(null);
+              if (localN !== 'teams') return nav(`/ludo/play?mode=local&n=${localN}`);
+              const q = new URLSearchParams({ mode: 'local', n: '4', t: '1' });
+              localNames.forEach((x, i) => x.trim() && q.set(`p${i + 1}`, x.trim()));
+              nav(`/ludo/play?${q.toString()}`);
+            }}
+          ><Icon name="play" /> {t('Start', 'শুরু করুন')}</button>
         </div>
       </Sheet>
 
@@ -590,12 +625,12 @@ export function LudoGame() {
     () =>
       colors.map((c, i) =>
         i === 0
-          ? { name: mode === 'local' ? t('Player 1', 'প্লেয়ার ১') : (me?.username ?? t('You', 'আপনি')), avatar: mode === 'local' ? null : me?.avatarThumbUrl, bot: false }
+          ? { name: mode === 'local' ? params.get('p1')?.slice(0, 16) || t('Player 1', 'প্লেয়ার ১') : (me?.username ?? t('You', 'আপনি')), avatar: mode === 'local' ? null : me?.avatarThumbUrl, bot: false }
           : mode === 'local'
-            ? { name: t(`Player ${i + 1}`, `প্লেয়ার ${num(i + 1, 'bn')}`), bot: false }
+            ? { name: params.get(`p${i + 1}`)?.slice(0, 16) || t(`Player ${i + 1}`, `প্লেয়ার ${num(i + 1, 'bn')}`), bot: false }
             : { name: t(BOT_NAMES[i - 1]![0], BOT_NAMES[i - 1]![1]), bot: true },
       ),
-    [colors, mode, me, t],
+    [colors, mode, me, t, params],
   );
 
   const [game, setGame] = useState<LudoState>(() => newLudoGame(colors, localTeams ? [0, 1, 0, 1] : undefined));
@@ -687,7 +722,7 @@ export function LudoGame() {
     setPhase('roll');
   };
 
-  const bags = useRef<number[][]>([]);
+  const diceState = useRef({ bags: [] as number[][], sinceSix: [] as number[] });
   const roll = async () => {
     if (phase !== 'roll') return;
     setPhase('rolling');
@@ -697,7 +732,8 @@ export function LudoGame() {
       setFaces(1 + Math.floor(Math.random() * 6));
       await sleep(55);
     }
-    const dice = fairDice(bags.current, gameRef.current.turn);
+    const g0 = gameRef.current;
+    const dice = fairDice(diceState.current, g0.turn, onlyInYard(g0, moverOf(g0)), rnd);
     setFaces(dice);
     if (!alive.current) return;
     const r = applyRoll(gameRef.current, dice);
@@ -706,13 +742,6 @@ export function LudoGame() {
     if (r.lost) {
       flash(t('Three sixes — turn lost', 'তিনবার ছক্কা — চাল বাতিল'));
       await sleep(900);
-      setPhase('roll');
-      return;
-    }
-    if (r.again) {
-      // No token out yet: up to 3 tries to roll a six.
-      flash(t(`Need a six — try ${(r.state.tries ?? 1) + 1} of 3`, `ছক্কা লাগবে — আবার চেষ্টা (${num((r.state.tries ?? 1) + 1, 'bn')}/৩)`));
-      await sleep(700);
       setPhase('roll');
       return;
     }
@@ -873,6 +902,7 @@ export function LudoGame() {
         home={home}
         pct={null}
         note={game.players[pi]!.place ? t(`#${game.players[pi]!.place}`, `${num(game.players[pi]!.place, lang)} নম্বর`) : null}
+        tag={localTeams ? { text: pi % 2 === 0 ? t('Team 1', 'দল ১') : t('Team 2', 'দল ২'), kind: pi % 2 === 0 ? 'mate' : 'opp' } : null}
         dice={active ? <Dice value={faces} rolling={phase === 'rolling'} canRoll={canRoll} onRoll={() => void roll()} /> : <span className="lp-dice-off" />}
       />
     );
@@ -1043,24 +1073,6 @@ function rnd(n: number) {
   const buf = new Uint32Array(1);
   crypto.getRandomValues(buf);
   return buf[0]! % n;
-}
-
-/**
- * Fair dice (same rule as online): each player draws from a shuffled bag of 1–6, so nobody gets
- * all the sixes; one roll in five is fully random so the order can't be counted.
- */
-function fairDice(bags: number[][], seat: number) {
-  if (rnd(5) === 0) return rnd(6) + 1;
-  let bag = bags[seat];
-  if (!bag || !bag.length) {
-    bag = [1, 2, 3, 4, 5, 6];
-    for (let i = bag.length - 1; i > 0; i--) {
-      const j = rnd(i + 1);
-      [bag[i], bag[j]] = [bag[j]!, bag[i]!];
-    }
-    bags[seat] = bag;
-  }
-  return bag.pop()!;
 }
 
 /** Token positions with small offsets when several share a square. */
@@ -1241,7 +1253,6 @@ export function LudoOnline() {
         setRolling(false);
         if (L.dice === 6) ludoSfx('six');
         if (L.lost) flash(t('Three sixes — turn lost', 'তিনবার ছক্কা — চাল বাতিল'));
-        else if (L.again) flash(t(`Need a six — try ${(s.state?.tries ?? 1) + 1} of 3`, `ছক্কা লাগবে — আবার চেষ্টা (${num((s.state?.tries ?? 1) + 1, 'bn')}/৩)`));
       } else if (fresh && L?.type === 'move' && s.state) {
         const from = L.path[0] === 0 && L.path.length === 1;
         if (from) ludoSfx('out');
@@ -1412,23 +1423,57 @@ export function LudoOnline() {
           </div>
         </section>
 
+        {snap.teams ? (
+          // 2 vs 2: two team boxes. The host taps a player to move them to the other team.
+          <div className="lr-teams">
+            {[0, 1].map((tm) => {
+              const members = snap.seats.filter((x) => x.team === tm);
+              return (
+                <div key={tm} className={`lr-tm t${tm}`}>
+                  <b className="lr-tm-h">{tm === 0 ? t('Team 1', 'দল ১') : t('Team 2', 'দল ২')}</b>
+                  {[0, 1].map((k) => {
+                    const seat = members[k];
+                    if (!seat)
+                      return (
+                        <button key={k} type="button" className="lr-tm-p empty" onClick={() => setInviteOpen(true)}>
+                          <span className="lr-tm-av"><Icon name="user-plus" size={20} /></span>
+                          <small>{t('Invite', 'ডাকুন')}</small>
+                        </button>
+                      );
+                    const can = isHost;
+                    return (
+                      <button
+                        key={k}
+                        type="button"
+                        className={`lr-tm-p${can ? ' can' : ''}`}
+                        disabled={!can}
+                        onClick={() => (haptic('tap'), void emit('ludo:team', { gameId: snap.id, userId: seat.userId }).catch((e: any) => toast.error(t('Not now', 'এখন হবে না'), e?.message)))}
+                      >
+                        <Avatar name={seat.name} src={seat.avatar} size={48} />
+                        <span className="grow">
+                          <b className="ellipsis">{seat.userId === me.id ? t('You', 'আপনি') : seat.name}{seat.userId === snap.hostId && <Icon name="crown" size={13} className="lr-crown" />}</b>
+                          <small>{seat.connected ? t('Ready', 'প্রস্তুত') : t('Offline', 'অফলাইন')}</small>
+                        </span>
+                        {can && <span className="lr-tm-sw" aria-label={t('Move to the other team', 'অন্য দলে নিন')}><Icon name="refresh" size={16} /></span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
         <div className={`lr-seats n${snap.size}`}>
           {colors.map((c, i) => {
             // Seats sit at their colour's corner (players can move to a free corner).
             const seat = snap.seats.find((x) => x.color === c);
             return (
               <div key={i} className={`lr-seat${seat ? '' : ' empty'}`} style={{ ['--pc' as any]: LUDO_COLORS[c] }}>
-                {snap.teams && <span className="lr-team">{t(`Team ${(seat?.team ?? i % 2) + 1}`, `দল ${num((seat?.team ?? i % 2) + 1, lang)}`)}</span>}
                 {seat ? (
                   <>
                     <Avatar name={seat.name} src={seat.avatar} size={56} />
                     <b className="ellipsis">{seat.name}{seat.userId === snap.hostId && <Icon name="crown" size={14} className="lr-crown" />}</b>
                     <small>{seat.userId === me.id ? t('You', 'আপনি') : seat.connected ? t('Ready', 'প্রস্তুত') : t('Offline', 'অফলাইন')}</small>
-                    {snap.teams && isHost && seat.userId !== me.id && (
-                      <button type="button" className={`lr-mate${snap.partnerId === seat.userId ? ' on' : ''}`} onClick={() => (haptic('tap'), void emit('ludo:partner', { gameId: snap.id, userId: seat.userId }).catch((e: any) => toast.error(t('Not now', 'এখন হবে না'), e?.message)))}>
-                        <Icon name={snap.partnerId === seat.userId ? 'check' : 'users'} size={14} /> {snap.partnerId === seat.userId ? t('Teammate', 'আমার সাথী') : t('Make teammate', 'সাথী বানাও')}
-                      </button>
-                    )}
                   </>
                 ) : (
                   <>
@@ -1447,7 +1492,8 @@ export function LudoOnline() {
             );
           })}
         </div>
-        {snap.teams && <p className="lr-note">{isHost ? t('Tap “Make teammate” to choose who plays on your team.', '“সাথী বানাও” চাপুন — কে আপনার দলে খেলবে বেছে নিন।') : t('The host chooses the teams.', 'কে কার দলে খেলবে, হোস্ট বেছে নেবে।')}</p>}
+        )}
+        {snap.teams && <p className="lr-note">{isHost ? t('Tap a player to move them to the other team.', 'কাউকে অন্য দলে নিতে তার উপর চাপুন।') : t('The host chooses the teams.', 'কে কার দলে খেলবে, হোস্ট ঠিক করবে।')}</p>}
         <p className="lr-note">{snap.seats.length < snap.size ? t(`Waiting for players: ${snap.seats.length}/${snap.size} — the game starts when the room is full.`, `প্লেয়ারের অপেক্ষা: ${num(snap.seats.length, lang)}/${num(snap.size, lang)} — রুম পূর্ণ হলে খেলা শুরু হবে।`) : t('Everyone is here!', 'সবাই চলে এসেছে!')}</p>
 
         {others.length > 0 && <VoiceBar className="dark" roomId={snap.id} players={voicePlayers} />}

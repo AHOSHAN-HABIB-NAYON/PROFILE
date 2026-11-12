@@ -199,7 +199,7 @@ export interface ClientToServerEvents {
   'ludo:seat': (p: { gameId: string; color: number }, ack?: Ack) => void;
   'ludo:join': (p: { code: string }, ack: Ack<{ snapshot: LudoSnapshot }>) => void;
   'ludo:start': (p: { gameId: string }, ack?: Ack) => void;
-  'ludo:partner': (p: { gameId: string; userId: number }, ack?: Ack) => void;
+  'ludo:team': (p: { gameId: string; userId: number }, ack?: Ack) => void;
   'ludo:leave': (p: { gameId: string }, ack?: Ack) => void;
   'ludo:roll': (p: { gameId: string }, ack?: Ack) => void;
   'ludo:move': (p: { gameId: string; token: number }, ack?: Ack) => void;

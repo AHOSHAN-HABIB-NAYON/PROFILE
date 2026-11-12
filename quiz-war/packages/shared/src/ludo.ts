@@ -93,8 +93,6 @@ export interface LudoState {
   dice: number;
   /** Sixes rolled in a row this turn (3 = turn lost). */
   sixes: number;
-  /** Rolls this turn while no token is out (up to 3 tries to get a six). */
-  tries?: number;
   finished: boolean;
   /** 2 vs 2: team of each player (partners sit opposite). Absent = everyone for themselves. */
   teams?: number[];
@@ -207,48 +205,58 @@ export function applyMove(s0: LudoState, token: number): LudoMoveResult {
   const turnOver = s.teams ? false : playerDone;
   const extraTurn = !s.finished && !turnOver && (dice === 6 || captured.length > 0 || reachedHome);
   if (!extraTurn) nextTurn(s);
-  else {
-    s.dice = 0;
-    s.tries = 0;
-  }
+  else s.dice = 0;
   return { state: s, path, captured, reachedHome, extraTurn, playerDone };
 }
 
-/** Max rolls per turn while all of a player's tokens are still in the yard (to get a six). */
-export const LUDO_YARD_TRIES = 3;
-
-/**
- * Roll for the current player. With no legal move (or a third six) the turn passes — except
- * when none of the player's tokens is out yet: then they get up to 3 tries to roll a six, so a
- * player whose tokens were all captured isn't stuck watching everyone else.
- */
-export function applyRoll(s0: LudoState, dice: number): { state: LudoState; moves: number[]; lost: boolean; again: boolean } {
+/** Roll for the current player. With no legal move (or a third six) the turn passes (Ludo King rules). */
+export function applyRoll(s0: LudoState, dice: number): { state: LudoState; moves: number[]; lost: boolean } {
   const s: LudoState = { ...s0, players: s0.players.map((p) => ({ ...p, tokens: [...p.tokens] })) };
   s.dice = dice;
   s.sixes = dice === 6 ? s.sixes + 1 : 0;
   if (s.sixes >= 3) {
     nextTurn(s);
-    return { state: s, moves: [], lost: true, again: false };
+    return { state: s, moves: [], lost: true };
   }
-  const moves = legalMoves(s, dice);
-  if (!moves.length) {
-    const p = s.players[moverOf(s)]!;
-    const noneOut = p.tokens.every((x) => x < 0 || x >= LUDO_FINISH) && p.tokens.some((x) => x < 0);
-    const tries = (s.tries ?? 0) + 1;
-    if (noneOut && tries < LUDO_YARD_TRIES) {
-      s.tries = tries;
-      s.dice = 0;
-      return { state: s, moves, lost: false, again: true };
+  return { state: s, moves: legalMoves(s, dice), lost: false };
+}
+
+/**
+ * Fair dice used online and offline. Each player draws from their own shuffled bag of 1–6 (so
+ * everyone gets every number at the same rate), and nobody waits long for a six: after 5 rolls
+ * without one the next roll is a six — after 3 when all their tokens are still in the yard.
+ * `rnd(n)` returns a random whole number 0..n-1. `state.bags` / `state.sinceSix` live with the game.
+ */
+export function fairDice(st: { bags: number[][]; sinceSix: number[] }, seat: number, yardOnly: boolean, rnd: (n: number) => number): number {
+  const since = st.sinceSix[seat] ?? 0;
+  let dice: number;
+  if (since >= (yardOnly ? 3 : 5)) dice = 6;
+  else {
+    let bag = st.bags[seat];
+    if (!bag || !bag.length) {
+      bag = [1, 2, 3, 4, 5, 6];
+      for (let i = bag.length - 1; i > 0; i--) {
+        const j = rnd(i + 1);
+        [bag[i], bag[j]] = [bag[j]!, bag[i]!];
+      }
+      st.bags[seat] = bag;
     }
+    dice = bag.pop()!;
   }
-  return { state: s, moves, lost: false, again: false };
+  st.sinceSix[seat] = dice === 6 ? 0 : since + 1;
+  return dice;
+}
+
+/** Are all of this player's unfinished tokens still in the yard (a six is needed to start)? */
+export function onlyInYard(s: LudoState, seat: number): boolean {
+  const p = s.players[seat];
+  return !!p && p.tokens.some((x) => x < 0) && p.tokens.every((x) => x < 0 || x >= LUDO_FINISH);
 }
 
 /** Pass the turn to the next player who is still playing. */
 export function nextTurn(s: LudoState) {
   s.dice = 0;
   s.sixes = 0;
-  s.tries = 0;
   if (s.finished) return;
   for (let i = 1; i <= s.players.length; i++) {
     const n = (s.turn + i) % s.players.length;
@@ -327,7 +335,7 @@ export interface LudoSeat {
 
 /** The last thing that happened. `n` counts actions: the app animates each action once (by `n`). */
 export type LudoLast = { n?: number } & (
-  | { type: 'roll'; by: number; dice: number; moves: number[]; lost?: boolean; again?: boolean }
+  | { type: 'roll'; by: number; dice: number; moves: number[]; lost?: boolean }
   | { type: 'move'; by: number; mover: number; token: number; path: number[]; captured: { player: number; token: number }[]; home: boolean; extra: boolean }
   | { type: 'pass'; by: number }
 );
@@ -349,8 +357,6 @@ export interface LudoSnapshot {
   /** When the current turn times out (ms since epoch). */
   deadline: number | null;
   turnSeconds: number;
-  /** 2 vs 2 room: the player the host picked as teammate. */
-  partnerId?: number | null;
 }
 
 /** Seat colours: 2 players sit opposite (blue vs green); 4 go clockwise from blue. */

@@ -2417,3 +2417,19 @@ html:has(.ludo-over.full), html:has(.ludo-over.full) body { overflow: hidden; ov
 .splash-from b { font-family: var(--font); font-weight: 800; font-size: 17px; letter-spacing: .14em; }
 .mode-card.t-orange { background: linear-gradient(180deg, #fff7ed, #ffedd5); }
 .lr-seats.n3 > :last-child { grid-column: span 2; max-width: calc(50% - 5px); justify-self: center; width: 100%; }
+
+/* 2 vs 2 room: team boxes (host taps a player to move them) */
+.lr-teams { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.lr-tm { border-radius: 22px; padding: 12px; display: grid; gap: 8px; background: rgba(8, 15, 40, .4); border: 2.5px solid var(--tc); }
+.lr-tm.t0 { --tc: #3b82f6; } .lr-tm.t1 { --tc: #ef4444; }
+.lr-tm-h { justify-self: start; padding: 4px 14px; border-radius: 99px; background: var(--tc); color: #fff; font-size: 14px; font-weight: 900; }
+.lr-tm-p { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 16px; border: 0; background: rgba(255,255,255,.1); color: #fff; font: inherit; text-align: left; }
+.lr-tm-p b { display: block; font-size: 15px; } .lr-tm-p small { font-size: 12px; opacity: .8; }
+.lr-tm-p.can:active { transform: scale(.98); }
+.lr-tm-p.empty { border: 1.5px dashed rgba(255,255,255,.35); background: none; }
+.lr-tm-av { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.12); }
+.lr-tm-sw { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.16); }
+.lr-tm-p:disabled { opacity: 1; cursor: default; }
+.lt-setup { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.lt-setup .lr-tm { background: color-mix(in srgb, var(--tc) 8%, var(--surface)); color: var(--text); }
+.lt-name { width: 100%; min-width: 0; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--surface); color: var(--text); font: inherit; font-size: 15px; }
