@@ -1,0 +1,27 @@
+name: Delete old build artifacts
+
+# Frees GitHub Actions storage: deletes every stored artifact (the APK/AAB stay on the app-latest release).
+on:
+  push:
+    paths: ['.github/workflows/cleanup-artifacts.yml']
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete all artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          n=0
+          while :; do
+            ids=$(gh api "repos/$REPO/actions/artifacts?per_page=100" --jq '.artifacts[].id')
+            [ -z "$ids" ] && break
+            for id in $ids; do gh api -X DELETE "repos/$REPO/actions/artifacts/$id" && n=$((n+1)); done
+          done
+          echo "Deleted $n artifacts"
