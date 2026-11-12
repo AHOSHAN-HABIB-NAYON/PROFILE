@@ -145,10 +145,7 @@ jobs:
       - name: Remove signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/upload.jks"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: quizwar-apk
-          path: ${{ runner.temp }}/QuizWar.apk
+      # No upload-artifact: the APK/AAB live on the app-latest release (free), Actions artifact storage is only 0.5 GB.
       # Stable download link for testers: /releases/download/app-latest/QuizWar.apk
       - name: Publish APK release (app-latest)
         if: github.event_name != 'pull_request'
@@ -186,9 +183,3 @@ jobs:
           gh release create app-latest "${ASSETS[@]}" --target "$GITHUB_SHA" --prerelease \
             --title "QUIZ WAR Android (${QW_VERSION_NAME}-${QW_VERSION_CODE}, $KIND)" \
             --notes-file "$RUNNER_TEMP/notes.md"
-
-      - uses: actions/upload-artifact@v4
-        if: ${{ hashFiles('quiz-war/apps/android/app/build/outputs/bundle/release/*.aab') != '' }}
-        with:
-          name: quizwar-release-aab
-          path: quiz-war/apps/android/app/build/outputs/bundle/release/*.aab
