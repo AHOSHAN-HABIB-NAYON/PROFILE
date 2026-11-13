@@ -406,7 +406,17 @@ class FileOperationManager @Inject constructor(
 
     private fun finish(tracker: Tracker, status: OperationStatus) {
         tracker.publish(force = true, status = status)
-        _operations.value.firstOrNull { it.id == tracker.id }?.let { _finished.tryEmit(it) }
+        _operations.value.firstOrNull { it.id == tracker.id }?.let { op ->
+            _finished.tryEmit(op)
+            // Permanent deletes end with the "Deleted" animation.
+            if (op.kind == OperationKind.DELETE && status == OperationStatus.COMPLETED && op.succeededIds.isNotEmpty()) {
+                val n = op.succeededIds.size
+                com.webtecit.filepilot.core.designsystem.Feedback.deleted(
+                    "Deleted",
+                    if (n == 1) op.succeededIds[0].substringAfterLast('/') else "$n items deleted permanently",
+                )
+            }
+        }
     }
 
     private fun tempName(name: String): String = clampName(".$name.fmp-part")

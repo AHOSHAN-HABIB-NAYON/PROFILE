@@ -35,5 +35,14 @@ class MainViewModel @Inject constructor(
     }
 
     /** Permissions are asked later, when the user opens something that needs them. */
-    fun routeAfterOnboarding(): Any = HomeRoute
+    /** After the intro: one page asking for file access, unless it was already granted or answered. */
+    fun routeAfterOnboarding(): Any {
+        val p = prefs.value
+        val asked = p?.permissionsSetupDone == true
+        return if (!asked && !com.webtecit.filepilot.core.permissions.StorageAccess.hasFullAccess(context)) {
+            com.webtecit.filepilot.navigation.PermissionsRoute(setup = true)
+        } else {
+            HomeRoute
+        }
+    }
 }

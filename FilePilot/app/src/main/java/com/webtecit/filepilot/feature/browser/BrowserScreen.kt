@@ -533,41 +533,12 @@ fun BrowserScreen(
             onConfirm = { dialog = null; if (it != d.item.name) viewModel.rename(d.item, it) },
             onDismiss = { dialog = null },
         )
-        is BrowserDialog.Delete -> if (viewModel.usesRecycleBin(d.items)) {
-            val names = d.items
-            androidx.compose.material3.AlertDialog(
-                onDismissRequest = { dialog = null },
-                title = { Text(if (names.size == 1) "Delete \"${names[0].name}\"?" else "Delete ${names.size} items?") },
-                text = { Text("Items go to the Recycle Bin and can be restored for 30 days.") },
-                confirmButton = {
-                    androidx.compose.material3.TextButton(onClick = { dialog = null; viewModel.delete(d.items) }) { Text("Move to Recycle Bin") }
-                },
-                dismissButton = {
-                    Row {
-                        androidx.compose.material3.TextButton(onClick = { dialog = null; viewModel.delete(d.items, permanently = true) }) {
-                            Text("Delete permanently", color = MaterialTheme.colorScheme.error)
-                        }
-                        androidx.compose.material3.TextButton(onClick = { dialog = null }) { Text("Cancel") }
-                    }
-                },
-            )
-        } else {
-            val names = d.items
-            val title = if (names.size == 1) "Delete \"${names[0].name}\"?" else "Delete ${names.size} items?"
-            val folders = names.count { it.isDirectory }
-            ConfirmDialog(
-                title = title,
-                message = buildString {
-                    append(if (names.size == 1) "This item will be deleted permanently." else "These items will be deleted permanently.")
-                    if (folders > 0) append(" Everything inside the selected folders is deleted too.")
-                    append(" This can't be undone.")
-                },
-                confirmLabel = "Delete permanently",
-                destructive = true,
-                onConfirm = { dialog = null; viewModel.delete(d.items) },
-                onDismiss = { dialog = null },
-            )
-        }
+        is BrowserDialog.Delete -> DeleteSheet(
+            items = d.items,
+            canUseRecycleBin = viewModel.usesRecycleBin(d.items),
+            onDelete = { permanently -> dialog = null; viewModel.delete(d.items, permanently) },
+            onDismiss = { dialog = null },
+        )
         is BrowserDialog.BatchRename -> BatchRenameDialog(
             count = d.items.size,
             preview = { rule -> viewModel.batchRenamePreview(d.items, rule) },

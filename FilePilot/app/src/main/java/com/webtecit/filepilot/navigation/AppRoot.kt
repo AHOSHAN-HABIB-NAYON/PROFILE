@@ -98,6 +98,7 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
     val current = TopLevel.entries.firstOrNull { t -> destination?.hierarchy?.any { it.hasRoute(t.route::class) } == true }
     val animations = LocalAnimationsEnabled.current
 
+    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
@@ -235,6 +236,9 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
             }
             composable<AboutRoute> { AboutScreen(onBack = { nav.popBackStack() }) }
         }
+    }
+    // "Deleted" / "Saved" animations and Undo, above every screen.
+    com.webtecit.filepilot.core.designsystem.FeedbackHost()
     }
 }
 

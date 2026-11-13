@@ -31,9 +31,12 @@ class RecycleBin @Inject constructor(
     fun supports(item: FileItem): Boolean = item.id.startsWith("/") && !item.id.contains("/$DIR_NAME/")
 
     /** Moves items to the Recycle Bin. Returns the ids that were moved; failures are listed in the exception. */
-    suspend fun trash(items: List<FileItem>): List<String> = withContext(io) {
+    suspend fun trash(items: List<FileItem>): List<String> = trashEntries(items).map { it.originalPath }
+
+    /** Moves items to the Recycle Bin and returns their bin entries, so the move can be undone with [undo]. */
+    suspend fun trashEntries(items: List<FileItem>): List<TrashEntity> = withContext(io) {
         if (volumes.last.isEmpty()) runCatching { volumes.load() }
-        val moved = ArrayList<String>()
+        val moved = ArrayList<TrashEntity>()
         val failed = ArrayList<String>()
         for (item in items) {
             val source = File(item.id)
@@ -44,9 +47,10 @@ class RecycleBin @Inject constructor(
             // Folder sizes aren't counted here, so moving to the bin stays instant.
             val size = if (item.isDirectory) 0L else item.size
             if (source.renameTo(target)) {
-                dao.insert(TrashEntity(originalPath = item.id, trashPath = target.absolutePath, name = item.name,
-                    isDirectory = item.isDirectory, size = size, deletedAt = System.currentTimeMillis()))
-                moved += item.id
+                val entity = TrashEntity(originalPath = item.id, trashPath = target.absolutePath, name = item.name,
+                    isDirectory = item.isDirectory, size = size, deletedAt = System.currentTimeMillis())
+                val id = dao.insert(entity)
+                moved += entity.copy(id = id)
             } else {
                 failed += item.name
             }
@@ -70,6 +74,11 @@ class RecycleBin @Inject constructor(
         if (!source.renameTo(target)) throw FsException(FsError.ACCESS_DENIED, "\"${entry.name}\" couldn't be restored.")
         dao.delete(entry.id)
         target.absolutePath
+    }
+
+    /** Puts just-trashed items back where they were (Undo). */
+    suspend fun undo(entries: List<TrashEntity>) {
+        entries.forEach { runCatching { restore(it) } }
     }
 
     suspend fun deleteForever(entry: TrashEntity) = withContext(io) {

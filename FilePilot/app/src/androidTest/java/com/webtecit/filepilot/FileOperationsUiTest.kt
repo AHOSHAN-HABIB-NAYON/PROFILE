@@ -8,6 +8,7 @@ import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
@@ -68,8 +69,12 @@ class FileOperationsUiTest {
         rule.onNodeWithText(folderName).performTouchInput { longClick() }
         rule.waitForText("1 selected")
         rule.onNodeWithText("Delete").performClick()
-        rule.waitForText("Delete permanently")
-        rule.onNodeWithText("Delete permanently").performClick()
+        // The delete panel: switch to a permanent delete when the Recycle Bin is offered, then confirm.
+        rule.waitUntil(10_000) { rule.onAllNodesWithTag("confirm_delete").fetchSemanticsNodes().isNotEmpty() }
+        if (rule.onAllNodesWithTag("delete_permanently").fetchSemanticsNodes().isNotEmpty()) {
+            rule.onNodeWithTag("delete_permanently").performClick()
+        }
+        rule.onNodeWithTag("confirm_delete").performClick()
 
         rule.waitUntil(20_000) { !File(Environment.getExternalStorageDirectory(), folderName).exists() }
         rule.waitUntil(15_000) { rule.onAllNodesWithText(folderName).fetchSemanticsNodes().isEmpty() }

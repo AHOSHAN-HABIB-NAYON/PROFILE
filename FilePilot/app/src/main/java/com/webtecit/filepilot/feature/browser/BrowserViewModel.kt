@@ -552,9 +552,16 @@ class BrowserViewModel @Inject constructor(
         if (!permanently && usesRecycleBin(items)) {
             viewModelScope.launch {
                 try {
-                    recycleBin.trash(items)
+                    val entries = recycleBin.trashEntries(items)
                     library.onDeleted(items.map { it.id })
-                    message("Moved ${if (items.size == 1) "\"${items[0].name}\"" else Formatters.count(items.size, "item")} to the Recycle Bin.")
+                    com.webtecit.filepilot.core.designsystem.Feedback.deleted(
+                        "Moved to Recycle Bin",
+                        if (items.size == 1) items[0].name else Formatters.count(items.size, "item"),
+                        undo = {
+                            recycleBin.undo(entries)
+                            refresh()
+                        },
+                    )
                 } catch (e: Exception) {
                     message(e.userMessage())
                 }

@@ -2,6 +2,7 @@ package com.webtecit.filepilot
 
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -38,7 +39,15 @@ class FirstLaunchTest {
         rule.waitForText("Clean, secure, analyze")
         rule.onNodeWithText("Get started").performClick()
 
-        // No permission screen on the way in: Home opens directly.
+        // One file-access page follows the intro unless access is already on; "Not now" skips it.
+        rule.waitUntil(30_000) {
+            rule.onAllNodesWithText("Not now").fetchSemanticsNodes().isNotEmpty() ||
+                rule.onAllNodesWithText("Categories").fetchSemanticsNodes().isNotEmpty()
+        }
+        if (rule.onAllNodesWithText("Not now").fetchSemanticsNodes().isNotEmpty()) {
+            rule.onNodeWithText("Allow file access").assertExists()
+            rule.onNodeWithText("Not now").performClick()
+        }
         rule.waitForText("Categories")
         rule.waitForText("Internal storage")
     }

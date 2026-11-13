@@ -64,12 +64,13 @@ fun CleanerScreen(onBack: () -> Unit, onPreview: (String) -> Unit = {}, viewMode
     LaunchedEffect(Unit) { if (!state.scanned && !state.scanning) viewModel.scan() }
     var confirm by remember { mutableStateOf(false) }
     var permanentConfirm by remember { mutableStateOf(false) }
+    val leave = com.webtecit.filepilot.core.tasks.rememberKeepRunningGuard(state.scanning, "The scan", onLeave = onBack, onStop = viewModel::stopScan)
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Cleaner") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
+                navigationIcon = { IconButton(onClick = leave) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back") } },
                 actions = { if (!state.scanning) IconButton(onClick = viewModel::scan) { Icon(Icons.Rounded.Refresh, "Scan again") } },
             )
         },

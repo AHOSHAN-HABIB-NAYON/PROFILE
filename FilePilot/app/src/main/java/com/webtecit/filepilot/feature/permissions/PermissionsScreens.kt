@@ -2,6 +2,25 @@
 
 package com.webtecit.filepilot.feature.permissions
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.VerifiedUser
+import androidx.compose.material3.Surface
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.runtime.getValue
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -14,9 +33,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -38,10 +55,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -126,6 +141,12 @@ fun PermissionsScreen(setup: Boolean, onDone: () -> Unit, viewModel: Permissions
         }
     }
 
+    if (setup) {
+        // Once access is on (the user comes back from Android's settings page), carry on to Home.
+        androidx.compose.runtime.LaunchedEffect(granted) { if (granted) viewModel.markSetupDone(onDone) }
+        FileAccessSetup(onAllow = ::requestStorage, onSkip = { viewModel.markSetupDone(onDone) })
+        return
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -223,4 +244,79 @@ private fun Context.findActivity(): Activity? {
         c = c.baseContext
     }
     return null
+}
+
+
+/** The single permission page after the intro: only file access, explained plainly. */
+@Composable
+private fun FileAccessSetup(onAllow: () -> Unit, onSkip: () -> Unit) {
+    val animations = com.webtecit.filepilot.core.designsystem.LocalAnimationsEnabled.current
+    val t = androidx.compose.animation.core.rememberInfiniteTransition(label = "float")
+    val bob by t.animateFloat(
+        0f, if (animations) 1f else 0f,
+        androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(1800), androidx.compose.animation.core.RepeatMode.Reverse),
+        label = "bob",
+    )
+    val blue = com.webtecit.filepilot.core.designsystem.Palette.Blue
+    Column(
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding().navigationBarsPadding().padding(horizontal = 22.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), horizontalAlignment = Alignment.CenterHorizontally) {
+            Spacer(Modifier.height(48.dp))
+            Box(
+                Modifier.size(150.dp).clip(RoundedCornerShape(40.dp))
+                    .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(blue.copy(alpha = 0.14f), blue.copy(alpha = 0.04f)))),
+                contentAlignment = Alignment.Center,
+            ) {
+                Surface(
+                    shape = RoundedCornerShape(26.dp), color = Color.Transparent, shadowElevation = 10.dp,
+                    modifier = Modifier.graphicsLayer { translationY = -6.dp.toPx() * bob },
+                ) {
+                    Box(
+                        Modifier.size(84.dp).background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(0xFF3B7BFF), com.webtecit.filepilot.core.designsystem.Palette.Navy))),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(Icons.Rounded.FolderOpen, null, tint = Color.White, modifier = Modifier.size(46.dp)) }
+                }
+                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerLowest, shadowElevation = 4.dp, modifier = Modifier.align(Alignment.TopEnd).padding(top = 14.dp, end = 4.dp)) {
+                    Icon(Icons.Rounded.VerifiedUser, null, tint = com.webtecit.filepilot.core.designsystem.Palette.Green, modifier = Modifier.padding(8.dp).size(22.dp))
+                }
+            }
+            Spacer(Modifier.height(26.dp))
+            Text("Allow file access", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "FilePilot needs All files access to show, copy, move and clean your files. Nothing leaves your phone.",
+                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(22.dp))
+            AppCard(contentPadding = PaddingValues(vertical = 4.dp)) {
+                SetupLine(Icons.Rounded.FolderOpen, com.webtecit.filepilot.core.designsystem.Palette.Blue, "Browse every folder", "Internal storage, SD card, USB")
+                SetupLine(Icons.Rounded.Lock, com.webtecit.filepilot.core.designsystem.Palette.Green, "Private and offline", "No account, no uploads")
+            }
+        }
+        Button(
+            onClick = onAllow,
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth().height(52.dp).testTag("allow_access"),
+        ) {
+            Icon(Icons.Rounded.CheckCircle, null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Allow access", fontWeight = FontWeight.SemiBold)
+        }
+        TextButton(onClick = onSkip, modifier = Modifier.fillMaxWidth().height(48.dp).testTag("permissions_continue")) { Text("Not now") }
+        Spacer(Modifier.height(8.dp))
+    }
+}
+
+@Composable
+private fun SetupLine(icon: ImageVector, tint: Color, title: String, subtitle: String) {
+    Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        IconTile(icon, tint, size = 40.dp)
+        Spacer(Modifier.width(14.dp))
+        Column {
+            Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
 }

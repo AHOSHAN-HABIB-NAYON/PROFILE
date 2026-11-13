@@ -125,6 +125,11 @@ class CleanerEngine @Inject constructor(
         }
     }
 
+    /** Stops a running scan; what was found so far is dropped. */
+    fun stopScan() {
+        job?.cancel()
+    }
+
     private fun item(f: File, group: CleanGroup, note: String = "") =
         CleanItem(f.absolutePath, f.name, if (f.isDirectory) 0 else f.length(), f.isDirectory, group, note)
 
@@ -153,10 +158,16 @@ class CleanerEngine @Inject constructor(
             val (empty, rest) = asItems.partition { it.isDirectory && chosen.first { c -> c.path == it.id }.group == CleanGroup.EMPTY }
             try {
                 withContext(io) { empty.forEach { File(it.id).deleteRecursively() } }
-                if (useBin) recycleBin.trash(rest) else if (rest.isNotEmpty()) operations.delete(rest)
-                _events.send(UiEvent.Message(
-                    "Freed ${Formatters.size(chosen.sumOf { it.size })}" + if (useBin) ". Items are kept in the Recycle Bin for 30 days." else ".",
-                ))
+                val freed = "Freed ${Formatters.size(chosen.sumOf { it.size })}"
+                if (useBin) {
+                    val entries = recycleBin.trashEntries(rest)
+                    com.webtecit.filepilot.core.designsystem.Feedback.deleted("Cleaned", "$freed · kept in the Recycle Bin", undo = { recycleBin.undo(entries) })
+                } else if (rest.isNotEmpty()) {
+                    // The delete engine shows its own "Deleted" confirmation when it finishes.
+                    operations.delete(rest)
+                } else {
+                    com.webtecit.filepilot.core.designsystem.Feedback.deleted("Cleaned", freed)
+                }
             } catch (e: Exception) {
                 _events.send(UiEvent.Message(e.userMessage()))
             }
@@ -171,6 +182,7 @@ class CleanerViewModel @Inject constructor(private val engine: CleanerEngine) : 
     val state = engine.state
     val events = engine.events
     fun scan() = engine.scan()
+    fun stopScan() = engine.stopScan()
     fun toggle(path: String) = engine.toggle(path)
     fun toggleGroup(group: CleanGroup, select: Boolean) = engine.toggleGroup(group, select)
     fun clean(permanently: Boolean) = engine.clean(permanently)
