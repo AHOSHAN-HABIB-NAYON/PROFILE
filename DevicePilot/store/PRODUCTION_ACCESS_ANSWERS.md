@@ -87,3 +87,27 @@ DevicePilot is a device manager. Its core feature is the Apps Manager, which lis
 - Ask each tester for one or two lines of feedback and save the messages — you need them for Part 1.
 - If you change anything after feedback, upload a new build to the closed track during the test; it shows Google the test was used.
 - If production access is refused, Google says why; fix it, keep testing for 14 more days, and apply again.
+
+---
+
+## Google Play support / appeal form ("Your app's core functionality", "User Data, 3rd Party Code, and SDKs")
+
+| Question | Answer |
+|---|---|
+| Developer email address | The email of your Play developer account (as filled in) |
+| Developer/Business Name | Exactly the developer name shown in Play Console (Settings → Developer account) |
+| Did somebody register this developer account on your behalf? | `No. I registered and manage this developer account myself.` |
+| Does your app function differently based on geolocation or language? | `No. DevicePilot works the same in every country and language. It is in English and reads information only from the user's own device.` |
+| Proof of Permission for intellectual property | **No third party intellectual property appears in my app** |
+| Login wall | **I do not have any content locked behind a login wall.** |
+| Video demo | Upload the same screen recording (MP4) showing Home, Device details, Battery, Boost, Cool down, Cleaner and Apps |
+
+**What SDKs does your app use and why?**
+```
+DevicePilot uses no third-party SDKs: no ads, analytics, crash-reporting, social or payment SDKs. It uses only Google's official Android Jetpack (AndroidX) libraries and Kotlin: Jetpack Compose and Material 3 for the user interface, Navigation and Lifecycle for screens, DataStore to save the user's settings on the device, WorkManager for optional on-device alerts, Biometric for the optional fingerprint app lock, SplashScreen and ProfileInstaller for fast start-up, and Kotlin Coroutines for background work.
+```
+
+**Explain how you ensure that any 3rd party code and SDKs used in your app comply with our policies.**
+```
+The app contains no third-party SDKs; every library is an official AndroidX library published by Google or the Kotlin library by JetBrains. We keep the dependency list minimal, review it before every release and use current stable versions. None of these libraries collect or send user data: DevicePilot has no account, no ads, no analytics and no server, and all information is processed and stored only on the user's device, as stated in our privacy policy and Data safety form.
+```
