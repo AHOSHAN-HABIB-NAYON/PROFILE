@@ -295,6 +295,97 @@ object MediaTools {
         bmp.recycle()
     }
 
+    /**
+     * Joins images top to bottom (long screenshot). All are scaled to the same width; very tall
+     * results are scaled down so they fit in memory. Returns the size written.
+     */
+    suspend fun stitchVertical(images: List<() -> InputStream>, out: OutputStream, format: ImageFormat, quality: Int, width: Int = 1440): Pair<Int, Int> {
+        require(images.size >= 2) { "Choose at least two images." }
+        val bitmaps = ArrayList<Bitmap>()
+        try {
+            for ((i, open) in images.withIndex()) {
+                currentCoroutineContext().ensureActive()
+                bitmaps += decode(open, width * 2) ?: throw IllegalArgumentException("Image ${i + 1} couldn't be read.")
+            }
+            val target = minOf(width, bitmaps.maxOf { it.width })
+            var heights = bitmaps.map { (it.height * target.toFloat() / it.width).toInt().coerceAtLeast(1) }
+            var w = target
+            val maxHeight = 30_000
+            if (heights.sum() > maxHeight) {
+                val k = maxHeight.toFloat() / heights.sum()
+                w = (w * k).toInt().coerceAtLeast(1)
+                heights = heights.map { (it * k).toInt().coerceAtLeast(1) }
+            }
+            val result = Bitmap.createBitmap(w, heights.sum(), Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(result)
+            canvas.drawColor(Color.WHITE)
+            var y = 0f
+            val paint = Paint(Paint.FILTER_BITMAP_FLAG)
+            bitmaps.forEachIndexed { i, b ->
+                canvas.drawBitmap(b, null, RectF(0f, y, w.toFloat(), y + heights[i]), paint)
+                y += heights[i]
+            }
+            result.compress(format.compress, quality.coerceIn(1, 100), out)
+            val size = result.width to result.height
+            result.recycle()
+            return size
+        } finally {
+            bitmaps.forEach { it.recycle() }
+        }
+    }
+
+    /** Puts images in a square grid, each cropped to fill its cell. */
+    suspend fun collage(images: List<() -> InputStream>, out: OutputStream, columns: Int, spacing: Int, background: Int, side: Int = 2048) {
+        require(images.size >= 2) { "Choose at least two images." }
+        val rows = (images.size + columns - 1) / columns
+        val cell = ((side - spacing * (columns + 1)) / columns).coerceAtLeast(16)
+        val height = rows * cell + spacing * (rows + 1)
+        val result = Bitmap.createBitmap(side, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(result)
+        canvas.drawColor(background)
+        val paint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
+        try {
+            images.forEachIndexed { i, open ->
+                currentCoroutineContext().ensureActive()
+                val b = decode(open, cell * 2) ?: throw IllegalArgumentException("Image ${i + 1} couldn't be read.")
+                val col = i % columns
+                val row = i / columns
+                val left = spacing + col * (cell + spacing)
+                val top = spacing + row * (cell + spacing)
+                // centre crop to a square
+                val s = minOf(b.width, b.height)
+                val src = android.graphics.Rect((b.width - s) / 2, (b.height - s) / 2, (b.width - s) / 2 + s, (b.height - s) / 2 + s)
+                canvas.drawBitmap(b, src, RectF(left.toFloat(), top.toFloat(), (left + cell).toFloat(), (top + cell).toFloat()), paint)
+                b.recycle()
+            }
+            result.compress(Bitmap.CompressFormat.JPEG, 92, out)
+        } finally {
+            result.recycle()
+        }
+    }
+
+    /** Removes GPS location (and the camera serial number) from a photo, in place. Returns true if it had a location. */
+    fun removeLocation(pfd: ParcelFileDescriptor): Boolean {
+        val exif = androidx.exifinterface.media.ExifInterface(pfd.fileDescriptor)
+        val had = exif.latLong != null
+        val tags = listOf(
+            androidx.exifinterface.media.ExifInterface.TAG_GPS_LATITUDE,
+            androidx.exifinterface.media.ExifInterface.TAG_GPS_LATITUDE_REF,
+            androidx.exifinterface.media.ExifInterface.TAG_GPS_LONGITUDE,
+            androidx.exifinterface.media.ExifInterface.TAG_GPS_LONGITUDE_REF,
+            androidx.exifinterface.media.ExifInterface.TAG_GPS_ALTITUDE,
+            androidx.exifinterface.media.ExifInterface.TAG_GPS_ALTITUDE_REF,
+            androidx.exifinterface.media.ExifInterface.TAG_GPS_TIMESTAMP,
+            androidx.exifinterface.media.ExifInterface.TAG_GPS_DATESTAMP,
+            androidx.exifinterface.media.ExifInterface.TAG_GPS_PROCESSING_METHOD,
+            androidx.exifinterface.media.ExifInterface.TAG_GPS_AREA_INFORMATION,
+            androidx.exifinterface.media.ExifInterface.TAG_BODY_SERIAL_NUMBER,
+        )
+        tags.forEach { exif.setAttribute(it, null) }
+        exif.saveAttributes()
+        return had
+    }
+
     /** Width and height of an image without loading it. */
     fun imageSize(open: () -> InputStream): Pair<Int, Int>? {
         val o = BitmapFactory.Options().apply { inJustDecodeBounds = true }

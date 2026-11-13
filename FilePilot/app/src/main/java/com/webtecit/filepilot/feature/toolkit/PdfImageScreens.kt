@@ -75,6 +75,9 @@ enum class FileTool(val title: String) {
     COMPRESS_IMAGE("Compress images"),
     RESIZE_IMAGE("Resize images"),
     CONVERT_IMAGE("Convert images"),
+    STITCH("Long screenshot"),
+    COLLAGE("Collage"),
+    REMOVE_LOCATION("Remove photo location"),
 }
 
 @Composable
@@ -86,6 +89,8 @@ fun FileToolScreen(tool: FileTool, onBack: () -> Unit, onOpenFolder: (String) ->
         FileTool.SPLIT_PDF -> SplitPdf(onBack, onOpenFolder, viewModel)
         FileTool.PDF_TO_IMAGES -> PdfToImages(onBack, onOpenFolder, viewModel)
         FileTool.COMPRESS_IMAGE, FileTool.RESIZE_IMAGE, FileTool.CONVERT_IMAGE -> ImageTool(tool, onBack, onOpenFolder, viewModel)
+        FileTool.STITCH, FileTool.COLLAGE -> CombineImages(tool, onBack, onOpenFolder, viewModel)
+        FileTool.REMOVE_LOCATION -> RemoveLocation(onBack, onOpenFolder, viewModel)
     }
 }
 
@@ -509,5 +514,155 @@ private fun ImageTool(tool: FileTool, onBack: () -> Unit, onOpenFolder: (String)
             }
         }
         Text("Saved in Pictures/FilePilot", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+// ----- Long screenshot / collage --------------------------------------------------------------
+
+@Composable
+private fun CombineImages(tool: FileTool, onBack: () -> Unit, onOpenFolder: (String) -> Unit, viewModel: ToolkitViewModel) {
+    val context = LocalContext.current
+    val run by viewModel.run.collectAsStateWithLifecycle()
+    val images = remember { mutableStateListOf<Uri>() }
+    var columns by remember { mutableIntStateOf(2) }
+    var spacing by remember { mutableIntStateOf(16) }
+    val stitch = tool == FileTool.STITCH
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris -> images.addAll(uris.filterNot { it in images }) }
+    ToolScaffold(
+        title = tool.title, onBack = onBack, run = run,
+        actionLabel = if (stitch) "Join ${images.size} images" else "Make collage", actionIcon = Icons.Rounded.Save,
+        actionEnabled = images.size >= 2,
+        onAction = {
+            val list = images.toList()
+            val cols = columns
+            val gap = spacing
+            viewModel.start(if (stitch) "Joining images" else "Making collage", if (stitch) "Long image saved" else "Collage saved") { report ->
+                report(null, "Drawing…")
+                val out = MediaTools.uniqueFile(ToolOutput.pictures(), if (stitch) "Long_screenshot" else "Collage", "jpg")
+                val openers = list.map { u -> { context.contentResolver.openInputStream(u) ?: error("An image can't be opened.") } }
+                try {
+                    out.outputStream().use { stream ->
+                        if (stitch) MediaTools.stitchVertical(openers, stream, ImageFormat.JPG, 92)
+                        else MediaTools.collage(openers, stream, cols, gap, android.graphics.Color.WHITE)
+                    }
+                } catch (e: Throwable) {
+                    out.delete()
+                    throw e
+                }
+                listOf(out)
+            }
+        },
+        onOpenFolder = onOpenFolder,
+    ) {
+        if (images.isEmpty()) {
+            PickArea(
+                "Choose images",
+                if (stitch) "Screenshots are joined top to bottom, in order" else "Two or more photos in a grid",
+                Icons.Rounded.AddPhotoAlternate,
+            ) { picker.launch("image/*") }
+        } else {
+            Text("${images.size} images · use the arrows to change the order", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                images.forEachIndexed { index, uri ->
+                    Box(Modifier.size(width = 86.dp, height = 120.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
+                        AsyncImage(model = uri, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(width = 86.dp, height = 120.dp))
+                        Text(
+                            "${index + 1}", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color.Black,
+                            modifier = Modifier.padding(4.dp).clip(RoundedCornerShape(6.dp)).background(Color.White).padding(horizontal = 5.dp),
+                        )
+                        Row(Modifier.align(Alignment.BottomCenter).fillMaxWidth().background(Color.Black.copy(alpha = 0.45f)), horizontalArrangement = Arrangement.SpaceBetween) {
+                            SmallIcon(Icons.AutoMirrored.Rounded.KeyboardArrowLeft, "Move earlier", index > 0) { images.add(index - 1, images.removeAt(index)) }
+                            SmallIcon(Icons.Rounded.Close, "Remove", true) { images.removeAt(index) }
+                            SmallIcon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, "Move later", index < images.lastIndex) { images.add(index + 1, images.removeAt(index)) }
+                        }
+                    }
+                }
+            }
+            androidx.compose.material3.TextButton(onClick = { picker.launch("image/*") }) { Text("Add more") }
+        }
+        if (!stitch) {
+            OptionCard("Columns") {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(2, 3, 4).forEach { c -> FilterChip(selected = columns == c, onClick = { columns = c }, label = { Text("$c") }) }
+                }
+            }
+            OptionCard("Spacing") {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(0 to "None", 16 to "Thin", 40 to "Wide").forEach { (v, l) -> FilterChip(selected = spacing == v, onClick = { spacing = v }, label = { Text(l) }) }
+                }
+            }
+        }
+        Text("Saved in Pictures/FilePilot", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+// ----- Remove location --------------------------------------------------------------------------
+
+@Composable
+private fun RemoveLocation(onBack: () -> Unit, onOpenFolder: (String) -> Unit, viewModel: ToolkitViewModel) {
+    val context = LocalContext.current
+    val run by viewModel.run.collectAsStateWithLifecycle()
+    val images = remember { mutableStateListOf<Uri>() }
+    // Opening documents (not the gallery picker) lets the app write the cleaned details back into the same file.
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris -> images.addAll(uris.filterNot { it in images }) }
+    var summary by remember { mutableStateOf<String?>(null) }
+    ToolScaffold(
+        title = "Remove photo location", onBack = onBack, run = run,
+        actionLabel = "Clean ${images.size} photo${if (images.size == 1) "" else "s"}", actionIcon = Icons.Rounded.Save, actionEnabled = images.isNotEmpty(),
+        onAction = {
+            val list = images.toList()
+            summary = null
+            viewModel.start("Removing locations", "Locations removed") { report ->
+                var cleaned = 0
+                var hadLocation = 0
+                val copies = ArrayList<java.io.File>()
+                list.forEachIndexed { i, uri ->
+                    val inPlace = runCatching {
+                        context.contentResolver.openFileDescriptor(uri, "rw")!!.use { pfd -> if (MediaTools.removeLocation(pfd)) hadLocation++ }
+                    }.isSuccess
+                    if (inPlace) {
+                        cleaned++
+                    } else {
+                        // The file can't be changed (read-only place): save a clean copy instead.
+                        val base = displayName(context, uri).substringBeforeLast('.')
+                        val out = MediaTools.uniqueFile(ToolOutput.pictures(), base + "_clean", "jpg")
+                        out.outputStream().use { stream ->
+                            MediaTools.processImage({ context.contentResolver.openInputStream(uri) ?: error("A photo can't be opened.") }, stream, ImageFormat.JPG, 95, 0)
+                        }
+                        copies += out
+                    }
+                    report((i + 1f) / list.size, "${i + 1} of ${list.size}")
+                }
+                summary = buildString {
+                    append("$cleaned cleaned in place")
+                    if (hadLocation > 0) append(" ($hadLocation had a location)")
+                    if (copies.isNotEmpty()) append(" · ${copies.size} saved as clean copies")
+                }
+                copies
+            }
+        },
+        onOpenFolder = onOpenFolder,
+    ) {
+        if (images.isEmpty()) {
+            PickArea("Choose photos", "GPS location is removed from the photo details", Icons.Rounded.AddPhotoAlternate) {
+                picker.launch(arrayOf("image/jpeg", "image/png", "image/webp"))
+            }
+        } else {
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                images.forEach { uri ->
+                    AsyncImage(model = uri, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(72.dp).clip(RoundedCornerShape(12.dp)))
+                }
+            }
+            androidx.compose.material3.TextButton(onClick = { picker.launch(arrayOf("image/jpeg", "image/png", "image/webp")) }) { Text("Add more") }
+        }
+        summary?.let {
+            Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)) {
+                Text(it, modifier = Modifier.fillMaxWidth().padding(12.dp))
+            }
+        }
+        Text(
+            "Photos keep the same picture and file; only the location and the camera serial number are removed. Share them safely afterwards.",
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }

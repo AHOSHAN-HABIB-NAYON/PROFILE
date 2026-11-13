@@ -305,6 +305,9 @@ fun toolRoute(tool: Tool): Any = when (tool) {
     Tool.RESIZE_IMAGE -> FileToolRoute(com.webtecit.filepilot.feature.toolkit.FileTool.RESIZE_IMAGE.name)
     Tool.CONVERT_IMAGE -> FileToolRoute(com.webtecit.filepilot.feature.toolkit.FileTool.CONVERT_IMAGE.name)
     Tool.QR_SCAN -> QrScanRoute
+    Tool.STITCH -> FileToolRoute(com.webtecit.filepilot.feature.toolkit.FileTool.STITCH.name)
+    Tool.COLLAGE -> FileToolRoute(com.webtecit.filepilot.feature.toolkit.FileTool.COLLAGE.name)
+    Tool.REMOVE_LOCATION -> FileToolRoute(com.webtecit.filepilot.feature.toolkit.FileTool.REMOVE_LOCATION.name)
     Tool.DEV_UTILS -> DevUtilsRoute(com.webtecit.filepilot.feature.toolkit.DevUtil.JSON.name)
     Tool.PASSWORD -> DevUtilsRoute(com.webtecit.filepilot.feature.toolkit.DevUtil.PASSWORD.name)
     Tool.ORGANIZE -> OrganizeRoute()

@@ -18,6 +18,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.LocationOff
+import androidx.compose.material.icons.rounded.GridView
+import androidx.compose.material.icons.rounded.ViewDay
 import androidx.compose.material.icons.rounded.AutoFixHigh
 import androidx.compose.material.icons.rounded.DataObject
 import androidx.compose.material.icons.rounded.Password
@@ -78,6 +81,9 @@ enum class Tool(val label: String, val description: String, val icon: ImageVecto
     COMPRESS_IMAGE("Compress", "Smaller photos, same look", Icons.Rounded.Compress, 0xFF1A9D6B, "PDF & Images"),
     RESIZE_IMAGE("Resize", "Change photo size", Icons.Rounded.PhotoSizeSelectLarge, 0xFF0E93B0, "PDF & Images"),
     CONVERT_IMAGE("JPG⇄PNG", "JPG, PNG or WEBP", Icons.Rounded.SwapHoriz, 0xFF4B5470, "PDF & Images"),
+    STITCH("Long screenshot", "Join screenshots into one tall image", Icons.Rounded.ViewDay, 0xFF2F6BFF, "PDF & Images"),
+    COLLAGE("Collage", "Photos in a neat grid", Icons.Rounded.GridView, 0xFFE0457B, "PDF & Images"),
+    REMOVE_LOCATION("No location", "Remove GPS location from photos", Icons.Rounded.LocationOff, 0xFF1A9D6B, "PDF & Images"),
     QR_SCAN("QR scan", "Scan QR codes and barcodes", Icons.Rounded.QrCodeScanner, 0xFF7C4DFF, "QR"),
     QR_CREATE("QR maker", "Links, WiFi, contacts, text", Icons.Rounded.QrCode2, 0xFFE0457B, "QR"),
     PASSWORD("Password", "Strong passwords, made offline", Icons.Rounded.Password, 0xFF7C4DFF, "Security"),
@@ -108,6 +114,9 @@ private val Tool.short: String
         Tool.RESIZE_IMAGE -> "Resize"
         Tool.CONVERT_IMAGE -> "JPG⇄PNG"
         Tool.QR_SCAN -> "QR scan"
+        Tool.STITCH -> "Long shot"
+        Tool.COLLAGE -> "Collage"
+        Tool.REMOVE_LOCATION -> "No location"
         Tool.QR_CREATE -> "QR maker"
         Tool.ANALYZER -> "Analyzer"
         Tool.CLEANER -> "Cleaner"
@@ -137,6 +146,9 @@ private val Tool.color: Color
         Tool.RESIZE_IMAGE -> Palette.Cyan
         Tool.CONVERT_IMAGE -> Palette.Slate
         Tool.QR_SCAN -> Palette.Purple
+        Tool.STITCH -> Palette.Blue
+        Tool.COLLAGE -> Palette.Pink
+        Tool.REMOVE_LOCATION -> Palette.Green
         Tool.QR_CREATE -> Palette.Pink
         Tool.ANALYZER -> Palette.Purple
         Tool.CLEANER -> Palette.Green

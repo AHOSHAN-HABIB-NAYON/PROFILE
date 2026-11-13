@@ -35,7 +35,7 @@ An offline Android file manager and developer toolkit by **Webtecit Apps**
 | Storage tools | Folder size (drill-down), Large files, Screenshots, WhatsApp media size, Smart organize |
 | Archives | ZIP / 7z / TAR.GZ / TAR; Store, Fast, Normal, Maximum; AES-256 ZIP passwords; split ZIP; test an archive |
 | PDF | Image to PDF, Text to PDF, Merge, Split / pick pages, Rotate, PDF to images |
-| Images | Compress, resize, convert (JPG, PNG, WEBP) |
+| Images | Compress, resize, convert (JPG, PNG, WEBP); long screenshot (join images top to bottom); collage; remove GPS location from photos |
 | QR | QR maker (link, text, WiFi, phone, email, SMS, contact, barcode, colours, logo); scanner with camera or a picture, torch, history |
 | Developer | Find & replace with "3 / 12" position, preserve case, select all matches, Undo after Replace all; save-before-leaving dialog; JSON, Base64, URL, hash, JWT, UUID, timestamp, colour, number bases, regex, text tools, file-size units; password generator |
 
@@ -46,7 +46,7 @@ An offline Android file manager and developer toolkit by **Webtecit Apps**
 - Root explorer: the terminal uses `su` when available; there is no separate root file browser.
 - Merged, split and rotated PDFs store pages as images (Android has no built-in PDF editing), so their text can't be selected.
 - The QR scanner reads codes the ZXing library supports (QR, Code 128, EAN, UPC and others). WiFi codes are shown with a "copy password and open WiFi settings" action; Android doesn't let apps join a network silently.
-- Not built yet: document scanner with edge detection, video compress/trim, GIF maker, OCR, collage, long-screenshot stitching, dual pane and tabs, Git viewer, project templates, EPUB/CSV viewers, PDF password lock and signing, local version history in the editor (unsaved work is kept as a draft instead).
+- Not built yet: document scanner with edge detection, video compress/trim, GIF maker, OCR, dual pane and tabs, Git viewer, project templates, EPUB/CSV viewers, PDF password lock and signing, local version history in the editor (unsaved work is kept as a draft instead).
 
 ## Stage 1 features
 
