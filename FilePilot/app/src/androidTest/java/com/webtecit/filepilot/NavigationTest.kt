@@ -40,7 +40,7 @@ class NavigationTest {
         rule.onNodeWithTag("tab_Files").performClick()
         rule.waitForText("Add SD card, USB drive or folder")
         rule.onNodeWithTag("tab_Tools").performClick()
-        rule.waitForText("Terminal")
+        rule.waitForText("Everything works offline")
         rule.onNodeWithTag("tab_Library").performClick()
         rule.waitForText("No favorites yet")
         rule.onNodeWithTag("tab_Settings").performClick()

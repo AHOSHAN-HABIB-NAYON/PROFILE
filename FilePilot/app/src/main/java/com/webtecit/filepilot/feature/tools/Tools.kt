@@ -18,6 +18,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.DataObject
+import androidx.compose.material.icons.rounded.Password
+import androidx.compose.material.icons.rounded.Forum
+import androidx.compose.material.icons.rounded.Screenshot
+import androidx.compose.material.icons.rounded.Inventory2
+import androidx.compose.material.icons.rounded.QrCode2
+import androidx.compose.material.icons.rounded.QrCodeScanner
+import androidx.compose.material.icons.rounded.SwapHoriz
+import androidx.compose.material.icons.rounded.PhotoSizeSelectLarge
+import androidx.compose.material.icons.rounded.Compress
+import androidx.compose.material.icons.rounded.PhotoLibrary
+import androidx.compose.material.icons.rounded.ContentCut
+import androidx.compose.material.icons.rounded.CallMerge
+import androidx.compose.material.icons.automirrored.rounded.TextSnippet
+import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.Code
@@ -50,9 +65,24 @@ enum class Tool(val label: String, val description: String, val icon: ImageVecto
     ANALYZER("Storage Analyzer", "Folders and types using your space", Icons.Rounded.DonutLarge, 0xFFEA580C, "Storage"),
     CLEANER("Cleaner", "Junk, duplicates and leftovers", Icons.Rounded.CleaningServices, 0xFF0369A1, "Storage"),
     RECYCLE_BIN("Recycle Bin", "Restore deleted files", Icons.Rounded.DeleteSweep, 0xFF64748B, "Storage"),
+    LARGE_FILES("Large files", "Files over 50 MB, biggest first", Icons.Rounded.Inventory2, 0xFFE88A12, "Storage"),
+    SCREENSHOTS("Screenshots", "Review and clear old screenshots", Icons.Rounded.Screenshot, 0xFF0E93B0, "Storage"),
+    WHATSAPP_MEDIA("WhatsApp media", "See what chats' photos and videos take", Icons.Rounded.Forum, 0xFF1A9D6B, "Storage"),
+    IMAGE_TO_PDF("Image to PDF", "Photos into one PDF", Icons.Rounded.PictureAsPdf, 0xFFE0457B, "PDF & Images"),
+    TEXT_TO_PDF("Text to PDF", "Type or paste text, save as PDF", Icons.AutoMirrored.Rounded.TextSnippet, 0xFF2F6BFF, "PDF & Images"),
+    MERGE_PDF("Merge PDF", "Join PDFs in any order", Icons.Rounded.CallMerge, 0xFFE88A12, "PDF & Images"),
+    SPLIT_PDF("Split PDF", "Pick, split or rotate pages", Icons.Rounded.ContentCut, 0xFF0E93B0, "PDF & Images"),
+    PDF_TO_IMAGES("PDF to Images", "Every page as a picture", Icons.Rounded.PhotoLibrary, 0xFF7C4DFF, "PDF & Images"),
+    COMPRESS_IMAGE("Compress", "Smaller photos, same look", Icons.Rounded.Compress, 0xFF1A9D6B, "PDF & Images"),
+    RESIZE_IMAGE("Resize", "Change photo size", Icons.Rounded.PhotoSizeSelectLarge, 0xFF0E93B0, "PDF & Images"),
+    CONVERT_IMAGE("JPG⇄PNG", "JPG, PNG or WEBP", Icons.Rounded.SwapHoriz, 0xFF4B5470, "PDF & Images"),
+    QR_SCAN("QR scan", "Scan QR codes and barcodes", Icons.Rounded.QrCodeScanner, 0xFF7C4DFF, "QR"),
+    QR_CREATE("QR maker", "Links, WiFi, contacts, text", Icons.Rounded.QrCode2, 0xFFE0457B, "QR"),
+    PASSWORD("Password", "Strong passwords, made offline", Icons.Rounded.Password, 0xFF7C4DFF, "Security"),
     SECURE_FOLDER("Secure Folder", "Encrypted, PIN-protected files", Icons.Rounded.Lock, 0xFFDB2777, "Security"),
     CODE_STUDIO("Code Studio", "Edit code with tabs and highlighting", Icons.Rounded.Code, 0xFF0D9488, "Developer"),
     TERMINAL("Terminal", "Shell commands, root when available", Icons.Rounded.Terminal, 0xFF111827, "Developer"),
+    DEV_UTILS("Dev utilities", "JSON, Base64, hash, regex, colours…", Icons.Rounded.DataObject, 0xFFE88A12, "Developer"),
     TEXT_SEARCH("Search in files", "Find text inside documents and code", Icons.Rounded.FindInPage, 0xFF7C3AED, "Developer"),
     HTML_PROJECTS("HTML Projects", "Build and run websites offline", Icons.Rounded.Language, 0xFF2563EB, "Developer"),
 }
@@ -61,6 +91,21 @@ enum class Tool(val label: String, val description: String, val icon: ImageVecto
 private val Tool.short: String
     get() = when (this) {
         Tool.FOLDER_SIZE -> "Folder size"
+        Tool.LARGE_FILES -> "Large files"
+        Tool.SCREENSHOTS -> "Screenshots"
+        Tool.WHATSAPP_MEDIA -> "WhatsApp"
+        Tool.PASSWORD -> "Password"
+        Tool.DEV_UTILS -> "Dev utilities"
+        Tool.IMAGE_TO_PDF -> "Image→PDF"
+        Tool.TEXT_TO_PDF -> "Text→PDF"
+        Tool.MERGE_PDF -> "Merge PDF"
+        Tool.SPLIT_PDF -> "Split PDF"
+        Tool.PDF_TO_IMAGES -> "PDF→Images"
+        Tool.COMPRESS_IMAGE -> "Compress"
+        Tool.RESIZE_IMAGE -> "Resize"
+        Tool.CONVERT_IMAGE -> "JPG⇄PNG"
+        Tool.QR_SCAN -> "QR scan"
+        Tool.QR_CREATE -> "QR maker"
         Tool.ANALYZER -> "Analyzer"
         Tool.CLEANER -> "Cleaner"
         Tool.RECYCLE_BIN -> "Recycle Bin"
@@ -74,6 +119,21 @@ private val Tool.short: String
 private val Tool.color: Color
     get() = when (this) {
         Tool.FOLDER_SIZE -> Palette.Blue
+        Tool.LARGE_FILES -> Palette.Orange
+        Tool.SCREENSHOTS -> Palette.Cyan
+        Tool.WHATSAPP_MEDIA -> Palette.Green
+        Tool.PASSWORD -> Palette.Purple
+        Tool.DEV_UTILS -> Palette.Orange
+        Tool.IMAGE_TO_PDF -> Palette.Pink
+        Tool.TEXT_TO_PDF -> Palette.Blue
+        Tool.MERGE_PDF -> Palette.Orange
+        Tool.SPLIT_PDF -> Palette.Cyan
+        Tool.PDF_TO_IMAGES -> Palette.Purple
+        Tool.COMPRESS_IMAGE -> Palette.Green
+        Tool.RESIZE_IMAGE -> Palette.Cyan
+        Tool.CONVERT_IMAGE -> Palette.Slate
+        Tool.QR_SCAN -> Palette.Purple
+        Tool.QR_CREATE -> Palette.Pink
         Tool.ANALYZER -> Palette.Purple
         Tool.CLEANER -> Palette.Green
         Tool.RECYCLE_BIN -> Palette.Pink
@@ -88,7 +148,7 @@ private val Tool.color: Color
 @Composable
 fun ToolGrid(tools: List<Tool>, onTool: (Tool) -> Unit, columns: Int = 3) {
     EqualGrid(tools, columns) { tool, m ->
-        GridBox(tool.short, tool.icon, tool.color, m, height = 92.dp) { onTool(tool) }
+        GridBox(tool.short, tool.icon, tool.color, m, height = 88.dp) { onTool(tool) }
     }
 }
 
@@ -113,7 +173,7 @@ fun ToolsScreen(onTool: (Tool) -> Unit) {
                             group, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(start = 6.dp, top = 10.dp, bottom = 8.dp),
                         )
-                        ToolGrid(tools, onTool)
+                        ToolGrid(tools, onTool, columns = 4)
                     }
                 }
             }

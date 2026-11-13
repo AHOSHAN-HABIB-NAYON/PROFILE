@@ -33,3 +33,7 @@ import kotlinx.serialization.Serializable
 @Serializable data object RecycleBinRoute
 
 @Serializable data class FolderSizeRoute(val path: String? = null)
+@Serializable data class FileToolRoute(val tool: String)
+@Serializable data object QrCreateRoute
+@Serializable data object QrScanRoute
+@Serializable data class DevUtilsRoute(val start: String)

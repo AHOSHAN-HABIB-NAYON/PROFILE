@@ -236,7 +236,7 @@ fun FolderSizeScreen(startPath: String?, onBack: () -> Unit, onOpenFolder: (Stri
                             }
                             Spacer(Modifier.width(14.dp))
                             Column(Modifier.weight(1f)) {
-                                Text(if (atRoot) "Internal storage" else File(state.path).name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(if (atRoot && File(state.root).name == "0") "Internal storage" else File(state.path).name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Text(
                                     if (state.scanning) "Scanning… ${"%,d".format(state.scannedFiles)} files"
                                     else "Scanned ${"%,d".format(state.scannedFiles)} files in ${state.seconds} s",

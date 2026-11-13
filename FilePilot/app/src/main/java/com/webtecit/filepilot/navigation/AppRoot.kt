@@ -158,6 +158,20 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
                 )
             }
             composable<ToolsRoute> { Guided { ToolsScreen(onTool = { nav.navigate(toolRoute(it)) }) } }
+            composable<FileToolRoute> { b ->
+                val tool = runCatching { com.webtecit.filepilot.feature.toolkit.FileTool.valueOf(b.toRoute<FileToolRoute>().tool) }
+                    .getOrDefault(com.webtecit.filepilot.feature.toolkit.FileTool.IMAGE_TO_PDF)
+                com.webtecit.filepilot.feature.toolkit.FileToolScreen(tool, onBack = { nav.popBackStack() }, onOpenFolder = { nav.navigate(BrowserRoute(it)) })
+            }
+            composable<QrCreateRoute> {
+                com.webtecit.filepilot.feature.toolkit.QrCreateScreen(onBack = { nav.popBackStack() }, onOpenFolder = { nav.navigate(BrowserRoute(it)) })
+            }
+            composable<DevUtilsRoute> { b ->
+                val start = runCatching { com.webtecit.filepilot.feature.toolkit.DevUtil.valueOf(b.toRoute<DevUtilsRoute>().start) }
+                    .getOrDefault(com.webtecit.filepilot.feature.toolkit.DevUtil.JSON)
+                com.webtecit.filepilot.feature.toolkit.DevUtilsScreen(start, onBack = { nav.popBackStack() })
+            }
+            composable<QrScanRoute> { com.webtecit.filepilot.feature.toolkit.QrScanScreen(onBack = { nav.popBackStack() }) }
             composable<FolderSizeRoute> { b ->
                 com.webtecit.filepilot.feature.analyzer.FolderSizeScreen(
                     startPath = b.toRoute<FolderSizeRoute>().path,
@@ -263,9 +277,37 @@ fun previewRoute(path: String): Any? {
     }
 }
 
+private fun screenshotsFolder(): String {
+    val root = android.os.Environment.getExternalStorageDirectory()
+    return listOf("Pictures/Screenshots", "DCIM/Screenshots", "Screenshots")
+        .map { java.io.File(root, it) }.firstOrNull { it.isDirectory }?.absolutePath
+        ?: java.io.File(root, android.os.Environment.DIRECTORY_PICTURES).absolutePath
+}
+
+private fun whatsAppMediaFolder(): String? {
+    val root = android.os.Environment.getExternalStorageDirectory()
+    return listOf("Android/media/com.whatsapp/WhatsApp/Media", "WhatsApp/Media", "Android/media/com.whatsapp.w4b/WhatsApp Business/Media")
+        .map { java.io.File(root, it) }.firstOrNull { it.isDirectory }?.absolutePath
+}
+
 /** The screen for each tool. */
 fun toolRoute(tool: Tool): Any = when (tool) {
     Tool.FOLDER_SIZE -> FolderSizeRoute()
+    Tool.IMAGE_TO_PDF -> FileToolRoute(com.webtecit.filepilot.feature.toolkit.FileTool.IMAGE_TO_PDF.name)
+    Tool.TEXT_TO_PDF -> FileToolRoute(com.webtecit.filepilot.feature.toolkit.FileTool.TEXT_TO_PDF.name)
+    Tool.MERGE_PDF -> FileToolRoute(com.webtecit.filepilot.feature.toolkit.FileTool.MERGE_PDF.name)
+    Tool.SPLIT_PDF -> FileToolRoute(com.webtecit.filepilot.feature.toolkit.FileTool.SPLIT_PDF.name)
+    Tool.PDF_TO_IMAGES -> FileToolRoute(com.webtecit.filepilot.feature.toolkit.FileTool.PDF_TO_IMAGES.name)
+    Tool.COMPRESS_IMAGE -> FileToolRoute(com.webtecit.filepilot.feature.toolkit.FileTool.COMPRESS_IMAGE.name)
+    Tool.RESIZE_IMAGE -> FileToolRoute(com.webtecit.filepilot.feature.toolkit.FileTool.RESIZE_IMAGE.name)
+    Tool.CONVERT_IMAGE -> FileToolRoute(com.webtecit.filepilot.feature.toolkit.FileTool.CONVERT_IMAGE.name)
+    Tool.QR_SCAN -> QrScanRoute
+    Tool.DEV_UTILS -> DevUtilsRoute(com.webtecit.filepilot.feature.toolkit.DevUtil.JSON.name)
+    Tool.PASSWORD -> DevUtilsRoute(com.webtecit.filepilot.feature.toolkit.DevUtil.PASSWORD.name)
+    Tool.LARGE_FILES -> BrowserRoute(com.webtecit.filepilot.core.storage.Category.LARGE.id)
+    Tool.SCREENSHOTS -> BrowserRoute(screenshotsFolder())
+    Tool.WHATSAPP_MEDIA -> FolderSizeRoute(whatsAppMediaFolder())
+    Tool.QR_CREATE -> QrCreateRoute
     Tool.ANALYZER -> AnalyzerRoute
     Tool.CODE_STUDIO -> EditorRoute()
     Tool.HTML_PROJECTS -> ProjectsRoute

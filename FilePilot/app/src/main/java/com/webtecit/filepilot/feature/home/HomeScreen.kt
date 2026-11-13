@@ -2,6 +2,9 @@
 
 package com.webtecit.filepilot.feature.home
 
+import androidx.compose.material.icons.rounded.PictureAsPdf
+import androidx.compose.material.icons.rounded.QrCodeScanner
+import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import com.webtecit.filepilot.core.storage.CategorySummary
 import androidx.compose.material.icons.rounded.Sync
@@ -185,14 +188,24 @@ fun HomeScreen(
                             border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
                             modifier = Modifier.fillMaxWidth().height(48.dp).enterAnimation(1).testTag("smart_search"),
                         ) {
-                            Row(Modifier.padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Row(Modifier.padding(start = 14.dp, end = 7.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Rounded.Search, null, tint = MaterialTheme.colorScheme.primary)
                                 Spacer(Modifier.width(10.dp))
                                 Text(
                                     "Search files, e.g. \"big videos\"",
                                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
                                 )
+                                Surface(
+                                    onClick = { onTool(Tool.QR_SCAN) },
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+                                    modifier = Modifier.size(34.dp),
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Rounded.QrCodeScanner, "Scan QR code", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                                    }
+                                }
                             }
                         }
                     }
@@ -246,11 +259,11 @@ fun HomeScreen(
                         val tools = listOf(
                             Triple(Tool.CLEANER, "Cleaner", Icons.Rounded.CleaningServices to Palette.Green),
                             Triple(Tool.FOLDER_SIZE, "Folder size", Icons.Rounded.FolderOpen to Palette.Blue),
+                            Triple(Tool.IMAGE_TO_PDF, "Image→PDF", Icons.Rounded.PictureAsPdf to Palette.Pink),
+                            Triple(Tool.QR_SCAN, "QR scan", Icons.Rounded.QrCodeScanner to Palette.Purple),
                             Triple(Tool.CODE_STUDIO, "Code Studio", Icons.Rounded.Code to Palette.Orange),
+                            Triple(Tool.COMPRESS_IMAGE, "Compress", Icons.Rounded.Compress to Palette.Cyan),
                             Triple(Tool.SECURE_FOLDER, "Secure", Icons.Rounded.Lock to Palette.Purple),
-                            Triple(Tool.RECYCLE_BIN, "Recycle Bin", Icons.Rounded.Delete to Palette.Pink),
-                            Triple(Tool.HTML_PROJECTS, "Web", Icons.Rounded.Language to Palette.Cyan),
-                            Triple(Tool.TERMINAL, "Terminal", Icons.Rounded.Terminal to Palette.Slate),
                             Triple(null, "More", Icons.Rounded.Apps to Palette.Slate),
                         )
                         EqualGrid(tools, columns = 4) { (tool, label, look), m ->
