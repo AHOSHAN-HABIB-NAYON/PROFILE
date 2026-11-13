@@ -20,7 +20,7 @@ An offline Android file manager and developer toolkit by **Webtecit Apps**
 | 6 | Secure Folder (AES-256-GCM, Android Keystore), PIN, fingerprint, app lock | Implemented |
 | 7 | PDF viewer, images to PDF, merge and compress PDF | Implemented |
 | 8 | Legal pages, security notes | Pages written in `filepilot-app/`; publishing needs a merge to `main` |
-| 8 | AdMob, Google Play Billing, Premium | **Not implemented** — needs your AdMob app/unit IDs and Play Console products |
+| 8 | Ads and Premium | Not included by decision: the app is completely free, with no ads and no in-app purchases |
 
 ### Known limits (honest list)
 
