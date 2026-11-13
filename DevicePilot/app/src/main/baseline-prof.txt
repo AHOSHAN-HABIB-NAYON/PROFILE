@@ -1,0 +1,12 @@
+# Baseline profile: pre-compiles DevicePilot and Compose hot paths at install time
+# so scrolling and navigation stay smooth on high refresh rate (90/120 Hz) screens.
+HSPLcom/webtecit/devicepilot/**->**(**)**
+Lcom/webtecit/devicepilot/**;
+HSPLandroidx/compose/runtime/**->**(**)**
+HSPLandroidx/compose/ui/**->**(**)**
+HSPLandroidx/compose/foundation/**->**(**)**
+HSPLandroidx/compose/material3/**->**(**)**
+HSPLandroidx/compose/animation/**->**(**)**
+HSPLandroidx/navigation/**->**(**)**
+HSPLandroidx/lifecycle/**->**(**)**
+HSPLkotlinx/coroutines/**->**(**)**
