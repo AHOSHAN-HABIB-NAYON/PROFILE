@@ -27,6 +27,8 @@ data class DeviceIdentity(
     val apiLevel: Int,
     val securityPatch: String?,
     val abi: String,
+    /** The name the user gave the phone (Settings → About phone), else manufacturer + model. */
+    val name: String = "$manufacturer $model",
 )
 
 enum class ChargeState { CHARGING, DISCHARGING, FULL, NOT_CHARGING, UNKNOWN }
@@ -81,7 +83,13 @@ class DeviceMonitor(private val context: Context) {
         apiLevel = Build.VERSION.SDK_INT,
         securityPatch = if (Build.VERSION.SDK_INT >= 23) Build.VERSION.SECURITY_PATCH else null,
         abi = Build.SUPPORTED_ABIS.firstOrNull() ?: "",
+        name = userDeviceName() ?: "${Build.MANUFACTURER.replaceFirstChar { it.uppercase() }} ${Build.MODEL}",
     )
+
+    private fun userDeviceName(): String? =
+        if (Build.VERSION.SDK_INT >= 25) runCatching {
+            Settings.Global.getString(context.contentResolver, Settings.Global.DEVICE_NAME)
+        }.getOrNull()?.trim()?.takeIf { it.isNotEmpty() } else null
 
     fun memory(): MemorySnapshot {
         val info = ActivityManager.MemoryInfo()

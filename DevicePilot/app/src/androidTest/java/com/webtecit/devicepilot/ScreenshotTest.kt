@@ -35,6 +35,8 @@ class ScreenshotTest {
         shell("appops set ${context.packageName} GET_USAGE_STATS allow")
         shell("mkdir -p /data/local/tmp/dp_shots")
         // A typical everyday battery state instead of the emulator's "100 % charging".
+        // Demo phone name shown on the Home card (Settings → About phone → Device name).
+        shell("settings put global device_name \"Aurora X5\"")
         shell("dumpsys battery unplug")
         shell("dumpsys battery set level 78")
         shell("dumpsys battery set temp 318")

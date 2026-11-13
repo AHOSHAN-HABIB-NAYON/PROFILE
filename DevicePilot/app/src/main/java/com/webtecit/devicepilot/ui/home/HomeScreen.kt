@@ -229,7 +229,7 @@ private fun DeviceCard(s: HomeState, modifier: Modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.home_your_device), style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.75f))
-                Text("${s.identity.manufacturer} ${s.identity.model}", style = MaterialTheme.typography.titleLarge, color = Color.White, maxLines = 2)
+                Text(s.identity.name, style = MaterialTheme.typography.titleLarge, color = Color.White, maxLines = 2)
                 Spacer(Modifier.height(4.dp))
                 Text(stringResource(R.string.android_version_api, s.identity.androidVersion, s.identity.apiLevel),
                     style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.85f))
