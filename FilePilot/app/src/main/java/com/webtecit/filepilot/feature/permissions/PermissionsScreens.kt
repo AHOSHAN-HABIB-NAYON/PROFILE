@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.runtime.getValue
+import androidx.compose.animation.core.animateFloat
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
