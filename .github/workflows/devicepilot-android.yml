@@ -36,7 +36,22 @@ jobs:
         run: ./gradlew --stacktrace testPlayDebugUnitTest testFullDebugUnitTest
       - name: Build debug APKs (Play + Full)
         run: ./gradlew --stacktrace assemblePlayDebug assembleFullDebug
+      - name: Set up release signing (only if the key secrets are configured)
+        env:
+          KS_B64: ${{ secrets.DP_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "DP_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "Release signing enabled"
+          else
+            echo "No release key configured: release builds use the test key"
+          fi
       - name: Build release APKs and the Play Store bundle
+        env:
+          DP_KEYSTORE_PASSWORD: ${{ secrets.DP_KEYSTORE_PASSWORD }}
+          DP_KEY_ALIAS: ${{ secrets.DP_KEY_ALIAS }}
+          DP_KEY_PASSWORD: ${{ secrets.DP_KEY_PASSWORD }}
         run: ./gradlew --stacktrace assemblePlayRelease bundlePlayRelease assembleFullRelease
       - name: Upload debug APK
         uses: actions/upload-artifact@v4

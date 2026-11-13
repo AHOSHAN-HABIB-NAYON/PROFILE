@@ -829,4 +829,8 @@
     <string name="qa_battery">Battery</string>
     <string name="ram_free_up_title">Free up memory</string>
     <string name="ram_free_up_text">Boost closes background apps in one tap; Cleaner finds app cache, junk and big files.</string>
+    <string name="title_terms">Terms of use</string>
+    <string name="settings_terms_sub">Rules for using DevicePilot (opens the web page)</string>
+    <string name="contact_support">Contact support</string>
+    <string name="open_web_version">Open web version</string>
 </resources>

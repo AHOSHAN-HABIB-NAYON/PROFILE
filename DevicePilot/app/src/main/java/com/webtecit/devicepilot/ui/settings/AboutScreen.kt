@@ -45,6 +45,7 @@ import com.webtecit.devicepilot.ui.common.ScreenList
 
 @Composable
 fun AboutScreen(navigate: (String) -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     var showLicenses by remember { mutableStateOf(false) }
     ScreenList {
         item {
@@ -70,7 +71,12 @@ fun AboutScreen(navigate: (String) -> Unit) {
                     OutlinedButton(onClick = { navigate(Routes.PRIVACY) }) { Text(stringResource(R.string.title_privacy)) }
                     OutlinedButton(onClick = { navigate(Routes.DISCLAIMER) }) { Text(stringResource(R.string.title_disclaimer)) }
                 }
-                OutlinedButton(onClick = { showLicenses = true }) { Text(stringResource(R.string.settings_licenses)) }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { com.webtecit.devicepilot.brand.Links.emailSupport(context) }) {
+                        Text(stringResource(R.string.contact_support))
+                    }
+                    OutlinedButton(onClick = { showLicenses = true }) { Text(stringResource(R.string.settings_licenses)) }
+                }
             }
         }
         item {
@@ -111,10 +117,19 @@ fun PrivacyScreen(navigate: (String) -> Unit) {
         }
         LegalSections.privacy.forEach { (t, b) -> item { LegalSection(Icons.Outlined.PrivacyTip, t, b) } }
         item {
-            Text(stringResource(R.string.privacy_contact, Attribution.developerName, Attribution.website),
+            Text(stringResource(R.string.privacy_contact, Attribution.developerName,
+                com.webtecit.devicepilot.brand.Links.SUPPORT_EMAIL),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        item { OutlinedButton(onClick = { navigate(Routes.DISCLAIMER) }) { Text(stringResource(R.string.title_disclaimer)) } }
+        item {
+            val ctx = androidx.compose.ui.platform.LocalContext.current
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { navigate(Routes.DISCLAIMER) }) { Text(stringResource(R.string.title_disclaimer)) }
+                OutlinedButton(onClick = { com.webtecit.devicepilot.system.SystemSettings.url(ctx, com.webtecit.devicepilot.brand.Links.PRIVACY) }) {
+                    Text(stringResource(R.string.open_web_version))
+                }
+            }
+        }
     }
 }
 
@@ -131,6 +146,14 @@ fun DisclaimerScreen(navigate: (String) -> Unit) {
             }
         }
         LegalSections.disclaimer.forEach { (t, b) -> item { LegalSection(Icons.Outlined.Gavel, t, b) } }
-        item { OutlinedButton(onClick = { navigate(Routes.PRIVACY) }) { Text(stringResource(R.string.title_privacy)) } }
+        item {
+            val ctx = androidx.compose.ui.platform.LocalContext.current
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { navigate(Routes.PRIVACY) }) { Text(stringResource(R.string.title_privacy)) }
+                OutlinedButton(onClick = { com.webtecit.devicepilot.system.SystemSettings.url(ctx, com.webtecit.devicepilot.brand.Links.DISCLAIMER) }) {
+                    Text(stringResource(R.string.open_web_version))
+                }
+            }
+        }
     }
 }

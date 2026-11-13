@@ -24,6 +24,7 @@ import androidx.compose.material.icons.outlined.BrightnessAuto
 import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.DataUsage
 import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.Gavel
 import androidx.compose.material.icons.outlined.Info
@@ -194,12 +195,18 @@ fun SettingsScreen(navigate: (String) -> Unit) {
                 LinkRow(Icons.Outlined.Gavel, Amber, stringResource(R.string.title_disclaimer), stringResource(R.string.settings_disclaimer_sub)) {
                     navigate(Routes.DISCLAIMER)
                 }
+                LinkRow(Icons.Outlined.Description, Violet, stringResource(R.string.title_terms), stringResource(R.string.settings_terms_sub)) {
+                    SystemSettings.url(context, com.webtecit.devicepilot.brand.Links.TERMS)
+                }
             }
         }
 
         // ---------- About ----------
         item {
             Group(stringResource(R.string.title_about)) {
+                LinkRow(Icons.Outlined.Email, Green, stringResource(R.string.contact_support), com.webtecit.devicepilot.brand.Links.SUPPORT_EMAIL) {
+                    com.webtecit.devicepilot.brand.Links.emailSupport(context)
+                }
                 LinkRow(Icons.Outlined.Info, Blue, stringResource(R.string.title_about),
                     stringResource(R.string.settings_version, BuildConfig.VERSION_NAME)) { navigate(Routes.ABOUT) }
                 LinkRow(Icons.Outlined.Description, Slate, stringResource(R.string.settings_licenses), null) { showLicenses = true }

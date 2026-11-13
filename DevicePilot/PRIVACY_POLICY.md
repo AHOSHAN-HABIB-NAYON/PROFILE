@@ -1,5 +1,7 @@
 # DevicePilot Privacy Policy
 
+Web version: https://ahoshan-habib-nayon.github.io/PROFILE/devicepilot-app/privacy.html · Contact: support.webtecit@gmail.com
+
 _Last updated: 2026-10-17_
 
 DevicePilot ("the app") is developed by **MD. AHOSHAN HABIB NAYON** (https://webtecit.com/). This policy describes what the app actually does with information.

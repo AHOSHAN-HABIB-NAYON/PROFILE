@@ -12,7 +12,8 @@ android {
         applicationId = "com.webtecit.devicepilot"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
+        // Play needs a higher versionCode for every upload: CI uses its run number.
+        versionCode = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables { useSupportLibrary = true }
