@@ -1,7 +1,13 @@
 package com.webtecit.filepilot.feature.tools
 
-import androidx.compose.foundation.layout.Arrangement
+import com.webtecit.filepilot.core.designsystem.EqualGrid
+import com.webtecit.filepilot.core.designsystem.GridBox
+import com.webtecit.filepilot.core.designsystem.Palette
+import com.webtecit.filepilot.core.designsystem.enterAnimation
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.Column
+
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -49,53 +55,62 @@ enum class Tool(val label: String, val description: String, val icon: ImageVecto
     HTML_PROJECTS("HTML Projects", "Build and run websites offline", Icons.Rounded.Language, 0xFF2563EB, "Developer"),
 }
 
-/** Tools in equal-sized tiles: same width and height for every tile, whatever the label length. */
+/** Short name and colour for each tool's box. */
+private val Tool.short: String
+    get() = when (this) {
+        Tool.ANALYZER -> "Analyzer"
+        Tool.CLEANER -> "Cleaner"
+        Tool.RECYCLE_BIN -> "Recycle Bin"
+        Tool.SECURE_FOLDER -> "Secure Folder"
+        Tool.CODE_STUDIO -> "Code Studio"
+        Tool.TERMINAL -> "Terminal"
+        Tool.TEXT_SEARCH -> "Text Search"
+        Tool.HTML_PROJECTS -> "Web Projects"
+    }
+
+private val Tool.color: Color
+    get() = when (this) {
+        Tool.ANALYZER -> Palette.Blue
+        Tool.CLEANER -> Palette.Green
+        Tool.RECYCLE_BIN -> Palette.Pink
+        Tool.SECURE_FOLDER -> Palette.Purple
+        Tool.CODE_STUDIO -> Palette.Orange
+        Tool.TERMINAL -> Palette.Slate
+        Tool.TEXT_SEARCH -> Palette.Green
+        Tool.HTML_PROJECTS -> Palette.Cyan
+    }
+
+/** Tools in equal boxes: the same width and height for every box, whatever the label. */
 @Composable
 fun ToolGrid(tools: List<Tool>, onTool: (Tool) -> Unit, columns: Int = 3) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        tools.chunked(columns).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                row.forEach { tool ->
-                    androidx.compose.material3.Surface(
-                        onClick = { onTool(tool) },
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
-                        color = Color(tool.tint).copy(alpha = 0.08f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(tool.tint).copy(alpha = 0.14f)),
-                        modifier = Modifier.weight(1f).height(112.dp),
-                    ) {
-                        Column(
-                            Modifier.fillMaxSize().padding(8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                        ) {
-                            androidx.compose.material3.Icon(tool.icon, null, tint = Color(tool.tint), modifier = Modifier.size(30.dp))
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                tool.label, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center,
-                                maxLines = 2, minLines = 2, overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    }
-                }
-                repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
-            }
-        }
+    EqualGrid(tools, columns) { tool, m ->
+        GridBox(tool.short, tool.icon, tool.color, m, height = 92.dp) { onTool(tool) }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ToolsScreen(onTool: (Tool) -> Unit) {
-    Scaffold(topBar = { TopAppBar(title = { Text("Tools") }) }) { padding ->
+    Scaffold { padding ->
         LazyColumn(
             Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 100.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
+            item(key = "title") {
+                Column(Modifier.padding(start = 4.dp, top = 8.dp, bottom = 4.dp).enterAnimation(0)) {
+                    Text("Tools", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    Text("Everything works offline", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
             Tool.entries.groupBy { it.group }.forEach { (group, tools) ->
                 item(key = group) {
-                    SectionHeader(group)
-                    ToolGrid(tools, onTool)
+                    Column {
+                        Text(
+                            group, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(start = 6.dp, top = 10.dp, bottom = 8.dp),
+                        )
+                        ToolGrid(tools, onTool)
+                    }
                 }
             }
         }

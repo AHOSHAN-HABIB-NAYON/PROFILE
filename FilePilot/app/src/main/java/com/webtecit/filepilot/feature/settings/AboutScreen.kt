@@ -2,6 +2,9 @@
 
 package com.webtecit.filepilot.feature.settings
 
+import com.webtecit.filepilot.core.designsystem.Palette
+import com.webtecit.filepilot.core.designsystem.enterAnimation
+import androidx.compose.ui.text.font.FontWeight
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -90,7 +93,7 @@ fun AboutScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             // App hero.
-            Surface(shape = RoundedCornerShape(20.dp), color = Color.Transparent, shadowElevation = 3.dp, modifier = Modifier.fillMaxWidth()) {
+            Surface(shape = RoundedCornerShape(20.dp), color = Color.Transparent, shadowElevation = 3.dp, modifier = Modifier.fillMaxWidth().enterAnimation(0)) {
                 Column(
                     Modifier.background(Brush.linearGradient(listOf(Color(0xFF3B7BFF), Color(0xFF1D4FE0), Color(0xFF1539B8)))).padding(18.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -121,36 +124,38 @@ fun AboutScreen(onBack: () -> Unit) {
                 color = MaterialTheme.colorScheme.surfaceContainerLowest,
                 shadowElevation = 1.dp,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().enterAnimation(1),
             ) {
-                Column(Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("DEVELOPER", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                    Spacer(Modifier.height(12.dp))
-                    Box(
-                        Modifier.size(80.dp).clip(CircleShape)
-                            .background(Brush.linearGradient(listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.tertiary)))
-                            .padding(3.dp),
-                    ) {
-                        Image(
-                            painterResource(R.drawable.developer_photo),
-                            contentDescription = "Photo of ${Brand.DEVELOPER}",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize().clip(CircleShape).border(3.dp, MaterialTheme.colorScheme.surface, CircleShape),
-                        )
-                    }
-                    Spacer(Modifier.height(12.dp))
+                Column(Modifier.padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(Brand.DEVELOPER, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
-                        Spacer(Modifier.width(6.dp))
-                        Icon(Icons.Rounded.Verified, "Verified developer", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        Box(
+                            Modifier.size(62.dp).clip(CircleShape)
+                                .background(Brush.linearGradient(listOf(Palette.Blue, Palette.Purple)))
+                                .padding(2.dp),
+                        ) {
+                            Image(
+                                painterResource(R.drawable.developer_photo),
+                                contentDescription = "Photo of ${Brand.DEVELOPER}",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize().clip(CircleShape).border(2.dp, MaterialTheme.colorScheme.surface, CircleShape),
+                            )
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("DEVELOPER", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                Spacer(Modifier.width(4.dp))
+                                Icon(Icons.Rounded.Verified, "Verified developer", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+                            }
+                            Text(Brand.DEVELOPER, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                            Text(Brand.BRAND, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                        }
                     }
-                    Text(Brand.BRAND, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
-                    Text("webtecit.com", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.height(16.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                        ActionButton(Icons.Rounded.Language, "Website", Color(0xFF2563EB), Modifier.weight(1f)) { show(Brand.openUrl(context, Brand.WEBSITE)) }
-                        ActionButton(Icons.Rounded.Mail, "Email", Color(0xFFDB2777), Modifier.weight(1f)) { show(Brand.email(context, "${Brand.APP_NAME}: question")) }
-                        ActionButton(Icons.Rounded.Share, "Share", Color(0xFF16A34A), Modifier.weight(1f)) { show(Brand.shareApp(context)) }
+                    Spacer(Modifier.height(12.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        ActionButton(Icons.Rounded.Language, "Website", Palette.Blue, Modifier.weight(1f)) { show(Brand.openUrl(context, Brand.WEBSITE)) }
+                        ActionButton(Icons.Rounded.Mail, "Email", Palette.Pink, Modifier.weight(1f)) { show(Brand.email(context, "${Brand.APP_NAME}: question")) }
+                        ActionButton(Icons.Rounded.Share, "Share", Palette.Green, Modifier.weight(1f)) { show(Brand.shareApp(context)) }
                     }
                 }
             }
@@ -161,16 +166,16 @@ fun AboutScreen(onBack: () -> Unit) {
                 color = MaterialTheme.colorScheme.surfaceContainerLowest,
                 shadowElevation = 1.dp,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().enterAnimation(2),
             ) {
                 Column(Modifier.padding(vertical = 4.dp)) {
-                    SettingsRow("Copy support email", subtitle = Brand.SUPPORT_EMAIL, icon = Icons.Rounded.ContentCopy, tint = Color(0xFF7C3AED), onClick = {
+                    SettingsRow("Copy support email", subtitle = Brand.SUPPORT_EMAIL, icon = Icons.Rounded.ContentCopy, tint = Palette.Purple, onClick = {
                         copyText(context, "Email", Brand.SUPPORT_EMAIL)
                         Toast.makeText(context, "Email address copied", Toast.LENGTH_SHORT).show()
                     })
-                    SettingsRow("Privacy Policy", icon = Icons.Rounded.PrivacyTip, tint = Color(0xFF0D9488), onClick = { show(Brand.openUrl(context, Brand.PRIVACY_URL)) })
-                    SettingsRow("Terms & Conditions", icon = Icons.Rounded.Gavel, tint = Color(0xFF475569), onClick = { show(Brand.openUrl(context, Brand.TERMS_URL)) })
-                    SettingsRow("Disclaimer", icon = Icons.Rounded.Info, tint = Color(0xFFEA580C), onClick = { show(Brand.openUrl(context, Brand.DISCLAIMER_URL)) })
+                    SettingsRow("Privacy Policy", icon = Icons.Rounded.PrivacyTip, tint = Palette.Green, onClick = { show(Brand.openUrl(context, Brand.PRIVACY_URL)) })
+                    SettingsRow("Terms & Conditions", icon = Icons.Rounded.Gavel, tint = Palette.Slate, onClick = { show(Brand.openUrl(context, Brand.TERMS_URL)) })
+                    SettingsRow("Disclaimer", icon = Icons.Rounded.Info, tint = Palette.Orange, onClick = { show(Brand.openUrl(context, Brand.DISCLAIMER_URL)) })
                 }
             }
 
@@ -197,15 +202,14 @@ private fun Pill(text: String) {
 private fun ActionButton(icon: ImageVector, label: String, tint: Color, modifier: Modifier, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        color = tint.copy(alpha = 0.08f),
-        border = BorderStroke(1.dp, tint.copy(alpha = 0.16f)),
-        modifier = modifier.height(64.dp),
+        shape = RoundedCornerShape(14.dp),
+        color = tint.copy(alpha = 0.10f),
+        modifier = modifier.height(44.dp),
     ) {
-        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Icon(icon, null, tint = tint)
-            Spacer(Modifier.height(4.dp))
-            Text(label, style = MaterialTheme.typography.labelLarge)
+        Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, tint = tint, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text(label, style = MaterialTheme.typography.labelLarge, color = tint, fontWeight = FontWeight.SemiBold)
         }
     }
 }

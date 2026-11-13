@@ -2,6 +2,10 @@
 
 package com.webtecit.filepilot.feature.settings
 
+import com.webtecit.filepilot.core.designsystem.enterAnimation
+import androidx.compose.material.icons.rounded.LightMode
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.Contrast
 import android.os.Build
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -114,7 +118,6 @@ fun SettingsScreen(
     }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Settings") }) },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         LazyColumn(
@@ -123,13 +126,19 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
+                Text(
+                    "Settings", style = MaterialTheme.typography.headlineSmall, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    modifier = Modifier.padding(start = 4.dp, top = 16.dp, bottom = 2.dp).enterAnimation(0),
+                )
+            }
+            item {
                 // App card at the top of Settings.
                 androidx.compose.material3.Surface(
                     onClick = onOpenAbout,
                     shape = RoundedCornerShape(20.dp),
                     color = Color.Transparent,
                     shadowElevation = 3.dp,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().enterAnimation(1),
                 ) {
                     Row(
                         Modifier
@@ -137,7 +146,9 @@ fun SettingsScreen(
                             .padding(horizontal = 16.dp, vertical = 14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        com.webtecit.filepilot.core.designsystem.AppLogo(42.dp)
+                        Box(Modifier.size(44.dp).clip(RoundedCornerShape(13.dp)).background(Color.White.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) {
+                            com.webtecit.filepilot.core.designsystem.AppLogo(34.dp)
+                        }
                         Spacer(Modifier.size(14.dp))
                         Column(Modifier.weight(1f)) {
                             Text(Brand.APP_NAME, style = MaterialTheme.typography.titleMedium, color = Color.White)
@@ -161,6 +172,16 @@ fun SettingsScreen(
                                     selected = prefs.themeMode == mode,
                                     onClick = { viewModel.setTheme(mode) },
                                     shape = SegmentedButtonDefaults.itemShape(i, ThemeMode.entries.size),
+                                    icon = {
+                                        Icon(
+                                            when (mode) {
+                                                ThemeMode.LIGHT -> Icons.Rounded.LightMode
+                                                ThemeMode.DARK -> Icons.Rounded.DarkMode
+                                                ThemeMode.SYSTEM -> Icons.Rounded.Contrast
+                                            },
+                                            null, modifier = Modifier.size(18.dp),
+                                        )
+                                    },
                                 ) { Text(mode.label) }
                             }
                         }
@@ -393,7 +414,7 @@ private fun <T> ChoiceRow(title: String, options: List<T>, selected: T, label: (
 
 @Composable
 private fun Section(title: String, content: @Composable () -> Unit) {
-    Column {
+    Column(Modifier.enterAnimation(2)) {
         Text(
             title,
             style = MaterialTheme.typography.labelLarge,

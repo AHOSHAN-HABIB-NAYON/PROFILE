@@ -2,6 +2,20 @@
 
 package com.webtecit.filepilot.feature.home
 
+import com.webtecit.filepilot.core.designsystem.EqualGrid
+import com.webtecit.filepilot.core.designsystem.GridBox
+import com.webtecit.filepilot.core.designsystem.Palette
+import com.webtecit.filepilot.core.designsystem.enterAnimation
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.material.icons.rounded.PieChart
+import androidx.compose.material.icons.rounded.CleaningServices
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Code
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -118,14 +132,6 @@ fun HomeScreen(
 
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }, containerColor = MaterialTheme.colorScheme.background) { padding ->
         Box(Modifier.fillMaxSize()) {
-            // Soft decorative glow at the top of Home.
-            androidx.compose.foundation.Canvas(Modifier.fillMaxWidth().height(260.dp)) {
-                drawCircle(
-                    Brush.radialGradient(listOf(Color(0xFF3D6BFF).copy(alpha = if (dark) 0.20f else 0.12f), Color.Transparent),
-                        center = androidx.compose.ui.geometry.Offset(size.width * 0.95f, 0f), radius = size.width * 0.7f),
-                    radius = size.width * 0.7f, center = androidx.compose.ui.geometry.Offset(size.width * 0.95f, 0f),
-                )
-            }
             androidx.compose.material3.pulltorefresh.PullToRefreshBox(
                 isRefreshing = state.refreshing,
                 onRefresh = viewModel::refresh,
@@ -137,25 +143,27 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     item(key = "header") {
-                        Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Surface(shape = RoundedCornerShape(16.dp), shadowElevation = 4.dp, color = Color.Transparent) { AppLogo(44.dp) }
-                            Spacer(Modifier.width(14.dp))
+                        Row(Modifier.fillMaxWidth().padding(top = 8.dp).enterAnimation(0), verticalAlignment = Alignment.CenterVertically) {
+                            Surface(shape = RoundedCornerShape(13.dp), shadowElevation = 3.dp, color = Color.Transparent) { AppLogo(40.dp) }
+                            Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) {
-                                Text(Brand.APP_NAME, style = MaterialTheme.typography.headlineSmall)
-                                Text("Manage everything. Edit anything.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(Brand.APP_NAME, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                                Text("Files & developer tools", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
+                            val spin by animateFloatAsState(if (dark) 180f else 0f, tween(450), label = "themeSpin")
                             Surface(
                                 onClick = { viewModel.toggleTheme(dark) },
                                 shape = CircleShape,
                                 color = MaterialTheme.colorScheme.surfaceContainerLowest,
-                                shadowElevation = 4.dp,
-                                modifier = Modifier.size(42.dp).testTag("theme_toggle"),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
+                                modifier = Modifier.size(40.dp).testTag("theme_toggle"),
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         if (dark) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
                                         contentDescription = if (dark) "Switch to light mode" else "Switch to dark mode",
-                                        tint = MaterialTheme.colorScheme.primary,
+                                        tint = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.size(22.dp).graphicsLayer { rotationZ = spin },
                                     )
                                 }
                             }
@@ -164,27 +172,28 @@ fun HomeScreen(
                     item(key = "search") {
                         Surface(
                             onClick = { gate { onSearch() } },
-                            shape = RoundedCornerShape(26.dp),
+                            shape = RoundedCornerShape(14.dp),
                             color = MaterialTheme.colorScheme.surfaceContainerLowest,
-                            shadowElevation = 3.dp,
-                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
-                            modifier = Modifier.fillMaxWidth().testTag("smart_search"),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
+                            modifier = Modifier.fillMaxWidth().height(48.dp).enterAnimation(1).testTag("smart_search"),
                         ) {
-                            Row(Modifier.padding(horizontal = 18.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Rounded.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
-                                Spacer(Modifier.width(14.dp))
-                                Column(Modifier.weight(1f)) {
-                                    Text("Search anything", style = MaterialTheme.typography.titleMedium)
-                                    Text("Try \"large videos from last week\"", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                                Box(Modifier.width(1.dp).height(30.dp).background(MaterialTheme.colorScheme.outlineVariant))
-                                Spacer(Modifier.width(14.dp))
-                                Icon(Icons.Rounded.Search, null, tint = MaterialTheme.colorScheme.onSurface)
+                            Row(Modifier.padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Rounded.Search, null, tint = MaterialTheme.colorScheme.primary)
+                                Spacer(Modifier.width(10.dp))
+                                Text(
+                                    "Search files, e.g. \"videos over 100 MB\"",
+                                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                )
                             }
                         }
                     }
                     if (primary != null) {
-                        item(key = "hero") { HeroStorage(primary, onBrowse = { open(primary.rootId) }, onAnalyze = { gate { onTool(Tool.ANALYZER) } }) }
+                        item(key = "hero") {
+                            Box(Modifier.enterAnimation(2)) {
+                                HeroStorage(primary, onBrowse = { open(primary.rootId) }, onAnalyze = { gate { onTool(Tool.ANALYZER) } })
+                            }
+                        }
                     }
                     items(state.volumes.filter { it.type != VolumeType.INTERNAL }, key = { "vol:" + it.rootId }) { v ->
                         StorageCard(v, onClick = { open(v.rootId) })
@@ -198,38 +207,44 @@ fun HomeScreen(
                             }
                         }
                     }
-                    item(key = "cat_header") { HomeHeader(Icons.Rounded.GridView, "Categories", "View all", onOpenFiles) }
+                    item(key = "cat_header") { HomeHeader("Categories", "View all", onOpenFiles) }
                     item(key = "categories") {
                         val summaries = state.categories.associateBy { it.category }
                         fun stats(c: Category) = summaries[c]?.let { it.count to it.bytes }
                         val tiles = listOf(
-                            CategoryTile("Images", Icons.Rounded.Image, Color(0xFFE11D74), Category.IMAGES.id, stats(Category.IMAGES)),
-                            CategoryTile("Videos", Icons.Rounded.Movie, Color(0xFFDC2626), Category.VIDEOS.id, stats(Category.VIDEOS)),
-                            CategoryTile("Audio", Icons.Rounded.MusicNote, Color(0xFFEA580C), Category.AUDIO.id, stats(Category.AUDIO)),
-                            CategoryTile("Documents", Icons.Rounded.Description, Color(0xFF2563EB), Category.DOCUMENTS.id, stats(Category.DOCUMENTS)),
-                            CategoryTile("APKs", Icons.Rounded.Android, Color(0xFF16A34A), Category.APKS.id, stats(Category.APKS)),
-                            CategoryTile("Archives", Icons.Rounded.FolderZip, Color(0xFF9333EA), Category.ARCHIVES.id, stats(Category.ARCHIVES)),
-                            CategoryTile("Downloads", Icons.Rounded.Download, Color(0xFF0284C7), state.downloadsId, null),
-                            CategoryTile("Recent", Icons.Rounded.History, Color(0xFF0D9488), Category.RECENT.id, null),
+                            CategoryTile("Images", Icons.Rounded.Image, Palette.Blue, Category.IMAGES.id, stats(Category.IMAGES)),
+                            CategoryTile("Videos", Icons.Rounded.Movie, Palette.Pink, Category.VIDEOS.id, stats(Category.VIDEOS)),
+                            CategoryTile("Audio", Icons.Rounded.MusicNote, Palette.Orange, Category.AUDIO.id, stats(Category.AUDIO)),
+                            CategoryTile("Docs", Icons.Rounded.Description, Palette.Green, Category.DOCUMENTS.id, stats(Category.DOCUMENTS)),
+                            CategoryTile("APKs", Icons.Rounded.Android, Palette.Purple, Category.APKS.id, stats(Category.APKS)),
+                            CategoryTile("Archives", Icons.Rounded.FolderZip, Palette.Cyan, Category.ARCHIVES.id, stats(Category.ARCHIVES)),
+                            CategoryTile("Recent", Icons.Rounded.History, Palette.Slate, Category.RECENT.id, null),
+                            CategoryTile("Downloads", Icons.Rounded.Download, Palette.Blue, state.downloadsId, null),
                         )
-                        UniformGrid(tiles, columns = 4) { t, m -> CategoryCell(t, m) { if (t.id.isNotEmpty()) open(t.id) } }
+                        EqualGrid(tiles, columns = 4) { t, m ->
+                            GridBox(t.label, t.icon, t.tint, m, subtitle = t.stats?.let { "%,d".format(it.first) } ?: " ") { if (t.id.isNotEmpty()) open(t.id) }
+                        }
                     }
-                    item(key = "tools_header") { HomeHeader(Icons.Rounded.Build, "Tools", "More tools", onOpenTools) }
+                    item(key = "tools_header") { HomeHeader("Tools", "More tools", onOpenTools) }
                     item(key = "tools") {
-                        val tools: List<Tool?> = listOf(Tool.CLEANER, Tool.ANALYZER, Tool.SECURE_FOLDER, null)
-                        UniformGrid(tools, columns = 4) { t, m ->
-                            if (t != null) ToolCell(t.label, t.icon, Color(t.tint), m) { gate { onTool(t) } }
-                            else ToolCell("More Tools", Icons.Rounded.Apps, Color(0xFF6366F1), m, onOpenTools)
+                        val tools = listOf(
+                            Triple(Tool.CLEANER, "Cleaner", Icons.Rounded.CleaningServices to Palette.Green),
+                            Triple(Tool.ANALYZER, "Analyzer", Icons.Rounded.PieChart to Palette.Blue),
+                            Triple(Tool.SECURE_FOLDER, "Secure", Icons.Rounded.Lock to Palette.Purple),
+                            Triple(Tool.CODE_STUDIO, "Code Studio", Icons.Rounded.Code to Palette.Orange),
+                        )
+                        EqualGrid(tools, columns = 4) { (tool, label, look), m ->
+                            GridBox(label, look.first, look.second, m) { gate { onTool(tool) } }
                         }
                     }
                     if (state.quickFolders.isNotEmpty()) {
-                        item(key = "quick_header") { HomeHeader(Icons.Rounded.Folder, "Quick access", null, null) }
+                        item(key = "quick_header") { HomeHeader("Quick access", null, null) }
                         item(key = "quick") {
-                            UniformGrid(state.quickFolders, columns = 3) { f, m -> QuickTile(f, m) { open(f.id) } }
+                            EqualGrid(state.quickFolders, columns = 3) { f, m -> QuickTile(f, m) { open(f.id) } }
                         }
                     }
                     if (state.favorites.isNotEmpty()) {
-                        item(key = "fav_header") { HomeHeader(Icons.Rounded.Star, "Favorites", "See all", onOpenLibrary) }
+                        item(key = "fav_header") { HomeHeader("Favorites", "See all", onOpenLibrary) }
                         item(key = "favorites") {
                             AppCard(contentPadding = PaddingValues(vertical = 4.dp)) {
                                 state.favorites.take(5).forEach { EntryRow(it) { viewModel.open(it.id) } }
@@ -237,7 +252,7 @@ fun HomeScreen(
                         }
                     }
                     if (state.recents.isNotEmpty()) {
-                        item(key = "recent_header") { HomeHeader(Icons.Rounded.History, "Recently opened", "See all", onOpenLibrary) }
+                        item(key = "recent_header") { HomeHeader("Recently opened", "See all", onOpenLibrary) }
                         item(key = "recents") {
                             AppCard(contentPadding = PaddingValues(vertical = 4.dp)) {
                                 state.recents.take(5).forEach { EntryRow(it, showTime = true) { viewModel.open(it.id) } }
@@ -251,115 +266,62 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeHeader(icon: ImageVector, title: String, action: String?, onAction: (() -> Unit)?) {
-    Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(22.dp))
-        Spacer(Modifier.width(10.dp))
-        Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+private fun HomeHeader(title: String, action: String?, onAction: (() -> Unit)?) {
+    Row(Modifier.fillMaxWidth().padding(top = 6.dp, start = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
         if (action != null && onAction != null) {
-            Row(
-                Modifier.clip(CircleShape).clickable(onClick = onAction).padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(action, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.width(4.dp))
-                Icon(Icons.AutoMirrored.Rounded.ArrowForward, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-            }
-        }
-    }
-}
-
-/** Lays items out in equal columns; every cell gets the same width and height. */
-@Composable
-private fun <T> UniformGrid(items: List<T>, columns: Int, cell: @Composable (T, Modifier) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        items.chunked(columns).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                row.forEach { cell(it, Modifier.weight(1f)) }
-                repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ToolCell(label: String, icon: ImageVector, tint: Color, modifier: Modifier, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLowest,
-        shadowElevation = 2.dp,
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
-        modifier = modifier.height(92.dp),
-    ) {
-        Column(Modifier.fillMaxSize().padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Icon(icon, null, tint = tint, modifier = Modifier.size(30.dp))
-            Spacer(Modifier.height(8.dp))
-            Text(label, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                action, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.clip(CircleShape).clickable(onClick = onAction).padding(horizontal = 8.dp, vertical = 4.dp),
+            )
         }
     }
 }
 
 @Composable
 private fun HeroStorage(volume: StorageVolumeInfo, onBrowse: () -> Unit, onAnalyze: () -> Unit) {
+    val animations = com.webtecit.filepilot.core.designsystem.LocalAnimationsEnabled.current
+    // The bar fills from empty when Home opens.
+    val fill = remember { androidx.compose.animation.core.Animatable(if (animations) 0f else volume.usedFraction.toFloat()) }
+    LaunchedEffect(volume.usedFraction) {
+        fill.animateTo(volume.usedFraction.toFloat(), tween(if (animations) 1100 else 0, easing = androidx.compose.animation.core.FastOutSlowInEasing))
+    }
     Surface(
         onClick = onBrowse,
-        shape = RoundedCornerShape(30.dp),
+        shape = RoundedCornerShape(22.dp),
         color = Color.Transparent,
-        shadowElevation = 8.dp,
+        shadowElevation = 4.dp,
         modifier = Modifier.fillMaxWidth().testTag("storage_card"),
     ) {
-        Box(Modifier.background(Brush.linearGradient(listOf(Color(0xFF3B7BFF), Color(0xFF1D4FE0), Color(0xFF1539B8))))) {
-            // Decorative wave and folder.
-            androidx.compose.foundation.Canvas(Modifier.matchParentSize()) {
-                val path = androidx.compose.ui.graphics.Path().apply {
-                    moveTo(0f, size.height * 0.78f)
-                    cubicTo(size.width * 0.3f, size.height * 0.62f, size.width * 0.6f, size.height * 1.02f, size.width, size.height * 0.70f)
-                    lineTo(size.width, size.height); lineTo(0f, size.height); close()
-                }
-                drawPath(path, Color.White.copy(alpha = 0.08f))
-            }
-            Icon(
-                Icons.Rounded.Folder, null, tint = Color.White.copy(alpha = 0.18f),
-                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 14.dp, bottom = 52.dp).size(64.dp),
-            )
-            Row(Modifier.padding(horizontal = 18.dp, vertical = 22.dp), verticalAlignment = Alignment.CenterVertically) {
-                ProgressRing(
-                    volume.usedFraction, Color.White, size = 100.dp, thickness = 10.dp, trackColor = Color.White.copy(alpha = 0.22f),
-                ) {
-                    Text(Formatters.percent(volume.usedFraction), style = MaterialTheme.typography.headlineSmall, color = Color.White)
-                    Text("used", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.85f))
-                }
-                Spacer(Modifier.width(14.dp))
-                Box(Modifier.width(1.dp).height(96.dp).background(Color.White.copy(alpha = 0.25f)))
-                Spacer(Modifier.width(14.dp))
+        Column(Modifier.background(Brush.linearGradient(listOf(Color(0xFF3B7BFF), Palette.Navy))).padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.Storage, null, tint = Color.White, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text(volume.label, style = MaterialTheme.typography.titleMedium, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    Text("${Formatters.size(volume.usedBytes)} of ${Formatters.size(volume.totalBytes)}", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.92f))
-                    Spacer(Modifier.height(8.dp))
-                    Row(
-                        Modifier.clip(CircleShape).background(Color(0xFF34D399).copy(alpha = 0.9f)).padding(horizontal = 10.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(Icons.Rounded.Check, null, tint = Color(0xFF064E3B), modifier = Modifier.size(14.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("${Formatters.size(volume.freeBytes)} free", style = MaterialTheme.typography.labelMedium, color = Color(0xFF064E3B))
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    Row(
-                        Modifier.clip(CircleShape).background(Color.White).clickable(onClick = onAnalyze).padding(horizontal = 14.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(Icons.Rounded.BarChart, null, tint = Color(0xFF1539B8), modifier = Modifier.size(16.dp))
+                    Text(volume.label, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.85f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(Formatters.size(volume.usedBytes), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = Color.White)
                         Spacer(Modifier.width(6.dp))
-                        Text("Analyze storage", style = MaterialTheme.typography.labelLarge, color = Color(0xFF0B1B3F))
-                        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = Color(0xFF0B1B3F), modifier = Modifier.size(18.dp))
+                        Text("of ${Formatters.size(volume.totalBytes)}", style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.8f), modifier = Modifier.padding(bottom = 2.dp))
                     }
+                }
+                Icon(Icons.Rounded.Storage, null, tint = Color.White.copy(alpha = 0.9f), modifier = Modifier.size(30.dp))
+            }
+            Spacer(Modifier.height(10.dp))
+            Box(Modifier.fillMaxWidth().height(7.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.25f))) {
+                Box(Modifier.fillMaxWidth(fill.value.coerceIn(0f, 1f)).fillMaxHeight().clip(CircleShape).background(Color.White))
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "${Formatters.size(volume.freeBytes)} free", style = MaterialTheme.typography.labelMedium, color = Color.White,
+                    modifier = Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.18f)).padding(horizontal = 10.dp, vertical = 5.dp),
+                )
+                Spacer(Modifier.weight(1f))
+                Row(
+                    Modifier.clip(CircleShape).background(Color.White).clickable(onClick = onAnalyze).padding(start = 12.dp, end = 6.dp, top = 5.dp, bottom = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Analyze", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = Palette.Navy)
+                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = Palette.Navy, modifier = Modifier.size(18.dp))
                 }
             }
         }
@@ -367,29 +329,6 @@ private fun HeroStorage(volume: StorageVolumeInfo, onBrowse: () -> Unit, onAnaly
 }
 
 private data class CategoryTile(val label: String, val icon: ImageVector, val tint: Color, val id: String, val stats: Pair<Int, Long>?)
-
-@Composable
-private fun CategoryCell(tile: CategoryTile, modifier: Modifier, onClick: () -> Unit) {
-    val dark = com.webtecit.filepilot.core.designsystem.LocalDarkTheme.current
-    Surface(
-        onClick = onClick,
-        shape = RoundedCornerShape(20.dp),
-        color = tile.tint.copy(alpha = if (dark) 0.16f else 0.09f),
-        border = androidx.compose.foundation.BorderStroke(1.dp, tile.tint.copy(alpha = 0.12f)),
-        modifier = modifier.height(100.dp),
-    ) {
-        Column(Modifier.fillMaxSize().padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Icon(tile.icon, null, tint = tile.tint, modifier = Modifier.size(32.dp))
-            Spacer(Modifier.height(8.dp))
-            Text(tile.label, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            // Always reserve the size line, so every tile has the same layout.
-            Text(
-                tile.stats?.let { Formatters.size(it.second) } ?: " ",
-                style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1,
-            )
-        }
-    }
-}
 
 @Composable
 private fun QuickTile(folder: QuickFolder, modifier: Modifier, onClick: () -> Unit) {
@@ -401,13 +340,7 @@ private fun QuickTile(folder: QuickFolder, modifier: Modifier, onClick: () -> Un
         QuickFolderType.MUSIC -> Icons.Rounded.MusicNote to Color(0xFFEA580C)
         QuickFolderType.MOVIES -> Icons.Rounded.Movie to Color(0xFFDC2626)
     }
-    AppCard(onClick = onClick, modifier = modifier.height(96.dp), contentPadding = PaddingValues(10.dp)) {
-        Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            IconTile(icon, tint, size = 40.dp)
-            Spacer(Modifier.height(8.dp))
-            Text(folder.label, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-    }
+    GridBox(folder.label, icon, tint, modifier, onClick = onClick)
 }
 
 @Composable
