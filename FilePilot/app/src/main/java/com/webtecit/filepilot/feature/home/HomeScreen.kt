@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package com.webtecit.filepilot.feature.home
 
 import androidx.compose.foundation.Image
@@ -124,116 +126,122 @@ fun HomeScreen(
                     radius = size.width * 0.7f, center = androidx.compose.ui.geometry.Offset(size.width * 0.95f, 0f),
                 )
             }
-            LazyColumn(
+            androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+                isRefreshing = state.refreshing,
+                onRefresh = viewModel::refresh,
                 modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 6.dp, bottom = 28.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                item(key = "header") {
-                    Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Surface(shape = RoundedCornerShape(16.dp), shadowElevation = 4.dp, color = Color.Transparent) { AppLogo(44.dp) }
-                        Spacer(Modifier.width(14.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(Brand.APP_NAME, style = MaterialTheme.typography.headlineSmall)
-                            Text("Manage everything. Edit anything.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Surface(
-                            onClick = { viewModel.toggleTheme(dark) },
-                            shape = CircleShape,
-                            color = MaterialTheme.colorScheme.surfaceContainerLowest,
-                            shadowElevation = 4.dp,
-                            modifier = Modifier.size(42.dp).testTag("theme_toggle"),
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    if (dark) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
-                                    contentDescription = if (dark) "Switch to light mode" else "Switch to dark mode",
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            }
-                        }
-                    }
-                }
-                item(key = "search") {
-                    Surface(
-                        onClick = { gate { onSearch() } },
-                        shape = RoundedCornerShape(26.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerLowest,
-                        shadowElevation = 3.dp,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
-                        modifier = Modifier.fillMaxWidth().testTag("smart_search"),
-                    ) {
-                        Row(Modifier.padding(horizontal = 18.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Rounded.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 6.dp, bottom = 28.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    item(key = "header") {
+                        Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Surface(shape = RoundedCornerShape(16.dp), shadowElevation = 4.dp, color = Color.Transparent) { AppLogo(44.dp) }
                             Spacer(Modifier.width(14.dp))
                             Column(Modifier.weight(1f)) {
-                                Text("Search anything", style = MaterialTheme.typography.titleMedium)
-                                Text("Try \"large videos from last week\"", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(Brand.APP_NAME, style = MaterialTheme.typography.headlineSmall)
+                                Text("Manage everything. Edit anything.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            Box(Modifier.width(1.dp).height(30.dp).background(MaterialTheme.colorScheme.outlineVariant))
-                            Spacer(Modifier.width(14.dp))
-                            Icon(Icons.Rounded.Search, null, tint = MaterialTheme.colorScheme.onSurface)
+                            Surface(
+                                onClick = { viewModel.toggleTheme(dark) },
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                shadowElevation = 4.dp,
+                                modifier = Modifier.size(42.dp).testTag("theme_toggle"),
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        if (dark) Icons.Rounded.LightMode else Icons.Rounded.DarkMode,
+                                        contentDescription = if (dark) "Switch to light mode" else "Switch to dark mode",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            }
                         }
                     }
-                }
-                if (primary != null) {
-                    item(key = "hero") { HeroStorage(primary, onBrowse = { open(primary.rootId) }, onAnalyze = { gate { onTool(Tool.ANALYZER) } }) }
-                }
-                items(state.volumes.filter { it.type != VolumeType.INTERNAL }, key = { "vol:" + it.rootId }) { v ->
-                    StorageCard(v, onClick = { open(v.rootId) })
-                }
-                items(state.safRoots, key = { "saf:" + it.treeUri }) { root ->
-                    AppCard(onClick = { onOpenFolder(root.rootId) }) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconTile(Icons.Rounded.FolderOpen, MaterialTheme.colorScheme.tertiary)
-                            Spacer(Modifier.width(14.dp))
-                            Text(root.label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                    item(key = "search") {
+                        Surface(
+                            onClick = { gate { onSearch() } },
+                            shape = RoundedCornerShape(26.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerLowest,
+                            shadowElevation = 3.dp,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)),
+                            modifier = Modifier.fillMaxWidth().testTag("smart_search"),
+                        ) {
+                            Row(Modifier.padding(horizontal = 18.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Rounded.AutoAwesome, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
+                                Spacer(Modifier.width(14.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text("Search anything", style = MaterialTheme.typography.titleMedium)
+                                    Text("Try \"large videos from last week\"", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                Box(Modifier.width(1.dp).height(30.dp).background(MaterialTheme.colorScheme.outlineVariant))
+                                Spacer(Modifier.width(14.dp))
+                                Icon(Icons.Rounded.Search, null, tint = MaterialTheme.colorScheme.onSurface)
+                            }
                         }
                     }
-                }
-                item(key = "cat_header") { HomeHeader(Icons.Rounded.GridView, "Categories", "View all", onOpenFiles) }
-                item(key = "categories") {
-                    val summaries = state.categories.associateBy { it.category }
-                    fun stats(c: Category) = summaries[c]?.let { it.count to it.bytes }
-                    val tiles = listOf(
-                        CategoryTile("Images", Icons.Rounded.Image, Color(0xFFE11D74), Category.IMAGES.id, stats(Category.IMAGES)),
-                        CategoryTile("Videos", Icons.Rounded.Movie, Color(0xFFDC2626), Category.VIDEOS.id, stats(Category.VIDEOS)),
-                        CategoryTile("Audio", Icons.Rounded.MusicNote, Color(0xFFEA580C), Category.AUDIO.id, stats(Category.AUDIO)),
-                        CategoryTile("Documents", Icons.Rounded.Description, Color(0xFF2563EB), Category.DOCUMENTS.id, stats(Category.DOCUMENTS)),
-                        CategoryTile("APKs", Icons.Rounded.Android, Color(0xFF16A34A), Category.APKS.id, stats(Category.APKS)),
-                        CategoryTile("Archives", Icons.Rounded.FolderZip, Color(0xFF9333EA), Category.ARCHIVES.id, stats(Category.ARCHIVES)),
-                        CategoryTile("Downloads", Icons.Rounded.Download, Color(0xFF0284C7), state.downloadsId, null),
-                        CategoryTile("Recent", Icons.Rounded.History, Color(0xFF0D9488), Category.RECENT.id, null),
-                    )
-                    UniformGrid(tiles, columns = 4) { t, m -> CategoryCell(t, m) { if (t.id.isNotEmpty()) open(t.id) } }
-                }
-                item(key = "tools_header") { HomeHeader(Icons.Rounded.Build, "Tools", "More tools", onOpenTools) }
-                item(key = "tools") {
-                    val tools: List<Tool?> = listOf(Tool.CLEANER, Tool.ANALYZER, Tool.SECURE_FOLDER, null)
-                    UniformGrid(tools, columns = 4) { t, m ->
-                        if (t != null) ToolCell(t.label, t.icon, Color(t.tint), m) { gate { onTool(t) } }
-                        else ToolCell("More Tools", Icons.Rounded.Apps, Color(0xFF6366F1), m, onOpenTools)
+                    if (primary != null) {
+                        item(key = "hero") { HeroStorage(primary, onBrowse = { open(primary.rootId) }, onAnalyze = { gate { onTool(Tool.ANALYZER) } }) }
                     }
-                }
-                if (state.quickFolders.isNotEmpty()) {
-                    item(key = "quick_header") { HomeHeader(Icons.Rounded.Folder, "Quick access", null, null) }
-                    item(key = "quick") {
-                        UniformGrid(state.quickFolders, columns = 3) { f, m -> QuickTile(f, m) { open(f.id) } }
+                    items(state.volumes.filter { it.type != VolumeType.INTERNAL }, key = { "vol:" + it.rootId }) { v ->
+                        StorageCard(v, onClick = { open(v.rootId) })
                     }
-                }
-                if (state.favorites.isNotEmpty()) {
-                    item(key = "fav_header") { HomeHeader(Icons.Rounded.Star, "Favorites", "See all", onOpenLibrary) }
-                    item(key = "favorites") {
-                        AppCard(contentPadding = PaddingValues(vertical = 4.dp)) {
-                            state.favorites.take(5).forEach { EntryRow(it) { viewModel.open(it.id) } }
+                    items(state.safRoots, key = { "saf:" + it.treeUri }) { root ->
+                        AppCard(onClick = { onOpenFolder(root.rootId) }) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconTile(Icons.Rounded.FolderOpen, MaterialTheme.colorScheme.tertiary)
+                                Spacer(Modifier.width(14.dp))
+                                Text(root.label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                            }
                         }
                     }
-                }
-                if (state.recents.isNotEmpty()) {
-                    item(key = "recent_header") { HomeHeader(Icons.Rounded.History, "Recently opened", "See all", onOpenLibrary) }
-                    item(key = "recents") {
-                        AppCard(contentPadding = PaddingValues(vertical = 4.dp)) {
-                            state.recents.take(5).forEach { EntryRow(it, showTime = true) { viewModel.open(it.id) } }
+                    item(key = "cat_header") { HomeHeader(Icons.Rounded.GridView, "Categories", "View all", onOpenFiles) }
+                    item(key = "categories") {
+                        val summaries = state.categories.associateBy { it.category }
+                        fun stats(c: Category) = summaries[c]?.let { it.count to it.bytes }
+                        val tiles = listOf(
+                            CategoryTile("Images", Icons.Rounded.Image, Color(0xFFE11D74), Category.IMAGES.id, stats(Category.IMAGES)),
+                            CategoryTile("Videos", Icons.Rounded.Movie, Color(0xFFDC2626), Category.VIDEOS.id, stats(Category.VIDEOS)),
+                            CategoryTile("Audio", Icons.Rounded.MusicNote, Color(0xFFEA580C), Category.AUDIO.id, stats(Category.AUDIO)),
+                            CategoryTile("Documents", Icons.Rounded.Description, Color(0xFF2563EB), Category.DOCUMENTS.id, stats(Category.DOCUMENTS)),
+                            CategoryTile("APKs", Icons.Rounded.Android, Color(0xFF16A34A), Category.APKS.id, stats(Category.APKS)),
+                            CategoryTile("Archives", Icons.Rounded.FolderZip, Color(0xFF9333EA), Category.ARCHIVES.id, stats(Category.ARCHIVES)),
+                            CategoryTile("Downloads", Icons.Rounded.Download, Color(0xFF0284C7), state.downloadsId, null),
+                            CategoryTile("Recent", Icons.Rounded.History, Color(0xFF0D9488), Category.RECENT.id, null),
+                        )
+                        UniformGrid(tiles, columns = 4) { t, m -> CategoryCell(t, m) { if (t.id.isNotEmpty()) open(t.id) } }
+                    }
+                    item(key = "tools_header") { HomeHeader(Icons.Rounded.Build, "Tools", "More tools", onOpenTools) }
+                    item(key = "tools") {
+                        val tools: List<Tool?> = listOf(Tool.CLEANER, Tool.ANALYZER, Tool.SECURE_FOLDER, null)
+                        UniformGrid(tools, columns = 4) { t, m ->
+                            if (t != null) ToolCell(t.label, t.icon, Color(t.tint), m) { gate { onTool(t) } }
+                            else ToolCell("More Tools", Icons.Rounded.Apps, Color(0xFF6366F1), m, onOpenTools)
+                        }
+                    }
+                    if (state.quickFolders.isNotEmpty()) {
+                        item(key = "quick_header") { HomeHeader(Icons.Rounded.Folder, "Quick access", null, null) }
+                        item(key = "quick") {
+                            UniformGrid(state.quickFolders, columns = 3) { f, m -> QuickTile(f, m) { open(f.id) } }
+                        }
+                    }
+                    if (state.favorites.isNotEmpty()) {
+                        item(key = "fav_header") { HomeHeader(Icons.Rounded.Star, "Favorites", "See all", onOpenLibrary) }
+                        item(key = "favorites") {
+                            AppCard(contentPadding = PaddingValues(vertical = 4.dp)) {
+                                state.favorites.take(5).forEach { EntryRow(it) { viewModel.open(it.id) } }
+                            }
+                        }
+                    }
+                    if (state.recents.isNotEmpty()) {
+                        item(key = "recent_header") { HomeHeader(Icons.Rounded.History, "Recently opened", "See all", onOpenLibrary) }
+                        item(key = "recents") {
+                            AppCard(contentPadding = PaddingValues(vertical = 4.dp)) {
+                                state.recents.take(5).forEach { EntryRow(it, showTime = true) { viewModel.open(it.id) } }
+                            }
                         }
                     }
                 }

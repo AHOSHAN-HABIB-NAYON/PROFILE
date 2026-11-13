@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class FilesState(
+    val refreshing: Boolean = false,
     val volumes: List<StorageVolumeInfo> = emptyList(),
     val safRoots: List<SafRoot> = emptyList(),
     val bookmarks: List<LibraryEntry> = emptyList(),
@@ -61,8 +62,13 @@ class FilesViewModel @Inject constructor(
 
     fun refresh() {
         viewModelScope.launch {
-            val vols = runCatching { volumes.load() }.getOrDefault(emptyList())
-            _state.update { it.copy(volumes = vols, access = StorageAccess.level(context)) }
+            _state.update { it.copy(refreshing = true) }
+            try {
+                val vols = runCatching { volumes.load() }.getOrDefault(emptyList())
+                _state.update { it.copy(volumes = vols, access = StorageAccess.level(context)) }
+            } finally {
+                _state.update { it.copy(refreshing = false) }
+            }
         }
     }
 

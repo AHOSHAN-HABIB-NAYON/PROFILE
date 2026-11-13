@@ -37,6 +37,7 @@ enum class QuickFolderType { DOWNLOADS, CAMERA, PICTURES, DOCUMENTS, MUSIC, MOVI
 data class QuickFolder(val type: QuickFolderType, val label: String, val id: String)
 
 data class HomeState(
+    val refreshing: Boolean = false,
     val volumes: List<StorageVolumeInfo> = emptyList(),
     val access: AccessLevel = AccessLevel.LIMITED,
     val quickFolders: List<QuickFolder> = emptyList(),
@@ -76,14 +77,19 @@ class HomeViewModel @Inject constructor(
 
     fun refresh() {
         viewModelScope.launch {
-            val access = StorageAccess.level(context)
-            val vols = runCatching { volumes.load() }.getOrDefault(emptyList())
-            val quick = if (access == AccessLevel.FULL) withContext(io) { quickFolders() } else emptyList()
-            val downloads = File(Environment.getExternalStorageDirectory(), Environment.DIRECTORY_DOWNLOADS).absolutePath
-            _state.update { it.copy(volumes = vols, access = access, quickFolders = quick, downloadsId = downloads, loaded = true) }
-            if (access == AccessLevel.FULL) {
-                val sums = runCatching { categories.summaries() }.getOrDefault(emptyList())
-                _state.update { it.copy(categories = sums) }
+            _state.update { it.copy(refreshing = true) }
+            try {
+                val access = StorageAccess.level(context)
+                val vols = runCatching { volumes.load() }.getOrDefault(emptyList())
+                val quick = if (access == AccessLevel.FULL) withContext(io) { quickFolders() } else emptyList()
+                val downloads = File(Environment.getExternalStorageDirectory(), Environment.DIRECTORY_DOWNLOADS).absolutePath
+                _state.update { it.copy(volumes = vols, access = access, quickFolders = quick, downloadsId = downloads, loaded = true) }
+                if (access == AccessLevel.FULL) {
+                    val sums = runCatching { categories.summaries() }.getOrDefault(emptyList())
+                    _state.update { it.copy(categories = sums) }
+                }
+            } finally {
+                _state.update { it.copy(refreshing = false) }
             }
         }
     }

@@ -86,80 +86,86 @@ fun FilesScreen(
         topBar = { TopAppBar(title = { Text("Files") }) },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
-        LazyColumn(
+        androidx.compose.material3.pulltorefresh.PullToRefreshBox(
+            isRefreshing = state.refreshing,
+            onRefresh = viewModel::refresh,
             modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (state.access == AccessLevel.LIMITED) {
-                item(key = "limited") {
-                    AppCard(onClick = { gate { viewModel.refresh() } }) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconTile(Icons.Rounded.Warning, MaterialTheme.colorScheme.error)
-                            Spacer(Modifier.width(14.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text("Limited access", style = MaterialTheme.typography.titleMedium)
-                                Text(
-                                    "Only folders you add below can be opened. Tap to allow access to all files.",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                if (state.access == AccessLevel.LIMITED) {
+                    item(key = "limited") {
+                        AppCard(onClick = { gate { viewModel.refresh() } }) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconTile(Icons.Rounded.Warning, MaterialTheme.colorScheme.error)
+                                Spacer(Modifier.width(14.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text("Limited access", style = MaterialTheme.typography.titleMedium)
+                                    Text(
+                                        "Only folders you add below can be opened. Tap to allow access to all files.",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
                     }
                 }
-            }
-            item(key = "storage") { SectionHeader("Storage") }
-            items(state.volumes, key = { "v:" + it.rootId }) { v -> StorageCard(v, onClick = { gate { onOpenFolder(v.rootId) } }) }
-
-            item(key = "granted") { SectionHeader("Granted folders and drives") }
-            if (state.safRoots.isEmpty()) {
-                item(key = "granted_empty") {
-                    Text(
-                        "Add an SD card, a USB drive or any folder through Android's folder picker. " +
-                            "This works even without access to all files.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                    )
+                item(key = "storage") { SectionHeader("Storage") }
+                items(state.volumes, key = { "v:" + it.rootId }) { v -> StorageCard(v, onClick = { gate { onOpenFolder(v.rootId) } }) }
+    
+                item(key = "granted") { SectionHeader("Granted folders and drives") }
+                if (state.safRoots.isEmpty()) {
+                    item(key = "granted_empty") {
+                        Text(
+                            "Add an SD card, a USB drive or any folder through Android's folder picker. " +
+                                "This works even without access to all files.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                        )
+                    }
                 }
-            }
-            items(state.safRoots, key = { "s:" + it.treeUri }) { root ->
-                AppCard(onClick = { onOpenFolder(root.rootId) }, contentPadding = PaddingValues(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 4.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconTile(Icons.Rounded.FolderOpen, MaterialTheme.colorScheme.tertiary)
-                        Spacer(Modifier.width(14.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(root.label, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(
-                                if (root.accessible) "Access granted" else "Access lost. Remove it and add it again.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (root.accessible) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
-                            )
-                        }
-                        IconButton(onClick = { removeRoot = root }) {
-                            Icon(Icons.Rounded.Close, contentDescription = "Remove ${root.label}")
+                items(state.safRoots, key = { "s:" + it.treeUri }) { root ->
+                    AppCard(onClick = { onOpenFolder(root.rootId) }, contentPadding = PaddingValues(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 4.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconTile(Icons.Rounded.FolderOpen, MaterialTheme.colorScheme.tertiary)
+                            Spacer(Modifier.width(14.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(root.label, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text(
+                                    if (root.accessible) "Access granted" else "Access lost. Remove it and add it again.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (root.accessible) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+                                )
+                            }
+                            IconButton(onClick = { removeRoot = root }) {
+                                Icon(Icons.Rounded.Close, contentDescription = "Remove ${root.label}")
+                            }
                         }
                     }
                 }
-            }
-            item(key = "add") {
-                OutlinedButton(onClick = { picker.launch(null) }, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Rounded.Add, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Add SD card, USB drive or folder")
+                item(key = "add") {
+                    OutlinedButton(onClick = { picker.launch(null) }, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Rounded.Add, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Add SD card, USB drive or folder")
+                    }
                 }
-            }
-            if (state.bookmarks.isNotEmpty()) {
-                item(key = "bookmarks") { SectionHeader("Bookmarks") }
-                items(state.bookmarks, key = { "b:" + it.id }) { b ->
-                    AppCard(onClick = { viewModel.open(b.id) }, contentPadding = PaddingValues(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 4.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconTile(Icons.Rounded.Bookmark, MaterialTheme.colorScheme.primary)
-                            Spacer(Modifier.width(14.dp))
-                            Text(b.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            IconButton(onClick = { viewModel.removeBookmark(b) }) {
-                                Icon(Icons.Rounded.Close, contentDescription = "Remove bookmark ${b.name}")
+                if (state.bookmarks.isNotEmpty()) {
+                    item(key = "bookmarks") { SectionHeader("Bookmarks") }
+                    items(state.bookmarks, key = { "b:" + it.id }) { b ->
+                        AppCard(onClick = { viewModel.open(b.id) }, contentPadding = PaddingValues(start = 16.dp, top = 12.dp, bottom = 12.dp, end = 4.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconTile(Icons.Rounded.Bookmark, MaterialTheme.colorScheme.primary)
+                                Spacer(Modifier.width(14.dp))
+                                Text(b.name, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                IconButton(onClick = { viewModel.removeBookmark(b) }) {
+                                    Icon(Icons.Rounded.Close, contentDescription = "Remove bookmark ${b.name}")
+                                }
                             }
                         }
                     }
