@@ -1,0 +1,124 @@
+name: FilePilot Android build
+
+on:
+  push:
+    paths:
+      - "FilePilot/**"
+      - ".github/workflows/filepilot-android.yml"
+  pull_request:
+    paths:
+      - "FilePilot/**"
+  workflow_dispatch:
+
+concurrency:
+  group: filepilot-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: FilePilot
+
+jobs:
+  build:
+    name: Build + unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Unit tests
+        run: ./gradlew --stacktrace testDebugUnitTest
+      - name: Build debug APK
+        run: ./gradlew --stacktrace assembleDebug
+      - name: Set up release signing (only if the key secrets are configured)
+        env:
+          KS_B64: ${{ secrets.FP_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "FP_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "Release signing enabled"
+          else
+            echo "No release key configured: release builds use the test key"
+          fi
+      - name: Build release APK and App Bundle
+        env:
+          FP_KEYSTORE_PASSWORD: ${{ secrets.FP_KEYSTORE_PASSWORD }}
+          FP_KEY_ALIAS: ${{ secrets.FP_KEY_ALIAS }}
+          FP_KEY_PASSWORD: ${{ secrets.FP_KEY_PASSWORD }}
+        run: ./gradlew --stacktrace assembleRelease bundleRelease
+      - name: Upload APKs and bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: FilePilot-apks
+          path: |
+            FilePilot/app/build/outputs/apk/debug/*.apk
+            FilePilot/app/build/outputs/apk/release/*.apk
+            FilePilot/app/build/outputs/bundle/release/*.aab
+      - name: Prepare direct-download files
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk FilePilot.apk
+          cp app/build/outputs/bundle/release/app-release.aab FilePilot.aab
+      - name: Publish test build (direct download link)
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: filepilot-test
+          name: FilePilot test build
+          prerelease: true
+          files: |
+            FilePilot/FilePilot.apk
+            FilePilot/FilePilot.aab
+          body: |
+            Latest FilePilot: Coding Pro test build. Without release-key secrets it is signed with a test key;
+            re-build the .aab with your release key before uploading to Google Play.
+            APK: https://github.com/${{ github.repository }}/releases/download/filepilot-test/FilePilot.apk
+            Built from commit ${{ github.sha }}.
+      - name: Upload unit test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: filepilot-unit-test-reports
+          path: FilePilot/app/build/reports/tests/
+
+  device-tests:
+    name: UI tests (emulator API 34)
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run UI tests
+        timeout-minutes: 25
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          working-directory: FilePilot
+          profile: pixel_6
+          script: ./gradlew --stacktrace connectedDebugAndroidTest
+      - name: Upload UI test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: filepilot-device-test-reports
+          path: FilePilot/app/build/reports/androidTests/

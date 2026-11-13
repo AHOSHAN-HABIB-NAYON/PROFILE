@@ -1,0 +1,15 @@
+package com.webtecit.filepilot.navigation
+
+import kotlinx.serialization.Serializable
+
+@Serializable data object SplashRoute
+@Serializable data object OnboardingRoute
+@Serializable data object PermissionIntroRoute
+@Serializable data class PermissionsRoute(val setup: Boolean)
+@Serializable data object HomeRoute
+@Serializable data object FilesRoute
+@Serializable data object LibraryRoute
+@Serializable data object SettingsRoute
+@Serializable data class BrowserRoute(val locationId: String)
+@Serializable data class CompareRoute(val firstId: String, val secondId: String)
+@Serializable data object AboutRoute
