@@ -22,13 +22,31 @@ An offline Android file manager and developer toolkit by **Webtecit Apps**
 | 8 | Legal pages, security notes | Pages written in `filepilot-app/`; publishing needs a merge to `main` |
 | 8 | Ads and Premium | Not included by decision: the app is completely free, with no ads and no in-app purchases |
 
+### Added after the stages
+
+| Area | What works |
+| --- | --- |
+| Look | Home with greeting by time, storage ring, category rings with GB, running jobs with stop, quick tools; equal boxes and enter/press animations everywhere; intro with three animated pages; one file-access page after the intro |
+| Feedback | Animated "Deleted" and "Saved" confirmations; Undo after moving to the Recycle Bin, Replace all, Smart organize |
+| Delete | Bottom panel with the items, space freed and a "Delete permanently" switch |
+| Background | Leaving a running scan asks to keep running with a notification (asks for notifications on Android 13+) |
+| Back | Back returns to the previous folder, then to the screen you came from |
+| Photos | Swipe left/right through the folder, pinch zoom, thumbnails, share, open with, details, delete |
+| Storage tools | Folder size (drill-down), Large files, Screenshots, WhatsApp media size, Smart organize |
+| Archives | ZIP / 7z / TAR.GZ / TAR; Store, Fast, Normal, Maximum; AES-256 ZIP passwords; split ZIP; test an archive |
+| PDF | Image to PDF, Text to PDF, Merge, Split / pick pages, Rotate, PDF to images |
+| Images | Compress, resize, convert (JPG, PNG, WEBP) |
+| QR | QR maker (link, text, WiFi, phone, email, SMS, contact, barcode, colours, logo); scanner with camera or a picture, torch, history |
+| Developer | Find & replace with "3 / 12" position, preserve case, select all matches, Undo after Replace all; save-before-leaving dialog; JSON, Base64, URL, hash, JWT, UUID, timestamp, colour, number bases, regex, text tools, file-size units; password generator |
+
 ### Known limits (honest list)
 
 - APK toolkit reads APK/XAPK/APKS information and signatures. Editing AndroidManifest/smali, rebuilding, signing and zipalign are **not** implemented. Extracting installed apps needs `QUERY_ALL_PACKAGES`, a policy-restricted permission, so it was left out.
-- Archives: ZIP, TAR, TAR.GZ and GZIP open in-app; RAR and 7z open in other apps. Password-protected archives aren't supported.
-- Merged/compressed PDFs store pages as images (Android has no built-in PDF editing library).
-- Long copies run while the app is open; there is no notification-based background service yet.
+- RAR archives can be opened but not created (RAR creation is not licensed for other apps).
 - Root explorer: the terminal uses `su` when available; there is no separate root file browser.
+- Merged, split and rotated PDFs store pages as images (Android has no built-in PDF editing), so their text can't be selected.
+- The QR scanner reads codes the ZXing library supports (QR, Code 128, EAN, UPC and others). WiFi codes are shown with a "copy password and open WiFi settings" action; Android doesn't let apps join a network silently.
+- Not built yet: document scanner with edge detection, video compress/trim, GIF maker, OCR, collage, long-screenshot stitching, dual pane and tabs, Git viewer, project templates, EPUB/CSV viewers, PDF password lock and signing, local version history in the editor (unsaved work is kept as a draft instead).
 
 ## Stage 1 features
 
@@ -75,6 +93,8 @@ app/src/main/java/com/webtecit/filepilot/
 - **`MANAGE_EXTERNAL_STORAGE` (All files access)** is declared because file management is the app's core purpose, a use case Google Play permits. You must submit the *All files access* declaration in Play Console, with a short video of the core file-management flow. Approval is decided by Google and isn't guaranteed.
 - No `READ_MEDIA_*` permissions are requested (Play's photo/video policy), and there is no `QUERY_ALL_PACKAGES` or `REQUEST_INSTALL_PACKAGES` yet. The APK toolkit (Stage 4) may need the latter; it will be raised before it is added.
 - `Android/data` and `Android/obb` of other apps are not accessible on Android 11+; the app doesn't try to bypass this.
+- `CAMERA` is used only by the QR scanner and asked when the scanner opens; scanning a picture from the gallery needs no permission.
+- `POST_NOTIFICATIONS` (Android 13+) is asked only when the user chooses to keep a job running in the background.
 - Cloud backup is disabled; nothing leaves the device.
 - Ads, billing and the legal pages (Stage 8) will update the Data safety answers and the privacy policy.
 

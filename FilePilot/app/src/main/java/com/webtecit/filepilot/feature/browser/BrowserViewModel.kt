@@ -196,7 +196,14 @@ class BrowserViewModel @Inject constructor(
 
     // --- navigation -----------------------------------------------------------------------
 
+    /**
+     * Folders visited on this screen, so Back returns to where the user came from: into a folder and
+     * back out, and finally back to the screen that opened the browser (Home, a category, a tool).
+     */
+    private val history = ArrayDeque<List<Crumb>>()
+
     fun openFolder(item: FileItem, currentScroll: Int) {
+        history.addLast(_state.value.crumbs)
         rememberScroll(currentScroll)
         val wasDeep = _state.value.showingDeepResults
         resetSearch()
@@ -215,17 +222,20 @@ class BrowserViewModel @Inject constructor(
     fun openCrumb(index: Int, currentScroll: Int) {
         val crumbs = _state.value.crumbs
         if (index !in crumbs.indices || index == crumbs.lastIndex) return
+        history.addLast(crumbs)
         rememberScroll(currentScroll)
         resetSearch()
         _state.update { it.copy(crumbs = crumbs.take(index + 1), selection = emptySet()) }
         load(crumbs[index].id, spinner = true)
     }
 
-    /** Goes to the parent folder. Returns false at the top, so the screen can close. */
+    /** Goes back to the previously shown folder. Returns false when there is none, so the screen closes. */
     fun goUp(currentScroll: Int): Boolean {
-        val crumbs = _state.value.crumbs
-        if (crumbs.size <= 1) return false
-        openCrumb(crumbs.lastIndex - 1, currentScroll)
+        val previous = history.removeLastOrNull() ?: return false
+        rememberScroll(currentScroll)
+        resetSearch()
+        _state.update { it.copy(crumbs = previous, selection = emptySet()) }
+        load(previous.last().id, spinner = true)
         return true
     }
 

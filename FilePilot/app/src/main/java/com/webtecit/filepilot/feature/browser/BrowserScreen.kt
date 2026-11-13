@@ -295,7 +295,9 @@ fun BrowserScreen(
                         }
                     },
                     navigationIcon = {
-                        IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Close folder") }
+                        IconButton(onClick = { if (!viewModel.goUp(firstVisible())) onClose() }) {
+                            Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        }
                     },
                     actions = {
                         IconButton(onClick = viewModel::openSearch) { Icon(Icons.Rounded.Search, contentDescription = "Search") }
