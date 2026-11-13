@@ -116,11 +116,15 @@ class ArchiveViewModel @Inject constructor(
         }
         ui.value = ui.value.copy(extracting = true, message = null)
         appScope.launch {
-            val id = tasks.start("Extracting ${f.name}", "Starting…")
+            val id = tasks.start("Extracting ${f.name}", "Starting…", coroutineContext[kotlinx.coroutines.Job])
             val result = runCatching {
                 withContext(Dispatchers.IO) { ArchiveEngine.extract(f, target, only, password) { n, name -> tasks.update("Extracting ${f.name}", "$n files · $name", null) } }
             }
             result.onSuccess { n -> tasks.finish(id, "Extracted $n files to ${target.name}") }.onFailure { tasks.dismiss(id) }
+            if (result.exceptionOrNull() is kotlinx.coroutines.CancellationException) {
+                ui.value = ui.value.copy(extracting = false, message = "Extraction stopped. Files already written were kept.")
+                return@launch
+            }
             ui.value = when (val e = result.exceptionOrNull()) {
                 null -> ui.value.copy(extracting = false, message = "Extracted ${result.getOrNull()} files to ${target.name}", extractedTo = target.absolutePath)
                 is PasswordNeededException -> { password = null; pending = target to only; ui.value.copy(extracting = false, askPassword = true, wrongPassword = e.wrong) }

@@ -15,8 +15,6 @@ object TestSupport {
     fun setFirstLaunch(onboardingDone: Boolean, setupDone: Boolean) = runBlocking {
         prefs().setOnboardingDone(onboardingDone)
         prefs().setPermissionsSetupDone(setupDone)
-        // Walkthrough overlays would cover the screens under test.
-        com.webtecit.filepilot.feature.guide.Guides.ALL.forEach { prefs().markGuideSeen(it) }
         prefs().setDefaultAppPromptDone()
     }
 

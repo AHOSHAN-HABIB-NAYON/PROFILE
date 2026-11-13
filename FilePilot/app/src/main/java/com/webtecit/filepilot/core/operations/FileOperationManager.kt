@@ -23,6 +23,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -161,18 +162,17 @@ class FileOperationManager @Inject constructor(
     fun delete(items: List<FileItem>): Long {
         val id = start(FileOperation(nextId.getAndIncrement(), OperationKind.DELETE, "Deleting ${itemsLabel(items)}"))
         launch(id) { tracker ->
-            var total = 0
-            for (item in items) {
-                val fs = resolver.of(item.id)
-                total += if (item.isDirectory && !fs.nativeRecursiveDelete) measure(item).first else 1
-            }
-            tracker.setTotals(total, 0)
+            // No counting pass first: deleting starts immediately; progress is per selected item.
+            tracker.setTotals(items.size, 0)
             for (item in items) {
                 currentCoroutineContext().ensureActive()
                 tracker.guard(item.name) {
                     val fs = resolver.of(item.id)
                     fs.parentId(item.id)?.let(tracker::affected)
-                    deleteTree(fs, item, tracker)
+                    tracker.current(item.name)
+                    if (fs is com.webtecit.filepilot.core.storage.LocalFileSystem) fastDelete(item)
+                    else deleteTree(fs, item, null)
+                    tracker.itemsDone(1)
                     tracker.succeeded(item.id)
                 }
             }
@@ -329,6 +329,18 @@ class FileOperationManager @Inject constructor(
         }
         withContext(NonCancellable) { runCatching { deleteTree(fs, backup, null) } }
         return placed
+    }
+
+    /** Deletes a local file or folder straight through the file system, the fastest way. */
+    private suspend fun fastDelete(item: FileItem) = withContext(io) {
+        val root = java.io.File(item.id)
+        if (!root.exists()) return@withContext
+        // Deepest entries first, checking for cancellation as we go.
+        val ok = root.walkBottomUp().fold(true) { acc, f ->
+            if (!currentCoroutineContext().isActive) return@withContext
+            f.delete() && acc
+        }
+        if (!ok && root.exists()) throw FsException(FsError.ACCESS_DENIED, "Some items in \"${item.name}\" couldn't be deleted.")
     }
 
     private suspend fun deleteTree(fs: FileSystem, item: FileItem, tracker: Tracker?) {

@@ -48,20 +48,6 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Lets FilePilot open folders and act as a file picker, so it can be the default file manager. -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="resource/folder" />
-                <data android:mimeType="inode/directory" />
-                <data android:mimeType="vnd.android.document/directory" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.GET_CONTENT" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.OPENABLE" />
-                <data android:mimeType="*/*" />
-            </intent-filter>
         </activity>
 
         <service

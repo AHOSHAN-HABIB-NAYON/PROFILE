@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -70,7 +72,6 @@ import com.webtecit.filepilot.feature.web.PreviewScreen
 import com.webtecit.filepilot.feature.web.ProjectsScreen
 import com.webtecit.filepilot.feature.tools.Tool
 import com.webtecit.filepilot.feature.tools.ToolsScreen
-import com.webtecit.filepilot.feature.guide.Guides
 import com.webtecit.filepilot.feature.permissions.PermissionsScreen
 import com.webtecit.filepilot.feature.settings.AboutScreen
 import com.webtecit.filepilot.feature.settings.SettingsScreen
@@ -140,11 +141,13 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
                 )
             }
             composable<HomeRoute> {
-                Guided(Guides.HOME) { HomeScreen(
+                Guided { HomeScreen(
                     onOpenFolder = { nav.navigate(BrowserRoute(it)) },
                     onSearch = { nav.navigate(SearchRoute) },
                     onTool = { nav.navigate(toolRoute(it)) },
                     onOpenLibrary = { nav.switchTab(LibraryRoute) },
+                    onOpenFiles = { nav.switchTab(FilesRoute) },
+                    onOpenTools = { nav.switchTab(ToolsRoute) },
                 ) }
             }
             composable<FilesRoute> {
@@ -153,13 +156,13 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
                     onGrantAccess = { nav.navigate(PermissionsRoute(setup = false)) },
                 )
             }
-            composable<ToolsRoute> { Guided(Guides.TOOLS) { ToolsScreen(onTool = { nav.navigate(toolRoute(it)) }) } }
+            composable<ToolsRoute> { Guided { ToolsScreen(onTool = { nav.navigate(toolRoute(it)) }) } }
             composable<AnalyzerRoute> {
-                Guided(Guides.ANALYZER) { AnalyzerScreen(onBack = { nav.popBackStack() }, onOpenFolder = { nav.navigate(BrowserRoute(it)) }) }
+                Guided { AnalyzerScreen(onBack = { nav.popBackStack() }, onOpenFolder = { nav.navigate(BrowserRoute(it)) }) }
             }
             composable<EditorRoute> { backStack ->
                 val route = backStack.toRoute<EditorRoute>()
-                Guided(Guides.EDITOR) { EditorScreen(
+                Guided { EditorScreen(
                     fileId = route.fileId,
                     projectRoot = route.projectRoot,
                     onBack = { nav.popBackStack() },
@@ -170,7 +173,7 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
             }
             composable<PreviewRoute> { backStack ->
                 val route = backStack.toRoute<PreviewRoute>()
-                Guided(Guides.PREVIEW) { PreviewScreen(route.root, route.entry, prefs.previewDevice, prefs.previewConsole, onBack = { nav.popBackStack() }) }
+                Guided { PreviewScreen(route.root, route.entry, prefs.previewDevice, prefs.previewConsole, onBack = { nav.popBackStack() }) }
             }
             composable<ProjectsRoute> {
                 ProjectsScreen(
@@ -186,7 +189,7 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
             composable<SqliteRoute> { b -> com.webtecit.filepilot.feature.devtools.SqliteScreen(b.toRoute<SqliteRoute>().path, onBack = { nav.popBackStack() }) }
             composable<FontRoute> { b -> com.webtecit.filepilot.feature.devtools.FontPreviewScreen(b.toRoute<FontRoute>().path, onBack = { nav.popBackStack() }) }
             composable<ArchiveRoute> { b ->
-                Guided(Guides.ARCHIVE) { com.webtecit.filepilot.feature.devtools.ArchiveBrowserScreen(b.toRoute<ArchiveRoute>().path, onBack = { nav.popBackStack() },
+                Guided { com.webtecit.filepilot.feature.devtools.ArchiveBrowserScreen(b.toRoute<ArchiveRoute>().path, onBack = { nav.popBackStack() },
                     onOpenFolder = { nav.navigate(BrowserRoute(it)) }) }
             }
             composable<TextSearchRoute> { b ->
@@ -199,8 +202,10 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
                 com.webtecit.filepilot.feature.search.SmartSearchScreen(onBack = { nav.popBackStack() }, onOpenFolder = { nav.navigate(BrowserRoute(it)) })
             }
             composable<TerminalRoute> { com.webtecit.filepilot.feature.devtools.TerminalScreen(onBack = { nav.popBackStack() }) }
-            composable<VaultRoute> { Guided(Guides.VAULT) { com.webtecit.filepilot.feature.vault.VaultScreen(onBack = { nav.popBackStack() }) } }
-            composable<CleanerRoute> { Guided(Guides.CLEANER) { com.webtecit.filepilot.feature.cleaner.CleanerScreen(onBack = { nav.popBackStack() }) } }
+            composable<VaultRoute> { Guided { com.webtecit.filepilot.feature.vault.VaultScreen(onBack = { nav.popBackStack() }) } }
+            composable<CleanerRoute> {
+                Guided { com.webtecit.filepilot.feature.cleaner.CleanerScreen(onBack = { nav.popBackStack() }, onPreview = { p -> previewRoute(p)?.let { nav.navigate(it) } }) }
+            }
             composable<RecycleBinRoute> { com.webtecit.filepilot.feature.recycle.RecycleBinScreen(onBack = { nav.popBackStack() }) }
             composable<LibraryRoute> {
                 LibraryScreen(onOpenFolder = { nav.navigate(BrowserRoute(it)) })
@@ -213,7 +218,7 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
             }
             composable<BrowserRoute> { backStack ->
                 val route = backStack.toRoute<BrowserRoute>()
-                Guided(Guides.BROWSER) { BrowserScreen(
+                Guided { BrowserScreen(
                     locationId = route.locationId,
                     startSearch = route.search,
                     onClose = { nav.popBackStack() },
@@ -230,6 +235,20 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
             }
             composable<AboutRoute> { AboutScreen(onBack = { nav.popBackStack() }) }
         }
+    }
+}
+
+/** The in-app viewer for a file on device storage, or null to use another app. */
+fun previewRoute(path: String): Any? {
+    val name = path.substringAfterLast('/')
+    return when (com.webtecit.filepilot.core.storage.FileTypes.kindOf(name, false)) {
+        com.webtecit.filepilot.core.storage.FileKind.IMAGE -> ImageRoute(path)
+        com.webtecit.filepilot.core.storage.FileKind.VIDEO, com.webtecit.filepilot.core.storage.FileKind.AUDIO -> VideoRoute(path)
+        com.webtecit.filepilot.core.storage.FileKind.PDF -> PdfRoute(path)
+        com.webtecit.filepilot.core.storage.FileKind.TEXT, com.webtecit.filepilot.core.storage.FileKind.CODE -> EditorRoute(path)
+        com.webtecit.filepilot.core.storage.FileKind.APK -> ApkRoute(path)
+        com.webtecit.filepilot.core.storage.FileKind.ARCHIVE -> ArchiveRoute(path)
+        else -> HexRoute(path)
     }
 }
 
@@ -250,14 +269,83 @@ private fun NavHostController.openEditor(fileId: String, projectRoot: String?) {
     navigate(EditorRoute(fileId, projectRoot)) { popUpTo<EditorRoute> { inclusive = true } }
 }
 
-/** Shows a screen with its one-time walkthrough on top. */
+/** Hosts a screen. */
 @Composable
-private fun Guided(guide: Pair<String, List<com.webtecit.filepilot.feature.guide.GuideStep>>, content: @Composable () -> Unit) {
-    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
-        content()
-        com.webtecit.filepilot.feature.guide.FeatureGuide(guide.first, guide.second)
+private fun Guided(content: @Composable () -> Unit) = content()
+
+/**
+ * Floating bottom menu: the selected tab is a filled blue pill with its name; the others show an
+ * icon above a label, separated by thin dividers.
+ */
+@Composable
+private fun FloatingNavBar(current: TopLevel, onSelect: (TopLevel) -> Unit) {
+    androidx.compose.material3.Surface(
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(30.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        shadowElevation = 14.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
+        modifier = Modifier
+            .navigationBarsPadding()
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+            .fillMaxWidth()
+            .height(70.dp),
+    ) {
+        androidx.compose.foundation.layout.Row(
+            Modifier.fillMaxSize().padding(6.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            TopLevel.entries.forEachIndexed { index, tab ->
+                val selected = tab == current
+                val weight by androidx.compose.animation.core.animateFloatAsState(if (selected) 1.9f else 1f, label = "tabWeight")
+                if (index > 0 && !selected && TopLevel.entries[index - 1] != current) {
+                    androidx.compose.foundation.layout.Box(
+                        Modifier.width(1.dp).height(28.dp).background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
+                    )
+                }
+                androidx.compose.foundation.layout.Box(
+                    Modifier
+                        .weight(weight)
+                        .fillMaxHeight()
+                        .padding(horizontal = 2.dp)
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp))
+                        .background(
+                            if (selected) androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)),
+                            ) else androidx.compose.ui.graphics.SolidColor(androidx.compose.ui.graphics.Color.Transparent),
+                        )
+                        .clickable { onSelect(tab) }
+                        .testTag("tab_${tab.label}")
+                        .semantics { contentDescription = tab.label },
+                    contentAlignment = androidx.compose.ui.Alignment.Center,
+                ) {
+                    if (selected) {
+                        androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            Icon(tab.selected, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(22.dp))
+                            Text(
+                                tab.label, color = MaterialTheme.colorScheme.onPrimary, style = MaterialTheme.typography.labelLarge,
+                                maxLines = 1, modifier = Modifier.padding(start = 6.dp),
+                            )
+                        }
+                    } else {
+                        androidx.compose.foundation.layout.Column(horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally) {
+                            Icon(tab.unselected, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
+                            Text(tab.label, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
+
+/** Opens the editor; an editor already on the back stack is replaced so its tabs carry over. */
+private fun NavHostController.openEditor(fileId: String, projectRoot: String?) {
+    navigate(EditorRoute(fileId, projectRoot)) { popUpTo<EditorRoute> { inclusive = true } }
+}
+
+/** Hosts a screen. */
+@Composable
+private fun Guided(content: @Composable () -> Unit) = content()
 
 /** A floating, rounded bottom menu with an animated pill behind the selected tab. */
 @Composable

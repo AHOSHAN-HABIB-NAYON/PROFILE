@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Cancel
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Sync
@@ -53,6 +54,7 @@ class OperationsViewModel @Inject constructor(
     val operations = manager.operations
     val tasks = background.tasks
     fun dismissTask(id: Long) = background.dismiss(id)
+    fun cancelTask(id: Long) = background.cancel(id)
     fun cancel(id: Long) = manager.cancel(id)
     fun dismiss(id: Long) = manager.dismiss(id)
 }
@@ -97,6 +99,9 @@ fun OperationsPanel(
                             }
                         }
                         if (t.finished) IconButton(onClick = { viewModel.dismissTask(t.id) }) { Icon(Icons.Rounded.Close, "Dismiss") }
+                        else IconButton(onClick = { viewModel.cancelTask(t.id) }) {
+                            Icon(Icons.Rounded.Cancel, "Stop ${t.title}", tint = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
                 if (needsNotifyPermission && (ops.any { !it.status.finished } || bg.any { !it.finished })) {
@@ -174,7 +179,7 @@ private fun OperationRow(op: FileOperation, onCancel: () -> Unit, onDismiss: () 
             }
         }
         when {
-            !op.status.finished -> TextButton(onClick = onCancel) { Text("Cancel") }
+            !op.status.finished -> IconButton(onClick = onCancel) { Icon(Icons.Rounded.Cancel, "Stop", tint = MaterialTheme.colorScheme.error) }
             op.status == OperationStatus.FAILED -> TextButton(onClick = onShowProblems) { Text("View") }
             else -> IconButton(onClick = onDismiss) { Icon(Icons.Rounded.Close, contentDescription = "Dismiss") }
         }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DonutLarge
@@ -48,19 +49,30 @@ enum class Tool(val label: String, val description: String, val icon: ImageVecto
     HTML_PROJECTS("HTML Projects", "Build and run websites offline", Icons.Rounded.Language, 0xFF2563EB, "Developer"),
 }
 
+/** Tools in equal-sized tiles: same width and height for every tile, whatever the label length. */
 @Composable
 fun ToolGrid(tools: List<Tool>, onTool: (Tool) -> Unit, columns: Int = 3) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         tools.chunked(columns).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 row.forEach { tool ->
-                    AppCard(onClick = { onTool(tool) }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(12.dp)) {
-                        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                            IconTile(tool.icon, Color(tool.tint), size = 44.dp)
+                    androidx.compose.material3.Surface(
+                        onClick = { onTool(tool) },
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                        color = Color(tool.tint).copy(alpha = 0.08f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(tool.tint).copy(alpha = 0.14f)),
+                        modifier = Modifier.weight(1f).height(112.dp),
+                    ) {
+                        Column(
+                            Modifier.fillMaxSize().padding(8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            androidx.compose.material3.Icon(tool.icon, null, tint = Color(tool.tint), modifier = Modifier.size(30.dp))
                             Spacer(Modifier.height(8.dp))
                             Text(
                                 tool.label, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center,
-                                maxLines = 2, overflow = TextOverflow.Ellipsis,
+                                maxLines = 2, minLines = 2, overflow = TextOverflow.Ellipsis,
                             )
                         }
                     }

@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -56,12 +57,13 @@ import com.webtecit.filepilot.core.designsystem.kindStyle
 import com.webtecit.filepilot.core.storage.FileTypes
 
 @Composable
-fun CleanerScreen(onBack: () -> Unit, viewModel: CleanerViewModel = hiltViewModel()) {
+fun CleanerScreen(onBack: () -> Unit, onPreview: (String) -> Unit = {}, viewModel: CleanerViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     EventHandler(viewModel.events, snackbar)
     LaunchedEffect(Unit) { if (!state.scanned && !state.scanning) viewModel.scan() }
     var confirm by remember { mutableStateOf(false) }
+    var permanentConfirm by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -142,6 +144,9 @@ fun CleanerScreen(onBack: () -> Unit, viewModel: CleanerViewModel = hiltViewMode
                                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                                     )
                                 }
+                                if (!it.isDirectory) IconButton(onClick = { onPreview(it.path) }) {
+                                    Icon(Icons.Rounded.Visibility, "Preview ${it.name}", tint = MaterialTheme.colorScheme.primary)
+                                }
                                 Checkbox(checked = it.path in state.selected, onCheckedChange = { _ -> viewModel.toggle(it.path) })
                             }
                         }
@@ -151,13 +156,35 @@ fun CleanerScreen(onBack: () -> Unit, viewModel: CleanerViewModel = hiltViewMode
         }
     }
     if (confirm) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirm = false },
+            title = { Text("Clean up ${Formatters.count(state.selected.size, "item")}?") },
+            text = {
+                Text(
+                    "${Formatters.size(state.selectedBytes)} will be removed.\n\n" +
+                        "Move to Recycle Bin: files can be restored for 30 days.\n" +
+                        "Delete permanently: files are erased now and can't be recovered.",
+                )
+            },
+            confirmButton = {
+                Column(horizontalAlignment = Alignment.End) {
+                    androidx.compose.material3.TextButton(onClick = { confirm = false; viewModel.clean(permanently = false) }) { Text("Move to Recycle Bin") }
+                    androidx.compose.material3.TextButton(onClick = { confirm = false; permanentConfirm = true }) {
+                        Text("Delete permanently", color = MaterialTheme.colorScheme.error)
+                    }
+                    androidx.compose.material3.TextButton(onClick = { confirm = false }) { Text("Cancel") }
+                }
+            },
+        )
+    }
+    if (permanentConfirm) {
         ConfirmDialog(
-            title = "Clean up ${Formatters.count(state.selected.size, "item")}?",
-            message = "${Formatters.size(state.selectedBytes)} will be removed. With the Recycle Bin on (Settings), files can be restored for 30 days.",
-            confirmLabel = "Clean up",
+            title = "Delete permanently?",
+            message = "${Formatters.count(state.selected.size, "item")} (${Formatters.size(state.selectedBytes)}) will be erased. This can't be undone.",
+            confirmLabel = "Delete permanently",
             destructive = true,
-            onConfirm = { confirm = false; viewModel.clean() },
-            onDismiss = { confirm = false },
+            onConfirm = { permanentConfirm = false; viewModel.clean(permanently = true) },
+            onDismiss = { permanentConfirm = false },
         )
     }
 }

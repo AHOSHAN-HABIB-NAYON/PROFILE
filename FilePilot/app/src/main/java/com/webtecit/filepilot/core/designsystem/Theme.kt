@@ -144,16 +144,30 @@ private fun darkScheme(accent: AccentColor): ColorScheme {
     )
 }
 
+/** Slightly compact type scale (about 8% smaller than Material defaults) for a denser, modern look. */
+private fun TextStyle.compact(weight: FontWeight? = null): TextStyle = copy(
+    fontSize = fontSize * 0.92f,
+    lineHeight = lineHeight * 0.92f,
+    fontWeight = weight ?: fontWeight,
+)
+
 private val AppTypography = Typography().let { t ->
     t.copy(
-        headlineMedium = t.headlineMedium.copy(fontWeight = FontWeight.SemiBold, letterSpacing = (-0.25).sp),
-        headlineSmall = t.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
-        titleLarge = t.titleLarge.copy(fontWeight = FontWeight.SemiBold, fontSize = 22.sp),
-        titleMedium = t.titleMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 16.sp),
-        titleSmall = t.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-        bodyLarge = t.bodyLarge.copy(lineHeight = 24.sp),
-        bodyMedium = t.bodyMedium.copy(lineHeight = 20.sp),
-        labelLarge = t.labelLarge.copy(fontWeight = FontWeight.Medium),
+        displayLarge = t.displayLarge.compact(),
+        displayMedium = t.displayMedium.compact(),
+        displaySmall = t.displaySmall.compact(),
+        headlineLarge = t.headlineLarge.compact(FontWeight.Bold),
+        headlineMedium = t.headlineMedium.compact(FontWeight.Bold).copy(letterSpacing = (-0.25).sp),
+        headlineSmall = t.headlineSmall.compact(FontWeight.SemiBold),
+        titleLarge = t.titleLarge.compact(FontWeight.SemiBold),
+        titleMedium = t.titleMedium.compact(FontWeight.SemiBold),
+        titleSmall = t.titleSmall.compact(FontWeight.SemiBold),
+        bodyLarge = t.bodyLarge.compact(),
+        bodyMedium = t.bodyMedium.compact(),
+        bodySmall = t.bodySmall.compact(),
+        labelLarge = t.labelLarge.compact(FontWeight.Medium),
+        labelMedium = t.labelMedium.compact(),
+        labelSmall = t.labelSmall.compact(),
     )
 }
 

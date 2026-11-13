@@ -454,7 +454,7 @@ class BrowserViewModel @Inject constructor(
         val out = java.io.File(dir, NameRules.uniqueName("$name.${format.extension}", rawItems.map { it.name }))
         clearSelection()
         appScope.launch {
-            val id = tasks.start("Creating ${out.name}", "Starting…")
+            val id = tasks.start("Creating ${out.name}", "Starting…", coroutineContext[kotlinx.coroutines.Job])
             val result = runCatching {
                 withContext(io) {
                     com.webtecit.filepilot.core.archive.ArchiveEngine.create(items.map { java.io.File(it.id) }, out, format, password?.takeIf { it.isNotEmpty() }?.toCharArray(), maximum) { n, f ->

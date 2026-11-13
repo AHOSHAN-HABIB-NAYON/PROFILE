@@ -45,6 +45,10 @@ class TaskService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         createChannel(this)
+        if (intent?.action == ACTION_STOP) {
+            operations.operations.value.filter { !it.status.finished }.forEach { operations.cancel(it.id) }
+            tasks.cancelAll()
+        }
         val first = build("Working…", null)
         ServiceCompat.startForeground(
             this, NOTIFICATION_ID, first,
@@ -96,6 +100,10 @@ class TaskService : Service() {
         .setOngoing(true)
         .setSilent(true)
         .setProgress(100, ((progress ?: 0f) * 100).toInt(), progress == null)
+        .addAction(
+            0, "Stop all",
+            PendingIntent.getService(this, 1, Intent(this, TaskService::class.java).setAction(ACTION_STOP), PendingIntent.FLAG_IMMUTABLE),
+        )
         .setContentIntent(
             PendingIntent.getActivity(
                 this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
@@ -113,6 +121,7 @@ class TaskService : Service() {
     companion object {
         private const val CHANNEL = "work"
         private const val NOTIFICATION_ID = 42
+        private const val ACTION_STOP = "com.webtecit.filepilot.STOP_ALL"
 
         fun createChannel(context: Context) {
             if (Build.VERSION.SDK_INT >= 26) {

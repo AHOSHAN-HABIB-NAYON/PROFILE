@@ -70,7 +70,7 @@ class CleanerEngine @Inject constructor(
         job?.cancel()
         _state.value = CleanerState(scanning = true, progress = "Looking through your files…")
         job = scope.launch {
-            val task = tasks.start("Cleaner scan", "Looking for junk and duplicates")
+            val task = tasks.start("Cleaner scan", "Looking for junk and duplicates", coroutineContext[kotlinx.coroutines.Job])
             val root = File(volumes.primaryRoot())
             val items = ArrayList<CleanItem>()
             val preselect = HashSet<String>()
@@ -117,7 +117,12 @@ class CleanerEngine @Inject constructor(
             _state.value = CleanerState(scanned = true, items = items, selected = preselect)
             tasks.finish(task, "Found ${Formatters.count(items.size, "item")} to review")
         }
-        job?.invokeOnCompletion { e -> if (e != null) tasks.clearAll("Cleaner scan") }
+        job?.invokeOnCompletion { e ->
+            if (e != null) {
+                tasks.clearAll("Cleaner scan")
+                _state.update { it.copy(scanning = false, scanned = it.items.isNotEmpty()) }
+            }
+        }
     }
 
     private fun item(f: File, group: CleanGroup, note: String = "") =
@@ -137,13 +142,13 @@ class CleanerEngine @Inject constructor(
         s.copy(selected = if (select) s.selected + paths else s.selected - paths)
     }
 
-    fun clean() {
+    fun clean(permanently: Boolean = false) {
         val s = _state.value
         val chosen = s.items.filter { it.path in s.selected }.distinctBy { it.path }
         if (chosen.isEmpty()) return
         _state.update { it.copy(cleaning = true) }
         scope.launch {
-            val useBin = preferences.current().recycleBin
+            val useBin = preferences.current().recycleBin && !permanently
             val asItems = chosen.map { FileItem(it.path, it.name, it.isDirectory, it.size, File(it.path).lastModified(), FileTypes.mimeOf(it.name)) }
             val (empty, rest) = asItems.partition { it.isDirectory && chosen.first { c -> c.path == it.id }.group == CleanGroup.EMPTY }
             try {
@@ -168,5 +173,5 @@ class CleanerViewModel @Inject constructor(private val engine: CleanerEngine) : 
     fun scan() = engine.scan()
     fun toggle(path: String) = engine.toggle(path)
     fun toggleGroup(group: CleanGroup, select: Boolean) = engine.toggleGroup(group, select)
-    fun clean() = engine.clean()
+    fun clean(permanently: Boolean) = engine.clean(permanently)
 }

@@ -29,9 +29,12 @@ class BackgroundTasks @Inject constructor(@ApplicationContext private val contex
     private val _tasks = MutableStateFlow<List<BgTask>>(emptyList())
     val tasks: StateFlow<List<BgTask>> = _tasks.asStateFlow()
     private val ids = AtomicLong(1)
+    private val jobs = java.util.concurrent.ConcurrentHashMap<Long, kotlinx.coroutines.Job>()
 
-    fun start(title: String, detail: String): Long {
+    /** Starts tracking a task; pass its [job] so the user can stop it. */
+    fun start(title: String, detail: String, job: kotlinx.coroutines.Job? = null): Long {
         val task = BgTask(ids.getAndIncrement(), title, detail)
+        if (job != null) jobs[task.id] = job
         _tasks.update { list -> list.filterNot { it.title == title } + task }
         TaskService.ensureRunning(context)
         return task.id
@@ -42,6 +45,7 @@ class BackgroundTasks @Inject constructor(@ApplicationContext private val contex
     }
 
     fun finish(id: Long, result: String) {
+        jobs.remove(id)
         _tasks.update { list -> list.map { if (it.id == id) it.copy(detail = result, progress = 1f, finished = true) else it } }
     }
 
@@ -50,7 +54,18 @@ class BackgroundTasks @Inject constructor(@ApplicationContext private val contex
     }
 
     fun dismiss(id: Long) {
+        jobs.remove(id)
         _tasks.update { list -> list.filterNot { it.id == id } }
+    }
+
+    /** Stops a running task. */
+    fun cancel(id: Long) {
+        jobs.remove(id)?.cancel()
+        _tasks.update { list -> list.filterNot { it.id == id } }
+    }
+
+    fun cancelAll() {
+        _tasks.value.filter { !it.finished }.forEach { cancel(it.id) }
     }
 
     /** Runs [block] as a tracked task; [report] updates the detail line and progress. */

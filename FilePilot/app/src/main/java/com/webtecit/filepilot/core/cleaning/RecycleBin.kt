@@ -41,7 +41,8 @@ class RecycleBin @Inject constructor(
             val dir = File(root, DIR_NAME).apply { mkdirs() }
             File(dir, ".nomedia").takeIf { !it.exists() }?.createNewFile()
             val target = File(dir, "${System.currentTimeMillis()}_${item.name}".take(240))
-            val size = if (item.isDirectory) source.walkTopDown().filter { it.isFile }.sumOf { it.length() } else item.size
+            // Folder sizes aren't counted here, so moving to the bin stays instant.
+            val size = if (item.isDirectory) 0L else item.size
             if (source.renameTo(target)) {
                 dao.insert(TrashEntity(originalPath = item.id, trashPath = target.absolutePath, name = item.name,
                     isDirectory = item.isDirectory, size = size, deletedAt = System.currentTimeMillis()))

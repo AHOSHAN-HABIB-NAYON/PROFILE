@@ -46,7 +46,7 @@ data class HomeState(
     val safRoots: List<SafRoot> = emptyList(),
     val downloadsId: String = "",
     val loaded: Boolean = false,
-    val showDefaultPrompt: Boolean = false,
+    val themeMode: com.webtecit.filepilot.core.preferences.ThemeMode = com.webtecit.filepilot.core.preferences.ThemeMode.LIGHT,
 )
 
 @HiltViewModel
@@ -71,9 +71,7 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch { library.favorites.collect { f -> _state.update { it.copy(favorites = f) } } }
         viewModelScope.launch { library.recents.collect { r -> _state.update { it.copy(recents = r) } } }
         viewModelScope.launch { safRoots.roots.collect { r -> _state.update { it.copy(safRoots = r) } } }
-        viewModelScope.launch {
-            preferences.preferences.collect { p -> _state.update { it.copy(showDefaultPrompt = p.onboardingDone && !p.defaultAppPromptDone) } }
-        }
+        viewModelScope.launch { preferences.preferences.collect { p -> _state.update { it.copy(themeMode = p.themeMode) } } }
     }
 
     fun refresh() {
@@ -90,8 +88,11 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun dismissDefaultPrompt() {
-        viewModelScope.launch { preferences.setDefaultAppPromptDone() }
+    /** Switches between light and dark from the Home header. */
+    fun toggleTheme(currentlyDark: Boolean) {
+        viewModelScope.launch {
+            preferences.setThemeMode(if (currentlyDark) com.webtecit.filepilot.core.preferences.ThemeMode.LIGHT else com.webtecit.filepilot.core.preferences.ThemeMode.DARK)
+        }
     }
 
     fun open(id: String) {

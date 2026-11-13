@@ -116,7 +116,7 @@ fun RecycleBinScreen(onBack: () -> Unit, viewModel: RecycleBinViewModel = hiltVi
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(e.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text("${Formatters.size(e.size)} · $daysLeft days left · ${e.originalPath.substringBeforeLast('/').substringAfter("/0/")}",
+                            Text("${if (e.isDirectory) "Folder" else Formatters.size(e.size)} · $daysLeft days left · ${e.originalPath.substringBeforeLast('/').substringAfter("/0/")}",
                                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                         IconButton(onClick = { viewModel.restore(e) }) { Icon(Icons.Rounded.Restore, "Restore ${e.name}") }
