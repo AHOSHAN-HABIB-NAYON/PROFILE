@@ -28,6 +28,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Code
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.ContentCut
 import androidx.compose.material.icons.rounded.ContentPaste
@@ -69,6 +71,8 @@ import com.webtecit.filepilot.core.designsystem.FileThumb
 import com.webtecit.filepilot.core.operations.ClipMode
 import com.webtecit.filepilot.core.operations.FileClip
 import com.webtecit.filepilot.core.storage.FileItem
+import com.webtecit.filepilot.core.storage.FileKind
+
 
 /** Second line of a row: "1.2 MB · 13 Nov 2026" for files, the date for folders. */
 fun FileItem.subtitle(): String =
@@ -328,6 +332,8 @@ private fun BarAction(icon: ImageVector, label: String, enabled: Boolean, onClic
 
 enum class ItemAction(val label: String, val icon: ImageVector) {
     OPEN("Open", Icons.Rounded.OpenInBrowser),
+    EDIT("Edit in Code Studio", Icons.Rounded.Code),
+    RUN("Run website", Icons.Rounded.PlayArrow),
     OPEN_WITH("Open with", Icons.AutoMirrored.Rounded.OpenInNew),
     SHARE("Share", Icons.Rounded.Share),
     COPY("Copy", Icons.Rounded.ContentCopy),
@@ -350,6 +356,10 @@ fun ItemActionsSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val actions = buildList {
         add(ItemAction.OPEN)
+        val local = item.id.startsWith("/")
+        if (!item.isDirectory && item.size <= 8_000_000 && (item.kind == FileKind.CODE || item.kind == FileKind.TEXT || item.extension.isEmpty())) add(ItemAction.EDIT)
+        if (local && (item.extension == "html" || item.extension == "htm" ||
+                (item.isDirectory && java.io.File(item.id, "index.html").isFile))) add(ItemAction.RUN)
         if (!item.isDirectory) {
             add(ItemAction.OPEN_WITH)
             add(ItemAction.SHARE)
@@ -397,3 +407,7 @@ fun ItemActionsSheet(
         Spacer(Modifier.navigationBarsPadding().height(12.dp))
     }
 }
+
+/** Code and text files open in the built-in editor; everything else in other apps. */
+fun opensInEditor(item: FileItem): Boolean =
+    !item.isDirectory && item.size <= 8_000_000 && (item.kind == FileKind.CODE || item.kind == FileKind.TEXT)

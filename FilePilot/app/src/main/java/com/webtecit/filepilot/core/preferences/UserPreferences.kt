@@ -29,6 +29,14 @@ enum class AccentColor(val label: String) {
 
 enum class ViewMode { LIST, GRID }
 
+enum class EditorTheme(val label: String) { LIGHT("Light"), DARK("Dark"), APP("Same as app") }
+
+enum class EditorFont(val label: String, val css: String) {
+    MONO("Monospace", "monospace"), SANS("Sans serif", "sans-serif"), SERIF("Serif", "serif"),
+}
+
+enum class PreviewDevice(val label: String) { MOBILE("Mobile"), TABLET("Tablet"), DESKTOP("Desktop") }
+
 enum class StartLocation(val label: String) { OVERVIEW("Storage overview"), INTERNAL("Internal storage") }
 
 data class UserPreferences(
@@ -44,6 +52,18 @@ data class UserPreferences(
     val startLocation: StartLocation = StartLocation.OVERVIEW,
     val onboardingDone: Boolean = false,
     val permissionsSetupDone: Boolean = false,
+    val editorFontSize: Int = 14,
+    val editorWrap: Boolean = false,
+    val editorLineNumbers: Boolean = true,
+    val editorTabSize: Int = 4,
+    val editorAutoIndent: Boolean = true,
+    val editorAutoSave: Boolean = false,
+    val editorTheme: EditorTheme = EditorTheme.LIGHT,
+    val editorFont: EditorFont = EditorFont.MONO,
+    val previewDevice: PreviewDevice = PreviewDevice.MOBILE,
+    val previewConsole: Boolean = true,
+    val recycleBin: Boolean = true,
+    val appLock: Boolean = false,
 )
 
 private val Context.settingsStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -75,6 +95,18 @@ class PreferencesRepository @Inject constructor(
         val start = stringPreferencesKey("start_location")
         val onboarding = booleanPreferencesKey("onboarding_done")
         val permissions = booleanPreferencesKey("permissions_setup_done")
+        val edSize = androidx.datastore.preferences.core.intPreferencesKey("editor_font_size")
+        val edWrap = booleanPreferencesKey("editor_wrap")
+        val edLines = booleanPreferencesKey("editor_line_numbers")
+        val edTab = androidx.datastore.preferences.core.intPreferencesKey("editor_tab_size")
+        val edIndent = booleanPreferencesKey("editor_auto_indent")
+        val edAutoSave = booleanPreferencesKey("editor_auto_save")
+        val edTheme = stringPreferencesKey("editor_theme")
+        val edFont = stringPreferencesKey("editor_font")
+        val pvDevice = stringPreferencesKey("preview_device")
+        val pvConsole = booleanPreferencesKey("preview_console")
+        val recycle = booleanPreferencesKey("recycle_bin")
+        val appLock = booleanPreferencesKey("app_lock")
     }
 
     val preferences: Flow<UserPreferences> = store.data.map { p ->
@@ -96,6 +128,18 @@ class PreferencesRepository @Inject constructor(
             startLocation = enumOr(p[Keys.start], d.startLocation),
             onboardingDone = p[Keys.onboarding] ?: false,
             permissionsSetupDone = p[Keys.permissions] ?: false,
+            editorFontSize = p[Keys.edSize] ?: d.editorFontSize,
+            editorWrap = p[Keys.edWrap] ?: d.editorWrap,
+            editorLineNumbers = p[Keys.edLines] ?: d.editorLineNumbers,
+            editorTabSize = p[Keys.edTab] ?: d.editorTabSize,
+            editorAutoIndent = p[Keys.edIndent] ?: d.editorAutoIndent,
+            editorAutoSave = p[Keys.edAutoSave] ?: d.editorAutoSave,
+            editorTheme = enumOr(p[Keys.edTheme], d.editorTheme),
+            editorFont = enumOr(p[Keys.edFont], d.editorFont),
+            previewDevice = enumOr(p[Keys.pvDevice], d.previewDevice),
+            previewConsole = p[Keys.pvConsole] ?: d.previewConsole,
+            recycleBin = p[Keys.recycle] ?: d.recycleBin,
+            appLock = p[Keys.appLock] ?: d.appLock,
         )
     }
 
@@ -112,6 +156,19 @@ class PreferencesRepository @Inject constructor(
     suspend fun setStartLocation(v: StartLocation) = set { it[Keys.start] = v.name }
     suspend fun setOnboardingDone(done: Boolean = true) = set { it[Keys.onboarding] = done }
     suspend fun setPermissionsSetupDone(done: Boolean = true) = set { it[Keys.permissions] = done }
+
+    suspend fun setEditorFontSize(v: Int) = set { it[Keys.edSize] = v.coerceIn(8, 32) }
+    suspend fun setEditorWrap(v: Boolean) = set { it[Keys.edWrap] = v }
+    suspend fun setEditorLineNumbers(v: Boolean) = set { it[Keys.edLines] = v }
+    suspend fun setEditorTabSize(v: Int) = set { it[Keys.edTab] = v }
+    suspend fun setEditorAutoIndent(v: Boolean) = set { it[Keys.edIndent] = v }
+    suspend fun setEditorAutoSave(v: Boolean) = set { it[Keys.edAutoSave] = v }
+    suspend fun setEditorTheme(v: EditorTheme) = set { it[Keys.edTheme] = v.name }
+    suspend fun setEditorFont(v: EditorFont) = set { it[Keys.edFont] = v.name }
+    suspend fun setPreviewDevice(v: PreviewDevice) = set { it[Keys.pvDevice] = v.name }
+    suspend fun setPreviewConsole(v: Boolean) = set { it[Keys.pvConsole] = v }
+    suspend fun setRecycleBin(v: Boolean) = set { it[Keys.recycle] = v }
+    suspend fun setAppLock(v: Boolean) = set { it[Keys.appLock] = v }
 
     suspend fun setSortOrder(v: SortOrder) = set {
         it[Keys.sortField] = v.field.name

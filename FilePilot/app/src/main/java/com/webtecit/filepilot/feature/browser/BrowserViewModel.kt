@@ -106,6 +106,7 @@ class BrowserViewModel @Inject constructor(
     private val operations: FileOperationManager,
     private val clipboard: FileClipboard,
     private val opener: FileOpener,
+    private val recycleBin: com.webtecit.filepilot.core.cleaning.RecycleBin,
     @IoDispatcher private val io: CoroutineDispatcher,
     @DefaultDispatcher private val default: CoroutineDispatcher,
 ) : ViewModel() {
@@ -500,10 +501,27 @@ class BrowserViewModel @Inject constructor(
         }
     }
 
-    fun delete(items: List<FileItem>) {
+    /** True when these items would go to the Recycle Bin rather than being deleted permanently. */
+    fun usesRecycleBin(items: List<FileItem>): Boolean =
+        _state.value.prefs.recycleBin && items.isNotEmpty() && items.all(recycleBin::supports)
+
+    fun delete(items: List<FileItem>, permanently: Boolean = false) {
         if (items.isEmpty()) return
-        operations.delete(items)
         clearSelection()
+        if (!permanently && usesRecycleBin(items)) {
+            viewModelScope.launch {
+                try {
+                    recycleBin.trash(items)
+                    library.onDeleted(items.map { it.id })
+                    message("Moved ${if (items.size == 1) "\"${items[0].name}\"" else Formatters.count(items.size, "item")} to the Recycle Bin.")
+                } catch (e: Exception) {
+                    message(e.userMessage())
+                }
+                refresh()
+            }
+        } else {
+            operations.delete(items)
+        }
     }
 
     fun batchRenamePreview(items: List<FileItem>, rule: BatchRenameRule): List<RenamePreview> {

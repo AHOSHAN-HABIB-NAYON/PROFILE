@@ -173,6 +173,8 @@ fun SettingsScreen(
             item {
                 Section("File manager") {
                     SwitchRow("Show hidden files", prefs.showHidden, viewModel::setShowHidden, subtitle = "Names starting with a dot", icon = Icons.Rounded.Visibility)
+                    SwitchRow("Recycle Bin", prefs.recycleBin, viewModel::setRecycleBin,
+                        subtitle = "Keep deleted files for 30 days so they can be restored", icon = Icons.Rounded.Visibility)
                     SwitchRow("Show file extensions", prefs.showExtensions, viewModel::setShowExtensions, subtitle = "For example .jpg and .pdf", icon = Icons.Rounded.Extension)
                     SwitchRow(
                         "Grid view",
@@ -195,6 +197,25 @@ fun SettingsScreen(
                         icon = Icons.Rounded.Home,
                         onClick = { startOpen = true },
                     )
+                }
+            }
+            item {
+                Section("Code editor") {
+                    ChoiceRow("Editor theme", com.webtecit.filepilot.core.preferences.EditorTheme.entries, prefs.editorTheme, { it.label }, viewModel::setEditorTheme)
+                    ChoiceRow("Font", com.webtecit.filepilot.core.preferences.EditorFont.entries, prefs.editorFont, { it.label }, viewModel::setEditorFont)
+                    ChoiceRow("Font size", listOf(12, 13, 14, 15, 16, 18, 20), prefs.editorFontSize, { "$it" }, viewModel::setEditorFontSize)
+                    ChoiceRow("Tab size", listOf(2, 4, 8), prefs.editorTabSize, { "$it spaces" }, viewModel::setEditorTabSize)
+                    SwitchRow("Line numbers", prefs.editorLineNumbers, viewModel::setEditorLineNumbers)
+                    SwitchRow("Word wrap", prefs.editorWrap, viewModel::setEditorWrap)
+                    SwitchRow("Auto indentation", prefs.editorAutoIndent, viewModel::setEditorAutoIndent)
+                    SwitchRow("Auto save", prefs.editorAutoSave, viewModel::setEditorAutoSave, subtitle = "Save a few seconds after you stop typing. Drafts are always kept.")
+                }
+            }
+            item {
+                Section("HTML preview") {
+                    ChoiceRow("Default device", com.webtecit.filepilot.core.preferences.PreviewDevice.entries, prefs.previewDevice, { it.label }, viewModel::setPreviewDevice)
+                    SwitchRow("Open console automatically", prefs.previewConsole, viewModel::setPreviewConsole,
+                        subtitle = "Websites run offline inside the app; nothing is reachable from the network.")
                 }
             }
             item {
@@ -262,6 +283,35 @@ fun SettingsScreen(
                 }
             },
             confirmButton = { TextButton(onClick = { startOpen = false }) { Text("Close") } },
+        )
+    }
+}
+
+@Composable
+private fun <T> ChoiceRow(title: String, options: List<T>, selected: T, label: (T) -> String, onSelect: (T) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    SettingsRow(title, subtitle = label(selected), onClick = { open = true })
+    if (open) {
+        AlertDialog(
+            onDismissRequest = { open = false },
+            title = { Text(title) },
+            text = {
+                Column {
+                    options.forEach { o ->
+                        Row(
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))
+                                .selectable(selected = o == selected, role = Role.RadioButton) { onSelect(o); open = false }
+                                .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(selected = o == selected, onClick = null)
+                            Spacer(Modifier.size(12.dp))
+                            Text(label(o))
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { open = false }) { Text("Close") } },
         )
     }
 }

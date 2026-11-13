@@ -14,3 +14,8 @@ import kotlinx.serialization.Serializable
 @Serializable data object AboutRoute
 @Serializable data object ToolsRoute
 @Serializable data object AnalyzerRoute
+@Serializable data class EditorRoute(val fileId: String? = null, val projectRoot: String? = null)
+@Serializable data class PreviewRoute(val root: String, val entry: String)
+@Serializable data object ProjectsRoute
+@Serializable data object CleanerRoute
+@Serializable data object RecycleBinRoute

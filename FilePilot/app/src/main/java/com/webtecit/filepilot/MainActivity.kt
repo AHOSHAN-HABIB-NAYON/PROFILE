@@ -61,6 +61,7 @@ class MainActivity : AppCompatActivity() {
                         AppRoot(
                             afterSplash = viewModel::routeAfterSplash,
                             afterOnboarding = viewModel::routeAfterOnboarding,
+                            prefs = p,
                         )
                     }
                 }

@@ -110,6 +110,8 @@ fun BrowserScreen(
     startSearch: Boolean = false,
     onClose: () -> Unit,
     onCompare: (String, String) -> Unit,
+    onEdit: (String) -> Unit = {},
+    onRunSite: (String, String) -> Unit = { _, _ -> },
     onGrantAccess: () -> Unit,
     viewModel: BrowserViewModel = hiltViewModel(),
 ) {
@@ -154,6 +156,7 @@ fun BrowserScreen(
         when {
             state.selectionMode -> viewModel.toggleSelection(item)
             item.isDirectory -> viewModel.openFolder(item, firstVisible())
+            opensInEditor(item) -> onEdit(item.id)
             else -> viewModel.openFile(item, chooser = false)
         }
     }
@@ -161,7 +164,10 @@ fun BrowserScreen(
     fun onAction(item: FileItem, action: ItemAction) {
         dialog = null
         when (action) {
-            ItemAction.OPEN -> if (item.isDirectory) viewModel.openFolder(item, firstVisible()) else viewModel.openFile(item, false)
+            ItemAction.OPEN -> onItemClick(item)
+            ItemAction.EDIT -> onEdit(item.id)
+            ItemAction.RUN -> if (item.isDirectory) onRunSite(item.id, "index.html")
+                else java.io.File(item.id).parentFile?.let { onRunSite(it.absolutePath, item.name) }
             ItemAction.OPEN_WITH -> viewModel.openFile(item, chooser = true)
             ItemAction.SHARE -> viewModel.share(listOf(item))
             ItemAction.COPY -> viewModel.putOnClipboard(listOf(item), ClipMode.COPY)
@@ -479,7 +485,25 @@ fun BrowserScreen(
             onConfirm = { dialog = null; if (it != d.item.name) viewModel.rename(d.item, it) },
             onDismiss = { dialog = null },
         )
-        is BrowserDialog.Delete -> {
+        is BrowserDialog.Delete -> if (viewModel.usesRecycleBin(d.items)) {
+            val names = d.items
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { dialog = null },
+                title = { Text(if (names.size == 1) "Delete \"${names[0].name}\"?" else "Delete ${names.size} items?") },
+                text = { Text("Items go to the Recycle Bin and can be restored for 30 days.") },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(onClick = { dialog = null; viewModel.delete(d.items) }) { Text("Move to Recycle Bin") }
+                },
+                dismissButton = {
+                    Row {
+                        androidx.compose.material3.TextButton(onClick = { dialog = null; viewModel.delete(d.items, permanently = true) }) {
+                            Text("Delete permanently", color = MaterialTheme.colorScheme.error)
+                        }
+                        androidx.compose.material3.TextButton(onClick = { dialog = null }) { Text("Cancel") }
+                    }
+                },
+            )
+        } else {
             val names = d.items
             val title = if (names.size == 1) "Delete \"${names[0].name}\"?" else "Delete ${names.size} items?"
             val folders = names.count { it.isDirectory }

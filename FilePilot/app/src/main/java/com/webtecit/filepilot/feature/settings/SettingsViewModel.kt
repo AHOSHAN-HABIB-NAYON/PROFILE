@@ -46,6 +46,18 @@ class SettingsViewModel @Inject constructor(
     fun setSort(v: SortOrder) = launch { repo.setSortOrder(v) }
     fun setViewMode(v: ViewMode) = launch { repo.setViewMode(v) }
     fun setStartLocation(v: StartLocation) = launch { repo.setStartLocation(v) }
+    fun setEditorFontSize(v: Int) = launch { repo.setEditorFontSize(v) }
+    fun setEditorWrap(v: Boolean) = launch { repo.setEditorWrap(v) }
+    fun setEditorLineNumbers(v: Boolean) = launch { repo.setEditorLineNumbers(v) }
+    fun setEditorTabSize(v: Int) = launch { repo.setEditorTabSize(v) }
+    fun setEditorAutoIndent(v: Boolean) = launch { repo.setEditorAutoIndent(v) }
+    fun setEditorAutoSave(v: Boolean) = launch { repo.setEditorAutoSave(v) }
+    fun setEditorTheme(v: com.webtecit.filepilot.core.preferences.EditorTheme) = launch { repo.setEditorTheme(v) }
+    fun setEditorFont(v: com.webtecit.filepilot.core.preferences.EditorFont) = launch { repo.setEditorFont(v) }
+    fun setPreviewDevice(v: com.webtecit.filepilot.core.preferences.PreviewDevice) = launch { repo.setPreviewDevice(v) }
+    fun setPreviewConsole(v: Boolean) = launch { repo.setPreviewConsole(v) }
+    fun setRecycleBin(v: Boolean) = launch { repo.setRecycleBin(v) }
+    fun setAppLock(v: Boolean) = launch { repo.setAppLock(v) }
 
     private fun launch(block: suspend () -> Unit) {
         viewModelScope.launch { block() }

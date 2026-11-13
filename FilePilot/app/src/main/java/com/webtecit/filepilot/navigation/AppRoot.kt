@@ -53,6 +53,10 @@ import com.webtecit.filepilot.feature.library.LibraryScreen
 import com.webtecit.filepilot.feature.onboarding.OnboardingScreen
 import com.webtecit.filepilot.feature.operations.OperationsPanel
 import com.webtecit.filepilot.feature.analyzer.AnalyzerScreen
+import com.webtecit.filepilot.core.preferences.UserPreferences
+import com.webtecit.filepilot.feature.editor.EditorScreen
+import com.webtecit.filepilot.feature.web.PreviewScreen
+import com.webtecit.filepilot.feature.web.ProjectsScreen
 import com.webtecit.filepilot.feature.tools.Tool
 import com.webtecit.filepilot.feature.tools.ToolsScreen
 import com.webtecit.filepilot.feature.permissions.PermissionsScreen
@@ -74,7 +78,7 @@ private enum class TopLevel(val route: Any, val label: String, val selected: Ima
  * @param afterOnboarding where the app goes when onboarding ends.
  */
 @Composable
-fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any) {
+fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPreferences) {
     val nav = rememberNavController()
     val entry by nav.currentBackStackEntryAsState()
     val destination = entry?.destination
@@ -159,6 +163,30 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any) {
             composable<AnalyzerRoute> {
                 AnalyzerScreen(onBack = { nav.popBackStack() }, onOpenFolder = { nav.navigate(BrowserRoute(it)) })
             }
+            composable<EditorRoute> { backStack ->
+                val route = backStack.toRoute<EditorRoute>()
+                EditorScreen(
+                    fileId = route.fileId,
+                    projectRoot = route.projectRoot,
+                    onBack = { nav.popBackStack() },
+                    onBrowse = { nav.switchTab(FilesRoute) },
+                    onDevicePreview = { root, entry -> nav.navigate(PreviewRoute(root, entry)) },
+                )
+            }
+            composable<PreviewRoute> { backStack ->
+                val route = backStack.toRoute<PreviewRoute>()
+                PreviewScreen(route.root, route.entry, prefs.previewDevice, prefs.previewConsole, onBack = { nav.popBackStack() })
+            }
+            composable<ProjectsRoute> {
+                ProjectsScreen(
+                    onBack = { nav.popBackStack() },
+                    onRun = { root, entry -> nav.navigate(PreviewRoute(root, entry)) },
+                    onEdit = { file, root -> nav.openEditor(file, root) },
+                    onBrowse = { nav.navigate(BrowserRoute(it)) },
+                )
+            }
+            composable<CleanerRoute> { com.webtecit.filepilot.feature.cleaner.CleanerScreen(onBack = { nav.popBackStack() }) }
+            composable<RecycleBinRoute> { com.webtecit.filepilot.feature.recycle.RecycleBinScreen(onBack = { nav.popBackStack() }) }
             composable<LibraryRoute> {
                 LibraryScreen(onOpenFolder = { nav.navigate(BrowserRoute(it)) })
             }
@@ -175,6 +203,8 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any) {
                     startSearch = route.search,
                     onClose = { nav.popBackStack() },
                     onCompare = { a, b -> nav.navigate(CompareRoute(a, b)) },
+                    onEdit = { nav.openEditor(it, null) },
+                    onRunSite = { root, entry -> nav.navigate(PreviewRoute(root, entry)) },
                     onGrantAccess = { nav.navigate(PermissionsRoute(setup = false)) },
                 )
             }
@@ -190,6 +220,15 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any) {
 /** The screen for each tool. */
 fun toolRoute(tool: Tool): Any = when (tool) {
     Tool.ANALYZER -> AnalyzerRoute
+    Tool.CODE_STUDIO -> EditorRoute()
+    Tool.HTML_PROJECTS -> ProjectsRoute
+    Tool.CLEANER -> CleanerRoute
+    Tool.RECYCLE_BIN -> RecycleBinRoute
+}
+
+/** Opens the editor; an editor already on the back stack is replaced so its tabs carry over. */
+private fun NavHostController.openEditor(fileId: String, projectRoot: String?) {
+    navigate(EditorRoute(fileId, projectRoot)) { popUpTo<EditorRoute> { inclusive = true } }
 }
 
 private fun NavHostController.switchTab(route: Any) {

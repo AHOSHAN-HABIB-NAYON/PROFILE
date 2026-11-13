@@ -48,6 +48,33 @@ data class SafRootEntity(
     val addedAt: Long,
 )
 
+/** An item in the Recycle Bin: where it came from and where it is kept now. */
+@Entity(tableName = "trash")
+data class TrashEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val originalPath: String,
+    val trashPath: String,
+    val name: String,
+    val isDirectory: Boolean,
+    val size: Long,
+    val deletedAt: Long,
+)
+
+@Dao
+interface TrashDao {
+    @Query("SELECT * FROM trash ORDER BY deletedAt DESC")
+    fun all(): Flow<List<TrashEntity>>
+
+    @Query("SELECT * FROM trash WHERE deletedAt < :before")
+    suspend fun olderThan(before: Long): List<TrashEntity>
+
+    @androidx.room.Insert
+    suspend fun insert(entity: TrashEntity): Long
+
+    @Query("DELETE FROM trash WHERE id = :id")
+    suspend fun delete(id: Long)
+}
+
 @Dao
 interface LibraryDao {
     @Query("SELECT * FROM favorites ORDER BY addedAt DESC")
@@ -103,12 +130,13 @@ interface LibraryDao {
 }
 
 @Database(
-    entities = [FavoriteEntity::class, BookmarkEntity::class, RecentEntity::class, SafRootEntity::class],
-    version = 1,
+    entities = [FavoriteEntity::class, BookmarkEntity::class, RecentEntity::class, SafRootEntity::class, TrashEntity::class],
+    version = 2,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun libraryDao(): LibraryDao
+    abstract fun trashDao(): TrashDao
 }
 
 @Module
@@ -117,8 +145,22 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun database(@ApplicationContext context: Context): AppDatabase =
-        Room.databaseBuilder(context, AppDatabase::class.java, "filepilot.db").build()
+        Room.databaseBuilder(context, AppDatabase::class.java, "filepilot.db")
+            .addMigrations(MIGRATION_1_2)
+            .build()
 
     @Provides
     fun libraryDao(db: AppDatabase): LibraryDao = db.libraryDao()
+
+    @Provides
+    fun trashDao(db: AppDatabase): TrashDao = db.trashDao()
+
+    val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `trash` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `originalPath` TEXT NOT NULL, " +
+                    "`trashPath` TEXT NOT NULL, `name` TEXT NOT NULL, `isDirectory` INTEGER NOT NULL, `size` INTEGER NOT NULL, `deletedAt` INTEGER NOT NULL)",
+            )
+        }
+    }
 }

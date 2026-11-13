@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="stylesheet" href="codemirror.bundle.css">
+<style>
+  html, body { margin: 0; height: 100%; background: var(--bg, #fff); }
+  .CodeMirror { height: 100%; font-family: var(--font, monospace); font-size: var(--size, 14px); line-height: 1.5; }
+  .CodeMirror-gutters { border-right: 1px solid rgba(127,127,127,.18); }
+  .cm-s-idea.CodeMirror { background: #fff; }
+  .CodeMirror-activeline-background { background: rgba(41,82,227,.06) !important; }
+  .cm-s-material-darker .CodeMirror-activeline-background { background: rgba(255,255,255,.05) !important; }
+  .cm-searching { background: rgba(255, 196, 0, .45); }
+  .CodeMirror-foldmarker { color: #2952E3; font-family: sans-serif; text-shadow: none; }
+</style>
+</head>
+<body>
+<script src="codemirror.bundle.js"></script>
+<script>
+  // A small, local API used by FilePilot through evaluateJavascript. The page loads no remote content.
+  var docs = {}, current = null, marks = [];
+  var cm = CodeMirror(document.body, {
+    lineNumbers: true, matchBrackets: true, autoCloseBrackets: true, autoCloseTags: true,
+    styleActiveLine: true, foldGutter: true, indentUnit: 4, tabSize: 4, smartIndent: true,
+    gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"], theme: "idea", inputStyle: "contenteditable",
+    viewportMargin: 30, extraKeys: { "Ctrl-/": "toggleComment" }
+  });
+  function notify(name, a, b) { if (window.FilePilot && FilePilot[name]) FilePilot[name](a, b); }
+  cm.on("changes", function () { if (current) notify("onChanged", current, !docs[current].isClean()); });
+  cm.on("cursorActivity", function () { var c = cm.getCursor(); notify("onCursor", c.line + 1, c.ch + 1); });
+
+  function openDoc(id, text, mode) {
+    if (!docs[id]) { docs[id] = CodeMirror.Doc(text, mode); docs[id].markClean(); }
+    switchDoc(id);
+  }
+  function switchDoc(id) { if (!docs[id]) return; current = id; cm.swapDoc(docs[id]); cm.refresh(); cm.focus(); notify("onChanged", id, !docs[id].isClean()); }
+  function closeDoc(id) { delete docs[id]; if (current === id) current = null; }
+  function getValue(id) { return docs[id] ? docs[id].getValue() : null; }
+  function markClean(id) { if (docs[id]) { docs[id].markClean(); if (id === current) notify("onChanged", id, false); } }
+  function setText(id, text) { if (docs[id]) docs[id].setValue(text); }
+  function setOptions(o) {
+    cm.setOption("lineNumbers", o.lineNumbers); cm.setOption("lineWrapping", o.wrap);
+    cm.setOption("tabSize", o.tabSize); cm.setOption("indentUnit", o.tabSize);
+    cm.setOption("smartIndent", o.autoIndent); cm.setOption("theme", o.dark ? "material-darker" : "idea");
+    cm.setOption("readOnly", o.readOnly ? true : false);
+    document.documentElement.style.setProperty("--size", o.fontSize + "px");
+    document.documentElement.style.setProperty("--font", o.font);
+    document.documentElement.style.setProperty("--bg", o.dark ? "#212121" : "#ffffff");
+    cm.refresh();
+  }
+  function clearMarks() { marks.forEach(function (m) { m.clear(); }); marks = []; }
+  function find(q, caseSensitive, backwards) {
+    clearMarks(); if (!q) return 0;
+    var count = 0, c = cm.getSearchCursor(q, CodeMirror.Pos(cm.firstLine(), 0), { caseFold: !caseSensitive });
+    while (c.findNext() && count < 5000) { marks.push(cm.markText(c.from(), c.to(), { className: "cm-searching" })); count++; }
+    var cur = cm.getSearchCursor(q, backwards ? cm.getCursor("from") : cm.getCursor("to"), { caseFold: !caseSensitive });
+    var ok = backwards ? cur.findPrevious() : cur.findNext();
+    if (!ok) { cur = cm.getSearchCursor(q, backwards ? CodeMirror.Pos(cm.lastLine()) : CodeMirror.Pos(cm.firstLine(), 0), { caseFold: !caseSensitive }); ok = backwards ? cur.findPrevious() : cur.findNext(); }
+    if (ok) { cm.setSelection(cur.from(), cur.to()); cm.scrollIntoView({ from: cur.from(), to: cur.to() }, 80); }
+    return count;
+  }
+  function replaceOne(q, r, caseSensitive) {
+    var sel = cm.getSelection();
+    if (sel && (caseSensitive ? sel === q : sel.toLowerCase() === q.toLowerCase())) cm.replaceSelection(r);
+    return find(q, caseSensitive, false);
+  }
+  function replaceAll(q, r, caseSensitive) {
+    if (!q) return 0; clearMarks(); var n = 0;
+    cm.operation(function () {
+      var c = cm.getSearchCursor(q, CodeMirror.Pos(cm.firstLine(), 0), { caseFold: !caseSensitive });
+      while (c.findNext()) { c.replace(r); n++; }
+    });
+    return n;
+  }
+  function goToLine(n) { var l = Math.max(0, Math.min(cm.lastLine(), n - 1)); cm.setCursor(l, 0); cm.scrollIntoView(null, 120); cm.focus(); }
+  function command(name) { cm.execCommand(name); cm.focus(); }
+  function insertText(t) { cm.replaceSelection(t); cm.focus(); }
+  function lineCount() { return cm.lineCount(); }
+</script>
+</body>
+</html>
