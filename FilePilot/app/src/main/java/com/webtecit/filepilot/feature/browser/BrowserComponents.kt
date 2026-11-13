@@ -25,6 +25,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Close
@@ -109,6 +111,16 @@ fun FileRow(
             .testTag("file_row"),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        androidx.compose.animation.AnimatedVisibility(
+            visible = selectionMode,
+            enter = androidx.compose.animation.expandHorizontally() + androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.shrinkHorizontally() + androidx.compose.animation.fadeOut(),
+        ) {
+            Row {
+                SelectTick(selected, Modifier.testTag("select_tick"))
+                Spacer(Modifier.width(12.dp))
+            }
+        }
         FileThumb(item)
         Spacer(Modifier.width(14.dp))
         Column(Modifier.weight(1f)) {
@@ -138,12 +150,12 @@ fun FileRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        if (selectionMode) {
-            Checkbox(checked = selected, onCheckedChange = { onClick() })
-        } else {
+        if (!selectionMode) {
             IconButton(onClick = onMore) {
                 Icon(Icons.Rounded.MoreVert, contentDescription = "More actions for ${item.name}")
             }
+        } else {
+            Spacer(Modifier.width(12.dp))
         }
     }
 }
@@ -185,6 +197,7 @@ fun FileGridCell(
     ) {
         Box(Modifier.fillMaxWidth().aspectRatio(1.15f), contentAlignment = Alignment.Center) {
             FileThumb(item, size = 64.dp)
+            if (selected) SelectTick(true, Modifier.align(Alignment.TopStart))
         }
         Spacer(Modifier.height(6.dp))
         Text(
@@ -442,3 +455,20 @@ fun ItemActionsSheet(
 /** Code and text files open in the built-in editor; everything else in other apps. */
 fun opensInEditor(item: FileItem): Boolean =
     !item.isDirectory && item.size <= 8_000_000 && (item.kind == FileKind.CODE || item.kind == FileKind.TEXT)
+
+
+/** Round tick shown on the left of a file while selecting. */
+@Composable
+fun SelectTick(selected: Boolean, modifier: Modifier = Modifier) {
+    val primary = MaterialTheme.colorScheme.primary
+    Box(
+        modifier
+            .size(24.dp)
+            .clip(androidx.compose.foundation.shape.CircleShape)
+            .background(if (selected) primary else Color.Transparent)
+            .border(2.dp, if (selected) primary else MaterialTheme.colorScheme.outline, androidx.compose.foundation.shape.CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (selected) Icon(Icons.Rounded.Check, contentDescription = "Selected", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
+    }
+}

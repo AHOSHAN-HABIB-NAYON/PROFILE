@@ -254,8 +254,8 @@ fun SettingsRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
-            IconTile(icon, tint, size = 34.dp)
-            Spacer(Modifier.width(12.dp))
+            Icon(icon, null, tint = tint, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.width(16.dp))
         }
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
@@ -290,8 +290,8 @@ fun SwitchRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
-            IconTile(icon, tint, size = 38.dp)
-            Spacer(Modifier.width(14.dp))
+            Icon(icon, null, tint = tint, modifier = Modifier.size(24.dp))
+            Spacer(Modifier.width(16.dp))
         }
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
