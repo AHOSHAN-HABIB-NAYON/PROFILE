@@ -158,6 +158,13 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
                 )
             }
             composable<ToolsRoute> { Guided { ToolsScreen(onTool = { nav.navigate(toolRoute(it)) }) } }
+            composable<FolderSizeRoute> { b ->
+                com.webtecit.filepilot.feature.analyzer.FolderSizeScreen(
+                    startPath = b.toRoute<FolderSizeRoute>().path,
+                    onBack = { nav.popBackStack() },
+                    onOpenFolder = { nav.navigate(BrowserRoute(it)) },
+                )
+            }
             composable<AnalyzerRoute> {
                 Guided { AnalyzerScreen(onBack = { nav.popBackStack() }, onOpenFolder = { nav.navigate(BrowserRoute(it)) }) }
             }
@@ -258,6 +265,7 @@ fun previewRoute(path: String): Any? {
 
 /** The screen for each tool. */
 fun toolRoute(tool: Tool): Any = when (tool) {
+    Tool.FOLDER_SIZE -> FolderSizeRoute()
     Tool.ANALYZER -> AnalyzerRoute
     Tool.CODE_STUDIO -> EditorRoute()
     Tool.HTML_PROJECTS -> ProjectsRoute

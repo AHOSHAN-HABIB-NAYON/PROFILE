@@ -199,7 +199,7 @@ fun HomeScreen(
                     if (primary != null) {
                         item(key = "hero") {
                             Box(Modifier.enterAnimation(2)) {
-                                HeroStorage(primary, state.categories, onBrowse = { open(primary.rootId) }, onAnalyze = { gate { onTool(Tool.ANALYZER) } })
+                                HeroStorage(primary, state.categories, onBrowse = { open(primary.rootId) }, onAnalyze = { gate { onTool(Tool.FOLDER_SIZE) } })
                             }
                         }
                     }
@@ -245,7 +245,7 @@ fun HomeScreen(
                     item(key = "tools") {
                         val tools = listOf(
                             Triple(Tool.CLEANER, "Cleaner", Icons.Rounded.CleaningServices to Palette.Green),
-                            Triple(Tool.ANALYZER, "Analyzer", Icons.Rounded.PieChart to Palette.Blue),
+                            Triple(Tool.FOLDER_SIZE, "Folder size", Icons.Rounded.FolderOpen to Palette.Blue),
                             Triple(Tool.CODE_STUDIO, "Code Studio", Icons.Rounded.Code to Palette.Orange),
                             Triple(Tool.SECURE_FOLDER, "Secure", Icons.Rounded.Lock to Palette.Purple),
                             Triple(Tool.RECYCLE_BIN, "Recycle Bin", Icons.Rounded.Delete to Palette.Pink),
@@ -388,7 +388,7 @@ private fun HeroStorage(volume: StorageVolumeInfo, categories: List<CategorySumm
                         Modifier.clip(CircleShape).background(Color.White).clickable(onClick = onAnalyze).padding(start = 12.dp, end = 6.dp, top = 5.dp, bottom = 5.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("Analyze", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = Palette.Navy)
+                        Text("Folder size", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = Palette.Navy)
                         Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = Palette.Navy, modifier = Modifier.size(18.dp))
                     }
                 }

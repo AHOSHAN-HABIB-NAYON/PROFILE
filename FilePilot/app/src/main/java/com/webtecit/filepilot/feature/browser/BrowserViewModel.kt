@@ -449,22 +449,42 @@ class BrowserViewModel @Inject constructor(
     }
 
     /** Creates an archive in the current folder in the background. */
-    fun createArchive(items: List<FileItem>, name: String, format: com.webtecit.filepilot.core.archive.ArchiveFormat, password: String?, maximum: Boolean) {
+    fun createArchive(
+        items: List<FileItem>,
+        name: String,
+        format: com.webtecit.filepilot.core.archive.ArchiveFormat,
+        password: String?,
+        level: com.webtecit.filepilot.core.archive.CompressLevel,
+        splitBytes: Long,
+    ) {
         if (items.any { !it.id.startsWith("/") }) { message("Archives can be created from files on device storage."); return }
-        val dir = _state.value.currentId ?: return
-        val out = java.io.File(dir, NameRules.uniqueName("$name.${format.extension}", rawItems.map { it.name }))
+        // In categories and search results there is no real folder, so archives go to Download.
+        val current = _state.value.currentId
+        val dir = current?.takeIf { it.startsWith("/") }
+            ?: android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS).absolutePath
+        val existing = java.io.File(dir).list()?.toList().orEmpty()
+        val out = java.io.File(dir, NameRules.uniqueName("$name.${format.extension}", existing))
         clearSelection()
         appScope.launch {
-            val id = tasks.start("Creating ${out.name}", "Starting…", coroutineContext[kotlinx.coroutines.Job])
+            val title = "Zipping ${out.name}"
+            val id = tasks.start(title, "Starting…", coroutineContext[kotlinx.coroutines.Job])
+            val sources = items.map { java.io.File(it.id) }
             val result = runCatching {
                 withContext(io) {
-                    com.webtecit.filepilot.core.archive.ArchiveEngine.create(items.map { java.io.File(it.id) }, out, format, password?.takeIf { it.isNotEmpty() }?.toCharArray(), maximum) { n, f ->
-                        tasks.update("Creating ${out.name}", "$n files · $f", null)
-                    }
+                    val total = sources.sumOf { s -> if (s.isDirectory) s.walkTopDown().count { it.isFile } else 1 }.coerceAtLeast(1)
+                    com.webtecit.filepilot.core.archive.ArchiveEngine.create(
+                        sources, out, format, password?.takeIf { it.isNotEmpty() }?.toCharArray(), level, splitBytes,
+                    ) { n, f -> tasks.update(title, "$n of $total files · $f", (n.toFloat() / total).coerceIn(0f, 1f)) }
                 }
             }
-            result.onSuccess { tasks.finish(id, "Created ${out.name} (${Formatters.size(out.length())})") }
-                .onFailure { out.delete(); tasks.dismiss(id); message("Couldn't create the archive: ${it.userMessage()}") }
+            result.onSuccess {
+                tasks.finish(id, "Created ${out.name} (${Formatters.size(out.length())})")
+                com.webtecit.filepilot.core.designsystem.Feedback.saved("Archive created", "${out.name} · ${Formatters.size(out.length())}")
+            }.onFailure {
+                out.delete()
+                tasks.dismiss(id)
+                if (it !is kotlinx.coroutines.CancellationException) message("Couldn't create the archive: ${it.userMessage()}")
+            }
             refresh()
         }
     }

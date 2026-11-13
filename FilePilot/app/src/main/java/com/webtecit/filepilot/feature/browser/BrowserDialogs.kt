@@ -2,6 +2,7 @@
 
 package com.webtecit.filepilot.feature.browser
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -258,42 +259,87 @@ fun BatchRenameDialog(
 @Composable
 fun CreateArchiveDialog(
     defaultName: String,
-    onCreate: (String, com.webtecit.filepilot.core.archive.ArchiveFormat, String?, Boolean) -> Unit,
+    onCreate: (String, com.webtecit.filepilot.core.archive.ArchiveFormat, String?, com.webtecit.filepilot.core.archive.CompressLevel, Long) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val zipFormat = com.webtecit.filepilot.core.archive.ArchiveFormat.ZIP
     var name by remember { mutableStateOf(defaultName) }
-    var format by remember { mutableStateOf(com.webtecit.filepilot.core.archive.ArchiveFormat.ZIP) }
+    var format by remember { mutableStateOf(zipFormat) }
     var password by remember { mutableStateOf("") }
-    var maximum by remember { mutableStateOf(false) }
-    val formats = listOf(com.webtecit.filepilot.core.archive.ArchiveFormat.ZIP, com.webtecit.filepilot.core.archive.ArchiveFormat.SEVEN_Z, com.webtecit.filepilot.core.archive.ArchiveFormat.TAR_GZ)
+    var level by remember { mutableStateOf(com.webtecit.filepilot.core.archive.CompressLevel.NORMAL) }
+    var split by remember { mutableStateOf(0L) }
+    val formats = listOf(
+        zipFormat,
+        com.webtecit.filepilot.core.archive.ArchiveFormat.SEVEN_Z,
+        com.webtecit.filepilot.core.archive.ArchiveFormat.TAR_GZ,
+        com.webtecit.filepilot.core.archive.ArchiveFormat.TAR,
+    )
+    val splits = listOf(0L to "Off", 50L * 1024 * 1024 to "50 MB", 100L * 1024 * 1024 to "100 MB", 500L * 1024 * 1024 to "500 MB", 1024L * 1024 * 1024 to "1 GB")
     val error = com.webtecit.filepilot.core.storage.NameRules.validate(name)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Create archive") },
         text = {
-            Column {
+            Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
                 OutlinedTextField(name, { name = it }, label = { Text("Archive name") }, singleLine = true, isError = error != null,
-                    supportingText = { error?.let { Text(it) } }, modifier = Modifier.fillMaxWidth())
-                Spacer(Modifier.height(8.dp))
+                    supportingText = { Text(error ?: "$name.${format.extension}") }, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(4.dp))
+                Text("Format", style = MaterialTheme.typography.labelLarge)
+                Spacer(Modifier.height(6.dp))
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                     formats.forEachIndexed { i, f ->
-                        SegmentedButton(selected = format == f, onClick = { format = f }, shape = SegmentedButtonDefaults.itemShape(i, formats.size)) { Text(f.label) }
+                        SegmentedButton(selected = format == f, onClick = { format = f }, shape = SegmentedButtonDefaults.itemShape(i, formats.size)) {
+                            Text(f.label, maxLines = 1, style = MaterialTheme.typography.labelMedium)
+                        }
                     }
                 }
-                Spacer(Modifier.height(8.dp))
-                if (format == com.webtecit.filepilot.core.archive.ArchiveFormat.ZIP) {
+                if (format != com.webtecit.filepilot.core.archive.ArchiveFormat.TAR) {
+                    Spacer(Modifier.height(12.dp))
+                    Text("Compression", style = MaterialTheme.typography.labelLarge)
+                    Spacer(Modifier.height(6.dp))
+                    val levels = com.webtecit.filepilot.core.archive.CompressLevel.entries
+                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                        levels.forEachIndexed { i, l ->
+                            SegmentedButton(selected = level == l, onClick = { level = l }, shape = SegmentedButtonDefaults.itemShape(i, levels.size)) {
+                                Text(l.label, maxLines = 1, style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
+                    }
+                    Text(
+                        when (level) {
+                            com.webtecit.filepilot.core.archive.CompressLevel.STORE -> "Fastest, no compression. Good for photos and videos."
+                            com.webtecit.filepilot.core.archive.CompressLevel.FAST -> "Quick, a little smaller."
+                            com.webtecit.filepilot.core.archive.CompressLevel.NORMAL -> "Balanced size and speed."
+                            com.webtecit.filepilot.core.archive.CompressLevel.MAXIMUM -> "Smallest file, slowest."
+                        },
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+                if (format == zipFormat) {
+                    Spacer(Modifier.height(12.dp))
                     OutlinedTextField(password, { password = it }, label = { Text("Password (optional, AES-256)") }, singleLine = true,
                         visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
-                }
-                Row(Modifier.fillMaxWidth().clickable(role = Role.Checkbox) { maximum = !maximum }, verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = maximum, onCheckedChange = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Maximum compression (slower)")
+                    Spacer(Modifier.height(10.dp))
+                    Text("Split into parts", style = MaterialTheme.typography.labelLarge)
+                    Row(Modifier.horizontalScroll(androidx.compose.foundation.rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        splits.forEach { (bytes, label) ->
+                            FilterChip(selected = split == bytes, onClick = { split = bytes }, label = { Text(label) })
+                        }
+                    }
+                    if (split > 0) {
+                        Text(
+                            "Makes $name.zip, $name.z01, … Keep all parts together to open it. Works for one folder or for files.",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         },
         confirmButton = {
-            TextButton(enabled = error == null, onClick = { onCreate(name.trim(), format, password.takeIf { format == com.webtecit.filepilot.core.archive.ArchiveFormat.ZIP }, maximum) }) { Text("Create") }
+            TextButton(enabled = error == null, onClick = {
+                onCreate(name.trim(), format, password.takeIf { format == zipFormat }, level, if (format == zipFormat) split else 0L)
+            }) { Text("Create") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )

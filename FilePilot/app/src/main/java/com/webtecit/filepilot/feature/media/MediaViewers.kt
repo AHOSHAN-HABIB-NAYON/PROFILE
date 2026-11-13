@@ -2,6 +2,25 @@
 
 package com.webtecit.filepilot.feature.media
 
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.positionChanged
+import androidx.compose.ui.platform.testTag
+import kotlinx.coroutines.launch
 import android.widget.MediaController
 import android.widget.VideoView
 import androidx.compose.animation.AnimatedVisibility
@@ -57,22 +76,59 @@ import com.webtecit.filepilot.core.storage.FileKind
 import com.webtecit.filepilot.core.storage.FileTypes
 import java.io.File
 
-/** Full-screen photos: swipe between images in the folder, pinch or double-tap to zoom, EXIF details. */
+@dagger.hilt.android.lifecycle.HiltViewModel
+class ImageViewerViewModel @javax.inject.Inject constructor(
+    private val recycleBin: com.webtecit.filepilot.core.cleaning.RecycleBin,
+) : androidx.lifecycle.ViewModel() {
+    /** Moves a photo to the Recycle Bin (or deletes it when the bin can't take it). Returns true when it is gone. */
+    suspend fun delete(file: File, onUndone: () -> Unit): Boolean {
+        val item = com.webtecit.filepilot.core.storage.FileItem(file.absolutePath, file.name, false, file.length(), file.lastModified(), FileTypes.mimeOf(file.name))
+        return if (recycleBin.supports(item)) {
+            runCatching {
+                val entries = recycleBin.trashEntries(listOf(item))
+                com.webtecit.filepilot.core.designsystem.Feedback.deleted("Moved to Recycle Bin", file.name, undo = {
+                    recycleBin.undo(entries)
+                    onUndone()
+                })
+            }.isSuccess
+        } else {
+            val ok = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { file.delete() }
+            if (ok) com.webtecit.filepilot.core.designsystem.Feedback.deleted("Deleted", file.name)
+            ok
+        }
+    }
+}
+
+/** Full-screen photos: swipe left and right through the folder, pinch or double-tap to zoom, thumbnails, details. */
 @Composable
-fun ImageViewerScreen(path: String, onBack: () -> Unit) {
+fun ImageViewerScreen(path: String, onBack: () -> Unit, viewModel: ImageViewerViewModel = androidx.hilt.navigation.compose.hiltViewModel()) {
     val context = LocalContext.current
-    val images = remember(path) {
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var reload by remember { mutableStateOf(0) }
+    val images = remember(path, reload) {
         val f = File(path)
         f.parentFile?.listFiles().orEmpty().filter { it.isFile && FileTypes.kindOf(it.name, false) == FileKind.IMAGE && !it.name.startsWith(".") }
-            .sortedBy { it.name.lowercase() }.ifEmpty { listOf(f) }
+            .sortedBy { it.name.lowercase() }.ifEmpty { if (f.exists()) listOf(f) else emptyList() }
     }
-    val pager = rememberPagerState(initialPage = images.indexOfFirst { it.absolutePath == path }.coerceAtLeast(0)) { images.size }
+    if (images.isEmpty()) {
+        androidx.compose.runtime.LaunchedEffect(Unit) { onBack() }
+        return
+    }
+    val start = remember(path) { images.indexOfFirst { it.absolutePath == path }.coerceAtLeast(0) }
+    val pager = rememberPagerState(initialPage = start) { images.size }
     var chrome by remember { mutableStateOf(true) }
     var info by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
     val current = images[pager.currentPage.coerceIn(0, images.lastIndex)]
+    val strip = androidx.compose.foundation.lazy.rememberLazyListState()
+    androidx.compose.runtime.LaunchedEffect(pager.currentPage) {
+        strip.animateScrollToItem((pager.currentPage - 3).coerceAtLeast(0))
+    }
     Box(Modifier.fillMaxSize().background(Color.Black)) {
-        HorizontalPager(state = pager, modifier = Modifier.fillMaxSize()) { i -> ZoomableImage(images[i]) { chrome = !chrome } }
-        AnimatedVisibility(chrome) {
+        HorizontalPager(state = pager, beyondViewportPageCount = 1, modifier = Modifier.fillMaxSize().testTag("image_pager")) { i ->
+            ZoomableImage(images[i]) { chrome = !chrome }
+        }
+        AnimatedVisibility(chrome, enter = fadeIn(), exit = fadeOut()) {
             Row(
                 Modifier.fillMaxWidth().background(Color.Black.copy(alpha = 0.45f)).statusBarsPadding().padding(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -82,12 +138,61 @@ fun ImageViewerScreen(path: String, onBack: () -> Unit) {
                     Text(current.name, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text("${pager.currentPage + 1} of ${images.size} · ${Formatters.size(current.length())}", color = Color.White.copy(alpha = 0.75f), style = MaterialTheme.typography.bodySmall)
                 }
-                IconButton(onClick = {
-                    FileIntents.share(context, listOf(FileProvider.getUriForFile(context, "${context.packageName}.files", current)), listOf(FileTypes.mimeOf(current.name)))
-                }) { Icon(Icons.Rounded.Share, "Share", tint = Color.White) }
                 IconButton(onClick = { info = true }) { Icon(Icons.Rounded.Info, "Photo details", tint = Color.White) }
             }
         }
+        AnimatedVisibility(chrome, enter = fadeIn(), exit = fadeOut(), modifier = Modifier.align(Alignment.BottomCenter)) {
+            Column(Modifier.fillMaxWidth().background(Color.Black.copy(alpha = 0.45f)).navigationBarsPadding().padding(vertical = 8.dp)) {
+                if (images.size > 1) {
+                    androidx.compose.foundation.lazy.LazyRow(
+                        state = strip,
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+                    ) {
+                        items(images.size, key = { images[it].absolutePath }) { i ->
+                            val selected = i == pager.currentPage
+                            AsyncImage(
+                                model = images[i], contentDescription = null, contentScale = ContentScale.Crop,
+                                modifier = Modifier.size(48.dp)
+                                    .border(if (selected) 2.dp else 0.dp, if (selected) Color.White else Color.Transparent, androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+                                    .padding(if (selected) 2.dp else 0.dp)
+                                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                                    .graphicsLayer { alpha = if (selected) 1f else 0.6f }
+                                    .clickable { scope.launch { pager.animateScrollToPage(i) } },
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(6.dp))
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceEvenly) {
+                    ViewerAction(Icons.Rounded.Share, "Share") {
+                        FileIntents.share(context, listOf(FileProvider.getUriForFile(context, "${context.packageName}.files", current)), listOf(FileTypes.mimeOf(current.name)))
+                    }
+                    ViewerAction(Icons.AutoMirrored.Rounded.OpenInNew, "Open with") {
+                        runCatching {
+                            FileIntents.open(context, FileProvider.getUriForFile(context, "${context.packageName}.files", current), FileTypes.mimeOf(current.name), forceChooser = true)
+                        }
+                    }
+                    ViewerAction(Icons.Rounded.Info, "Details") { info = true }
+                    ViewerAction(Icons.Rounded.Delete, "Delete", tint = Color(0xFFFF8A9A)) { confirmDelete = true }
+                }
+            }
+        }
+    }
+    if (confirmDelete) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("Delete \"${current.name}\"?") },
+            text = { Text("The photo goes to the Recycle Bin when it can, so you can undo.") },
+            confirmButton = {
+                androidx.compose.material3.TextButton(onClick = {
+                    confirmDelete = false
+                    val target = current
+                    scope.launch { if (viewModel.delete(target) { reload++ }) reload++ }
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { androidx.compose.material3.TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
+        )
     }
     if (info) {
         ModalBottomSheet(onDismissRequest = { info = false }) {
@@ -103,6 +208,18 @@ fun ImageViewerScreen(path: String, onBack: () -> Unit) {
                 if (rows.size <= 3) Text("This photo has no camera details (EXIF).", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 12.dp))
             }
         }
+    }
+}
+
+@Composable
+private fun ViewerAction(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, tint: Color = Color.White, onClick: () -> Unit) {
+    Column(
+        Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp)).clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(icon, contentDescription = label, tint = tint)
+        Spacer(Modifier.height(2.dp))
+        Text(label, color = tint, style = MaterialTheme.typography.labelSmall)
     }
 }
 
@@ -143,9 +260,21 @@ private fun ZoomableImage(file: File, onTap: () -> Unit) {
                 )
             }
             .pointerInput(file) {
-                detectTransformGestures { _, pan, zoom, _ ->
-                    scale = (scale * zoom).coerceIn(1f, 6f)
-                    offset = if (scale == 1f) Offset.Zero else offset + pan
+                // Pinch and pan only while zoomed or with two fingers, so a one-finger swipe still
+                // moves to the next photo.
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    do {
+                        val event = awaitPointerEvent()
+                        val fingers = event.changes.count { it.pressed }
+                        if (fingers > 1 || scale > 1f) {
+                            val zoom = event.calculateZoom()
+                            val pan = event.calculatePan()
+                            scale = (scale * zoom).coerceIn(1f, 6f)
+                            offset = if (scale == 1f) Offset.Zero else offset + pan
+                            event.changes.forEach { if (it.positionChanged()) it.consume() }
+                        }
+                    } while (event.changes.any { it.pressed })
                 }
             },
         contentAlignment = Alignment.Center,

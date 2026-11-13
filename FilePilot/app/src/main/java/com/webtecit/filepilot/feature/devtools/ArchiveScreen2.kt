@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.FactCheck
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -120,7 +121,10 @@ class ArchiveViewModel @Inject constructor(
             val result = runCatching {
                 withContext(Dispatchers.IO) { ArchiveEngine.extract(f, target, only, password) { n, name -> tasks.update("Extracting ${f.name}", "$n files · $name", null) } }
             }
-            result.onSuccess { n -> tasks.finish(id, "Extracted $n files to ${target.name}") }.onFailure { tasks.dismiss(id) }
+            result.onSuccess { n ->
+                tasks.finish(id, "Extracted $n files to ${target.name}")
+                com.webtecit.filepilot.core.designsystem.Feedback.saved("Extracted", "$n files to ${target.name}")
+            }.onFailure { tasks.dismiss(id) }
             if (result.exceptionOrNull() is kotlinx.coroutines.CancellationException) {
                 ui.value = ui.value.copy(extracting = false, message = "Extraction stopped. Files already written were kept.")
                 return@launch
@@ -133,9 +137,35 @@ class ArchiveViewModel @Inject constructor(
         }
     }
 
+    private var pendingTest = false
+
+    /** Reads every file in the archive to check it isn't damaged. */
+    fun test() {
+        val f = file ?: return
+        if (ui.value.encrypted && password == null) {
+            pendingTest = true
+            ui.value = ui.value.copy(askPassword = true)
+            return
+        }
+        ui.value = ui.value.copy(extracting = true, message = "Testing…")
+        viewModelScope.launch {
+            val result = withContext(Dispatchers.IO) { runCatching { ArchiveEngine.test(f, password) } }
+            ui.value = when (val e = result.exceptionOrNull()) {
+                null -> ui.value.copy(extracting = false, message = "No errors found · ${result.getOrNull()} files checked")
+                is PasswordNeededException -> { password = null; pendingTest = true; ui.value.copy(extracting = false, message = null, askPassword = true, wrongPassword = e.wrong) }
+                else -> ui.value.copy(extracting = false, message = "The archive is damaged: ${e.userMessage()}")
+            }
+        }
+    }
+
     fun submitPassword(pw: String) {
         password = pw.toCharArray()
         ui.value = ui.value.copy(askPassword = false, wrongPassword = false)
+        if (pendingTest) {
+            pendingTest = false
+            test()
+            return
+        }
         pending?.let { (t, o) -> extract(t, o) }
     }
 
@@ -189,7 +219,12 @@ fun ArchiveBrowserScreen(path: String, onBack: () -> Unit, onOpenFolder: (String
                         Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back")
                     }
                 },
-                actions = { if (ui.encrypted) Icon(Icons.Rounded.Lock, "Password protected", Modifier.padding(end = 16.dp)) },
+                actions = {
+                    if (ui.encrypted) Icon(Icons.Rounded.Lock, "Password protected", Modifier.padding(end = 8.dp))
+                    IconButton(onClick = viewModel::test, enabled = ui.entries != null && !ui.extracting) {
+                        Icon(Icons.Rounded.FactCheck, "Test archive")
+                    }
+                },
             )
         },
         bottomBar = {

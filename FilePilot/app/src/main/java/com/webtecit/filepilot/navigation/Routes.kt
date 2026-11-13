@@ -31,3 +31,5 @@ import kotlinx.serialization.Serializable
 @Serializable data class ImageRoute(val path: String)
 @Serializable data class VideoRoute(val path: String)
 @Serializable data object RecycleBinRoute
+
+@Serializable data class FolderSizeRoute(val path: String? = null)

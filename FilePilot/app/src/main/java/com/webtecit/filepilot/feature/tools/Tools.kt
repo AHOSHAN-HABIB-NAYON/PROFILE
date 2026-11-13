@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.Lock
@@ -45,6 +46,7 @@ import com.webtecit.filepilot.core.designsystem.SectionHeader
 
 /** Every tool in the app. Only finished tools are listed here. */
 enum class Tool(val label: String, val description: String, val icon: ImageVector, val tint: Long, val group: String) {
+    FOLDER_SIZE("Folder size", "Which folders take your space", Icons.Rounded.FolderOpen, 0xFF2F6BFF, "Storage"),
     ANALYZER("Storage Analyzer", "Folders and types using your space", Icons.Rounded.DonutLarge, 0xFFEA580C, "Storage"),
     CLEANER("Cleaner", "Junk, duplicates and leftovers", Icons.Rounded.CleaningServices, 0xFF0369A1, "Storage"),
     RECYCLE_BIN("Recycle Bin", "Restore deleted files", Icons.Rounded.DeleteSweep, 0xFF64748B, "Storage"),
@@ -58,6 +60,7 @@ enum class Tool(val label: String, val description: String, val icon: ImageVecto
 /** Short name and colour for each tool's box. */
 private val Tool.short: String
     get() = when (this) {
+        Tool.FOLDER_SIZE -> "Folder size"
         Tool.ANALYZER -> "Analyzer"
         Tool.CLEANER -> "Cleaner"
         Tool.RECYCLE_BIN -> "Recycle Bin"
@@ -70,7 +73,8 @@ private val Tool.short: String
 
 private val Tool.color: Color
     get() = when (this) {
-        Tool.ANALYZER -> Palette.Blue
+        Tool.FOLDER_SIZE -> Palette.Blue
+        Tool.ANALYZER -> Palette.Purple
         Tool.CLEANER -> Palette.Green
         Tool.RECYCLE_BIN -> Palette.Pink
         Tool.SECURE_FOLDER -> Palette.Purple

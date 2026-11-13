@@ -548,7 +548,7 @@ fun BrowserScreen(
         is BrowserDialog.Details -> DetailsSheet(id = d.id, onDismiss = { dialog = null })
         is BrowserDialog.CreateArchive -> CreateArchiveDialog(
             defaultName = if (d.items.size == 1) d.items[0].name.substringBeforeLast('.').ifBlank { d.items[0].name } else "Archive",
-            onCreate = { name, format, password, max -> dialog = null; viewModel.createArchive(d.items, name, format, password, max) },
+            onCreate = { name, format, password, level, split -> dialog = null; viewModel.createArchive(d.items, name, format, password, level, split) },
             onDismiss = { dialog = null },
         )
         is BrowserDialog.TransferTo -> com.webtecit.filepilot.core.designsystem.FolderPickerDialog(

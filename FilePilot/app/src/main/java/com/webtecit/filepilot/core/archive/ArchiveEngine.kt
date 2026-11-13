@@ -28,6 +28,9 @@ enum class ArchiveFormat(val label: String, val extension: String) {
     TAR_BZ2("TAR.BZ2", "tar.bz2"), TAR_XZ("TAR.XZ", "tar.xz"), GZ("GZ", "gz"), BZ2("BZ2", "bz2"), XZ("XZ", "xz"),
 }
 
+/** How hard to compress: Store keeps files as they are (fastest), Maximum makes the smallest file. */
+enum class CompressLevel(val label: String) { STORE("Store"), FAST("Fast"), NORMAL("Normal"), MAXIMUM("Maximum") }
+
 class PasswordNeededException(val wrong: Boolean) : Exception(if (wrong) "The password is incorrect." else "This archive is protected by a password.")
 
 /**
@@ -139,27 +142,77 @@ object ArchiveEngine {
     }
 
     /** Creates an archive from files and folders (relative paths start at each source's name). */
-    suspend fun create(sources: List<File>, out: File, format: ArchiveFormat, password: CharArray? = null, maximum: Boolean = false, onProgress: (Int, String) -> Unit = { _, _ -> }): Int {
+    suspend fun create(
+        sources: List<File>,
+        out: File,
+        format: ArchiveFormat,
+        password: CharArray? = null,
+        maximum: Boolean = false,
+        onProgress: (Int, String) -> Unit = { _, _ -> },
+    ): Int = create(sources, out, format, password, if (maximum) CompressLevel.MAXIMUM else CompressLevel.NORMAL, 0L, onProgress)
+
+    /**
+     * Creates an archive. [splitBytes] > 0 makes a split ZIP (name.zip, name.z01, …) for one folder or
+     * a set of files.
+     */
+    suspend fun create(
+        sources: List<File>,
+        out: File,
+        format: ArchiveFormat,
+        password: CharArray?,
+        level: CompressLevel,
+        splitBytes: Long,
+        onProgress: (Int, String) -> Unit = { _, _ -> },
+    ): Int {
         var count = 0
         when (format) {
             ArchiveFormat.ZIP -> {
                 val zip = ZipFile(out, password)
                 val params = ZipParameters().apply {
-                    compressionLevel = if (maximum) CompressionLevel.MAXIMUM else CompressionLevel.NORMAL
+                    if (level == CompressLevel.STORE) {
+                        compressionMethod = net.lingala.zip4j.model.enums.CompressionMethod.STORE
+                    } else {
+                        compressionLevel = when (level) {
+                            CompressLevel.FAST -> CompressionLevel.FASTEST
+                            CompressLevel.MAXIMUM -> CompressionLevel.MAXIMUM
+                            else -> CompressionLevel.NORMAL
+                        }
+                    }
                     if (password != null && password.isNotEmpty()) {
                         isEncryptFiles = true
                         encryptionMethod = EncryptionMethod.AES
                         aesKeyStrength = AesKeyStrength.KEY_STRENGTH_256
                     }
                 }
-                for (s in sources) {
-                    currentCoroutineContext().ensureActive()
-                    if (s.isDirectory) zip.addFolder(s, params) else zip.addFile(s, params)
-                    count += if (s.isDirectory) s.walkTopDown().count { it.isFile } else 1
-                    onProgress(count, s.name)
+                if (splitBytes > 0) {
+                    require(splitBytes >= MIN_SPLIT) { "Parts must be at least 64 KB." }
+                    val single = sources.singleOrNull()
+                    when {
+                        single != null && single.isDirectory -> zip.createSplitZipFileFromFolder(single, params, true, splitBytes)
+                        sources.all { it.isFile } -> zip.createSplitZipFile(sources, params, true, splitBytes)
+                        else -> throw IllegalArgumentException("A split ZIP can be made from one folder or from files. Select one folder, or only files.")
+                    }
+                    count = sources.sumOf { s -> if (s.isDirectory) s.walkTopDown().count { it.isFile } else 1 }
+                    onProgress(count, out.name)
+                } else {
+                    for (s in sources) {
+                        currentCoroutineContext().ensureActive()
+                        if (s.isDirectory) zip.addFolder(s, params) else zip.addFile(s, params)
+                        count += if (s.isDirectory) s.walkTopDown().count { it.isFile } else 1
+                        onProgress(count, s.name)
+                    }
                 }
             }
             ArchiveFormat.SEVEN_Z -> SevenZOutputFile(out).use { z ->
+                z.setContentMethods(
+                    listOf(
+                        if (level == CompressLevel.STORE) org.apache.commons.compress.archivers.sevenz.SevenZMethodConfiguration(org.apache.commons.compress.archivers.sevenz.SevenZMethod.COPY)
+                        else org.apache.commons.compress.archivers.sevenz.SevenZMethodConfiguration(
+                            org.apache.commons.compress.archivers.sevenz.SevenZMethod.LZMA2,
+                            org.tukaani.xz.LZMA2Options(when (level) { CompressLevel.FAST -> 1; CompressLevel.MAXIMUM -> 9; else -> 6 }),
+                        ),
+                    ),
+                )
                 for (s in sources) for (f in s.walkTopDown()) {
                     currentCoroutineContext().ensureActive()
                     val name = s.name + f.absolutePath.removePrefix(s.absolutePath)
@@ -175,7 +228,15 @@ object ArchiveEngine {
                     z.closeArchiveEntry()
                 }
             }
-            ArchiveFormat.TAR_GZ -> TarArchiveOutputStream(GzipCompressorOutputStream(out.outputStream().buffered())).use { t ->
+            ArchiveFormat.TAR_GZ, ArchiveFormat.TAR -> TarArchiveOutputStream(
+                if (format == ArchiveFormat.TAR) out.outputStream().buffered()
+                else GzipCompressorOutputStream(
+                    out.outputStream().buffered(),
+                    org.apache.commons.compress.compressors.gzip.GzipParameters().apply {
+                        compressionLevel = when (level) { CompressLevel.STORE -> 0; CompressLevel.FAST -> 1; CompressLevel.MAXIMUM -> 9; else -> 6 }
+                    },
+                ),
+            ).use { t ->
                 t.setLongFileMode(TarArchiveOutputStream.LONGFILE_POSIX)
                 t.setBigNumberMode(TarArchiveOutputStream.BIGNUMBER_POSIX)
                 for (s in sources) for (f in s.walkTopDown()) {
@@ -190,6 +251,71 @@ object ArchiveEngine {
         }
         return count
     }
+
+    /** Reads every entry to the end to check the archive isn't damaged. Returns the number of files checked. */
+    suspend fun test(file: File, password: CharArray? = null, onProgress: (Int, String) -> Unit = { _, _ -> }): Int {
+        var count = 0
+        val sink = ByteArray(256 * 1024)
+        fun drain(input: InputStream) { while (input.read(sink) >= 0) Unit }
+        when (formatOf(file.name)) {
+            ArchiveFormat.ZIP -> {
+                val zip = ZipFile(file)
+                if (zip.isEncrypted) {
+                    if (password == null) throw PasswordNeededException(false)
+                    zip.setPassword(password)
+                }
+                try {
+                    for (h in zip.fileHeaders) {
+                        currentCoroutineContext().ensureActive()
+                        if (h.isDirectory) continue
+                        zip.getInputStream(h).use { drain(it) }
+                        onProgress(++count, h.fileName)
+                    }
+                } catch (e: net.lingala.zip4j.exception.ZipException) {
+                    if (e.type == net.lingala.zip4j.exception.ZipException.Type.WRONG_PASSWORD) throw PasswordNeededException(true) else throw e
+                }
+            }
+            ArchiveFormat.SEVEN_Z -> try {
+                sevenZ(file, password).use { z ->
+                    while (true) {
+                        currentCoroutineContext().ensureActive()
+                        val e = z.nextEntry ?: break
+                        if (e.isDirectory) continue
+                        while (z.read(sink) >= 0) Unit
+                        onProgress(++count, e.name)
+                    }
+                }
+            } catch (e: org.apache.commons.compress.PasswordRequiredException) {
+                throw PasswordNeededException(password != null)
+            }
+            ArchiveFormat.RAR -> Archive(file, password?.let { String(it) }).use { a ->
+                if ((a.isEncrypted || a.fileHeaders.any { it.isEncrypted }) && password == null) throw PasswordNeededException(false)
+                for (h in a.fileHeaders) {
+                    currentCoroutineContext().ensureActive()
+                    if (h.isDirectory) continue
+                    a.extractFile(h, object : java.io.OutputStream() {
+                        override fun write(b: Int) = Unit
+                        override fun write(b: ByteArray, off: Int, len: Int) = Unit
+                    })
+                    onProgress(++count, h.fileName)
+                }
+            }
+            ArchiveFormat.TAR, ArchiveFormat.TAR_GZ, ArchiveFormat.TAR_BZ2, ArchiveFormat.TAR_XZ -> tarStream(file).use { t ->
+                while (true) {
+                    currentCoroutineContext().ensureActive()
+                    val e = t.nextTarEntry ?: break
+                    if (e.isDirectory) continue
+                    drain(t)
+                    onProgress(++count, e.name)
+                }
+            }
+            ArchiveFormat.GZ, ArchiveFormat.BZ2, ArchiveFormat.XZ -> compressorStream(file).use { drain(it); onProgress(++count, file.name) }
+            null -> throw IllegalArgumentException("This isn't an archive FilePilot can read.")
+        }
+        return count
+    }
+
+    const val MIN_SPLIT = 65_536L
 
     private fun sevenZ(file: File, password: CharArray?): SevenZFile =
         if (password != null) SevenZFile(file, password) else SevenZFile(file)
