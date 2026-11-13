@@ -276,8 +276,9 @@ class FileOperationManager @Inject constructor(
         for (child in sourceFs.list(source.id)) {
             currentCoroutineContext().ensureActive()
             tracker.guard(child.name) {
-                if (child.isDirectory) children[child.name.lowercase()] = copyDirectory(child, dir.id, child.name, null, tracker)
-                else children[child.name.lowercase()] = copyFile(child, dir.id, child.name, null, tracker)
+                val copied = if (child.isDirectory) copyDirectory(child, dir.id, child.name, null, tracker)
+                else copyFile(child, dir.id, child.name, null, tracker)
+                children[child.name.lowercase()] = copied
             }
         }
         if (replace == null) return dir
