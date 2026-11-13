@@ -115,7 +115,8 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           working-directory: FilePilot
           profile: pixel_6
-          script: ./gradlew --stacktrace connectedDebugAndroidTest
+          # On failure, print each failed test's message and any crash from the device log.
+          script: ./gradlew --stacktrace connectedDebugAndroidTest || (grep -h -A 12 "<failure" app/build/outputs/androidTest-results/connected/debug/*.xml | head -150; adb logcat -d -s AndroidRuntime:E TestRunner:E | tail -120; exit 1)
       - name: Upload UI test reports
         if: always()
         uses: actions/upload-artifact@v4

@@ -17,10 +17,12 @@ object TestSupport {
         prefs().setPermissionsSetupDone(setupDone)
     }
 
-    /** Grants or resets "All files access" (Android 11+) through the shell. */
-    fun setAllFilesAccess(allow: Boolean) {
-        val mode = if (allow) "allow" else "default"
-        shell("appops set ${context.packageName} MANAGE_EXTERNAL_STORAGE $mode")
+    /**
+     * Grants "All files access" (Android 11+) through the shell. There is deliberately no way to
+     * revoke it here: Android kills the app process on revocation, which would end the test run.
+     */
+    fun grantAllFilesAccess() {
+        shell("appops set ${context.packageName} MANAGE_EXTERNAL_STORAGE allow")
     }
 
     fun shell(command: String) {

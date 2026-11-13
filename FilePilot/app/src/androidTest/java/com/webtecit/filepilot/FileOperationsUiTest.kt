@@ -41,7 +41,7 @@ class FileOperationsUiTest {
 
     @Before fun setUp() {
         assumeTrue("All files access is granted through appops on Android 11+", Build.VERSION.SDK_INT >= 30)
-        TestSupport.setAllFilesAccess(true)
+        TestSupport.grantAllFilesAccess()
         TestSupport.setFirstLaunch(onboardingDone = true, setupDone = true)
         scenario = ActivityScenario.launch(MainActivity::class.java)
         rule.waitForText("Internal storage")

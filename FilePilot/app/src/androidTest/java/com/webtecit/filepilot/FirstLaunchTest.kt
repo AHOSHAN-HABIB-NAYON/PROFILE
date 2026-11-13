@@ -8,6 +8,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.webtecit.filepilot.TestSupport.waitForText
+import com.webtecit.filepilot.core.permissions.StorageAccess
 import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Rule
@@ -16,7 +17,7 @@ import org.junit.rules.RuleChain
 import org.junit.rules.Timeout
 import org.junit.runner.RunWith
 
-/** Splash → onboarding → permission explanation → permission screen → Home, without granting access. */
+/** Splash → onboarding → (permission explanation → permission screen, when access is missing) → Home. */
 @RunWith(AndroidJUnit4::class)
 class FirstLaunchTest {
     private val rule = createEmptyComposeRule()
@@ -29,8 +30,10 @@ class FirstLaunchTest {
 
     @After fun close() { scenario?.close() }
 
-    @Test fun completesFirstLaunchWithLimitedAccess() {
-        TestSupport.setAllFilesAccess(false)
+    @Test fun completesFirstLaunch() {
+        // Revoking "All files access" makes Android kill the app process (and this test with it),
+        // so the test follows whichever path the current permission state leads to.
+        val fullAccess = StorageAccess.hasFullAccess(TestSupport.context)
         TestSupport.setFirstLaunch(onboardingDone = false, setupDone = false)
         scenario = ActivityScenario.launch(MainActivity::class.java)
 
@@ -39,13 +42,14 @@ class FirstLaunchTest {
         rule.waitForText("Code Studio")
         rule.onNodeWithText("Skip").performClick()
 
-        rule.waitForText("Storage access")
-        rule.onNodeWithText("Continue").performScrollTo().performClick()
-
-        rule.waitForText("Continue with limited access")
-        rule.onNodeWithTag("permissions_continue").performScrollTo().performClick()
-
-        rule.waitForText("Allow storage access")
+        if (!fullAccess) {
+            rule.waitForText("Storage access")
+            rule.onNodeWithText("Continue").performScrollTo().performClick()
+            rule.waitForText("Continue with limited access")
+            rule.onNodeWithTag("permissions_continue").performScrollTo().performClick()
+            rule.waitForText("Allow storage access")
+        }
         rule.waitForText("Storage")
+        rule.waitForText("Internal storage")
     }
 }
