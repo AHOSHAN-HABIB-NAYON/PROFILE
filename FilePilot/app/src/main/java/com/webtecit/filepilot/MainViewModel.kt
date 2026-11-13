@@ -3,12 +3,10 @@ package com.webtecit.filepilot
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.webtecit.filepilot.core.permissions.StorageAccess
 import com.webtecit.filepilot.core.preferences.PreferencesRepository
 import com.webtecit.filepilot.core.preferences.UserPreferences
 import com.webtecit.filepilot.navigation.HomeRoute
 import com.webtecit.filepilot.navigation.OnboardingRoute
-import com.webtecit.filepilot.navigation.PermissionIntroRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -32,9 +30,6 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun routeAfterOnboarding(): Any {
-        val p = prefs.value
-        val setupDone = p?.permissionsSetupDone == true
-        return if (setupDone || StorageAccess.hasFullAccess(context)) HomeRoute else PermissionIntroRoute
-    }
+    /** Permissions are asked later, when the user opens something that needs them. */
+    fun routeAfterOnboarding(): Any = HomeRoute
 }

@@ -20,14 +20,17 @@ import kotlinx.coroutines.CoroutineDispatcher
 class FileSystems @Inject constructor(
     @ApplicationContext private val context: Context,
     @IoDispatcher io: CoroutineDispatcher,
+    categories: CategoryRepository,
 ) : FileSystemResolver {
 
     val local = LocalFileSystem(io, useNio = Build.VERSION.SDK_INT >= 26)
     val saf = SafFileSystem(context, io)
+    val category = CategoryFileSystem(categories)
 
     override fun of(id: String): FileSystem = when {
         local.handles(id) -> local
         saf.handles(id) -> saf
+        category.handles(id) -> category
         else -> throw FsException(FsError.NOT_SUPPORTED, "This location isn't supported.")
     }
 

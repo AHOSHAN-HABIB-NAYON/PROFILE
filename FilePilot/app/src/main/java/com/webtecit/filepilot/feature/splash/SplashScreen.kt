@@ -74,7 +74,7 @@ fun SplashScreen(onFinished: () -> Unit) {
                 },
             ) {
                 Text("FilePilot", style = MaterialTheme.typography.headlineMedium)
-                Text("Coding Pro", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                Text("Manage everything. Edit anything.", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
             }
         }
         Text(

@@ -66,6 +66,7 @@ fun FilesScreen(
     var removeRoot by remember { mutableStateOf<SafRoot?>(null) }
     var autoOpened by rememberSaveable { mutableStateOf(false) }
     EventHandler(viewModel.events, snackbar, onOpenFolder)
+    val gate = com.webtecit.filepilot.core.permissions.rememberAccessGate()
     LifecycleResumeEffect(Unit) {
         viewModel.refresh()
         onPauseOrDispose { }
@@ -92,7 +93,7 @@ fun FilesScreen(
         ) {
             if (state.access == AccessLevel.LIMITED) {
                 item(key = "limited") {
-                    AppCard(onClick = onGrantAccess) {
+                    AppCard(onClick = { gate { viewModel.refresh() } }) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconTile(Icons.Rounded.Warning, MaterialTheme.colorScheme.error)
                             Spacer(Modifier.width(14.dp))
@@ -109,7 +110,7 @@ fun FilesScreen(
                 }
             }
             item(key = "storage") { SectionHeader("Storage") }
-            items(state.volumes, key = { "v:" + it.rootId }) { v -> StorageCard(v, onClick = { onOpenFolder(v.rootId) }) }
+            items(state.volumes, key = { "v:" + it.rootId }) { v -> StorageCard(v, onClick = { gate { onOpenFolder(v.rootId) } }) }
 
             item(key = "granted") { SectionHeader("Granted folders and drives") }
             if (state.safRoots.isEmpty()) {

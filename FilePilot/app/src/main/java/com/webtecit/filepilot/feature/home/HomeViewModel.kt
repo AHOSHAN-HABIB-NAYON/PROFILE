@@ -8,6 +8,8 @@ import com.webtecit.filepilot.core.common.IoDispatcher
 import com.webtecit.filepilot.core.common.UiEvent
 import com.webtecit.filepilot.core.permissions.AccessLevel
 import com.webtecit.filepilot.core.permissions.StorageAccess
+import com.webtecit.filepilot.core.storage.CategoryRepository
+import com.webtecit.filepilot.core.storage.CategorySummary
 import com.webtecit.filepilot.core.storage.StorageVolumeInfo
 import com.webtecit.filepilot.core.storage.StorageVolumes
 import com.webtecit.filepilot.data.FileOpener
@@ -38,9 +40,11 @@ data class HomeState(
     val volumes: List<StorageVolumeInfo> = emptyList(),
     val access: AccessLevel = AccessLevel.LIMITED,
     val quickFolders: List<QuickFolder> = emptyList(),
+    val categories: List<CategorySummary> = emptyList(),
     val favorites: List<LibraryEntry> = emptyList(),
     val recents: List<LibraryEntry> = emptyList(),
     val safRoots: List<SafRoot> = emptyList(),
+    val downloadsId: String = "",
     val loaded: Boolean = false,
 )
 
@@ -48,6 +52,7 @@ data class HomeState(
 class HomeViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val volumes: StorageVolumes,
+    private val categories: CategoryRepository,
     library: LibraryRepository,
     safRoots: SafRootsRepository,
     private val opener: FileOpener,
@@ -66,13 +71,17 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch { safRoots.roots.collect { r -> _state.update { it.copy(safRoots = r) } } }
     }
 
-    /** Called whenever Home becomes visible: storage use and permissions may have changed. */
     fun refresh() {
         viewModelScope.launch {
             val access = StorageAccess.level(context)
             val vols = runCatching { volumes.load() }.getOrDefault(emptyList())
             val quick = if (access == AccessLevel.FULL) withContext(io) { quickFolders() } else emptyList()
-            _state.update { it.copy(volumes = vols, access = access, quickFolders = quick, loaded = true) }
+            val downloads = File(Environment.getExternalStorageDirectory(), Environment.DIRECTORY_DOWNLOADS).absolutePath
+            _state.update { it.copy(volumes = vols, access = access, quickFolders = quick, downloadsId = downloads, loaded = true) }
+            if (access == AccessLevel.FULL) {
+                val sums = runCatching { categories.summaries() }.getOrDefault(emptyList())
+                _state.update { it.copy(categories = sums) }
+            }
         }
     }
 
@@ -82,14 +91,13 @@ class HomeViewModel @Inject constructor(
 
     private fun quickFolders(): List<QuickFolder> {
         val root = Environment.getExternalStorageDirectory()
-        val candidates = listOf(
+        return listOf(
             QuickFolder(QuickFolderType.DOWNLOADS, "Downloads", File(root, Environment.DIRECTORY_DOWNLOADS).absolutePath),
             QuickFolder(QuickFolderType.CAMERA, "Camera", File(root, "${Environment.DIRECTORY_DCIM}/Camera").absolutePath),
             QuickFolder(QuickFolderType.PICTURES, "Pictures", File(root, Environment.DIRECTORY_PICTURES).absolutePath),
             QuickFolder(QuickFolderType.DOCUMENTS, "Documents", File(root, Environment.DIRECTORY_DOCUMENTS).absolutePath),
             QuickFolder(QuickFolderType.MUSIC, "Music", File(root, Environment.DIRECTORY_MUSIC).absolutePath),
             QuickFolder(QuickFolderType.MOVIES, "Movies", File(root, Environment.DIRECTORY_MOVIES).absolutePath),
-        )
-        return candidates.filter { File(it.id).isDirectory }
+        ).filter { File(it.id).isDirectory }
     }
 }

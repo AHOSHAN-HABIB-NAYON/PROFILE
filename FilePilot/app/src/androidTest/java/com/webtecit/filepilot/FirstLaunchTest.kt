@@ -1,14 +1,11 @@
 package com.webtecit.filepilot
 
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.webtecit.filepilot.TestSupport.waitForText
-import com.webtecit.filepilot.core.permissions.StorageAccess
 import java.util.concurrent.TimeUnit
 import org.junit.After
 import org.junit.Rule
@@ -31,25 +28,18 @@ class FirstLaunchTest {
     @After fun close() { scenario?.close() }
 
     @Test fun completesFirstLaunch() {
-        // Revoking "All files access" makes Android kill the app process (and this test with it),
-        // so the test follows whichever path the current permission state leads to.
-        val fullAccess = StorageAccess.hasFullAccess(TestSupport.context)
         TestSupport.setFirstLaunch(onboardingDone = false, setupDone = false)
         scenario = ActivityScenario.launch(MainActivity::class.java)
 
-        rule.waitForText("File Manager")
+        rule.waitForText("Manage everything")
         rule.onNodeWithText("Next").performClick()
-        rule.waitForText("Code Studio")
-        rule.onNodeWithText("Skip").performClick()
+        rule.waitForText("Code & run websites")
+        rule.onNodeWithText("Next").performClick()
+        rule.waitForText("Clean, secure, analyze")
+        rule.onNodeWithText("Get started").performClick()
 
-        if (!fullAccess) {
-            rule.waitForText("Storage access")
-            rule.onNodeWithText("Continue").performScrollTo().performClick()
-            rule.waitForText("Continue with limited access")
-            rule.onNodeWithTag("permissions_continue").performScrollTo().performClick()
-            rule.waitForText("Allow storage access")
-        }
-        rule.waitForText("Storage")
+        // No permission screen on the way in: Home opens directly.
+        rule.waitForText("Categories")
         rule.waitForText("Internal storage")
     }
 }

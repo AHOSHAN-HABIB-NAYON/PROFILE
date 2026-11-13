@@ -31,7 +31,7 @@ class NavigationTest {
     @Before fun launch() {
         TestSupport.setFirstLaunch(onboardingDone = true, setupDone = true)
         scenario = ActivityScenario.launch(MainActivity::class.java)
-        rule.waitForText("Storage")
+        rule.waitForText("Categories")
     }
 
     @After fun close() { scenario?.close() }
@@ -39,6 +39,8 @@ class NavigationTest {
     @Test fun visitsEveryTabAndAbout() {
         rule.onNodeWithTag("tab_Files").performClick()
         rule.waitForText("Add SD card, USB drive or folder")
+        rule.onNodeWithTag("tab_Tools").performClick()
+        rule.waitForText("Storage Analyzer")
         rule.onNodeWithTag("tab_Library").performClick()
         rule.waitForText("No favorites yet")
         rule.onNodeWithTag("tab_Settings").performClick()

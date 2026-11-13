@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -73,6 +75,7 @@ fun AboutScreen(onBack: () -> Unit) {
             Spacer(Modifier.height(8.dp))
             AppLogo(88.dp)
             Text(Brand.APP_NAME, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center)
+            Text(Brand.STORE_NAME, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             Text(
                 "Version ${BuildConfig.VERSION_NAME} · Build ${BuildConfig.VERSION_CODE}",
                 style = MaterialTheme.typography.bodyMedium,
@@ -87,7 +90,12 @@ fun AboutScreen(onBack: () -> Unit) {
 
             AppCard(modifier = Modifier.fillMaxWidth()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconTile(Icons.Rounded.Person, MaterialTheme.colorScheme.primary, size = 52.dp)
+                    androidx.compose.foundation.Image(
+                        androidx.compose.ui.res.painterResource(com.webtecit.filepilot.R.drawable.developer_photo),
+                        contentDescription = "Photo of ${Brand.DEVELOPER}",
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.size(72.dp).clip(androidx.compose.foundation.shape.CircleShape),
+                    )
                     Spacer(Modifier.width(14.dp))
                     Column {
                         Text("Developer", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

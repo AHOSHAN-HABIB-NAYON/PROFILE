@@ -53,7 +53,7 @@ class FileOperationsUiTest {
     }
 
     @Test fun createsAndDeletesAFolder() {
-        rule.onAllNodesWithText("Internal storage")[0].performClick()
+        rule.onNodeWithTag("storage_card").performClick()
         rule.waitUntil(15_000) { rule.onAllNodesWithText("folder", substring = true).fetchSemanticsNodes().isNotEmpty() }
 
         rule.onNodeWithContentDescription("Create").performClick()

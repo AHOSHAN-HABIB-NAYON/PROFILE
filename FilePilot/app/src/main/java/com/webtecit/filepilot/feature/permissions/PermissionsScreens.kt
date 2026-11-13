@@ -86,55 +86,6 @@ class PermissionsViewModel @Inject constructor(
     }
 }
 
-/** Screen 3: explains why storage access is needed before anything is requested. */
-@Composable
-fun PermissionIntroScreen(onContinue: () -> Unit, onNotNow: () -> Unit, viewModel: PermissionsViewModel = hiltViewModel()) {
-    Column(
-        Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-    ) {
-        Spacer(Modifier.height(16.dp))
-        IconTile(Icons.Rounded.Shield, MaterialTheme.colorScheme.primary, size = 64.dp)
-        Spacer(Modifier.height(20.dp))
-        Text("Storage access", style = MaterialTheme.typography.headlineMedium)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "FilePilot is a file manager. To show, copy, move and organise your files, it needs permission to access your storage.",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(24.dp))
-        Reason(Icons.Rounded.Folder, "Browse every folder", "See all files on internal storage and SD cards, including Downloads and Documents.")
-        Reason(Icons.Rounded.Tune, "Manage files", "Copy, move, rename and delete only when you ask, always with confirmation for deletions.")
-        Reason(Icons.Rounded.CloudOff, "Private and offline", "Nothing is uploaded. FilePilot has no account and doesn't send your files anywhere.")
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "You can change this at any time in Settings → Permission manager. Without it, you can still open folders you pick yourself.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(32.dp))
-        Button(onClick = onContinue, modifier = Modifier.fillMaxWidth().height(52.dp)) { Text("Continue") }
-        TextButton(onClick = { viewModel.markSetupDone(onNotNow) }, modifier = Modifier.fillMaxWidth()) { Text("Not now") }
-    }
-}
-
-@Composable
-private fun Reason(icon: ImageVector, title: String, text: String) {
-    Row(Modifier.padding(vertical = 10.dp), verticalAlignment = Alignment.Top) {
-        IconTile(icon, MaterialTheme.colorScheme.tertiary, size = 40.dp)
-        Spacer(Modifier.width(14.dp))
-        Column {
-            Text(title, style = MaterialTheme.typography.titleMedium)
-            Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-    }
-}
-
 /**
  * Screen 4 (first launch) and Settings → Permission manager: shows each permission's state and
  * requests it in context. [setup] is true during first launch.

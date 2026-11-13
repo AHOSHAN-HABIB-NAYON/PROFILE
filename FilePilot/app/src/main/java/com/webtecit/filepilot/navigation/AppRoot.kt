@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Construction
+import androidx.compose.material.icons.rounded.Construction
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.rounded.Folder
@@ -50,7 +52,9 @@ import com.webtecit.filepilot.feature.home.HomeScreen
 import com.webtecit.filepilot.feature.library.LibraryScreen
 import com.webtecit.filepilot.feature.onboarding.OnboardingScreen
 import com.webtecit.filepilot.feature.operations.OperationsPanel
-import com.webtecit.filepilot.feature.permissions.PermissionIntroScreen
+import com.webtecit.filepilot.feature.analyzer.AnalyzerScreen
+import com.webtecit.filepilot.feature.tools.Tool
+import com.webtecit.filepilot.feature.tools.ToolsScreen
 import com.webtecit.filepilot.feature.permissions.PermissionsScreen
 import com.webtecit.filepilot.feature.settings.AboutScreen
 import com.webtecit.filepilot.feature.settings.SettingsScreen
@@ -59,6 +63,7 @@ import com.webtecit.filepilot.feature.splash.SplashScreen
 private enum class TopLevel(val route: Any, val label: String, val selected: ImageVector, val unselected: ImageVector) {
     HOME(HomeRoute, "Home", Icons.Rounded.Home, Icons.Outlined.Home),
     FILES(FilesRoute, "Files", Icons.Rounded.Folder, Icons.Outlined.Folder),
+    TOOLS(ToolsRoute, "Tools", Icons.Rounded.Construction, Icons.Outlined.Construction),
     LIBRARY(LibraryRoute, "Library", Icons.Rounded.Star, Icons.Outlined.StarBorder),
     SETTINGS(SettingsRoute, "Settings", Icons.Rounded.Settings, Icons.Outlined.Settings),
 }
@@ -126,18 +131,12 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any) {
                     nav.navigate(afterOnboarding()) { popUpTo(OnboardingRoute) { inclusive = true } }
                 })
             }
-            composable<PermissionIntroRoute> {
-                PermissionIntroScreen(
-                    onContinue = { nav.navigate(PermissionsRoute(setup = true)) },
-                    onNotNow = { nav.navigate(HomeRoute) { popUpTo(PermissionIntroRoute) { inclusive = true } } },
-                )
-            }
             composable<PermissionsRoute> { backStack ->
                 val route = backStack.toRoute<PermissionsRoute>()
                 PermissionsScreen(
                     setup = route.setup,
                     onDone = {
-                        if (route.setup) nav.navigate(HomeRoute) { popUpTo(PermissionIntroRoute) { inclusive = true } }
+                        if (route.setup) nav.navigate(HomeRoute) { popUpTo(PermissionsRoute(setup = true)) { inclusive = true } }
                         else nav.popBackStack()
                     },
                 )
@@ -145,8 +144,8 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any) {
             composable<HomeRoute> {
                 HomeScreen(
                     onOpenFolder = { nav.navigate(BrowserRoute(it)) },
-                    onGrantAccess = { nav.navigate(PermissionsRoute(setup = false)) },
-                    onOpenFiles = { nav.switchTab(FilesRoute) },
+                    onSearch = { nav.navigate(BrowserRoute(it, search = true)) },
+                    onTool = { nav.navigate(toolRoute(it)) },
                     onOpenLibrary = { nav.switchTab(LibraryRoute) },
                 )
             }
@@ -155,6 +154,10 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any) {
                     onOpenFolder = { nav.navigate(BrowserRoute(it)) },
                     onGrantAccess = { nav.navigate(PermissionsRoute(setup = false)) },
                 )
+            }
+            composable<ToolsRoute> { ToolsScreen(onTool = { nav.navigate(toolRoute(it)) }) }
+            composable<AnalyzerRoute> {
+                AnalyzerScreen(onBack = { nav.popBackStack() }, onOpenFolder = { nav.navigate(BrowserRoute(it)) })
             }
             composable<LibraryRoute> {
                 LibraryScreen(onOpenFolder = { nav.navigate(BrowserRoute(it)) })
@@ -169,6 +172,7 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any) {
                 val route = backStack.toRoute<BrowserRoute>()
                 BrowserScreen(
                     locationId = route.locationId,
+                    startSearch = route.search,
                     onClose = { nav.popBackStack() },
                     onCompare = { a, b -> nav.navigate(CompareRoute(a, b)) },
                     onGrantAccess = { nav.navigate(PermissionsRoute(setup = false)) },
@@ -181,6 +185,11 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any) {
             composable<AboutRoute> { AboutScreen(onBack = { nav.popBackStack() }) }
         }
     }
+}
+
+/** The screen for each tool. */
+fun toolRoute(tool: Tool): Any = when (tool) {
+    Tool.ANALYZER -> AnalyzerRoute
 }
 
 private fun NavHostController.switchTab(route: Any) {

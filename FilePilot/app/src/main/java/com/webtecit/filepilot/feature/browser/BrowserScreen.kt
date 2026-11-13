@@ -107,12 +107,17 @@ private sealed interface BrowserDialog {
 @Composable
 fun BrowserScreen(
     locationId: String,
+    startSearch: Boolean = false,
     onClose: () -> Unit,
     onCompare: (String, String) -> Unit,
     onGrantAccess: () -> Unit,
     viewModel: BrowserViewModel = hiltViewModel(),
 ) {
-    LaunchedEffect(locationId) { viewModel.start(locationId) }
+    LaunchedEffect(locationId) {
+        viewModel.start(locationId)
+        if (startSearch) viewModel.openSearch()
+    }
+    val gate = com.webtecit.filepilot.core.permissions.rememberAccessGate()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val items = viewModel.items.collectAsLazyPagingItems()
     val listState = rememberLazyListState()
@@ -303,11 +308,11 @@ fun BrowserScreen(
                     onShare = { viewModel.share(viewModel.selectedItems()) },
                     onDelete = { dialog = BrowserDialog.Delete(viewModel.selectedItems()) },
                 )
-                clip != null && state.error == null -> PasteBar(clip, onPaste = viewModel::paste, onCancel = viewModel::clearClipboard)
+                clip != null && state.error == null && !state.virtual -> PasteBar(clip, onPaste = viewModel::paste, onCancel = viewModel::clearClipboard)
             }
         },
         floatingActionButton = {
-            if (!state.selectionMode && !state.searchActive && state.clip == null && state.error == null && !state.loading) {
+            if (!state.selectionMode && !state.searchActive && state.clip == null && state.error == null && !state.loading && !state.virtual) {
                 Box {
                     FloatingActionButton(
                         onClick = { createMenuOpen = true },
@@ -359,20 +364,25 @@ fun BrowserScreen(
                         title = if (error.needsAccess) "Storage access needed" else "Can't open this folder",
                         message = error.message,
                         actionLabel = if (error.needsAccess) "Grant access" else "Try again",
-                        onAction = if (error.needsAccess) onGrantAccess else viewModel::refresh,
+                        onAction = if (error.needsAccess) ({ gate { viewModel.refresh() } }) else viewModel::refresh,
                         modifier = Modifier.verticalScroll(rememberScrollState()),
                     )
                     !state.loading && state.visibleCount == 0 -> EmptyState(
                         icon = if (state.searchActive) Icons.Rounded.SearchOff else Icons.Rounded.CreateNewFolder,
-                        title = if (state.searchActive) "No matches" else "This folder is empty",
+                        title = when {
+                            state.searchActive -> "No matches"
+                            state.virtual -> "Nothing here yet"
+                            else -> "This folder is empty"
+                        },
                         message = when {
                             state.searchActive && state.query.isBlank() -> "Type a name to search this folder."
                             state.searchActive && !state.deepSearch -> "Nothing here matches \"${state.query}\". Include subfolders to search deeper."
                             state.searchActive -> "Nothing in this folder or its subfolders matches \"${state.query}\"."
+                            state.virtual -> "No files of this type were found on your storage."
                             else -> "Create a folder or paste files here."
                         },
-                        actionLabel = if (state.searchActive) null else "New folder",
-                        onAction = if (state.searchActive) null else ({ dialog = BrowserDialog.NewFolder }),
+                        actionLabel = if (state.searchActive || state.virtual) null else "New folder",
+                        onAction = if (state.searchActive || state.virtual) null else ({ dialog = BrowserDialog.NewFolder }),
                         modifier = Modifier.verticalScroll(rememberScrollState()),
                     )
                     grid -> LazyVerticalGrid(
@@ -423,7 +433,9 @@ fun BrowserScreen(
                                     onClick = { onItemClick(item) },
                                     onLongClick = { viewModel.toggleSelection(item) },
                                     onMore = { dialog = BrowserDialog.Actions(item) },
-                                    subtitleOverride = if (state.showingDeepResults) viewModel.parentPathOf(item) else null,
+                                    subtitleOverride = if (state.showingDeepResults || state.virtual) {
+                                        "${item.subtitle()} · ${viewModel.parentPathOf(item)}"
+                                    } else null,
                                 )
                             }
                         }

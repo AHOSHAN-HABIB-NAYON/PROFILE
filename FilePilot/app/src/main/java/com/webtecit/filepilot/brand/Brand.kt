@@ -7,7 +7,9 @@ import android.net.Uri
 
 /** Developer and support details shown in About and used by support actions. */
 object Brand {
-    const val APP_NAME = "FilePilot: Coding Pro"
+    const val APP_NAME = "FilePilot"
+    /** Full title used for the Google Play listing. */
+    const val STORE_NAME = "FilePilot: Coding Pro"
     const val DEVELOPER = "MD AHOSHAN HABIB NAYON"
     const val BRAND = "Webtecit Apps"
     const val WEBSITE = "https://webtecit.com"
@@ -31,7 +33,7 @@ object Brand {
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_SUBJECT, APP_NAME)
-            putExtra(Intent.EXTRA_TEXT, "Try $APP_NAME by $BRAND: ${playStoreUrl(context.packageName.removeSuffix(".debug"))}")
+            putExtra(Intent.EXTRA_TEXT, "Try $STORE_NAME by $BRAND: ${playStoreUrl(context.packageName.removeSuffix(".debug"))}")
         }
         return start(context, Intent.createChooser(intent, "Share $APP_NAME"), "No app can share text.")
     }

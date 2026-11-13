@@ -89,6 +89,9 @@ data class BrowserUiState(
     val selectionMode: Boolean get() = selection.isNotEmpty()
     val bookmarked: Boolean get() = currentId != null && currentId in bookmarkIds
     val showingDeepResults: Boolean get() = searchActive && deepSearch && query.isNotBlank()
+
+    /** A category such as Images: a collection of files, not a real folder. */
+    val virtual: Boolean get() = currentId?.startsWith(com.webtecit.filepilot.core.storage.CategoryFileSystem.PREFIX) == true
 }
 
 @OptIn(FlowPreview::class)
@@ -162,7 +165,7 @@ class BrowserViewModel @Inject constructor(
             operations.finished.collect { op ->
                 if (op.kind == OperationKind.DELETE) library.onDeleted(op.succeededIds)
                 val current = _state.value.currentId
-                if (current != null && current in op.affectedDirs) refresh()
+                if (current != null && (current in op.affectedDirs || _state.value.virtual)) refresh()
             }
         }
     }
