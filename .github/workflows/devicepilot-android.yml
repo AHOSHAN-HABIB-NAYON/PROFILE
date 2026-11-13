@@ -71,7 +71,7 @@ jobs:
           cp app/build/outputs/apk/play/release/app-play-release.apk DevicePilot-Play.apk
           cp app/build/outputs/bundle/playRelease/app-play-release.aab DevicePilot-Play.aab
       - name: Publish test build (direct download link)
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: devicepilot-test
@@ -82,7 +82,7 @@ jobs:
             DevicePilot/DevicePilot-Play.apk
             DevicePilot/DevicePilot-Play.aab
           body: |
-            Latest DevicePilot test builds (signed with a test key — the .aab must be re-built with your release key before uploading to Play).
+            Latest DevicePilot builds. Signed with your upload key when the DP_KEYSTORE_* secrets are set (DevicePilot-Play.aab is the file for Google Play); otherwise signed with a test key.
             Full edition (all features): https://github.com/${{ github.repository }}/releases/download/devicepilot-test/DevicePilot.apk
             Play edition: https://github.com/${{ github.repository }}/releases/download/devicepilot-test/DevicePilot-Play.apk
             Built from commit ${{ github.sha }}.
