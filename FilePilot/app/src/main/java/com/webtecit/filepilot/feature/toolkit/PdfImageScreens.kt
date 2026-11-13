@@ -24,7 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.AddPhotoAlternate
-import androidx.compose.material.icons.rounded.CallMerge
+import androidx.compose.material.icons.automirrored.rounded.CallMerge
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCut
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -245,7 +245,7 @@ private fun MergePdf(onBack: () -> Unit, onOpenFolder: (String) -> Unit, viewMod
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris -> pdfs.addAll(uris.filterNot { it in pdfs }) }
     ToolScaffold(
         title = "Merge PDF", onBack = onBack, run = run,
-        actionLabel = "Merge ${pdfs.size} PDFs", actionIcon = Icons.Rounded.CallMerge, actionEnabled = pdfs.size >= 2 && name.isNotBlank(),
+        actionLabel = "Merge ${pdfs.size} PDFs", actionIcon = Icons.AutoMirrored.Rounded.CallMerge, actionEnabled = pdfs.size >= 2 && name.isNotBlank(),
         onAction = {
             val list = pdfs.toList()
             val fileName = name.trim()

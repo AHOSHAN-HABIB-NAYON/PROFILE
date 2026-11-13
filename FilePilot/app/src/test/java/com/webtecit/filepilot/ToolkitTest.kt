@@ -25,7 +25,7 @@ class ToolkitTest {
     @Test fun buildsQrPayloads() {
         assertEquals("https://webtecit.com", MediaTools.qrPayload(QrKind.URL, mapOf("url" to "webtecit.com")))
         assertEquals("http://a.b", MediaTools.qrPayload(QrKind.URL, mapOf("url" to "http://a.b")))
-        assertEquals("WIFI:T:WPA;S:Home\;Net;P:p\\:1;;", MediaTools.qrPayload(QrKind.WIFI, mapOf("ssid" to "Home;Net", "password" to "p:1")))
+        assertEquals("WIFI:T:WPA;S:Home\\;Net;P:p\\:1;;", MediaTools.qrPayload(QrKind.WIFI, mapOf("ssid" to "Home;Net", "password" to "p:1")))
         assertEquals("WIFI:T:nopass;S:Cafe;;", MediaTools.qrPayload(QrKind.WIFI, mapOf("ssid" to "Cafe", "security" to "None")))
         assertEquals("tel:+8801", MediaTools.qrPayload(QrKind.PHONE, mapOf("phone" to " +8801 ")))
         assertEquals("SMSTO:123:hi", MediaTools.qrPayload(QrKind.SMS, mapOf("phone" to "123", "message" to "hi")))

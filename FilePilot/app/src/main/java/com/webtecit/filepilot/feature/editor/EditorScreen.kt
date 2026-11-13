@@ -2,6 +2,23 @@
 
 package com.webtecit.filepilot.feature.editor
 
+import androidx.compose.material.icons.rounded.SaveAs
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.material.icons.rounded.FindReplace
+import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material.icons.rounded.SelectAll
+import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import kotlinx.coroutines.launch
 import android.view.ViewGroup
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -176,15 +193,32 @@ fun EditorScreen(
         }
     }
 
+    var askLeave by remember { mutableStateOf(false) }
     fun leave() {
         val id = activeId
         if (id == null || !ready) { onBack(); return }
         controller.getValue(id) { text ->
             if (text != null) viewModel.snapshot(id, text, viewModel.session.tabs.value.firstOrNull { it.id == id }?.dirty == true)
-            onBack()
+            // Unsaved files: ask before leaving. Otherwise just go.
+            if (viewModel.session.tabs.value.any { it.dirty }) askLeave = true else onBack()
         }
     }
     BackHandler { if (findOpen) findOpen = false else leave() }
+    if (askLeave) {
+        val dirty = tabs.filter { it.dirty }
+        LeaveDialog(
+            names = dirty.map { it.name },
+            onSave = { chosen ->
+                askLeave = false
+                val ids = dirty.filterIndexed { i, _ -> i in chosen }.map { it.id }
+                if (ids.isEmpty()) { onBack(); return@LeaveDialog }
+                var left = ids.size
+                ids.forEach { tabId -> save(controller, viewModel, tabId, dirtyOnLoad) { left--; if (left == 0) onBack() } }
+            },
+            onKeepDraft = { askLeave = false; onBack() },
+            onDismiss = { askLeave = false },
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -390,6 +424,62 @@ fun EditorScreen(
     }
 }
 
+/** Asked when leaving the editor with unsaved files: save the chosen ones, keep them as drafts, or stay. */
+@Composable
+private fun LeaveDialog(names: List<String>, onSave: (Set<Int>) -> Unit, onKeepDraft: () -> Unit, onDismiss: () -> Unit) {
+    var chosen by remember { mutableStateOf(names.indices.toSet()) }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Surface(shape = RoundedCornerShape(26.dp), color = MaterialTheme.colorScheme.surfaceContainerLowest, modifier = Modifier.testTag("leave_dialog")) {
+            Column(Modifier.padding(20.dp)) {
+                Box(
+                    Modifier.size(54.dp).clip(RoundedCornerShape(17.dp)).background(Color(0xFFE88A12).copy(alpha = 0.15f)).align(Alignment.CenterHorizontally),
+                    contentAlignment = Alignment.Center,
+                ) { Icon(Icons.Rounded.SaveAs, null, tint = Color(0xFFE88A12), modifier = Modifier.size(30.dp)) }
+                Spacer(Modifier.height(12.dp))
+                Text("Save changes before leaving?", style = MaterialTheme.typography.titleMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, modifier = Modifier.align(Alignment.CenterHorizontally))
+                Text(
+                    if (names.size == 1) "1 file has unsaved changes" else "${names.size} files have unsaved changes",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.CenterHorizontally),
+                )
+                Spacer(Modifier.height(12.dp))
+                Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                    Column(Modifier.padding(vertical = 4.dp)) {
+                        names.forEachIndexed { i, n ->
+                            Row(
+                                Modifier.fillMaxWidth().clickable { chosen = if (i in chosen) chosen - i else chosen + i }.padding(horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                androidx.compose.material3.Checkbox(checked = i in chosen, onCheckedChange = null)
+                                Spacer(Modifier.width(6.dp))
+                                Text(n, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.padding(vertical = 12.dp))
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(14.dp))
+                androidx.compose.material3.Button(
+                    onClick = { onSave(chosen) },
+                    shape = RoundedCornerShape(14.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color(0xFF1A9D6B)),
+                    modifier = Modifier.fillMaxWidth().height(48.dp).testTag("save_and_exit"),
+                ) {
+                    Icon(Icons.Rounded.Save, null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text(if (chosen.size == names.size) "Save all & exit" else "Save ${chosen.size} & exit")
+                }
+                Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = onKeepDraft, modifier = Modifier.weight(1f)) { Text("Leave unsaved") }
+                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel") }
+                }
+                Text(
+                    "Unsaved changes are kept as a draft, so you can restore them when you open the file again.",
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
 private fun save(controller: CodeEditorController, viewModel: EditorViewModel, id: String, dirtyOnLoad: MutableSet<String>, then: () -> Unit) {
     controller.getValue(id) { text ->
         if (text == null) return@getValue
@@ -408,36 +498,188 @@ private fun FindBar(controller: CodeEditorController, onFindInFiles: (() -> Unit
     var caseSensitive by remember { mutableStateOf(false) }
     var regex by remember { mutableStateOf(false) }
     var wholeWord by remember { mutableStateOf(false) }
-    var count by remember { mutableStateOf<Int?>(null) }
-    var replaced by remember { mutableStateOf<Int?>(null) }
-    fun opts() = "{caseSensitive:$caseSensitive,regex:$regex,wholeWord:$wholeWord}"
-    fun find(back: Boolean = false) = controller.js("find(${controller.q(query)}, ${opts()}, $back)") { count = it?.toIntOrNull() }
-    Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
-        Column(Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
+    var preserveCase by remember { mutableStateOf(false) }
+    var showReplace by remember { mutableStateOf(true) }
+    // count = matches in the file, index = which one is selected (1-based), -1 count = bad pattern
+    var count by remember { mutableStateOf(0) }
+    var index by remember { mutableStateOf(0) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    fun opts() = "{caseSensitive:$caseSensitive,regex:$regex,wholeWord:$wholeWord,preserveCase:$preserveCase}"
+    fun apply(result: String?) {
+        val v = result?.toIntOrNull() ?: 0
+        if (v < 0) { count = -1; index = 0 } else { count = v / 10000; index = v % 10000 }
+    }
+    fun find(back: Boolean = false) {
+        if (query.isEmpty()) { count = 0; index = 0; controller.js("clearSearch()"); return }
+        controller.js("find(${controller.q(query)}, ${opts()}, $back)") { apply(it) }
+    }
+    val bad = count == -1
+    val none = query.isNotEmpty() && count == 0
+    val danger = Color(0xFFE0455A)
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = BorderStroke(1.dp, if (bad || none) danger.copy(alpha = 0.45f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
+        shadowElevation = 6.dp,
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp).testTag("find_panel"),
+    ) {
+        Column(Modifier.padding(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(query, { query = it; find() }, label = { Text("Find") }, singleLine = true, modifier = Modifier.weight(1f),
-                    isError = count == -1, supportingText = if (count == -1) ({ Text("Invalid regular expression") }) else null)
-                IconButton(onClick = { find(back = true) }) { Icon(Icons.Rounded.KeyboardArrowUp, "Previous match") }
-                IconButton(onClick = { find() }) { Icon(Icons.Rounded.KeyboardArrowDown, "Next match") }
+                IconButton(onClick = { showReplace = !showReplace }, modifier = Modifier.size(32.dp)) {
+                    Icon(if (showReplace) Icons.Rounded.KeyboardArrowDown else Icons.AutoMirrored.Rounded.KeyboardArrowRight, if (showReplace) "Hide replace" else "Show replace")
+                }
+                FindField(
+                    value = query, onChange = { query = it; find() }, icon = Icons.Rounded.Search, error = bad || none,
+                    placeholder = "Find", modifier = Modifier.weight(1f).testTag("find_field"),
+                ) {
+                    ToggleChip("Aa", "Match case", caseSensitive) { caseSensitive = !caseSensitive; find() }
+                    ToggleChip("ab", "Whole word", wholeWord, underline = true) { wholeWord = !wholeWord; find() }
+                    ToggleChip(".*", "Regular expression", regex) { regex = !regex; find() }
+                }
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(replace, { replace = it }, label = { Text(if (regex) "Replace with ($1 = group)" else "Replace with") }, singleLine = true, modifier = Modifier.weight(1f))
-                TextButton(onClick = { controller.js("replaceOne(${controller.q(query)}, ${controller.q(replace)}, ${opts()})") { count = it?.toIntOrNull() } }) { Text("Replace") }
-                TextButton(onClick = { controller.js("replaceAll(${controller.q(query)}, ${controller.q(replace)}, ${opts()})") { r -> count = 0; replaced = r?.toIntOrNull() } }) { Text("All") }
+            if (showReplace) {
+                Spacer(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Spacer(Modifier.width(32.dp))
+                    FindField(
+                        value = replace, onChange = { replace = it }, icon = Icons.Rounded.FindReplace, error = false,
+                        placeholder = if (regex) "Replace ($1 = group)" else "Replace with", modifier = Modifier.weight(1f).testTag("replace_field"),
+                    ) {
+                        ToggleChip("AB", "Preserve case", preserveCase) { preserveCase = !preserveCase }
+                    }
+                }
             }
-            Row(Modifier.horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
-                FilterChip(selected = caseSensitive, onClick = { caseSensitive = !caseSensitive; find() }, label = { Text("Aa Match case") })
-                Spacer(Modifier.width(6.dp))
-                FilterChip(selected = wholeWord, onClick = { wholeWord = !wholeWord; find() }, label = { Text("Whole word") })
-                Spacer(Modifier.width(6.dp))
-                FilterChip(selected = regex, onClick = { regex = !regex; find() }, label = { Text(".* Regex") })
-                Spacer(Modifier.width(6.dp))
-                if (onFindInFiles != null) TextButton(onClick = onFindInFiles) { Text("Find in all files") }
-                count?.takeIf { it >= 0 && query.isNotEmpty() }?.let { Text("$it matches", style = MaterialTheme.typography.bodySmall) }
-                replaced?.let { Text("  · replaced $it", style = MaterialTheme.typography.bodySmall) }
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.padding(start = 32.dp), verticalAlignment = Alignment.CenterVertically) {
+                when {
+                    bad -> {
+                        Icon(Icons.Rounded.ErrorOutline, null, tint = danger, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Invalid regular expression", color = danger, style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
+                    }
+                    none -> {
+                        CountBadge("0", danger)
+                        Spacer(Modifier.width(8.dp))
+                        Text("No results", color = danger, style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
+                    }
+                    query.isEmpty() -> Text("Type to search", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                    else -> {
+                        CountBadge(if (index > 0) "$index / $count" else "$count", MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(8.dp))
+                        Text(if (count == 1) "match" else "matches", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                    }
+                }
+                IconButton(onClick = { find(back = true) }, enabled = count > 0, modifier = Modifier.size(36.dp)) { Icon(Icons.Rounded.KeyboardArrowUp, "Previous match") }
+                IconButton(onClick = { find() }, enabled = count > 0, modifier = Modifier.size(36.dp)) { Icon(Icons.Rounded.KeyboardArrowDown, "Next match") }
+                IconButton(
+                    onClick = { controller.js("selectAllMatches(${controller.q(query)}, ${opts()})") },
+                    enabled = count > 0, modifier = Modifier.size(36.dp),
+                ) { Icon(Icons.Rounded.SelectAll, "Select all matches") }
+            }
+            if (showReplace) {
+                Spacer(Modifier.height(6.dp))
+                Row(Modifier.padding(start = 32.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    androidx.compose.material3.FilledTonalButton(
+                        onClick = { controller.js("replaceOne(${controller.q(query)}, ${controller.q(replace)}, ${opts()})") { apply(it) } },
+                        enabled = count > 0, shape = RoundedCornerShape(11.dp), modifier = Modifier.weight(1f).height(40.dp),
+                    ) { Icon(Icons.Rounded.FindReplace, null, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text("Replace", maxLines = 1) }
+                    androidx.compose.material3.Button(
+                        onClick = {
+                            val from = query
+                            val to = replace
+                            controller.js("replaceAll(${controller.q(query)}, ${controller.q(replace)}, ${opts()})") { r ->
+                                val n = r?.toIntOrNull() ?: 0
+                                count = 0
+                                index = 0
+                                if (n > 0) {
+                                    com.webtecit.filepilot.core.designsystem.Feedback.show(
+                                        com.webtecit.filepilot.core.designsystem.FeedbackEvent(
+                                            com.webtecit.filepilot.core.designsystem.FeedbackKind.SAVED,
+                                            "$n replaced",
+                                            "$from → $to",
+                                            undo = { scope.launch { controller.js("command('undo')") { find() } } },
+                                        ),
+                                    )
+                                }
+                            }
+                        },
+                        enabled = count > 0, shape = RoundedCornerShape(11.dp), modifier = Modifier.weight(1.3f).height(40.dp).testTag("replace_all"),
+                    ) { Icon(Icons.Rounded.DoneAll, null, modifier = Modifier.size(16.dp)); Spacer(Modifier.width(4.dp)); Text(if (count > 0) "Replace all · $count" else "Replace all", maxLines = 1) }
+                }
+            }
+            if (onFindInFiles != null) {
+                TextButton(onClick = onFindInFiles, modifier = Modifier.padding(start = 24.dp)) { Text("Search all files in the project →") }
             }
         }
     }
+}
+
+@Composable
+private fun FindField(
+    value: String,
+    onChange: (String) -> Unit,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    error: Boolean,
+    placeholder: String,
+    modifier: Modifier,
+    toggles: @Composable () -> Unit,
+) {
+    val danger = Color(0xFFE0455A)
+    androidx.compose.foundation.text.BasicTextField(
+        value = value,
+        onValueChange = onChange,
+        singleLine = true,
+        textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurface),
+        cursorBrush = androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.primary),
+        modifier = modifier,
+        decorationBox = { inner ->
+            Row(
+                Modifier.height(42.dp).clip(RoundedCornerShape(11.dp)).background(MaterialTheme.colorScheme.surfaceContainerLowest)
+                    .border(1.5.dp, if (error) danger else MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), RoundedCornerShape(11.dp))
+                    .padding(start = 10.dp, end = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(icon, null, tint = if (error) danger else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Box(Modifier.weight(1f)) {
+                    if (value.isEmpty()) Text(placeholder, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), maxLines = 1)
+                    inner()
+                }
+                toggles()
+            }
+        },
+    )
+}
+
+@Composable
+private fun ToggleChip(text: String, description: String, on: Boolean, underline: Boolean = false, onClick: () -> Unit) {
+    val primary = MaterialTheme.colorScheme.primary
+    Box(
+        Modifier.padding(horizontal = 1.dp).size(width = 30.dp, height = 28.dp).clip(RoundedCornerShape(7.dp))
+            .background(if (on) primary.copy(alpha = 0.18f) else Color.Transparent)
+            .border(1.dp, if (on) primary.copy(alpha = 0.5f) else Color.Transparent, RoundedCornerShape(7.dp))
+            .clickable(onClickLabel = description, role = androidx.compose.ui.semantics.Role.Switch, onClick = onClick)
+            .semantics { contentDescription = "$description ${if (on) "on" else "off"}" },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text,
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                textDecoration = if (underline) androidx.compose.ui.text.style.TextDecoration.Underline else null,
+            ),
+            color = if (on) primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun CountBadge(text: String, color: Color) {
+    Text(
+        text, color = Color.White, style = MaterialTheme.typography.labelMedium, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+        modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(color).padding(horizontal = 8.dp, vertical = 2.dp).testTag("match_count"),
+    )
 }
 
 @Composable

@@ -171,6 +171,9 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
                     .getOrDefault(com.webtecit.filepilot.feature.toolkit.DevUtil.JSON)
                 com.webtecit.filepilot.feature.toolkit.DevUtilsScreen(start, onBack = { nav.popBackStack() })
             }
+            composable<OrganizeRoute> { b ->
+                com.webtecit.filepilot.feature.toolkit.OrganizeScreen(b.toRoute<OrganizeRoute>().path, onBack = { nav.popBackStack() }, onOpenFolder = { nav.navigate(BrowserRoute(it)) })
+            }
             composable<QrScanRoute> { com.webtecit.filepilot.feature.toolkit.QrScanScreen(onBack = { nav.popBackStack() }) }
             composable<FolderSizeRoute> { b ->
                 com.webtecit.filepilot.feature.analyzer.FolderSizeScreen(
@@ -304,6 +307,7 @@ fun toolRoute(tool: Tool): Any = when (tool) {
     Tool.QR_SCAN -> QrScanRoute
     Tool.DEV_UTILS -> DevUtilsRoute(com.webtecit.filepilot.feature.toolkit.DevUtil.JSON.name)
     Tool.PASSWORD -> DevUtilsRoute(com.webtecit.filepilot.feature.toolkit.DevUtil.PASSWORD.name)
+    Tool.ORGANIZE -> OrganizeRoute()
     Tool.LARGE_FILES -> BrowserRoute(com.webtecit.filepilot.core.storage.Category.LARGE.id)
     Tool.SCREENSHOTS -> BrowserRoute(screenshotsFolder())
     Tool.WHATSAPP_MEDIA -> FolderSizeRoute(whatsAppMediaFolder())

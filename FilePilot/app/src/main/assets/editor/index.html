@@ -11,7 +11,8 @@
   .cm-s-idea.CodeMirror { background: #fff; }
   .CodeMirror-activeline-background { background: rgba(41,82,227,.06) !important; }
   .cm-s-material-darker .CodeMirror-activeline-background { background: rgba(255,255,255,.05) !important; }
-  .cm-searching { background: rgba(255, 196, 0, .45); }
+  .cm-searching { background: rgba(255, 170, 0, .28); box-shadow: inset 0 0 0 1px rgba(232, 138, 18, .55); border-radius: 2px; }
+  .cm-searching-current { background: #E88A12 !important; color: #11162A !important; border-radius: 2px; }
   .CodeMirror-foldmarker { color: #2952E3; font-family: sans-serif; text-shadow: none; }
 </style>
 </head>
@@ -61,37 +62,85 @@
     return q;
   }
   function cursorFor(query, pos, o) { return cm.getSearchCursor(query, pos, { caseFold: !o.caseSensitive }); }
+  var currentMark = null;
+  function markCurrent(from, to) {
+    if (currentMark) currentMark.clear();
+    currentMark = cm.markText(from, to, { className: "cm-searching-current" });
+  }
+  // Highlights every match and moves to the next (or previous) one.
+  // Returns count * 10000 + (1-based index of the selected match), 0 when nothing matches, -1 for a bad pattern.
   function find(q, o, backwards) {
     clearMarks();
+    if (currentMark) { currentMark.clear(); currentMark = null; }
     var query = makeQuery(q, o);
     if (query === null) return q ? -1 : 0;
-    var count = 0, c = cursorFor(query, CodeMirror.Pos(cm.firstLine(), 0), o);
-    while (c.findNext() && count < 5000) { if (c.from().line === c.to().line && c.from().ch === c.to().ch) break; marks.push(cm.markText(c.from(), c.to(), { className: "cm-searching" })); count++; }
+    var count = 0, c = cursorFor(query, CodeMirror.Pos(cm.firstLine(), 0), o), starts = [];
+    while (c.findNext() && count < 5000) {
+      if (c.from().line === c.to().line && c.from().ch === c.to().ch) break;
+      marks.push(cm.markText(c.from(), c.to(), { className: "cm-searching" }));
+      starts.push(c.from());
+      count++;
+    }
+    if (count === 0) return 0;
     var cur = cursorFor(query, backwards ? cm.getCursor("from") : cm.getCursor("to"), o);
     var ok = backwards ? cur.findPrevious() : cur.findNext();
     if (!ok) { cur = cursorFor(query, backwards ? CodeMirror.Pos(cm.lastLine()) : CodeMirror.Pos(cm.firstLine(), 0), o); ok = backwards ? cur.findPrevious() : cur.findNext(); }
-    if (ok) { cm.setSelection(cur.from(), cur.to()); cm.scrollIntoView({ from: cur.from(), to: cur.to() }, 80); }
-    return count;
+    var index = 0;
+    if (ok) {
+      cm.setSelection(cur.from(), cur.to());
+      cm.scrollIntoView({ from: cur.from(), to: cur.to() }, 80);
+      markCurrent(cur.from(), cur.to());
+      for (var i = 0; i < starts.length; i++) {
+        if (starts[i].line === cur.from().line && starts[i].ch === cur.from().ch) { index = i + 1; break; }
+      }
+    }
+    return count * 10000 + index;
   }
   function expand(r, m) { return (m && typeof m === "object" && m.length) ? r.replace(/\$(\d)/g, function (_, i) { return m[i] || ""; }) : r; }
+  // Keeps the capitalisation of the text being replaced: BTN -> BUTTON, Btn -> Button.
+  function keepCase(original, r) {
+    if (original.length === 0) return r;
+    if (original === original.toUpperCase() && original !== original.toLowerCase()) return r.toUpperCase();
+    if (original[0] === original[0].toUpperCase() && original[0] !== original[0].toLowerCase()) return r.charAt(0).toUpperCase() + r.slice(1);
+    return r;
+  }
+  function replacement(c, r, m, o) {
+    var text = expand(r, m);
+    return o.preserveCase ? keepCase(cm.getRange(c.from(), c.to()), text) : text;
+  }
   function replaceOne(q, r, o) {
     var query = makeQuery(q, o);
     if (query === null) return -1;
     var c = cursorFor(query, cm.getCursor("from"), o);
     var m = c.findNext();
-    if (m && c.from().line === cm.getCursor("from").line && c.from().ch === cm.getCursor("from").ch) c.replace(expand(r, m));
+    if (m && c.from().line === cm.getCursor("from").line && c.from().ch === cm.getCursor("from").ch) c.replace(replacement(c, r, m, o));
     return find(q, o, false);
   }
   function replaceAll(q, r, o) {
     var query = makeQuery(q, o);
     if (query === null) return -1;
-    clearMarks(); var n = 0;
+    clearMarks();
+    if (currentMark) { currentMark.clear(); currentMark = null; }
+    var n = 0;
     cm.operation(function () {
       var c = cursorFor(query, CodeMirror.Pos(cm.firstLine(), 0), o), m;
-      while ((m = c.findNext())) { if (c.from().line === c.to().line && c.from().ch === c.to().ch) break; c.replace(expand(r, m)); n++; }
+      while ((m = c.findNext())) { if (c.from().line === c.to().line && c.from().ch === c.to().ch) break; c.replace(replacement(c, r, m, o)); n++; }
     });
     return n;
   }
+  // Selects every match at once (one cursor per match) so they can be edited together.
+  function selectAllMatches(q, o) {
+    var query = makeQuery(q, o);
+    if (query === null) return -1;
+    var ranges = [], c = cursorFor(query, CodeMirror.Pos(cm.firstLine(), 0), o);
+    while (c.findNext() && ranges.length < 5000) {
+      if (c.from().line === c.to().line && c.from().ch === c.to().ch) break;
+      ranges.push({ anchor: c.from(), head: c.to() });
+    }
+    if (ranges.length) { clearMarks(); if (currentMark) { currentMark.clear(); currentMark = null; } cm.setSelections(ranges); cm.focus(); }
+    return ranges.length;
+  }
+  function clearSearch() { clearMarks(); if (currentMark) { currentMark.clear(); currentMark = null; } }
   function goToLine(n) { var l = Math.max(0, Math.min(cm.lastLine(), n - 1)); cm.setCursor(l, 0); cm.scrollIntoView(null, 120); cm.focus(); }
   function command(name) { cm.execCommand(name); cm.focus(); }
   function insertText(t) { cm.replaceSelection(t); cm.focus(); }

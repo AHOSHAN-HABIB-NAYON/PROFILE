@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoFixHigh
 import androidx.compose.material.icons.rounded.DataObject
 import androidx.compose.material.icons.rounded.Password
 import androidx.compose.material.icons.rounded.Forum
@@ -30,7 +31,7 @@ import androidx.compose.material.icons.rounded.PhotoSizeSelectLarge
 import androidx.compose.material.icons.rounded.Compress
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.ContentCut
-import androidx.compose.material.icons.rounded.CallMerge
+import androidx.compose.material.icons.automirrored.rounded.CallMerge
 import androidx.compose.material.icons.automirrored.rounded.TextSnippet
 import androidx.compose.material.icons.rounded.PictureAsPdf
 import androidx.compose.material.icons.rounded.FolderOpen
@@ -65,12 +66,13 @@ enum class Tool(val label: String, val description: String, val icon: ImageVecto
     ANALYZER("Storage Analyzer", "Folders and types using your space", Icons.Rounded.DonutLarge, 0xFFEA580C, "Storage"),
     CLEANER("Cleaner", "Junk, duplicates and leftovers", Icons.Rounded.CleaningServices, 0xFF0369A1, "Storage"),
     RECYCLE_BIN("Recycle Bin", "Restore deleted files", Icons.Rounded.DeleteSweep, 0xFF64748B, "Storage"),
+    ORGANIZE("Smart organize", "Sort Download into folders by type", Icons.Rounded.AutoFixHigh, 0xFF7C4DFF, "Storage"),
     LARGE_FILES("Large files", "Files over 50 MB, biggest first", Icons.Rounded.Inventory2, 0xFFE88A12, "Storage"),
     SCREENSHOTS("Screenshots", "Review and clear old screenshots", Icons.Rounded.Screenshot, 0xFF0E93B0, "Storage"),
     WHATSAPP_MEDIA("WhatsApp media", "See what chats' photos and videos take", Icons.Rounded.Forum, 0xFF1A9D6B, "Storage"),
     IMAGE_TO_PDF("Image to PDF", "Photos into one PDF", Icons.Rounded.PictureAsPdf, 0xFFE0457B, "PDF & Images"),
     TEXT_TO_PDF("Text to PDF", "Type or paste text, save as PDF", Icons.AutoMirrored.Rounded.TextSnippet, 0xFF2F6BFF, "PDF & Images"),
-    MERGE_PDF("Merge PDF", "Join PDFs in any order", Icons.Rounded.CallMerge, 0xFFE88A12, "PDF & Images"),
+    MERGE_PDF("Merge PDF", "Join PDFs in any order", Icons.AutoMirrored.Rounded.CallMerge, 0xFFE88A12, "PDF & Images"),
     SPLIT_PDF("Split PDF", "Pick, split or rotate pages", Icons.Rounded.ContentCut, 0xFF0E93B0, "PDF & Images"),
     PDF_TO_IMAGES("PDF to Images", "Every page as a picture", Icons.Rounded.PhotoLibrary, 0xFF7C4DFF, "PDF & Images"),
     COMPRESS_IMAGE("Compress", "Smaller photos, same look", Icons.Rounded.Compress, 0xFF1A9D6B, "PDF & Images"),
@@ -92,6 +94,7 @@ private val Tool.short: String
     get() = when (this) {
         Tool.FOLDER_SIZE -> "Folder size"
         Tool.LARGE_FILES -> "Large files"
+        Tool.ORGANIZE -> "Organize"
         Tool.SCREENSHOTS -> "Screenshots"
         Tool.WHATSAPP_MEDIA -> "WhatsApp"
         Tool.PASSWORD -> "Password"
@@ -120,6 +123,7 @@ private val Tool.color: Color
     get() = when (this) {
         Tool.FOLDER_SIZE -> Palette.Blue
         Tool.LARGE_FILES -> Palette.Orange
+        Tool.ORGANIZE -> Palette.Purple
         Tool.SCREENSHOTS -> Palette.Cyan
         Tool.WHATSAPP_MEDIA -> Palette.Green
         Tool.PASSWORD -> Palette.Purple
