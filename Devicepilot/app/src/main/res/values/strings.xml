@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Devicepilot</string>
+    <string name="app_subtitle">Smart Device Manager &amp; Optimizer</string>
+    <string name="channel_charging">Charging</string>
+    <string name="channel_alerts">Device alerts</string>
+</resources>
