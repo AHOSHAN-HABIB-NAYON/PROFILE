@@ -223,9 +223,14 @@ private fun MainScaffold(
     val haptics = LocalHapticFeedback.current
     val isTopLevel = tabs.any { it.route == route }
 
-    // First start after onboarding: ask for every permission the app uses.
+    // First start after onboarding: show the permissions page once. It is marked as shown right
+    // away, so leaving it with Back or the bottom bar does not bring it back on the next launch;
+    // after that the app always opens on Home (the page stays reachable from Settings).
     LaunchedEffect(Unit) {
-        if (!settings.permissionsSetupDone) nav.navigate(Routes.PERMISSIONS) { launchSingleTop = true }
+        if (!settings.permissionsSetupDone) {
+            container.settings.setPermissionsSetupDone()
+            nav.navigate(Routes.PERMISSIONS) { launchSingleTop = true }
+        }
     }
 
     LaunchedEffect(initialRoute) {
