@@ -328,11 +328,6 @@ fun SettingsScreen(
                     }
                 }
             }
-            item {
-                Section("About", "App and developer", Icons.Rounded.Info) {
-                    SettingsRow("About FilePilot", subtitle = "Version, developer and contact", icon = Icons.Rounded.Info, onClick = onOpenAbout)
-                }
-            }
         }
     }
 
