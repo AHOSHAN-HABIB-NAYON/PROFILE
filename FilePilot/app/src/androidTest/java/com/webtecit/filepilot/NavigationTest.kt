@@ -44,7 +44,7 @@ class NavigationTest {
         rule.onNodeWithTag("tab_Library").performClick()
         rule.waitForText("No favorites yet")
         rule.onNodeWithTag("tab_Settings").performClick()
-        rule.waitForText("APPEARANCE")
+        rule.waitForText("Appearance")
         rule.onNodeWithTag("settings_list").performScrollToNode(hasText("About FilePilot"))
         rule.onNodeWithText("About FilePilot").performClick()
         rule.waitForText("MD AHOSHAN HABIB NAYON")
@@ -53,10 +53,10 @@ class NavigationTest {
 
     @Test fun switchesToDarkThemeAndBack() {
         rule.onNodeWithTag("tab_Settings").performClick()
-        rule.waitForText("APPEARANCE")
+        rule.waitForText("Appearance")
         rule.onNodeWithText("Dark").performClick()
-        rule.waitForText("APPEARANCE")
+        rule.waitForText("Appearance")
         rule.onNodeWithText("Light").performClick()
-        rule.waitForText("APPEARANCE")
+        rule.waitForText("Appearance")
     }
 }

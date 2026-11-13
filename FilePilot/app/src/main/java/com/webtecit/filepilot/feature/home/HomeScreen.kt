@@ -63,7 +63,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -132,10 +131,10 @@ fun HomeScreen(
             ) {
                 item(key = "header") {
                     Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Surface(shape = RoundedCornerShape(16.dp), shadowElevation = 6.dp, color = Color.Transparent) { AppLogo(52.dp) }
+                        Surface(shape = RoundedCornerShape(16.dp), shadowElevation = 4.dp, color = Color.Transparent) { AppLogo(44.dp) }
                         Spacer(Modifier.width(14.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(Brand.APP_NAME, style = MaterialTheme.typography.headlineMedium)
+                            Text(Brand.APP_NAME, style = MaterialTheme.typography.headlineSmall)
                             Text("Manage everything. Edit anything.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Surface(
@@ -143,7 +142,7 @@ fun HomeScreen(
                             shape = CircleShape,
                             color = MaterialTheme.colorScheme.surfaceContainerLowest,
                             shadowElevation = 4.dp,
-                            modifier = Modifier.size(46.dp).testTag("theme_toggle"),
+                            modifier = Modifier.size(42.dp).testTag("theme_toggle"),
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
@@ -283,7 +282,7 @@ private fun ToolCell(label: String, icon: ImageVector, tint: Color, modifier: Mo
         color = MaterialTheme.colorScheme.surfaceContainerLowest,
         shadowElevation = 2.dp,
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
-        modifier = modifier.height(98.dp),
+        modifier = modifier.height(92.dp),
     ) {
         Column(Modifier.fillMaxSize().padding(8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Icon(icon, null, tint = tint, modifier = Modifier.size(30.dp))
@@ -318,7 +317,7 @@ private fun HeroStorage(volume: StorageVolumeInfo, onBrowse: () -> Unit, onAnaly
             )
             Row(Modifier.padding(horizontal = 18.dp, vertical = 22.dp), verticalAlignment = Alignment.CenterVertically) {
                 ProgressRing(
-                    volume.usedFraction, Color.White, size = 112.dp, thickness = 11.dp, trackColor = Color.White.copy(alpha = 0.22f),
+                    volume.usedFraction, Color.White, size = 100.dp, thickness = 10.dp, trackColor = Color.White.copy(alpha = 0.22f),
                 ) {
                     Text(Formatters.percent(volume.usedFraction), style = MaterialTheme.typography.headlineSmall, color = Color.White)
                     Text("used", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.85f))
@@ -369,7 +368,7 @@ private fun CategoryCell(tile: CategoryTile, modifier: Modifier, onClick: () -> 
         shape = RoundedCornerShape(20.dp),
         color = tile.tint.copy(alpha = if (dark) 0.16f else 0.09f),
         border = androidx.compose.foundation.BorderStroke(1.dp, tile.tint.copy(alpha = 0.12f)),
-        modifier = modifier.height(108.dp),
+        modifier = modifier.height(100.dp),
     ) {
         Column(Modifier.fillMaxSize().padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
             Icon(tile.icon, null, tint = tile.tint, modifier = Modifier.size(32.dp))

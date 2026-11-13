@@ -38,6 +38,12 @@ import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.Restore
+import androidx.compose.material.icons.rounded.BugReport
+import androidx.compose.material.icons.rounded.PrivacyTip
+import androidx.compose.material.icons.rounded.Gavel
+import androidx.compose.material.icons.rounded.Code
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -117,6 +123,34 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
+                // App card at the top of Settings.
+                androidx.compose.material3.Surface(
+                    onClick = onOpenAbout,
+                    shape = RoundedCornerShape(26.dp),
+                    color = Color.Transparent,
+                    shadowElevation = 6.dp,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        Modifier
+                            .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(0xFF3B7BFF), Color(0xFF1539B8))))
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        com.webtecit.filepilot.core.designsystem.AppLogo(42.dp)
+                        Spacer(Modifier.size(14.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(Brand.APP_NAME, style = MaterialTheme.typography.titleMedium, color = Color.White)
+                            Text("Version ${com.webtecit.filepilot.BuildConfig.VERSION_NAME} · Free, no ads", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.85f))
+                        }
+                        Text(
+                            "About", style = MaterialTheme.typography.labelLarge, color = Color(0xFF1539B8),
+                            modifier = Modifier.clip(CircleShape).background(Color.White).padding(horizontal = 14.dp, vertical = 7.dp),
+                        )
+                    }
+                }
+            }
+            item {
                 Section("Appearance") {
                     Column(Modifier.padding(16.dp)) {
                         Text("Theme", style = MaterialTheme.typography.bodyLarge)
@@ -154,6 +188,7 @@ fun SettingsScreen(
                             viewModel::setDynamic,
                             subtitle = "Use colours from your wallpaper",
                             icon = Icons.Rounded.Colorize,
+                            tint = Color(0xFFDB2777),
                         )
                     }
                     SwitchRow(
@@ -162,6 +197,7 @@ fun SettingsScreen(
                         viewModel::setAnimations,
                         subtitle = "Screen transitions and motion",
                         icon = Icons.Rounded.Animation,
+                        tint = Color(0xFF7C3AED),
                     )
                     SwitchRow(
                         "Smooth scrolling",
@@ -169,21 +205,23 @@ fun SettingsScreen(
                         viewModel::setHighRefresh,
                         subtitle = "Use your display's highest refresh rate (90/120 Hz) when available",
                         icon = Icons.Rounded.Speed,
+                        tint = Color(0xFF0D9488),
                     )
                 }
             }
             item {
                 Section("File manager") {
-                    SwitchRow("Show hidden files", prefs.showHidden, viewModel::setShowHidden, subtitle = "Names starting with a dot", icon = Icons.Rounded.Visibility)
+                    SwitchRow("Show hidden files", prefs.showHidden, viewModel::setShowHidden, subtitle = "Names starting with a dot", icon = Icons.Rounded.Visibility, tint = Color(0xFF2563EB))
                     SwitchRow("Recycle Bin", prefs.recycleBin, viewModel::setRecycleBin,
-                        subtitle = "Keep deleted files for 30 days so they can be restored", icon = Icons.Rounded.Visibility)
-                    SwitchRow("Show file extensions", prefs.showExtensions, viewModel::setShowExtensions, subtitle = "For example .jpg and .pdf", icon = Icons.Rounded.Extension)
+                        subtitle = "Keep deleted files for 30 days so they can be restored", icon = Icons.Rounded.Restore, tint = Color(0xFF16A34A))
+                    SwitchRow("Show file extensions", prefs.showExtensions, viewModel::setShowExtensions, subtitle = "For example .jpg and .pdf", icon = Icons.Rounded.Extension, tint = Color(0xFFEA580C))
                     SwitchRow(
                         "Grid view",
                         prefs.viewMode == ViewMode.GRID,
                         { viewModel.setViewMode(if (it) ViewMode.GRID else ViewMode.LIST) },
                         subtitle = "Show folders as tiles instead of a list",
                         icon = Icons.Rounded.GridView,
+                        tint = Color(0xFF0284C7),
                     )
                     SettingsRow(
                         "Default sorting",
@@ -191,12 +229,14 @@ fun SettingsScreen(
                             (if (prefs.sortOrder.ascending) "ascending" else "descending") +
                             (if (prefs.sortOrder.foldersFirst) ", folders first" else ""),
                         icon = Icons.AutoMirrored.Rounded.Sort,
+                        tint = Color(0xFF9333EA),
                         onClick = { sortOpen = true },
                     )
                     SettingsRow(
                         "Open Files tab in",
                         subtitle = prefs.startLocation.label,
                         icon = Icons.Rounded.Home,
+                        tint = Color(0xFF0D9488),
                         onClick = { startOpen = true },
                     )
                 }
@@ -242,10 +282,10 @@ fun SettingsScreen(
             }
             item {
                 Section("Support") {
-                    SettingsRow("Contact support", subtitle = Brand.SUPPORT_EMAIL, icon = Icons.Rounded.Mail, onClick = {
+                    SettingsRow("Contact support", subtitle = Brand.SUPPORT_EMAIL, icon = Icons.Rounded.Mail, tint = Color(0xFF2563EB), onClick = {
                         show(Brand.email(context, "${Brand.APP_NAME} support"))
                     })
-                    SettingsRow("Report a problem", subtitle = "Describe what happened and we'll look into it", icon = Icons.Rounded.Mail, onClick = {
+                    SettingsRow("Report a problem", subtitle = "Describe what happened and we'll look into it", icon = Icons.Rounded.BugReport, tint = Color(0xFFDC2626), onClick = {
                         show(
                             Brand.email(
                                 context,
@@ -255,20 +295,20 @@ fun SettingsScreen(
                             ),
                         )
                     })
-                    SettingsRow("Share app", icon = Icons.Rounded.Share, onClick = { show(Brand.shareApp(context)) })
+                    SettingsRow("Share app", icon = Icons.Rounded.Share, tint = Color(0xFF16A34A), onClick = { show(Brand.shareApp(context)) })
                 }
             }
             item {
                 Section("Legal") {
-                    SettingsRow("Privacy Policy", icon = Icons.Rounded.Security, onClick = { show(Brand.openUrl(context, Brand.PRIVACY_URL)) })
-                    SettingsRow("Terms & Conditions", icon = Icons.Rounded.Info, onClick = { show(Brand.openUrl(context, Brand.TERMS_URL)) })
-                    SettingsRow("Disclaimer", icon = Icons.Rounded.Info, onClick = { show(Brand.openUrl(context, Brand.DISCLAIMER_URL)) })
-                    SettingsRow("Open source licenses", icon = Icons.Rounded.Info, onClick = { licensesOpen = true })
+                    SettingsRow("Privacy Policy", icon = Icons.Rounded.PrivacyTip, tint = Color(0xFF0D9488), onClick = { show(Brand.openUrl(context, Brand.PRIVACY_URL)) })
+                    SettingsRow("Terms & Conditions", icon = Icons.Rounded.Gavel, tint = Color(0xFF475569), onClick = { show(Brand.openUrl(context, Brand.TERMS_URL)) })
+                    SettingsRow("Disclaimer", icon = Icons.Rounded.Info, tint = Color(0xFFEA580C), onClick = { show(Brand.openUrl(context, Brand.DISCLAIMER_URL)) })
+                    SettingsRow("Open source licenses", icon = Icons.Rounded.Code, tint = Color(0xFF7C3AED), onClick = { licensesOpen = true })
                 }
             }
             item {
                 Section("About") {
-                    SettingsRow("About FilePilot", subtitle = "Version, developer and contact", icon = Icons.Rounded.Info, onClick = onOpenAbout)
+                    SettingsRow("About FilePilot", subtitle = "Version, developer and contact", icon = Icons.Rounded.Info, tint = Color(0xFF2952E3), onClick = onOpenAbout)
                 }
             }
         }
@@ -325,7 +365,7 @@ fun SettingsScreen(
 @Composable
 private fun <T> ChoiceRow(title: String, options: List<T>, selected: T, label: (T) -> String, onSelect: (T) -> Unit) {
     var open by remember { mutableStateOf(false) }
-    SettingsRow(title, subtitle = label(selected), onClick = { open = true })
+    SettingsRow(title, subtitle = label(selected), icon = Icons.Rounded.Tune, tint = Color(0xFF0D9488), onClick = { open = true })
     if (open) {
         AlertDialog(
             onDismissRequest = { open = false },
@@ -355,16 +395,17 @@ private fun <T> ChoiceRow(title: String, options: List<T>, selected: T, label: (
 private fun Section(title: String, content: @Composable () -> Unit) {
     Column {
         Text(
-            title.uppercase(),
-            style = MaterialTheme.typography.labelMedium,
+            title,
+            style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(start = 4.dp, top = 8.dp, bottom = 8.dp),
+            modifier = Modifier.padding(start = 6.dp, top = 6.dp, bottom = 8.dp),
         )
-        Card(
-            shape = MaterialTheme.shapes.large,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        ) { Column { content() } }
+        androidx.compose.material3.Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLowest,
+            shadowElevation = 2.dp,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
+        ) { Column(Modifier.padding(vertical = 4.dp)) { content() } }
     }
 }
 
