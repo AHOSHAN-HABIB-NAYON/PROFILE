@@ -27,6 +27,19 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     private val viewModel: MainViewModel by viewModels()
+    private var locked by androidx.compose.runtime.mutableStateOf(true)
+    private var stoppedAt = 0L
+
+    override fun onStart() {
+        super.onStart()
+        // Lock again after 30 seconds in the background.
+        if (stoppedAt > 0 && System.currentTimeMillis() - stoppedAt > 30_000) locked = true
+    }
+
+    override fun onStop() {
+        super.onStop()
+        stoppedAt = System.currentTimeMillis()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val splash = installSplashScreen()
@@ -58,7 +71,15 @@ class MainActivity : AppCompatActivity() {
                         onDispose { }
                     }
                     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                        AppRoot(
+                        val lockOn = p.appLock && com.webtecit.filepilot.core.security.VaultKeys.hasPin(this@MainActivity)
+                        if (lockOn && locked) {
+                            com.webtecit.filepilot.core.security.PinPad(
+                                "FilePilot is locked", "Enter your PIN or use your fingerprint",
+                                confirmNew = false,
+                                verify = { com.webtecit.filepilot.core.security.VaultKeys.checkPin(this@MainActivity, it) },
+                                onDone = { locked = false },
+                            )
+                        } else AppRoot(
                             afterSplash = viewModel::routeAfterSplash,
                             afterOnboarding = viewModel::routeAfterOnboarding,
                             prefs = p,

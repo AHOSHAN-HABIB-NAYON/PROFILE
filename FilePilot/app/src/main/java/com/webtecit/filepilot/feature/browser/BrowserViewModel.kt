@@ -107,6 +107,8 @@ class BrowserViewModel @Inject constructor(
     private val clipboard: FileClipboard,
     private val opener: FileOpener,
     private val recycleBin: com.webtecit.filepilot.core.cleaning.RecycleBin,
+    private val pdfTools: com.webtecit.filepilot.feature.pdf.PdfTools,
+    private val vault: com.webtecit.filepilot.feature.vault.VaultRepository,
     @IoDispatcher private val io: CoroutineDispatcher,
     @DefaultDispatcher private val default: CoroutineDispatcher,
 ) : ViewModel() {
@@ -587,6 +589,90 @@ class BrowserViewModel @Inject constructor(
                 if (failures.isEmpty()) "Renamed ${Formatters.count(renamed, "item")}."
                 else "Renamed $renamed, ${failures.size} failed. ${failures.first()}",
             )
+        }
+    }
+
+    // --- tools on files -------------------------------------------------------------------
+
+    private val busyJobs = MutableStateFlow(0)
+
+    /** Creates [name] (made unique) in the current folder and writes it with [write]. */
+    private suspend fun writeNew(name: String, write: suspend (java.io.OutputStream) -> Unit): FileItem {
+        val dir = _state.value.currentId ?: throw FsException(FsError.NOT_FOUND, "No folder is open.")
+        val fs = fileSystems.of(dir)
+        val unique = NameRules.uniqueName(name, rawItems.map { it.name })
+        val created = fs.createFile(dir, unique)
+        try {
+            withContext(io) { fs.openOutput(created.id).use { write(it) } }
+        } catch (e: Throwable) {
+            runCatching { fs.delete(created.id) }
+            throw e
+        }
+        return fileSystems.of(created.id).stat(created.id) ?: created
+    }
+
+    private fun runTool(start: String, block: suspend () -> String) {
+        clearSelection()
+        message(start)
+        viewModelScope.launch {
+            busyJobs.value++
+            val result = try { block() } catch (e: CancellationException) { throw e } catch (e: Exception) { e.userMessage() }
+            busyJobs.value--
+            refresh()
+            message(result)
+        }
+    }
+
+    fun compressToZip(items: List<FileItem>) {
+        if (items.any { !it.id.startsWith("/") }) { message("ZIP creation works with files on device storage."); return }
+        val name = (if (items.size == 1) items[0].name.substringBeforeLast('.').ifBlank { items[0].name } else "Archive") + ".zip"
+        runTool("Creating $name…") {
+            val out = writeNew(name) { com.webtecit.filepilot.core.archive.ZipTools.zip(items.map { java.io.File(it.id) }, it) }
+            "Created \"${out.name}\" (${Formatters.size(out.size)})."
+        }
+    }
+
+    fun imagesToPdf(items: List<FileItem>) = runTool("Creating PDF from ${Formatters.count(items.size, "image")}…") {
+        val out = writeNew("Images ${java.text.SimpleDateFormat("yyyy-MM-dd HHmm", java.util.Locale.US).format(java.util.Date())}.pdf") { pdfTools.imagesToPdf(items, it) }
+        "Created \"${out.name}\"."
+    }
+
+    fun mergePdfs(items: List<FileItem>) = runTool("Merging ${Formatters.count(items.size, "PDF")}…") {
+        val out = writeNew("Merged.pdf") { pdfTools.merge(items, it) }
+        "Created \"${out.name}\". Pages are stored as images, so text can't be selected in the merged file."
+    }
+
+    fun compressPdf(item: FileItem) = runTool("Compressing \"${item.name}\"…") {
+        val out = writeNew(item.name.removeSuffix(".pdf").removeSuffix(".PDF") + " (compressed).pdf") { pdfTools.merge(listOf(item), it, dpi = 110, jpegQuality = 70) }
+        if (out.size >= item.size) {
+            fileSystems.of(out.id).delete(out.id)
+            "This PDF is already compact; compressing wouldn't make it smaller."
+        } else "Saved \"${out.name}\": ${Formatters.size(item.size)} → ${Formatters.size(out.size)}."
+    }
+
+    fun moveToVault(items: List<FileItem>) = runTool("Encrypting ${Formatters.count(items.size, "file")}…") {
+        val n = vault.importItems(items)
+        library.onDeleted(items.map { it.id })
+        "Moved $n to the Secure Folder. The originals were deleted after encryption."
+    }
+
+    fun split(item: FileItem, partMb: Int) {
+        if (!item.id.startsWith("/")) { message("Splitting works with files on device storage."); return }
+        runTool("Splitting \"${item.name}\"…") {
+            val parts = withContext(io) {
+                com.webtecit.filepilot.feature.devtools.FileToolsLogic.split(java.io.File(item.id), java.io.File(item.id).parentFile!!, partMb * 1_000_000L)
+            }
+            "Split into ${parts.size} parts (${parts.firstOrNull()?.name} …)."
+        }
+    }
+
+    fun mergeParts(item: FileItem) {
+        val parts = com.webtecit.filepilot.feature.devtools.FileToolsLogic.partsOf(java.io.File(item.id))
+        if (parts.size < 2) { message("No other parts (.001, .002 …) were found next to this file."); return }
+        val target = java.io.File(parts[0].parentFile, NameRules.uniqueName(parts[0].name.substringBeforeLast('.'), rawItems.map { it.name }))
+        runTool("Joining ${parts.size} parts…") {
+            withContext(io) { com.webtecit.filepilot.feature.devtools.FileToolsLogic.merge(parts, target) }
+            "Created \"${target.name}\" (${Formatters.size(target.length())})."
         }
     }
 

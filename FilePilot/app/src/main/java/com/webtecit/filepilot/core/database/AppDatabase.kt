@@ -60,6 +60,28 @@ data class TrashEntity(
     val deletedAt: Long,
 )
 
+/** A file stored encrypted in the Secure Folder. */
+@Entity(tableName = "vault")
+data class VaultEntity(
+    @PrimaryKey val id: String,
+    val name: String,
+    val size: Long,
+    val mime: String,
+    val addedAt: Long,
+)
+
+@Dao
+interface VaultDao {
+    @Query("SELECT * FROM vault ORDER BY addedAt DESC")
+    fun all(): Flow<List<VaultEntity>>
+
+    @Upsert
+    suspend fun upsert(entity: VaultEntity)
+
+    @Query("DELETE FROM vault WHERE id = :id")
+    suspend fun delete(id: String)
+}
+
 @Dao
 interface TrashDao {
     @Query("SELECT * FROM trash ORDER BY deletedAt DESC")
@@ -130,13 +152,14 @@ interface LibraryDao {
 }
 
 @Database(
-    entities = [FavoriteEntity::class, BookmarkEntity::class, RecentEntity::class, SafRootEntity::class, TrashEntity::class],
-    version = 2,
+    entities = [FavoriteEntity::class, BookmarkEntity::class, RecentEntity::class, SafRootEntity::class, TrashEntity::class, VaultEntity::class],
+    version = 3,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun libraryDao(): LibraryDao
     abstract fun trashDao(): TrashDao
+    abstract fun vaultDao(): VaultDao
 }
 
 @Module
@@ -146,7 +169,7 @@ object DatabaseModule {
     @Singleton
     fun database(@ApplicationContext context: Context): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, "filepilot.db")
-            .addMigrations(MIGRATION_1_2)
+            .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build()
 
     @Provides
@@ -154,6 +177,18 @@ object DatabaseModule {
 
     @Provides
     fun trashDao(db: AppDatabase): TrashDao = db.trashDao()
+
+    @Provides
+    fun vaultDao(db: AppDatabase): VaultDao = db.vaultDao()
+
+    val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS `vault` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `size` INTEGER NOT NULL, " +
+                    "`mime` TEXT NOT NULL, `addedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+            )
+        }
+    }
 
     val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
         override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {

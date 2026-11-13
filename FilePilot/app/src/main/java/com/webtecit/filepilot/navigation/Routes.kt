@@ -18,4 +18,13 @@ import kotlinx.serialization.Serializable
 @Serializable data class PreviewRoute(val root: String, val entry: String)
 @Serializable data object ProjectsRoute
 @Serializable data object CleanerRoute
+@Serializable data object VaultRoute
+@Serializable data class PdfRoute(val fileId: String)
+@Serializable data class ApkRoute(val path: String)
+@Serializable data class HexRoute(val path: String)
+@Serializable data class SqliteRoute(val path: String)
+@Serializable data class ArchiveRoute(val path: String)
+@Serializable data class FontRoute(val path: String)
+@Serializable data class TextSearchRoute(val root: String)
+@Serializable data object TerminalRoute
 @Serializable data object RecycleBinRoute

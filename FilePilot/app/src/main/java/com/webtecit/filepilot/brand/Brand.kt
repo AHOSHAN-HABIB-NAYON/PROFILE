@@ -15,6 +15,21 @@ object Brand {
     const val WEBSITE = "https://webtecit.com"
     const val SUPPORT_EMAIL = "support.webtecit@gmail.com"
 
+    /** Legal pages, published with GitHub Pages from this repository's filepilot-app folder. */
+    private const val PAGES = "https://ahoshan-habib-nayon.github.io/PROFILE/filepilot-app/"
+    const val PRIVACY_URL = PAGES + "privacy.html"
+    const val TERMS_URL = PAGES + "terms.html"
+    const val DISCLAIMER_URL = PAGES + "disclaimer.html"
+
+    val openSourceLicenses = listOf(
+        "CodeMirror 5" to "MIT License · © Marijn Haverbeke and others",
+        "AndroidX (Compose, Room, Paging, Navigation, WebKit, Biometric, DataStore)" to "Apache License 2.0 · © The Android Open Source Project",
+        "Kotlin, kotlinx.coroutines, kotlinx.serialization" to "Apache License 2.0 · © JetBrains s.r.o.",
+        "Dagger / Hilt" to "Apache License 2.0 · © The Dagger Authors",
+        "Coil" to "Apache License 2.0 · © Coil Contributors",
+        "Material Design icons" to "Apache License 2.0 · © Google",
+    )
+
     fun playStoreUrl(packageName: String) = "https://play.google.com/store/apps/details?id=$packageName"
 
     /** Returns null on success, or a message to show. */

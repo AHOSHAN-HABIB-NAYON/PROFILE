@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -97,6 +98,7 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     var sortOpen by remember { mutableStateOf(false) }
     var startOpen by remember { mutableStateOf(false) }
+    var licensesOpen by remember { mutableStateOf(false) }
     LifecycleResumeEffect(Unit) {
         viewModel.refreshAccess()
         onPauseOrDispose { }
@@ -220,6 +222,16 @@ fun SettingsScreen(
             }
             item {
                 Section("Privacy & security") {
+                    SwitchRow(
+                        "App lock",
+                        prefs.appLock && com.webtecit.filepilot.core.security.VaultKeys.hasPin(context),
+                        { on ->
+                            if (on && !com.webtecit.filepilot.core.security.VaultKeys.hasPin(context)) show("Create a PIN in Tools → Secure Folder first.")
+                            else viewModel.setAppLock(on)
+                        },
+                        subtitle = "Ask for your PIN or fingerprint when FilePilot opens",
+                        icon = Icons.Rounded.Security,
+                    )
                     SettingsRow(
                         "Permission manager",
                         subtitle = if (fullAccess) "Access to all files: allowed" else "Access to all files: not allowed",
@@ -247,6 +259,14 @@ fun SettingsScreen(
                 }
             }
             item {
+                Section("Legal") {
+                    SettingsRow("Privacy Policy", icon = Icons.Rounded.Security, onClick = { show(Brand.openUrl(context, Brand.PRIVACY_URL)) })
+                    SettingsRow("Terms & Conditions", icon = Icons.Rounded.Info, onClick = { show(Brand.openUrl(context, Brand.TERMS_URL)) })
+                    SettingsRow("Disclaimer", icon = Icons.Rounded.Info, onClick = { show(Brand.openUrl(context, Brand.DISCLAIMER_URL)) })
+                    SettingsRow("Open source licenses", icon = Icons.Rounded.Info, onClick = { licensesOpen = true })
+                }
+            }
+            item {
                 Section("About") {
                     SettingsRow("About FilePilot", subtitle = "Version, developer and contact", icon = Icons.Rounded.Info, onClick = onOpenAbout)
                 }
@@ -254,6 +274,21 @@ fun SettingsScreen(
         }
     }
 
+    if (licensesOpen) {
+        AlertDialog(
+            onDismissRequest = { licensesOpen = false },
+            title = { Text("Open source licenses") },
+            text = {
+                Column(Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState())) {
+                    Brand.openSourceLicenses.forEach { (name, license) ->
+                        Text(name, style = MaterialTheme.typography.titleSmall)
+                        Text(license, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(bottom = 10.dp))
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { licensesOpen = false }) { Text("Close") } },
+        )
+    }
     if (sortOpen) {
         SortDialog(current = prefs.sortOrder, onApply = { viewModel.setSort(it); sortOpen = false }, onDismiss = { sortOpen = false })
     }

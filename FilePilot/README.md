@@ -12,16 +12,23 @@ An offline Android file manager and developer toolkit by **Webtecit Apps**
 
 | Stage | Scope | Status |
 | --- | --- | --- |
-| 1 | Core file manager, permissions, navigation, file operations | **Implemented** |
-| 2 | Home dashboard, categories, storage analyzer | Not started |
-| 3 | HTML Studio, code editor, local web run, responsive preview | Not started |
-| 4 | APK toolkit, HEX, SQLite, terminal, advanced tools | Not started |
-| 5 | Cleaner, duplicate finder, recycle bin | Not started |
-| 6 | Secure folder, PIN, biometric, encryption | Not started |
-| 7 | PDF, document and media tools | Not started |
-| 8 | AdMob, billing, legal pages, security audit, release | Not started |
+| 1 | Core file manager, permissions, navigation, file operations | Implemented |
+| 2 | Home dashboard, categories, storage analyzer | Implemented |
+| 3 | Code Studio, HTML Studio, offline website runner, responsive device preview | Implemented |
+| 4 | APK information, HEX editor, SQLite viewer/editor, archives (ZIP/TAR/GZIP), terminal with root detection, text search, split/merge, font preview | Implemented (see limits) |
+| 5 | Cleaner, duplicate finder (SHA-256), Recycle Bin | Implemented |
+| 6 | Secure Folder (AES-256-GCM, Android Keystore), PIN, fingerprint, app lock | Implemented |
+| 7 | PDF viewer, images to PDF, merge and compress PDF | Implemented |
+| 8 | Legal pages, security notes | Pages written in `filepilot-app/`; publishing needs a merge to `main` |
+| 8 | AdMob, Google Play Billing, Premium | **Not implemented** — needs your AdMob app/unit IDs and Play Console products |
 
-The onboarding marks tools from later stages as "Coming in a future update", so nothing unfinished is presented as available.
+### Known limits (honest list)
+
+- APK toolkit reads APK/XAPK/APKS information and signatures. Editing AndroidManifest/smali, rebuilding, signing and zipalign are **not** implemented. Extracting installed apps needs `QUERY_ALL_PACKAGES`, a policy-restricted permission, so it was left out.
+- Archives: ZIP, TAR, TAR.GZ and GZIP open in-app; RAR and 7z open in other apps. Password-protected archives aren't supported.
+- Merged/compressed PDFs store pages as images (Android has no built-in PDF editing library).
+- Long copies run while the app is open; there is no notification-based background service yet.
+- Root explorer: the terminal uses `su` when available; there is no separate root file browser.
 
 ## Stage 1 features
 

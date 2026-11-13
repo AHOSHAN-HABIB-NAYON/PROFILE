@@ -342,6 +342,18 @@ enum class ItemAction(val label: String, val icon: ImageVector) {
     FAVORITE("Add to favorites", Icons.Rounded.StarBorder),
     UNFAVORITE("Remove from favorites", Icons.Rounded.Star),
     COPY_PATH("Copy path", Icons.Rounded.Link),
+    TOOL_APK("APK information", Icons.Rounded.Info),
+    TOOL_SQLITE("Open in SQLite viewer", Icons.Rounded.Info),
+    TOOL_ARCHIVE("Open archive", Icons.Rounded.Info),
+    TOOL_FONT("Font preview", Icons.Rounded.Info),
+    TOOL_PDF("Open in PDF viewer", Icons.Rounded.Info),
+    COMPRESS_PDF("Compress PDF", Icons.Rounded.Info),
+    TOOL_HEX("HEX editor", Icons.Rounded.Info),
+    ZIP("Compress to ZIP", Icons.Rounded.ContentCopy),
+    SPLIT("Split into parts", Icons.Rounded.ContentCut),
+    MERGE_PARTS("Join split parts", Icons.Rounded.ContentPaste),
+    SEARCH_TEXT("Search text in this folder", Icons.Rounded.Info),
+    VAULT("Move to Secure Folder", Icons.Rounded.Star),
     DETAILS("Details", Icons.Rounded.Info),
     DELETE("Delete", Icons.Rounded.Delete),
 }
@@ -369,6 +381,21 @@ fun ItemActionsSheet(
         add(ItemAction.RENAME)
         add(if (favorite) ItemAction.UNFAVORITE else ItemAction.FAVORITE)
         add(ItemAction.COPY_PATH)
+        if (local) {
+            when {
+                item.kind == FileKind.APK -> add(ItemAction.TOOL_APK)
+                item.kind == FileKind.DATABASE -> add(ItemAction.TOOL_SQLITE)
+                item.kind == FileKind.ARCHIVE -> add(ItemAction.TOOL_ARCHIVE)
+                item.kind == FileKind.FONT -> add(ItemAction.TOOL_FONT)
+            }
+            if (!item.isDirectory) add(ItemAction.TOOL_HEX)
+            add(ItemAction.ZIP)
+            if (!item.isDirectory && item.size > 10_000_000) add(ItemAction.SPLIT)
+            if (item.extension.matches(Regex("\\d{3}"))) add(ItemAction.MERGE_PARTS)
+            if (item.isDirectory) add(ItemAction.SEARCH_TEXT)
+        }
+        if (item.kind == FileKind.PDF) { add(ItemAction.TOOL_PDF); add(ItemAction.COMPRESS_PDF) }
+        if (!item.isDirectory) add(ItemAction.VAULT)
         add(ItemAction.DETAILS)
         add(ItemAction.DELETE)
     }

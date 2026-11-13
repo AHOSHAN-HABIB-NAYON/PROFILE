@@ -13,6 +13,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DonutLarge
 import androidx.compose.material.icons.rounded.Code
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Terminal
+import androidx.compose.material.icons.rounded.FindInPage
 import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.Language
@@ -38,7 +41,10 @@ enum class Tool(val label: String, val description: String, val icon: ImageVecto
     ANALYZER("Storage Analyzer", "Folders and types using your space", Icons.Rounded.DonutLarge, 0xFFEA580C, "Storage"),
     CLEANER("Cleaner", "Junk, duplicates and leftovers", Icons.Rounded.CleaningServices, 0xFF0369A1, "Storage"),
     RECYCLE_BIN("Recycle Bin", "Restore deleted files", Icons.Rounded.DeleteSweep, 0xFF64748B, "Storage"),
+    SECURE_FOLDER("Secure Folder", "Encrypted, PIN-protected files", Icons.Rounded.Lock, 0xFFDB2777, "Security"),
     CODE_STUDIO("Code Studio", "Edit code with tabs and highlighting", Icons.Rounded.Code, 0xFF0D9488, "Developer"),
+    TERMINAL("Terminal", "Shell commands, root when available", Icons.Rounded.Terminal, 0xFF111827, "Developer"),
+    TEXT_SEARCH("Search in files", "Find text inside documents and code", Icons.Rounded.FindInPage, 0xFF7C3AED, "Developer"),
     HTML_PROJECTS("HTML Projects", "Build and run websites offline", Icons.Rounded.Language, 0xFF2563EB, "Developer"),
 }
 

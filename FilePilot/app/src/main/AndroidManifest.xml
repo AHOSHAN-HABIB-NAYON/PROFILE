@@ -16,6 +16,10 @@
         android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
 
+    <!-- Only so websites previewed in HTML Studio can load online resources they reference.
+         The app itself sends no data. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:name=".FilePilotApp"
         android:allowBackup="false"

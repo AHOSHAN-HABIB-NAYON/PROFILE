@@ -185,6 +185,21 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
                     onBrowse = { nav.navigate(BrowserRoute(it)) },
                 )
             }
+            composable<PdfRoute> { b -> com.webtecit.filepilot.feature.pdf.PdfViewerScreen(b.toRoute<PdfRoute>().fileId, onBack = { nav.popBackStack() }) }
+            composable<ApkRoute> { b -> com.webtecit.filepilot.feature.devtools.ApkInfoScreen(b.toRoute<ApkRoute>().path, onBack = { nav.popBackStack() }) }
+            composable<HexRoute> { b -> com.webtecit.filepilot.feature.devtools.HexScreen(b.toRoute<HexRoute>().path, onBack = { nav.popBackStack() }) }
+            composable<SqliteRoute> { b -> com.webtecit.filepilot.feature.devtools.SqliteScreen(b.toRoute<SqliteRoute>().path, onBack = { nav.popBackStack() }) }
+            composable<FontRoute> { b -> com.webtecit.filepilot.feature.devtools.FontPreviewScreen(b.toRoute<FontRoute>().path, onBack = { nav.popBackStack() }) }
+            composable<ArchiveRoute> { b ->
+                com.webtecit.filepilot.feature.devtools.ArchiveScreen(b.toRoute<ArchiveRoute>().path, onBack = { nav.popBackStack() },
+                    onOpenFolder = { nav.navigate(BrowserRoute(it)) })
+            }
+            composable<TextSearchRoute> { b ->
+                com.webtecit.filepilot.feature.devtools.TextSearchScreen(b.toRoute<TextSearchRoute>().root, onBack = { nav.popBackStack() },
+                    onOpenFile = { nav.openEditor(it, null) })
+            }
+            composable<TerminalRoute> { com.webtecit.filepilot.feature.devtools.TerminalScreen(onBack = { nav.popBackStack() }) }
+            composable<VaultRoute> { com.webtecit.filepilot.feature.vault.VaultScreen(onBack = { nav.popBackStack() }) }
             composable<CleanerRoute> { com.webtecit.filepilot.feature.cleaner.CleanerScreen(onBack = { nav.popBackStack() }) }
             composable<RecycleBinRoute> { com.webtecit.filepilot.feature.recycle.RecycleBinScreen(onBack = { nav.popBackStack() }) }
             composable<LibraryRoute> {
@@ -204,6 +219,7 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
                     onClose = { nav.popBackStack() },
                     onCompare = { a, b -> nav.navigate(CompareRoute(a, b)) },
                     onEdit = { nav.openEditor(it, null) },
+                    onTool = { route -> nav.navigate(route) },
                     onRunSite = { root, entry -> nav.navigate(PreviewRoute(root, entry)) },
                     onGrantAccess = { nav.navigate(PermissionsRoute(setup = false)) },
                 )
@@ -223,6 +239,9 @@ fun toolRoute(tool: Tool): Any = when (tool) {
     Tool.CODE_STUDIO -> EditorRoute()
     Tool.HTML_PROJECTS -> ProjectsRoute
     Tool.CLEANER -> CleanerRoute
+    Tool.SECURE_FOLDER -> VaultRoute
+    Tool.TERMINAL -> TerminalRoute
+    Tool.TEXT_SEARCH -> TextSearchRoute(android.os.Environment.getExternalStorageDirectory().absolutePath)
     Tool.RECYCLE_BIN -> RecycleBinRoute
 }
 

@@ -117,6 +117,9 @@ fun AboutScreen(onBack: () -> Unit) {
                     Toast.makeText(context, "Email address copied", Toast.LENGTH_SHORT).show()
                 })
                 SettingsRow("Share app", icon = Icons.Rounded.Share, onClick = { show(Brand.shareApp(context)) })
+                SettingsRow("Privacy Policy", icon = Icons.Rounded.Language, onClick = { show(Brand.openUrl(context, Brand.PRIVACY_URL)) })
+                SettingsRow("Terms & Conditions", icon = Icons.Rounded.Language, onClick = { show(Brand.openUrl(context, Brand.TERMS_URL)) })
+                SettingsRow("Disclaimer", icon = Icons.Rounded.Language, onClick = { show(Brand.openUrl(context, Brand.DISCLAIMER_URL)) })
             }
 
             Text(

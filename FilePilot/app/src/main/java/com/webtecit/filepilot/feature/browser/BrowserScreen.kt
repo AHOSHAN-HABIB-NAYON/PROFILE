@@ -112,6 +112,7 @@ fun BrowserScreen(
     onCompare: (String, String) -> Unit,
     onEdit: (String) -> Unit = {},
     onRunSite: (String, String) -> Unit = { _, _ -> },
+    onTool: (Any) -> Unit = {},
     onGrantAccess: () -> Unit,
     viewModel: BrowserViewModel = hiltViewModel(),
 ) {
@@ -157,6 +158,11 @@ fun BrowserScreen(
             state.selectionMode -> viewModel.toggleSelection(item)
             item.isDirectory -> viewModel.openFolder(item, firstVisible())
             opensInEditor(item) -> onEdit(item.id)
+            item.kind == com.webtecit.filepilot.core.storage.FileKind.PDF -> onTool(com.webtecit.filepilot.navigation.PdfRoute(item.id))
+            item.id.startsWith("/") && item.kind == com.webtecit.filepilot.core.storage.FileKind.APK -> onTool(com.webtecit.filepilot.navigation.ApkRoute(item.id))
+            item.id.startsWith("/") && item.kind == com.webtecit.filepilot.core.storage.FileKind.DATABASE -> onTool(com.webtecit.filepilot.navigation.SqliteRoute(item.id))
+            item.id.startsWith("/") && item.kind == com.webtecit.filepilot.core.storage.FileKind.ARCHIVE -> onTool(com.webtecit.filepilot.navigation.ArchiveRoute(item.id))
+            item.id.startsWith("/") && item.kind == com.webtecit.filepilot.core.storage.FileKind.FONT -> onTool(com.webtecit.filepilot.navigation.FontRoute(item.id))
             else -> viewModel.openFile(item, chooser = false)
         }
     }
@@ -179,6 +185,18 @@ fun BrowserScreen(
                 Toast.makeText(context, "Path copied", Toast.LENGTH_SHORT).show()
             }
             ItemAction.DETAILS -> dialog = BrowserDialog.Details(item.id)
+            ItemAction.TOOL_APK -> onTool(com.webtecit.filepilot.navigation.ApkRoute(item.id))
+            ItemAction.TOOL_SQLITE -> onTool(com.webtecit.filepilot.navigation.SqliteRoute(item.id))
+            ItemAction.TOOL_ARCHIVE -> onTool(com.webtecit.filepilot.navigation.ArchiveRoute(item.id))
+            ItemAction.TOOL_FONT -> onTool(com.webtecit.filepilot.navigation.FontRoute(item.id))
+            ItemAction.TOOL_PDF -> onTool(com.webtecit.filepilot.navigation.PdfRoute(item.id))
+            ItemAction.TOOL_HEX -> onTool(com.webtecit.filepilot.navigation.HexRoute(item.id))
+            ItemAction.COMPRESS_PDF -> viewModel.compressPdf(item)
+            ItemAction.ZIP -> viewModel.compressToZip(listOf(item))
+            ItemAction.SPLIT -> viewModel.split(item, partMb = 100)
+            ItemAction.MERGE_PARTS -> viewModel.mergeParts(item)
+            ItemAction.SEARCH_TEXT -> onTool(com.webtecit.filepilot.navigation.TextSearchRoute(item.id))
+            ItemAction.VAULT -> viewModel.moveToVault(listOf(item))
             ItemAction.DELETE -> dialog = BrowserDialog.Delete(listOf(item))
         }
     }
@@ -221,6 +239,19 @@ fun BrowserScreen(
                                     onCompare(selected[0].id, selected[1].id)
                                 },
                             )
+                        }
+                        val kinds = selected.map { it.kind }.toSet()
+                        if (selected.size > 1 && kinds == setOf(com.webtecit.filepilot.core.storage.FileKind.IMAGE)) {
+                            DropdownMenuItem(text = { Text("Create PDF from images") }, onClick = { dismiss(); viewModel.imagesToPdf(selected) })
+                        }
+                        if (selected.size > 1 && kinds == setOf(com.webtecit.filepilot.core.storage.FileKind.PDF)) {
+                            DropdownMenuItem(text = { Text("Merge PDFs") }, onClick = { dismiss(); viewModel.mergePdfs(selected) })
+                        }
+                        if (selected.all { it.id.startsWith("/") }) {
+                            DropdownMenuItem(text = { Text("Compress to ZIP") }, onClick = { dismiss(); viewModel.compressToZip(selected) })
+                        }
+                        if (selected.none { it.isDirectory }) {
+                            DropdownMenuItem(text = { Text("Move to Secure Folder") }, onClick = { dismiss(); viewModel.moveToVault(selected) })
                         }
                         val allFav = selected.isNotEmpty() && selected.all { it.id in state.favoriteIds }
                         DropdownMenuItem(

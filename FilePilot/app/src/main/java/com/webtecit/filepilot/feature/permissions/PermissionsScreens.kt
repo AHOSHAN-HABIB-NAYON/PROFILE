@@ -168,7 +168,7 @@ fun PermissionsScreen(setup: Boolean, onDone: () -> Unit, viewModel: Permissions
                     IconTile(Icons.Rounded.FolderOpen, MaterialTheme.colorScheme.secondary, size = 40.dp)
                     Spacer(Modifier.width(14.dp))
                     Text(
-                        "FilePilot doesn't use your camera, location, contacts or the internet for file management, and it doesn't post notifications in this version.",
+                        "FilePilot doesn't use your camera, location or contacts, sends no data anywhere, and doesn't post notifications. Internet is used only by websites you preview.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
