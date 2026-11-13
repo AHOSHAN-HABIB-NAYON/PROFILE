@@ -77,8 +77,11 @@ fun AppsScreen(navigate: (String) -> Unit) {
                 ShortcutButton(stringResource(R.string.apps_uninstall), Icons.Outlined.DeleteSweep, Modifier.weight(1f)) { navigate(Routes.UNINSTALL) }
                 if (com.webtecit.devicepilot.BuildConfig.FULL) ShortcutButton(stringResource(R.string.apps_apk_files), Icons.Outlined.FolderZip, Modifier.weight(1f)) { navigate(Routes.APKS) }
             }
-            Spacer(Modifier.height(8.dp))
-            ShortcutButton(stringResource(R.string.title_hider), Icons.Outlined.VisibilityOff, Modifier.fillMaxWidth()) { navigate(Routes.HIDER) }
+            // App Hider: Full edition only (in the Play edition it could only point to Android's own options).
+            if (com.webtecit.devicepilot.BuildConfig.FULL) {
+                Spacer(Modifier.height(8.dp))
+                ShortcutButton(stringResource(R.string.title_hider), Icons.Outlined.VisibilityOff, Modifier.fillMaxWidth()) { navigate(Routes.HIDER) }
+            }
         }
         if (!ui.usageAccess) item {
             PermissionCard(

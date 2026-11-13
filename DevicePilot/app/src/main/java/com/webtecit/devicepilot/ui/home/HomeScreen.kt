@@ -184,16 +184,13 @@ fun HomeScreen(navigate: (String) -> Unit) {
         item { SectionTitle(stringResource(R.string.home_quick_actions)) }
         item {
             DpCard(Modifier.entrance(5), contentPadding = 8.dp) {
+                // Only shortcuts that are not already on Home or in the bottom menu.
                 val actions = listOf(
-                    QuickAction(Icons.Outlined.Radar, R.string.qa_scan) { navigate(Routes.OPTIMIZE) },
                     QuickAction(Icons.Outlined.PhoneAndroid, R.string.qa_device_info) { navigate(Routes.DEVICE_INFO) },
                     QuickAction(Icons.Outlined.PlayCircle, R.string.qa_running) { navigate(Routes.RUNNING) },
-                    QuickAction(Icons.Outlined.Apps, R.string.qa_apps) { navigate(Routes.APPS) },
                     if (com.webtecit.devicepilot.BuildConfig.FULL) QuickAction(Icons.Outlined.Security, R.string.qa_firewall) { navigate(Routes.FIREWALL) }
-                    else QuickAction(Icons.Outlined.DataUsage, R.string.qa_network) { navigate(Routes.NETWORK) },
-                    QuickAction(Icons.Outlined.CleaningServices, R.string.qa_boost) { navigate(Routes.BOOST) },
-                    QuickAction(Icons.Outlined.DeleteSweep, R.string.qa_cleaner) { navigate(Routes.CLEANER) },
-                    QuickAction(Icons.Outlined.VisibilityOff, R.string.qa_hider) { navigate(Routes.HIDER) },
+                    else QuickAction(Icons.Outlined.BatteryChargingFull, R.string.qa_battery) { navigate(Routes.BATTERY) },
+                    QuickAction(Icons.Outlined.MenuBook, R.string.qa_guide) { navigate(Routes.GUIDE) },
                 )
                 actions.chunked(4).forEach { row ->
                     Row(Modifier.fillMaxWidth()) {
@@ -201,9 +198,6 @@ fun HomeScreen(navigate: (String) -> Unit) {
                     }
                 }
             }
-        }
-        item {
-            NavigationShortcuts(navigate, s)
         }
         item { SourceNote(stringResource(R.string.home_sources_note)) }
         item { com.webtecit.devicepilot.brand.DeveloperCredit() }
@@ -325,17 +319,6 @@ private fun factorExplain(id: HealthFactorId) = when (id) {
     HealthFactorId.BATTERY_LEVEL -> R.string.factor_battery_level_explain
 }
 
-@Composable
-private fun NavigationShortcuts(navigate: (String) -> Unit, s: HomeState) {
-    DpCard {
-        com.webtecit.devicepilot.ui.common.NavRow(Icons.Outlined.BatteryChargingFull, stringResource(R.string.title_battery),
-            stringResource(R.string.battery_row_sub)) { navigate(Routes.BATTERY) }
-        com.webtecit.devicepilot.ui.common.NavRow(Icons.Outlined.SdStorage, stringResource(R.string.title_storage),
-            s.storage?.let { stringResource(pressureRes(it.pressure)) }) { navigate(Routes.STORAGE) }
-        com.webtecit.devicepilot.ui.common.NavRow(Icons.Outlined.Memory, stringResource(R.string.title_memory),
-            stringResource(pressureRes(s.memory.pressure))) { navigate(Routes.MEMORY) }
-    }
-}
 
 
 /** Battery health and cycle count, shown prominently near the top of Home. */

@@ -6,6 +6,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.background
@@ -29,9 +33,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -44,7 +45,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -283,26 +283,9 @@ private fun MainScaffold(
             )
         },
         bottomBar = {
-            NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 2.dp) {
-                val current = tabFor(route)
-                tabs.forEach { tab ->
-                    val selected = current == tab.route
-                    val scale by animateFloatAsState(if (selected) 1.12f else 1f, tween(220), label = "tab")
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            nav.navigateTab(tab.route)
-                        },
-                        icon = { Icon(if (selected) tab.selectedIcon else tab.icon, null, Modifier.scale(scale)) },
-                        label = { Text(stringResource(tab.label), maxLines = 1, style = MaterialTheme.typography.labelSmall) },
-                        colors = NavigationBarItemDefaults.colors(
-                            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                        ),
-                    )
-                }
+            DpBottomBar(selectedRoute = tabFor(route)) { r ->
+                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                nav.navigateTab(r)
             }
         },
     ) { padding ->
@@ -350,6 +333,72 @@ private fun MainScaffold(
             composable(Routes.HIDER) { com.webtecit.devicepilot.ui.hider.AppHiderScreen() }
             composable(Routes.DEVICE_INFO) { com.webtecit.devicepilot.ui.device.DeviceInfoScreen() }
             composable(Routes.DISCLAIMER) { com.webtecit.devicepilot.ui.settings.DisclaimerScreen(go) }
+        }
+    }
+}
+
+
+/**
+ * Floating bottom menu: rounded bar with a soft shadow; the selected tab gets a gradient pill
+ * behind its icon and a bold coloured label. Labels stay visible on every tab for clarity.
+ */
+@Composable
+private fun DpBottomBar(selectedRoute: String?, onSelect: (String) -> Unit) {
+    androidx.compose.material3.Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(26.dp),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 10.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        androidx.compose.foundation.layout.Row(
+            Modifier.padding(horizontal = 6.dp, vertical = 8.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            tabs.forEach { tab ->
+                val selected = selectedRoute == tab.route
+                val pillAlpha by animateFloatAsState(if (selected) 1f else 0f, tween(220), label = "pill")
+                val pillWidth by androidx.compose.animation.core.animateDpAsState(if (selected) 56.dp else 40.dp, tween(220), label = "w")
+                val primary = MaterialTheme.colorScheme.primary
+                val secondary = MaterialTheme.colorScheme.secondary
+                androidx.compose.foundation.layout.Column(
+                    Modifier
+                        .weight(1f)
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(16.dp))
+                        .selectable(selected = selected, role = androidx.compose.ui.semantics.Role.Tab) { onSelect(tab.route) }
+                        .padding(vertical = 4.dp),
+                    horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                ) {
+                    androidx.compose.foundation.layout.Box(
+                        Modifier
+                            .size(width = pillWidth, height = 32.dp)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(50))
+                            .background(
+                                androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                    listOf(primary.copy(alpha = pillAlpha), secondary.copy(alpha = pillAlpha))
+                                )
+                            ),
+                        contentAlignment = androidx.compose.ui.Alignment.Center,
+                    ) {
+                        Icon(
+                            if (selected) tab.selectedIcon else tab.icon, null,
+                            tint = if (selected) androidx.compose.ui.graphics.Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
+                    androidx.compose.foundation.layout.Spacer(Modifier.height(4.dp))
+                    Text(
+                        stringResource(tab.label), maxLines = 1,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = if (selected) androidx.compose.ui.text.font.FontWeight.Bold else androidx.compose.ui.text.font.FontWeight.Medium,
+                        color = if (selected) primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
         }
     }
 }

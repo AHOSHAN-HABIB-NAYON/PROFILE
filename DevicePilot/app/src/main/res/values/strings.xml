@@ -121,10 +121,7 @@
     <string name="source_proc_stat">Source: /proc/stat</string>
     <string name="cpu_cores_value">%1$d cores</string>
     <string name="cpu_usage_restricted_long">Android 8 and later do not let apps read overall CPU usage. Core frequencies are shown when the kernel exposes them.</string>
-    <string name="qa_scan">Scan device</string>
-    <string name="qa_apps">Manage apps</string>
     <string name="qa_firewall">Firewall</string>
-    <string name="qa_cleanup">Clean up</string>
     <string name="qa_guide">Speed up guide</string>
     <string name="home_sources_note">All values come from public Android APIs on this device. When Android does not expose a value, DevicePilot says so instead of estimating it.</string>
     <string name="battery_row_sub">Level, voltage, current and health</string>
@@ -361,12 +358,6 @@
     <string name="cat_images">Images</string>
     <string name="cat_video">Videos</string>
     <string name="cat_audio">Audio</string>
-    <string name="storage_large_files">Review large files</string>
-    <string name="storage_large_files_text">Pick files with the system file picker to see their sizes. DevicePilot never deletes anything without asking you.</string>
-    <string name="storage_pick_files">Pick files</string>
-    <string name="storage_delete_title">Delete file?</string>
-    <string name="storage_delete_text">Delete \"%1$s\" permanently?</string>
-    <string name="storage_file_deleted">File deleted.</string>
     <string name="ram_available">%1$s available</string>
     <string name="ram_total">%1$s total</string>
     <string name="ram_threshold">Low-memory threshold</string>
@@ -378,13 +369,6 @@
     <string name="cpu_cores">Cores</string>
     <string name="cpu_usage">Usage</string>
     <string name="cpu_core_n">Core %1$d</string>
-    <string name="cleanup_title">Clean up</string>
-    <string name="cleanup_text">Checks memory and storage and clears DevicePilot\'s own cache. It does not kill other apps — Android manages them and restarting them often uses more battery.</string>
-    <string name="cleanup_run">Run clean up</string>
-    <string name="cleanup_done_actions">Actions completed</string>
-    <string name="cleanup_own_cache">DevicePilot cache cleared: %1$s</string>
-    <string name="cleanup_findings">Findings</string>
-    <string name="cleanup_suggestions">Suggested: free storage by removing unused apps and large files. No other actions were performed.</string>
     <string name="running_title">Running apps</string>
     <string name="running_explain">Android no longer lets regular apps see or stop other apps\' processes. To stop a misbehaving app, open App management and use Force stop, or view Running services in Developer options.</string>
     <string name="recent_apps_today">Apps used today</string>
@@ -485,12 +469,6 @@
     <string name="settings_temp_unit">Temperature unit</string>
     <string name="unit_c">°C</string>
     <string name="unit_f">°F</string>
-    <string name="settings_refresh">Monitoring refresh</string>
-    <string name="settings_refresh_hint">Only while a monitoring screen is open. Longer intervals use less battery.</string>
-    <string name="refresh_2">2 s</string>
-    <string name="refresh_3">3 s</string>
-    <string name="refresh_5">5 s</string>
-    <string name="refresh_10">10 s</string>
     <string name="settings_notifications">Optional alerts</string>
     <string name="settings_notifications_hint">Checked about every 15 minutes in the background with WorkManager. All alerts are off by default.</string>
     <string name="notif_denied">Notification permission was denied.</string>
@@ -502,7 +480,6 @@
     <string name="notif_data_threshold">Alert after %1$s per billing cycle</string>
     <string name="notif_data_needs_access">Needs Usage Access — open settings</string>
     <string name="notif_opt_firewall">Firewall interrupted</string>
-    <string name="settings_more">More</string>
     <string name="settings_licenses">Open-source licenses</string>
     <string name="settings_version">Version %1$s</string>
     <string name="licenses_apache">These libraries are licensed under the Apache License 2.0.</string>
@@ -671,7 +648,6 @@
     <string name="disc_s5_text">The firewall uses Android\'s VPN feature. Android allows only one VPN at a time, and Android or another VPN app can turn it off. Blocked apps lose internet while a rule is active.</string>
     <string name="disc_s6_title">Use at your own risk</string>
     <string name="disc_s6_text">The app is provided \"as is\" without warranty. The developer is not responsible for data loss or device problems resulting from actions taken with the app.</string>
-    <string name="qa_hider">App Hider</string>
     <string name="title_hider">App Hider</string>
     <string name="settings_security">Security</string>
     <string name="admin_description">Used only for App Hider: lets DevicePilot hide and unhide apps you choose. Active only after you set it up yourself.</string>
@@ -712,7 +688,6 @@
     <string name="hider_copied">Command copied</string>
     <string name="hider_note">Hiding uses Android\'s official DevicePolicyManager.setApplicationHidden. Hidden apps cannot run or show notifications until unhidden. Turn off App Hider before uninstalling DevicePilot.</string>
     <string name="dev_badge">Official developer</string>
-    <string name="home_cycles">%1$d cycles</string>
     <string name="dd_chip_model">Chip model</string>
     <string name="dd_clusters">CPU clusters</string>
     <string name="dd_gpu">GPU</string>
@@ -748,7 +723,6 @@
     <string name="needs_usage_access_short">Needs access</string>
     <string name="tap_to_grant">Tap to allow Usage Access</string>
     <string name="data_split">Wi-Fi %1$s · Mobile %2$s</string>
-    <string name="qa_boost">Boost</string>
     <string name="title_boost">Boost</string>
     <string name="title_cool">Cool down</string>
     <string name="speed_title">Speed up your phone</string>
@@ -776,7 +750,6 @@
     <string name="cool_tips_title">Cool your phone faster</string>
     <string name="cool_tips">• Stop games, camera and navigation for a few minutes.\n• Unplug the charger and remove a thick case.\n• Keep the phone out of direct sun, on a hard surface.\n• Lower screen brightness or turn on Battery saver.</string>
     <string name="cool_note">No app can cool hardware directly. Less background work lowers heat; the numbers above are the real readings from Android.</string>
-    <string name="qa_network">Network usage</string>
     <string name="dd_imei">IMEI</string>
     <string name="hider_hero_text_play">Hide apps from your app drawer using the privacy features built into Android and your phone\'s launcher.</string>
     <string name="hider_opt_builtin_title_play">Built into your phone</string>
@@ -787,7 +760,6 @@
     <string name="onb_3p_text">Close background apps in one tap and watch your phone\'s real temperature as it cools down.</string>
     <string name="running_hero_text_play">See apps with active background services or recent activity and close them in one tap.</string>
     <string name="title_cleaner">Cleaner</string>
-    <string name="qa_cleaner">Cleaner</string>
     <string name="clean_button">Clean</string>
     <string name="edition_full">Full edition</string>
     <string name="edition_play">Play edition</string>
@@ -854,4 +826,7 @@
     <string name="dd_front">Front</string>
     <string name="dd_health_percent">Health (capacity)</string>
     <string name="dd_time_to_full">Time to full charge</string>
+    <string name="qa_battery">Battery</string>
+    <string name="ram_free_up_title">Free up memory</string>
+    <string name="ram_free_up_text">Boost closes background apps in one tap; Cleaner finds app cache, junk and big files.</string>
 </resources>

@@ -76,13 +76,6 @@ class MemoryViewModel(c: AppContainer) : ViewModel() {
     val cpu = polling(2_000) { c.monitor.cpu() }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 }
 
-/** Result of the Clean Up check. Only [ownCacheFreed] is an action DevicePilot actually performs. */
-private data class CleanupReport(
-    val memoryPressure: Pressure,
-    val storagePressure: Pressure?,
-    val ownCacheFreed: Long,
-)
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MemoryScreen(navigate: (String) -> Unit) {
@@ -92,8 +85,6 @@ fun MemoryScreen(navigate: (String) -> Unit) {
     val vm: MemoryViewModel = viewModel { MemoryViewModel(c) }
     val memory by vm.memory.collectAsStateWithLifecycle()
     val cpu by vm.cpu.collectAsStateWithLifecycle()
-    var report by remember { mutableStateOf<CleanupReport?>(null) }
-    var scanning by remember { mutableStateOf(false) }
     val recent by produceState<List<AppUsageInfo>?>(null) {
         value = if (!c.usage.hasUsageAccess()) null else c.usage
             .appUsage(UsagePeriods.range(UsagePeriod.TODAY, System.currentTimeMillis(), 1))
@@ -144,51 +135,16 @@ fun MemoryScreen(navigate: (String) -> Unit) {
                 }
             }
         }
-        item { SectionTitle(stringResource(R.string.cleanup_title)) }
         item {
             DpCard {
-                Text(stringResource(R.string.cleanup_text), style = MaterialTheme.typography.bodySmall,
+                Text(stringResource(R.string.ram_free_up_title), style = MaterialTheme.typography.titleSmall)
+                Spacer(Modifier.height(4.dp))
+                Text(stringResource(R.string.ram_free_up_text), style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(10.dp))
-                Button(onClick = {
-                    scanning = true
-                    scope.launch {
-                        val freed = withContext(Dispatchers.IO) { clearOwnCache(context.cacheDir) }
-                        report = CleanupReport(c.monitor.memory().pressure, c.monitor.storage()?.pressure, freed)
-                        scanning = false
-                    }
-                }, enabled = !scanning) {
-                    Icon(Icons.Outlined.CleaningServices, null); Spacer(Modifier.width(8.dp)); Text(stringResource(R.string.cleanup_run))
-                }
-                if (scanning) LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 8.dp))
-                AnimatedVisibility(report != null) {
-                    report?.let { r ->
-                        Column(Modifier.padding(top = 12.dp)) {
-                            Text(stringResource(R.string.cleanup_done_actions), style = MaterialTheme.typography.titleSmall)
-                            Text(stringResource(R.string.cleanup_own_cache, Formatters.bytes(r.ownCacheFreed)), style = MaterialTheme.typography.bodySmall)
-                            Spacer(Modifier.height(8.dp))
-                            Text(stringResource(R.string.cleanup_findings), style = MaterialTheme.typography.titleSmall)
-                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
-                                Text(stringResource(R.string.factor_memory), Modifier.weight(1f))
-                                StatusPill(stringResource(pressureRes(r.memoryPressure)), pressureLevel(r.memoryPressure))
-                            }
-                            r.storagePressure?.let {
-                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 4.dp)) {
-                                    Text(stringResource(R.string.factor_storage), Modifier.weight(1f))
-                                    StatusPill(stringResource(pressureRes(it)), pressureLevel(it))
-                                }
-                            }
-                            Spacer(Modifier.height(6.dp))
-                            Text(stringResource(R.string.cleanup_suggestions), style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Spacer(Modifier.height(8.dp))
-                            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                if (r.storagePressure != null && r.storagePressure != Pressure.LOW)
-                                    ShortcutButton(stringResource(R.string.action_storage_settings), Icons.Outlined.Settings) { SystemSettings.storage(context) }
-                                ShortcutButton(stringResource(R.string.action_uninstall_unused), Icons.Outlined.Apps) { navigate(Routes.UNINSTALL) }
-                            }
-                        }
-                    }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { navigate(Routes.BOOST) }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.boost_button)) }
+                    OutlinedButtonCompat(stringResource(R.string.title_cleaner), Modifier.weight(1f)) { navigate(Routes.CLEANER) }
                 }
             }
         }
@@ -228,12 +184,7 @@ fun MemoryScreen(navigate: (String) -> Unit) {
     }
 }
 
-/** Deletes only DevicePilot's own cache directory contents. Returns bytes freed. */
-private fun clearOwnCache(dir: File): Long {
-    var freed = 0L
-    dir.listFiles()?.forEach { f ->
-        val size = f.walkBottomUp().filter { it.isFile }.sumOf { it.length() }
-        if (f.deleteRecursively()) freed += size
-    }
-    return freed
+@Composable
+private fun OutlinedButtonCompat(text: String, modifier: Modifier, onClick: () -> Unit) {
+    androidx.compose.material3.OutlinedButton(onClick = onClick, modifier = modifier) { Text(text) }
 }

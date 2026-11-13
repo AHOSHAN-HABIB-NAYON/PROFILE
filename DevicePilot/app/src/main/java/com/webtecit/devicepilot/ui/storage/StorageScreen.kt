@@ -65,8 +65,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private data class PickedFile(val uri: Uri, val name: String, val size: Long?)
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun StorageScreen(navigate: (String) -> Unit) {
@@ -76,22 +74,7 @@ fun StorageScreen(navigate: (String) -> Unit) {
     val info by produceState<Pair<StorageSnapshot?, StorageCategories?>?>(null) {
         value = withContext(Dispatchers.IO) { c.monitor.storage() to c.monitor.storageCategories(context) }
     }
-    val files = remember { mutableStateListOf<PickedFile>() }
-    var toDelete by remember { mutableStateOf<PickedFile?>(null) }
-    var message by remember { mutableStateOf<String?>(null) }
-    val deletedMsg = stringResource(R.string.storage_file_deleted)
-    val failedMsg = stringResource(R.string.apk_delete_failed)
 
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
-        scope.launch {
-            val picked = withContext(Dispatchers.IO) {
-                uris.map { u -> c.apkInspector.queryNameAndSize(u).let { (n, s) -> PickedFile(u, n, s) } }
-            }
-            val merged = (files.filter { f -> picked.none { it.uri == f.uri } } + picked).sortedByDescending { it.size ?: 0 }
-            files.clear()
-            files.addAll(merged)
-        }
-    }
 
     ScreenList {
         val st = info?.first
@@ -153,49 +136,5 @@ fun StorageScreen(navigate: (String) -> Unit) {
                 }
             }
         }
-        item {
-            SectionTitle(stringResource(R.string.storage_large_files))
-        }
-        item {
-            DpCard {
-                Text(stringResource(R.string.storage_large_files_text), style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.height(8.dp))
-                ShortcutButton(stringResource(R.string.storage_pick_files), Icons.Outlined.FindInPage) { picker.launch(arrayOf("*/*")) }
-                message?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary) }
-            }
-        }
-        items(files, key = { it.uri.toString() }) { f ->
-            DpCard(contentPadding = 12.dp) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(f.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        Text(f.size?.let { Formatters.bytes(it) } ?: "—", style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    IconButton(onClick = { toDelete = f }) { Icon(Icons.Outlined.Delete, stringResource(R.string.action_delete_file)) }
-                }
-            }
-        }
-    }
-
-    toDelete?.let { f ->
-        ConfirmDialog(
-            title = stringResource(R.string.storage_delete_title),
-            text = stringResource(R.string.storage_delete_text, f.name),
-            confirm = stringResource(R.string.action_delete_file),
-            destructive = true,
-            onConfirm = {
-                toDelete = null
-                scope.launch {
-                    val ok = withContext(Dispatchers.IO) {
-                        runCatching { DocumentsContract.deleteDocument(context.contentResolver, f.uri) }.getOrDefault(false)
-                    }
-                    if (ok) files.remove(f)
-                    message = if (ok) deletedMsg else failedMsg
-                }
-            },
-            onDismiss = { toDelete = null },
-        )
     }
 }

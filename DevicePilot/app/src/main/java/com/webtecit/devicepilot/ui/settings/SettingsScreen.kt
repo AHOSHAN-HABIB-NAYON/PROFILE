@@ -137,11 +137,6 @@ fun SettingsScreen(navigate: (String) -> Unit) {
                 Spacer(Modifier.height(8.dp))
                 Segments(listOf(TemperatureUnit.CELSIUS to R.string.unit_c, TemperatureUnit.FAHRENHEIT to R.string.unit_f),
                     s.temperatureUnit) { scope.launch { c.settings.setTemperatureUnit(it) } }
-                Divider()
-                RowHeader(Icons.Outlined.Timer, Cyan, stringResource(R.string.settings_refresh), stringResource(R.string.settings_refresh_hint))
-                Spacer(Modifier.height(8.dp))
-                Segments(listOf(2 to R.string.refresh_2, 3 to R.string.refresh_3, 5 to R.string.refresh_5, 10 to R.string.refresh_10),
-                    s.refreshSeconds) { scope.launch { c.settings.setRefreshSeconds(it) } }
             }
         }
 
