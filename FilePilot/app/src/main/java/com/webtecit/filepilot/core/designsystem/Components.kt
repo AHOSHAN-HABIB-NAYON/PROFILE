@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -124,7 +125,7 @@ fun IconTile(icon: ImageVector, tint: Color, size: Dp = 44.dp, modifier: Modifie
     Box(
         modifier = modifier
             .size(size)
-            .clip(RoundedCornerShape(size * 0.28f))
+            .clip(RoundedCornerShape(size * 0.30f))
             .background(tint.copy(alpha = 0.12f)),
         contentAlignment = Alignment.Center,
     ) {
@@ -250,12 +251,13 @@ fun SettingsRow(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .heightIn(min = 64.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
-            Icon(icon, null, tint = tint, modifier = Modifier.size(24.dp))
-            Spacer(Modifier.width(16.dp))
+            IconTile(icon, tint, size = 40.dp)
+            Spacer(Modifier.width(14.dp))
         }
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
@@ -286,12 +288,13 @@ fun SwitchRow(
         modifier = modifier
             .fillMaxWidth()
             .clickable(role = Role.Switch) { onCheckedChange(!checked) }
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+            .heightIn(min = 64.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
-            Icon(icon, null, tint = tint, modifier = Modifier.size(24.dp))
-            Spacer(Modifier.width(16.dp))
+            IconTile(icon, tint, size = 40.dp)
+            Spacer(Modifier.width(14.dp))
         }
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)

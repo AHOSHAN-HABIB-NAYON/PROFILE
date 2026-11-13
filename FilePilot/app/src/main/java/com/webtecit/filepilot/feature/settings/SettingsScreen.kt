@@ -38,12 +38,6 @@ import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Visibility
-import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.LightMode
-import androidx.compose.material.icons.rounded.DarkMode
-import androidx.compose.material.icons.rounded.Folder
-import androidx.compose.material.icons.rounded.Language
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.PrivacyTip
@@ -120,6 +114,7 @@ fun SettingsScreen(
     }
 
     Scaffold(
+        topBar = { TopAppBar(title = { Text("Settings") }) },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         LazyColumn(
@@ -128,52 +123,51 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                Row(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Rounded.Settings, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(34.dp))
-                    Spacer(Modifier.size(12.dp))
-                    Column {
-                        Text("Settings", style = MaterialTheme.typography.headlineMedium)
-                        Text("Customize your app experience", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                // App card at the top of Settings.
+                androidx.compose.material3.Surface(
+                    onClick = onOpenAbout,
+                    shape = RoundedCornerShape(20.dp),
+                    color = Color.Transparent,
+                    shadowElevation = 3.dp,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        Modifier
+                            .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(Color(0xFF3B7BFF), Color(0xFF1539B8))))
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        com.webtecit.filepilot.core.designsystem.AppLogo(42.dp)
+                        Spacer(Modifier.size(14.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(Brand.APP_NAME, style = MaterialTheme.typography.titleMedium, color = Color.White)
+                            Text("Version ${com.webtecit.filepilot.BuildConfig.VERSION_NAME} · Free, no ads", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.85f))
+                        }
+                        Text(
+                            "About", style = MaterialTheme.typography.labelLarge, color = Color(0xFF1539B8),
+                            modifier = Modifier.clip(CircleShape).background(Color.White).padding(horizontal = 14.dp, vertical = 7.dp),
+                        )
                     }
                 }
             }
             item {
-                Section("Appearance", "Personalize the look", Icons.Rounded.Palette) {
-                    Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                        Text("Theme", style = MaterialTheme.typography.titleSmall)
-                        Spacer(Modifier.height(10.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            ThemeMode.entries.forEach { mode ->
-                                val selected = prefs.themeMode == mode
-                                val icon = when (mode) {
-                                    ThemeMode.LIGHT -> Icons.Rounded.LightMode
-                                    ThemeMode.DARK -> Icons.Rounded.DarkMode
-                                    ThemeMode.SYSTEM -> Icons.Rounded.Settings
-                                }
-                                androidx.compose.material3.Surface(
+                Section("Appearance") {
+                    Column(Modifier.padding(16.dp)) {
+                        Text("Theme", style = MaterialTheme.typography.bodyLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Medium)
+                        Spacer(Modifier.height(8.dp))
+                        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                            ThemeMode.entries.forEachIndexed { i, mode ->
+                                SegmentedButton(
+                                    selected = prefs.themeMode == mode,
                                     onClick = { viewModel.setTheme(mode) },
-                                    shape = CircleShape,
-                                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerLowest,
-                                    border = if (selected) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                                    shadowElevation = if (selected) 3.dp else 0.dp,
-                                    modifier = Modifier.weight(1f).height(44.dp),
-                                ) {
-                                    Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                                        val fg = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-                                        if (selected) Icon(Icons.Rounded.Check, null, tint = fg, modifier = Modifier.size(16.dp))
-                                        Icon(icon, null, tint = if (selected) fg else MaterialTheme.colorScheme.primary, modifier = Modifier.padding(start = 4.dp).size(18.dp))
-                                        Text(mode.label, color = fg, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 6.dp))
-                                    }
-                                }
+                                    shape = SegmentedButtonDefaults.itemShape(i, ThemeMode.entries.size),
+                                ) { Text(mode.label) }
                             }
                         }
-                        Spacer(Modifier.height(14.dp))
-                        androidx.compose.material3.HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
-                        Spacer(Modifier.height(12.dp))
-                        Text("Accent colour", style = MaterialTheme.typography.titleSmall)
-                        Text("Choose your favourite colour", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(Modifier.height(10.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                        Spacer(Modifier.height(16.dp))
+                        Text("Accent colour", style = MaterialTheme.typography.bodyLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Medium)
+                        Spacer(Modifier.height(8.dp))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             AccentColor.entries.forEach { accent ->
                                 Swatch(
                                     color = accent.swatch(),
@@ -186,7 +180,6 @@ fun SettingsScreen(
                                 )
                             }
                         }
-                        Spacer(Modifier.height(4.dp))
                     }
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                         SwitchRow(
@@ -195,6 +188,7 @@ fun SettingsScreen(
                             viewModel::setDynamic,
                             subtitle = "Use colours from your wallpaper",
                             icon = Icons.Rounded.Colorize,
+                            tint = Color(0xFFDB2777),
                         )
                     }
                     SwitchRow(
@@ -203,6 +197,7 @@ fun SettingsScreen(
                         viewModel::setAnimations,
                         subtitle = "Screen transitions and motion",
                         icon = Icons.Rounded.Animation,
+                        tint = Color(0xFF7C3AED),
                     )
                     SwitchRow(
                         "Smooth scrolling",
@@ -210,21 +205,23 @@ fun SettingsScreen(
                         viewModel::setHighRefresh,
                         subtitle = "Use your display's highest refresh rate (90/120 Hz) when available",
                         icon = Icons.Rounded.Speed,
+                        tint = Color(0xFF0D9488),
                     )
                 }
             }
             item {
-                Section("File manager", "File management options", Icons.Rounded.Folder) {
-                    SwitchRow("Show hidden files", prefs.showHidden, viewModel::setShowHidden, subtitle = "Names starting with a dot", icon = Icons.Rounded.Visibility)
+                Section("File manager") {
+                    SwitchRow("Show hidden files", prefs.showHidden, viewModel::setShowHidden, subtitle = "Names starting with a dot", icon = Icons.Rounded.Visibility, tint = Color(0xFF2563EB))
                     SwitchRow("Recycle Bin", prefs.recycleBin, viewModel::setRecycleBin,
-                        subtitle = "Keep deleted files for 30 days so they can be restored", icon = Icons.Rounded.Restore)
-                    SwitchRow("Show file extensions", prefs.showExtensions, viewModel::setShowExtensions, subtitle = "For example .jpg and .pdf", icon = Icons.Rounded.Extension)
+                        subtitle = "Keep deleted files for 30 days so they can be restored", icon = Icons.Rounded.Restore, tint = Color(0xFF16A34A))
+                    SwitchRow("Show file extensions", prefs.showExtensions, viewModel::setShowExtensions, subtitle = "For example .jpg and .pdf", icon = Icons.Rounded.Extension, tint = Color(0xFFEA580C))
                     SwitchRow(
                         "Grid view",
                         prefs.viewMode == ViewMode.GRID,
                         { viewModel.setViewMode(if (it) ViewMode.GRID else ViewMode.LIST) },
                         subtitle = "Show folders as tiles instead of a list",
                         icon = Icons.Rounded.GridView,
+                        tint = Color(0xFF0284C7),
                     )
                     SettingsRow(
                         "Default sorting",
@@ -232,18 +229,20 @@ fun SettingsScreen(
                             (if (prefs.sortOrder.ascending) "ascending" else "descending") +
                             (if (prefs.sortOrder.foldersFirst) ", folders first" else ""),
                         icon = Icons.AutoMirrored.Rounded.Sort,
+                        tint = Color(0xFF9333EA),
                         onClick = { sortOpen = true },
                     )
                     SettingsRow(
                         "Open Files tab in",
                         subtitle = prefs.startLocation.label,
                         icon = Icons.Rounded.Home,
+                        tint = Color(0xFF0D9488),
                         onClick = { startOpen = true },
                     )
                 }
             }
             item {
-                Section("Code editor", "Code Studio preferences", Icons.Rounded.Code) {
+                Section("Code editor") {
                     ChoiceRow("Editor theme", com.webtecit.filepilot.core.preferences.EditorTheme.entries, prefs.editorTheme, { it.label }, viewModel::setEditorTheme)
                     ChoiceRow("Font", com.webtecit.filepilot.core.preferences.EditorFont.entries, prefs.editorFont, { it.label }, viewModel::setEditorFont)
                     ChoiceRow("Font size", listOf(12, 13, 14, 15, 16, 18, 20), prefs.editorFontSize, { "$it" }, viewModel::setEditorFontSize)
@@ -255,14 +254,14 @@ fun SettingsScreen(
                 }
             }
             item {
-                Section("HTML preview", "Website preview options", Icons.Rounded.Language) {
+                Section("HTML preview") {
                     ChoiceRow("Default device", com.webtecit.filepilot.core.preferences.PreviewDevice.entries, prefs.previewDevice, { it.label }, viewModel::setPreviewDevice)
                     SwitchRow("Open console automatically", prefs.previewConsole, viewModel::setPreviewConsole,
                         subtitle = "Websites run offline inside the app; nothing is reachable from the network.")
                 }
             }
             item {
-                Section("Privacy & security", "Lock and permissions", Icons.Rounded.Security) {
+                Section("Privacy & security") {
                     SwitchRow(
                         "App lock",
                         prefs.appLock && com.webtecit.filepilot.core.security.VaultKeys.hasPin(context),
@@ -282,11 +281,11 @@ fun SettingsScreen(
                 }
             }
             item {
-                Section("Support", "Get help and share", Icons.Rounded.Mail) {
-                    SettingsRow("Contact support", subtitle = Brand.SUPPORT_EMAIL, icon = Icons.Rounded.Mail, onClick = {
+                Section("Support") {
+                    SettingsRow("Contact support", subtitle = Brand.SUPPORT_EMAIL, icon = Icons.Rounded.Mail, tint = Color(0xFF2563EB), onClick = {
                         show(Brand.email(context, "${Brand.APP_NAME} support"))
                     })
-                    SettingsRow("Report a problem", subtitle = "Describe what happened and we'll look into it", icon = Icons.Rounded.BugReport, onClick = {
+                    SettingsRow("Report a problem", subtitle = "Describe what happened and we'll look into it", icon = Icons.Rounded.BugReport, tint = Color(0xFFDC2626), onClick = {
                         show(
                             Brand.email(
                                 context,
@@ -296,36 +295,20 @@ fun SettingsScreen(
                             ),
                         )
                     })
-                    SettingsRow("Share app", icon = Icons.Rounded.Share, onClick = { show(Brand.shareApp(context)) })
+                    SettingsRow("Share app", icon = Icons.Rounded.Share, tint = Color(0xFF16A34A), onClick = { show(Brand.shareApp(context)) })
                 }
             }
             item {
-                Section("Legal", "Policies and licenses", Icons.Rounded.Gavel) {
-                    SettingsRow("Privacy Policy", icon = Icons.Rounded.PrivacyTip, onClick = { show(Brand.openUrl(context, Brand.PRIVACY_URL)) })
-                    SettingsRow("Terms & Conditions", icon = Icons.Rounded.Gavel, onClick = { show(Brand.openUrl(context, Brand.TERMS_URL)) })
-                    SettingsRow("Disclaimer", icon = Icons.Rounded.Info, onClick = { show(Brand.openUrl(context, Brand.DISCLAIMER_URL)) })
-                    SettingsRow("Open source licenses", icon = Icons.Rounded.Code, onClick = { licensesOpen = true })
+                Section("Legal") {
+                    SettingsRow("Privacy Policy", icon = Icons.Rounded.PrivacyTip, tint = Color(0xFF0D9488), onClick = { show(Brand.openUrl(context, Brand.PRIVACY_URL)) })
+                    SettingsRow("Terms & Conditions", icon = Icons.Rounded.Gavel, tint = Color(0xFF475569), onClick = { show(Brand.openUrl(context, Brand.TERMS_URL)) })
+                    SettingsRow("Disclaimer", icon = Icons.Rounded.Info, tint = Color(0xFFEA580C), onClick = { show(Brand.openUrl(context, Brand.DISCLAIMER_URL)) })
+                    SettingsRow("Open source licenses", icon = Icons.Rounded.Code, tint = Color(0xFF7C3AED), onClick = { licensesOpen = true })
                 }
             }
             item {
-                androidx.compose.material3.Surface(
-                    onClick = onOpenAbout,
-                    shape = RoundedCornerShape(26.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(44.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Rounded.Info, null, tint = MaterialTheme.colorScheme.onPrimary)
-                        }
-                        Spacer(Modifier.size(14.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("About FilePilot", style = MaterialTheme.typography.titleMedium)
-                            Text("Version, developer and contact", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = MaterialTheme.colorScheme.primary)
-                    }
+                Section("About") {
+                    SettingsRow("About FilePilot", subtitle = "Version, developer and contact", icon = Icons.Rounded.Info, tint = Color(0xFF2952E3), onClick = onOpenAbout)
                 }
             }
         }
@@ -382,7 +365,7 @@ fun SettingsScreen(
 @Composable
 private fun <T> ChoiceRow(title: String, options: List<T>, selected: T, label: (T) -> String, onSelect: (T) -> Unit) {
     var open by remember { mutableStateOf(false) }
-    SettingsRow(title, subtitle = label(selected), icon = Icons.Rounded.Tune, onClick = { open = true })
+    SettingsRow(title, subtitle = label(selected), icon = Icons.Rounded.Tune, tint = Color(0xFF0D9488), onClick = { open = true })
     if (open) {
         AlertDialog(
             onDismissRequest = { open = false },
@@ -409,25 +392,21 @@ private fun <T> ChoiceRow(title: String, options: List<T>, selected: T, label: (
 }
 
 @Composable
-private fun Section(title: String, subtitle: String, icon: androidx.compose.ui.graphics.vector.ImageVector, content: @Composable () -> Unit) {
-    androidx.compose.material3.Surface(
-        shape = RoundedCornerShape(26.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLowest,
-        shadowElevation = 3.dp,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(Modifier.padding(vertical = 6.dp)) {
-            Row(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(30.dp))
-                Spacer(Modifier.size(14.dp))
-                Column {
-                    Text(title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
-                    Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-            content()
-        }
+private fun Section(title: String, content: @Composable () -> Unit) {
+    Column {
+        Text(
+            title,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 8.dp),
+        )
+        androidx.compose.material3.Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLowest,
+            shadowElevation = 1.dp,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+            modifier = Modifier.fillMaxWidth(),
+        ) { Column(Modifier.padding(vertical = 6.dp)) { content() } }
     }
 }
 
@@ -435,10 +414,9 @@ private fun Section(title: String, subtitle: String, icon: androidx.compose.ui.g
 private fun Swatch(color: Color, label: String, selected: Boolean, onClick: () -> Unit) {
     Box(
         Modifier
-            .size(48.dp)
-            .clip(CircleShape)
-            .border(if (selected) 2.dp else 0.dp, if (selected) color else Color.Transparent, CircleShape)
-            .padding(if (selected) 4.dp else 0.dp)
+            .size(42.dp)
+            .border(2.dp, if (selected) color else Color.Transparent, CircleShape)
+            .padding(4.dp)
             .clip(CircleShape)
             .background(color)
             .clickable(role = Role.RadioButton, onClick = onClick)
