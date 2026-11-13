@@ -58,6 +58,7 @@ class SettingsViewModel @Inject constructor(
     fun setPreviewConsole(v: Boolean) = launch { repo.setPreviewConsole(v) }
     fun setRecycleBin(v: Boolean) = launch { repo.setRecycleBin(v) }
     fun setAppLock(v: Boolean) = launch { repo.setAppLock(v) }
+    fun resetGuides() = launch { repo.resetGuides() }
 
     private fun launch(block: suspend () -> Unit) {
         viewModelScope.launch { block() }

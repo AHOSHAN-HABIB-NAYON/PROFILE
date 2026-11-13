@@ -64,6 +64,8 @@ data class UserPreferences(
     val previewConsole: Boolean = true,
     val recycleBin: Boolean = true,
     val appLock: Boolean = false,
+    val seenGuides: Set<String> = emptySet(),
+    val defaultAppPromptDone: Boolean = false,
 )
 
 private val Context.settingsStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
@@ -107,6 +109,8 @@ class PreferencesRepository @Inject constructor(
         val pvConsole = booleanPreferencesKey("preview_console")
         val recycle = booleanPreferencesKey("recycle_bin")
         val appLock = booleanPreferencesKey("app_lock")
+        val guides = androidx.datastore.preferences.core.stringSetPreferencesKey("seen_guides")
+        val defaultPrompt = booleanPreferencesKey("default_app_prompt_done")
     }
 
     val preferences: Flow<UserPreferences> = store.data.map { p ->
@@ -140,6 +144,8 @@ class PreferencesRepository @Inject constructor(
             previewConsole = p[Keys.pvConsole] ?: d.previewConsole,
             recycleBin = p[Keys.recycle] ?: d.recycleBin,
             appLock = p[Keys.appLock] ?: d.appLock,
+            seenGuides = p[Keys.guides] ?: emptySet(),
+            defaultAppPromptDone = p[Keys.defaultPrompt] ?: false,
         )
     }
 
@@ -169,6 +175,9 @@ class PreferencesRepository @Inject constructor(
     suspend fun setPreviewConsole(v: Boolean) = set { it[Keys.pvConsole] = v }
     suspend fun setRecycleBin(v: Boolean) = set { it[Keys.recycle] = v }
     suspend fun setAppLock(v: Boolean) = set { it[Keys.appLock] = v }
+    suspend fun markGuideSeen(key: String) = set { it[Keys.guides] = (it[Keys.guides] ?: emptySet()) + key }
+    suspend fun resetGuides() = set { it[Keys.guides] = emptySet() }
+    suspend fun setDefaultAppPromptDone() = set { it[Keys.defaultPrompt] = true }
 
     suspend fun setSortOrder(v: SortOrder) = set {
         it[Keys.sortField] = v.field.name

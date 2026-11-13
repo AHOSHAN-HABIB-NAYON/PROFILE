@@ -107,6 +107,9 @@ class FileOperationManager @Inject constructor(
     val finished: SharedFlow<FileOperation> = _finished.asSharedFlow()
 
     private val jobs = ConcurrentHashMap<Long, Job>()
+
+    /** Called whenever an operation starts (the app uses it to start its progress service). */
+    @Volatile var onActivity: (() -> Unit)? = null
     private val nextId = AtomicLong(1)
 
     /** Names in [targetDirId] that the pasted items would collide with. */
@@ -366,6 +369,7 @@ class FileOperationManager @Inject constructor(
 
     private fun start(op: FileOperation): Long {
         _operations.update { it + op }
+        runCatching { onActivity?.invoke() }
         return op.id
     }
 

@@ -149,17 +149,20 @@ fun AnalyzerScreen(onBack: () -> Unit, onOpenFolder: (String) -> Unit, viewModel
             if (state.scanning) {
                 item {
                     AppCard {
-                        Text("Scanning…", style = MaterialTheme.typography.titleMedium)
-                        Text(
+                        com.webtecit.filepilot.core.designsystem.ScanAnimation(
+                            "Analyzing storage…",
                             "${"%,d".format(state.scannedFiles)} files · ${state.currentFolder}",
+                        )
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                            OutlinedButton(onClick = viewModel::cancel) { Text("Stop scan") }
+                        }
+                        Text(
+                            "You can leave this screen — the scan keeps running.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         )
-                        Spacer(Modifier.height(10.dp))
-                        LinearProgressIndicator(Modifier.fillMaxWidth())
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedButton(onClick = viewModel::cancel) { Text("Stop scan") }
                     }
                 }
             }

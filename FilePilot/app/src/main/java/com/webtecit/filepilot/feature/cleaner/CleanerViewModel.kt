@@ -49,14 +49,17 @@ data class CleanerState(
     val selectedBytes: Long get() = items.filter { it.path in selected }.sumOf { it.size }
 }
 
-@HiltViewModel
-class CleanerViewModel @Inject constructor(
+/** Runs cleaner scans at app level, so they continue when the user leaves the screen. */
+@javax.inject.Singleton
+class CleanerEngine @Inject constructor(
+    @com.webtecit.filepilot.core.common.ApplicationScope private val scope: kotlinx.coroutines.CoroutineScope,
+    private val tasks: com.webtecit.filepilot.core.tasks.BackgroundTasks,
     private val volumes: StorageVolumes,
     private val recycleBin: RecycleBin,
     private val operations: FileOperationManager,
     private val preferences: PreferencesRepository,
     @IoDispatcher private val io: CoroutineDispatcher,
-) : ViewModel() {
+) {
     private val _state = MutableStateFlow(CleanerState())
     val state = _state.asStateFlow()
     private val _events = Channel<UiEvent>(Channel.BUFFERED)
@@ -66,7 +69,8 @@ class CleanerViewModel @Inject constructor(
     fun scan() {
         job?.cancel()
         _state.value = CleanerState(scanning = true, progress = "Looking through your files…")
-        job = viewModelScope.launch {
+        job = scope.launch {
+            val task = tasks.start("Cleaner scan", "Looking for junk and duplicates")
             val root = File(volumes.primaryRoot())
             val items = ArrayList<CleanItem>()
             val preselect = HashSet<String>()
@@ -76,7 +80,10 @@ class CleanerViewModel @Inject constructor(
                 var count = 0
                 Scanners.walk(root, onDir = { dirs += it }) { f ->
                     files += f
-                    if (++count % 500 == 0) _state.update { it.copy(progress = "Scanned ${"%,d".format(count)} files…") }
+                    if (++count % 500 == 0) {
+                        _state.update { it.copy(progress = "Scanned ${"%,d".format(count)} files…") }
+                        tasks.update("Cleaner scan", "Scanned ${"%,d".format(count)} files", null)
+                    }
                 }
                 val monthAgo = System.currentTimeMillis() - 30L * 24 * 3600 * 1000
                 files.filter(Scanners::isTemporary).forEach { items += item(it, CleanGroup.TEMP); preselect += it.absolutePath }
@@ -94,7 +101,10 @@ class CleanerViewModel @Inject constructor(
                 _state.update { it.copy(progress = "Comparing files for duplicates…") }
                 val candidates = files.filter { !it.absolutePath.contains("/.") }
                 val groups = Scanners.duplicates(candidates, minSize = 4096) { done, total ->
-                    if (done % 25 == 0) _state.update { it.copy(progress = "Checking duplicates: $done of $total") }
+                    if (done % 25 == 0) {
+                        _state.update { it.copy(progress = "Checking duplicates: $done of $total") }
+                        tasks.update("Cleaner scan", "Checking duplicates: $done of $total", if (total > 0) done.toFloat() / total else null)
+                    }
                 }
                 groups.forEachIndexed { gi, g ->
                     g.forEachIndexed { i, f ->
@@ -105,7 +115,9 @@ class CleanerViewModel @Inject constructor(
                 }
             }
             _state.value = CleanerState(scanned = true, items = items, selected = preselect)
+            tasks.finish(task, "Found ${Formatters.count(items.size, "item")} to review")
         }
+        job?.invokeOnCompletion { e -> if (e != null) tasks.clearAll("Cleaner scan") }
     }
 
     private fun item(f: File, group: CleanGroup, note: String = "") =
@@ -130,7 +142,7 @@ class CleanerViewModel @Inject constructor(
         val chosen = s.items.filter { it.path in s.selected }.distinctBy { it.path }
         if (chosen.isEmpty()) return
         _state.update { it.copy(cleaning = true) }
-        viewModelScope.launch {
+        scope.launch {
             val useBin = preferences.current().recycleBin
             val asItems = chosen.map { FileItem(it.path, it.name, it.isDirectory, it.size, File(it.path).lastModified(), FileTypes.mimeOf(it.name)) }
             val (empty, rest) = asItems.partition { it.isDirectory && chosen.first { c -> c.path == it.id }.group == CleanGroup.EMPTY }
@@ -147,4 +159,14 @@ class CleanerViewModel @Inject constructor(
             _state.update { it.copy(cleaning = false, items = it.items.filterNot { i -> i.path in removed }, selected = emptySet()) }
         }
     }
+}
+
+@HiltViewModel
+class CleanerViewModel @Inject constructor(private val engine: CleanerEngine) : ViewModel() {
+    val state = engine.state
+    val events = engine.events
+    fun scan() = engine.scan()
+    fun toggle(path: String) = engine.toggle(path)
+    fun toggleGroup(group: CleanGroup, select: Boolean) = engine.toggleGroup(group, select)
+    fun clean() = engine.clean()
 }

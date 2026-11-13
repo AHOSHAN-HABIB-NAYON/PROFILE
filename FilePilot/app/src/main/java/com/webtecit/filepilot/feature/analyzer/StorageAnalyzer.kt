@@ -60,6 +60,7 @@ class StorageAnalyzer @Inject constructor(
     @ApplicationContext private val context: Context,
     @ApplicationScope private val scope: CoroutineScope,
     @IoDispatcher private val io: CoroutineDispatcher,
+    private val tasks: com.webtecit.filepilot.core.tasks.BackgroundTasks,
 ) {
     private val _state = MutableStateFlow(AnalyzerState())
     val state: StateFlow<AnalyzerState> = _state.asStateFlow()
@@ -78,7 +79,9 @@ class StorageAnalyzer @Inject constructor(
         job?.cancel()
         _state.value = AnalyzerState(scanning = true, rootId = rootId, result = _state.value.result?.takeIf { it.rootId == rootId })
         job = scope.launch(io) {
+            val taskId = tasks.start("Storage analysis", "Scanning…")
             val result = runCatching { analyze(rootId) }.getOrNull()
+            if (result != null) tasks.finish(taskId, "${"%,d".format(result.totalFiles)} files analyzed") else tasks.dismiss(taskId)
             _state.update { it.copy(scanning = false, result = result ?: it.result) }
             if (result != null) runCatching { cacheFile(rootId).writeText(json.encodeToString(AnalysisResult.serializer(), result)) }
         }
@@ -86,6 +89,7 @@ class StorageAnalyzer @Inject constructor(
 
     fun cancel() {
         job?.cancel()
+        tasks.clearAll("Storage analysis")
         _state.update { it.copy(scanning = false) }
     }
 
@@ -156,6 +160,7 @@ class StorageAnalyzer @Inject constructor(
         if (now - counter.lastPublish > 200) {
             counter.lastPublish = now
             _state.update { it.copy(scannedFiles = counter.files, currentFolder = dir.name) }
+            tasks.update("Storage analysis", "${"%,d".format(counter.files)} files · ${dir.name}", null)
         }
         return bytes to files
     }

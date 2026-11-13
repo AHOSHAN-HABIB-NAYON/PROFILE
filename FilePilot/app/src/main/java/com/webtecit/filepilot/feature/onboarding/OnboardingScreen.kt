@@ -11,6 +11,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -116,69 +117,122 @@ fun OnboardingScreen(onFinished: () -> Unit, viewModel: OnboardingViewModel = hi
     val scope = rememberCoroutineScope()
     val animations = LocalAnimationsEnabled.current
     val last = pager.currentPage == pages.lastIndex
+    val primary = MaterialTheme.colorScheme.primary
+    val tertiary = MaterialTheme.colorScheme.tertiary
 
-    Column(
-        Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 12.dp),
-    ) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            if (!last) TextButton(onClick = { viewModel.finish(onFinished) }) { Text("Skip") } else Spacer(Modifier.height(48.dp))
-        }
-        HorizontalPager(state = pager, modifier = Modifier.weight(1f).fillMaxWidth().testTag("onboarding_pager")) { index ->
-            val offset = pageOffset(pager, index)
-            Column(
-                Modifier.fillMaxSize().graphicsLayer {
-                    alpha = 1f - offset.absoluteValue.coerceAtMost(1f) * 0.6f
-                },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Box(
-                    Modifier.size(280.dp).graphicsLayer {
-                        translationX = offset * size.width * 0.35f
-                        val s = 1f - offset.absoluteValue.coerceAtMost(1f) * 0.15f
-                        scaleX = s; scaleY = s
-                    },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    when (index) {
-                        0 -> FilesScene(animations)
-                        1 -> CodeScene(animations)
-                        else -> SecureScene(animations)
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        AmbientBackground(animations, primary, tertiary)
+        Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp, vertical = 8.dp)) {
+            Row(Modifier.fillMaxWidth().height(52.dp), verticalAlignment = Alignment.CenterVertically) {
+                com.webtecit.filepilot.core.designsystem.AppLogo(32.dp)
+                Spacer(Modifier.width(10.dp))
+                Text("FilePilot", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                if (!last) TextButton(onClick = { viewModel.finish(onFinished) }) { Text("Skip") }
+            }
+            HorizontalPager(state = pager, modifier = Modifier.weight(1f).fillMaxWidth().testTag("onboarding_pager")) { index ->
+                val offset = pageOffset(pager, index)
+                val settled = 1f - offset.absoluteValue.coerceAtMost(1f)
+                Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+                    // The illustration scales to the space available, so it fits any phone or tablet.
+                    androidx.compose.foundation.layout.BoxWithConstraints(
+                        Modifier.weight(1f).fillMaxWidth(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        val scale = (minOf(maxWidth.value, maxHeight.value) / 300f).coerceIn(0.55f, 1.6f)
+                        Box(
+                            Modifier.size(280.dp).graphicsLayer {
+                                scaleX = scale * (0.85f + 0.15f * settled)
+                                scaleY = scale * (0.85f + 0.15f * settled)
+                                translationX = offset * size.width * 0.4f
+                                alpha = 0.3f + 0.7f * settled
+                            },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            when (index) {
+                                0 -> FilesScene(animations)
+                                1 -> CodeScene(animations)
+                                else -> SecureScene(animations)
+                            }
+                        }
+                    }
+                    Column(
+                        Modifier.fillMaxWidth().widthIn(max = 520.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            pages[index].title,
+                            style = MaterialTheme.typography.headlineMedium,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.graphicsLayer { alpha = settled; translationY = (1f - settled) * 40f },
+                        )
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            pages[index].text,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.graphicsLayer { alpha = settled; translationY = (1f - settled) * 70f },
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Box(Modifier.graphicsLayer { alpha = settled; translationY = (1f - settled) * 100f }) {
+                            FeatureChips(pages[index].features)
+                        }
+                        Spacer(Modifier.height(8.dp))
                     }
                 }
-                Spacer(Modifier.height(28.dp))
-                Text(pages[index].title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    pages[index].text,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.widthIn(max = 420.dp),
-                )
-                Spacer(Modifier.height(16.dp))
-                FeatureChips(pages[index].features)
             }
-        }
-        Row(Modifier.fillMaxWidth().padding(vertical = 16.dp), horizontalArrangement = Arrangement.Center) {
-            pages.indices.forEach { i ->
-                val selected = i == pager.currentPage
-                val width by animateDpAsState(if (selected) 28.dp else 8.dp, label = "dot")
-                val color by animateColorAsState(
-                    if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, label = "dotColor",
-                )
-                Box(Modifier.padding(horizontal = 4.dp).size(width = width, height = 8.dp).background(color, CircleShape))
-            }
-        }
-        Button(
-            onClick = {
-                if (last) viewModel.finish(onFinished)
-                else scope.launch {
-                    if (animations) pager.animateScrollToPage(pager.currentPage + 1) else pager.scrollToPage(pager.currentPage + 1)
+            Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), horizontalArrangement = Arrangement.Center) {
+                pages.indices.forEach { i ->
+                    val selected = i == pager.currentPage
+                    val width by animateDpAsState(if (selected) 32.dp else 8.dp, label = "dot")
+                    val color by animateColorAsState(
+                        if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, label = "dotColor",
+                    )
+                    Box(Modifier.padding(horizontal = 4.dp).size(width = width, height = 8.dp).background(color, CircleShape))
                 }
-            },
-            modifier = Modifier.fillMaxWidth().height(54.dp),
-        ) { Text(if (last) "Get started" else "Next") }
+            }
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .widthIn(max = 520.dp)
+                    .align(Alignment.CenterHorizontally)
+                    .height(56.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Brush.horizontalGradient(listOf(primary, tertiary)))
+                    .clickable {
+                        if (last) viewModel.finish(onFinished)
+                        else scope.launch {
+                            if (animations) pager.animateScrollToPage(pager.currentPage + 1) else pager.scrollToPage(pager.currentPage + 1)
+                        }
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    if (last) "Get started" else "Next",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.White,
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+        }
+    }
+}
+
+/** Two soft, slowly drifting colour shapes behind the intro. */
+@Composable
+private fun AmbientBackground(animations: Boolean, a: Color, b: Color) {
+    val t = loop(animations, 7000)
+    androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+        drawCircle(
+            Brush.radialGradient(listOf(a.copy(alpha = 0.16f), Color.Transparent), center = androidx.compose.ui.geometry.Offset(size.width * (0.15f + 0.2f * t), size.height * 0.18f), radius = size.minDimension * 0.75f),
+            radius = size.minDimension * 0.75f,
+            center = androidx.compose.ui.geometry.Offset(size.width * (0.15f + 0.2f * t), size.height * 0.18f),
+        )
+        drawCircle(
+            Brush.radialGradient(listOf(b.copy(alpha = 0.14f), Color.Transparent), center = androidx.compose.ui.geometry.Offset(size.width * (0.9f - 0.2f * t), size.height * (0.62f + 0.08f * t)), radius = size.minDimension * 0.7f),
+            radius = size.minDimension * 0.7f,
+            center = androidx.compose.ui.geometry.Offset(size.width * (0.9f - 0.2f * t), size.height * (0.62f + 0.08f * t)),
+        )
     }
 }
 

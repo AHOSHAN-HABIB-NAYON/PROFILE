@@ -20,6 +20,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Android
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.foundation.border
 import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Download
@@ -81,7 +83,7 @@ import com.webtecit.filepilot.feature.tools.ToolGrid
 @Composable
 fun HomeScreen(
     onOpenFolder: (String) -> Unit,
-    onSearch: (String) -> Unit,
+    onSearch: () -> Unit,
     onTool: (Tool) -> Unit,
     onOpenLibrary: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
@@ -112,9 +114,30 @@ fun HomeScreen(
                         Text(Brand.APP_NAME, style = MaterialTheme.typography.headlineSmall)
                         Text("Manage everything. Edit anything.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    IconButton(onClick = { primary?.let { v -> gate { onSearch(v.rootId) } } }) {
-                        Icon(Icons.Rounded.Search, contentDescription = "Search files")
+                }
+            }
+            item(key = "search") {
+                // Smart search entry: natural-language queries such as "large videos last week".
+                val brand = MaterialTheme.colorScheme.primary
+                val accent = MaterialTheme.colorScheme.tertiary
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(MaterialTheme.shapes.extraLarge)
+                        .background(Brush.linearGradient(listOf(brand.copy(alpha = 0.10f), accent.copy(alpha = 0.10f))))
+                        .border(1.dp, Brush.linearGradient(listOf(brand.copy(alpha = 0.5f), accent.copy(alpha = 0.5f))), MaterialTheme.shapes.extraLarge)
+                        .clickable { gate { onSearch() } }
+                        .padding(horizontal = 18.dp, vertical = 16.dp)
+                        .testTag("smart_search"),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Rounded.AutoAwesome, null, tint = brand)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Search anything", style = MaterialTheme.typography.titleMedium)
+                        Text("Try \"large videos from last week\"", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
+                    Icon(Icons.Rounded.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             if (primary != null) {
@@ -178,26 +201,6 @@ fun HomeScreen(
                     AppCard(contentPadding = PaddingValues(vertical = 4.dp)) {
                         state.recents.take(5).forEach { EntryRow(it, showTime = true) { viewModel.open(it.id) } }
                     }
-                }
-            }
-            item(key = "developer") {
-                Row(
-                    Modifier.fillMaxWidth().clip(CircleShape).clickable { Brand.openUrl(context, Brand.WEBSITE) }
-                        .padding(vertical = 8.dp, horizontal = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center,
-                ) {
-                    Image(
-                        painterResource(R.drawable.developer_photo), contentDescription = "Developer",
-                        contentScale = ContentScale.Crop, modifier = Modifier.size(28.dp).clip(CircleShape),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        "by ${Brand.DEVELOPER} · webtecit.com",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    )
                 }
             }
         }

@@ -3,6 +3,7 @@
 package com.webtecit.filepilot.feature.cleaner
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -86,11 +87,13 @@ fun CleanerScreen(onBack: () -> Unit, viewModel: CleanerViewModel = hiltViewMode
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         when {
-            state.scanning -> Column(Modifier.fillMaxSize().padding(padding).padding(24.dp)) {
-                Text("Scanning", style = MaterialTheme.typography.titleMedium)
-                Text(state.progress, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.height(12.dp))
-                LinearProgressIndicator(Modifier.fillMaxWidth())
+            state.scanning -> Column(Modifier.fillMaxSize().padding(padding), verticalArrangement = Arrangement.Center) {
+                com.webtecit.filepilot.core.designsystem.ScanAnimation("Looking for junk and duplicates", state.progress, size = 240.dp)
+                Text(
+                    "You can leave this screen — the scan keeps running.",
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
             }
             state.items.isEmpty() && state.scanned -> EmptyState(
                 Icons.Rounded.CleaningServices, "All clean", "No junk, duplicates or large leftovers were found.",

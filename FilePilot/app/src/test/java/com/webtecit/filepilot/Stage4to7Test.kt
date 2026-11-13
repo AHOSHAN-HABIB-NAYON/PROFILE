@@ -112,3 +112,35 @@ class Stage4to7Test {
         }
     }
 }
+
+class SmartQueryTest {
+    private val now = java.util.Calendar.getInstance().apply { clear(); set(2026, 10, 13, 12, 0) }.timeInMillis
+    private fun parse(q: String) = com.webtecit.filepilot.feature.search.SmartQueryParser.parse(q, now)
+
+    @Test fun understandsTypeSizeAndTime() {
+        val q = parse("large videos from last week")
+        assertEquals(setOf(com.webtecit.filepilot.core.storage.FileKind.VIDEO), q.kinds)
+        assertEquals(50_000_000L, q.minSize)
+        assertEquals(now - 7L * 24 * 3600 * 1000, q.after)
+        assertTrue(q.words.isEmpty())
+    }
+
+    @Test fun understandsExplicitSizesExtensionsYearsAndNames() {
+        val q = parse("pdf invoice 2024 bigger than 2 mb")
+        assertEquals(setOf("pdf"), q.extensions)
+        assertEquals(2_000_000L, q.minSize)
+        assertEquals(listOf("invoice"), q.words)
+        val start = java.util.Calendar.getInstance().apply { clear(); set(2024, 0, 1) }.timeInMillis
+        assertEquals(start, q.after)
+        val small = parse("photos under 500 kb .png")
+        assertEquals(500_000L, small.maxSize)
+        assertEquals(setOf("png"), small.extensions)
+        assertEquals(setOf(com.webtecit.filepilot.core.storage.FileKind.IMAGE), small.kinds)
+    }
+
+    @Test fun plainWordsSearchNames() {
+        val q = parse("holiday beach")
+        assertEquals(listOf("holiday", "beach"), q.words)
+        assertTrue(q.kinds.isEmpty())
+    }
+}

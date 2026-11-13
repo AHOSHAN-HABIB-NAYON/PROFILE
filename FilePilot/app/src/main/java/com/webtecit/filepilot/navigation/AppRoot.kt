@@ -11,6 +11,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.Home
@@ -59,6 +70,7 @@ import com.webtecit.filepilot.feature.web.PreviewScreen
 import com.webtecit.filepilot.feature.web.ProjectsScreen
 import com.webtecit.filepilot.feature.tools.Tool
 import com.webtecit.filepilot.feature.tools.ToolsScreen
+import com.webtecit.filepilot.feature.guide.Guides
 import com.webtecit.filepilot.feature.permissions.PermissionsScreen
 import com.webtecit.filepilot.feature.settings.AboutScreen
 import com.webtecit.filepilot.feature.settings.SettingsScreen
@@ -90,25 +102,7 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
         bottomBar = {
             Column {
                 OperationsPanel(padNavigationBar = current == null)
-                if (current != null) {
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
-                        TopLevel.entries.forEach { tab ->
-                            val selected = tab == current
-                            NavigationBarItem(
-                                selected = selected,
-                                onClick = { nav.switchTab(tab.route) },
-                                icon = { Icon(if (selected) tab.selected else tab.unselected, contentDescription = null) },
-                                label = { Text(tab.label) },
-                                colors = NavigationBarItemDefaults.colors(
-                                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                                    selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                ),
-                                modifier = Modifier.testTag("tab_${tab.label}"),
-                            )
-                        }
-                    }
-                }
+                if (current != null) FloatingNavBar(current = current, onSelect = { nav.switchTab(it.route) })
             }
         },
     ) { padding ->
@@ -146,12 +140,12 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
                 )
             }
             composable<HomeRoute> {
-                HomeScreen(
+                Guided(Guides.HOME) { HomeScreen(
                     onOpenFolder = { nav.navigate(BrowserRoute(it)) },
-                    onSearch = { nav.navigate(BrowserRoute(it, search = true)) },
+                    onSearch = { nav.navigate(SearchRoute) },
                     onTool = { nav.navigate(toolRoute(it)) },
                     onOpenLibrary = { nav.switchTab(LibraryRoute) },
-                )
+                ) }
             }
             composable<FilesRoute> {
                 FilesScreen(
@@ -159,23 +153,23 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
                     onGrantAccess = { nav.navigate(PermissionsRoute(setup = false)) },
                 )
             }
-            composable<ToolsRoute> { ToolsScreen(onTool = { nav.navigate(toolRoute(it)) }) }
+            composable<ToolsRoute> { Guided(Guides.TOOLS) { ToolsScreen(onTool = { nav.navigate(toolRoute(it)) }) } }
             composable<AnalyzerRoute> {
-                AnalyzerScreen(onBack = { nav.popBackStack() }, onOpenFolder = { nav.navigate(BrowserRoute(it)) })
+                Guided(Guides.ANALYZER) { AnalyzerScreen(onBack = { nav.popBackStack() }, onOpenFolder = { nav.navigate(BrowserRoute(it)) }) }
             }
             composable<EditorRoute> { backStack ->
                 val route = backStack.toRoute<EditorRoute>()
-                EditorScreen(
+                Guided(Guides.EDITOR) { EditorScreen(
                     fileId = route.fileId,
                     projectRoot = route.projectRoot,
                     onBack = { nav.popBackStack() },
                     onBrowse = { nav.switchTab(FilesRoute) },
                     onDevicePreview = { root, entry -> nav.navigate(PreviewRoute(root, entry)) },
-                )
+                ) }
             }
             composable<PreviewRoute> { backStack ->
                 val route = backStack.toRoute<PreviewRoute>()
-                PreviewScreen(route.root, route.entry, prefs.previewDevice, prefs.previewConsole, onBack = { nav.popBackStack() })
+                Guided(Guides.PREVIEW) { PreviewScreen(route.root, route.entry, prefs.previewDevice, prefs.previewConsole, onBack = { nav.popBackStack() }) }
             }
             composable<ProjectsRoute> {
                 ProjectsScreen(
@@ -191,16 +185,19 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
             composable<SqliteRoute> { b -> com.webtecit.filepilot.feature.devtools.SqliteScreen(b.toRoute<SqliteRoute>().path, onBack = { nav.popBackStack() }) }
             composable<FontRoute> { b -> com.webtecit.filepilot.feature.devtools.FontPreviewScreen(b.toRoute<FontRoute>().path, onBack = { nav.popBackStack() }) }
             composable<ArchiveRoute> { b ->
-                com.webtecit.filepilot.feature.devtools.ArchiveScreen(b.toRoute<ArchiveRoute>().path, onBack = { nav.popBackStack() },
-                    onOpenFolder = { nav.navigate(BrowserRoute(it)) })
+                Guided(Guides.ARCHIVE) { com.webtecit.filepilot.feature.devtools.ArchiveScreen(b.toRoute<ArchiveRoute>().path, onBack = { nav.popBackStack() },
+                    onOpenFolder = { nav.navigate(BrowserRoute(it)) }) }
             }
             composable<TextSearchRoute> { b ->
                 com.webtecit.filepilot.feature.devtools.TextSearchScreen(b.toRoute<TextSearchRoute>().root, onBack = { nav.popBackStack() },
                     onOpenFile = { nav.openEditor(it, null) })
             }
+            composable<SearchRoute> {
+                com.webtecit.filepilot.feature.search.SmartSearchScreen(onBack = { nav.popBackStack() }, onOpenFolder = { nav.navigate(BrowserRoute(it)) })
+            }
             composable<TerminalRoute> { com.webtecit.filepilot.feature.devtools.TerminalScreen(onBack = { nav.popBackStack() }) }
-            composable<VaultRoute> { com.webtecit.filepilot.feature.vault.VaultScreen(onBack = { nav.popBackStack() }) }
-            composable<CleanerRoute> { com.webtecit.filepilot.feature.cleaner.CleanerScreen(onBack = { nav.popBackStack() }) }
+            composable<VaultRoute> { Guided(Guides.VAULT) { com.webtecit.filepilot.feature.vault.VaultScreen(onBack = { nav.popBackStack() }) } }
+            composable<CleanerRoute> { Guided(Guides.CLEANER) { com.webtecit.filepilot.feature.cleaner.CleanerScreen(onBack = { nav.popBackStack() }) } }
             composable<RecycleBinRoute> { com.webtecit.filepilot.feature.recycle.RecycleBinScreen(onBack = { nav.popBackStack() }) }
             composable<LibraryRoute> {
                 LibraryScreen(onOpenFolder = { nav.navigate(BrowserRoute(it)) })
@@ -213,7 +210,7 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
             }
             composable<BrowserRoute> { backStack ->
                 val route = backStack.toRoute<BrowserRoute>()
-                BrowserScreen(
+                Guided(Guides.BROWSER) { BrowserScreen(
                     locationId = route.locationId,
                     startSearch = route.search,
                     onClose = { nav.popBackStack() },
@@ -222,7 +219,7 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
                     onTool = { route -> nav.navigate(route) },
                     onRunSite = { root, entry -> nav.navigate(PreviewRoute(root, entry)) },
                     onGrantAccess = { nav.navigate(PermissionsRoute(setup = false)) },
-                )
+                ) }
             }
             composable<CompareRoute> { backStack ->
                 val route = backStack.toRoute<CompareRoute>()
@@ -248,6 +245,72 @@ fun toolRoute(tool: Tool): Any = when (tool) {
 /** Opens the editor; an editor already on the back stack is replaced so its tabs carry over. */
 private fun NavHostController.openEditor(fileId: String, projectRoot: String?) {
     navigate(EditorRoute(fileId, projectRoot)) { popUpTo<EditorRoute> { inclusive = true } }
+}
+
+/** Shows a screen with its one-time walkthrough on top. */
+@Composable
+private fun Guided(guide: Pair<String, List<com.webtecit.filepilot.feature.guide.GuideStep>>, content: @Composable () -> Unit) {
+    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
+        content()
+        com.webtecit.filepilot.feature.guide.FeatureGuide(guide.first, guide.second)
+    }
+}
+
+/** A floating, rounded bottom menu with an animated pill behind the selected tab. */
+@Composable
+private fun FloatingNavBar(current: TopLevel, onSelect: (TopLevel) -> Unit) {
+    androidx.compose.material3.Surface(
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        shadowElevation = 10.dp,
+        tonalElevation = 0.dp,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .fillMaxWidth()
+            .height(68.dp),
+    ) {
+        androidx.compose.foundation.layout.Row(
+            Modifier.fillMaxSize().padding(horizontal = 6.dp),
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            TopLevel.entries.forEach { tab ->
+                val selected = tab == current
+                val weight by androidx.compose.animation.core.animateFloatAsState(if (selected) 1.7f else 1f, label = "tabWeight")
+                val bg by androidx.compose.animation.animateColorAsState(
+                    if (selected) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Transparent, label = "tabBg",
+                )
+                val fg by androidx.compose.animation.animateColorAsState(
+                    if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant, label = "tabFg",
+                )
+                androidx.compose.foundation.layout.Row(
+                    Modifier
+                        .weight(weight)
+                        .height(48.dp)
+                        .padding(horizontal = 3.dp)
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp))
+                        .background(bg)
+                        .clickable { onSelect(tab) }
+                        .testTag("tab_${tab.label}")
+                        .semantics { contentDescription = tab.label },
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                ) {
+                    Icon(if (selected) tab.selected else tab.unselected, contentDescription = null, tint = fg, modifier = Modifier.size(22.dp))
+                    androidx.compose.animation.AnimatedVisibility(selected) {
+                        Text(
+                            tab.label,
+                            color = fg,
+                            style = MaterialTheme.typography.labelLarge,
+                            maxLines = 1,
+                            modifier = Modifier.padding(start = 6.dp),
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 private fun NavHostController.switchTab(route: Any) {

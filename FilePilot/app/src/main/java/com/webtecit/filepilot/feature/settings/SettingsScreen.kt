@@ -268,6 +268,9 @@ fun SettingsScreen(
             }
             item {
                 Section("About") {
+                    SettingsRow("Show tips again", subtitle = "Replay the walkthrough on every screen", icon = Icons.Rounded.Info, onClick = {
+                        viewModel.resetGuides(); show("Tips will appear again on each screen.")
+                    })
                     SettingsRow("About FilePilot", subtitle = "Version, developer and contact", icon = Icons.Rounded.Info, onClick = onOpenAbout)
                 }
             }
