@@ -11,7 +11,8 @@ import org.junit.runner.RunWith
 
 /**
  * Captures real screenshots of the main screens for the README / store listing.
- * Files go to /data/local/tmp/dp_shots (CI pulls them with adb).
+ * Files go to /data/local/tmp/dp_shots (CI pulls them with adb). Play-edition files are
+ * prefixed "play-" so the Google Play listing shows exactly the Play edition.
  */
 @RunWith(AndroidJUnit4::class)
 class ScreenshotTest {
@@ -33,6 +34,11 @@ class ScreenshotTest {
         }
         shell("appops set ${context.packageName} GET_USAGE_STATS allow")
         shell("mkdir -p /data/local/tmp/dp_shots")
+        // A typical everyday battery state instead of the emulator's "100 % charging".
+        shell("dumpsys battery unplug")
+        shell("dumpsys battery set level 78")
+        shell("dumpsys battery set temp 318")
+        val prefix = if (BuildConfig.FULL) "" else "play-"
         val screens = listOf(
             "01-home" to null, "02-device-details" to "device", "03-boost" to "boost", "04-cool-down" to "cool",
             "05-cleaner" to "cleaner", "06-battery" to "battery", "07-temperature" to "temperature",
@@ -45,8 +51,9 @@ class ScreenshotTest {
             if (route != null) intent.putExtra(MainActivity.EXTRA_ROUTE, route)
             ActivityScenario.launch<MainActivity>(intent).use {
                 Thread.sleep(3_000) // let data load and entrance animations finish
-                shell("screencap -p /data/local/tmp/dp_shots/$name.png")
+                shell("screencap -p /data/local/tmp/dp_shots/$prefix$name.png")
             }
         }
+        shell("dumpsys battery reset")
     }
 }
