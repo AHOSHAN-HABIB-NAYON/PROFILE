@@ -28,4 +28,6 @@ import kotlinx.serialization.Serializable
 @Serializable data class TextSearchRoute(val root: String)
 @Serializable data object TerminalRoute
 @Serializable data object SearchRoute
+@Serializable data class ImageRoute(val path: String)
+@Serializable data class VideoRoute(val path: String)
 @Serializable data object RecycleBinRoute

@@ -140,6 +140,30 @@ fun HomeScreen(
                     Icon(Icons.Rounded.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
+            if (state.showDefaultPrompt) {
+                item(key = "default_app") {
+                    AppCard {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconTile(Icons.Rounded.Folder, MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(14.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text("Use FilePilot as your file manager", style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    "Open folders and pick files with FilePilot. When Android asks which app to use, choose FilePilot and \"Always\".",
+                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                        Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
+                            androidx.compose.material3.TextButton(onClick = viewModel::dismissDefaultPrompt) { Text("Skip") }
+                            androidx.compose.material3.Button(onClick = {
+                                runCatching { context.startActivity(android.content.Intent(android.provider.Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS)) }
+                                viewModel.dismissDefaultPrompt()
+                            }) { Text("Open settings") }
+                        }
+                    }
+                }
+            }
             if (primary != null) {
                 item(key = "hero") { HeroStorage(primary, onBrowse = { open(primary.rootId) }, onAnalyze = { gate { onTool(Tool.ANALYZER) } }) }
             }

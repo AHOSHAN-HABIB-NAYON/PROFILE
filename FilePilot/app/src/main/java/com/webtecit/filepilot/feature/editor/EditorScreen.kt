@@ -93,6 +93,7 @@ fun EditorScreen(
     onBack: () -> Unit,
     onBrowse: () -> Unit,
     onDevicePreview: (String, String) -> Unit,
+    onFindInFiles: (String) -> Unit = {},
     viewModel: EditorViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(fileId) { if (fileId != null) viewModel.open(fileId, projectRoot) }
@@ -279,7 +280,7 @@ fun EditorScreen(
                     }
                 }
             }
-            if (findOpen && active != null) FindBar(controller)
+            if (findOpen && active != null) FindBar(controller, onFindInFiles = viewModel.previewTarget(active)?.let { (root, _) -> { onFindInFiles(root) } })
             if (tabs.isEmpty()) {
                 EmptyState(
                     Icons.Rounded.Code, "Code Studio",
@@ -288,24 +289,36 @@ fun EditorScreen(
                 )
             }
             val showPreview = active?.isHtml == true && mode != EditorMode.CODE
-            // The editor stays in the layout (only resized) so its text, cursor and undo history are kept.
-            AndroidView(
-                factory = { controller.webView.apply { layoutParams = ViewGroup.LayoutParams(-1, -1) } },
-                modifier = Modifier.fillMaxWidth().then(
-                    when {
-                        tabs.isEmpty() || (showPreview && mode == EditorMode.PREVIEW) -> Modifier.height(0.dp)
-                        showPreview -> Modifier.weight(1f)
-                        else -> Modifier.weight(1f)
-                    },
-                ),
-            )
-            if (showPreview && active != null) {
-                HorizontalDivider()
-                val target = viewModel.previewTarget(active)
-                if (target != null) {
-                    SitePreview(root = target.first, entry = target.second, reloadKey = previewReload, modifier = Modifier.fillMaxWidth().weight(1f))
+            // On wide screens (landscape, tablets) code and preview sit side by side, like a desktop IDE.
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
+                val wide = maxWidth >= 700.dp
+                val hideEditor = tabs.isEmpty() || (showPreview && mode == EditorMode.PREVIEW)
+                val editor = @Composable { m: Modifier ->
+                    // The editor stays in the layout (only resized) so its text, cursor and undo history are kept.
+                    AndroidView(
+                        factory = { controller.webView.apply { (parent as? ViewGroup)?.removeView(this); layoutParams = ViewGroup.LayoutParams(-1, -1) } },
+                        modifier = m,
+                    )
+                }
+                val preview = @Composable { m: Modifier ->
+                    val target = active?.let { viewModel.previewTarget(it) }
+                    if (target != null) SitePreview(root = target.first, entry = target.second, reloadKey = previewReload, modifier = m)
+                    else Text("Preview works for files on device storage.", Modifier.padding(16.dp))
+                }
+                if (wide && showPreview && mode == EditorMode.SPLIT) {
+                    Row(Modifier.fillMaxSize()) {
+                        editor(Modifier.weight(1f).fillMaxSize())
+                        androidx.compose.material3.VerticalDivider()
+                        preview(Modifier.weight(1f).fillMaxSize())
+                    }
                 } else {
-                    Text("Preview works for files on device storage.", Modifier.padding(16.dp))
+                    Column(Modifier.fillMaxSize()) {
+                        editor(if (hideEditor) Modifier.fillMaxWidth().height(0.dp) else Modifier.fillMaxWidth().weight(1f))
+                        if (showPreview) {
+                            HorizontalDivider()
+                            preview(Modifier.fillMaxWidth().weight(1f))
+                        }
+                    }
                 }
             }
             if (active != null && !showPreview || (active != null && mode == EditorMode.SPLIT)) SymbolBar(controller, prefs.editorTabSize)
@@ -389,28 +402,39 @@ private fun save(controller: CodeEditorController, viewModel: EditorViewModel, i
 }
 
 @Composable
-private fun FindBar(controller: CodeEditorController) {
+private fun FindBar(controller: CodeEditorController, onFindInFiles: (() -> Unit)?) {
     var query by remember { mutableStateOf("") }
     var replace by remember { mutableStateOf("") }
     var caseSensitive by remember { mutableStateOf(false) }
+    var regex by remember { mutableStateOf(false) }
+    var wholeWord by remember { mutableStateOf(false) }
     var count by remember { mutableStateOf<Int?>(null) }
-    fun find(back: Boolean = false) = controller.js("find(${controller.q(query)}, $caseSensitive, $back)") { count = it?.toIntOrNull() }
+    var replaced by remember { mutableStateOf<Int?>(null) }
+    fun opts() = "{caseSensitive:$caseSensitive,regex:$regex,wholeWord:$wholeWord}"
+    fun find(back: Boolean = false) = controller.js("find(${controller.q(query)}, ${opts()}, $back)") { count = it?.toIntOrNull() }
     Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
         Column(Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(query, { query = it; find() }, label = { Text("Find") }, singleLine = true, modifier = Modifier.weight(1f))
+                OutlinedTextField(query, { query = it; find() }, label = { Text("Find") }, singleLine = true, modifier = Modifier.weight(1f),
+                    isError = count == -1, supportingText = if (count == -1) ({ Text("Invalid regular expression") }) else null)
                 IconButton(onClick = { find(back = true) }) { Icon(Icons.Rounded.KeyboardArrowUp, "Previous match") }
                 IconButton(onClick = { find() }) { Icon(Icons.Rounded.KeyboardArrowDown, "Next match") }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(replace, { replace = it }, label = { Text("Replace with") }, singleLine = true, modifier = Modifier.weight(1f))
-                TextButton(onClick = { controller.js("replaceOne(${controller.q(query)}, ${controller.q(replace)}, $caseSensitive)") { count = it?.toIntOrNull() } }) { Text("Replace") }
-                TextButton(onClick = { controller.js("replaceAll(${controller.q(query)}, ${controller.q(replace)}, $caseSensitive)") { r -> count = 0; r?.let { } } }) { Text("All") }
+                OutlinedTextField(replace, { replace = it }, label = { Text(if (regex) "Replace with ($1 = group)" else "Replace with") }, singleLine = true, modifier = Modifier.weight(1f))
+                TextButton(onClick = { controller.js("replaceOne(${controller.q(query)}, ${controller.q(replace)}, ${opts()})") { count = it?.toIntOrNull() } }) { Text("Replace") }
+                TextButton(onClick = { controller.js("replaceAll(${controller.q(query)}, ${controller.q(replace)}, ${opts()})") { r -> count = 0; replaced = r?.toIntOrNull() } }) { Text("All") }
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                FilterChip(selected = caseSensitive, onClick = { caseSensitive = !caseSensitive; find() }, label = { Text("Match case") })
-                Spacer(Modifier.width(12.dp))
-                count?.let { Text(if (query.isEmpty()) "" else "$it matches", style = MaterialTheme.typography.bodySmall) }
+            Row(Modifier.horizontalScroll(rememberScrollState()), verticalAlignment = Alignment.CenterVertically) {
+                FilterChip(selected = caseSensitive, onClick = { caseSensitive = !caseSensitive; find() }, label = { Text("Aa Match case") })
+                Spacer(Modifier.width(6.dp))
+                FilterChip(selected = wholeWord, onClick = { wholeWord = !wholeWord; find() }, label = { Text("Whole word") })
+                Spacer(Modifier.width(6.dp))
+                FilterChip(selected = regex, onClick = { regex = !regex; find() }, label = { Text(".* Regex") })
+                Spacer(Modifier.width(6.dp))
+                if (onFindInFiles != null) TextButton(onClick = onFindInFiles) { Text("Find in all files") }
+                count?.takeIf { it >= 0 && query.isNotEmpty() }?.let { Text("$it matches", style = MaterialTheme.typography.bodySmall) }
+                replaced?.let { Text("  · replaced $it", style = MaterialTheme.typography.bodySmall) }
             }
         }
     }

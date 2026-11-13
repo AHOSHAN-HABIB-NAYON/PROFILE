@@ -107,6 +107,11 @@ dependencies {
     implementation(libs.coil.compose)
     implementation(libs.androidx.webkit)
     implementation(libs.androidx.biometric)
+    implementation(libs.zip4j)
+    implementation(libs.junrar)
+    implementation(libs.commons.compress)
+    implementation(libs.xz)
+    implementation(libs.androidx.exifinterface)
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)

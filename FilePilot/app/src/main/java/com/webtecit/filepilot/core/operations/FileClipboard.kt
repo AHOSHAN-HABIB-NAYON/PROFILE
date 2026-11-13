@@ -21,6 +21,24 @@ class FileClipboard @Inject constructor() {
         _clip.value = if (items.isEmpty()) null else FileClip(items, mode, sourceDirId)
     }
 
+    /**
+     * Adds items to the clipboard. Copying more items in the same mode (from any folder) adds to
+     * what is already there, so files from several folders can be pasted together.
+     * Returns the number of items now on the clipboard.
+     */
+    fun add(items: List<FileItem>, mode: ClipMode, sourceDirId: String): Int {
+        val current = _clip.value
+        val merged = if (current != null && current.mode == mode) (current.items + items).distinctBy { it.id } else items
+        _clip.value = if (merged.isEmpty()) null else FileClip(merged, mode, current?.sourceDirId?.takeIf { it == sourceDirId } ?: sourceDirId)
+        return merged.size
+    }
+
+    fun remove(id: String) {
+        val current = _clip.value ?: return
+        val left = current.items.filterNot { it.id == id }
+        _clip.value = if (left.isEmpty()) null else current.copy(items = left)
+    }
+
     fun clear() {
         _clip.value = null
     }

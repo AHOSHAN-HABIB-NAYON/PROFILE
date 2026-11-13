@@ -56,6 +56,61 @@ object FileToolsLogic {
     data class Match(val path: String, val line: Int, val text: String)
 
     /** Finds lines containing [query] in text files under [root] (files up to 5 MB). */
+    private val textExtensions = setOf("txt", "md", "html", "htm", "css", "js", "mjs", "json", "xml", "csv", "log", "kt", "java", "py", "php", "c", "h", "cpp",
+        "sql", "yaml", "yml", "ini", "conf", "properties", "sh", "ts", "tsx", "jsx", "gradle", "kts", "toml", "svg", "smali", "vue", "scss", "less")
+
+    /** The pattern for a search: plain text, whole word or regular expression. */
+    fun pattern(query: String, regex: Boolean, ignoreCase: Boolean, wholeWord: Boolean = false): Regex {
+        val body = if (regex) query else Regex.escape(query).let { if (wholeWord) "\\b$it\\b" else it }
+        return if (ignoreCase) Regex(body, RegexOption.IGNORE_CASE) else Regex(body)
+    }
+
+    private suspend fun textFiles(root: File, visit: suspend (File) -> Boolean) {
+        val stack = ArrayDeque<File>().apply { add(root) }
+        while (stack.isNotEmpty()) {
+            currentCoroutineContext().ensureActive()
+            val dir = stack.removeLast()
+            for (f in dir.listFiles().orEmpty()) {
+                if (f.isDirectory) { if (!f.name.startsWith(".")) stack.addLast(f); continue }
+                if (f.extension.lowercase() !in textExtensions || f.length() > 5_000_000) continue
+                if (!visit(f)) return
+            }
+        }
+    }
+
+    /** Lines matching [pattern] in text files under [root]. */
+    suspend fun searchPattern(root: File, pattern: Regex, limit: Int = 2000, onFile: (Int) -> Unit = {}): List<Match> {
+        val matches = ArrayList<Match>()
+        var scanned = 0
+        textFiles(root) { f ->
+            onFile(++scanned)
+            runCatching {
+                f.bufferedReader().useLines { lines ->
+                    lines.forEachIndexed { i, line -> if (matches.size < limit && pattern.containsMatchIn(line)) matches += Match(f.absolutePath, i + 1, line.trim().take(200)) }
+                }
+            }
+            matches.size < limit
+        }
+        return matches
+    }
+
+    /** Replaces every match in text files under [root]; returns (files changed, replacements). */
+    suspend fun replaceInFiles(root: File, pattern: Regex, replacement: String): Pair<Int, Int> {
+        var files = 0
+        var total = 0
+        textFiles(root) { f ->
+            val text = runCatching { f.readText() }.getOrNull() ?: return@textFiles true
+            val n = pattern.findAll(text).count()
+            if (n > 0) {
+                f.writeText(pattern.replace(text, replacement))
+                files++
+                total += n
+            }
+            true
+        }
+        return files to total
+    }
+
     suspend fun searchText(root: File, query: String, ignoreCase: Boolean = true, limit: Int = 1000, onFile: (Int) -> Unit = {}): List<Match> {
         val matches = ArrayList<Match>()
         var scanned = 0

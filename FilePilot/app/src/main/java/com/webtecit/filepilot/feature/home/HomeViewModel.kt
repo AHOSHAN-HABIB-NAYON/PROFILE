@@ -46,6 +46,7 @@ data class HomeState(
     val safRoots: List<SafRoot> = emptyList(),
     val downloadsId: String = "",
     val loaded: Boolean = false,
+    val showDefaultPrompt: Boolean = false,
 )
 
 @HiltViewModel
@@ -57,6 +58,7 @@ class HomeViewModel @Inject constructor(
     safRoots: SafRootsRepository,
     private val opener: FileOpener,
     @IoDispatcher private val io: CoroutineDispatcher,
+    private val preferences: com.webtecit.filepilot.core.preferences.PreferencesRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeState())
@@ -69,6 +71,9 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch { library.favorites.collect { f -> _state.update { it.copy(favorites = f) } } }
         viewModelScope.launch { library.recents.collect { r -> _state.update { it.copy(recents = r) } } }
         viewModelScope.launch { safRoots.roots.collect { r -> _state.update { it.copy(safRoots = r) } } }
+        viewModelScope.launch {
+            preferences.preferences.collect { p -> _state.update { it.copy(showDefaultPrompt = p.onboardingDone && !p.defaultAppPromptDone) } }
+        }
     }
 
     fun refresh() {
@@ -83,6 +88,10 @@ class HomeViewModel @Inject constructor(
                 _state.update { it.copy(categories = sums) }
             }
         }
+    }
+
+    fun dismissDefaultPrompt() {
+        viewModelScope.launch { preferences.setDefaultAppPromptDone() }
     }
 
     fun open(id: String) {

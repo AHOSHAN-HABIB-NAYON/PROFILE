@@ -22,10 +22,14 @@ class MainViewModel @Inject constructor(
     /** Null until preferences are loaded; the system splash stays visible until then. */
     val prefs: StateFlow<UserPreferences?> = repository.preferences.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    /** Set when another app asked FilePilot to open a folder or pick a file. */
+    var startOverride: Any? = null
+
     fun routeAfterSplash(): Any {
         val p = prefs.value ?: return HomeRoute
         return when {
             !p.onboardingDone -> OnboardingRoute
+            startOverride != null -> startOverride!!
             else -> routeAfterOnboarding()
         }
     }

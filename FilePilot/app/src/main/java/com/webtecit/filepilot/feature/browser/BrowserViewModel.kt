@@ -109,6 +109,8 @@ class BrowserViewModel @Inject constructor(
     private val recycleBin: com.webtecit.filepilot.core.cleaning.RecycleBin,
     private val pdfTools: com.webtecit.filepilot.feature.pdf.PdfTools,
     private val vault: com.webtecit.filepilot.feature.vault.VaultRepository,
+    private val tasks: com.webtecit.filepilot.core.tasks.BackgroundTasks,
+    @com.webtecit.filepilot.core.common.ApplicationScope private val appScope: kotlinx.coroutines.CoroutineScope,
     @IoDispatcher private val io: CoroutineDispatcher,
     @DefaultDispatcher private val default: CoroutineDispatcher,
 ) : ViewModel() {
@@ -421,19 +423,55 @@ class BrowserViewModel @Inject constructor(
     fun putOnClipboard(items: List<FileItem>, mode: ClipMode) {
         val dir = _state.value.currentId ?: return
         if (items.isEmpty()) return
-        clipboard.set(items, mode, dir)
+        val total = clipboard.add(items, mode, dir)
         clearSelection()
         val what = if (items.size == 1) "\"${items[0].name}\"" else Formatters.count(items.size, "item")
         val verb = if (mode == ClipMode.COPY) "copy" else "move"
-        message("Ready to $verb $what. Open the destination folder and tap Paste.")
+        message(
+            if (total > items.size) "Added $what — ${Formatters.count(total, "item")} ready to $verb. Open a folder and tap Paste."
+            else "Ready to $verb $what. Open the destination folder and tap Paste.",
+        )
     }
 
     fun clearClipboard() = clipboard.clear()
 
+    fun removeFromClipboard(id: String) = clipboard.remove(id)
+
+    /** Copies or moves items straight to a chosen folder (without the clipboard). */
+    fun transferTo(items: List<FileItem>, targetDirId: String, move: Boolean) {
+        clearSelection()
+        viewModelScope.launch {
+            val conflicts = runCatching { operations.conflicts(items, targetDirId) }.getOrDefault(emptyList())
+            operations.transfer(items, targetDirId, move, if (conflicts.isEmpty()) ConflictPolicy.KEEP_BOTH else ConflictPolicy.KEEP_BOTH)
+            message("${if (move) "Moving" else "Copying"} ${Formatters.count(items.size, "item")}. Same names are kept as copies.")
+        }
+    }
+
+    /** Creates an archive in the current folder in the background. */
+    fun createArchive(items: List<FileItem>, name: String, format: com.webtecit.filepilot.core.archive.ArchiveFormat, password: String?, maximum: Boolean) {
+        if (items.any { !it.id.startsWith("/") }) { message("Archives can be created from files on device storage."); return }
+        val dir = _state.value.currentId ?: return
+        val out = java.io.File(dir, NameRules.uniqueName("$name.${format.extension}", rawItems.map { it.name }))
+        clearSelection()
+        appScope.launch {
+            val id = tasks.start("Creating ${out.name}", "Starting…")
+            val result = runCatching {
+                withContext(io) {
+                    com.webtecit.filepilot.core.archive.ArchiveEngine.create(items.map { java.io.File(it.id) }, out, format, password?.takeIf { it.isNotEmpty() }?.toCharArray(), maximum) { n, f ->
+                        tasks.update("Creating ${out.name}", "$n files · $f", null)
+                    }
+                }
+            }
+            result.onSuccess { tasks.finish(id, "Created ${out.name} (${Formatters.size(out.length())})") }
+                .onFailure { out.delete(); tasks.dismiss(id); message("Couldn't create the archive: ${it.userMessage()}") }
+            refresh()
+        }
+    }
+
     fun paste() {
         val clip = clipboard.clip.value ?: return
         val target = _state.value.currentId ?: return
-        if (clip.mode == ClipMode.CUT && clip.sourceDirId == target) {
+        if (clip.mode == ClipMode.CUT && clip.items.all { fileSystems.of(it.id).parentId(it.id) == target }) {
             message("These items are already in this folder.")
             return
         }

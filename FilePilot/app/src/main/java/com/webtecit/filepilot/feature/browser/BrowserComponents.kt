@@ -258,7 +258,7 @@ fun Breadcrumbs(crumbs: List<Crumb>, onCrumb: (Int) -> Unit, modifier: Modifier 
 }
 
 @Composable
-fun PasteBar(clip: FileClip, onPaste: () -> Unit, onCancel: () -> Unit, modifier: Modifier = Modifier) {
+fun PasteBar(clip: FileClip, onPaste: () -> Unit, onCancel: () -> Unit, onView: () -> Unit = {}, modifier: Modifier = Modifier) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         tonalElevation = 0.dp,
@@ -274,14 +274,14 @@ fun PasteBar(clip: FileClip, onPaste: () -> Unit, onCancel: () -> Unit, modifier
                 tint = MaterialTheme.colorScheme.primary,
             )
             Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
+            Column(Modifier.weight(1f).clickable(onClick = onView)) {
                 Text(
                     if (clip.mode == ClipMode.COPY) "Copy ${Formatters.count(clip.items.size, "item")}"
                     else "Move ${Formatters.count(clip.items.size, "item")}",
                     style = MaterialTheme.typography.titleSmall,
                 )
                 Text(
-                    "Open a folder, then paste",
+                    "Tap to review · copy more to add",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -349,7 +349,9 @@ enum class ItemAction(val label: String, val icon: ImageVector) {
     TOOL_PDF("Open in PDF viewer", Icons.Rounded.Info),
     COMPRESS_PDF("Compress PDF", Icons.Rounded.Info),
     TOOL_HEX("HEX editor", Icons.Rounded.Info),
-    ZIP("Compress to ZIP", Icons.Rounded.ContentCopy),
+    ZIP("Create archive", Icons.Rounded.ContentCopy),
+    COPY_TO("Copy to…", Icons.Rounded.ContentCopy),
+    MOVE_TO("Move to…", Icons.Rounded.ContentCut),
     SPLIT("Split into parts", Icons.Rounded.ContentCut),
     MERGE_PARTS("Join split parts", Icons.Rounded.ContentPaste),
     SEARCH_TEXT("Search text in this folder", Icons.Rounded.Info),
@@ -390,6 +392,8 @@ fun ItemActionsSheet(
             }
             if (!item.isDirectory) add(ItemAction.TOOL_HEX)
             add(ItemAction.ZIP)
+            add(ItemAction.COPY_TO)
+            add(ItemAction.MOVE_TO)
             if (!item.isDirectory && item.size > 10_000_000) add(ItemAction.SPLIT)
             if (item.extension.matches(Regex("\\d{3}"))) add(ItemAction.MERGE_PARTS)
             if (item.isDirectory) add(ItemAction.SEARCH_TEXT)

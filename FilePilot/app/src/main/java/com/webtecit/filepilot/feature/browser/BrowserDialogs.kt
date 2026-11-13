@@ -254,3 +254,47 @@ fun BatchRenameDialog(
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }
+
+@Composable
+fun CreateArchiveDialog(
+    defaultName: String,
+    onCreate: (String, com.webtecit.filepilot.core.archive.ArchiveFormat, String?, Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var name by remember { mutableStateOf(defaultName) }
+    var format by remember { mutableStateOf(com.webtecit.filepilot.core.archive.ArchiveFormat.ZIP) }
+    var password by remember { mutableStateOf("") }
+    var maximum by remember { mutableStateOf(false) }
+    val formats = listOf(com.webtecit.filepilot.core.archive.ArchiveFormat.ZIP, com.webtecit.filepilot.core.archive.ArchiveFormat.SEVEN_Z, com.webtecit.filepilot.core.archive.ArchiveFormat.TAR_GZ)
+    val error = com.webtecit.filepilot.core.storage.NameRules.validate(name)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Create archive") },
+        text = {
+            Column {
+                OutlinedTextField(name, { name = it }, label = { Text("Archive name") }, singleLine = true, isError = error != null,
+                    supportingText = { error?.let { Text(it) } }, modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(8.dp))
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    formats.forEachIndexed { i, f ->
+                        SegmentedButton(selected = format == f, onClick = { format = f }, shape = SegmentedButtonDefaults.itemShape(i, formats.size)) { Text(f.label) }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                if (format == com.webtecit.filepilot.core.archive.ArchiveFormat.ZIP) {
+                    OutlinedTextField(password, { password = it }, label = { Text("Password (optional, AES-256)") }, singleLine = true,
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
+                }
+                Row(Modifier.fillMaxWidth().clickable(role = Role.Checkbox) { maximum = !maximum }, verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(checked = maximum, onCheckedChange = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Maximum compression (slower)")
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = error == null, onClick = { onCreate(name.trim(), format, password.takeIf { format == com.webtecit.filepilot.core.archive.ArchiveFormat.ZIP }, maximum) }) { Text("Create") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}

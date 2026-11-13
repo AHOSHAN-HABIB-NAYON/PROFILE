@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -148,6 +149,26 @@ fun ApkInfoScreen(path: String, onBack: () -> Unit) {
                         Kv("DEX files", "${r.dexFiles}")
                         Kv("Entries", "${r.entries}")
                         Kv("Native code", if (r.nativeAbis.isEmpty()) "None" else r.nativeAbis.entries.joinToString { "${it.key} (${it.value})" })
+                    }
+                }
+                item {
+                    var manifest by remember { mutableStateOf<String?>(null) }
+                    TextButton(onClick = {
+                        manifest = runCatching {
+                            java.util.zip.ZipFile(path).use { z -> z.getInputStream(z.getEntry("AndroidManifest.xml")).use { AxmlDecoder.decode(it.readBytes()) } }
+                        }.getOrElse { "The manifest couldn't be decoded: ${it.message}" }
+                    }) { Text("View AndroidManifest.xml") }
+                    manifest?.let { m ->
+                        AlertDialog(
+                            onDismissRequest = { manifest = null },
+                            title = { Text("AndroidManifest.xml") },
+                            text = {
+                                Box(Modifier.height(420.dp).horizontalScroll(rememberScrollState())) {
+                                    SelectionContainer { Text(m, style = MonoStyle, modifier = Modifier.verticalScrollCompat()) }
+                                }
+                            },
+                            confirmButton = { TextButton(onClick = { manifest = null }) { Text("Close") } },
+                        )
                     }
                 }
                 item { SectionHeader("Signing certificates") }
@@ -528,31 +549,52 @@ fun TerminalScreen(onBack: () -> Unit) {
 @Composable
 fun TextSearchScreen(rootPath: String, onBack: () -> Unit, onOpenFile: (String) -> Unit) {
     var query by remember { mutableStateOf("") }
+    var replacement by remember { mutableStateOf("") }
+    var regex by remember { mutableStateOf(false) }
+    var matchCase by remember { mutableStateOf(false) }
+    var wholeWord by remember { mutableStateOf(false) }
     var results by remember { mutableStateOf<List<FileToolsLogic.Match>?>(null) }
     var scanned by remember { mutableIntStateOf(0) }
     var running by remember { mutableStateOf(false) }
+    var confirm by remember { mutableStateOf(false) }
+    var info by remember { mutableStateOf<String?>(null) }
     val scope = rememberCoroutineScope()
-    ToolScaffold("Search text in files", rootPath, onBack) { padding ->
+    fun pattern() = runCatching { FileToolsLogic.pattern(query, regex, !matchCase, wholeWord) }.getOrNull()
+    fun search() {
+        val p = pattern() ?: run { info = "Invalid regular expression."; return }
+        running = true; results = null; info = null
+        scope.launch {
+            results = withContext(Dispatchers.IO) { FileToolsLogic.searchPattern(File(rootPath), p) { scanned = it } }
+            running = false
+        }
+    }
+    ToolScaffold("Find & replace in files", rootPath.substringAfterLast('/'), onBack) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(query, { query = it }, label = { Text("Text to find") }, singleLine = true, modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search))
-                TextButton(enabled = query.isNotBlank() && !running, onClick = {
-                    running = true; results = null
-                    scope.launch {
-                        results = withContext(Dispatchers.IO) { FileToolsLogic.searchText(File(rootPath), query) { scanned = it } }
-                        running = false
-                    }
-                }) { Text("Search") }
+                OutlinedTextField(query, { query = it }, label = { Text("Find") }, singleLine = true, modifier = Modifier.weight(1f), textStyle = MonoStyle,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search), keyboardActions = KeyboardActions(onSearch = { if (query.isNotBlank()) search() }))
+                TextButton(enabled = query.isNotBlank() && !running, onClick = ::search) { Text("Search") }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(replacement, { replacement = it }, label = { Text(if (regex) "Replace with ($1 = group)" else "Replace with") }, singleLine = true,
+                    modifier = Modifier.weight(1f), textStyle = MonoStyle)
+                TextButton(enabled = !results.isNullOrEmpty() && !running, onClick = { confirm = true }) { Text("Replace all") }
+            }
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FilterChip(selected = matchCase, onClick = { matchCase = !matchCase }, label = { Text("Match case") })
+                FilterChip(selected = wholeWord, onClick = { wholeWord = !wholeWord }, label = { Text("Whole word") })
+                FilterChip(selected = regex, onClick = { regex = !regex }, label = { Text("Regex") })
             }
             if (running) { LinearProgressIndicator(Modifier.fillMaxWidth()); Text("$scanned files checked", style = MaterialTheme.typography.bodySmall) }
+            info?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary) }
             results?.let { r ->
-                if (r.isEmpty()) EmptyState(Icons.Rounded.SearchOff, "No matches", "No text files here contain \"$query\".")
-                Text("${r.size} matches", style = MaterialTheme.typography.bodySmall)
+                val files = r.map { it.path }.distinct().size
+                Text("${r.size} matches in $files files", style = MaterialTheme.typography.bodySmall)
+                if (r.isEmpty()) EmptyState(Icons.Rounded.SearchOff, "No matches", "No text files here contain that text.")
                 LazyColumn {
                     items(r) { m ->
                         Column(Modifier.fillMaxWidth().clickable { onOpenFile(m.path) }.padding(vertical = 8.dp)) {
-                            Text("${File(m.path).name}:${m.line}", style = MaterialTheme.typography.titleSmall)
+                            Text("${m.path.removePrefix(rootPath).trimStart('/')}:${m.line}", style = MaterialTheme.typography.titleSmall)
                             Text(m.text, style = MonoStyle, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         }
                         HorizontalDivider()
@@ -560,6 +602,27 @@ fun TextSearchScreen(rootPath: String, onBack: () -> Unit, onOpenFile: (String) 
                 }
             }
         }
+    }
+    if (confirm) {
+        AlertDialog(
+            onDismissRequest = { confirm = false },
+            title = { Text("Replace in all files?") },
+            text = { Text("Every match in ${results?.map { it.path }?.distinct()?.size ?: 0} files will be replaced and saved. Close these files in Code Studio first if they are open.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirm = false
+                    val p = pattern() ?: return@TextButton
+                    running = true
+                    scope.launch {
+                        val (files, n) = withContext(Dispatchers.IO) { FileToolsLogic.replaceInFiles(File(rootPath), p, if (regex) replacement else Regex.escapeReplacement(replacement)) }
+                        running = false
+                        info = "Replaced $n matches in $files files."
+                        results = null
+                    }
+                }) { Text("Replace all", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { confirm = false }) { Text("Cancel") } },
+        )
     }
 }
 
@@ -580,3 +643,6 @@ fun FontPreviewScreen(path: String, onBack: () -> Unit) {
         }
     }
 }
+
+@Composable
+private fun Modifier.verticalScrollCompat(): Modifier = this.then(Modifier.verticalScroll(rememberScrollState()))

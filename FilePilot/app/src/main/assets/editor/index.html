@@ -50,26 +50,45 @@
     cm.refresh();
   }
   function clearMarks() { marks.forEach(function (m) { m.clear(); }); marks = []; }
-  function find(q, caseSensitive, backwards) {
-    clearMarks(); if (!q) return 0;
-    var count = 0, c = cm.getSearchCursor(q, CodeMirror.Pos(cm.firstLine(), 0), { caseFold: !caseSensitive });
-    while (c.findNext() && count < 5000) { marks.push(cm.markText(c.from(), c.to(), { className: "cm-searching" })); count++; }
-    var cur = cm.getSearchCursor(q, backwards ? cm.getCursor("from") : cm.getCursor("to"), { caseFold: !caseSensitive });
+  // Builds the search query: plain text, whole word or regular expression. Returns null if invalid.
+  function makeQuery(q, o) {
+    if (!q) return null;
+    var flags = o.caseSensitive ? "g" : "gi";
+    try {
+      if (o.regex) return new RegExp(q, flags);
+      if (o.wholeWord) return new RegExp("\\b" + q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", flags);
+    } catch (e) { return null; }
+    return q;
+  }
+  function cursorFor(query, pos, o) { return cm.getSearchCursor(query, pos, { caseFold: !o.caseSensitive }); }
+  function find(q, o, backwards) {
+    clearMarks();
+    var query = makeQuery(q, o);
+    if (query === null) return q ? -1 : 0;
+    var count = 0, c = cursorFor(query, CodeMirror.Pos(cm.firstLine(), 0), o);
+    while (c.findNext() && count < 5000) { if (c.from().line === c.to().line && c.from().ch === c.to().ch) break; marks.push(cm.markText(c.from(), c.to(), { className: "cm-searching" })); count++; }
+    var cur = cursorFor(query, backwards ? cm.getCursor("from") : cm.getCursor("to"), o);
     var ok = backwards ? cur.findPrevious() : cur.findNext();
-    if (!ok) { cur = cm.getSearchCursor(q, backwards ? CodeMirror.Pos(cm.lastLine()) : CodeMirror.Pos(cm.firstLine(), 0), { caseFold: !caseSensitive }); ok = backwards ? cur.findPrevious() : cur.findNext(); }
+    if (!ok) { cur = cursorFor(query, backwards ? CodeMirror.Pos(cm.lastLine()) : CodeMirror.Pos(cm.firstLine(), 0), o); ok = backwards ? cur.findPrevious() : cur.findNext(); }
     if (ok) { cm.setSelection(cur.from(), cur.to()); cm.scrollIntoView({ from: cur.from(), to: cur.to() }, 80); }
     return count;
   }
-  function replaceOne(q, r, caseSensitive) {
-    var sel = cm.getSelection();
-    if (sel && (caseSensitive ? sel === q : sel.toLowerCase() === q.toLowerCase())) cm.replaceSelection(r);
-    return find(q, caseSensitive, false);
+  function expand(r, m) { return (m && typeof m === "object" && m.length) ? r.replace(/\$(\d)/g, function (_, i) { return m[i] || ""; }) : r; }
+  function replaceOne(q, r, o) {
+    var query = makeQuery(q, o);
+    if (query === null) return -1;
+    var c = cursorFor(query, cm.getCursor("from"), o);
+    var m = c.findNext();
+    if (m && c.from().line === cm.getCursor("from").line && c.from().ch === cm.getCursor("from").ch) c.replace(expand(r, m));
+    return find(q, o, false);
   }
-  function replaceAll(q, r, caseSensitive) {
-    if (!q) return 0; clearMarks(); var n = 0;
+  function replaceAll(q, r, o) {
+    var query = makeQuery(q, o);
+    if (query === null) return -1;
+    clearMarks(); var n = 0;
     cm.operation(function () {
-      var c = cm.getSearchCursor(q, CodeMirror.Pos(cm.firstLine(), 0), { caseFold: !caseSensitive });
-      while (c.findNext()) { c.replace(r); n++; }
+      var c = cursorFor(query, CodeMirror.Pos(cm.firstLine(), 0), o), m;
+      while ((m = c.findNext())) { if (c.from().line === c.to().line && c.from().ch === c.to().ch) break; c.replace(expand(r, m)); n++; }
     });
     return n;
   }

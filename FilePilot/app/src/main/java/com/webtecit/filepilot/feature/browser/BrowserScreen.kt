@@ -93,6 +93,9 @@ import com.webtecit.filepilot.core.storage.FileItem
 import com.webtecit.filepilot.feature.details.DetailsSheet
 import kotlinx.coroutines.flow.first
 
+/** Set when another app opened FilePilot to pick a file: tapping a file returns it to that app. */
+val LocalFilePicker = androidx.compose.runtime.staticCompositionLocalOf<((FileItem) -> Unit)?> { null }
+
 private sealed interface BrowserDialog {
     data object NewFolder : BrowserDialog
     data object NewFile : BrowserDialog
@@ -102,6 +105,9 @@ private sealed interface BrowserDialog {
     data class BatchRename(val items: List<FileItem>) : BrowserDialog
     data class Details(val id: String) : BrowserDialog
     data class Actions(val item: FileItem) : BrowserDialog
+    data class CreateArchive(val items: List<FileItem>) : BrowserDialog
+    data class TransferTo(val items: List<FileItem>, val move: Boolean) : BrowserDialog
+    data object Clipboard : BrowserDialog
 }
 
 @Composable
@@ -153,12 +159,17 @@ fun BrowserScreen(
         }
     }
 
+    val picker = LocalFilePicker.current
     fun onItemClick(item: FileItem) {
         when {
             state.selectionMode -> viewModel.toggleSelection(item)
             item.isDirectory -> viewModel.openFolder(item, firstVisible())
+            picker != null -> picker(item)
             opensInEditor(item) -> onEdit(item.id)
             item.kind == com.webtecit.filepilot.core.storage.FileKind.PDF -> onTool(com.webtecit.filepilot.navigation.PdfRoute(item.id))
+            item.id.startsWith("/") && item.kind == com.webtecit.filepilot.core.storage.FileKind.IMAGE -> onTool(com.webtecit.filepilot.navigation.ImageRoute(item.id))
+            item.id.startsWith("/") && (item.kind == com.webtecit.filepilot.core.storage.FileKind.VIDEO || item.kind == com.webtecit.filepilot.core.storage.FileKind.AUDIO) ->
+                onTool(com.webtecit.filepilot.navigation.VideoRoute(item.id))
             item.id.startsWith("/") && item.kind == com.webtecit.filepilot.core.storage.FileKind.APK -> onTool(com.webtecit.filepilot.navigation.ApkRoute(item.id))
             item.id.startsWith("/") && item.kind == com.webtecit.filepilot.core.storage.FileKind.DATABASE -> onTool(com.webtecit.filepilot.navigation.SqliteRoute(item.id))
             item.id.startsWith("/") && item.kind == com.webtecit.filepilot.core.storage.FileKind.ARCHIVE -> onTool(com.webtecit.filepilot.navigation.ArchiveRoute(item.id))
@@ -192,7 +203,9 @@ fun BrowserScreen(
             ItemAction.TOOL_PDF -> onTool(com.webtecit.filepilot.navigation.PdfRoute(item.id))
             ItemAction.TOOL_HEX -> onTool(com.webtecit.filepilot.navigation.HexRoute(item.id))
             ItemAction.COMPRESS_PDF -> viewModel.compressPdf(item)
-            ItemAction.ZIP -> viewModel.compressToZip(listOf(item))
+            ItemAction.ZIP -> dialog = BrowserDialog.CreateArchive(listOf(item))
+            ItemAction.COPY_TO -> dialog = BrowserDialog.TransferTo(listOf(item), move = false)
+            ItemAction.MOVE_TO -> dialog = BrowserDialog.TransferTo(listOf(item), move = true)
             ItemAction.SPLIT -> viewModel.split(item, partMb = 100)
             ItemAction.MERGE_PARTS -> viewModel.mergeParts(item)
             ItemAction.SEARCH_TEXT -> onTool(com.webtecit.filepilot.navigation.TextSearchRoute(item.id))
@@ -248,7 +261,9 @@ fun BrowserScreen(
                             DropdownMenuItem(text = { Text("Merge PDFs") }, onClick = { dismiss(); viewModel.mergePdfs(selected) })
                         }
                         if (selected.all { it.id.startsWith("/") }) {
-                            DropdownMenuItem(text = { Text("Compress to ZIP") }, onClick = { dismiss(); viewModel.compressToZip(selected) })
+                            DropdownMenuItem(text = { Text("Create archive (ZIP, 7z, TAR)") }, onClick = { dismiss(); dialog = BrowserDialog.CreateArchive(selected) })
+                            DropdownMenuItem(text = { Text("Copy to…") }, onClick = { dismiss(); dialog = BrowserDialog.TransferTo(selected, move = false) })
+                            DropdownMenuItem(text = { Text("Move to…") }, onClick = { dismiss(); dialog = BrowserDialog.TransferTo(selected, move = true) })
                         }
                         if (selected.none { it.isDirectory }) {
                             DropdownMenuItem(text = { Text("Move to Secure Folder") }, onClick = { dismiss(); viewModel.moveToVault(selected) })
@@ -345,7 +360,9 @@ fun BrowserScreen(
                     onShare = { viewModel.share(viewModel.selectedItems()) },
                     onDelete = { dialog = BrowserDialog.Delete(viewModel.selectedItems()) },
                 )
-                clip != null && state.error == null && !state.virtual -> PasteBar(clip, onPaste = viewModel::paste, onCancel = viewModel::clearClipboard)
+                clip != null && state.error == null && !state.virtual -> PasteBar(
+                    clip, onPaste = viewModel::paste, onCancel = viewModel::clearClipboard, onView = { dialog = BrowserDialog.Clipboard },
+                )
             }
         },
         floatingActionButton = {
@@ -558,6 +575,37 @@ fun BrowserScreen(
             onDismiss = { dialog = null },
         )
         is BrowserDialog.Details -> DetailsSheet(id = d.id, onDismiss = { dialog = null })
+        is BrowserDialog.CreateArchive -> CreateArchiveDialog(
+            defaultName = if (d.items.size == 1) d.items[0].name.substringBeforeLast('.').ifBlank { d.items[0].name } else "Archive",
+            onCreate = { name, format, password, max -> dialog = null; viewModel.createArchive(d.items, name, format, password, max) },
+            onDismiss = { dialog = null },
+        )
+        is BrowserDialog.TransferTo -> com.webtecit.filepilot.core.designsystem.FolderPickerDialog(
+            title = if (d.move) "Move to" else "Copy to",
+            confirmLabel = if (d.move) "Move here" else "Copy here",
+            start = state.currentId?.takeIf { it.startsWith("/") },
+            onPick = { target -> dialog = null; viewModel.transferTo(d.items, target, d.move) },
+            onDismiss = { dialog = null },
+        )
+        BrowserDialog.Clipboard -> state.clip?.let { clip ->
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { dialog = null },
+                title = { Text("Clipboard · ${Formatters.count(clip.items.size, "item")}") },
+                text = {
+                    androidx.compose.foundation.lazy.LazyColumn(Modifier.height(320.dp)) {
+                        items(clip.items.size) { i ->
+                            val it = clip.items[i]
+                            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                com.webtecit.filepilot.core.designsystem.FileThumb(it, size = 36.dp)
+                                Text(it.name, Modifier.weight(1f).padding(horizontal = 10.dp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                IconButton(onClick = { viewModel.removeFromClipboard(it.id) }) { Icon(Icons.Rounded.Close, "Remove ${it.name}") }
+                            }
+                        }
+                    }
+                },
+                confirmButton = { androidx.compose.material3.TextButton(onClick = { dialog = null }) { Text("Done") } },
+            )
+        } ?: run { dialog = null }
         is BrowserDialog.Actions -> ItemActionsSheet(
             item = d.item,
             favorite = d.item.id in state.favoriteIds,

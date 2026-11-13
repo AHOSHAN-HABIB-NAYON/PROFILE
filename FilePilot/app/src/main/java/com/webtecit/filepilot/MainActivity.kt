@@ -49,6 +49,19 @@ class MainActivity : AppCompatActivity() {
         // Keep the system splash only until preferences (theme, onboarding state) are read.
         splash.setKeepOnScreenCondition { viewModel.prefs.value == null }
 
+        val picking = intent?.action == android.content.Intent.ACTION_GET_CONTENT
+        if (picking) {
+            viewModel.startOverride = com.webtecit.filepilot.navigation.BrowserRoute(android.os.Environment.getExternalStorageDirectory().absolutePath)
+        } else if (intent?.action == android.content.Intent.ACTION_VIEW) {
+            intent?.data?.takeIf { it.scheme == "file" }?.path?.let { viewModel.startOverride = com.webtecit.filepilot.navigation.BrowserRoute(it) }
+        }
+        val picker: ((com.webtecit.filepilot.core.storage.FileItem) -> Unit)? = if (!picking) null else { item ->
+            val uri = if (item.id.startsWith("/")) androidx.core.content.FileProvider.getUriForFile(this, "$packageName.files", java.io.File(item.id))
+            else android.net.Uri.parse(item.id.removePrefix(com.webtecit.filepilot.core.storage.SafFileSystem.PREFIX))
+            setResult(RESULT_OK, android.content.Intent().setData(uri).addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION))
+            finish()
+        }
+
         setContent {
             val prefs by viewModel.prefs.collectAsStateWithLifecycle()
             val p = prefs
@@ -80,11 +93,13 @@ class MainActivity : AppCompatActivity() {
                                 verify = { com.webtecit.filepilot.core.security.VaultKeys.checkPin(this@MainActivity, it) },
                                 onDone = { locked = false },
                             )
-                        } else AppRoot(
-                            afterSplash = viewModel::routeAfterSplash,
-                            afterOnboarding = viewModel::routeAfterOnboarding,
-                            prefs = p,
-                        )
+                        } else androidx.compose.runtime.CompositionLocalProvider(com.webtecit.filepilot.feature.browser.LocalFilePicker provides picker) {
+                            AppRoot(
+                                afterSplash = viewModel::routeAfterSplash,
+                                afterOnboarding = viewModel::routeAfterOnboarding,
+                                prefs = p,
+                            )
+                        }
                     }
                 }
             }

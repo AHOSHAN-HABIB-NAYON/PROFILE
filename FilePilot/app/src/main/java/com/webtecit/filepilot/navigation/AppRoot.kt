@@ -165,6 +165,7 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
                     onBack = { nav.popBackStack() },
                     onBrowse = { nav.switchTab(FilesRoute) },
                     onDevicePreview = { root, entry -> nav.navigate(PreviewRoute(root, entry)) },
+                    onFindInFiles = { nav.navigate(TextSearchRoute(it)) },
                 ) }
             }
             composable<PreviewRoute> { backStack ->
@@ -185,13 +186,15 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
             composable<SqliteRoute> { b -> com.webtecit.filepilot.feature.devtools.SqliteScreen(b.toRoute<SqliteRoute>().path, onBack = { nav.popBackStack() }) }
             composable<FontRoute> { b -> com.webtecit.filepilot.feature.devtools.FontPreviewScreen(b.toRoute<FontRoute>().path, onBack = { nav.popBackStack() }) }
             composable<ArchiveRoute> { b ->
-                Guided(Guides.ARCHIVE) { com.webtecit.filepilot.feature.devtools.ArchiveScreen(b.toRoute<ArchiveRoute>().path, onBack = { nav.popBackStack() },
+                Guided(Guides.ARCHIVE) { com.webtecit.filepilot.feature.devtools.ArchiveBrowserScreen(b.toRoute<ArchiveRoute>().path, onBack = { nav.popBackStack() },
                     onOpenFolder = { nav.navigate(BrowserRoute(it)) }) }
             }
             composable<TextSearchRoute> { b ->
                 com.webtecit.filepilot.feature.devtools.TextSearchScreen(b.toRoute<TextSearchRoute>().root, onBack = { nav.popBackStack() },
                     onOpenFile = { nav.openEditor(it, null) })
             }
+            composable<ImageRoute> { b -> com.webtecit.filepilot.feature.media.ImageViewerScreen(b.toRoute<ImageRoute>().path, onBack = { nav.popBackStack() }) }
+            composable<VideoRoute> { b -> com.webtecit.filepilot.feature.media.VideoPlayerScreen(b.toRoute<VideoRoute>().path, onBack = { nav.popBackStack() }) }
             composable<SearchRoute> {
                 com.webtecit.filepilot.feature.search.SmartSearchScreen(onBack = { nav.popBackStack() }, onOpenFolder = { nav.navigate(BrowserRoute(it)) })
             }

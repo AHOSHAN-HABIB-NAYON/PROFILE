@@ -144,3 +144,22 @@ class SmartQueryTest {
         assertTrue(q.kinds.isEmpty())
     }
 }
+
+class ProjectReplaceTest {
+    @get:Rule val temp = TemporaryFolder()
+
+    @Test fun replacesAcrossFilesWithRegexGroups() = runBlocking {
+        val root = temp.newFolder("site")
+        File(root, "index.html").writeText("<h1>Title</h1>\n<p>old-name</p>")
+        File(root, "css").mkdirs()
+        File(root, "css/a.css").writeText(".old-name { color: red }")
+        File(root, "img.png").writeBytes(byteArrayOf(1, 2, 3))
+        val p = FileToolsLogic.pattern("old-(\\w+)", regex = true, ignoreCase = false)
+        assertEquals(2, FileToolsLogic.searchPattern(root, p).size)
+        val (files, n) = FileToolsLogic.replaceInFiles(root, p, "new-$1")
+        assertEquals(2 to 2, files to n)
+        assertTrue(File(root, "css/a.css").readText().contains(".new-name"))
+        val word = FileToolsLogic.pattern("Title", regex = false, ignoreCase = true, wholeWord = true)
+        assertEquals(1, FileToolsLogic.searchPattern(root, word).size)
+    }
+}

@@ -19,6 +19,11 @@ coroutines = "1.10.2"
 serialization = "1.9.0"
 coil = "3.3.0"
 webkit = "1.12.1"
+zip4j = "2.11.5"
+junrar = "7.5.5"
+commonsCompress = "1.21"
+xz = "1.9"
+exifinterface = "1.3.7"
 biometric = "1.1.0"
 profileinstaller = "1.4.1"
 junit = "4.13.2"
@@ -60,6 +65,11 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 androidx-webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
 androidx-biometric = { group = "androidx.biometric", name = "biometric", version.ref = "biometric" }
+zip4j = { group = "net.lingala.zip4j", name = "zip4j", version.ref = "zip4j" }
+junrar = { group = "com.github.junrar", name = "junrar", version.ref = "junrar" }
+commons-compress = { group = "org.apache.commons", name = "commons-compress", version.ref = "commonsCompress" }
+xz = { group = "org.tukaani", name = "xz", version.ref = "xz" }
+androidx-exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version.ref = "exifinterface" }
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxJunit" }
