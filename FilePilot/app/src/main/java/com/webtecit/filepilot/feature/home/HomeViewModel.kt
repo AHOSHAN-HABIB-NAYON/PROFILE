@@ -48,6 +48,7 @@ data class HomeState(
     val downloadsId: String = "",
     val loaded: Boolean = false,
     val themeMode: com.webtecit.filepilot.core.preferences.ThemeMode = com.webtecit.filepilot.core.preferences.ThemeMode.LIGHT,
+    val tasks: List<com.webtecit.filepilot.core.tasks.BgTask> = emptyList(),
 )
 
 @HiltViewModel
@@ -60,6 +61,7 @@ class HomeViewModel @Inject constructor(
     private val opener: FileOpener,
     @IoDispatcher private val io: CoroutineDispatcher,
     private val preferences: com.webtecit.filepilot.core.preferences.PreferencesRepository,
+    private val backgroundTasks: com.webtecit.filepilot.core.tasks.BackgroundTasks,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeState())
@@ -73,11 +75,15 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch { library.recents.collect { r -> _state.update { it.copy(recents = r) } } }
         viewModelScope.launch { safRoots.roots.collect { r -> _state.update { it.copy(safRoots = r) } } }
         viewModelScope.launch { preferences.preferences.collect { p -> _state.update { it.copy(themeMode = p.themeMode) } } }
+        viewModelScope.launch { backgroundTasks.tasks.collect { t -> _state.update { it.copy(tasks = t.filter { task -> !task.finished }) } } }
     }
 
-    fun refresh() {
+    fun stopTask(id: Long) = backgroundTasks.cancel(id)
+
+    /** Reloads storage and categories. The pull-to-refresh spinner shows only when the user pulled ([byUser]). */
+    fun refresh(byUser: Boolean = false) {
         viewModelScope.launch {
-            _state.update { it.copy(refreshing = true) }
+            if (byUser) _state.update { it.copy(refreshing = true) }
             try {
                 val access = StorageAccess.level(context)
                 val vols = runCatching { volumes.load() }.getOrDefault(emptyList())

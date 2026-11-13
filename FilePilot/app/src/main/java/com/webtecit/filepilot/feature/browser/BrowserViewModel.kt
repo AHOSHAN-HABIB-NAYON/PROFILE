@@ -187,8 +187,9 @@ class BrowserViewModel @Inject constructor(
         }
     }
 
-    fun refresh() {
-        _state.value.currentId?.let { load(it, spinner = false) }
+    /** Reloads the folder quietly; the pull-to-refresh spinner shows only when the user pulled ([byUser]). */
+    fun refresh(byUser: Boolean = false) {
+        _state.value.currentId?.let { load(it, spinner = false, pulled = byUser) }
     }
 
     fun savedScroll(id: String?): Int = id?.let { scrollPositions[it] } ?: 0
@@ -257,10 +258,10 @@ class BrowserViewModel @Inject constructor(
 
     // --- loading --------------------------------------------------------------------------
 
-    private fun load(id: String, spinner: Boolean) {
+    private fun load(id: String, spinner: Boolean, pulled: Boolean = false) {
         loadJob?.cancel()
         deepJob?.cancel()
-        _state.update { it.copy(currentId = id, loading = spinner, refreshing = !spinner, error = null) }
+        _state.update { it.copy(currentId = id, loading = spinner, refreshing = pulled, error = null) }
         loadJob = viewModelScope.launch {
             try {
                 rawItems = fileSystems.of(id).list(id)

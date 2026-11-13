@@ -88,7 +88,7 @@ fun FilesScreen(
     ) { padding ->
         androidx.compose.material3.pulltorefresh.PullToRefreshBox(
             isRefreshing = state.refreshing,
-            onRefresh = viewModel::refresh,
+            onRefresh = { viewModel.refresh(byUser = true) },
             modifier = Modifier.fillMaxSize().padding(padding),
         ) {
             LazyColumn(

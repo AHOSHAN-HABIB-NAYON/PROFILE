@@ -21,6 +21,8 @@ enum class Category(val label: String, val kind: FileKind) {
     DOCUMENTS("Documents", FileKind.DOCUMENT),
     APKS("APKs", FileKind.APK),
     ARCHIVES("Archives", FileKind.ARCHIVE),
+    CODE("Code", FileKind.CODE),
+    DOWNLOADS("Downloads", FileKind.OTHER),
     LARGE("Large files", FileKind.OTHER),
     RECENT("Recent files", FileKind.OTHER);
 
@@ -36,6 +38,10 @@ class CategoryRepository @Inject constructor(
     @IoDispatcher private val io: CoroutineDispatcher,
 ) {
     private val uri = MediaStore.Files.getContentUri("external")
+    private val codeExt = listOf(
+        "html", "htm", "css", "scss", "js", "mjs", "ts", "jsx", "tsx", "vue", "kt", "kts", "java", "py", "php", "c", "cpp", "h",
+        "cs", "go", "rs", "swift", "dart", "rb", "lua", "sql", "sh", "gradle", "yml", "yaml", "toml",
+    )
     private val docExt = listOf("pdf", "doc", "docx", "odt", "rtf", "txt", "md", "xls", "xlsx", "ods", "csv", "ppt", "pptx", "odp", "epub", "html", "htm", "json", "xml")
     private val apkExt = listOf("apk", "xapk", "apks", "apkm")
     private val archiveExt = listOf("zip", "rar", "7z", "tar", "gz", "tgz", "bz2", "xz")
@@ -51,6 +57,9 @@ class CategoryRepository @Inject constructor(
             Category.DOCUMENTS -> ext(docExt)
             Category.APKS -> ext(apkExt)
             Category.ARCHIVES -> ext(archiveExt)
+            Category.CODE -> ext(codeExt)
+            Category.DOWNLOADS -> "${MediaStore.Files.FileColumns.DATA} LIKE ? AND ${MediaStore.Files.FileColumns.SIZE} > 0" to
+                arrayOf(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS).absolutePath + "/%")
             Category.LARGE -> "${MediaStore.Files.FileColumns.SIZE} > ?" to arrayOf(LARGE_BYTES.toString())
             Category.RECENT -> "${MediaStore.Files.FileColumns.DATE_MODIFIED} > ? AND ${MediaStore.Files.FileColumns.SIZE} > 0" to
                 arrayOf(((System.currentTimeMillis() - 7L * 24 * 3600 * 1000) / 1000).toString())
@@ -58,7 +67,7 @@ class CategoryRepository @Inject constructor(
     }
 
     suspend fun summaries(): List<CategorySummary> = coroutineScope {
-        listOf(Category.IMAGES, Category.VIDEOS, Category.AUDIO, Category.DOCUMENTS, Category.APKS, Category.ARCHIVES)
+        listOf(Category.IMAGES, Category.VIDEOS, Category.AUDIO, Category.DOCUMENTS, Category.APKS, Category.ARCHIVES, Category.CODE, Category.DOWNLOADS)
             .map { c -> async(io) { summary(c) } }
             .map { it.await() }
     }

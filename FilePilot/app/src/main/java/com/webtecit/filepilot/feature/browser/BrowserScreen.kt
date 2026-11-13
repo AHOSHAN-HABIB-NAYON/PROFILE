@@ -408,7 +408,7 @@ fun BrowserScreen(
 
             PullToRefreshBox(
                 isRefreshing = state.refreshing,
-                onRefresh = viewModel::refresh,
+                onRefresh = { viewModel.refresh(byUser = true) },
                 modifier = Modifier.fillMaxSize(),
             ) {
                 val error = state.error
@@ -418,7 +418,7 @@ fun BrowserScreen(
                         title = if (error.needsAccess) "Storage access needed" else "Can't open this folder",
                         message = error.message,
                         actionLabel = if (error.needsAccess) "Grant access" else "Try again",
-                        onAction = if (error.needsAccess) ({ gate { viewModel.refresh() } }) else viewModel::refresh,
+                        onAction = if (error.needsAccess) ({ gate { viewModel.refresh() } }) else ({ viewModel.refresh() }),
                         modifier = Modifier.verticalScroll(rememberScrollState()),
                     )
                     !state.loading && state.visibleCount == 0 -> EmptyState(

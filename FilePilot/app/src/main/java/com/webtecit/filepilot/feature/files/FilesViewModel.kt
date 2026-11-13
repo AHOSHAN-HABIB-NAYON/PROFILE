@@ -60,9 +60,9 @@ class FilesViewModel @Inject constructor(
         viewModelScope.launch { preferences.preferences.collect { p -> _state.update { it.copy(startLocation = p.startLocation) } } }
     }
 
-    fun refresh() {
+    fun refresh(byUser: Boolean = false) {
         viewModelScope.launch {
-            _state.update { it.copy(refreshing = true) }
+            if (byUser) _state.update { it.copy(refreshing = true) }
             try {
                 val vols = runCatching { volumes.load() }.getOrDefault(emptyList())
                 _state.update { it.copy(volumes = vols, access = StorageAccess.level(context)) }
