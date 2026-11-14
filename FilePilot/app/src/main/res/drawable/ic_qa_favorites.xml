@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated FilePilot illustrated icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="40dp" android:height="40dp" android:viewportWidth="40" android:viewportHeight="40">
+    <path android:pathData="M4,11a4,4 0 0 1 4,-4h8l3.5,3.5H32a4,4 0 0 1 4,4V30a4,4 0 0 1 -4,4H8a4,4 0 0 1 -4,-4z" android:fillColor="#FFFFD9A0"/>
+    <path android:pathData="M4,15a4,4 0 0 1 4,-4h24a4,4 0 0 1 4,4v15a4,4 0 0 1 -4,4H8a4,4 0 0 1 -4,-4z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="4" android:startY="11" android:endX="36" android:endY="34" android:startColor="#FFFFC15C" android:endColor="#FFF08A12"/>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M20,16.5l2.2,4.4 4.8,0.7 -3.5,3.4 0.8,4.8 -4.3,-2.3 -4.3,2.3 0.8,-4.8 -3.5,-3.4 4.8,-0.7z" android:fillColor="#FFFFFFFF"/>
+</vector>

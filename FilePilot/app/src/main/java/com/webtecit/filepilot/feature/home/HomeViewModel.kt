@@ -34,7 +34,7 @@ import kotlinx.coroutines.withContext
 
 enum class QuickFolderType { DOWNLOADS, CAMERA, PICTURES, DOCUMENTS, MUSIC, MOVIES }
 
-data class QuickFolder(val type: QuickFolderType, val label: String, val id: String)
+data class QuickFolder(val type: QuickFolderType, val label: String, val id: String, val count: Int = 0)
 
 data class HomeState(
     val refreshing: Boolean = false,
@@ -121,5 +121,6 @@ class HomeViewModel @Inject constructor(
             QuickFolder(QuickFolderType.MUSIC, "Music", File(root, Environment.DIRECTORY_MUSIC).absolutePath),
             QuickFolder(QuickFolderType.MOVIES, "Movies", File(root, Environment.DIRECTORY_MOVIES).absolutePath),
         ).filter { File(it.id).isDirectory }
+            .map { f -> f.copy(count = File(f.id).list()?.count { !it.startsWith(".") } ?: 0) }
     }
 }

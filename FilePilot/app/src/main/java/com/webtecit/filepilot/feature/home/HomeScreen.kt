@@ -116,6 +116,7 @@ import com.webtecit.filepilot.core.storage.StorageVolumeInfo
 import com.webtecit.filepilot.core.storage.VolumeType
 import com.webtecit.filepilot.data.LibraryEntry
 import com.webtecit.filepilot.feature.tools.Tool
+import com.webtecit.filepilot.feature.tools.iconRes
 import com.webtecit.filepilot.feature.tools.ToolGrid
 
 @Composable
@@ -235,15 +236,16 @@ fun HomeScreen(
                     item(key = "categories") {
                         val summaries = state.categories.associateBy { it.category }
                         val used = (primary?.usedBytes ?: 0L).coerceAtLeast(1L)
+                        val R = com.webtecit.filepilot.R.drawable
                         val tiles = listOf(
-                            CategoryTile("Images", Icons.Rounded.Image, Palette.Blue, Category.IMAGES.id, summaries[Category.IMAGES]),
-                            CategoryTile("Videos", Icons.Rounded.Movie, Palette.Pink, Category.VIDEOS.id, summaries[Category.VIDEOS]),
-                            CategoryTile("Audio", Icons.Rounded.MusicNote, Palette.Orange, Category.AUDIO.id, summaries[Category.AUDIO]),
-                            CategoryTile("Docs", Icons.Rounded.Description, Palette.Green, Category.DOCUMENTS.id, summaries[Category.DOCUMENTS]),
-                            CategoryTile("APKs", Icons.Rounded.Android, Palette.Purple, Category.APKS.id, summaries[Category.APKS]),
-                            CategoryTile("Archives", Icons.Rounded.FolderZip, Palette.Cyan, Category.ARCHIVES.id, summaries[Category.ARCHIVES]),
-                            CategoryTile("Code", Icons.Rounded.Code, Palette.Slate, Category.CODE.id, summaries[Category.CODE]),
-                            CategoryTile("Downloads", Icons.Rounded.Download, Palette.Blue, state.downloadsId, summaries[Category.DOWNLOADS]),
+                            CategoryTile("Images", Icons.Rounded.Image, Palette.Blue, Category.IMAGES.id, summaries[Category.IMAGES], R.ic_cat_images),
+                            CategoryTile("Videos", Icons.Rounded.Movie, Palette.Pink, Category.VIDEOS.id, summaries[Category.VIDEOS], R.ic_cat_videos),
+                            CategoryTile("Audio", Icons.Rounded.MusicNote, Palette.Orange, Category.AUDIO.id, summaries[Category.AUDIO], R.ic_cat_audio),
+                            CategoryTile("Docs", Icons.Rounded.Description, Palette.Green, Category.DOCUMENTS.id, summaries[Category.DOCUMENTS], R.ic_cat_docs),
+                            CategoryTile("APKs", Icons.Rounded.Android, Palette.Purple, Category.APKS.id, summaries[Category.APKS], R.ic_cat_apks),
+                            CategoryTile("Archives", Icons.Rounded.FolderZip, Palette.Cyan, Category.ARCHIVES.id, summaries[Category.ARCHIVES], R.ic_cat_archives),
+                            CategoryTile("Code", Icons.Rounded.Code, Palette.Slate, Category.CODE.id, summaries[Category.CODE], R.ic_cat_code),
+                            CategoryTile("Downloads", Icons.Rounded.Download, Palette.Blue, state.downloadsId, summaries[Category.DOWNLOADS], R.ic_cat_downloads),
                         )
                         EqualGrid(tiles, columns = 4) { t, m ->
                             RingBox(
@@ -251,23 +253,18 @@ fun HomeScreen(
                                 fraction = t.summary?.let { (it.bytes.toFloat() / used).coerceIn(0f, 1f) },
                                 subtitle = t.summary?.let { Formatters.size(it.bytes) } ?: "—",
                                 modifier = m,
+                                iconRes = t.iconRes,
                             ) { if (t.id.isNotEmpty()) open(t.id) }
                         }
                     }
                     item(key = "tools_header") { HomeHeader("Quick tools", "All tools", onOpenTools) }
                     item(key = "tools") {
                         val tools = listOf(
-                            Triple(Tool.CLEANER, "Cleaner", Icons.Rounded.CleaningServices to Palette.Green),
-                            Triple(Tool.FOLDER_SIZE, "Folder size", Icons.Rounded.FolderOpen to Palette.Blue),
-                            Triple(Tool.IMAGE_TO_PDF, "Image→PDF", Icons.Rounded.PictureAsPdf to Palette.Pink),
-                            Triple(Tool.QR_SCAN, "QR scan", Icons.Rounded.QrCodeScanner to Palette.Purple),
-                            Triple(Tool.CODE_STUDIO, "Code Studio", Icons.Rounded.Code to Palette.Orange),
-                            Triple(Tool.COMPRESS_IMAGE, "Compress", Icons.Rounded.Compress to Palette.Cyan),
-                            Triple(Tool.SECURE_FOLDER, "Secure", Icons.Rounded.Lock to Palette.Purple),
-                            Triple(null, "More", Icons.Rounded.Apps to Palette.Slate),
+                            Tool.CLEANER to "Cleaner", Tool.CODE_STUDIO to "Code", Tool.WHATSAPP_MEDIA to "WhatsApp", Tool.LARGE_FILES to "Large files",
+                            Tool.RECYCLE_BIN to "Recycle Bin", Tool.SECURE_FOLDER to "Secure", Tool.QR_SCAN to "QR scan", Tool.STITCH to "Long shot",
                         )
-                        EqualGrid(tools, columns = 4) { (tool, label, look), m ->
-                            GridBox(label, look.first, look.second, m) { if (tool != null) gate { onTool(tool) } else onOpenTools() }
+                        EqualGrid(tools, columns = 4) { (tool, label), m ->
+                            GridBox(label, tool.icon, Color(tool.tint), m, iconRes = tool.iconRes) { gate { onTool(tool) } }
                         }
                     }
                     item(key = "recent_header") { HomeHeader("Recent files", if (state.recents.isNotEmpty()) "See all" else null, onOpenLibrary) }
@@ -291,14 +288,22 @@ fun HomeScreen(
                             }
                         }
                     }
-                    item(key = "quick_header") { HomeHeader("Quick access", null, null) }
-                    item(key = "quick") {
-                        androidx.compose.foundation.lazy.LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(state.quickFolders, key = { it.id }) { f -> QuickChip(f) { open(f.id) } }
-                            item(key = "fav") {
-                                QuickChipView("Favorites", Icons.Rounded.Star, Palette.Orange, onOpenLibrary)
+                    if (state.favorites.isNotEmpty()) {
+                        item(key = "fav_header") { HomeHeader("Favorites", "See all", onOpenLibrary) }
+                        item(key = "favorites") {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                state.favorites.take(3).forEach { f -> FavoriteCard(f, Modifier.weight(1f)) { viewModel.open(f.id) } }
+                                repeat(3 - state.favorites.take(3).size) { Spacer(Modifier.weight(1f)) }
                             }
                         }
+                    }
+                    item(key = "quick_header") { HomeHeader("Quick access", null, null) }
+                    item(key = "quick") {
+                        val order = listOf(QuickFolderType.DOWNLOADS, QuickFolderType.CAMERA, QuickFolderType.DOCUMENTS, QuickFolderType.PICTURES, QuickFolderType.MUSIC, QuickFolderType.MOVIES)
+                        val folders = state.quickFolders.sortedBy { order.indexOf(it.type) }.take(3)
+                        val cards: List<QuickCard> = folders.map { QuickCard(it.label, quickIcon(it.type), "${"%,d".format(it.count)} items") { open(it.id) } } +
+                            QuickCard("Favorites", com.webtecit.filepilot.R.drawable.ic_qa_favorites, "${state.favorites.size} items", onOpenLibrary)
+                        EqualGrid(cards, columns = 4) { c, m -> QuickAccessCard(c, m) }
                     }
                 }
             }
@@ -423,11 +428,11 @@ private fun HeroStorage(volume: StorageVolumeInfo, categories: List<CategorySumm
     }
 }
 
-private data class CategoryTile(val label: String, val icon: ImageVector, val tint: Color, val id: String, val summary: CategorySummary?)
+private data class CategoryTile(val label: String, val icon: ImageVector, val tint: Color, val id: String, val summary: CategorySummary?, val iconRes: Int)
 
 /** A category box: icon inside a ring that fills with the share of used space this type takes. */
 @Composable
-private fun RingBox(label: String, icon: ImageVector, tint: Color, fraction: Float?, subtitle: String, modifier: Modifier, onClick: () -> Unit) {
+private fun RingBox(label: String, icon: ImageVector, tint: Color, fraction: Float?, subtitle: String, modifier: Modifier, iconRes: Int? = null, onClick: () -> Unit) {
     val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(if (pressed) 0.94f else 1f, label = "press")
@@ -441,12 +446,12 @@ private fun RingBox(label: String, icon: ImageVector, tint: Color, fraction: Flo
         color = MaterialTheme.colorScheme.surfaceContainerLowest,
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
         shadowElevation = 1.dp,
-        modifier = modifier.height(104.dp).graphicsLayer { scaleX = scale; scaleY = scale },
+        modifier = modifier.height(112.dp).graphicsLayer { scaleX = scale; scaleY = scale },
     ) {
         Column(Modifier.fillMaxSize().padding(4.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-            Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(56.dp), contentAlignment = Alignment.Center) {
                 androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
-                    val stroke = 4.dp.toPx()
+                    val stroke = 3.5.dp.toPx()
                     val inset = stroke / 2
                     val arc = androidx.compose.ui.geometry.Size(size.width - stroke, size.height - stroke)
                     val topLeft = androidx.compose.ui.geometry.Offset(inset, inset)
@@ -455,7 +460,11 @@ private fun RingBox(label: String, icon: ImageVector, tint: Color, fraction: Flo
                         drawArc(tint, -90f, 360f * sweep, false, topLeft, arc, style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round))
                     }
                 }
-                Icon(icon, null, tint = tint, modifier = Modifier.size(20.dp))
+                if (iconRes != null) {
+                    androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(iconRes), null, modifier = Modifier.size(36.dp))
+                } else {
+                    Icon(icon, null, tint = tint, modifier = Modifier.size(22.dp))
+                }
             }
             Spacer(Modifier.height(6.dp))
             Text(label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -488,6 +497,54 @@ private fun TaskCard(task: com.webtecit.filepilot.core.tasks.BgTask, onStop: () 
                 }
             }
             IconButton(onClick = onStop) { Icon(Icons.Rounded.Close, contentDescription = "Stop ${task.title}") }
+        }
+    }
+}
+
+private class QuickCard(val label: String, val iconRes: Int, val subtitle: String, val onClick: () -> Unit)
+
+private fun quickIcon(type: QuickFolderType): Int = when (type) {
+    QuickFolderType.DOWNLOADS -> com.webtecit.filepilot.R.drawable.ic_qa_download
+    QuickFolderType.CAMERA -> com.webtecit.filepilot.R.drawable.ic_qa_camera
+    QuickFolderType.PICTURES -> com.webtecit.filepilot.R.drawable.ic_qa_pictures
+    QuickFolderType.DOCUMENTS -> com.webtecit.filepilot.R.drawable.ic_qa_documents
+    QuickFolderType.MUSIC -> com.webtecit.filepilot.R.drawable.ic_qa_music
+    QuickFolderType.MOVIES -> com.webtecit.filepilot.R.drawable.ic_qa_movies
+}
+
+@Composable
+private fun QuickAccessCard(card: QuickCard, modifier: Modifier) {
+    Surface(
+        onClick = card.onClick,
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
+        modifier = modifier.height(100.dp),
+    ) {
+        Column(Modifier.fillMaxSize().padding(6.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(card.iconRes), null, modifier = Modifier.size(38.dp))
+            Spacer(Modifier.height(6.dp))
+            Text(card.label, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(card.subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+        }
+    }
+}
+
+@Composable
+private fun FavoriteCard(entry: LibraryEntry, modifier: Modifier, onClick: () -> Unit) {
+    val style = kindStyle(FileTypes.kindOf(entry.name, entry.isDirectory))
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
+        modifier = modifier.height(96.dp),
+    ) {
+        Column(Modifier.fillMaxSize().padding(12.dp)) {
+            com.webtecit.filepilot.core.designsystem.GradientIcon(if (entry.isDirectory) Icons.Rounded.Folder else style.icon, if (entry.isDirectory) Palette.Orange else style.tint, size = 36.dp)
+            Spacer(Modifier.weight(1f))
+            Text(entry.name, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(if (entry.isDirectory) "Folder" else "File", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

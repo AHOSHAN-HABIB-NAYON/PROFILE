@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated FilePilot illustrated icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="36dp" android:height="36dp" android:viewportWidth="36" android:viewportHeight="36">
+    <path android:pathData="M12,3h12a9,9 0 0 1 9,9v12a9,9 0 0 1 -9,9h-12a9,9 0 0 1 -9,-9v-12a9,9 0 0 1 9,-9z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="3" android:startY="3" android:endX="33" android:endY="33" android:startColor="#FFAE8DFF" android:endColor="#FF6B3FF0"/>
+        </aapt:attr>
+    </path>
+    <path android:pathData="M10,23a8,8 0 0 1 16,0z" android:fillColor="#FFFFFFFF"/>
+    <path android:pathData="M13.2,19.5a1.3,1.3 0 1 0 2.6,0a1.3,1.3 0 1 0 -2.6,0z" android:fillColor="#FF6B3FF0"/>
+    <path android:pathData="M20.2,19.5a1.3,1.3 0 1 0 2.6,0a1.3,1.3 0 1 0 -2.6,0z" android:fillColor="#FF6B3FF0"/>
+    <path android:pathData="M12.5,13.5l2,3M23.5,13.5l-2,3" android:strokeColor="#FFFFFFFF" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" android:fillColor="#00000000"/>
+    <path android:pathData="M11.5,24.5h13.0a1.5,1.5 0 0 1 1.5,1.5v0.0a1.5,1.5 0 0 1 -1.5,1.5h-13.0a1.5,1.5 0 0 1 -1.5,-1.5v-0.0a1.5,1.5 0 0 1 1.5,-1.5z" android:fillColor="#FFFFFFFF" android:fillAlpha="0.6"/>
+</vector>

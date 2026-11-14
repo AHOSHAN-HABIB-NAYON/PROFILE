@@ -5,6 +5,10 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -67,9 +71,33 @@ fun Modifier.enterAnimation(index: Int = 0): Modifier {
     }
 }
 
+/** A tile in the app's icon style: coloured gradient square with a white symbol. */
+@Composable
+fun GradientIcon(icon: ImageVector, tint: Color, size: Dp = 46.dp) {
+    androidx.compose.foundation.layout.Box(
+        Modifier.size(size)
+            .tintedShadow(tint, size)
+            .clip(RoundedCornerShape(size * 0.32f))
+            .background(androidx.compose.ui.graphics.Brush.linearGradient(listOf(lighten(tint), tint))),
+        contentAlignment = Alignment.Center,
+    ) {
+        androidx.compose.material3.Icon(icon, null, tint = Color.White, modifier = Modifier.size(size * 0.52f))
+    }
+}
+
+private fun Modifier.tintedShadow(tint: Color, size: Dp): Modifier =
+    this.shadow(elevation = size * 0.14f, shape = RoundedCornerShape(size * 0.32f), ambientColor = tint, spotColor = tint)
+
+private fun lighten(c: Color): Color = Color(
+    red = c.red + (1f - c.red) * 0.35f,
+    green = c.green + (1f - c.green) * 0.35f,
+    blue = c.blue + (1f - c.blue) * 0.35f,
+    alpha = 1f,
+)
+
 /**
- * The standard square box used for categories and tools: white card, coloured icon tile,
- * one-line label and an optional second line. Every box in a grid has the same size.
+ * The standard square box used for categories and tools: white card, illustrated icon (a drawable
+ * when [iconRes] is given, else a gradient tile), one-line label and an optional second line.
  */
 @Composable
 fun GridBox(
@@ -78,7 +106,8 @@ fun GridBox(
     tint: Color,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
-    height: Dp = 88.dp,
+    height: Dp = 96.dp,
+    iconRes: Int? = null,
     onClick: () -> Unit,
 ) {
     val interaction = remember { MutableInteractionSource() }
@@ -87,7 +116,7 @@ fun GridBox(
     Surface(
         onClick = onClick,
         interactionSource = interaction,
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLowest,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)),
         shadowElevation = 1.dp,
@@ -98,8 +127,12 @@ fun GridBox(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            IconTile(icon, tint, size = 40.dp)
-            Spacer(Modifier.height(7.dp))
+            if (iconRes != null) {
+                androidx.compose.foundation.Image(androidx.compose.ui.res.painterResource(iconRes), contentDescription = null, modifier = Modifier.size(46.dp))
+            } else {
+                GradientIcon(icon, tint)
+            }
+            Spacer(Modifier.height(8.dp))
             Text(
                 label,
                 style = MaterialTheme.typography.labelMedium,

@@ -160,11 +160,26 @@ private val Tool.color: Color
         Tool.HTML_PROJECTS -> Palette.Cyan
     }
 
+/** Illustrated icon for the tools that have one. */
+val Tool.iconRes: Int?
+    get() = when (this) {
+        Tool.CLEANER -> com.webtecit.filepilot.R.drawable.ic_tool_cleaner
+        Tool.CODE_STUDIO -> com.webtecit.filepilot.R.drawable.ic_tool_code
+        Tool.WHATSAPP_MEDIA -> com.webtecit.filepilot.R.drawable.ic_tool_chat
+        Tool.LARGE_FILES -> com.webtecit.filepilot.R.drawable.ic_tool_large
+        Tool.RECYCLE_BIN -> com.webtecit.filepilot.R.drawable.ic_tool_bin
+        Tool.SECURE_FOLDER -> com.webtecit.filepilot.R.drawable.ic_tool_secure
+        Tool.QR_SCAN -> com.webtecit.filepilot.R.drawable.ic_tool_qr
+        Tool.STITCH -> com.webtecit.filepilot.R.drawable.ic_tool_long
+        Tool.FOLDER_SIZE -> com.webtecit.filepilot.R.drawable.ic_tool_folder_size
+        else -> null
+    }
+
 /** Tools in equal boxes: the same width and height for every box, whatever the label. */
 @Composable
 fun ToolGrid(tools: List<Tool>, onTool: (Tool) -> Unit, columns: Int = 3) {
     EqualGrid(tools, columns) { tool, m ->
-        GridBox(tool.short, tool.icon, tool.color, m, height = 88.dp) { onTool(tool) }
+        GridBox(tool.short, tool.icon, tool.color, m, height = 96.dp, iconRes = tool.iconRes) { onTool(tool) }
     }
 }
 
