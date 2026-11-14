@@ -60,6 +60,19 @@ class NavigationTest {
         rule.waitForText("New file")
         rule.onNodeWithTag("new_file").assertIsDisplayed()
         rule.onNodeWithText("Choose a language").assertIsDisplayed()
+        // The real screen pixels, not just the Compose tree: the dark "New file" card must be visible
+        // (a stray WebView once painted white over it while the semantics still said "displayed").
+        rule.waitForIdle()
+        Thread.sleep(800)
+        val bounds = rule.onNodeWithTag("new_file").fetchSemanticsNode().boundsInWindow
+        val shot = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
+        val loc = IntArray(2)
+        scenario!!.onActivity { it.window.decorView.getLocationOnScreen(loc) }
+        val x = (loc[0] + bounds.left + 12).toInt().coerceIn(0, shot.width - 1)
+        val y = (loc[1] + bounds.center.y).toInt().coerceIn(0, shot.height - 1)
+        val px = shot.getPixel(x, y)
+        val lum = (android.graphics.Color.red(px) * 299 + android.graphics.Color.green(px) * 587 + android.graphics.Color.blue(px) * 114) / 1000
+        org.junit.Assert.assertTrue("New file card is not visible on screen (pixel luminance $lum at $x,$y)", lum < 110)
     }
 
     @Test fun switchesToDarkThemeAndBack() {

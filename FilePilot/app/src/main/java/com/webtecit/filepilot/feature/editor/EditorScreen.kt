@@ -336,6 +336,9 @@ fun EditorScreen(
                     // The editor stays in the layout (only resized) so its text, cursor and undo history are kept.
                     AndroidView(
                         factory = { controller.webView.apply { (parent as? ViewGroup)?.removeView(this); layoutParams = ViewGroup.LayoutParams(-1, -1) } },
+                        // A WebView squeezed to zero height can still paint over the screen on some phones,
+                        // which hid the start screen; so it is made invisible whenever it isn't in use.
+                        update = { it.visibility = if (hideEditor) android.view.View.INVISIBLE else android.view.View.VISIBLE },
                         modifier = m,
                     )
                 }
