@@ -115,8 +115,12 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           working-directory: FilePilot
           profile: pixel_6
-          # On failure, print each failed test's message and any crash from the device log.
-          script: ./gradlew --stacktrace connectedDebugAndroidTest || (grep -h -A 12 "<failure" app/build/outputs/androidTest-results/connected/debug/*.xml | head -150; adb logcat -d -s AndroidRuntime:E TestRunner:E | tail -120; exit 1)
+          # The device log is recorded to a file from the start (the emulator can vanish after a crash),
+          # and on failure each failed test's message and any crash from that log is printed.
+          script: |
+            adb logcat -c || true
+            nohup adb logcat -v time > /tmp/device.log 2>&1 &
+            ./gradlew --stacktrace connectedDebugAndroidTest || (grep -h -A 12 "<failure" app/build/outputs/androidTest-results/connected/debug/*.xml | head -150; echo "---- device log (errors) ----"; grep -E "FATAL|AndroidRuntime|E/TestRunner|Process: com.webtecit|Caused by|at com.webtecit|ANR in|lowmemorykiller|SIGSEGV|crash" /tmp/device.log | tail -200; exit 1)
       - name: Upload UI test reports
         if: always()
         uses: actions/upload-artifact@v4
