@@ -1,5 +1,7 @@
 package com.webtecit.filepilot.feature.editor
 
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.map
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.webtecit.filepilot.core.common.UiEvent
@@ -50,6 +52,54 @@ class EditorViewModel @Inject constructor(
                 message(e.userMessage())
             }
         }
+    }
+
+    /** Code and text files opened recently, for the start screen. */
+    val recentCode: StateFlow<List<com.webtecit.filepilot.data.LibraryEntry>> = library.recents
+        .map { list -> list.filter { !it.isDirectory && com.webtecit.filepilot.core.storage.FileTypes.isTextLike(it.name) }.take(5) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    /** Creates a new file with starter text in [dir] and opens it. */
+    fun createFile(dir: String, fileName: String, text: String) {
+        viewModelScope.launch {
+            try {
+                val file = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    val folder = java.io.File(dir).apply { mkdirs() }
+                    val target = uniqueFile(folder, fileName)
+                    target.writeText(text)
+                    target
+                }
+                open(file.absolutePath, null)
+            } catch (e: Exception) {
+                message("Couldn't create the file: ${e.userMessage()}")
+            }
+        }
+    }
+
+    /** Creates a project folder with [files] (name to text) and opens the first file. */
+    fun createProject(dir: String, name: String, files: List<Pair<String, String>>) {
+        viewModelScope.launch {
+            try {
+                val (root, first) = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    val parent = java.io.File(dir).apply { mkdirs() }
+                    val folder = uniqueFile(parent, name).apply { mkdirs() }
+                    files.forEach { (n, t) -> java.io.File(folder, n).apply { parentFile?.mkdirs() }.writeText(t) }
+                    folder to java.io.File(folder, files.first().first)
+                }
+                open(first.absolutePath, root.absolutePath)
+            } catch (e: Exception) {
+                message("Couldn't create the project: ${e.userMessage()}")
+            }
+        }
+    }
+
+    private fun uniqueFile(dir: java.io.File, name: String): java.io.File {
+        var f = java.io.File(dir, name)
+        var n = 1
+        val base = name.substringBeforeLast('.', name)
+        val ext = name.substringAfterLast('.', "")
+        while (f.exists()) f = java.io.File(dir, if (ext.isEmpty() || base == name) "$name ($n)" else "$base ($n).$ext").also { n++ }
+        return f
     }
 
     fun reopen(id: String, charset: String) {

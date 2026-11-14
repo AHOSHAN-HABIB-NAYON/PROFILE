@@ -316,15 +316,20 @@ fun EditorScreen(
             }
             if (findOpen && active != null) FindBar(controller, onFindInFiles = viewModel.previewTarget(active)?.let { (root, _) -> { onFindInFiles(root) } })
             if (tabs.isEmpty()) {
-                EmptyState(
-                    Icons.Rounded.Code, "Code Studio",
-                    "Open a code or text file from Files, or create a website in HTML Projects. Files open here in tabs.",
-                    actionLabel = "Browse files", onAction = onBrowse,
-                )
+                val recent by viewModel.recentCode.collectAsStateWithLifecycle()
+                Box(Modifier.fillMaxWidth().weight(1f)) {
+                    CodeStart(
+                        recent = recent,
+                        onCreateFile = viewModel::createFile,
+                        onCreateProject = viewModel::createProject,
+                        onBrowse = onBrowse,
+                        onOpenRecent = { viewModel.open(it, null) },
+                    )
+                }
             }
             val showPreview = active?.isHtml == true && mode != EditorMode.CODE
             // On wide screens (landscape, tablets) code and preview sit side by side, like a desktop IDE.
-            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().then(if (tabs.isEmpty()) Modifier.height(0.dp) else Modifier.weight(1f))) {
                 val wide = maxWidth >= 700.dp
                 val hideEditor = tabs.isEmpty() || (showPreview && mode == EditorMode.PREVIEW)
                 val editor = @Composable { m: Modifier ->
