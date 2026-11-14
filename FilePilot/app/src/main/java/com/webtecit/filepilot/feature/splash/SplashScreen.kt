@@ -93,7 +93,7 @@ fun SplashScreen(onFinished: () -> Unit) {
     Box(
         Modifier
             .fillMaxSize()
-            .background(Brush.radialGradient(listOf(Color(0xFF4F86FF), SplashBlue, Color(0xFF1A45C9), Color(0xFF12308F))))
+            .background(Brush.verticalGradient(listOf(Color(0xFF3D7BFF), SplashBlue, Color(0xFF1A45C9))))
             .testTag("splash"),
         contentAlignment = Alignment.Center,
     ) {
@@ -106,7 +106,7 @@ fun SplashScreen(onFinished: () -> Unit) {
                 Modifier
                     .graphicsLayer { scaleX = logoScale.value; scaleY = logoScale.value }
                     .size(108.dp)
-                    .shadow(22.dp, RoundedCornerShape(32.dp), ambientColor = Color(0xFF051450), spotColor = Color(0xFF051450))
+                    .shadow(16.dp, RoundedCornerShape(32.dp))
                     .clip(RoundedCornerShape(32.dp))
                     .background(Color.White),
                 contentAlignment = Alignment.Center,

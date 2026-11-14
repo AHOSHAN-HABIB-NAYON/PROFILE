@@ -119,7 +119,7 @@ jobs:
           # and on failure each failed test's message and any crash from that log is printed.
           script: |
             adb logcat -c || true
-            nohup adb logcat -v time > /tmp/device.log 2>&1 &
+            nohup sh -c 'while true; do adb wait-for-device; adb logcat -v time; sleep 1; done' >> /tmp/device.log 2>&1 &
             ./gradlew --stacktrace connectedDebugAndroidTest || (grep -h -A 12 "<failure" app/build/outputs/androidTest-results/connected/debug/*.xml | head -150; echo "---- device log (errors) ----"; grep -E "FATAL|AndroidRuntime|E/TestRunner|Process: com.webtecit|Caused by|at com.webtecit|ANR in|lowmemorykiller|SIGSEGV|crash" /tmp/device.log | tail -200; exit 1)
       - name: Upload UI test reports
         if: always()
