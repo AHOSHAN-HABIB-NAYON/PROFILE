@@ -9,9 +9,10 @@
     </style>
 
     <style name="Theme.FilePilot.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/fmp_background</item>
+        <item name="windowSplashScreenBackground">@color/fmp_splash</item>
+        <item name="windowSplashScreenIconBackgroundColor">#FFFFFF</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
-        <item name="windowSplashScreenAnimationDuration">300</item>
+        <item name="windowSplashScreenAnimationDuration">200</item>
         <item name="postSplashScreenTheme">@style/Theme.FilePilot</item>
     </style>
 </resources>

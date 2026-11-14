@@ -370,86 +370,8 @@ enum class ItemAction(val label: String, val icon: ImageVector) {
     SEARCH_TEXT("Search text in this folder", Icons.Rounded.Info),
     VAULT("Move to Secure Folder", Icons.Rounded.Star),
     DETAILS("Details", Icons.Rounded.Info),
+    SHOW_IN_FOLDER("Show in folder", Icons.Rounded.Info),
     DELETE("Delete", Icons.Rounded.Delete),
-}
-
-@Composable
-fun ItemActionsSheet(
-    item: FileItem,
-    favorite: Boolean,
-    onAction: (ItemAction) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val actions = buildList {
-        add(ItemAction.OPEN)
-        val local = item.id.startsWith("/")
-        if (!item.isDirectory && item.size <= 8_000_000 && (item.kind == FileKind.CODE || item.kind == FileKind.TEXT || item.extension.isEmpty())) add(ItemAction.EDIT)
-        if (local && (item.extension == "html" || item.extension == "htm" ||
-                (item.isDirectory && java.io.File(item.id, "index.html").isFile))) add(ItemAction.RUN)
-        if (!item.isDirectory) {
-            add(ItemAction.OPEN_WITH)
-            add(ItemAction.SHARE)
-        }
-        add(ItemAction.COPY)
-        add(ItemAction.MOVE)
-        add(ItemAction.RENAME)
-        add(if (favorite) ItemAction.UNFAVORITE else ItemAction.FAVORITE)
-        add(ItemAction.COPY_PATH)
-        if (local) {
-            when {
-                item.kind == FileKind.APK -> add(ItemAction.TOOL_APK)
-                item.kind == FileKind.DATABASE -> add(ItemAction.TOOL_SQLITE)
-                item.kind == FileKind.ARCHIVE -> add(ItemAction.TOOL_ARCHIVE)
-                item.kind == FileKind.FONT -> add(ItemAction.TOOL_FONT)
-            }
-            if (!item.isDirectory) add(ItemAction.TOOL_HEX)
-            add(ItemAction.ZIP)
-            add(ItemAction.COPY_TO)
-            add(ItemAction.MOVE_TO)
-            if (!item.isDirectory && item.size > 10_000_000) add(ItemAction.SPLIT)
-            if (item.extension.matches(Regex("\\d{3}"))) add(ItemAction.MERGE_PARTS)
-            if (item.isDirectory) add(ItemAction.SEARCH_TEXT)
-        }
-        if (item.kind == FileKind.PDF) { add(ItemAction.TOOL_PDF); add(ItemAction.COMPRESS_PDF) }
-        if (!item.isDirectory) add(ItemAction.VAULT)
-        add(ItemAction.DETAILS)
-        add(ItemAction.DELETE)
-    }
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
-        Row(Modifier.padding(horizontal = 24.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            FileThumb(item, size = 48.dp)
-            Spacer(Modifier.width(14.dp))
-            Column {
-                Text(item.name, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(item.subtitle(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-        Spacer(Modifier.height(8.dp))
-        actions.forEach { action ->
-            val destructive = action == ItemAction.DELETE
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .clickable { onAction(action) }
-                    .padding(horizontal = 24.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    action.icon,
-                    contentDescription = null,
-                    tint = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.width(20.dp))
-                Text(
-                    action.label,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                )
-            }
-        }
-        Spacer(Modifier.navigationBarsPadding().height(12.dp))
-    }
 }
 
 /** Code and text files open in the built-in editor; everything else in other apps. */

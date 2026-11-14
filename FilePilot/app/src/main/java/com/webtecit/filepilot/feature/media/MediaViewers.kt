@@ -291,22 +291,3 @@ private fun ZoomableImage(file: File, onTap: () -> Unit) {
 }
 
 /** Plays a video or audio file with standard controls. */
-@Composable
-fun VideoPlayerScreen(path: String, onBack: () -> Unit) {
-    val context = LocalContext.current
-    val video = remember { VideoView(context) }
-    DisposableEffect(path) {
-        val controller = MediaController(context).apply { setAnchorView(video) }
-        video.setMediaController(controller)
-        video.setVideoPath(path)
-        video.setOnPreparedListener { it.isLooping = false; video.start() }
-        onDispose { video.stopPlayback() }
-    }
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
-        AndroidView(factory = { video }, modifier = Modifier.fillMaxSize().align(Alignment.Center))
-        Row(Modifier.fillMaxWidth().statusBarsPadding().padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Back", tint = Color.White) }
-            Text(File(path).name, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-    }
-}

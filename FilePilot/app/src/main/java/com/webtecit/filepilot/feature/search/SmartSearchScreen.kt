@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class, kotlinx.coroutines.FlowPreview::class)
+@file:OptIn(ExperimentalMaterial3Api::class, kotlinx.coroutines.FlowPreview::class, androidx.compose.foundation.ExperimentalFoundationApi::class)
 
 package com.webtecit.filepilot.feature.search
 
@@ -53,6 +53,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -99,6 +105,7 @@ data class SearchUi(
     val searching: Boolean = false,
     val results: List<FileItem>? = null,
     val recent: List<String> = emptyList(),
+    val selected: Set<String> = emptySet(),
 )
 
 @HiltViewModel
@@ -106,6 +113,9 @@ class SmartSearchViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val opener: FileOpener,
     @IoDispatcher private val io: CoroutineDispatcher,
+    private val recycleBin: com.webtecit.filepilot.core.cleaning.RecycleBin,
+    private val operations: com.webtecit.filepilot.core.operations.FileOperationManager,
+    private val preferences: com.webtecit.filepilot.core.preferences.PreferencesRepository,
 ) : ViewModel() {
     val state = MutableStateFlow(SearchUi(recent = loadRecent()))
     private val input = MutableStateFlow("")
@@ -127,6 +137,45 @@ class SmartSearchViewModel @Inject constructor(
     fun setText(t: String) {
         state.value = state.value.copy(text = t)
         input.value = t
+    }
+
+    fun toggle(item: FileItem) {
+        val sel = state.value.selected
+        state.value = state.value.copy(selected = if (item.id in sel) sel - item.id else sel + item.id)
+    }
+
+    fun selectAll() { state.value = state.value.copy(selected = state.value.results.orEmpty().map { it.id }.toSet()) }
+    fun clearSelection() { state.value = state.value.copy(selected = emptySet()) }
+    fun selectedItems(): List<FileItem> = state.value.results.orEmpty().filter { it.id in state.value.selected }
+    fun rememberQuery() = saveRecent(state.value.text)
+
+    fun share(items: List<FileItem>) { viewModelScope.launch { _events.send(opener.share(items)) } }
+    fun openWith(item: FileItem) { viewModelScope.launch { _events.send(opener.openFile(item, chooser = true)) } }
+
+    fun recycleBinOn(): Boolean = runCatching { kotlinx.coroutines.runBlocking { preferences.current().recycleBin } }.getOrDefault(true)
+    fun canUseBin(items: List<FileItem>) = recycleBinOn() && items.all(recycleBin::supports)
+
+    /** Deletes [items] (to the Recycle Bin unless [permanently]) and drops them from the results. */
+    fun delete(items: List<FileItem>, permanently: Boolean) {
+        if (items.isEmpty()) return
+        val freed = com.webtecit.filepilot.core.common.Formatters.size(items.filter { !it.isDirectory }.sumOf { it.size })
+        val what = if (items.size == 1) items[0].name else com.webtecit.filepilot.core.common.Formatters.count(items.size, "item")
+        viewModelScope.launch {
+            if (!permanently && items.all(recycleBin::supports)) {
+                runCatching { recycleBin.trashEntries(items) }
+                    .onSuccess { entries ->
+                        com.webtecit.filepilot.core.designsystem.Feedback.deleted("Deleted", "$what · $freed", undo = {
+                            recycleBin.undo(entries)
+                            state.value = state.value.copy(results = (state.value.results.orEmpty() + items).distinctBy { it.id })
+                        })
+                    }
+                    .onFailure { com.webtecit.filepilot.core.designsystem.Feedback.error("Couldn't delete", it.message.orEmpty()); return@launch }
+            } else {
+                operations.delete(items)
+            }
+            val gone = items.map { it.id }.toSet()
+            state.value = state.value.copy(results = state.value.results?.filterNot { it.id in gone }, selected = state.value.selected - gone)
+        }
     }
 
     fun open(item: FileItem) {
@@ -210,7 +259,13 @@ private val examples = listOf(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SmartSearchScreen(onBack: () -> Unit, onOpenFolder: (String) -> Unit, viewModel: SmartSearchViewModel = hiltViewModel()) {
+fun SmartSearchScreen(
+    onBack: () -> Unit,
+    onOpenFolder: (String) -> Unit,
+    onOpenRoute: (Any) -> Unit = {},
+    routeFor: (String) -> Any? = { null },
+    viewModel: SmartSearchViewModel = hiltViewModel(),
+) {
     val ui by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     EventHandler(viewModel.events, snackbar, onOpenFolder)
@@ -220,6 +275,44 @@ fun SmartSearchScreen(onBack: () -> Unit, onOpenFolder: (String) -> Unit, viewMo
     val tertiary = MaterialTheme.colorScheme.tertiary
     val glow = rememberInfiniteTransition(label = "glow")
     val shift by glow.animateFloat(0f, 1f, infiniteRepeatable(tween(2600, easing = LinearEasing)), label = "shift")
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var sheetFor by remember { mutableStateOf<FileItem?>(null) }
+    var deleting by remember { mutableStateOf<List<FileItem>?>(null) }
+    val selecting = ui.selected.isNotEmpty()
+    androidx.activity.compose.BackHandler(enabled = selecting) { viewModel.clearSelection() }
+
+    fun openItem(item: FileItem) {
+        viewModel.rememberQuery()
+        when {
+            item.isDirectory -> onOpenFolder(item.id)
+            item.id.startsWith("/") -> routeFor(item.id)?.let(onOpenRoute) ?: viewModel.open(item)
+            else -> viewModel.open(item)
+        }
+    }
+
+    fun onAction(item: FileItem, action: com.webtecit.filepilot.feature.browser.ItemAction) {
+        sheetFor = null
+        when (action) {
+            com.webtecit.filepilot.feature.browser.ItemAction.OPEN -> openItem(item)
+            com.webtecit.filepilot.feature.browser.ItemAction.SHARE -> viewModel.share(listOf(item))
+            com.webtecit.filepilot.feature.browser.ItemAction.OPEN_WITH -> viewModel.openWith(item)
+            com.webtecit.filepilot.feature.browser.ItemAction.DELETE -> deleting = listOf(item)
+            com.webtecit.filepilot.feature.browser.ItemAction.SHOW_IN_FOLDER -> onOpenFolder(item.id.substringBeforeLast('/'))
+            com.webtecit.filepilot.feature.browser.ItemAction.COPY_PATH -> {
+                val cm = context.getSystemService(android.content.ClipboardManager::class.java)
+                cm?.setPrimaryClip(android.content.ClipData.newPlainText("Path", item.id))
+                android.widget.Toast.makeText(context, "Path copied", android.widget.Toast.LENGTH_SHORT).show()
+            }
+            com.webtecit.filepilot.feature.browser.ItemAction.EDIT -> onOpenRoute(com.webtecit.filepilot.navigation.EditorRoute(item.id))
+            com.webtecit.filepilot.feature.browser.ItemAction.TOOL_APK -> onOpenRoute(com.webtecit.filepilot.navigation.ApkRoute(item.id))
+            com.webtecit.filepilot.feature.browser.ItemAction.TOOL_ARCHIVE -> onOpenRoute(com.webtecit.filepilot.navigation.ArchiveRoute(item.id))
+            com.webtecit.filepilot.feature.browser.ItemAction.TOOL_PDF -> onOpenRoute(com.webtecit.filepilot.navigation.PdfRoute(item.id))
+            com.webtecit.filepilot.feature.browser.ItemAction.TOOL_HEX -> onOpenRoute(com.webtecit.filepilot.navigation.HexRoute(item.id))
+            com.webtecit.filepilot.feature.browser.ItemAction.TOOL_FONT -> onOpenRoute(com.webtecit.filepilot.navigation.FontRoute(item.id))
+            com.webtecit.filepilot.feature.browser.ItemAction.TOOL_SQLITE -> onOpenRoute(com.webtecit.filepilot.navigation.SqliteRoute(item.id))
+            else -> Unit
+        }
+    }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbar) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
@@ -288,28 +381,107 @@ fun SmartSearchScreen(onBack: () -> Unit, onOpenFolder: (String) -> Unit, viewMo
                 results != null && results.isEmpty() && !ui.searching -> EmptyState(
                     Icons.Rounded.SearchOff, "Nothing found", "No files match. Try fewer words, or a different type or time.",
                 )
-                results != null -> LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
-                    item { Text("${results.size}${if (results.size == 500) "+" else ""} results", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) }
-                    items(results, key = { it.id }) { item ->
-                        Row(
-                            Modifier.fillMaxWidth().clickable { viewModel.open(item) }.padding(horizontal = 16.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            FileThumb(item)
-                            Spacer(Modifier.width(14.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text(item.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text(
-                                    "${item.subtitle()} · ${item.id.substringBeforeLast('/').substringAfter("/0/")}",
-                                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                )
+                results != null -> Box(Modifier.fillMaxSize()) {
+                    LazyColumn(contentPadding = PaddingValues(bottom = if (selecting) 96.dp else 24.dp), modifier = Modifier.testTag("search_results")) {
+                        item {
+                            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                                if (selecting) {
+                                    val bytes = viewModel.selectedItems().filter { !it.isDirectory }.sumOf { it.size }
+                                    Text("${ui.selected.size} selected", style = MaterialTheme.typography.labelLarge, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+                                    Text(" · ${com.webtecit.filepilot.core.common.Formatters.size(bytes)}", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                                    Text(if (ui.selected.size == results.size) "Clear" else "Select all", color = primary, style = MaterialTheme.typography.labelLarge,
+                                        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { if (ui.selected.size == results.size) viewModel.clearSelection() else viewModel.selectAll() }.padding(6.dp))
+                                } else {
+                                    Text("${results.size}${if (results.size == 500) "+" else ""} results", style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+                                    Text("Long-press to select", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
                             }
+                        }
+                        items(results, key = { it.id }) { item ->
+                            val selected = item.id in ui.selected
+                            Row(
+                                Modifier.fillMaxWidth()
+                                    .background(if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f) else androidx.compose.ui.graphics.Color.Transparent)
+                                    .combinedClickable(
+                                        onClick = { if (selecting) viewModel.toggle(item) else openItem(item) },
+                                        onLongClick = { viewModel.toggle(item) },
+                                    )
+                                    .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                if (selecting) {
+                                    com.webtecit.filepilot.feature.browser.SelectTick(selected)
+                                    Spacer(Modifier.width(12.dp))
+                                }
+                                FileThumb(item, size = 48.dp)
+                                Spacer(Modifier.width(14.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text(item.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(
+                                        "${item.subtitle()} · ${item.id.substringBeforeLast('/').substringAfterLast('/')}",
+                                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                                if (!selecting) IconButton(onClick = { sheetFor = item }) {
+                                    Icon(androidx.compose.material.icons.Icons.Rounded.MoreVert, "Actions for ${item.name}", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    }
+                    if (selecting) {
+                        Row(
+                            Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(12.dp)
+                                .clip(RoundedCornerShape(22.dp)).background(androidx.compose.ui.graphics.Color(0xFF151A2D)).padding(vertical = 6.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                        ) {
+                            SelBarButton(androidx.compose.material.icons.Icons.Rounded.Share, "Share", androidx.compose.ui.graphics.Color.White) { viewModel.share(viewModel.selectedItems()) }
+                            SelBarButton(androidx.compose.material.icons.Icons.Rounded.Close, "Cancel", androidx.compose.ui.graphics.Color.White) { viewModel.clearSelection() }
+                            SelBarButton(androidx.compose.material.icons.Icons.Rounded.Delete, "Delete", androidx.compose.ui.graphics.Color(0xFFFF8A9A)) { deleting = viewModel.selectedItems() }
                         }
                     }
                 }
             }
         }
+    }
+
+    sheetFor?.let { item ->
+        com.webtecit.filepilot.feature.browser.ItemActionsSheet(
+            item = item,
+            favorite = false,
+            onAction = { onAction(item, it) },
+            onDismiss = { sheetFor = null },
+            allowed = SearchActions,
+        )
+    }
+    deleting?.let { list ->
+        com.webtecit.filepilot.feature.browser.DeleteSheet(
+            items = list,
+            canUseRecycleBin = viewModel.canUseBin(list),
+            onDelete = { permanently -> deleting = null; viewModel.delete(list, permanently) },
+            onDismiss = { deleting = null },
+        )
+    }
+}
+
+private val SearchActions = setOf(
+    com.webtecit.filepilot.feature.browser.ItemAction.OPEN, com.webtecit.filepilot.feature.browser.ItemAction.SHARE,
+    com.webtecit.filepilot.feature.browser.ItemAction.OPEN_WITH, com.webtecit.filepilot.feature.browser.ItemAction.DELETE,
+    com.webtecit.filepilot.feature.browser.ItemAction.SHOW_IN_FOLDER, com.webtecit.filepilot.feature.browser.ItemAction.COPY_PATH,
+    com.webtecit.filepilot.feature.browser.ItemAction.EDIT, com.webtecit.filepilot.feature.browser.ItemAction.TOOL_APK,
+    com.webtecit.filepilot.feature.browser.ItemAction.TOOL_ARCHIVE, com.webtecit.filepilot.feature.browser.ItemAction.TOOL_PDF,
+    com.webtecit.filepilot.feature.browser.ItemAction.TOOL_HEX, com.webtecit.filepilot.feature.browser.ItemAction.TOOL_FONT,
+    com.webtecit.filepilot.feature.browser.ItemAction.TOOL_SQLITE,
+)
+
+@Composable
+private fun SelBarButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, tint: androidx.compose.ui.graphics.Color, onClick: () -> Unit) {
+    Column(
+        Modifier.clip(RoundedCornerShape(14.dp)).clickable(onClick = onClick).padding(horizontal = 18.dp, vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(icon, null, tint = tint)
+        Text(label, color = tint, style = MaterialTheme.typography.labelSmall)
     }
 }
 

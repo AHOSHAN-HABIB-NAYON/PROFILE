@@ -226,7 +226,12 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
             composable<VideoRoute> { b -> com.webtecit.filepilot.feature.media.VideoPlayerScreen(b.toRoute<VideoRoute>().path, onBack = { nav.popBackStack() }) }
             composable<AudioRoute> { b -> com.webtecit.filepilot.feature.media.AudioPlayerScreen(b.toRoute<AudioRoute>().path, onBack = { nav.popBackStack() }) }
             composable<SearchRoute> {
-                com.webtecit.filepilot.feature.search.SmartSearchScreen(onBack = { nav.popBackStack() }, onOpenFolder = { nav.navigate(BrowserRoute(it)) })
+                com.webtecit.filepilot.feature.search.SmartSearchScreen(
+                    onBack = { nav.popBackStack() },
+                    onOpenFolder = { nav.navigate(BrowserRoute(it)) },
+                    onOpenRoute = { nav.navigate(it) },
+                    routeFor = { p -> previewRoute(p)?.takeUnless { it is HexRoute } },
+                )
             }
             composable<TerminalRoute> { com.webtecit.filepilot.feature.devtools.TerminalScreen(onBack = { nav.popBackStack() }) }
             composable<VaultRoute> { Guided { com.webtecit.filepilot.feature.vault.VaultScreen(onBack = { nav.popBackStack() }) } }

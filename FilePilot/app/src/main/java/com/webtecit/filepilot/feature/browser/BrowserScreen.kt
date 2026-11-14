@@ -212,6 +212,7 @@ fun BrowserScreen(
             ItemAction.SEARCH_TEXT -> onTool(com.webtecit.filepilot.navigation.TextSearchRoute(item.id))
             ItemAction.VAULT -> viewModel.moveToVault(listOf(item))
             ItemAction.DELETE -> dialog = BrowserDialog.Delete(listOf(item))
+            ItemAction.SHOW_IN_FOLDER -> Unit
         }
     }
 

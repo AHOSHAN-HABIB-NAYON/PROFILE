@@ -2,7 +2,6 @@
 
 package com.webtecit.filepilot.feature.recycle
 
-import android.widget.MediaController
 import android.widget.VideoView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -343,9 +342,9 @@ private fun TrashVideo(file: File) {
     val context = LocalContext.current
     val video = remember(file) { VideoView(context) }
     DisposableEffect(file) {
-        val controller = MediaController(context).apply { setAnchorView(video) }
-        video.setMediaController(controller)
         video.setVideoPath(file.absolutePath)
+        // Tap pauses and resumes. (The platform MediaController would swallow the back button.)
+        video.setOnClickListener { if (video.isPlaying) video.pause() else video.start() }
         video.setOnPreparedListener { video.start() }
         onDispose { video.stopPlayback() }
     }
