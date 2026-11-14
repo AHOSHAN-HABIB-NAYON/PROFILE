@@ -19,6 +19,8 @@
     <!-- Only so websites previewed in HTML Studio can load online resources they reference.
          The app itself sends no data. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- A file manager installs APKs the user picks; Android asks the user to allow it first. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- Keep long copies, scans and extractions running with a progress notification. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />

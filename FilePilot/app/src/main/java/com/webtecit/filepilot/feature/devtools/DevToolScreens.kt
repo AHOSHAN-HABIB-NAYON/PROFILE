@@ -32,6 +32,8 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.SearchOff
+import androidx.compose.material.icons.rounded.InstallMobile
+import androidx.compose.ui.platform.testTag
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -119,6 +121,7 @@ fun ApkInfoScreen(path: String, onBack: () -> Unit) {
     var bundle by remember { mutableStateOf<List<Pair<String, Long>>?>(null) }
     var error by remember { mutableStateOf<String?>(null) }
     val ext = FileTypes.extensionOf(path)
+    val install = rememberApkInstall()
     LaunchedEffect(path) {
         withContext(Dispatchers.IO) {
             runCatching {
@@ -142,6 +145,17 @@ fun ApkInfoScreen(path: String, onBack: () -> Unit) {
                             }
                         }
                         Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.height(12.dp))
+                        androidx.compose.material3.Button(
+                            onClick = { install(File(path)) },
+                            modifier = Modifier.fillMaxWidth().height(50.dp).testTag("apk_install"),
+                            shape = androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
+                        ) {
+                            androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.Rounded.InstallMobile, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Install app")
+                        }
+                        Spacer(Modifier.height(8.dp))
                         Kv("Version", "${r.versionName} (${r.versionCode})")
                         Kv("Minimum SDK", "API ${r.minSdk}")
                         Kv("Target SDK", "API ${r.targetSdk}")
