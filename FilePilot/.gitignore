@@ -9,3 +9,4 @@ captures/
 .cxx/
 *.jks
 *.keystore
+!app/test-signing.keystore
