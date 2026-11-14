@@ -411,8 +411,8 @@ class FileOperationManager @Inject constructor(
             // Permanent deletes end with the "Deleted" animation.
             if (op.kind == OperationKind.DELETE && status == OperationStatus.COMPLETED && op.succeededIds.isNotEmpty()) {
                 val n = op.succeededIds.size
-                com.webtecit.filepilot.core.designsystem.Feedback.deleted(
-                    "Deleted",
+                com.webtecit.filepilot.core.designsystem.Feedback.deletedPermanently(
+                    "Deleted permanently",
                     if (n == 1) op.succeededIds[0].substringAfterLast('/') else "$n items deleted permanently",
                 )
             }

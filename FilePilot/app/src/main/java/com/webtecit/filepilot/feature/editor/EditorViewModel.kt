@@ -73,7 +73,7 @@ class EditorViewModel @Inject constructor(
             try {
                 session.save(id, text)
                 onSaved()
-                com.webtecit.filepilot.core.designsystem.Feedback.saved("Saved", id.substringAfterLast('/'))
+                com.webtecit.filepilot.core.designsystem.Feedback.saved("Saved!", "", file = if (id.startsWith("/")) java.io.File(id) else null)
             } catch (e: Exception) {
                 message("Not saved: ${e.userMessage()} Your changes are kept as a draft.")
                 session.saveDraft(id, text)
@@ -85,7 +85,7 @@ class EditorViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 session.saveAs(id, text, name)
-                com.webtecit.filepilot.core.designsystem.Feedback.saved("Saved", name)
+                com.webtecit.filepilot.core.designsystem.Feedback.saved("Saved!", name)
             } catch (e: Exception) {
                 message(e.userMessage())
             }

@@ -93,7 +93,7 @@ class ImageViewerViewModel @javax.inject.Inject constructor(
             }.isSuccess
         } else {
             val ok = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { file.delete() }
-            if (ok) com.webtecit.filepilot.core.designsystem.Feedback.deleted("Deleted", file.name)
+            if (ok) com.webtecit.filepilot.core.designsystem.Feedback.deletedPermanently("Deleted permanently", file.name)
             ok
         }
     }

@@ -118,14 +118,11 @@ class ToolkitViewModel @Inject constructor(
                 val size = files.sumOf { it.length() }
                 tasks.finish(id, if (files.isEmpty()) "Done" else "Saved ${files.size} file${if (files.size == 1) "" else "s"}")
                 _run.value = ToolRun(output = files, detail = "")
-                Feedback.saved(
-                    savedTitle,
-                    when (files.size) {
-                        0 -> ""
-                        1 -> "${files[0].name} · ${Formatters.size(size)}"
-                        else -> "${files.size} files · ${Formatters.size(size)}"
-                    },
-                )
+                if (files.size == 1) {
+                    Feedback.saved(savedTitle, "${files[0].parentFile?.name.orEmpty()} · ${Formatters.size(size)}", file = files[0])
+                } else {
+                    Feedback.saved(savedTitle, if (files.isEmpty()) "" else "${files.size} files · ${Formatters.size(size)}")
+                }
             }.onFailure { e ->
                 tasks.dismiss(id)
                 if (e is kotlinx.coroutines.CancellationException) {

@@ -158,7 +158,7 @@ fun QrCreateScreen(onBack: () -> Unit, onOpenFolder: (String) -> Unit) {
                 if (share) {
                     com.webtecit.filepilot.core.storage.FileIntents.share(context, listOf(FileProvider.getUriForFile(context, "${context.packageName}.files", f)), listOf("image/png"))
                 } else {
-                    Feedback.saved("QR code saved", "Pictures/FilePilot/${f.name}")
+                    Feedback.saved("Saved!", "Pictures/FilePilot", file = f)
                 }
             }.onFailure {
                 android.widget.Toast.makeText(context, "Couldn't save: ${it.message}", android.widget.Toast.LENGTH_LONG).show()

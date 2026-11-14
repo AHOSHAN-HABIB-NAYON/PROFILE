@@ -166,7 +166,7 @@ class CleanerEngine @Inject constructor(
                     // The delete engine shows its own "Deleted" confirmation when it finishes.
                     operations.delete(rest)
                 } else {
-                    com.webtecit.filepilot.core.designsystem.Feedback.deleted("Cleaned", freed)
+                    com.webtecit.filepilot.core.designsystem.Feedback.deletedPermanently("Cleaned", freed)
                 }
             } catch (e: Exception) {
                 _events.send(UiEvent.Message(e.userMessage()))

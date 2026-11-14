@@ -495,7 +495,7 @@ class BrowserViewModel @Inject constructor(
             }
             result.onSuccess {
                 tasks.finish(id, "Created ${out.name} (${Formatters.size(out.length())})")
-                com.webtecit.filepilot.core.designsystem.Feedback.saved("Archive created", "${out.name} · ${Formatters.size(out.length())}")
+                com.webtecit.filepilot.core.designsystem.Feedback.saved("Archive created", "${out.parentFile?.name.orEmpty()} · ${Formatters.size(out.length())}", file = out)
             }.onFailure {
                 out.delete()
                 tasks.dismiss(id)
