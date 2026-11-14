@@ -15,7 +15,7 @@
 <nav class="tabs"><a href="index.html">Home</a><a href="privacy.html" class=on>Privacy Policy</a><a href="terms.html">Terms & Conditions</a><a href="disclaimer.html">Disclaimer</a></nav>
 </div></header>
 <main class="wrap">
-<p class="meta">Effective date: November 13, 2026</p>
+<p class="meta">Effective date: November 14, 2026</p>
 <section class="card"><h2>Summary</h2><ul>
 <li>FilePilot has <b>no account, no login, no ads and no analytics</b> in this version.</li>
 <li>There is <b>no FilePilot server</b>. The app does not upload, sell or share your files or personal data.</li>
@@ -29,10 +29,13 @@
 <tr><td>Folder access through Android's folder picker</td><td>SD cards, USB drives or single folders you choose</td><td>When you choose to add a folder</td></tr>
 <tr><td>Internet (INTERNET)</td><td>Only so websites you build and preview in HTML Studio can load online resources they reference (for example web fonts or libraries). The app itself sends no data</td><td>Granted at install; no prompt</td></tr>
 <tr><td>Fingerprint / face / device lock (through Android's BiometricPrompt)</td><td>To unlock the Secure Folder and the optional app lock</td><td>When you use those features. Biometric data never reaches the app</td></tr>
+<tr><td>Install unknown apps (REQUEST_INSTALL_PACKAGES)</td><td>So you can install an APK file you choose in the file manager. The app hands the file to Android's own installer, which asks you to confirm; nothing is installed without your action</td><td>Only when you tap Install on an APK; Android asks you to allow it first</td></tr>
+<tr><td>Camera (CAMERA)</td><td>Only for the QR code scanner. Images are analysed on the device and are not saved or sent anywhere</td><td>When you open the QR scanner</td></tr>
+<tr><td>Notifications and foreground service (POST_NOTIFICATIONS, FOREGROUND_SERVICE)</td><td>To show progress of long copy, move, archive or cleaning tasks so they can finish in the background</td><td>Notifications are requested on Android 13+; you can decline</td></tr>
 </table></div></section>
 <section class="card"><h2>Information stored by the app</h2><p>Only in the app's private storage on your device:</p><ul>
 <li>Settings (theme, view, sorting, editor and preview options).</li>
-<li>Favorites, bookmarks and the list of recently opened files.</li>
+<li>Favorites, bookmarks and the list of recently opened files. The Recent files page reads Android's media index on the device to list recently added files; this list is not stored or sent anywhere.</li>
 <li>Folders you granted through the folder picker.</li>
 <li>Unsaved editor drafts, so your code isn't lost.</li>
 <li>Recycle Bin records (original location and date) for 30 days; the files themselves stay in a hidden folder on the same storage.</li>
