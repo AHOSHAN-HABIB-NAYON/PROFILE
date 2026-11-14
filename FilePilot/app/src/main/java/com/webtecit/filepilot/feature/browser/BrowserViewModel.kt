@@ -202,6 +202,12 @@ class BrowserViewModel @Inject constructor(
      */
     private val history = ArrayDeque<List<Crumb>>()
 
+    /** Files opened inside FilePilot (photos, PDFs, videos, code, archives) go to Recent files too. */
+    fun noteOpened(item: FileItem) {
+        if (item.isDirectory) return
+        viewModelScope.launch { runCatching { library.addRecent(item) } }
+    }
+
     fun openFolder(item: FileItem, currentScroll: Int) {
         history.addLast(_state.value.crumbs)
         rememberScroll(currentScroll)

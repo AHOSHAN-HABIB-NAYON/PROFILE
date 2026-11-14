@@ -270,8 +270,21 @@ fun HomeScreen(
                             GridBox(label, look.first, look.second, m) { if (tool != null) gate { onTool(tool) } else onOpenTools() }
                         }
                     }
-                    if (state.recents.isNotEmpty()) {
-                        item(key = "recent_header") { HomeHeader("Recent files", "See all", onOpenLibrary) }
+                    item(key = "recent_header") { HomeHeader("Recent files", if (state.recents.isNotEmpty()) "See all" else null, onOpenLibrary) }
+                    if (state.recents.isEmpty()) {
+                        item(key = "recents_empty") {
+                            AppCard(modifier = Modifier.enterAnimation(3)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    IconTile(Icons.Rounded.History, Palette.Slate, size = 38.dp)
+                                    Spacer(Modifier.width(12.dp))
+                                    Text(
+                                        "Files you open will appear here.",
+                                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                    } else {
                         item(key = "recents") {
                             AppCard(contentPadding = PaddingValues(vertical = 4.dp), modifier = Modifier.enterAnimation(3)) {
                                 state.recents.take(4).forEach { EntryRow(it, showTime = true) { viewModel.open(it.id) } }

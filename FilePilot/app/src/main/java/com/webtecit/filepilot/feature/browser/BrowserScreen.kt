@@ -161,6 +161,7 @@ fun BrowserScreen(
 
     val picker = LocalFilePicker.current
     fun onItemClick(item: FileItem) {
+        if (!state.selectionMode && !item.isDirectory && picker == null) viewModel.noteOpened(item)
         when {
             state.selectionMode -> viewModel.toggleSelection(item)
             item.isDirectory -> viewModel.openFolder(item, firstVisible())
