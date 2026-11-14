@@ -236,16 +236,15 @@ fun HomeScreen(
                     item(key = "categories") {
                         val summaries = state.categories.associateBy { it.category }
                         val used = (primary?.usedBytes ?: 0L).coerceAtLeast(1L)
-                        val R = com.webtecit.filepilot.R.drawable
                         val tiles = listOf(
-                            CategoryTile("Images", Icons.Rounded.Image, Palette.Blue, Category.IMAGES.id, summaries[Category.IMAGES], R.ic_cat_images),
-                            CategoryTile("Videos", Icons.Rounded.Movie, Palette.Pink, Category.VIDEOS.id, summaries[Category.VIDEOS], R.ic_cat_videos),
-                            CategoryTile("Audio", Icons.Rounded.MusicNote, Palette.Orange, Category.AUDIO.id, summaries[Category.AUDIO], R.ic_cat_audio),
-                            CategoryTile("Docs", Icons.Rounded.Description, Palette.Green, Category.DOCUMENTS.id, summaries[Category.DOCUMENTS], R.ic_cat_docs),
-                            CategoryTile("APKs", Icons.Rounded.Android, Palette.Purple, Category.APKS.id, summaries[Category.APKS], R.ic_cat_apks),
-                            CategoryTile("Archives", Icons.Rounded.FolderZip, Palette.Cyan, Category.ARCHIVES.id, summaries[Category.ARCHIVES], R.ic_cat_archives),
-                            CategoryTile("Code", Icons.Rounded.Code, Palette.Slate, Category.CODE.id, summaries[Category.CODE], R.ic_cat_code),
-                            CategoryTile("Downloads", Icons.Rounded.Download, Palette.Blue, state.downloadsId, summaries[Category.DOWNLOADS], R.ic_cat_downloads),
+                            CategoryTile("Images", Icons.Rounded.Image, Palette.Blue, Category.IMAGES.id, summaries[Category.IMAGES], R.drawable.ic_cat_images),
+                            CategoryTile("Videos", Icons.Rounded.Movie, Palette.Pink, Category.VIDEOS.id, summaries[Category.VIDEOS], R.drawable.ic_cat_videos),
+                            CategoryTile("Audio", Icons.Rounded.MusicNote, Palette.Orange, Category.AUDIO.id, summaries[Category.AUDIO], R.drawable.ic_cat_audio),
+                            CategoryTile("Docs", Icons.Rounded.Description, Palette.Green, Category.DOCUMENTS.id, summaries[Category.DOCUMENTS], R.drawable.ic_cat_docs),
+                            CategoryTile("APKs", Icons.Rounded.Android, Palette.Purple, Category.APKS.id, summaries[Category.APKS], R.drawable.ic_cat_apks),
+                            CategoryTile("Archives", Icons.Rounded.FolderZip, Palette.Cyan, Category.ARCHIVES.id, summaries[Category.ARCHIVES], R.drawable.ic_cat_archives),
+                            CategoryTile("Code", Icons.Rounded.Code, Palette.Slate, Category.CODE.id, summaries[Category.CODE], R.drawable.ic_cat_code),
+                            CategoryTile("Downloads", Icons.Rounded.Download, Palette.Blue, state.downloadsId, summaries[Category.DOWNLOADS], R.drawable.ic_cat_downloads),
                         )
                         EqualGrid(tiles, columns = 4) { t, m ->
                             RingBox(

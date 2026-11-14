@@ -38,3 +38,4 @@ import kotlinx.serialization.Serializable
 @Serializable data object QrScanRoute
 @Serializable data class DevUtilsRoute(val start: String)
 @Serializable data class OrganizeRoute(val path: String? = null)
+@Serializable data object WhatsAppRoute

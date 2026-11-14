@@ -174,6 +174,7 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
             composable<OrganizeRoute> { b ->
                 com.webtecit.filepilot.feature.toolkit.OrganizeScreen(b.toRoute<OrganizeRoute>().path, onBack = { nav.popBackStack() }, onOpenFolder = { nav.navigate(BrowserRoute(it)) })
             }
+            composable<WhatsAppRoute> { com.webtecit.filepilot.feature.cleaner.WhatsAppScreen(onBack = { nav.popBackStack() }) }
             composable<QrScanRoute> { com.webtecit.filepilot.feature.toolkit.QrScanScreen(onBack = { nav.popBackStack() }) }
             composable<FolderSizeRoute> { b ->
                 com.webtecit.filepilot.feature.analyzer.FolderSizeScreen(
@@ -287,12 +288,6 @@ private fun screenshotsFolder(): String {
         ?: java.io.File(root, android.os.Environment.DIRECTORY_PICTURES).absolutePath
 }
 
-private fun whatsAppMediaFolder(): String? {
-    val root = android.os.Environment.getExternalStorageDirectory()
-    return listOf("Android/media/com.whatsapp/WhatsApp/Media", "WhatsApp/Media", "Android/media/com.whatsapp.w4b/WhatsApp Business/Media")
-        .map { java.io.File(root, it) }.firstOrNull { it.isDirectory }?.absolutePath
-}
-
 /** The screen for each tool. */
 fun toolRoute(tool: Tool): Any = when (tool) {
     Tool.FOLDER_SIZE -> FolderSizeRoute()
@@ -313,7 +308,7 @@ fun toolRoute(tool: Tool): Any = when (tool) {
     Tool.ORGANIZE -> OrganizeRoute()
     Tool.LARGE_FILES -> BrowserRoute(com.webtecit.filepilot.core.storage.Category.LARGE.id)
     Tool.SCREENSHOTS -> BrowserRoute(screenshotsFolder())
-    Tool.WHATSAPP_MEDIA -> FolderSizeRoute(whatsAppMediaFolder())
+    Tool.WHATSAPP_MEDIA -> WhatsAppRoute
     Tool.QR_CREATE -> QrCreateRoute
     Tool.ANALYZER -> AnalyzerRoute
     Tool.CODE_STUDIO -> EditorRoute()
