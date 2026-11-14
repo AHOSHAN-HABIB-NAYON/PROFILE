@@ -127,6 +127,7 @@ fun HomeScreen(
     onOpenLibrary: () -> Unit,
     onOpenFiles: () -> Unit = {},
     onOpenTools: () -> Unit = {},
+    onRecent: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -213,7 +214,7 @@ fun HomeScreen(
                     if (primary != null) {
                         item(key = "hero") {
                             Box(Modifier.enterAnimation(2)) {
-                                HeroStorage(primary, state.categories, onBrowse = { open(primary.rootId) }, onAnalyze = { gate { onTool(Tool.FOLDER_SIZE) } })
+                                HeroStorage(primary, state.categories, onBrowse = { open(primary.rootId) }, onAnalyze = { gate { onTool(Tool.FOLDER_SIZE) } }, onRecent = { gate { onRecent() } })
                             }
                         }
                     }
@@ -343,7 +344,7 @@ private fun animatedFraction(target: Float, durationMs: Int = 1100): Float {
 }
 
 @Composable
-private fun HeroStorage(volume: StorageVolumeInfo, categories: List<CategorySummary>, onBrowse: () -> Unit, onAnalyze: () -> Unit) {
+private fun HeroStorage(volume: StorageVolumeInfo, categories: List<CategorySummary>, onBrowse: () -> Unit, onAnalyze: () -> Unit, onRecent: () -> Unit) {
     val used = animatedFraction(volume.usedFraction.toFloat())
     val total = volume.totalBytes.coerceAtLeast(1L).toFloat()
     val byCat = categories.associateBy { it.category }
@@ -414,6 +415,16 @@ private fun HeroStorage(volume: StorageVolumeInfo, categories: List<CategorySumm
                         modifier = Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.18f)).padding(horizontal = 10.dp, vertical = 5.dp),
                     )
                     Spacer(Modifier.weight(1f))
+                    Row(
+                        Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.18f)).clickable(onClick = onRecent)
+                            .padding(horizontal = 10.dp, vertical = 5.dp).testTag("hero_recent"),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Rounded.History, null, tint = Color.White, modifier = Modifier.size(15.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Recent", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold, color = Color.White)
+                    }
+                    Spacer(Modifier.width(8.dp))
                     Row(
                         Modifier.clip(CircleShape).background(Color.White).clickable(onClick = onAnalyze).padding(start = 12.dp, end = 6.dp, top = 5.dp, bottom = 5.dp),
                         verticalAlignment = Alignment.CenterVertically,

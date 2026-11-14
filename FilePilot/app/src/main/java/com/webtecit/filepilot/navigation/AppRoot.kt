@@ -149,6 +149,7 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
                     onOpenLibrary = { nav.switchTab(LibraryRoute) },
                     onOpenFiles = { nav.switchTab(FilesRoute) },
                     onOpenTools = { nav.switchTab(ToolsRoute) },
+                    onRecent = { nav.navigate(RecentFilesRoute) },
                 ) }
             }
             composable<FilesRoute> {
@@ -237,6 +238,14 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
             composable<VaultRoute> { Guided { com.webtecit.filepilot.feature.vault.VaultScreen(onBack = { nav.popBackStack() }) } }
             composable<CleanerRoute> {
                 Guided { com.webtecit.filepilot.feature.cleaner.CleanerScreen(onBack = { nav.popBackStack() }, onPreview = { p -> previewRoute(p)?.let { nav.navigate(it) } }) }
+            }
+            composable<RecentFilesRoute> {
+                com.webtecit.filepilot.feature.recent.RecentFilesScreen(
+                    onBack = { nav.popBackStack() },
+                    onOpenFolder = { nav.navigate(BrowserRoute(it)) },
+                    onOpenRoute = { nav.navigate(it) },
+                    routeFor = { p -> previewRoute(p)?.takeUnless { it is HexRoute } },
+                )
             }
             composable<RecycleBinRoute> { com.webtecit.filepilot.feature.recycle.RecycleBinScreen(onBack = { nav.popBackStack() }) }
             composable<LibraryRoute> {

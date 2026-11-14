@@ -2,6 +2,8 @@ package com.webtecit.filepilot
 
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
@@ -73,6 +75,16 @@ class NavigationTest {
         val px = shot.getPixel(x, y)
         val lum = (android.graphics.Color.red(px) * 299 + android.graphics.Color.green(px) * 587 + android.graphics.Color.blue(px) * 114) / 1000
         org.junit.Assert.assertTrue("New file card is not visible on screen (pixel luminance $lum at $x,$y)", lum < 110)
+    }
+
+    @Test fun opensRecentFilesFromTheStorageCard() {
+        TestSupport.grantAllFilesAccess()
+        rule.onNodeWithTag("hero_recent").performClick()
+        rule.waitForText("Recent files")
+        rule.waitUntil(15_000) {
+            rule.onAllNodesWithTag("recent_list").fetchSemanticsNodes().isNotEmpty() ||
+                rule.onAllNodesWithText("No recent files").fetchSemanticsNodes().isNotEmpty()
+        }
     }
 
     @Test fun switchesToDarkThemeAndBack() {
