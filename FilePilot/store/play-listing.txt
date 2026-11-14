@@ -1,0 +1,58 @@
+FilePilot: Coding Pro — Google Play store listing
+=================================================
+
+APP NAME (max 30)
+FilePilot: Coding Pro
+
+SHORT DESCRIPTION (max 80)
+File manager & code editor. Clean, organize and build websites. Free, no ads.
+
+FULL DESCRIPTION (max 4000)
+FilePilot is a fast, clean file manager and a real code editor in one app. Organize your phone, free up space and build websites — all offline, with no account, no ads and no tracking.
+
+FILE MANAGER
+• Browse internal storage, SD cards and USB drives
+• Copy, move, rename, delete, share and compress to ZIP
+• Smart search: type "big videos" or "apk files bigger than 50 MB"
+• Recent files: see everything that recently arrived on your phone
+• Categories for images, videos, audio, documents, APKs and archives
+• Favorites, quick access and a Recycle Bin that keeps deleted files for 30 days
+• Install APK files you choose, and inspect their details first
+
+CLEAN & ANALYZE
+• Storage cleaner for junk, empty folders, duplicates and large files
+• Folder size: see what takes space, results appear while scanning
+• Chat media cleaner: review and remove old images, videos and voice notes
+• Delete with confirmation and Undo
+
+CODE STUDIO
+• Create files in HTML, CSS, JavaScript, Kotlin, Python, PHP, JSON and more
+• Tabs, syntax highlighting, line numbers, find & replace with regex
+• Start a website or landing page from a template
+• Live preview on phone, tablet and desktop sizes
+• Unsaved drafts are kept so your work isn't lost
+
+TOOLS
+• PDF: images or text to PDF, merge, split, PDF to images, compress
+• Images: resize, convert, long screenshot, collage, remove location data
+• QR code scanner and maker
+• Developer tools: HEX editor, SQLite viewer, archive viewer, JSON / Base64 / hash utilities
+
+MEDIA
+• Photo viewer with swipe and zoom
+• Video player with gestures, speed control, lock and rotate
+• Music player with shuffle, repeat and speed
+
+PRIVATE & SECURE
+• No account, no ads, no analytics
+• Everything is processed on your device
+• Secure Folder with AES-256 encryption and fingerprint unlock
+• Light and dark theme
+
+FilePilot is made by Webtecit Apps. Questions or ideas? Write to support.webtecit@gmail.com
+
+---------------------------------------------------------------
+CATEGORY: Tools
+EMAIL: support.webtecit@gmail.com
+WEBSITE: https://ahoshan-habib-nayon.github.io/PROFILE/filepilot-app/
+PRIVACY POLICY: https://ahoshan-habib-nayon.github.io/PROFILE/filepilot-app/privacy.html
