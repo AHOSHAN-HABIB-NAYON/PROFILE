@@ -413,7 +413,7 @@ private fun MediaCell(f: WaFile, kind: WaKind, selected: Boolean, onClick: () ->
 
 /** First frame of a video, read on a background thread. */
 @Composable
-private fun VideoThumb(file: File) {
+internal fun VideoThumb(file: File) {
     val frame by produceState<Bitmap?>(null, file) {
         value = withContext(Dispatchers.IO) {
             runCatching {

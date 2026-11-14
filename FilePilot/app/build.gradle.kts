@@ -24,6 +24,14 @@ android {
 
     // Release signing comes from environment variables so no secret is stored in the repository.
     signingConfigs {
+        // A fixed test key (committed on purpose, not secret) so every test build can update the
+        // previous one on a phone. CI runners would otherwise make a new random debug key each run.
+        create("test") {
+            storeFile = file("test-signing.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         create("release") {
             val storePath = System.getenv("FP_KEYSTORE_PATH")
             if (storePath != null) {
@@ -43,9 +51,10 @@ android {
             // Without a release keystore the optimized build is signed with the debug key so it
             // can be installed for testing. Store uploads must use the real release key.
             signingConfig = if (System.getenv("FP_KEYSTORE_PATH") != null) signingConfigs.getByName("release")
-            else signingConfigs.getByName("debug")
+            else signingConfigs.getByName("test")
         }
         debug {
+            signingConfig = signingConfigs.getByName("test")
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
         }

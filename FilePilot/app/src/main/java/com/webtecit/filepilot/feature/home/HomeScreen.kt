@@ -149,7 +149,7 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxSize().padding(padding),
             ) {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().testTag("home_list"),
                     contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 6.dp, bottom = 28.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
@@ -263,7 +263,7 @@ fun HomeScreen(
                             Tool.RECYCLE_BIN to "Recycle Bin", Tool.SECURE_FOLDER to "Secure", Tool.QR_SCAN to "QR scan", Tool.STITCH to "Long shot",
                         )
                         EqualGrid(tools, columns = 4) { (tool, label), m ->
-                            GridBox(label, tool.icon, Color(tool.tint), m, iconRes = tool.iconRes) { gate { onTool(tool) } }
+                            GridBox(label, tool.icon, Color(tool.tint), m.testTag("qt_${tool.name}"), iconRes = tool.iconRes) { gate { onTool(tool) } }
                         }
                     }
                     item(key = "recent_header") { HomeHeader("Recent files", if (state.recents.isNotEmpty()) "See all" else null, onOpenLibrary) }

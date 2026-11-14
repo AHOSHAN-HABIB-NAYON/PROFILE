@@ -6,6 +6,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.performScrollToKey
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.webtecit.filepilot.TestSupport.waitForText
@@ -49,6 +51,15 @@ class NavigationTest {
         rule.onNodeWithText("About FilePilot").performClick()
         rule.waitForText("MD AHOSHAN HABIB NAYON")
         rule.waitForText("Webtecit Apps")
+    }
+
+    @Test fun codeStudioShowsStartScreen() {
+        TestSupport.grantAllFilesAccess()
+        rule.onNodeWithTag("home_list").performScrollToKey("tools")
+        rule.onNodeWithTag("qt_CODE_STUDIO").performClick()
+        rule.waitForText("New file")
+        rule.onNodeWithTag("new_file").assertIsDisplayed()
+        rule.onNodeWithText("Choose a language").assertIsDisplayed()
     }
 
     @Test fun switchesToDarkThemeAndBack() {

@@ -224,6 +224,7 @@ fun AppRoot(afterSplash: () -> Any, afterOnboarding: () -> Any, prefs: UserPrefe
             }
             composable<ImageRoute> { b -> com.webtecit.filepilot.feature.media.ImageViewerScreen(b.toRoute<ImageRoute>().path, onBack = { nav.popBackStack() }) }
             composable<VideoRoute> { b -> com.webtecit.filepilot.feature.media.VideoPlayerScreen(b.toRoute<VideoRoute>().path, onBack = { nav.popBackStack() }) }
+            composable<AudioRoute> { b -> com.webtecit.filepilot.feature.media.AudioPlayerScreen(b.toRoute<AudioRoute>().path, onBack = { nav.popBackStack() }) }
             composable<SearchRoute> {
                 com.webtecit.filepilot.feature.search.SmartSearchScreen(onBack = { nav.popBackStack() }, onOpenFolder = { nav.navigate(BrowserRoute(it)) })
             }
@@ -272,7 +273,8 @@ fun previewRoute(path: String): Any? {
     val name = path.substringAfterLast('/')
     return when (com.webtecit.filepilot.core.storage.FileTypes.kindOf(name, false)) {
         com.webtecit.filepilot.core.storage.FileKind.IMAGE -> ImageRoute(path)
-        com.webtecit.filepilot.core.storage.FileKind.VIDEO, com.webtecit.filepilot.core.storage.FileKind.AUDIO -> VideoRoute(path)
+        com.webtecit.filepilot.core.storage.FileKind.VIDEO -> VideoRoute(path)
+        com.webtecit.filepilot.core.storage.FileKind.AUDIO -> AudioRoute(path)
         com.webtecit.filepilot.core.storage.FileKind.PDF -> PdfRoute(path)
         com.webtecit.filepilot.core.storage.FileKind.TEXT, com.webtecit.filepilot.core.storage.FileKind.CODE -> EditorRoute(path)
         com.webtecit.filepilot.core.storage.FileKind.APK -> ApkRoute(path)

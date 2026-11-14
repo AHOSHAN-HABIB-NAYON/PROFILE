@@ -169,8 +169,8 @@ fun BrowserScreen(
             opensInEditor(item) -> onEdit(item.id)
             item.kind == com.webtecit.filepilot.core.storage.FileKind.PDF -> onTool(com.webtecit.filepilot.navigation.PdfRoute(item.id))
             item.id.startsWith("/") && item.kind == com.webtecit.filepilot.core.storage.FileKind.IMAGE -> onTool(com.webtecit.filepilot.navigation.ImageRoute(item.id))
-            item.id.startsWith("/") && (item.kind == com.webtecit.filepilot.core.storage.FileKind.VIDEO || item.kind == com.webtecit.filepilot.core.storage.FileKind.AUDIO) ->
-                onTool(com.webtecit.filepilot.navigation.VideoRoute(item.id))
+            item.id.startsWith("/") && item.kind == com.webtecit.filepilot.core.storage.FileKind.VIDEO -> onTool(com.webtecit.filepilot.navigation.VideoRoute(item.id))
+            item.id.startsWith("/") && item.kind == com.webtecit.filepilot.core.storage.FileKind.AUDIO -> onTool(com.webtecit.filepilot.navigation.AudioRoute(item.id))
             item.id.startsWith("/") && item.kind == com.webtecit.filepilot.core.storage.FileKind.APK -> onTool(com.webtecit.filepilot.navigation.ApkRoute(item.id))
             item.id.startsWith("/") && item.kind == com.webtecit.filepilot.core.storage.FileKind.DATABASE -> onTool(com.webtecit.filepilot.navigation.SqliteRoute(item.id))
             item.id.startsWith("/") && item.kind == com.webtecit.filepilot.core.storage.FileKind.ARCHIVE -> onTool(com.webtecit.filepilot.navigation.ArchiveRoute(item.id))
